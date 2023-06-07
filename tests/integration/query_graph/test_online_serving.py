@@ -277,7 +277,7 @@ async def check_concurrent_online_store_table_updates(
             session=session,
             aggregation_id=aggregation_id,
             job_schedule_ts_str=job_schedule_ts_str,
-            retry_num=10,  # no issue because of retry
+            retry_num=1,  # no issue even without retry
         )
         try:
             await online_store_job.execute()

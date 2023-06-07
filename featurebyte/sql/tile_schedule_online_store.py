@@ -139,6 +139,7 @@ class TileScheduleOnlineStore(BaselSqlModel):
                 keys = " AND ".join(
                     [f"a.{col} = b.{col}" for col in quoted_entity_columns]
                     + [f"a.{quoted_result_name_column} = b.{quoted_result_name_column}"]
+                    + [f"a.{quoted_result_name_column} = '{f_name}'"]
                 )
 
                 # update or insert feature values for entities that are in entity universe
