@@ -525,6 +525,7 @@ jobs:
           }
     - env:
         SLACK_BOT_TOKEN: ${{ secrets.SLACK_OAUTH }}
+      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && contains(needs.*.result, 'failure') }}
       name: Send Slack notification to developer channel
       uses: slackapi/slack-github-action@v1.24.0
       with:
@@ -549,4 +550,3 @@ jobs:
                   }
               ]
           }
-      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && contains(needs.*.result, 'failure') }}
