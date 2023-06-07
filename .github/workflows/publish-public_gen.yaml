@@ -119,8 +119,8 @@ jobs:
       run: |-
         task install
         poetry publish --build -r test-pypi
-    - name: Publish to PyPI
-      if: ${{ github.event.inputs.pypi == 'true' }}
+    - if: ${{ github.event.inputs.pypi == 'true' }}
+      name: Publish to PyPI
       run: |-
         task install
         poetry publish --build
@@ -128,8 +128,8 @@ jobs:
       run: |-
         git config --global user.name "featurebyte[bot]"
         git config --global user.email "featurebyte[bot]@users.noreply.github.com"
-    - name: Tagging Version
-      if: ${{ github.event.inputs.pypi == 'true' }}
+    - if: ${{ github.event.inputs.pypi == 'true' }}
+      name: Tagging Version
       run: |-
         # Tagging version only when pushed to PyPI
         git tag "release/${{ github.event.inputs.version }}"
