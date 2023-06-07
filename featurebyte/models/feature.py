@@ -223,7 +223,7 @@ class FeatureModel(FeatureByteCatalogBaseDocumentModel):
             values.get("entity_ids"),
             values.get("dtype"),
         ]
-        if any([not x for x in derived_attributes]):
+        if any(not x for x in derived_attributes):
             # extract table ids & entity ids from the graph
             graph = values["graph"]
             node_name = values["node_name"]
