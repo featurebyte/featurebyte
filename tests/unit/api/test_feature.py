@@ -727,7 +727,8 @@ def test_feature__as_default_version(saved_feature):
 
     error_msg = (
         f"Cannot set default feature ID to {new_version.id} "
-        f"because it has lower readiness level than PUBLIC_DRAFT."
+        f"because its readiness level (DRAFT) is lower than the readiness level of "
+        f"version {saved_feature.version} (PUBLIC_DRAFT)."
     )
     assert error_msg in str(exc.value)
     assert new_version.is_default is False

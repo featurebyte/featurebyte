@@ -3,11 +3,12 @@ FeatureNamespace API route controller
 """
 from __future__ import annotations
 
-from typing import Any, Literal, cast
+from typing import Any, Literal, Optional, cast
 
 from bson.objectid import ObjectId
 
 from featurebyte.exception import DocumentUpdateError
+from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature import DefaultVersionMode, FeatureModel, FeatureReadiness
 from featurebyte.routes.common.base import (
     BaseDocumentController,
@@ -168,16 +169,20 @@ class FeatureNamespaceController(
             new_default_feature = await self.feature_service.get_document(
                 document_id=data.default_feature_id
             )
-            max_readiness = new_default_feature.readiness
+            max_readiness = FeatureReadiness(new_default_feature.readiness)
+            version: Optional[str] = None
             async for feature_dict in self.feature_service.list_documents_iterator(
                 query_filter={"_id": {"$in": feature_namespace.feature_ids}}
             ):
                 max_readiness = max(max_readiness, FeatureReadiness(feature_dict["readiness"]))
+                if feature_dict["readiness"] == max_readiness:
+                    version = VersionIdentifier(**feature_dict["version"]).to_str()
 
             if new_default_feature.readiness != max_readiness:
                 raise DocumentUpdateError(
                     f"Cannot set default feature ID to {new_default_feature.id} "
-                    f"because it has lower readiness level than {max_readiness}."
+                    f"because its readiness level ({new_default_feature.readiness}) "
+                    f"is lower than the readiness level of version {version} ({max_readiness.value})."
                 )
 
             # update feature namespace default feature ID and update feature readiness
