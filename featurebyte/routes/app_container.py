@@ -127,7 +127,6 @@ class AppContainer:
         -------
         AppContainer instance
         """
-
         return AppContainer(
             user=user,
             persistent=persistent,
