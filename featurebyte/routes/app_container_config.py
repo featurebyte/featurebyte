@@ -3,7 +3,7 @@ App container config module.
 
 This contains all our registrations for dependency injection.
 """
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 from dataclasses import dataclass
 

@@ -39,7 +39,6 @@ from featurebyte.common.utils import get_version
 from featurebyte.logging import get_logger
 from featurebyte.middleware import ExceptionMiddleware
 from featurebyte.models.base import DEFAULT_CATALOG_ID, PydanticObjectId, User
-from featurebyte.routes.app_container import AppContainer
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.schema import APIServiceStatus
 from featurebyte.schema.task import TaskId
