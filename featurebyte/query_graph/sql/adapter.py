@@ -1,11 +1,13 @@
 """
 Module for helper classes to generate engine specific SQL expressions
 """
+# pylint: disable=too-many-lines
 from __future__ import annotations
 
 from typing import Literal, Optional, cast
 
 import re
+import string
 from abc import abstractmethod
 
 from sqlglot import expressions
@@ -757,11 +759,46 @@ class SnowflakeAdapter(BaseAdapter):
     @classmethod
     def online_store_pivot_finalise_serving_name(cls, serving_name: str) -> Expression:
         # Snowflake's PIVOT surrounds the pivoted index column (the serving names) with double
-        # quotes (") and this Alias removes them.
-        return expressions.Alias(
-            this=quoted_identifier(f'""{serving_name}""'),
-            alias=quoted_identifier(serving_name),
+        # quotes (") in some cases. This Alias removes them.
+        if cls.will_pivoted_column_name_be_quoted(serving_name):
+            return expressions.Alias(
+                this=quoted_identifier(f'""{serving_name}""'),
+                alias=quoted_identifier(serving_name),
+            )
+        return quoted_identifier(serving_name)
+
+    @classmethod
+    def will_pivoted_column_name_be_quoted(cls, column_name: str) -> bool:
+        """
+        If a column name is simple enough to be unquoted and when unquoted resolves to itself
+        based on Snowflake's identifier resolution rules, the pivoted column name will not be
+        quoted. This happens when the column name satisfies all the following conditions:
+
+        * Start with a letter (A-Z, a-z) or an underscore (“_”).
+        * Contain only letters, underscores, decimal digits (0-9), and dollar signs (“$”).
+        * All the alphabetic characters are uppercase.
+
+        See also: https://docs.snowflake.com/en/sql-reference/identifiers-syntax
+
+        Parameters
+        ----------
+        column_name: str
+            The column name to be checked
+
+        Returns
+        -------
+        bool
+        """
+        starts_with_letter_or_underscore = column_name[0].isalpha() or column_name[0] == "_"
+        invalid_characters = set(column_name) - set(string.ascii_letters + string.digits + "_$")
+        does_not_contain_invalid_characters = len(invalid_characters) == 0
+        all_alphabetic_chars_are_uppercase = column_name.isupper()
+        will_not_be_quoted = (
+            starts_with_letter_or_underscore
+            and does_not_contain_invalid_characters
+            and all_alphabetic_chars_are_uppercase
         )
+        return not will_not_be_quoted
 
 
 class DatabricksAdapter(BaseAdapter):

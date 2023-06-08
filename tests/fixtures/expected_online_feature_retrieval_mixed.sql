@@ -24,7 +24,7 @@ WITH ONLINE_MY_REQUEST_TABLE AS (
       "_fb_internal_window_w7200_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb"
     FROM (
       SELECT
-        """CUSTOMER_ID""" AS "CUSTOMER_ID",
+        "CUSTOMER_ID",
         "'_fb_internal_window_w172800_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb'" AS "_fb_internal_window_w172800_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb",
         "'_fb_internal_window_w7200_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb'" AS "_fb_internal_window_w7200_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb"
       FROM (
