@@ -3,7 +3,7 @@ FeatureListService class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, AsyncIterator, Dict, List, Optional, Sequence, cast
 
 from bson.objectid import ObjectId
 
@@ -17,6 +17,7 @@ from featurebyte.models.feature_list import (
     FeatureListModel,
     FeatureListNamespaceModel,
 )
+from featurebyte.persistent import Persistent
 from featurebyte.schema.feature import FeatureServiceUpdate
 from featurebyte.schema.feature_list import FeatureListServiceCreate, FeatureListServiceUpdate
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
@@ -77,16 +78,34 @@ class FeatureListService(
 
     document_class = FeatureListModel
 
+    def __init__(self, user: Any, persistent: Persistent, catalog_id: ObjectId):
+        super().__init__(user=user, persistent=persistent, catalog_id=catalog_id)
+        self.entity_service = EntityService(
+            user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
+        )
+        self.relationship_info_service = RelationshipInfoService(
+            user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
+        )
+        self.feature_service = FeatureService(
+            user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
+        )
+        self.feature_list_namespace_service = FeatureListNamespaceService(
+            user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
+        )
+
+    async def _feature_iterator(
+        self, feature_ids: Sequence[ObjectId]
+    ) -> AsyncIterator[FeatureModel]:
+        for feature_id in feature_ids:
+            feature = await self.feature_service.get_document(document_id=feature_id)
+            yield feature
+
     async def _extract_feature_data(self, document: FeatureListModel) -> Dict[str, Any]:
         feature_store_id: Optional[ObjectId] = None
         feature_namespace_ids = set()
         features = []
-        feature_service = FeatureService(
-            user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
-        )
-        for feature_id in document.feature_ids:
+        async for feature in self._feature_iterator(feature_ids=document.feature_ids):
             # retrieve feature from the persistent
-            feature = await feature_service.get_document(document_id=feature_id)
             features.append(feature)
 
             # validate the feature list
@@ -117,25 +136,19 @@ class FeatureListService(
     async def _extract_relationships_info(
         self, features: List[FeatureModel]
     ) -> List[EntityRelationshipInfo]:
-        relationship_info_service = RelationshipInfoService(
-            user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
-        )
-        entity_service = EntityService(
-            user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
-        )
         entity_ids = set()
         for feature in features:
             entity_ids.update(feature.entity_ids)
 
         ancestor_entity_ids = set(entity_ids)
-        async for entity_doc in entity_service.list_documents_iterator(
+        async for entity_doc in self.entity_service.list_documents_iterator(
             query_filter={"_id": {"$in": list(entity_ids)}}
         ):
             entity = EntityModel(**entity_doc)
             ancestor_entity_ids.update(entity.ancestor_ids)
 
         descendant_entity_ids = set(entity_ids)
-        async for entity_doc in entity_service.list_documents_iterator(
+        async for entity_doc in self.entity_service.list_documents_iterator(
             query_filter={"ancestor_ids": {"$in": list(entity_ids)}}
         ):
             entity = EntityModel(**entity_doc)
@@ -143,7 +156,7 @@ class FeatureListService(
 
         relationships_info = [
             EntityRelationshipInfo(**relationship_info)
-            async for relationship_info in relationship_info_service.list_documents_iterator(
+            async for relationship_info in self.relationship_info_service.list_documents_iterator(
                 query_filter={
                     "$or": [
                         {"entity_id": {"$in": list(descendant_entity_ids)}},
@@ -155,19 +168,22 @@ class FeatureListService(
         return relationships_info
 
     async def _update_features(
-        self, features: list[FeatureModel], feature_list_id: ObjectId
+        self,
+        features: list[FeatureModel],
+        inserted_feature_list_id: Optional[ObjectId] = None,
+        deleted_feature_list_id: Optional[ObjectId] = None,
     ) -> None:
-        feature_service = FeatureService(
-            user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
-        )
         for feature in features:
-            await feature_service.update_document(
+            feature_list_ids = cast(List[ObjectId], feature.feature_list_ids)
+            if inserted_feature_list_id:
+                feature_list_ids = self.include_object_id(
+                    feature_list_ids, inserted_feature_list_id
+                )
+            if deleted_feature_list_id:
+                feature_list_ids = self.exclude_object_id(feature_list_ids, deleted_feature_list_id)
+            await self.feature_service.update_document(
                 document_id=feature.id,
-                data=FeatureServiceUpdate(
-                    feature_list_ids=self.include_object_id(
-                        feature.feature_list_ids, feature_list_id
-                    ),
-                ),
+                data=FeatureServiceUpdate(feature_list_ids=feature_list_ids),
                 document=feature,
                 return_document=False,
             )
@@ -185,7 +201,6 @@ class FeatureListService(
         document = FeatureListModel(
             **{
                 **data.json_dict(),
-                "feature_ids": data.feature_ids,
                 "version": await self._get_feature_list_version(data.name),
                 "user_id": self.user.id,
                 "catalog_id": self.catalog_id,
@@ -215,23 +230,16 @@ class FeatureListService(
             )
             assert insert_id == document.id
 
-            feature_list_namespace_service = FeatureListNamespaceService(
-                user=self.user,
-                persistent=self.persistent,
-                catalog_id=self.catalog_id,
-            )
             try:
-                feature_list_namespace = await feature_list_namespace_service.get_document(
+                feature_list_namespace = await self.feature_list_namespace_service.get_document(
                     document_id=document.feature_list_namespace_id,
                 )
                 await validate_feature_list_version_and_namespace_consistency(
                     feature_list=document,
                     feature_list_namespace=feature_list_namespace,
-                    feature_service=FeatureService(
-                        user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
-                    ),
+                    feature_service=self.feature_service,
                 )
-                feature_list_namespace = await feature_list_namespace_service.update_document(
+                feature_list_namespace = await self.feature_list_namespace_service.update_document(
                     document_id=document.feature_list_namespace_id,
                     data=FeatureListNamespaceServiceUpdate(
                         feature_list_ids=self.include_object_id(
@@ -243,7 +251,7 @@ class FeatureListService(
                 assert feature_list_namespace is not None
 
             except DocumentNotFoundError:
-                await feature_list_namespace_service.create_document(
+                await self.feature_list_namespace_service.create_document(
                     data=FeatureListNamespaceModel(
                         _id=document.feature_list_namespace_id or ObjectId(),
                         name=document.name,
@@ -256,5 +264,48 @@ class FeatureListService(
                 )
 
             # update feature's feature_list_ids attribute
-            await self._update_features(feature_data["features"], insert_id)
+            await self._update_features(
+                feature_data["features"], inserted_feature_list_id=insert_id
+            )
         return await self.get_document(document_id=insert_id)
+
+    async def delete_document(
+        self,
+        document_id: ObjectId,
+        exception_detail: Optional[str] = None,
+        use_raw_query_filter: bool = False,
+        **kwargs: Any,
+    ) -> int:
+        feature_list = await self.get_document(document_id=document_id)
+        async with self.persistent.start_transaction():
+            deleted_count = await super().delete_document(document_id=document_id)
+            feature_list_namespace = await self.feature_list_namespace_service.get_document(
+                document_id=feature_list.feature_list_namespace_id
+            )
+            feature_list_namespace = await self.feature_list_namespace_service.update_document(
+                document_id=feature_list.feature_list_namespace_id,
+                data=FeatureListNamespaceServiceUpdate(
+                    feature_list_ids=self.exclude_object_id(
+                        feature_list_namespace.feature_list_ids, document_id
+                    ),
+                ),
+                return_document=True,
+            )  # type: ignore[assignment]
+
+            # update feature's feature_list_ids attribute
+            features = [
+                feature
+                async for feature in self._feature_iterator(feature_ids=feature_list.feature_ids)
+            ]
+            await self._update_features(
+                features=features,
+                deleted_feature_list_id=document_id,
+            )
+
+            if not feature_list_namespace.feature_list_ids:
+                # delete feature list namespace if it has no more feature list
+                await self.feature_list_namespace_service.delete_document(
+                    document_id=feature_list.feature_list_namespace_id
+                )
+
+        return deleted_count
