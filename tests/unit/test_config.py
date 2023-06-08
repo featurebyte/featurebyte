@@ -4,10 +4,16 @@ Test config parser
 import os
 import tempfile
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
+from uuid import uuid4
 
 import pytest
 import requests.exceptions
+from websocket import (
+    WebSocketAddressException,
+    WebSocketBadStatusException,
+    WebSocketConnectionClosedException,
+)
 
 from featurebyte.config import (
     DEFAULT_HOME_PATH,
@@ -16,6 +22,7 @@ from featurebyte.config import (
     LocalStorageSettings,
     LoggingSettings,
     Profile,
+    WebsocketClient,
 )
 from featurebyte.exception import InvalidSettingsError
 from featurebyte.logging import get_logger
@@ -201,3 +208,57 @@ def test_client_redirection(mock_check_sdk_versions, mock_get_home_path):
             "Connection": "keep-alive",
             "Authorization": "Bearer API_TOKEN_VALUE1",
         }
+
+
+@pytest.mark.no_mock_websocket_client
+def test_websocket_ssl():
+    """
+    Test websocket with ssl
+    """
+    config = Configurations("tests/fixtures/config/config.yaml")
+
+    # getting a websocket client with ssl url should not fail
+    config.profile.api_url = "https://some_endpoint"
+    with pytest.raises(WebSocketAddressException):
+        with config.get_websocket_client(str(uuid4())) as ws_client:
+            assert isinstance(ws_client, WebsocketClient)
+
+
+@pytest.mark.no_mock_websocket_client
+def test_websocket_reconnect():
+    """
+    Test websocket reconnection logic
+    """
+    config = Configurations("tests/fixtures/config/config.yaml")
+
+    with patch("featurebyte.config.websocket.create_connection") as mock_create_connection:
+        mock_ws = Mock()
+        mock_create_connection.side_effect = lambda *args, **kwargs: mock_ws
+
+        with config.get_websocket_client(str(uuid4())) as ws_client:
+            # get some data from websocket
+            mock_ws.recv.side_effect = [b"test"]
+            data = ws_client.receive_bytes()
+            assert data == b"test"
+
+            # get empty data from websocket
+            mock_ws.recv.side_effect = [b""]
+            data = ws_client.receive_bytes()
+            assert data == b""
+
+            # unexpected disconnect of valid connection
+            mock_ws.recv.side_effect = [
+                WebSocketConnectionClosedException(),
+                WebSocketConnectionClosedException(),
+                b"test",
+            ]
+            data = ws_client.receive_bytes()
+            assert data == b"test"
+
+            # unexpected disconnect of closed connection
+            mock_ws.recv.side_effect = [
+                WebSocketConnectionClosedException(),
+                WebSocketBadStatusException("Not found", 404),
+            ]
+            with pytest.raises(WebSocketBadStatusException):
+                ws_client.receive_bytes()

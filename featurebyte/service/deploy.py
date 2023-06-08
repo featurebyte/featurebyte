@@ -306,7 +306,7 @@ class DeployService(BaseService):
                         )
 
                     if update_progress:
-                        percent = 20 + 60 // len(document.feature_ids) * (ind + 1)
+                        percent = 20 + int(60 / len(document.feature_ids) * (ind + 1))
                         update_progress(percent, f"Updated {feature.name}")
 
                 if update_progress:
