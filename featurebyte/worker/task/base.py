@@ -3,7 +3,7 @@ Base models for task and task payload
 """
 from __future__ import annotations
 
-from typing import Any, Dict, cast
+from typing import Any, Dict, Optional, cast
 
 from abc import abstractmethod
 from enum import Enum
@@ -44,7 +44,7 @@ class BaseTask:  # pylint: disable=too-many-instance-attributes
         self.get_credential = get_credential
         self.get_celery = get_celery
         self.progress = progress
-        self._app_container = None
+        self._app_container: Optional[LazyAppContainer] = None
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
