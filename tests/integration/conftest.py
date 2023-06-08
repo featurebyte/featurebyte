@@ -655,6 +655,18 @@ def get_session_manager(credentials_mapping):
     return SessionManager(credentials=credentials_mapping)
 
 
+@pytest.fixture(name="get_session_callback", scope="session")
+def get_session_callback_fixture(session_manager, feature_store):
+    """
+    Fixture to return a callback that returns a session object
+    """
+
+    async def callback():
+        return await session_manager.get_session(feature_store)
+
+    return callback
+
+
 @pytest.fixture(name="dimension_data_table_name", scope="session")
 def dimension_data_table_name_fixture():
     """

@@ -1,7 +1,11 @@
 """
 Integration test for online store SQL generation
 """
+import asyncio
+import threading
 import time
+from collections import defaultdict
+from queue import Queue
 from unittest.mock import patch
 
 import pandas as pd
@@ -9,10 +13,13 @@ import pytest
 
 from featurebyte import FeatureList, RecordRetrievalException
 from featurebyte.common.date_util import get_next_job_datetime
+from featurebyte.feature_manager.model import ExtendedFeatureModel
+from featurebyte.models.online_store import OnlineFeatureSpec
 from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.query_graph.sql.online_serving import get_online_store_retrieval_expr
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
+from featurebyte.sql.tile_schedule_online_store import TileScheduleOnlineStore
 from tests.util.helper import create_batch_request_table_from_dataframe, fb_assert_frame_equal
 
 
@@ -81,6 +88,7 @@ async def test_online_serving_sql(
     session,
     config,
     data_source,
+    get_session_callback,
 ):
     """
     Test executing feature compute sql and feature retrieval SQL for online store
@@ -160,6 +168,11 @@ async def test_online_serving_sql(
         batch_request_table.delete()
         assert batch_request_table.saved is False
 
+        await check_concurrent_online_store_table_updates(
+            get_session_callback,
+            feature_list,
+            next_job_datetime.strftime("%Y-%m-%d %H:%M:%S"),
+        )
     finally:
         deployment.disable()
         assert deployment.enabled is False
@@ -215,3 +228,62 @@ def check_get_batch_features(deployment, batch_request_table, df_historical, col
     # check preview deleted materialized table should raise RecordRetrievalException
     with pytest.raises(RecordRetrievalException):
         batch_feature_table.preview()
+
+
+async def check_concurrent_online_store_table_updates(
+    get_session_callback, feature_list, job_schedule_ts_str
+):
+    """
+    Test concurrent online store table updates
+    """
+
+    def get_online_feature_spec(feature):
+        return OnlineFeatureSpec(feature=ExtendedFeatureModel(**feature.dict()))
+
+    # Find concurrent online store table updates given a FeatureList. Concurrent online store table
+    # updates occur when tile jobs associated with different aggregation ids write to the same
+    # online store table. The logic below finds such a table and the associated aggregation ids.
+    online_store_table_name_to_aggregation_id = defaultdict(set)
+    for _, feature_object in feature_list.feature_objects.items():
+        for query in get_online_feature_spec(feature_object).precompute_queries:
+            online_store_table_name_to_aggregation_id[query.table_name].add(query.aggregation_id)
+
+    table_with_concurrent_updates = None
+    for table_name, agg_ids in online_store_table_name_to_aggregation_id.items():
+        if len(agg_ids) > 1:
+            table_with_concurrent_updates = table_name
+            break
+    assert table_with_concurrent_updates is not None, "No table with concurrent updates found"
+
+    aggregation_ids = list(online_store_table_name_to_aggregation_id[table_with_concurrent_updates])
+
+    async def run(aggregation_id, out):
+        """
+        Trigger online store updates for the given aggregation_id
+        """
+        session = await get_session_callback()
+        online_store_job = TileScheduleOnlineStore(
+            session=session,
+            aggregation_id=aggregation_id,
+            job_schedule_ts_str=job_schedule_ts_str,
+            retry_num=10,  # no issue because of retry
+        )
+        try:
+            await online_store_job.execute()
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            out.put(e)
+
+    out = Queue()
+
+    for _ in range(3):
+        threads = []
+        for aggregation_id in aggregation_ids:
+            t = threading.Thread(target=asyncio.run, args=(run(aggregation_id, out),))
+            threads.append(t)
+            t.start()
+
+        for t in threads:
+            t.join()
+
+        if not out.empty():
+            raise out.get()
