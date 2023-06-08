@@ -217,10 +217,10 @@ class FeatureModel(FeatureByteCatalogBaseDocumentModel):
     @root_validator
     @classmethod
     def _add_derived_attributes(cls, values: dict[str, Any]) -> dict[str, Any]:
+        # do not check entity_ids as the derived result can be an empty list
         derived_attributes = [
             values.get("primary_table_ids"),
             values.get("table_ids"),
-            values.get("entity_ids"),
             values.get("dtype"),
         ]
         if any(not x for x in derived_attributes):
