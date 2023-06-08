@@ -217,20 +217,28 @@ class FeatureModel(FeatureByteCatalogBaseDocumentModel):
     @root_validator
     @classmethod
     def _add_derived_attributes(cls, values: dict[str, Any]) -> dict[str, Any]:
-        # extract table ids & entity ids from the graph
-        graph = values["graph"]
-        node_name = values["node_name"]
-        values["primary_table_ids"] = graph.get_primary_table_ids(node_name=node_name)
-        values["table_ids"] = graph.get_table_ids(node_name=node_name)
-        values["entity_ids"] = graph.get_entity_ids(node_name=node_name)
+        # do not check entity_ids as the derived result can be an empty list
+        derived_attributes = [
+            values.get("primary_table_ids"),
+            values.get("table_ids"),
+            values.get("dtype"),
+        ]
+        if any(not x for x in derived_attributes):
+            # only derive attributes if any of them is missing
+            # extract table ids & entity ids from the graph
+            graph = values["graph"]
+            node_name = values["node_name"]
+            values["primary_table_ids"] = graph.get_primary_table_ids(node_name=node_name)
+            values["table_ids"] = graph.get_table_ids(node_name=node_name)
+            values["entity_ids"] = graph.get_entity_ids(node_name=node_name)
 
-        # extract dtype from the graph
-        node = graph.get_node_by_name(node_name)
-        op_struct = graph.extract_operation_structure(node=node)
-        if len(op_struct.aggregations) != 1:
-            raise ValueError("Feature graph must have exactly one aggregation output")
+            # extract dtype from the graph
+            node = graph.get_node_by_name(node_name)
+            op_struct = graph.extract_operation_structure(node=node)
+            if len(op_struct.aggregations) != 1:
+                raise ValueError("Feature graph must have exactly one aggregation output")
 
-        values["dtype"] = op_struct.aggregations[0].dtype
+            values["dtype"] = op_struct.aggregations[0].dtype
         return values
 
     @property
