@@ -3,7 +3,7 @@ Session class
 """
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator, ClassVar, List, Optional, OrderedDict
+from typing import Any, AsyncGenerator, ClassVar, Optional, OrderedDict
 
 import asyncio
 import contextvars
@@ -765,32 +765,26 @@ class MetadataSchemaInitializer:
     def __init__(self, session: BaseSession):
         self.session = session
 
-    def create_metadata_table_queries(self, current_migration_version: int) -> List[str]:
-        """Queries to create metadata table
+    async def create_metadata_table_if_not_exists(self, current_migration_version: int) -> None:
+        """Create metadata table if it doesn't exist
 
         Parameters
         ----------
         current_migration_version: int
             Current migration version
-
-        Returns
-        -------
-        List[str]
         """
-        return [
-            (
-                "CREATE TABLE IF NOT EXISTS METADATA_SCHEMA ( "
-                "WORKING_SCHEMA_VERSION INT, "
-                f"{InternalName.MIGRATION_VERSION} INT, "
-                "FEATURE_STORE_ID VARCHAR, "
-                "CREATED_AT TIMESTAMP DEFAULT SYSDATE() "
-                ") AS "
-                "SELECT 0 AS WORKING_SCHEMA_VERSION, "
-                f"{current_migration_version} AS {InternalName.MIGRATION_VERSION}, "
-                "NULL AS FEATURE_STORE_ID, "
-                "SYSDATE() AS CREATED_AT;"
-            )
-        ]
+        await self.session.execute_query(
+            "CREATE TABLE IF NOT EXISTS METADATA_SCHEMA ( "
+            "WORKING_SCHEMA_VERSION INT, "
+            f"{InternalName.MIGRATION_VERSION} INT, "
+            "FEATURE_STORE_ID VARCHAR, "
+            "CREATED_AT TIMESTAMP DEFAULT SYSDATE() "
+            ") AS "
+            "SELECT 0 AS WORKING_SCHEMA_VERSION, "
+            f"{current_migration_version} AS {InternalName.MIGRATION_VERSION}, "
+            "NULL AS FEATURE_STORE_ID, "
+            "SYSDATE() AS CREATED_AT;"
+        )
 
     async def update_metadata_schema_version(self, new_version: int) -> None:
         """Inserts default information into the metadata schema.
@@ -816,10 +810,8 @@ class MetadataSchemaInitializer:
         current_migration_version = max(
             retrieve_all_migration_methods(data_warehouse_migrations_only=True)
         )
-        metadata_table_queries = self.create_metadata_table_queries(current_migration_version)
-        for query in metadata_table_queries:
-            await self.session.execute_query(query)
         logger.debug("Creating METADATA_SCHEMA table")
+        await self.create_metadata_table_if_not_exists(current_migration_version)
 
     async def update_feature_store_id(self, new_feature_store_id: str) -> None:
         """Inserts default information into the metadata schema.

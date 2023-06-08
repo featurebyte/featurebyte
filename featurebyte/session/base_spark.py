@@ -3,7 +3,7 @@ BaseSparkSession class
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional, cast
+from typing import Any, Optional, cast
 
 import os
 from abc import ABC
@@ -235,19 +235,31 @@ class BaseSparkMetadataSchemaInitializer(MetadataSchemaInitializer):
     def __init__(self, session: BaseSparkSession):
         super().__init__(session)
 
-    def create_metadata_table_queries(self, current_migration_version: int) -> List[str]:
-        """Query to create metadata table
+    async def metadata_table_exists(self) -> bool:
+        """
+        Check if metadata table exists
+
+        Returns
+        -------
+        bool
+        """
+        try:
+            await self.session.execute_query("SELECT * FROM METADATA_SCHEMA")
+        except self.session._no_schema_error:  # pylint: disable=protected-access
+            return False
+        return True
+
+    async def create_metadata_table_if_not_exists(self, current_migration_version: int) -> None:
+        """Create metadata table if it doesn't exist
 
         Parameters
         ----------
         current_migration_version: int
             Current migration version
-
-        Returns
-        -------
-        List[str]
         """
-        return [
+        if await self.metadata_table_exists():
+            return
+        for query in [
             (
                 f"""
                 CREATE TABLE IF NOT EXISTS METADATA_SCHEMA (
@@ -268,7 +280,8 @@ class BaseSparkMetadataSchemaInitializer(MetadataSchemaInitializer):
                     CURRENT_TIMESTAMP() AS CREATED_AT
                 """
             ),
-        ]
+        ]:
+            await self.session.execute_query(query)
 
 
 class BaseSparkSchemaInitializer(BaseSchemaInitializer):
@@ -280,7 +293,7 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
 
     @property
     def current_working_schema_version(self) -> int:
-        return 1
+        return 2
 
     @property
     def sql_directory_name(self) -> str:
