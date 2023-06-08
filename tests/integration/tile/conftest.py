@@ -7,10 +7,12 @@ import pytest_asyncio
 from bson import ObjectId
 
 from featurebyte.app import get_celery
+from featurebyte.enum import InternalName
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.models.feature import FeatureReadiness
 from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.sql.base import BaselSqlModel
 from featurebyte.tile.manager import TileManager
@@ -29,6 +31,18 @@ async def tile_task_online_store_prep(session, base_sql_model):
 
     number_records = 2
     quote_feature_name = base_sql_model.quote_column(feature_name)
+    adapter = get_sql_adapter(session.source_type)
+    sql_query = adapter.escape_quote_char(
+        f"""
+        select
+          {entity_col_names},
+          '{feature_name}' as {InternalName.ONLINE_STORE_RESULT_NAME_COLUMN},
+          {quote_feature_name} as {InternalName.ONLINE_STORE_VALUE_COLUMN}
+        FROM (
+          select {entity_col_names}, cast(value_2 as float) as {quote_feature_name} from {table_name} limit {number_records}
+        )
+        """
+    )
     insert_mapping_sql = f"""
             insert into ONLINE_STORE_MAPPING(
                 TILE_ID,
@@ -46,7 +60,7 @@ async def tile_task_online_store_prep(session, base_sql_model):
                 '{aggregation_id}',
                 '{feature_name}',
                 'FLOAT',
-                'select {entity_col_names}, cast(value_2 as float) as {quote_feature_name} from {table_name} limit {number_records}',
+                '{sql_query}',
                 '{feature_store_table_name}',
                 '{entity_col_names}',
                 false,
