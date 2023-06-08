@@ -458,8 +458,22 @@ class TileBasedAggregator(Aggregator[TileBasedAggregationSpec], ABC):
         C1       1.0           3.0
         C2       10.0          33.0
         C3       NULL          100.0
-        """
 
+        Parameters
+        ----------
+        table_name: str
+            Online store table name
+        agg_result_names: list[str]
+            Name of the aggregation results
+        serving_names: list[str]
+            Serving names
+        dtype: DBVarType
+            Data type of the aggregation results
+
+        Returns
+        -------
+        Select
+        """
         literal_agg_result_names = [make_literal_value(name) for name in agg_result_names]
         value_column = self.adapter.online_store_pivot_prepare_value_column(dtype)
         filtered_online_store = (
