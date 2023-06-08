@@ -16,8 +16,8 @@ from featurebyte.utils.credential import MongoBackedCredentialProvider
 
 
 def get_all_deps_for_key(
-    key: str, class_def_mapping: Dict[str, ClassDefinition], existing_deps: Dict[str, Any]
-) -> Dict[str, ClassDefinition]:
+    key: str, class_def_mapping: Dict[str, ClassDefinition], base_deps: Dict[str, Any]
+) -> List[str]:
     """
     Get dependencies for a given key.
 
@@ -27,27 +27,31 @@ def get_all_deps_for_key(
         key to get dependencies for
     class_def_mapping: Dict[str, ClassDefinition]
         mapping of key to class definition
-    existing_deps: Dict[str, Any]
+    base_deps: Dict[str, Any]
         existing dependencies
 
     Returns
     -------
     Dict[str, ClassDefinition]
-        dependencies
+        ordered dependencies, with the elements
     """
+    all_deps = [key]
+    # Skip if the key is already in the base_deps
+    if key in base_deps:
+        return all_deps
+
     # Get class definition
-    if key in existing_deps:
-        return {}
     class_def = class_def_mapping[key]
     dependencies = class_def.dependencies
-    all_deps = {key: class_def}
+    # If this node has no children, return the current node.
     if not dependencies:
         return all_deps
 
-    # Recursively get all dependencies
+    # Recursively get all dependencies of the children
     for dep in dependencies:
-        deps_for_key = get_all_deps_for_key(dep, class_def_mapping, existing_deps)
-        all_deps.update(deps_for_key)
+        children_deps = get_all_deps_for_key(dep, class_def_mapping, base_deps)
+        children_deps.extend(all_deps)
+        all_deps = children_deps
 
     return all_deps
 
@@ -176,7 +180,7 @@ def build_deps(
     -------
     Dict[str, Any]
     """
-    # Sort deps by order
+    # Sort deps by ascending ordering
     deps = sorted(deps, key=lambda x: x.ordering)
 
     # Build deps
@@ -198,6 +202,29 @@ def build_deps(
         elif dep.ordering == 40:
             new_deps[dep.name] = build_controllers(dep, new_deps)
     return new_deps
+
+
+def convert_dep_list_str_to_class_def(
+    deps: List[str], mapping: Dict[str, ClassDefinition]
+) -> List[ClassDefinition]:
+    """
+    Converts dependencies from a list of strings to a list of ClassDefinitions.
+
+    Parameters
+    ----------
+    deps: List[str]
+        list of dependencies
+    mapping: Dict[str, ClassDefinition]
+        mapping of key to class definition
+
+    Returns
+    -------
+    List[ClassDefinition[
+    """
+    output: List[ClassDefinition] = []
+    for dep in deps:
+        output.append(mapping[dep])
+    return output
 
 
 class LazyAppContainer:
@@ -237,12 +264,17 @@ class LazyAppContainer:
         if key in self.instance_map:
             return self.instance_map[key]
 
-        # Build instance
+        # Get deps by doing a depth first traversal through the dependencies
         deps = get_all_deps_for_key(
             key, app_container_config.get_class_def_mapping(), self.instance_map
         )
+        # Remove deps that have already been built
+        filtered_deps = [dep for dep in deps if dep not in self.instance_map]
+        ordered_deps = convert_dep_list_str_to_class_def(
+            filtered_deps, app_container_config.get_class_def_mapping()
+        )
         new_deps = build_deps(
-            list(deps.values()), self.instance_map, self.user, self.persistent, self.catalog_id
+            ordered_deps, self.instance_map, self.user, self.persistent, self.catalog_id
         )
         self.instance_map.update(new_deps)
         return self.instance_map[key]
