@@ -136,6 +136,9 @@ class TileScheduleOnlineStore(BaselSqlModel):
                 value_args += [f"b.{quoted_result_name_column}", f"b.{quoted_value_column}"]
                 value_args = ", ".join(value_args)  # type: ignore[assignment]
 
+                # Note: the last condition of "a.{quoted_result_name_column} = '{f_name}'" is
+                # required to avoid the ConcurrentAppendException error in delta tables in addition
+                # to setting the partition keys.
                 keys = " AND ".join(
                     [f"a.{col} = b.{col}" for col in quoted_entity_columns]
                     + [f"a.{quoted_result_name_column} = b.{quoted_result_name_column}"]
