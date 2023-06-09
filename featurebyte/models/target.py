@@ -44,7 +44,7 @@ class TargetModel(FeatureByteCatalogBaseDocumentModel):
     blind_spot: str
     entity_ids: List[PydanticObjectId]
 
-    class Settings(FeatureByteBaseDocumentModel.Settings):
+    class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
         MongoDB settings
         """
