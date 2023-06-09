@@ -21,7 +21,6 @@ from typing_extensions import Annotated  # pylint: disable=wrong-import-order
 
 from collections import defaultdict
 
-from bson import json_util
 from pydantic import Field, root_validator, validator
 
 from featurebyte.enum import AggFunc, DBVarType, StrEnum, TableDataType
@@ -75,6 +74,16 @@ class BaseColumn(FeatureByteBaseModel):
     filter: bool
     node_names: Set[str]
     node_name: str
+
+    def _get_hash_key(self) -> Tuple[Optional[str], DBVarType, bool, str]:
+        """
+        Get the hash key of the column (used to construct the hash key of the column)
+
+        Returns
+        -------
+        Tuple[Optional[str], DBVarType, bool, str]
+        """
+        return self.name, self.dtype, self.filter, self.node_name
 
     def clone(self: BaseColumnT, **kwargs: Any) -> BaseColumnT:
         """
@@ -307,9 +316,8 @@ class SourceDataColumn(BaseDataColumn):
     filter: bool = Field(default=False)
 
     def __hash__(self) -> int:
-        col_dict = self.dict()
-        col_dict["node_names"] = sorted(col_dict["node_names"])
-        return hash(json_util.dumps(col_dict, sort_keys=True))
+        key = (*self._get_hash_key(), self.type, self.table_id, self.table_type)
+        return hash(key)
 
 
 class DerivedDataColumn(BaseDerivedColumn):
@@ -319,12 +327,9 @@ class DerivedDataColumn(BaseDerivedColumn):
     type: Literal[ViewDataColumnType.DERIVED] = Field(ViewDataColumnType.DERIVED, const=True)
 
     def __hash__(self) -> int:
-        col_dict = self.dict()
-        col_dict["columns"] = sorted(
-            [json_util.dumps(col, sort_keys=True) for col in col_dict["columns"]]
-        )
-        col_dict["node_names"] = sorted(col_dict["node_names"])
-        return hash(json_util.dumps(col_dict, sort_keys=True))
+        columns_item = tuple(sorted([col.__hash__() for col in self.columns]))
+        key = (*self._get_hash_key(), self.type, columns_item)
+        return hash(key)
 
 
 ViewDataColumn = Annotated[Union[SourceDataColumn, DerivedDataColumn], Field(discriminator="type")]
@@ -350,9 +355,18 @@ class AggregationColumn(BaseDataColumn):
     ]
 
     def __hash__(self) -> int:
-        col_dict = self.dict()
-        col_dict["node_names"] = sorted(col_dict["node_names"])
-        return hash(json_util.dumps(col_dict, sort_keys=True))
+        key = (
+            *self._get_hash_key(),
+            self.type,
+            # specific to aggregation column
+            self.method,
+            tuple(sorted(self.keys)),
+            self.window,
+            self.category,
+            self.column.__hash__() if self.column else None,
+            self.aggregation_type,
+        )
+        return hash(key)
 
     def clone_without_internal_nodes(
         self,
@@ -387,12 +401,9 @@ class PostAggregationColumn(BaseDerivedColumn):
     )
 
     def __hash__(self) -> int:
-        col_dict = self.dict()
-        col_dict["columns"] = sorted(
-            [json_util.dumps(col, sort_keys=True) for col in col_dict["columns"]]
-        )
-        col_dict["node_names"] = sorted(col_dict["node_names"])
-        return hash(json_util.dumps(col_dict, sort_keys=True))
+        columns_item = tuple(sorted([col.__hash__() for col in self.columns]))
+        key = (*self._get_hash_key(), self.type, columns_item)
+        return hash(key)
 
 
 FeatureDataColumn = Annotated[
