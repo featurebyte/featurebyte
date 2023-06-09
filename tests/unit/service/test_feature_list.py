@@ -21,7 +21,6 @@ async def test_update_document__duplicated_feature_error(feature_list_service, f
     """Test feature creation - document inconsistency error"""
     data_dict = feature_list.dict(by_alias=True)
     data_dict["_id"] = ObjectId()
-    data_dict["version"] = {"name": "V220917"}
     data_dict["feature_ids"] = data_dict["feature_ids"] * 2
     with pytest.raises(DocumentError) as exc:
         await feature_list_service.create_document(

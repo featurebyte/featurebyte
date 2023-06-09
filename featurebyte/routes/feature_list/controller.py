@@ -14,6 +14,7 @@ from fastapi.exceptions import HTTPException
 from featurebyte.common.utils import dataframe_from_arrow_stream
 from featurebyte.exception import (
     DocumentDeletionError,
+    DocumentNotFoundError,
     MissingPointInTimeColumnError,
     RequiredEntityNotProvidedError,
     TooRecentPointInTimeError,
@@ -171,22 +172,16 @@ class FeatureListController(
                 "or change the default version mode to auto."
             )
 
-        # use transaction to ensure atomicity
-        async with self.service.persistent.start_transaction():
-            await self.service.delete_document(document_id=feature_list_id)
+        await self.service.delete_document(document_id=feature_list_id)
+        try:
             await self.feature_readiness_service.update_feature_list_namespace(
                 feature_list_namespace_id=feature_list.feature_list_namespace_id,
                 deleted_feature_list_ids=[feature_list_id],
                 return_document=False,
             )
-            feature_list_namespace = await self.feature_list_namespace_service.get_document(
-                document_id=feature_list.feature_list_namespace_id
-            )
-            if not feature_list_namespace.feature_list_ids:
-                # delete feature list namespace if it has no more feature list
-                await self.feature_list_namespace_service.delete_document(
-                    document_id=feature_list.feature_list_namespace_id
-                )
+        except DocumentNotFoundError:
+            # if feature list namespace is deleted, do nothing
+            pass
 
     async def list_feature_lists(
         self,
