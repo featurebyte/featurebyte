@@ -1,10 +1,12 @@
 """
 Unit tests for query graph operation structure extraction
 """
+
 import pytest
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.metadata.operation import NodeOutputCategory
+from tests.unit.query_graph.util import to_dict
 
 
 def extract_column_parameters(input_node, other_node_names=None, node_name=None):
@@ -22,15 +24,6 @@ def extract_column_parameters(input_node, other_node_names=None, node_name=None)
     }
 
 
-def to_dict(obj):
-    """Convert object to dict form for more readable pytest assert reporting"""
-    if isinstance(obj, list):
-        return [to_dict(x) for x in obj]
-    if hasattr(obj, "dict"):
-        return obj.dict()
-    return obj
-
-
 def test_extract_operation__single_input_node(global_graph, input_node):
     """Test extract_operation_structure: single input node"""
     op_struct = global_graph.extract_operation_structure(node=input_node)
@@ -38,14 +31,14 @@ def test_extract_operation__single_input_node(global_graph, input_node):
         {"name": col.name, "dtype": col.dtype, **extract_column_parameters(input_node)}
         for col in input_node.parameters.columns
     ]
-    assert op_struct.columns == expected_columns
+    assert to_dict(op_struct.columns) == expected_columns
     assert op_struct.aggregations == []
     assert op_struct.output_category == "view"
     assert op_struct.output_type == "frame"
     assert op_struct.row_index_lineage == (input_node.name,)
 
     grp_op_struct = op_struct.to_group_operation_structure()
-    assert grp_op_struct.source_columns == expected_columns
+    assert to_dict(grp_op_struct.source_columns) == expected_columns
     assert grp_op_struct.derived_columns == []
     assert grp_op_struct.aggregations == []
     assert grp_op_struct.post_aggregation is None
@@ -62,14 +55,14 @@ def test_extract_operation__project_add_assign(query_graph_and_assign_node):
     expected_columns = [
         {"name": "a", "dtype": "FLOAT", **extract_column_parameters(input_node, {"project_1"})}
     ]
-    assert op_struct.columns == expected_columns
+    assert to_dict(op_struct.columns) == expected_columns
     assert op_struct.aggregations == []
     assert op_struct.output_category == "view"
     assert op_struct.output_type == "series"
     assert op_struct.row_index_lineage == ("input_1",)
 
     grp_op_struct = op_struct.to_group_operation_structure()
-    assert grp_op_struct.source_columns == expected_columns
+    assert to_dict(grp_op_struct.source_columns) == expected_columns
     assert grp_op_struct.derived_columns == []
     assert grp_op_struct.aggregations == []
     assert grp_op_struct.post_aggregation is None
@@ -85,14 +78,14 @@ def test_extract_operation__project_add_assign(query_graph_and_assign_node):
         {"name": "a", "dtype": "FLOAT", **extract_column_parameters(input_node, {"project_3"})},
         {"name": "b", "dtype": "FLOAT", **extract_column_parameters(input_node, {"project_3"})},
     ]
-    assert op_struct.columns == expected_columns
+    assert to_dict(op_struct.columns) == expected_columns
     assert op_struct.aggregations == []
     assert op_struct.output_category == "view"
     assert op_struct.output_type == "frame"
     assert op_struct.row_index_lineage == ("input_1",)
 
     grp_op_struct = op_struct.to_group_operation_structure()
-    assert grp_op_struct.source_columns == expected_columns
+    assert to_dict(grp_op_struct.source_columns) == expected_columns
     assert grp_op_struct.derived_columns == []
     assert grp_op_struct.aggregations == []
     assert grp_op_struct.post_aggregation is None
@@ -122,7 +115,7 @@ def test_extract_operation__project_add_assign(query_graph_and_assign_node):
             "node_name": "add_1",
         }
     ]
-    assert op_struct.columns == expected_derived_columns
+    assert to_dict(op_struct.columns) == expected_derived_columns
     assert op_struct.aggregations == []
     assert op_struct.output_category == "view"
     assert op_struct.output_type == "series"
@@ -133,8 +126,8 @@ def test_extract_operation__project_add_assign(query_graph_and_assign_node):
         {"name": "a", "dtype": "FLOAT", **extract_column_parameters(input_node, {"project_1"})},
         {"name": "b", "dtype": "FLOAT", **extract_column_parameters(input_node, {"project_2"})},
     ]
-    assert grp_op_struct.source_columns == expected_columns
-    assert grp_op_struct.derived_columns == expected_derived_columns
+    assert to_dict(grp_op_struct.source_columns) == expected_columns
+    assert to_dict(grp_op_struct.derived_columns) == expected_derived_columns
     assert grp_op_struct.aggregations == []
     assert grp_op_struct.post_aggregation is None
     assert grp_op_struct.row_index_lineage == ("input_1",)
@@ -169,19 +162,19 @@ def test_extract_operation__project_add_assign(query_graph_and_assign_node):
             "node_name": "assign_1",
         },
     ]
-    assert op_struct.columns == expected_columns + expected_derived_columns
+    assert to_dict(op_struct.columns) == expected_columns + expected_derived_columns
     assert op_struct.output_category == "view"
     assert op_struct.output_type == "frame"
     assert op_struct.row_index_lineage == ("input_1",)
 
     grp_op_struct = op_struct.to_group_operation_structure()
-    assert grp_op_struct.source_columns == [
+    assert to_dict(grp_op_struct.source_columns) == [
         {"name": "ts", "dtype": "TIMESTAMP", **common_column_params},
         {"name": "cust_id", "dtype": "INT", **common_column_params},
         {"name": "a", "dtype": "FLOAT", **extract_column_parameters(input_node, {"project_1"})},
         {"name": "b", "dtype": "FLOAT", **extract_column_parameters(input_node, {"project_2"})},
     ]
-    assert grp_op_struct.derived_columns == expected_derived_columns
+    assert to_dict(grp_op_struct.derived_columns) == expected_derived_columns
     assert grp_op_struct.aggregations == []
     assert grp_op_struct.post_aggregation is None
     assert grp_op_struct.row_index_lineage == ("input_1",)
@@ -200,14 +193,14 @@ def test_extract_operation__filter(graph_four_nodes):
     expected_columns = [
         {"name": "column", "dtype": "FLOAT", **common_column_params, "filter": True}
     ]
-    assert op_struct.columns == expected_columns
+    assert to_dict(op_struct.columns) == expected_columns
     assert op_struct.aggregations == []
     assert op_struct.output_category == "view"
     assert op_struct.output_type == "frame"
     assert op_struct.row_index_lineage == ("input_1", "filter_1")
 
     grp_op_struct = op_struct.to_group_operation_structure()
-    assert grp_op_struct.source_columns == [
+    assert to_dict(grp_op_struct.source_columns) == [
         {"name": "column", "dtype": "FLOAT", **common_column_params, "filter": True}
     ]
     assert grp_op_struct.derived_columns == []
@@ -259,15 +252,15 @@ def test_extract_operation__lag(global_graph, input_node):
             "node_name": "lag_1",
         }
     ]
-    assert op_struct.columns == expected_derived_columns
+    assert to_dict(op_struct.columns) == expected_derived_columns
     assert op_struct.aggregations == []
     assert op_struct.output_category == "view"
     assert op_struct.output_type == "series"
     assert op_struct.row_index_lineage == ("input_1",)
 
     grp_op_struct = op_struct.to_group_operation_structure()
-    assert grp_op_struct.source_columns == expected_source_columns
-    assert grp_op_struct.derived_columns == expected_derived_columns
+    assert to_dict(grp_op_struct.source_columns) == expected_source_columns
+    assert to_dict(grp_op_struct.derived_columns) == expected_derived_columns
     assert grp_op_struct.aggregations == []
     assert grp_op_struct.post_aggregation is None
     assert grp_op_struct.row_index_lineage == ("input_1",)
@@ -308,7 +301,7 @@ def test_extract_operation__groupby(query_graph_with_groupby):
     grp_op_struct = op_struct.to_group_operation_structure()
     assert to_dict(grp_op_struct.source_columns) == expected_columns
     assert grp_op_struct.derived_columns == []
-    assert grp_op_struct.aggregations == expected_aggregations
+    assert to_dict(grp_op_struct.aggregations) == expected_aggregations
     assert grp_op_struct.post_aggregation is None
     assert grp_op_struct.row_index_lineage == ("groupby_1",)
     assert grp_op_struct.is_time_based is True
@@ -365,8 +358,8 @@ def test_extract_operation__groupby(query_graph_with_groupby):
     grp_op_struct = op_struct.to_group_operation_structure()
     assert to_dict(grp_op_struct.source_columns) == expected_columns
     assert grp_op_struct.derived_columns == []
-    assert grp_op_struct.aggregations == [expected_aggregation]
-    assert grp_op_struct.post_aggregation == expected_filtered_aggregation
+    assert to_dict(grp_op_struct.aggregations) == [expected_aggregation]
+    assert to_dict(grp_op_struct.post_aggregation) == expected_filtered_aggregation
     assert grp_op_struct.row_index_lineage == ("groupby_1", "filter_1")
 
 
@@ -473,7 +466,7 @@ def test_extract_operation__join_double_aggregations(
         "node_name": "join_feature_1",
         "dtype": "FLOAT",
     }
-    assert op_struct.columns == [
+    assert to_dict(op_struct.columns) == [
         {"name": "ts", "dtype": "TIMESTAMP", **common_event_table_column_params},
         {"name": "cust_id", "dtype": "INT", **common_event_table_column_params},
         {"name": "order_id", "dtype": "INT", **common_event_table_column_params},
@@ -948,7 +941,7 @@ def test_extract_operation_structure__groupby_on_event_timestamp_columns(
         "node_names": {"groupby_1", "input_1"},
         "type": "aggregation",
     }
-    assert op_struct.columns == [
+    assert to_dict(op_struct.columns) == [
         {
             "dtype": "TIMESTAMP",
             "filter": False,
@@ -960,7 +953,7 @@ def test_extract_operation_structure__groupby_on_event_timestamp_columns(
             "type": "source",
         }
     ]
-    assert op_struct.aggregations == [
+    assert to_dict(op_struct.aggregations) == [
         {"name": "a_2h_average", "window": "2h", **common_agg_params},
         {"name": "a_48h_average", "window": "48h", **common_agg_params},
     ]
@@ -982,7 +975,7 @@ def test_extract_operation_structure__graph_node_row_index_lineage(
         "table_type": "event_table",
         "type": "source",
     }
-    assert op_struct.columns == [
+    assert to_dict(op_struct.columns) == [
         {"name": "ts", "dtype": "TIMESTAMP", **common_params},
         {"name": "cust_id", "dtype": "INT", **common_params},
         {"name": "b", "dtype": "FLOAT", **common_params},
@@ -1058,7 +1051,7 @@ def test_track_changes_operation_structure(global_graph, scd_table_input_node):
         {"name": "previous_valid_from", "dtype": "TIMESTAMP", **track_changes_params},
         {"name": "new_valid_from", "dtype": "TIMESTAMP", **track_changes_params},
     ]
-    assert op_struct.columns == expected_columns
+    assert to_dict(op_struct.columns) == expected_columns
     assert op_struct.aggregations == []
     assert op_struct.output_type == NodeOutputType.FRAME
     assert op_struct.output_category == NodeOutputCategory.VIEW
