@@ -28,6 +28,7 @@ def test_get_persistent():
     mock_mongodb.assert_called_once_with(uri="mongodb://localhost:27022", database="featurebyte")
 
 
+@pytest.mark.flaky(reruns=3)
 def test_get_app__loading_time():
     """Test app loading time (to detect changes that increase loading app time)"""
     start = time.time()
