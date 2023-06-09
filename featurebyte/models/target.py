@@ -63,7 +63,7 @@ class TargetModel(FeatureByteCatalogBaseDocumentModel):
             ),
         ]
 
-        indexes = FeatureByteBaseDocumentModel.Settings.indexes + [
+        indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
             [
                 ("name", pymongo.TEXT),
             ],
