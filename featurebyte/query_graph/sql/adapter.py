@@ -552,9 +552,7 @@ class BaseAdapter:  # pylint: disable=too-many-public-methods
         -------
         Expression
         """
-        return cast(
-            Expression, alias_(quoted_identifier(serving_name), alias=serving_name, quoted=True)
-        )
+        return quoted_identifier(serving_name)
 
 
 class SnowflakeAdapter(BaseAdapter):
@@ -739,7 +737,7 @@ class SnowflakeAdapter(BaseAdapter):
         dtype: DBVarType,
     ) -> Expression:
         # Snowflake's PIVOT surrounds the pivoted fields with single quotes (')
-        agg_result_name_expr = expressions.Identifier(this=f"'{agg_result_name}'", quoted=True)
+        agg_result_name_expr = quoted_identifier(f"'{agg_result_name}'")
 
         # Convert string type to OBJECT type if needed
         if dtype == DBVarType.OBJECT:
