@@ -276,8 +276,11 @@ class TileBasedAggregationSpec(AggregationSpec):
             .extract(node=pruned_node)
             .operation_structure_map[pruned_node.name]
         )
-        assert len(op_struct.aggregations) == 1
-        aggregation = op_struct.aggregations[0]
+        aggregations = op_struct.aggregations
+        assert (
+            len(aggregations) == 1
+        ), f"Expect exactly one aggregation but got: {[agg.name for agg in aggregations]}"
+        aggregation = aggregations[0]
         return pruned_graph, pruned_node, aggregation.dtype
 
 
