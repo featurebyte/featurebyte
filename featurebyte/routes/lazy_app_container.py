@@ -6,7 +6,7 @@ from typing import Any, Dict, List
 from bson import ObjectId
 
 from featurebyte.persistent import Persistent
-from featurebyte.routes.app_container_config import ClassDefinition
+from featurebyte.routes.app_container_config import AppContainerConfig, ClassDefinition
 from featurebyte.routes.registry import app_container_config
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.routes.temp_data.controller import TempDataController
@@ -242,6 +242,7 @@ class LazyAppContainer:
         task_manager: TaskManager,
         storage: Storage,
         catalog_id: ObjectId,
+        app_container_config: AppContainerConfig,
     ):
         self.user = user
         self.persistent = persistent
@@ -249,6 +250,10 @@ class LazyAppContainer:
         self.task_manager = task_manager
         self.storage = storage
         self.catalog_id = catalog_id
+        self.app_container_config = app_container_config
+
+        # Validate the container config
+        app_container_config.validate()
 
         # Used to cache instances if they've already been built
         # Pre-load with some default deps
@@ -266,12 +271,12 @@ class LazyAppContainer:
 
         # Get deps by doing a depth first traversal through the dependencies
         deps = get_all_deps_for_key(
-            key, app_container_config.get_class_def_mapping(), self.instance_map
+            key, self.app_container_config.get_class_def_mapping(), self.instance_map
         )
         # Remove deps that have already been built
         filtered_deps = [dep for dep in deps if dep not in self.instance_map]
         ordered_deps = convert_dep_list_str_to_class_def(
-            filtered_deps, app_container_config.get_class_def_mapping()
+            filtered_deps, self.app_container_config.get_class_def_mapping()
         )
         new_deps = build_deps(
             ordered_deps, self.instance_map, self.user, self.persistent, self.catalog_id

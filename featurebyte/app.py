@@ -40,6 +40,7 @@ from featurebyte.logging import get_logger
 from featurebyte.middleware import ExceptionMiddleware
 from featurebyte.models.base import DEFAULT_CATALOG_ID, PydanticObjectId, User
 from featurebyte.routes.lazy_app_container import LazyAppContainer
+from featurebyte.routes.registry import app_container_config
 from featurebyte.schema import APIServiceStatus
 from featurebyte.schema.task import TaskId
 from featurebyte.service.task_manager import TaskManager
@@ -95,6 +96,7 @@ def _get_api_deps() -> Callable[[Request, PydanticObjectId], None]:
             ),
             storage=get_storage(),
             catalog_id=active_catalog_id,
+            app_container_config=app_container_config,
         )
 
     return _dep_injection_func

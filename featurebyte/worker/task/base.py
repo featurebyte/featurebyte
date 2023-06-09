@@ -3,12 +3,13 @@ Base models for task and task payload
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, cast
+from typing import Any, Dict, Optional
 
 from abc import abstractmethod
 from enum import Enum
 
 from featurebyte.routes.lazy_app_container import LazyAppContainer
+from featurebyte.routes.registry import app_container_config
 from featurebyte.schema.worker.progress import ProgressModel
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.service.task_manager import TaskManager
@@ -92,6 +93,7 @@ class BaseTask:  # pylint: disable=too-many-instance-attributes
                 ),
                 storage=self.get_storage(),
                 catalog_id=self.payload.catalog_id,
+                app_container_config=app_container_config,
             )
         return self._app_container
 

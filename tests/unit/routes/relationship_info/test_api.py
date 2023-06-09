@@ -9,6 +9,7 @@ from bson import ObjectId
 
 from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.routes.lazy_app_container import LazyAppContainer
+from featurebyte.routes.registry import app_container_config
 from featurebyte.schema.relationship_info import RelationshipInfoCreate, RelationshipInfoUpdate
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.storage import LocalTempStorage
@@ -84,6 +85,7 @@ class TestRelationshipInfoApi(BaseCatalogApiTestSuite):
             task_manager=task_manager,
             storage=LocalTempStorage(),
             catalog_id=catalog_id,
+            app_container_config=app_container_config,
         )
 
     @pytest_asyncio.fixture
