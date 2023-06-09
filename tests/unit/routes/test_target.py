@@ -60,5 +60,4 @@ class TestTargetApi(BaseCatalogApiTestSuite):
             payload = self.payload.copy()
             payload["_id"] = str(ObjectId())
             payload["name"] = f'{self.payload["name"]}_{i}'
-            # payload["serving_name"] = f'{payload["serving_name"]}_{i}'
             yield payload
