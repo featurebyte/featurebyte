@@ -9,7 +9,6 @@ import pymongo
 from pydantic import Field
 
 from featurebyte.models.base import (
-    FeatureByteBaseDocumentModel,
     FeatureByteCatalogBaseDocumentModel,
     PydanticObjectId,
     UniqueConstraintResolutionSignature,
