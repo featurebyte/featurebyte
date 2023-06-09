@@ -14,6 +14,7 @@ from fastapi import APIRouter, File, Form, Query, Request, UploadFile
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.persistent import AuditDocumentList
+from featurebyte.models.task import Task
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
     NameQuery,
@@ -28,6 +29,7 @@ from featurebyte.routes.common.schema import (
 from featurebyte.schema.common.base import DeleteResponse
 from featurebyte.schema.feature_list import (
     FeatureListCreate,
+    FeatureListCreateWithBatchFeatureCreation,
     FeatureListGetHistoricalFeatures,
     FeatureListNewVersionCreate,
     FeatureListPaginatedList,
@@ -50,6 +52,20 @@ async def create_feature_list(
     controller = request.state.app_container.feature_list_controller
     feature_list: FeatureListModel = await controller.create_feature_list(data=data)
     return feature_list
+
+
+@router.post("/batch", response_model=Task, status_code=HTTPStatus.CREATED)
+async def submit_feature_create_with_batch_feature_create_task(
+    request: Request, data: FeatureListCreateWithBatchFeatureCreation
+) -> Task:
+    """
+    Submit FeatureList create with batch feature create task
+    """
+    controller = request.state.app_container.feature_list_controller
+    task: Task = await controller.submit_feature_list_create_with_batch_feature_create_task(
+        data=data
+    )
+    return task
 
 
 @router.get("/{feature_list_id}", response_model=FeatureListModel)

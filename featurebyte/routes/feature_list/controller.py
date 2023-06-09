@@ -3,7 +3,7 @@ FeatureList API route controller
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Literal, Union
+from typing import Any, Dict, Literal, Optional, Union
 
 from http import HTTPStatus
 
@@ -23,9 +23,12 @@ from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
 from featurebyte.models.feature_list import FeatureListModel, FeatureListStatus
+from featurebyte.models.task import Task
 from featurebyte.routes.common.base import BaseDocumentController
+from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.feature_list import (
     FeatureListCreate,
+    FeatureListCreateWithBatchFeatureCreation,
     FeatureListGetHistoricalFeatures,
     FeatureListNewVersionCreate,
     FeatureListPaginatedList,
@@ -35,6 +38,9 @@ from featurebyte.schema.feature_list import (
     FeatureListUpdate,
 )
 from featurebyte.schema.info import FeatureListInfo
+from featurebyte.schema.worker.task.feature_list_batch_feature_create import (
+    FeatureListCreateWithBatchFeatureCreationPayload,
+)
 from featurebyte.service.deploy import DeployService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
@@ -68,6 +74,7 @@ class FeatureListController(
         version_service: VersionService,
         info_service: InfoService,
         feature_store_warehouse_service: FeatureStoreWarehouseService,
+        task_controller: TaskController,
     ):
         super().__init__(service)
         self.feature_list_namespace_service = feature_list_namespace_service
@@ -78,6 +85,32 @@ class FeatureListController(
         self.version_service = version_service
         self.info_service = info_service
         self.feature_store_warehouse_service = feature_store_warehouse_service
+        self.task_controller = task_controller
+
+    async def submit_feature_list_create_with_batch_feature_create_task(
+        self, data: FeatureListCreateWithBatchFeatureCreation
+    ) -> Optional[Task]:
+        """
+        Submit feature list creation with batch feature creation task
+
+        Parameters
+        ----------
+        data: FeatureListCreateWithBatchFeatureCreation
+            Feature list creation with batch feature creation payload
+
+        Returns
+        -------
+        Optional[Task]
+            Task object
+        """
+        payload = FeatureListCreateWithBatchFeatureCreationPayload(
+            **{
+                **data.json_dict(),
+                "catalog_id": self.service.catalog_id,
+            }
+        )
+        task_id = await self.task_controller.task_manager.submit(payload=payload)
+        return await self.task_controller.task_manager.get_task(task_id=str(task_id))
 
     async def create_feature_list(
         self, data: Union[FeatureListCreate, FeatureListNewVersionCreate]
