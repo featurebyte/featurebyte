@@ -65,7 +65,7 @@ from featurebyte.models.feature_list import (
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.schema.deployment import DeploymentCreate
-from featurebyte.schema.feature import BatchFeatureCreate, FeatureCreate
+from featurebyte.schema.feature import FeatureCreate
 from featurebyte.schema.feature_list import (
     FeatureListCreate,
     FeatureListCreateWithBatchFeatureCreation,
@@ -698,6 +698,8 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         feature_payloads = []
         for feat in self.feature_objects.values():
             feature_payloads.append(FeatureCreate(**feat.json_dict()))
+
+        assert self.name is not None, "FeatureList name cannot be None"
         feature_list_create = FeatureListCreateWithBatchFeatureCreation.create(
             name=self.name,
             features=feature_payloads,

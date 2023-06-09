@@ -1,10 +1,13 @@
 """
 Feature list creation with batch feature creation task
 """
+from __future__ import annotations
+
 from typing import Any, cast
 
 from featurebyte.models.feature import FeatureNamespaceModel
 from featurebyte.schema.feature_list import FeatureListCreate
+from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.schema.worker.task.batch_feature_create import BatchFeatureCreateTaskPayload
 from featurebyte.schema.worker.task.feature_list_batch_feature_create import (
     FeatureListCreateWithBatchFeatureCreationPayload,
@@ -17,7 +20,7 @@ class FeatureListCreateWithBatchFeatureCreationTask(BatchFeatureCreateTask):
     Feature list creation with batch feature creation task
     """
 
-    payload_class = FeatureListCreateWithBatchFeatureCreationPayload
+    payload_class: type[BaseTaskPayload] = FeatureListCreateWithBatchFeatureCreationPayload
 
     async def execute(self) -> Any:
         """
@@ -76,9 +79,11 @@ class FeatureListCreateWithBatchFeatureCreationTask(BatchFeatureCreateTask):
         )
 
         # create list of features
+        self.update_progress(percent=1, message="Started saving features")
         await self.batch_feature_create(
             payload=batch_feature_create_task_payload, start_percentage=0, end_percentage=90
         )
+        self.update_progress(percent=91, message="Completed saving features")
 
         # create feature list
         await self.app_container.feature_list_controller.create_feature_list(

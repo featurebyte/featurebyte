@@ -45,7 +45,7 @@ class FeatureListCreateWithBatchFeatureCreation(BaseBatchFeatureCreate):
     Feature List Creation with Batch Feature Creation schema
     """
 
-    id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
+    id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
     conflict_resolution: ConflictResolution
 
@@ -59,6 +59,21 @@ class FeatureListCreateWithBatchFeatureCreation(BaseBatchFeatureCreate):
     ) -> FeatureListCreateWithBatchFeatureCreation:
         """
         Create FeatureListCreateWithBatchFeatureCreation from list of FeatureCreate
+
+        Parameters
+        ----------
+        name: str
+            Name of feature list
+        features: List[FeatureCreate]
+            List of FeatureCreate to be created
+        conflict_resolution: ConflictResolution
+            Conflict resolution strategy
+        _id: ObjectId
+            Feature list object id
+
+        Returns
+        -------
+        FeatureListCreateWithBatchFeatureCreation
         """
         batch_feature_create = BatchFeatureCreate.create(features=features)
         return cls(

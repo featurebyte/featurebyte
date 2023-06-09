@@ -16,7 +16,8 @@ from featurebyte.exception import DocumentInconsistencyError
 from featurebyte.logging import get_logger
 from featurebyte.models.base import activate_catalog
 from featurebyte.models.feature import FeatureModel
-from featurebyte.schema.feature import BatchFeatureCreate, FeatureServiceCreate
+from featurebyte.schema.feature import FeatureServiceCreate
+from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.schema.worker.task.batch_feature_create import BatchFeatureCreateTaskPayload
 from featurebyte.service.feature import FeatureService
 from featurebyte.worker.task.base import BaseTask
@@ -78,7 +79,7 @@ class BatchFeatureCreateTask(BaseTask):
     Batch feature creation task
     """
 
-    payload_class = BatchFeatureCreateTaskPayload
+    payload_class: type[BaseTaskPayload] = BatchFeatureCreateTaskPayload
 
     async def is_generated_feature_consistent(
         self, document: FeatureModel, definition: str

@@ -3,7 +3,7 @@ ApiObject class
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, Iterator, List, Literal, Optional, Type, TypeVar, Union
+from typing import Any, ClassVar, Dict, Iterator, List, Optional, Type, TypeVar, Union
 
 import operator
 import time

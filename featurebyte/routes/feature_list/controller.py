@@ -23,7 +23,6 @@ from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
 from featurebyte.models.feature_list import FeatureListModel, FeatureListStatus
-from featurebyte.models.task import Task
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.feature_list import (
@@ -38,6 +37,7 @@ from featurebyte.schema.feature_list import (
     FeatureListUpdate,
 )
 from featurebyte.schema.info import FeatureListInfo
+from featurebyte.schema.task import Task
 from featurebyte.schema.worker.task.feature_list_batch_feature_create import (
     FeatureListCreateWithBatchFeatureCreationPayload,
 )
