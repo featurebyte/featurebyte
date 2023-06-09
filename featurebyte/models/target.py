@@ -10,6 +10,7 @@ from pydantic import Field
 
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
+    PydanticObjectId,
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
 )
@@ -30,17 +31,24 @@ class TargetModel(FeatureByteBaseDocumentModel):
         Datetime when the Target object was last updated
     """
 
-    description: Optional[str]
     # Recipe
     graph: QueryGraph = Field(allow_mutation=False)
     node_name: str
+
+    description: Optional[str]
+
+    # These fields will either be inferred from the recipe, or manually provided by the user only if they're creating
+    # a target without a recipe.
+    window: str
+    blind_spot: str
+    entity_ids: List[PydanticObjectId]
 
     class Settings(FeatureByteBaseDocumentModel.Settings):
         """
         MongoDB settings
         """
 
-        collection_name: str = "Target"
+        collection_name: str = "target"
         unique_constraints: List[UniqueValuesConstraint] = [
             UniqueValuesConstraint(
                 fields=("_id",),
