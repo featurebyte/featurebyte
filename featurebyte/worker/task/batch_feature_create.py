@@ -116,14 +116,14 @@ class BatchFeatureCreateTask(BaseTask):
         return is_consistent
 
     async def batch_feature_create(
-        self, payload: BatchFeatureCreate, start_percentage: int, end_percentage: int
+        self, payload: BatchFeatureCreateTaskPayload, start_percentage: int, end_percentage: int
     ) -> None:
         """
         Batch feature creation based on given payload
 
         Parameters
         ----------
-        payload: BatchFeatureCreate
+        payload: BatchFeatureCreateTaskPayload
             Batch feature create payload
         start_percentage: int
             Start percentage

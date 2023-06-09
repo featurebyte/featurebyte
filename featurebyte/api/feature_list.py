@@ -68,6 +68,7 @@ from featurebyte.schema.deployment import DeploymentCreate
 from featurebyte.schema.feature import BatchFeatureCreate, FeatureCreate
 from featurebyte.schema.feature_list import (
     FeatureListCreate,
+    FeatureListCreateWithBatchFeatureCreation,
     FeatureListGetHistoricalFeatures,
     FeatureListUpdate,
     FeatureVersionInfo,
@@ -661,29 +662,6 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         )
         return data.json_dict()
 
-    def _pre_save_operations(self, conflict_resolution: ConflictResolution = "raise") -> None:
-        feature_payloads = []
-        for feat in self.feature_objects.values():
-            if conflict_resolution == "retrieve":
-                # If conflict_resolution is retrieve, we will retrieve the feature from the catalog based on the
-                # feature name and update the feature object with the retrieved feature.
-                feat_name = feat.name
-                assert feat_name is not None
-                try:
-                    feat = Feature.get(name=feat_name)
-                    self.feature_objects[feat_name] = feat
-                except RecordRetrievalException:
-                    feature_payloads.append(FeatureCreate(**feat.json_dict()))
-            if conflict_resolution == "raise" and not feat.saved:
-                feature_payloads.append(FeatureCreate(**feat.json_dict()))
-
-        self.post_async_task(
-            route="/feature/batch",
-            payload=BatchFeatureCreate.create(feature_payloads).json_dict(),
-            retrieve_result=False,
-            has_output_url=False,
-        )
-
     def save(
         self, conflict_resolution: ConflictResolution = "raise", _id: Optional[ObjectId] = None
     ) -> None:
@@ -715,15 +693,38 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         ... ], name="feature_lists_invoice_features")
         >>> feature_list.save()  # doctest: +SKIP
         """
+        self._check_object_not_been_saved(conflict_resolution=conflict_resolution)
+
+        feature_payloads = []
+        for feat in self.feature_objects.values():
+            feature_payloads.append(FeatureCreate(**feat.json_dict()))
+        feature_list_create = FeatureListCreateWithBatchFeatureCreation.create(
+            name=self.name,
+            features=feature_payloads,
+            conflict_resolution=conflict_resolution,
+            _id=self.id,
+        )
         try:
-            super().save(conflict_resolution=conflict_resolution)
+            self.post_async_task(
+                route="/feature_list/batch",
+                payload=feature_list_create.json_dict(),
+                retrieve_result=False,
+                has_output_url=False,
+            )
+            object_dict = self._get_object_dict_by_id(id_value=feature_list_create.id)
         except DuplicatedRecordException as exc:
-            if conflict_resolution == "raise":
-                raise DuplicatedRecordException(
-                    exc.response,
-                    resolution=' Or try `feature_list.save(conflict_resolution = "retrieve")` to resolve conflict.',
-                ) from exc
-            raise exc
+            traceback_message = exc.response.json()["traceback"]
+            has_dup_exception = False
+            if traceback_message:
+                has_dup_exception = (
+                    "featurebyte.exception.DuplicatedRecordException" in traceback_message
+                )
+            if conflict_resolution == "retrieve" and has_dup_exception:
+                object_dict = self._get_object_dict_by_name(name=self.name)
+            else:
+                raise exc
+
+        type(self).__init__(self, **object_dict, **self._get_init_params_from_object())
 
     def delete(self) -> None:
         """

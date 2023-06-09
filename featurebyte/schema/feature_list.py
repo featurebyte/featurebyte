@@ -51,7 +51,11 @@ class FeatureListCreateWithBatchFeatureCreation(BaseBatchFeatureCreate):
 
     @classmethod
     def create(
-        cls, name: str, features: List[FeatureCreate], conflict_resolution: ConflictResolution
+        cls,
+        name: str,
+        features: List[FeatureCreate],
+        conflict_resolution: ConflictResolution,
+        _id: ObjectId,
     ) -> FeatureListCreateWithBatchFeatureCreation:
         """
         Create FeatureListCreateWithBatchFeatureCreation from list of FeatureCreate
@@ -62,6 +66,7 @@ class FeatureListCreateWithBatchFeatureCreation(BaseBatchFeatureCreate):
             conflict_resolution=conflict_resolution,
             graph=batch_feature_create.graph,
             features=batch_feature_create.features,
+            _id=_id,
         )
 
 

@@ -30,7 +30,7 @@ class FeatureListCreateWithBatchFeatureCreationTask(BatchFeatureCreateTask):
         # identify saved features
         saved_feature_ids = set()
         async for doc in self.app_container.feature_service.list_documents_iterator(
-            query_filter={"id": {"$in": feature_ids}}
+            query_filter={"_id": {"$in": feature_ids}}
         ):
             saved_feature_ids.add(doc["_id"])
 
@@ -70,10 +70,14 @@ class FeatureListCreateWithBatchFeatureCreationTask(BatchFeatureCreateTask):
         batch_feature_create_payload = BatchFeatureCreateTaskPayload.create(
             features=feature_creates
         )
+        batch_feature_create_task_payload = BatchFeatureCreateTaskPayload(
+            **batch_feature_create_payload.json_dict(),
+            catalog_id=payload.catalog_id,
+        )
 
         # create list of features
         await self.batch_feature_create(
-            payload=batch_feature_create_payload, start_percentage=0, end_percentage=90
+            payload=batch_feature_create_task_payload, start_percentage=0, end_percentage=90
         )
 
         # create feature list
