@@ -10,7 +10,11 @@ from featurebyte.app import get_celery
 from featurebyte.migration.service.data_warehouse import DataWarehouseMigrationServiceV8
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.service.working_schema import drop_all_objects
-from tests.util.helper import make_online_request
+from tests.util.helper import (
+    create_batch_request_table_from_dataframe,
+    create_observation_table_from_dataframe,
+    make_online_request,
+)
 
 
 @pytest.fixture(scope="session")
@@ -93,6 +97,36 @@ async def patch_list_tables_to_exclude_datasets(session, dataset_registration_he
         yield p
 
 
+async def create_materialized_tables(session, data_source, feature_list, deployment):
+    """
+    Helper function to create a list of materialized tables
+    """
+    df = pd.DataFrame({"üser id": [1], "POINT_IN_TIME": pd.to_datetime(["2001-01-15 10:00:00"])})
+    observation_table = await create_observation_table_from_dataframe(session, df, data_source)
+
+    df = pd.DataFrame({"üser id": [1]})
+    batch_request_table = await create_batch_request_table_from_dataframe(session, df, data_source)
+
+    historical_feature_table = feature_list.compute_historical_feature_table(
+        observation_table, str(ObjectId())
+    )
+    batch_feature_table = deployment.compute_batch_feature_table(
+        batch_request_table, str(ObjectId())
+    )
+
+    return [observation_table, batch_request_table, historical_feature_table, batch_feature_table]
+
+
+def check_materialized_tables(materialized_tables):
+    """
+    Helper function to check if the materialized tables still function correctly
+    """
+    for table in materialized_tables:
+        df = table.preview()
+        assert df.shape[0] > 0
+        assert df.shape[1] > 0
+
+
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.usefixtures("patch_list_tables_to_exclude_datasets")
 @pytest.mark.asyncio
@@ -108,6 +142,11 @@ async def test_drop_all_and_recreate(
     """
     snowflake_session = session
     deployed_feature_list, deployment = deployed_feature_list_deployment
+
+    materialized_tables = await create_materialized_tables(
+        session, feature_store.get_data_source(), deployed_feature_list, deployment
+    )
+    check_materialized_tables(materialized_tables)
 
     async def _list_objects(obj):
         query = f"SHOW {obj} IN {snowflake_session.database_name}.{snowflake_session.schema_name}"
@@ -160,3 +199,6 @@ async def test_drop_all_and_recreate(
     res = make_online_request(client, deployment, entity_serving_names)
     assert res.status_code == 200
     assert res.json() == expected_online_result
+
+    # Check materialized tables still work
+    check_materialized_tables(materialized_tables)

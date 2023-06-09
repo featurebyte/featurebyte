@@ -376,8 +376,5 @@ class SnowflakeSchemaInitializer(BaseSchemaInitializer):
             ):
                 await self._drop_object("PROCEDURE", func_name_with_args)
 
-        table_names = await self.session.list_tables(
-            self.session.database_name, self.session.schema_name
-        )
-        for name in table_names:
+        for name in await self.list_droppable_tables_in_working_schema():
             await self._drop_object("TABLE", name)

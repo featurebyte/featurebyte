@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from bson import ObjectId
 
+from featurebyte.enum import MaterializedTableNamePrefix
 from featurebyte.models.base import FeatureByteBaseDocumentModel
 from featurebyte.models.batch_feature_table import BatchFeatureTableModel
 from featurebyte.schema.batch_feature_table import BatchFeatureTableCreate
@@ -20,7 +21,7 @@ class BatchFeatureTableService(
     """
 
     document_class = BatchFeatureTableModel
-    materialized_table_name_prefix = "BATCH_FEATURE_TABLE"
+    materialized_table_name_prefix = MaterializedTableNamePrefix.BATCH_FEATURE_TABLE
 
     @property
     def class_name(self) -> str:

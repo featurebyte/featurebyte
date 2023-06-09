@@ -8,7 +8,7 @@ from typing import Any, Dict, cast
 import pandas as pd
 from bson import ObjectId
 
-from featurebyte.enum import DBVarType, SpecialColumnName
+from featurebyte.enum import DBVarType, MaterializedTableNamePrefix, SpecialColumnName
 from featurebyte.exception import (
     MissingPointInTimeColumnError,
     UnsupportedPointInTimeColumnTypeError,
@@ -34,7 +34,7 @@ class ObservationTableService(
     """
 
     document_class = ObservationTableModel
-    materialized_table_name_prefix = "OBSERVATION_TABLE"
+    materialized_table_name_prefix = MaterializedTableNamePrefix.OBSERVATION_TABLE
 
     def __init__(
         self,

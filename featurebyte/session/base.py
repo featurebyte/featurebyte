@@ -26,7 +26,13 @@ from featurebyte.common.utils import (
     dataframe_from_arrow_stream,
     pa_table_to_record_batches,
 )
-from featurebyte.enum import DBVarType, InternalName, SourceType, StrEnum
+from featurebyte.enum import (
+    DBVarType,
+    InternalName,
+    MaterializedTableNamePrefix,
+    SourceType,
+    StrEnum,
+)
 from featurebyte.exception import QueryExecutionTimeOut
 from featurebyte.logging import get_logger
 from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
@@ -747,6 +753,46 @@ class BaseSchemaInitializer(ABC):
     @classmethod
     def _normalize_casings(cls, identifiers: list[str]) -> list[str]:
         return [cls._normalize_casing(x) for x in identifiers]
+
+    @classmethod
+    def remove_materialized_tables(cls, table_names: list[str]) -> list[str]:
+        """
+        Remove materialized tables from the list of table names
+
+        Parameters
+        ----------
+        table_names: list[str]
+            List of table names to filter
+
+        Returns
+        -------
+        list[str]
+        """
+        out = []
+        materialized_table_prefixes = {
+            cls._normalize_casing(name) for name in MaterializedTableNamePrefix.all()
+        }
+        for table_name in table_names:
+            for prefix in materialized_table_prefixes:
+                if table_name.startswith(prefix):
+                    break
+            else:
+                out.append(table_name)
+        return out
+
+    async def list_droppable_tables_in_working_schema(self) -> list[str]:
+        """
+        List tables in the working schema that can be dropped without losing data. These are the
+        tables that will be reinstated by WorkingSchemaService when recreating the working schema.
+
+        Returns
+        -------
+        list[str]
+        """
+        table_names = await self.session.list_tables(
+            self.session.database_name, self.session.schema_name
+        )
+        return self.remove_materialized_tables(table_names)
 
 
 class MetadataSchemaInitializer:
