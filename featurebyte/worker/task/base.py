@@ -93,7 +93,7 @@ class BaseTask:  # pylint: disable=too-many-instance-attributes
                 storage=self.get_storage(),
                 catalog_id=self.payload.catalog_id,
             )
-        return cast(LazyAppContainer, self._app_container)
+        return self._app_container
 
     @abstractmethod
     async def execute(self) -> Any:
