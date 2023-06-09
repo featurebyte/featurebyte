@@ -20,8 +20,9 @@ from typing import (
 from typing_extensions import Annotated  # pylint: disable=wrong-import-order
 
 from collections import defaultdict
+from dataclasses import asdict, dataclass
 
-from pydantic import BaseModel, Field, root_validator, validator
+from pydantic import BaseModel, Field, validator
 
 from featurebyte.enum import AggFunc, DBVarType, StrEnum, TableDataType
 from featurebyte.models.base import PydanticObjectId
@@ -53,7 +54,8 @@ BaseColumnT = TypeVar("BaseColumnT", bound="BaseColumn")
 BaseDerivedColumnT = TypeVar("BaseDerivedColumnT", bound="BaseDerivedColumn")
 
 
-class BaseColumn(BaseModel):
+@dataclass
+class BaseColumn:
     """
     BaseColumn class
 
@@ -98,7 +100,7 @@ class BaseColumn(BaseModel):
         -------
         Self
         """
-        return type(self)(**{**self.dict(), **kwargs})
+        return type(self)(**{**asdict(self), **kwargs})
 
     def clone_without_internal_nodes(
         self: BaseColumnT,
@@ -158,24 +160,19 @@ class BaseColumn(BaseModel):
         return self.clone(**node_kwargs, **kwargs)
 
 
+@dataclass
 class BaseDataColumn(BaseColumn):
     """BaseDataColumn class"""
 
     name: str
 
 
+@dataclass
 class BaseDerivedColumn(BaseColumn):
     """BaseDerivedColumn class"""
 
     transforms: List[str]
     columns: Sequence[BaseDataColumn]
-
-    @root_validator(pre=True)
-    @classmethod
-    def _set_filter_flag(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        if "filter" not in values:
-            values["filter"] = any(col.filter for col in values["columns"])
-        return values
 
     @staticmethod
     def insert_column(
@@ -283,6 +280,7 @@ class BaseDerivedColumn(BaseColumn):
             transforms=transforms,
             node_names=node_names,
             node_name=node_name,
+            filter=any(col.filter for col in columns),
         )
 
     def clone_without_internal_nodes(
@@ -307,24 +305,26 @@ class BaseDerivedColumn(BaseColumn):
         )
 
 
+@dataclass
 class SourceDataColumn(BaseDataColumn):
     """Source column"""
 
     table_id: Optional[PydanticObjectId]
     table_type: TableDataType
-    type: Literal[ViewDataColumnType.SOURCE] = Field(ViewDataColumnType.SOURCE, const=True)
-    filter: bool = Field(default=False)
+    filter: bool
+    type: Literal[ViewDataColumnType.SOURCE] = ViewDataColumnType.SOURCE
 
     def __hash__(self) -> int:
         key = (*self._get_hash_key(), self.type, self.table_id, self.table_type)
         return hash(key)
 
 
+@dataclass
 class DerivedDataColumn(BaseDerivedColumn):
     """Derived column"""
 
     columns: List[SourceDataColumn]
-    type: Literal[ViewDataColumnType.DERIVED] = Field(ViewDataColumnType.DERIVED, const=True)
+    type: Literal[ViewDataColumnType.DERIVED] = ViewDataColumnType.DERIVED
 
     def __hash__(self) -> int:
         columns_item = tuple(sorted([col.__hash__() for col in self.columns]))
@@ -335,6 +335,7 @@ class DerivedDataColumn(BaseDerivedColumn):
 ViewDataColumn = Annotated[Union[SourceDataColumn, DerivedDataColumn], Field(discriminator="type")]
 
 
+@dataclass
 class AggregationColumn(BaseDataColumn):
     """Aggregation column"""
 
@@ -342,9 +343,6 @@ class AggregationColumn(BaseDataColumn):
     keys: List[str]
     window: Optional[str]
     category: Optional[str]
-    type: Literal[FeatureDataColumnType.AGGREGATION] = Field(
-        FeatureDataColumnType.AGGREGATION, const=True
-    )
     column: Optional[ViewDataColumn]
     aggregation_type: Literal[
         NodeType.GROUPBY,
@@ -353,6 +351,7 @@ class AggregationColumn(BaseDataColumn):
         NodeType.AGGREGATE_AS_AT,
         NodeType.REQUEST_COLUMN,
     ]
+    type: Literal[FeatureDataColumnType.AGGREGATION] = FeatureDataColumnType.AGGREGATION
 
     def __hash__(self) -> int:
         key = (
@@ -392,13 +391,12 @@ class AggregationColumn(BaseDataColumn):
         )
 
 
+@dataclass
 class PostAggregationColumn(BaseDerivedColumn):
     """Post aggregation column"""
 
     columns: List[AggregationColumn]
-    type: Literal[FeatureDataColumnType.POST_AGGREGATION] = Field(
-        FeatureDataColumnType.POST_AGGREGATION, const=True
-    )
+    type: Literal[FeatureDataColumnType.POST_AGGREGATION] = FeatureDataColumnType.POST_AGGREGATION
 
     def __hash__(self) -> int:
         columns_item = tuple(sorted([col.__hash__() for col in self.columns]))
