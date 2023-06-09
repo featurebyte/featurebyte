@@ -13,12 +13,19 @@ from featurebyte.enum import StrEnum
 class DepType(StrEnum):
     """
     DepType enums
+
+    They are prefixed with numbers to ensure that they are initialized in the correct order. For example, if a class
+    has dependencies on all 4 types, the dependencies will be initialized in the followingo rder
+    - no deps
+    - basic services
+    - services with extra deps
+    - controllers
     """
 
-    BASIC_SERVICE = "basic_service"
-    SERVICE_WITH_EXTRA_DEPS = "service_with_extra_deps"
-    NO_DEPS = "no_deps"
-    CONTROLLER = "controller"
+    NO_DEPS = "10_no_deps"
+    BASIC_SERVICE = "20_basic_service"
+    SERVICE_WITH_EXTRA_DEPS = "30_service_with_extra_deps"
+    CONTROLLER = "40_controller"
 
 
 @dataclass
