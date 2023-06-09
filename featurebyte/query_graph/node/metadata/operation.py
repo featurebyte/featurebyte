@@ -340,7 +340,7 @@ class AggregationColumn(BaseDataColumn):
     """Aggregation column"""
 
     method: Optional[AggFunc]
-    keys: List[str]
+    keys: Sequence[str]
     window: Optional[str]
     category: Optional[str]
     column: Optional[ViewDataColumn]
