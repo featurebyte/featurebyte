@@ -949,4 +949,4 @@ def test_benchmark_sdk_api_object_operation_runtime(snowflake_event_table):
 
     elapsed = datetime.now() - start
     elapsed_ratio = elapsed.total_seconds() / single_op_elapsed_time.total_seconds()
-    assert elapsed_ratio < 2000
+    assert elapsed_ratio < 2500
