@@ -7,6 +7,19 @@ from typing import Dict, List
 
 from dataclasses import dataclass
 
+from featurebyte.enum import StrEnum
+
+
+class DepType(StrEnum):
+    """
+    DepType enums
+    """
+
+    BASIC_SERVICE = "basic_service"
+    SERVICE_WITH_EXTRA_DEPS = "service_with_extra_deps"
+    NO_DEPS = "no_deps"
+    CONTROLLER = "controller"
+
 
 @dataclass
 class ClassDefinition:
@@ -20,11 +33,7 @@ class ClassDefinition:
     name: str
     class_: type
     dependencies: List[str]
-
-    # Ordering is a parameter to determine the order in which the dependencies are built.
-    # The lower the value, the earlier the dependency is built.
-    # If definitions have the same order, they are built in no particular order.
-    ordering: int
+    dep_type: DepType
 
 
 class AppContainerConfig:
@@ -69,7 +78,7 @@ class AppContainerConfig:
             type we are registering
         """
         self.no_dependency_objects.append(
-            ClassDefinition(name=name, class_=class_, dependencies=[], ordering=10)
+            ClassDefinition(name=name, class_=class_, dependencies=[], dep_type=DepType.NO_DEPS)
         )
 
     def add_service_with_extra_deps(self, name: str, class_: type, dependencies: List[str]) -> None:
@@ -90,7 +99,7 @@ class AppContainerConfig:
                 name=name,
                 class_=class_,
                 dependencies=dependencies,
-                ordering=30,
+                dep_type=DepType.SERVICE_WITH_EXTRA_DEPS,
             )
         )
 
@@ -110,7 +119,7 @@ class AppContainerConfig:
                 name=name,
                 class_=class_,
                 dependencies=[],
-                ordering=20,
+                dep_type=DepType.BASIC_SERVICE,
             )
         )
 
@@ -129,10 +138,7 @@ class AppContainerConfig:
         """
         self.controllers.append(
             ClassDefinition(
-                name=name,
-                class_=class_,
-                dependencies=dependencies,
-                ordering=40,
+                name=name, class_=class_, dependencies=dependencies, dep_type=DepType.CONTROLLER
             )
         )
 

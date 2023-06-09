@@ -6,8 +6,7 @@ from typing import Any, Dict, List
 from bson import ObjectId
 
 from featurebyte.persistent import Persistent
-from featurebyte.routes.app_container_config import AppContainerConfig, ClassDefinition
-from featurebyte.routes.registry import app_container_config
+from featurebyte.routes.app_container_config import AppContainerConfig, ClassDefinition, DepType
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.routes.temp_data.controller import TempDataController
 from featurebyte.service.task_manager import TaskManager
@@ -181,7 +180,7 @@ def build_deps(
     Dict[str, Any]
     """
     # Sort deps by ascending ordering
-    deps = sorted(deps, key=lambda x: x.ordering)
+    deps = sorted(deps, key=lambda x: x.dep_type)
 
     # Build deps
     new_deps = {}
@@ -191,15 +190,15 @@ def build_deps(
         if dep.name in new_deps:
             continue
         # Build dependencies for this dep
-        if dep.ordering == 10:
+        if dep.dep_type == DepType.NO_DEPS:
             new_deps[dep.name] = build_no_dep(dep)
-        elif dep.ordering == 20:
+        elif dep.dep_type == DepType.BASIC_SERVICE:
             new_deps[dep.name] = build_service(dep, user, persistent, catalog_id)
-        elif dep.ordering == 30:
+        elif dep.dep_type == DepType.SERVICE_WITH_EXTRA_DEPS:
             new_deps[dep.name] = build_service_with_deps(
                 dep, user, persistent, catalog_id, new_deps
             )
-        elif dep.ordering == 40:
+        elif dep.dep_type == DepType.CONTROLLER:
             new_deps[dep.name] = build_controllers(dep, new_deps)
     return new_deps
 
