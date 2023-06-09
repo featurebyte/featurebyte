@@ -5,8 +5,11 @@ SparkSession class
 from __future__ import annotations
 
 from typing import Any, AsyncGenerator, Optional, OrderedDict, Union
+from typing_extensions import Annotated
 
+# pylint: disable=wrong-import-order
 import collections
+import os
 import subprocess
 import tempfile
 
@@ -17,6 +20,7 @@ from pyarrow import Schema
 from pydantic import Field, PrivateAttr
 from pyhive.exc import OperationalError
 from pyhive.hive import Cursor
+from thrift.transport.TTransport import TTransportException
 
 from featurebyte.enum import DBVarType, SourceType, StorageType
 from featurebyte.logging import get_logger
@@ -26,6 +30,12 @@ from featurebyte.session.hive import AuthType, HiveConnection
 from featurebyte.session.simple_storage import WebHDFSStorage
 
 logger = get_logger(__name__)
+
+
+SparkDatabaseCredential = Annotated[
+    Union[KerberosKeytabCredential, AccessTokenCredential],
+    Field(discriminator="type"),
+]
 
 
 class SparkSession(BaseSparkSession):
@@ -40,7 +50,7 @@ class SparkSession(BaseSparkSession):
     use_http_transport: bool
     use_ssl: bool
     source_type: SourceType = Field(SourceType.SPARK, const=True)
-    database_credential: Optional[Union[KerberosKeytabCredential, AccessTokenCredential]]
+    database_credential: Optional[SparkDatabaseCredential]
 
     def __init__(self, **data: Any) -> None:
         auth = None
@@ -48,39 +58,48 @@ class SparkSession(BaseSparkSession):
         access_token = None
         kerberos_service_name = None
 
-        # perform authentication initialization prior to super().__init__()
-        # so that we can use kerberos cache to authenticate storage
-        database_credential = data.get("database_credential")
-        if database_credential:
-            if isinstance(database_credential, KerberosKeytabCredential):
-                # create a temporary keytab file to specify the KDC
-                with tempfile.NamedTemporaryFile(mode="wb", suffix=".keytab") as keytab_file:
-                    keytab_file.write(database_credential.keytab)
-                    keytab_file.flush()
-                    cmd = ["kinit", "-kt", keytab_file.name, database_credential.principal]
-                    subprocess.run(cmd, check=True)
+        super().__init__(**data)
+
+        if self.database_credential:
+            if isinstance(self.database_credential, KerberosKeytabCredential):
                 auth = AuthType.KERBEROS
                 kerberos_service_name = "hive"
-            else:
+            elif isinstance(self.database_credential, AccessTokenCredential):
                 auth = AuthType.TOKEN
-
-        super().__init__(**data)
+                access_token = self.database_credential.access_token
+            else:
+                raise NotImplementedError(
+                    f"Unsupported credential type: {self.database_credential.type}"
+                )
 
         # determine transport scheme
         if self.use_http_transport:
             scheme = "https" if self.use_ssl else "http"
 
-        self._connection = HiveConnection(
-            host=self.host,
-            http_path=self.http_path,
-            catalog=self.database_name,
-            database=self.schema_name,
-            port=self.port,
-            access_token=access_token,
-            auth=auth,
-            scheme=scheme,
-            kerberos_service_name=kerberos_service_name,
-        )
+        def _create_connection() -> HiveConnection:
+            return HiveConnection(
+                host=self.host,
+                http_path=self.http_path,
+                catalog=self.database_name,
+                database=self.schema_name,
+                port=self.port,
+                access_token=access_token,
+                auth=auth,
+                scheme=scheme,
+                kerberos_service_name=kerberos_service_name,
+            )
+
+        # create a connection
+        try:
+            self._connection = _create_connection()
+        except TTransportException:
+            # expected to fail if kerberos ticket is expired
+            if not isinstance(self.database_credential, KerberosKeytabCredential):
+                raise
+            # try kinit and create a connection again
+            self._kinit(self.database_credential)
+            self._connection = _create_connection()
+
         # Always use UTC for session timezone
         cursor = self._connection.cursor()
         cursor.execute("SET TIME ZONE 'UTC'")
@@ -89,6 +108,30 @@ class SparkSession(BaseSparkSession):
     def __del__(self) -> None:
         if hasattr(self, "_connection") and self._connection:
             self._connection.close()
+
+    @staticmethod
+    def _kinit(credential: KerberosKeytabCredential) -> None:
+        """
+        Run kinit to get a kerberos ticket
+
+        Parameters
+        ----------
+        credential : KerberosKeytabCredential
+            Kerberos keytab credential
+
+        Raises
+        ------
+        RuntimeError
+            If kinit fails
+        """
+        # create a temporary keytab file to specify the KDC
+        with tempfile.NamedTemporaryFile(mode="wb", suffix=".keytab") as keytab_file:
+            keytab_file.write(credential.keytab)
+            keytab_file.flush()
+            cmd = ["kinit", "-kt", keytab_file.name, credential.principal]
+            process = subprocess.run(cmd, env=os.environ, check=False, stderr=subprocess.PIPE)
+            if process.returncode != 0:
+                raise RuntimeError(f"Failed to kinit: {process.stderr.decode('utf-8')}")
 
     def _initialize_storage(self) -> None:
         # support for webhdfs

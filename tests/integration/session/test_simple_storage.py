@@ -14,12 +14,7 @@ from featurebyte.models.credential import (
     KerberosKeytabCredential,
     S3StorageCredential,
 )
-from featurebyte.session.simple_storage import (
-    AzureBlobStorage,
-    GCSStorage,
-    S3SimpleStorage,
-    WebHDFSStorage,
-)
+from featurebyte.session.simple_storage import AzureBlobStorage, GCSStorage, S3SimpleStorage
 from featurebyte.session.spark import SparkSession
 
 

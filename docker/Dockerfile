@@ -34,7 +34,7 @@ RUN groupadd -g 1000 runnergroup -o
 RUN useradd -g 1000 -u 1000 -o -M -d /app -r runner
 
 RUN apt-get update && \
-    apt-get install -y libsasl2-dev wkhtmltopdf gosu curl libkrb5-dev krb5-user && \
+    apt-get install -y libsasl2-dev libsasl2-modules-gssapi-mit wkhtmltopdf gosu curl libkrb5-dev krb5-user && \
     apt-get clean
 
 WORKDIR $USER_HOME

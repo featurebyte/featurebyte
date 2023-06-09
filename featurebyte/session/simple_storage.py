@@ -181,7 +181,7 @@ class GCSStorage(SimpleStorage):
             info=storage_credential.service_account_info
         )
         protocol, path = storage_url.split("//")
-        assert protocol == "gs:"
+        assert protocol == "gs:", "GCSStorage: Protocol must be gs for storage_url"
         parts = path.split("/")
         if len(parts) == 0:
             raise ValueError("Bucket is missing in storage url")
@@ -223,7 +223,7 @@ class AzureBlobStorage(SimpleStorage):
             ),
         )
         protocol, path = storage_url.split("//")
-        assert protocol == "azure:"
+        assert protocol == "azure:", "AzureBlobStorage: Protocol must be azure for storage_url"
         parts = path.split("/")
         if len(parts) == 0:
             raise ValueError("Container is missing in storage url")
@@ -257,7 +257,10 @@ class WebHDFSStorage(SimpleStorage):
         self.kerberos = kerberos
         super().__init__(storage_url=storage_url)
         protocol, path = storage_url.split("//")
-        assert protocol in {"http:", "https:"}
+        assert protocol in {
+            "http:",
+            "https:",
+        }, "WebHDFS: protocol must be http or https for storage_url"
         self.ssl = protocol == "https:"
         parts = path.split("/")
         if len(parts) == 0:

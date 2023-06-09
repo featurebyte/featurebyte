@@ -56,6 +56,7 @@ from featurebyte.models.credential import (
     AccessTokenCredential,
     AzureBlobStorageCredential,
     GCSStorageCredential,
+    KerberosKeytabCredential,
     S3StorageCredential,
     UsernamePasswordCredential,
 )
