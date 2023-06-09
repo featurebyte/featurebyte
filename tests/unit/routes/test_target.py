@@ -1,9 +1,7 @@
 """
 Test for target routes
 """
-from http import HTTPStatus
 
-import pytest
 from bson import ObjectId
 
 from tests.unit.routes.base import BaseCatalogApiTestSuite
