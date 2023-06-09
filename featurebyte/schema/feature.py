@@ -52,13 +52,41 @@ class BatchFeatureItem(FeatureByteBaseModel):
     tabular_source: TabularSource
 
 
-class BatchFeatureCreate(FeatureByteBaseModel):
+class BaseBatchFeatureCreate(FeatureByteBaseModel):
     """
-    Batch Feature Creation schema
+    Base Batch Feature Creation schema
     """
 
     graph: QueryGraph
     features: List[BatchFeatureItem]
+
+    def iterate_features(self) -> Iterator[FeatureCreate]:
+        """
+        Iterate over the batch feature create payload and yield feature create payloads
+
+        Yields
+        -------
+        Iterator[FeatureCreate]
+            List of feature create payloads
+        """
+        for feature in self.features:
+            target_node = self.graph.get_node_by_name(feature.node_name)
+            pruned_graph, node_name_map = self.graph.prune(
+                target_node=target_node, aggressive=False
+            )
+            yield FeatureCreate(
+                _id=feature.id,
+                name=feature.name,
+                node_name=node_name_map[feature.node_name],
+                graph=pruned_graph,
+                tabular_source=feature.tabular_source,
+            )
+
+
+class BatchFeatureCreate(BaseBatchFeatureCreate):
+    """
+    Batch Feature Creation schema
+    """
 
     @classmethod
     def create(cls, features: List[FeatureCreate]) -> BatchFeatureCreate:
@@ -91,28 +119,6 @@ class BatchFeatureCreate(FeatureByteBaseModel):
             graph=query_graph,
             features=feature_items,
         )
-
-    def iterate_features(self) -> Iterator[FeatureCreate]:
-        """
-        Iterate over the batch feature create payload and yield feature create payloads
-
-        Yields
-        -------
-        Iterator[FeatureCreate]
-            List of feature create payloads
-        """
-        for feature in self.features:
-            target_node = self.graph.get_node_by_name(feature.node_name)
-            pruned_graph, node_name_map = self.graph.prune(
-                target_node=target_node, aggressive=False
-            )
-            yield FeatureCreate(
-                _id=feature.id,
-                name=feature.name,
-                node_name=node_name_map[feature.node_name],
-                graph=pruned_graph,
-                tabular_source=feature.tabular_source,
-            )
 
 
 class FeatureNewVersionCreate(FeatureByteBaseModel):

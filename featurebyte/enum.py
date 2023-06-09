@@ -3,6 +3,8 @@ This module contains all the enums used across different modules
 """
 from __future__ import annotations
 
+from typing import Literal
+
 import functools
 from enum import Enum
 
@@ -305,6 +307,7 @@ class WorkerCommand(StrEnum):
     BATCH_FEATURE_TABLE_CREATE = "BATCH_FEATURE_TABLE_CREATE"
     MATERIALIZED_TABLE_DELETE = "MATERIALIZED_TABLE_DELETE"
     BATCH_FEATURE_CREATE = "BATCH_FEATURE_CREATE"
+    FEATURE_LIST_CREATE_WITH_BATCH_FEATURE_CREATE = "FEATURE_LIST_CREATE_WITH_BATCH_FEATURE_CREATE"
     STATIC_SOURCE_TABLE_CREATE = "STATIC_SOURCE_TABLE_CREATE"
     TEST = "TEST"
     TILE_COMPUTE = "TILE_COMPUTE"
@@ -364,3 +367,7 @@ class MaterializedTableNamePrefix(StrEnum):
         list[str]
         """
         return [c.value for c in cls]
+
+
+# enum used for handle conflict when saving object to persistent storage
+ConflictResolution = Literal["raise", "retrieve"]

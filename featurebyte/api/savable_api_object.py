@@ -10,8 +10,9 @@ from http import HTTPStatus
 from bson import ObjectId
 from typeguard import typechecked
 
-from featurebyte.api.api_object import ApiObject, ConflictResolution
+from featurebyte.api.api_object import ApiObject
 from featurebyte.config import Configurations
+from featurebyte.enum import ConflictResolution
 from featurebyte.exception import (
     DuplicatedRecordException,
     ObjectHasBeenSavedError,

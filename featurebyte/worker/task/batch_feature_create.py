@@ -16,7 +16,7 @@ from featurebyte.exception import DocumentInconsistencyError
 from featurebyte.logging import get_logger
 from featurebyte.models.base import activate_catalog
 from featurebyte.models.feature import FeatureModel
-from featurebyte.schema.feature import FeatureServiceCreate
+from featurebyte.schema.feature import BatchFeatureCreate, FeatureServiceCreate
 from featurebyte.schema.worker.task.batch_feature_create import BatchFeatureCreateTaskPayload
 from featurebyte.service.feature import FeatureService
 from featurebyte.worker.task.base import BaseTask
@@ -115,16 +115,26 @@ class BatchFeatureCreateTask(BaseTask):
             )
         return is_consistent
 
-    async def execute(self) -> Any:
+    async def batch_feature_create(
+        self, payload: BatchFeatureCreate, start_percentage: int, end_percentage: int
+    ) -> None:
         """
-        Execute Deployment Create & Update Task
+        Batch feature creation based on given payload
+
+        Parameters
+        ----------
+        payload: BatchFeatureCreate
+            Batch feature create payload
+        start_percentage: int
+            Start percentage
+        end_percentage: int
+            End percentage
 
         Raises
         ------
         DocumentInconsistencyError
             If the generated feature is not the same as the expected feature
         """
-        payload = cast(BatchFeatureCreateTaskPayload, self.payload)
         feature_service: FeatureService = self.app_container.feature_service
         total = len(payload.features)
 
@@ -149,5 +159,12 @@ class BatchFeatureCreateTask(BaseTask):
                 raise DocumentInconsistencyError("Inconsistent feature definition detected!")
 
             # update the progress
-            percent = 100 * (i + 1) / total
+            percent = start_percentage + (end_percentage - start_percentage) * (i + 1) / total
             self.update_progress(percent=int(percent), message=f"Completed {i+1}/{total} features")
+
+    async def execute(self) -> Any:
+        """
+        Execute Deployment Create & Update Task
+        """
+        payload = cast(BatchFeatureCreateTaskPayload, self.payload)
+        await self.batch_feature_create(payload=payload, start_percentage=0, end_percentage=100)

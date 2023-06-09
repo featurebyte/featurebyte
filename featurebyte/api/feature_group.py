@@ -15,7 +15,6 @@ from bson import ObjectId
 from pydantic import Field, parse_obj_as, root_validator
 from typeguard import typechecked
 
-from featurebyte.api.api_object import ConflictResolution
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from featurebyte.common.doc_util import FBAutoDoc
@@ -24,6 +23,7 @@ from featurebyte.common.utils import dataframe_from_json, enforce_observation_se
 from featurebyte.config import Configurations
 from featurebyte.core.mixin import ParentMixin
 from featurebyte.core.series import Series
+from featurebyte.enum import ConflictResolution
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.logging import get_logger
 from featurebyte.models.base import FeatureByteBaseModel

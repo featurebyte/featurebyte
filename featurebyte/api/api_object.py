@@ -38,7 +38,6 @@ from featurebyte.schema.task import TaskStatus
 
 ApiObjectT = TypeVar("ApiObjectT", bound="ApiObject")
 ModelT = TypeVar("ModelT", bound=FeatureByteBaseDocumentModel)
-ConflictResolution = Literal["raise", "retrieve"]
 PAGINATED_CALL_PAGE_SIZE = 100
 POLLING_INTERVAL = 3
 

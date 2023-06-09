@@ -10,6 +10,7 @@ from pydantic import Field, StrictStr, validator
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import version_validator
+from featurebyte.enum import ConflictResolution
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, VersionIdentifier
 from featurebyte.models.feature_list import (
     FeatureCluster,
@@ -18,6 +19,7 @@ from featurebyte.models.feature_list import (
 )
 from featurebyte.query_graph.node.validator import construct_unique_name_validator
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
+from featurebyte.schema.feature import BaseBatchFeatureCreate, BatchFeatureCreate, FeatureCreate
 
 
 class FeatureListCreate(FeatureByteBaseModel):
@@ -36,6 +38,31 @@ class FeatureListServiceCreate(FeatureListCreate):
     """
 
     feature_list_namespace_id: Optional[PydanticObjectId] = Field(default_factory=ObjectId)
+
+
+class FeatureListCreateWithBatchFeatureCreation(BaseBatchFeatureCreate):
+    """
+    Feature List Creation with Batch Feature Creation schema
+    """
+
+    id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
+    name: StrictStr
+    conflict_resolution: ConflictResolution
+
+    @classmethod
+    def create(
+        cls, name: str, features: List[FeatureCreate], conflict_resolution: ConflictResolution
+    ) -> FeatureListCreateWithBatchFeatureCreation:
+        """
+        Create FeatureListCreateWithBatchFeatureCreation from list of FeatureCreate
+        """
+        batch_feature_create = BatchFeatureCreate.create(features=features)
+        return cls(
+            name=name,
+            conflict_resolution=conflict_resolution,
+            graph=batch_feature_create.graph,
+            features=batch_feature_create.features,
+        )
 
 
 class FeatureVersionInfo(FeatureByteBaseModel):

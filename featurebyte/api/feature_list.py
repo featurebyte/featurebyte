@@ -28,12 +28,7 @@ from bson.objectid import ObjectId
 from pydantic import Field, root_validator
 from typeguard import typechecked
 
-from featurebyte.api.api_object import (
-    PAGINATED_CALL_PAGE_SIZE,
-    ApiObject,
-    ConflictResolution,
-    ForeignKeyMapping,
-)
+from featurebyte.api.api_object import PAGINATED_CALL_PAGE_SIZE, ApiObject, ForeignKeyMapping
 from featurebyte.api.base_table import TableApiObject
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
@@ -52,6 +47,7 @@ from featurebyte.common.utils import (
     enforce_observation_set_row_order,
 )
 from featurebyte.config import Configurations
+from featurebyte.enum import ConflictResolution
 from featurebyte.exception import (
     DuplicatedRecordException,
     RecordCreationException,

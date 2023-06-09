@@ -1,0 +1,85 @@
+"""
+Feature list creation with batch feature creation task
+"""
+from typing import Any, cast
+
+from featurebyte.models.feature import FeatureNamespaceModel
+from featurebyte.schema.feature_list import FeatureListCreate
+from featurebyte.schema.worker.task.batch_feature_create import BatchFeatureCreateTaskPayload
+from featurebyte.schema.worker.task.feature_list_batch_feature_create import (
+    FeatureListCreateWithBatchFeatureCreationPayload,
+)
+from featurebyte.worker.task.batch_feature_create import BatchFeatureCreateTask
+
+
+class FeatureListCreateWithBatchFeatureCreationTask(BatchFeatureCreateTask):
+    """
+    Feature list creation with batch feature creation task
+    """
+
+    payload_class = FeatureListCreateWithBatchFeatureCreationPayload
+
+    async def execute(self) -> Any:
+        """
+        Execute Deployment Create & Update Task
+        """
+        payload = cast(FeatureListCreateWithBatchFeatureCreationPayload, self.payload)
+        feature_ids = [feature.id for feature in payload.features]
+        feature_names = [feature.name for feature in payload.features]
+
+        # identify saved features
+        saved_feature_ids = set()
+        async for doc in self.app_container.feature_service.list_documents_iterator(
+            query_filter={"id": {"$in": feature_ids}}
+        ):
+            saved_feature_ids.add(doc["_id"])
+
+        # construct conflict feature id to resolution feature id map
+        conflict_to_resolution_feature_id_map = {}
+        if payload.conflict_resolution == "retrieve":
+            async for doc in self.app_container.feature_namespace_service.list_documents_iterator(
+                query_filter={"name": {"$in": feature_names}}
+            ):
+                feat_namespace = FeatureNamespaceModel(**doc)
+                conflict_to_resolution_feature_id_map[
+                    feat_namespace.name
+                ] = feat_namespace.default_feature_id
+
+        # identify features to create
+        feature_creates = []
+        feature_list_feature_ids = []
+        for feature_create in payload.iterate_features():
+            if feature_create.id in saved_feature_ids:
+                # skip if the feature is already saved
+                feature_list_feature_ids.append(feature_create.id)
+                continue
+
+            if (
+                payload.conflict_resolution == "retrieve"
+                and feature_create.name in conflict_to_resolution_feature_id_map
+            ):
+                # if the feature name is in conflict, use the resolution feature id
+                resolved_feature_id = conflict_to_resolution_feature_id_map[feature_create.name]
+                feature_list_feature_ids.append(resolved_feature_id)
+            else:
+                # add the feature create payload for batch feature creation
+                feature_creates.append(feature_create)
+                feature_list_feature_ids.append(feature_create.id)
+
+        # create batch feature create payload
+        batch_feature_create_payload = BatchFeatureCreateTaskPayload.create(
+            features=feature_creates
+        )
+
+        # create list of features
+        await self.batch_feature_create(
+            payload=batch_feature_create_payload, start_percentage=0, end_percentage=90
+        )
+
+        # create feature list
+        await self.app_container.feature_list_controller.create_feature_list(
+            data=FeatureListCreate(
+                _id=payload.id, name=payload.name, feature_ids=feature_list_feature_ids
+            )
+        )
+        self.update_progress(percent=100, message="Completed feature list creation")
