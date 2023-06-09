@@ -54,6 +54,7 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
         sort_by: Optional[str] = "created_at",
         sort_dir: Literal["asc", "desc"] = "desc",
         search: Optional[str] = None,
+        name: Optional[str] = None,
     ) -> TargetList:
         """
         List Target at persistent
@@ -70,13 +71,15 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
             Sorting the returning documents in ascending order or descending order
         search: str | None
             Search token to be used in filtering
+        name: str | None
+            Name token to be used in filtering
 
         Returns
         -------
         TargetList
             List of Target objects
         """
-        params: Dict[str, Any] = {"search": search}
+        params: Dict[str, Any] = {"search": search, "name": name}
         return await self.list(
             page=page, page_size=page_size, sort_by=sort_by, sort_dir=sort_dir, **params
         )

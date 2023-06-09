@@ -10,6 +10,7 @@ from pydantic import Field
 
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
+    FeatureByteCatalogBaseDocumentModel,
     PydanticObjectId,
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
@@ -17,7 +18,7 @@ from featurebyte.models.base import (
 from featurebyte.query_graph.graph import QueryGraph
 
 
-class TargetModel(FeatureByteBaseDocumentModel):
+class TargetModel(FeatureByteCatalogBaseDocumentModel):
     """
     Model for Target
 

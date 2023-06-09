@@ -14,7 +14,6 @@ from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.models.target import TargetModel
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
-    NameQuery,
     PageQuery,
     PageSizeQuery,
     SearchQuery,
@@ -45,19 +44,14 @@ async def list_target(
     sort_by: Optional[str] = SortByQuery,
     sort_dir: Optional[str] = SortDirQuery,
     search: Optional[str] = SearchQuery,
-    name: Optional[str] = NameQuery,
+    name: Optional[str] = SearchQuery,
 ) -> TargetList:
     """
     List Target's
     """
     controller = request.state.app_container.target_controller
     target_list: TargetList = await controller.list_target(
-        page=page,
-        page_size=page_size,
-        sort_by=sort_by,
-        sort_dir=sort_dir,
-        search=search,
-        name=name,
+        page=page, page_size=page_size, sort_by=sort_by, sort_dir=sort_dir, search=search, name=name
     )
     return target_list
 
