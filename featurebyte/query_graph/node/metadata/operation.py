@@ -21,10 +21,10 @@ from typing_extensions import Annotated  # pylint: disable=wrong-import-order
 
 from collections import defaultdict
 
-from pydantic import Field, root_validator, validator
+from pydantic import BaseModel, Field, root_validator, validator
 
 from featurebyte.enum import AggFunc, DBVarType, StrEnum, TableDataType
-from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
 
@@ -53,7 +53,7 @@ BaseColumnT = TypeVar("BaseColumnT", bound="BaseColumn")
 BaseDerivedColumnT = TypeVar("BaseDerivedColumnT", bound="BaseDerivedColumn")
 
 
-class BaseColumn(FeatureByteBaseModel):
+class BaseColumn(BaseModel):
     """
     BaseColumn class
 
@@ -411,7 +411,7 @@ FeatureDataColumn = Annotated[
 ]
 
 
-class GroupOperationStructure(FeatureByteBaseModel):
+class GroupOperationStructure(BaseModel):
     """GroupOperationStructure class"""
 
     source_columns: List[SourceDataColumn] = Field(default_factory=list)
@@ -434,7 +434,7 @@ class GroupOperationStructure(FeatureByteBaseModel):
         return list(set(table_ids))
 
 
-class OperationStructure(FeatureByteBaseModel):
+class OperationStructure(BaseModel):
     """NodeOperationStructure class"""
 
     # When NodeOutputType is:

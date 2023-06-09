@@ -900,13 +900,18 @@ def test_shape(snowflake_event_table):
 def test_benchmark_sdk_api_object_operation_runtime(snowflake_event_table):
     """Benchmark runtime of a query constructed from an EventView"""
     event_view = snowflake_event_table.get_view()
+    columns = event_view.columns
 
+    # take a single operation runtime by averaging over all columns
+    start = datetime.now()
+    for col in columns:
+        _ = event_view[col]
+    single_op_elapsed_time = (datetime.now() - start) / len(columns)
+
+    # add datetime extracted properties
     start = datetime.now()
     column_name = "event_timestamp"
     datetime_series = event_view[column_name]
-    single_op_elapsed_time = datetime.now() - start
-
-    # add datetime extracted properties
     properties = [
         "year",
         "quarter",
