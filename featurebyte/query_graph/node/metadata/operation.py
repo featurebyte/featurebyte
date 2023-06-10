@@ -19,8 +19,8 @@ from typing import (
 )
 from typing_extensions import Annotated  # pylint: disable=wrong-import-order
 
+import dataclasses
 from collections import defaultdict
-from dataclasses import asdict, dataclass
 
 from pydantic import BaseModel, Field, validator
 
@@ -54,7 +54,7 @@ BaseColumnT = TypeVar("BaseColumnT", bound="BaseColumn")
 BaseDerivedColumnT = TypeVar("BaseDerivedColumnT", bound="BaseDerivedColumn")
 
 
-@dataclass
+@dataclasses.dataclass
 class BaseColumn:
     """
     BaseColumn class
@@ -100,7 +100,7 @@ class BaseColumn:
         -------
         Self
         """
-        return type(self)(**{**asdict(self), **kwargs})
+        return dataclasses.replace(self, **kwargs)
 
     def clone_without_internal_nodes(
         self: BaseColumnT,
@@ -157,17 +157,17 @@ class BaseColumn:
             node_kwargs["node_name"] = graph_node_name
             if hasattr(self, "transforms"):
                 node_kwargs["transforms"] = [graph_node_transform] if graph_node_transform else []
-        return self.clone(**node_kwargs, **kwargs)
+        return dataclasses.replace(self, **{**node_kwargs, **kwargs})
 
 
-@dataclass
+@dataclasses.dataclass
 class BaseDataColumn(BaseColumn):
     """BaseDataColumn class"""
 
     name: str
 
 
-@dataclass
+@dataclasses.dataclass
 class BaseDerivedColumn(BaseColumn):
     """BaseDerivedColumn class"""
 
@@ -305,7 +305,7 @@ class BaseDerivedColumn(BaseColumn):
         )
 
 
-@dataclass
+@dataclasses.dataclass
 class SourceDataColumn(BaseDataColumn):
     """Source column"""
 
@@ -319,7 +319,7 @@ class SourceDataColumn(BaseDataColumn):
         return hash(key)
 
 
-@dataclass
+@dataclasses.dataclass
 class DerivedDataColumn(BaseDerivedColumn):
     """Derived column"""
 
@@ -335,7 +335,7 @@ class DerivedDataColumn(BaseDerivedColumn):
 ViewDataColumn = Annotated[Union[SourceDataColumn, DerivedDataColumn], Field(discriminator="type")]
 
 
-@dataclass
+@dataclasses.dataclass
 class AggregationColumn(BaseDataColumn):
     """Aggregation column"""
 
@@ -391,7 +391,7 @@ class AggregationColumn(BaseDataColumn):
         )
 
 
-@dataclass
+@dataclasses.dataclass
 class PostAggregationColumn(BaseDerivedColumn):
     """Post aggregation column"""
 
