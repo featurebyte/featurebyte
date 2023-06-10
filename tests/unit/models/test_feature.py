@@ -123,6 +123,7 @@ def test_extract_operation_structure(feature_model_dict):
         "table_type": "event_table",
         "node_names": {"input_1", "graph_1"},
         "node_name": "graph_1",
+        "filter": False,
     }
     expected_columns = [
         SourceDataColumn(name="col_float", dtype="FLOAT", **common_source_col_params)

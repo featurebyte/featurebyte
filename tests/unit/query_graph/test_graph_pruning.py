@@ -9,6 +9,7 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import construct_node
 from featurebyte.query_graph.transform.pruning import prune_query_graph
+from tests.unit.query_graph.util import to_dict
 from tests.util.helper import add_groupby_operation
 
 
@@ -258,8 +259,8 @@ def test_join_with_assign_node__join_node_parameters_pruning(
     pruned_node = pruned_graph.get_node_by_name(node_name_map[groupby_node.name])
 
     op_struct = pruned_graph.extract_operation_structure(node=pruned_node)
-    assert op_struct.columns == expected_op_struct_columns
-    assert op_struct.aggregations == expected_op_struct_aggregations
+    assert to_dict(op_struct.columns) == expected_op_struct_columns
+    assert to_dict(op_struct.aggregations) == expected_op_struct_aggregations
 
     # check pruned join node
     pruned_join_node = pruned_graph.get_node_by_name("join_1")
@@ -272,13 +273,13 @@ def test_join_with_assign_node__join_node_parameters_pruning(
 
     op_struct = pruned_graph.extract_operation_structure(node=pruned_node)
     expected_op_struct_columns = sorted(
-        col.dict(exclude={"node_names": True}) for col in op_struct.columns
+        to_dict(col, exclude=["node_names"]) for col in op_struct.columns
     )
     assert (
-        sorted(col.dict(exclude={"node_names"}) for col in op_struct.columns)
+        sorted(to_dict(col, exclude=["node_names"]) for col in op_struct.columns)
         == expected_op_struct_columns
     )
-    assert op_struct.aggregations == expected_op_struct_aggregations
+    assert to_dict(op_struct.aggregations) == expected_op_struct_aggregations
 
     # check pruned join node
     pruned_join_node = pruned_graph.get_node_by_name("join_1")
@@ -337,16 +338,16 @@ def test_join_is_prunable(
 
     # check operation structure of the join node output
     op_struct = pruned_graph.extract_operation_structure(node=join_node)
-    kwargs = {"include": {"name": True, "node_names": True}}
+    kwargs = {"include": ["name", "node_names"]}
     input_only_names = ["cust_id", "order_id", "order_method"]
     input_and_join_names = ["item_type", "item_name"]
     for i, name in enumerate(input_only_names):
-        assert op_struct.columns[i].dict(**kwargs) == {
+        assert to_dict(op_struct.columns[i], **kwargs) == {
             "name": name,
             "node_names": {pruned_ev_node.name},
         }
     for i, name in enumerate(input_and_join_names):
-        assert op_struct.columns[i + 3].dict(**kwargs) == {
+        assert to_dict(op_struct.columns[i + 3], **kwargs) == {
             "name": name,
             "node_names": {pruned_it_node.name, "join_1"},
         }

@@ -11,6 +11,7 @@ from featurebyte.query_graph.node.metadata.operation import (
     OperationStructure,
     SourceDataColumn,
 )
+from tests.unit.query_graph.util import to_dict
 
 
 @pytest.fixture(name="source_col1")
@@ -23,6 +24,7 @@ def source_col1_fixture():
         node_names={"input_1"},
         node_name="input_1",
         dtype=DBVarType.FLOAT,
+        filter=False,
     )
 
 
@@ -36,6 +38,7 @@ def source_col2_fixture():
         node_names={"input_1"},
         node_name="input_1",
         dtype=DBVarType.INT,
+        filter=False,
     )
 
 
@@ -126,6 +129,7 @@ def test_derived_data_column_create(
         node_names={"input_1", "add_1", "mul_1"},
         node_name="mul_1",
         dtype=DBVarType.FLOAT,
+        filter=False,
     )
 
 
@@ -138,12 +142,13 @@ def test_insert_column():
         node_names={"input_1", "project_1"},
         node_name="input_1",
         dtype=DBVarType.FLOAT,
+        filter=False,
     )
     another_col1 = col1.clone(node_names={"input_1", "filter_1"}, node_name="filter_1", filter=True)
     col_map = DerivedDataColumn.insert_column(
         DerivedDataColumn.insert_column({}, col1), another_col1
     )
-    assert col_map == {
+    assert to_dict(col_map) == {
         "col1": {
             "name": "col1",
             "node_names": {"input_1", "project_1", "filter_1"},
@@ -178,6 +183,7 @@ def test_data_column_clone_with_replacement(source_col1):
         node_names={"input_1"},
         node_name="input_1",
         dtype=DBVarType.FLOAT,
+        filter=False,
     )
 
     # case 2: when the node name not found in the replace_node_name_map
@@ -193,6 +199,7 @@ def test_data_column_clone_with_replacement(source_col1):
         node_names={"graph_1"},
         node_name="graph_1",
         dtype=DBVarType.FLOAT,
+        filter=False,
     )
 
 
@@ -214,7 +221,7 @@ def test_derived_data_column_clone_without_internal_nodes(source_col1, source_co
         graph_node_name="graph_1",
         graph_node_transform="graph",
     )
-    assert output == {
+    assert to_dict(output) == {
         "name": "source_col1",
         "table_id": None,
         "table_type": "event_table",
@@ -234,7 +241,7 @@ def test_derived_data_column_clone_without_internal_nodes(source_col1, source_co
         graph_node_name="graph_1",
         graph_node_transform="graph",
     )
-    assert output == {
+    assert to_dict(output) == {
         "columns": [
             {
                 "filter": False,
@@ -273,7 +280,7 @@ def test_derived_data_column_clone_without_internal_nodes(source_col1, source_co
         graph_node_name="graph_1",
         graph_node_transform="graph",
     )
-    assert output == {
+    assert to_dict(output) == {
         "columns": [
             {
                 "filter": False,

@@ -4,6 +4,7 @@ Tests for nested graph pruning related logic
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.graph_node.base import GraphNode
+from tests.unit.query_graph.util import to_dict
 
 
 def add_input_node(query_graph, input_details):
@@ -93,7 +94,7 @@ def test_nested_graph_pruning(input_details, groupby_node_params):
 
     # check operation structure
     operation_structure = graph.extract_operation_structure(node=node_proj_2h_avg)
-    assert operation_structure.dict() == {
+    assert to_dict(operation_structure) == {
         "aggregations": [
             {
                 "category": None,
