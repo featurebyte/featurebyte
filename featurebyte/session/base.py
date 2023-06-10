@@ -35,7 +35,11 @@ from featurebyte.enum import (
 )
 from featurebyte.exception import QueryExecutionTimeOut
 from featurebyte.logging import get_logger
-from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
+from featurebyte.query_graph.sql.common import (
+    get_fully_qualified_table_name,
+    quoted_identifier,
+    sql_to_string,
+)
 
 MINUTES_IN_SECONDS = 60
 HOUR_IN_SECONDS = 60 * MINUTES_IN_SECONDS
@@ -566,16 +570,6 @@ class BaseSchemaInitializer(ABC):
         """
 
     @abstractmethod
-    async def list_objects(self, object_type: str) -> pd.DataFrame:
-        """
-        List objects of a given type in the working schema
-
-        Returns
-        -------
-        pd.DataFrame
-        """
-
-    @abstractmethod
     async def drop_object(self, object_type: str, name: str) -> None:
         """
         Drop an object of a given type in the working schema
@@ -632,6 +626,17 @@ class BaseSchemaInitializer(ABC):
             await self.session.list_schemas(database_name=self.session.database_name)
         )
         return self._normalize_casing(self.session.schema_name) in available_schemas
+
+    async def list_objects(self, object_type: str) -> pd.DataFrame:
+        """
+        List objects of a given type in the working schema
+
+        Returns
+        -------
+        pd.DataFrame
+        """
+        query = f"SHOW {object_type} IN {self._schema_qualifier}"
+        return await self.session.execute_query(query)
 
     async def register_missing_functions(self, functions: list[dict[str, Any]]) -> None:
         """Register functions defined in the snowflake sql directory.
@@ -816,6 +821,16 @@ class BaseSchemaInitializer(ABC):
             self.session.database_name, self.session.schema_name
         )
         return self.remove_materialized_tables(table_names)
+
+    @property
+    def _schema_qualifier(self) -> str:
+        db_quoted = sql_to_string(
+            quoted_identifier(self.session.database_name), self.session.source_type
+        )
+        schema_quoted = sql_to_string(
+            quoted_identifier(self.session.schema_name), self.session.source_type
+        )
+        return f"{db_quoted}.{schema_quoted}"
 
 
 class MetadataSchemaInitializer:

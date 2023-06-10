@@ -151,13 +151,9 @@ async def test_drop_all_and_recreate(
     )
     check_materialized_tables(materialized_tables)
 
-    async def _list_objects(obj):
-        query = f"SHOW {obj} IN {snowflake_session.database_name}.{snowflake_session.schema_name}"
-        return await snowflake_session.execute_query(query)
-
     async def _get_object_counts():
-        num_tables = len(await _list_objects("TABLES"))
-        num_functions = len(await _list_objects("USER FUNCTIONS"))
+        num_tables = len(await session.initializer().list_objects("TABLES"))
+        num_functions = len(await session.initializer().list_objects("USER FUNCTIONS"))
 
         return num_tables, num_functions
 

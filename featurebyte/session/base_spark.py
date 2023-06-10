@@ -345,10 +345,6 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
         create_schema_query = f"CREATE SCHEMA {self.session.schema_name}"
         await self.session.execute_query(create_schema_query)
 
-    async def list_objects(self, object_type: str) -> pd.DataFrame:
-        query = f"SHOW {object_type} IN {self.session.schema_name}"
-        return await self.session.execute_query(query)
-
     async def drop_object(self, object_type: str, name: str) -> None:
         query = f"DROP {object_type} {name}"
         await self.session.execute_query(query)

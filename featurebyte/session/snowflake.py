@@ -317,10 +317,6 @@ class SnowflakeSchemaInitializer(BaseSchemaInitializer):
         create_schema_query = f'CREATE SCHEMA "{self.session.schema_name}"'
         await self.session.execute_query(create_schema_query)
 
-    async def list_objects(self, object_type: str) -> pd.DataFrame:
-        query = f"SHOW {object_type} IN SCHEMA {self._schema_qualifier}"
-        return await self.session.execute_query(query)
-
     async def drop_object(self, object_type: str, name: str) -> None:
         query = f"DROP {object_type} {self._fully_qualified(name)}"
         await self.session.execute_query(query)
@@ -365,10 +361,6 @@ class SnowflakeSchemaInitializer(BaseSchemaInitializer):
 
         for name in await self.list_droppable_tables_in_working_schema():
             await self.drop_object("TABLE", name)
-
-    @property
-    def _schema_qualifier(self) -> str:
-        return f'"{self.session.database_name}"."{self.session.schema_name}"'
 
     def _fully_qualified(self, name: str) -> str:
         if "(" in name:
