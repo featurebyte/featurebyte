@@ -73,27 +73,30 @@ def migration_service_fixture(user, persistent, get_cred):
     return service
 
 
-@pytest_asyncio.fixture
-async def patch_list_tables_to_exclude_datasets(session, dataset_registration_helper):
+@pytest.fixture
+def patch_to_exclude_datasets(dataset_registration_helper):
     """
-    Fixture to patch list_tables to exclude dataset tables
+    Fixture to patch remove_materialized_tables to exclude dataset tables
 
     The dataset tables are stored in the metadata schema and will be dropped during the schema
     recreation process, but these datasets themselves are required to complete the process (when
     re-online-enabling features)
     """
-    assert session.source_type == "snowflake"
+    from featurebyte.session.base import BaseSchemaInitializer
 
-    async def patched_list_tables(database_name=None, schema_name=None):
-        tables = (
-            await session.execute_query(f'SHOW TABLES IN SCHEMA "{database_name}"."{schema_name}"')
-        )["name"].tolist()
+    original_func = BaseSchemaInitializer.remove_materialized_tables
+
+    def patched_remove_materialized_tables(table_names: list[str]):
         known_tables = set(dataset_registration_helper.table_names)
-        tables = [t for t in tables if t not in known_tables]
-        return tables
+        filtered_tables = []
+        for table_name in table_names:
+            if table_name in known_tables:
+                continue
+            filtered_tables.append(table_name)
+        return original_func(filtered_tables)
 
-    with patch("featurebyte.session.snowflake.SnowflakeSession.list_tables") as p:
-        p.side_effect = patched_list_tables
+    with patch("featurebyte.session.base.BaseSchemaInitializer.remove_materialized_tables") as p:
+        p.side_effect = patched_remove_materialized_tables
         yield p
 
 
@@ -127,8 +130,8 @@ def check_materialized_tables(materialized_tables):
         assert df.shape[1] > 0
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-@pytest.mark.usefixtures("patch_list_tables_to_exclude_datasets")
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
+@pytest.mark.usefixtures("patch_to_exclude_datasets")
 @pytest.mark.asyncio
 async def test_drop_all_and_recreate(
     config,
