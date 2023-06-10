@@ -257,21 +257,12 @@ class BaseNode(BaseModel):
         if operation_info.columns or operation_info.aggregations:
             # make sure node name should be included in the node operation info
             assert self.name in operation_info.all_node_names
-        # Update is_time_based based on the inputs, or if the derive_node_operation_info returns true
-        update_args = {
-            "is_time_based": any(input_.is_time_based for input_ in inputs)
-            or operation_info.is_time_based,
-        }
-        constructor_args = {
-            "columns": operation_info.columns,
-            "aggregations": operation_info.aggregations,
-            "output_type": operation_info.output_type,
-            "output_category": operation_info.output_category,
-            "row_index_lineage": operation_info.row_index_lineage,
-            "is_time_based": operation_info.is_time_based,
-            **update_args,
-        }
-        return OperationStructure(**constructor_args)  # type: ignore
+
+        # update is_time_based based on the inputs, or if the derive_node_operation_info returns true
+        operation_info.is_time_based = (
+            any(input_.is_time_based for input_ in inputs) or operation_info.is_time_based
+        )
+        return operation_info
 
     def derive_sdk_code(
         self,
