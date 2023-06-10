@@ -300,7 +300,14 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
         return "spark"
 
     async def drop_all_objects_in_working_schema(self) -> None:
-        raise NotImplementedError()
+        if not await self.schema_exists():
+            return
+
+        for function in await self.list_functions():
+            await self.drop_object("FUNCTION", function)
+
+        for name in await self.list_droppable_tables_in_working_schema():
+            await self.drop_object("TABLE", name)
 
     @property
     def udf_jar_local_path(self) -> str:
@@ -337,6 +344,14 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
     async def create_schema(self) -> None:
         create_schema_query = f"CREATE SCHEMA {self.session.schema_name}"
         await self.session.execute_query(create_schema_query)
+
+    async def list_objects(self, object_type: str) -> pd.DataFrame:
+        query = f"SHOW {object_type} IN {self.session.schema_name}"
+        return await self.session.execute_query(query)
+
+    async def drop_object(self, object_type: str, name: str) -> None:
+        query = f"DROP {object_type} {name}"
+        await self.session.execute_query(query)
 
     async def list_functions(self) -> list[str]:
         def _function_name_to_identifier(function_name: str) -> str:

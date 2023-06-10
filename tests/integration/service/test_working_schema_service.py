@@ -2,7 +2,6 @@ from unittest.mock import Mock, patch
 
 import pandas as pd
 import pytest
-import pytest_asyncio
 from bson import ObjectId
 
 from featurebyte import FeatureList
@@ -87,10 +86,10 @@ def patch_to_exclude_datasets(dataset_registration_helper):
     original_func = BaseSchemaInitializer.remove_materialized_tables
 
     def patched_remove_materialized_tables(table_names: list[str]):
-        known_tables = set(dataset_registration_helper.table_names)
+        known_tables = set([name.upper() for name in dataset_registration_helper.table_names])
         filtered_tables = []
         for table_name in table_names:
-            if table_name in known_tables:
+            if table_name.upper() in known_tables:
                 continue
             filtered_tables.append(table_name)
         return original_func(filtered_tables)
@@ -139,6 +138,7 @@ async def test_drop_all_and_recreate(
     deployed_feature_list_deployment,
     migration_service,
     feature_store,
+    source_type,
 ):
     """
     Test dropping all objects first then use WorkingSchemaService to restore it
@@ -189,8 +189,13 @@ async def test_drop_all_and_recreate(
     # Check online requests can no longer be made
     res = make_online_request(client, deployment, entity_serving_names)
     assert res.status_code == 500
-    assert "SQL compilation error" in res.json()["detail"]
+    if source_type == "snowflake":
+        expected_error_message = "SQL compilation error"
+    else:
+        expected_error_message = "Table or view not found"
+    assert expected_error_message in res.json()["detail"]
 
+    # Recreate schema
     await migration_service.reset_working_schema(query_filter={"_id": ObjectId(feature_store.id)})
 
     # Check metadata are restored

@@ -565,6 +565,29 @@ class BaseSchemaInitializer(ABC):
         procedures, etc)
         """
 
+    @abstractmethod
+    async def list_objects(self, object_type: str) -> pd.DataFrame:
+        """
+        List objects of a given type in the working schema
+
+        Returns
+        -------
+        pd.DataFrame
+        """
+
+    @abstractmethod
+    async def drop_object(self, object_type: str, name: str) -> None:
+        """
+        Drop an object of a given type in the working schema
+
+        Parameters
+        ----------
+        object_type : str
+            Type of object to drop
+        name : str
+            Name of object to drop
+        """
+
     async def initialize(self) -> None:
         """Entry point to set up the featurebyte working schema"""
 
@@ -774,7 +797,7 @@ class BaseSchemaInitializer(ABC):
         }
         for table_name in table_names:
             for prefix in materialized_table_prefixes:
-                if table_name.startswith(prefix):
+                if cls._normalize_casing(table_name).startswith(prefix):
                     break
             else:
                 out.append(table_name)
