@@ -18,7 +18,6 @@ from featurebyte.api.feature_group import BaseFeatureGroup, FeatureGroup
 from featurebyte.api.feature_list import FeatureList, FeatureListNamespace
 from featurebyte.enum import InternalName
 from featurebyte.exception import (
-    DuplicatedRecordException,
     ObjectHasBeenSavedError,
     RecordCreationException,
     RecordDeletionException,
