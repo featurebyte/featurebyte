@@ -262,7 +262,16 @@ class BaseNode(BaseModel):
             "is_time_based": any(input_.is_time_based for input_ in inputs)
             or operation_info.is_time_based,
         }
-        return OperationStructure(**{**operation_info.dict(), **update_args})
+        constructor_args = {
+            "columns": operation_info.columns,
+            "aggregations": operation_info.aggregations,
+            "output_type": operation_info.output_type,
+            "output_category": operation_info.output_category,
+            "row_index_lineage": operation_info.row_index_lineage,
+            "is_time_based": operation_info.is_time_based,
+            **update_args,
+        }
+        return OperationStructure(**constructor_args)
 
     def derive_sdk_code(
         self,
