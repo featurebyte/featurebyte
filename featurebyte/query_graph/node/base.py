@@ -271,7 +271,7 @@ class BaseNode(BaseModel):
             "is_time_based": operation_info.is_time_based,
             **update_args,
         }
-        return OperationStructure(**constructor_args)
+        return OperationStructure(**constructor_args)  # type: ignore
 
     def derive_sdk_code(
         self,

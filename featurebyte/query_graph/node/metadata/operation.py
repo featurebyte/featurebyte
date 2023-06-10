@@ -22,7 +22,7 @@ from typing_extensions import Annotated  # pylint: disable=wrong-import-order
 import dataclasses
 from collections import defaultdict
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field
 
 from featurebyte.enum import AggFunc, DBVarType, StrEnum, TableDataType
 from featurebyte.models.base import PydanticObjectId
@@ -454,7 +454,7 @@ class OperationStructure:
                 output[col] = None
         return list(output)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.columns = self._deduplicate(self.columns)
         self.aggregations = self._deduplicate(self.aggregations)
         if self.output_category == NodeOutputCategory.VIEW:
