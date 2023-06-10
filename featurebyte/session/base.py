@@ -631,6 +631,11 @@ class BaseSchemaInitializer(ABC):
         """
         List objects of a given type in the working schema
 
+        Parameters
+        ----------
+        object_type : str
+            Type of object to list
+
         Returns
         -------
         pd.DataFrame
