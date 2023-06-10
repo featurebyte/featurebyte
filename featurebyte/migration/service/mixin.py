@@ -233,7 +233,7 @@ class DataWarehouseMigrationMixin(FeatureStoreService, BaseMigrationServiceMixin
             # Verify that session is fully functional by attempting to execute a query
             _ = await session.execute_query("SELECT 1 AS A")
         except CredentialsError:
-            logger.debug(f"Got CredentialsError, skipping migration for {feature_store.name}")
+            logger.warning(f"Got CredentialsError, skipping migration for {feature_store.name}")
             return
         except Exception:  # pylint: disable=broad-except
             logger.exception(

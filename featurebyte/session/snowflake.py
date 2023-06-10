@@ -358,15 +358,6 @@ class SnowflakeSchemaInitializer(BaseSchemaInitializer):
         query = f"DROP {object_type} {self._fully_qualified(name)}"
         await self.session.execute_query(query)
 
-    async def _drop_tasks(self) -> None:
-        tasks = await self._list_objects("TASKS")
-        while tasks.shape[0]:
-            # Drop tasks in a loop since new tasks might get added while the initial list of tasks
-            # are getting dropped (each shell task schedule new task as they are running)
-            for name in tasks["name"]:
-                await self._drop_object("TASK", name)
-            tasks = await self._list_objects("TASKS")
-
     async def drop_all_objects_in_working_schema(self) -> None:
         if not await self.schema_exists():
             return
@@ -385,10 +376,5 @@ class SnowflakeSchemaInitializer(BaseSchemaInitializer):
             ):
                 await self._drop_object("PROCEDURE", func_name_with_args)
 
-        await self._drop_tasks()
-
-        table_names = await self.session.list_tables(
-            self.session.database_name, self.session.schema_name
-        )
-        for name in table_names:
+        for name in await self.list_droppable_tables_in_working_schema():
             await self._drop_object("TABLE", name)

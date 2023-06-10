@@ -10,6 +10,7 @@ from pathlib import Path
 import pandas as pd
 from bson import ObjectId
 
+from featurebyte.enum import MaterializedTableNamePrefix
 from featurebyte.models.base import FeatureByteBaseDocumentModel
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
 from featurebyte.schema.historical_feature_table import HistoricalFeatureTableCreate
@@ -28,7 +29,7 @@ class HistoricalFeatureTableService(
     """
 
     document_class = HistoricalFeatureTableModel
-    materialized_table_name_prefix = "HISTORICAL_FEATURE_TABLE"
+    materialized_table_name_prefix = MaterializedTableNamePrefix.HISTORICAL_FEATURE_TABLE
 
     @property
     def class_name(self) -> str:

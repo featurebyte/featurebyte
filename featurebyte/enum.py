@@ -339,3 +339,25 @@ class SemanticType(StrEnum):
     DIMENSION_ID = "dimension_id"
     SCD_NATURAL_KEY_ID = "scd_natural_key_id"
     SCD_SURROGATE_KEY_ID = "scd_surrogate_key_id"
+
+
+class MaterializedTableNamePrefix(StrEnum):
+    """
+    Prefixes for the physical table names of materialized tables
+    """
+
+    OBSERVATION_TABLE = "OBSERVATION_TABLE"
+    HISTORICAL_FEATURE_TABLE = "HISTORICAL_FEATURE_TABLE"
+    BATCH_REQUEST_TABLE = "BATCH_REQUEST_TABLE"
+    BATCH_FEATURE_TABLE = "BATCH_FEATURE_TABLE"
+
+    @classmethod
+    def all(cls) -> list[str]:
+        """
+        List all prefixes
+
+        Returns
+        -------
+        list[str]
+        """
+        return [c.value for c in cls]
