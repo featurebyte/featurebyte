@@ -85,7 +85,7 @@ def patch_to_exclude_datasets(dataset_registration_helper):
 
     original_func = BaseSchemaInitializer.remove_materialized_tables
 
-    def patched_remove_materialized_tables(table_names: list[str]):
+    def patched_remove_materialized_tables(table_names):
         known_tables = set([name.upper() for name in dataset_registration_helper.table_names])
         filtered_tables = []
         for table_name in table_names:
