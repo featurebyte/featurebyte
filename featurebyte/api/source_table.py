@@ -15,6 +15,7 @@ from bson import ObjectId
 from pydantic import Field
 from typeguard import typechecked
 
+from featurebyte.api.api_object_util import is_server_mode
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.config import Configurations
 from featurebyte.core.frame import BaseFrame
@@ -117,6 +118,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
             table_details = TableDetails(**table_details)
 
         to_validate_schema = values.get("_validate_schema") or "columns_info" not in values
+        to_validate_schema &= not is_server_mode()
         if to_validate_schema:
             client = Configurations().get_client()
             response = client.post(
