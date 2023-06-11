@@ -4,6 +4,7 @@ Unit test for EventView class
 
 import copy
 import textwrap
+from datetime import datetime
 from unittest import mock
 from unittest.mock import AsyncMock, PropertyMock, patch
 
@@ -11,11 +12,12 @@ import pandas as pd
 import pytest
 from bson import ObjectId
 
+from featurebyte import to_timedelta
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature
 from featurebyte.api.observation_table import ObservationTable
-from featurebyte.enum import AggFunc, DBVarType
+from featurebyte.enum import DBVarType
 from featurebyte.exception import EventViewMatchingEntityColumnNotFound
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -892,3 +894,59 @@ def test_shape(snowflake_event_table):
         )
         # test view colum shape
         assert view["col_int"].shape() == (1000, 1)
+
+
+@pytest.mark.flaky(reruns=3)
+def test_benchmark_sdk_api_object_operation_runtime(snowflake_event_table):
+    """Benchmark runtime of a query constructed from an EventView"""
+    event_view = snowflake_event_table.get_view()
+    columns = event_view.columns
+
+    # take a single operation runtime by averaging over all columns
+    start = datetime.now()
+    for col in columns:
+        _ = event_view[col]
+    single_op_elapsed_time = (datetime.now() - start) / len(columns)
+
+    # add datetime extracted properties
+    start = datetime.now()
+    column_name = "event_timestamp"
+    datetime_series = event_view[column_name]
+    properties = [
+        "year",
+        "quarter",
+        "month",
+        "week",
+        "day",
+        "day_of_week",
+        "hour",
+        "minute",
+        "second",
+    ]
+    columns = []
+    for prop in properties:
+        name = f"dt_{prop}"
+        event_view[name] = getattr(datetime_series.dt, prop)
+        columns.append(name)
+
+    # check timedelta constructed from date difference
+    event_view["event_interval"] = datetime_series - datetime_series.lag("cust_id")
+    event_view["event_interval_second"] = event_view["event_interval"].dt.second
+    event_view["event_interval_hour"] = event_view["event_interval"].dt.hour
+    event_view["event_interval_minute"] = event_view["event_interval"].dt.minute
+    event_view["event_interval_microsecond"] = event_view["event_interval"].dt.microsecond
+
+    # add timedelta constructed from to_timedelta
+    timedelta = to_timedelta(event_view["event_interval_microsecond"].astype(int), "microsecond")
+    event_view["timestamp_added"] = datetime_series + timedelta
+    event_view["timestamp_added_from_timediff"] = datetime_series + event_view["event_interval"]
+    event_view["timestamp_added_constant"] = datetime_series + pd.Timedelta("1d")
+    event_view["timedelta_hour"] = timedelta.dt.hour
+
+    # filter on event_interval
+    event_view_filtered = event_view[event_view["event_interval_second"] > 500000]
+    _ = event_view_filtered.extract_pruned_graph_and_node()
+
+    elapsed = datetime.now() - start
+    elapsed_ratio = elapsed.total_seconds() / single_op_elapsed_time.total_seconds()
+    assert elapsed_ratio < 2500

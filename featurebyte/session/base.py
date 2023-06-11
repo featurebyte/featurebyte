@@ -26,10 +26,20 @@ from featurebyte.common.utils import (
     dataframe_from_arrow_stream,
     pa_table_to_record_batches,
 )
-from featurebyte.enum import DBVarType, InternalName, SourceType, StrEnum
+from featurebyte.enum import (
+    DBVarType,
+    InternalName,
+    MaterializedTableNamePrefix,
+    SourceType,
+    StrEnum,
+)
 from featurebyte.exception import QueryExecutionTimeOut
 from featurebyte.logging import get_logger
-from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
+from featurebyte.query_graph.sql.common import (
+    get_fully_qualified_table_name,
+    quoted_identifier,
+    sql_to_string,
+)
 
 MINUTES_IN_SECONDS = 60
 HOUR_IN_SECONDS = 60 * MINUTES_IN_SECONDS
@@ -559,6 +569,19 @@ class BaseSchemaInitializer(ABC):
         procedures, etc)
         """
 
+    @abstractmethod
+    async def drop_object(self, object_type: str, name: str) -> None:
+        """
+        Drop an object of a given type in the working schema
+
+        Parameters
+        ----------
+        object_type : str
+            Type of object to drop
+        name : str
+            Name of object to drop
+        """
+
     async def initialize(self) -> None:
         """Entry point to set up the featurebyte working schema"""
 
@@ -603,6 +626,22 @@ class BaseSchemaInitializer(ABC):
             await self.session.list_schemas(database_name=self.session.database_name)
         )
         return self._normalize_casing(self.session.schema_name) in available_schemas
+
+    async def list_objects(self, object_type: str) -> pd.DataFrame:
+        """
+        List objects of a given type in the working schema
+
+        Parameters
+        ----------
+        object_type : str
+            Type of object to list
+
+        Returns
+        -------
+        pd.DataFrame
+        """
+        query = f"SHOW {object_type} IN {self._schema_qualifier}"
+        return await self.session.execute_query(query)
 
     async def register_missing_functions(self, functions: list[dict[str, Any]]) -> None:
         """Register functions defined in the snowflake sql directory.
@@ -747,6 +786,56 @@ class BaseSchemaInitializer(ABC):
     @classmethod
     def _normalize_casings(cls, identifiers: list[str]) -> list[str]:
         return [cls._normalize_casing(x) for x in identifiers]
+
+    @classmethod
+    def remove_materialized_tables(cls, table_names: list[str]) -> list[str]:
+        """
+        Remove materialized tables from the list of table names
+
+        Parameters
+        ----------
+        table_names: list[str]
+            List of table names to filter
+
+        Returns
+        -------
+        list[str]
+        """
+        out = []
+        materialized_table_prefixes = {
+            cls._normalize_casing(name) for name in MaterializedTableNamePrefix.all()
+        }
+        for table_name in table_names:
+            for prefix in materialized_table_prefixes:
+                if cls._normalize_casing(table_name).startswith(prefix):
+                    break
+            else:
+                out.append(table_name)
+        return out
+
+    async def list_droppable_tables_in_working_schema(self) -> list[str]:
+        """
+        List tables in the working schema that can be dropped without losing data. These are the
+        tables that will be reinstated by WorkingSchemaService when recreating the working schema.
+
+        Returns
+        -------
+        list[str]
+        """
+        table_names = await self.session.list_tables(
+            self.session.database_name, self.session.schema_name
+        )
+        return self.remove_materialized_tables(table_names)
+
+    @property
+    def _schema_qualifier(self) -> str:
+        db_quoted = sql_to_string(
+            quoted_identifier(self.session.database_name), self.session.source_type
+        )
+        schema_quoted = sql_to_string(
+            quoted_identifier(self.session.schema_name), self.session.source_type
+        )
+        return f"{db_quoted}.{schema_quoted}"
 
 
 class MetadataSchemaInitializer:

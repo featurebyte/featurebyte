@@ -7,6 +7,7 @@ from typing import Any
 
 from bson import ObjectId
 
+from featurebyte.enum import MaterializedTableNamePrefix
 from featurebyte.models.base import FeatureByteBaseDocumentModel
 from featurebyte.models.batch_request_table import BatchRequestTableModel
 from featurebyte.persistent import Persistent
@@ -25,7 +26,7 @@ class BatchRequestTableService(
     """
 
     document_class = BatchRequestTableModel
-    materialized_table_name_prefix = "BATCH_REQUEST_TABLE"
+    materialized_table_name_prefix = MaterializedTableNamePrefix.BATCH_REQUEST_TABLE
 
     def __init__(
         self,

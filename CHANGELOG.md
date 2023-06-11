@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.3.1
+
+### 🐛 Bug Fixes
+
++ `websocket` make websocket client more resilient connection lost
++ `websocket` fix client failure when starting secure websocket connection
+
 ## v0.3.0
 
 ### 💡 Enhancements

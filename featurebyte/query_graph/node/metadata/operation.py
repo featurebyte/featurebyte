@@ -19,13 +19,13 @@ from typing import (
 )
 from typing_extensions import Annotated  # pylint: disable=wrong-import-order
 
+import dataclasses
 from collections import defaultdict
 
-from bson import json_util
-from pydantic import Field, root_validator, validator
+from pydantic import BaseModel, Field
 
 from featurebyte.enum import AggFunc, DBVarType, StrEnum, TableDataType
-from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
 
@@ -54,7 +54,8 @@ BaseColumnT = TypeVar("BaseColumnT", bound="BaseColumn")
 BaseDerivedColumnT = TypeVar("BaseDerivedColumnT", bound="BaseDerivedColumn")
 
 
-class BaseColumn(FeatureByteBaseModel):
+@dataclasses.dataclass
+class BaseColumn:
     """
     BaseColumn class
 
@@ -76,6 +77,16 @@ class BaseColumn(FeatureByteBaseModel):
     node_names: Set[str]
     node_name: str
 
+    def _get_hash_key(self) -> Tuple[Optional[str], DBVarType, bool, str]:
+        """
+        Get the hash key of the column (used to construct the hash key of the column)
+
+        Returns
+        -------
+        Tuple[Optional[str], DBVarType, bool, str]
+        """
+        return self.name, self.dtype, self.filter, self.node_name
+
     def clone(self: BaseColumnT, **kwargs: Any) -> BaseColumnT:
         """
         Clone an existing object by overriding certain attribute(s)
@@ -89,7 +100,7 @@ class BaseColumn(FeatureByteBaseModel):
         -------
         Self
         """
-        return type(self)(**{**self.dict(), **kwargs})
+        return dataclasses.replace(self, **kwargs)
 
     def clone_without_internal_nodes(
         self: BaseColumnT,
@@ -146,27 +157,22 @@ class BaseColumn(FeatureByteBaseModel):
             node_kwargs["node_name"] = graph_node_name
             if hasattr(self, "transforms"):
                 node_kwargs["transforms"] = [graph_node_transform] if graph_node_transform else []
-        return self.clone(**node_kwargs, **kwargs)
+        return dataclasses.replace(self, **{**node_kwargs, **kwargs})
 
 
+@dataclasses.dataclass
 class BaseDataColumn(BaseColumn):
     """BaseDataColumn class"""
 
     name: str
 
 
+@dataclasses.dataclass
 class BaseDerivedColumn(BaseColumn):
     """BaseDerivedColumn class"""
 
     transforms: List[str]
     columns: Sequence[BaseDataColumn]
-
-    @root_validator(pre=True)
-    @classmethod
-    def _set_filter_flag(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        if "filter" not in values:
-            values["filter"] = any(col.filter for col in values["columns"])
-        return values
 
     @staticmethod
     def insert_column(
@@ -274,6 +280,7 @@ class BaseDerivedColumn(BaseColumn):
             transforms=transforms,
             node_names=node_names,
             node_name=node_name,
+            filter=any(col.filter for col in columns),
         )
 
     def clone_without_internal_nodes(
@@ -298,48 +305,44 @@ class BaseDerivedColumn(BaseColumn):
         )
 
 
+@dataclasses.dataclass
 class SourceDataColumn(BaseDataColumn):
     """Source column"""
 
     table_id: Optional[PydanticObjectId]
     table_type: TableDataType
-    type: Literal[ViewDataColumnType.SOURCE] = Field(ViewDataColumnType.SOURCE, const=True)
-    filter: bool = Field(default=False)
+    filter: bool
+    type: Literal[ViewDataColumnType.SOURCE] = ViewDataColumnType.SOURCE
 
     def __hash__(self) -> int:
-        col_dict = self.dict()
-        col_dict["node_names"] = sorted(col_dict["node_names"])
-        return hash(json_util.dumps(col_dict, sort_keys=True))
+        key = (*self._get_hash_key(), self.type, self.table_id, self.table_type)
+        return hash(key)
 
 
+@dataclasses.dataclass
 class DerivedDataColumn(BaseDerivedColumn):
     """Derived column"""
 
     columns: List[SourceDataColumn]
-    type: Literal[ViewDataColumnType.DERIVED] = Field(ViewDataColumnType.DERIVED, const=True)
+    type: Literal[ViewDataColumnType.DERIVED] = ViewDataColumnType.DERIVED
 
     def __hash__(self) -> int:
-        col_dict = self.dict()
-        col_dict["columns"] = sorted(
-            [json_util.dumps(col, sort_keys=True) for col in col_dict["columns"]]
-        )
-        col_dict["node_names"] = sorted(col_dict["node_names"])
-        return hash(json_util.dumps(col_dict, sort_keys=True))
+        columns_item = tuple(sorted([col.__hash__() for col in self.columns]))
+        key = (*self._get_hash_key(), self.type, columns_item)
+        return hash(key)
 
 
 ViewDataColumn = Annotated[Union[SourceDataColumn, DerivedDataColumn], Field(discriminator="type")]
 
 
+@dataclasses.dataclass
 class AggregationColumn(BaseDataColumn):
     """Aggregation column"""
 
     method: Optional[AggFunc]
-    keys: List[str]
+    keys: Sequence[str]
     window: Optional[str]
     category: Optional[str]
-    type: Literal[FeatureDataColumnType.AGGREGATION] = Field(
-        FeatureDataColumnType.AGGREGATION, const=True
-    )
     column: Optional[ViewDataColumn]
     aggregation_type: Literal[
         NodeType.GROUPBY,
@@ -348,11 +351,21 @@ class AggregationColumn(BaseDataColumn):
         NodeType.AGGREGATE_AS_AT,
         NodeType.REQUEST_COLUMN,
     ]
+    type: Literal[FeatureDataColumnType.AGGREGATION] = FeatureDataColumnType.AGGREGATION
 
     def __hash__(self) -> int:
-        col_dict = self.dict()
-        col_dict["node_names"] = sorted(col_dict["node_names"])
-        return hash(json_util.dumps(col_dict, sort_keys=True))
+        key = (
+            *self._get_hash_key(),
+            self.type,
+            # specific to aggregation column
+            self.method,
+            tuple(sorted(self.keys)),
+            self.window,
+            self.category,
+            self.column.__hash__() if self.column else None,
+            self.aggregation_type,
+        )
+        return hash(key)
 
     def clone_without_internal_nodes(
         self,
@@ -378,21 +391,17 @@ class AggregationColumn(BaseDataColumn):
         )
 
 
+@dataclasses.dataclass
 class PostAggregationColumn(BaseDerivedColumn):
     """Post aggregation column"""
 
     columns: List[AggregationColumn]
-    type: Literal[FeatureDataColumnType.POST_AGGREGATION] = Field(
-        FeatureDataColumnType.POST_AGGREGATION, const=True
-    )
+    type: Literal[FeatureDataColumnType.POST_AGGREGATION] = FeatureDataColumnType.POST_AGGREGATION
 
     def __hash__(self) -> int:
-        col_dict = self.dict()
-        col_dict["columns"] = sorted(
-            [json_util.dumps(col, sort_keys=True) for col in col_dict["columns"]]
-        )
-        col_dict["node_names"] = sorted(col_dict["node_names"])
-        return hash(json_util.dumps(col_dict, sort_keys=True))
+        columns_item = tuple(sorted([col.__hash__() for col in self.columns]))
+        key = (*self._get_hash_key(), self.type, columns_item)
+        return hash(key)
 
 
 FeatureDataColumn = Annotated[
@@ -400,7 +409,7 @@ FeatureDataColumn = Annotated[
 ]
 
 
-class GroupOperationStructure(FeatureByteBaseModel):
+class GroupOperationStructure(BaseModel):
     """GroupOperationStructure class"""
 
     source_columns: List[SourceDataColumn] = Field(default_factory=list)
@@ -423,21 +432,31 @@ class GroupOperationStructure(FeatureByteBaseModel):
         return list(set(table_ids))
 
 
-class OperationStructure(FeatureByteBaseModel):
+@dataclasses.dataclass
+class OperationStructure:
     """NodeOperationStructure class"""
 
     # When NodeOutputType is:
     # - NodeOutputType.VIEW -> columns represents the output columns
     # - NodeOutputType.FEATURE -> columns represents the input columns
-    columns: List[ViewDataColumn] = Field(default_factory=list)
-    aggregations: List[FeatureDataColumn] = Field(default_factory=list)
     output_type: NodeOutputType
     output_category: NodeOutputCategory
     row_index_lineage: Tuple[str, ...]
-    is_time_based: bool = Field(default=False)
+    columns: List[ViewDataColumn] = dataclasses.field(default_factory=list)
+    aggregations: List[FeatureDataColumn] = dataclasses.field(default_factory=list)
+    is_time_based: bool = False
 
-    def __init__(self, **kwargs: Any):
-        super().__init__(**kwargs)
+    @staticmethod
+    def _deduplicate(columns: List[Any]) -> List[Any]:
+        output: Dict[Any, None] = {}
+        for col in columns:
+            if col not in output:
+                output[col] = None
+        return list(output)
+
+    def __post_init__(self) -> None:
+        self.columns = self._deduplicate(self.columns)
+        self.aggregations = self._deduplicate(self.aggregations)
         if self.output_category == NodeOutputCategory.VIEW:
             # make sure there are no duplicated column names
             assert len(self.columns) == len(set(col.name for col in self.columns))
@@ -514,15 +533,6 @@ class OperationStructure(FeatureByteBaseModel):
         if self.output_category == NodeOutputCategory.VIEW:
             return [col.name for col in self.columns if col.name]
         return [agg.name for agg in self.aggregations if agg.name]
-
-    @validator("columns", "aggregations")
-    @classmethod
-    def _validator(cls, value: List[Any]) -> List[Any]:
-        output: Dict[Any, None] = {}
-        for obj in value:
-            if obj not in output:
-                output[obj] = None
-        return list(output)
 
     @overload
     def _split_column_by_type(

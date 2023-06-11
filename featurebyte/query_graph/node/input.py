@@ -393,6 +393,7 @@ class InputNode(BaseNode):
                     node_names={self.name},
                     node_name=self.name,
                     dtype=column.dtype,
+                    filter=False,
                 )
                 for column in self.parameters.columns
             ],

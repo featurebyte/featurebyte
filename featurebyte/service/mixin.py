@@ -46,7 +46,7 @@ class OpsServiceMixin:
         -------
         List of sorted document_ids
         """
-        return sorted(document_ids + [document_id])  # type: ignore
+        return sorted(set(document_ids + [document_id]))  # type: ignore
 
     @staticmethod
     def exclude_object_id(
@@ -66,7 +66,7 @@ class OpsServiceMixin:
         -------
         List of sorted document_ids
         """
-        return sorted(ObjectId(doc_id) for doc_id in document_ids if doc_id != document_id)
+        return sorted(set(ObjectId(doc_id) for doc_id in document_ids if doc_id != document_id))
 
     @staticmethod
     def conditional_return(document: GeneralT, condition: bool) -> Optional[GeneralT]:
