@@ -317,25 +317,12 @@ class SnowflakeSchemaInitializer(BaseSchemaInitializer):
         create_schema_query = f'CREATE SCHEMA "{self.session.schema_name}"'
         await self.session.execute_query(create_schema_query)
 
-    @property
-    def _schema_qualifier(self) -> str:
-        return f'"{self.session.database_name}"."{self.session.schema_name}"'
-
-    def _fully_qualified(self, name: str) -> str:
-        if "(" in name:
-            # handle functions with arguments, e.g. MY_UDF(a INT, b INT)
-            parts = name.split("(", 1)
-            name = f"{quoted_identifier(parts[0])}({parts[1]}"
-        else:
-            name = f"{quoted_identifier(name)}"
-        return f"{self._schema_qualifier}.{name}"
-
-    async def _list_objects(self, object_type: str) -> pd.DataFrame:
-        query = f"SHOW {object_type} IN SCHEMA {self._schema_qualifier}"
-        return await self.session.execute_query(query)
+    async def drop_object(self, object_type: str, name: str) -> None:
+        query = f"DROP {object_type} {self._fully_qualified(name)}"
+        await self.session.execute_query(query)
 
     async def list_functions(self) -> list[str]:
-        df_result = await self._list_objects("USER FUNCTIONS")
+        df_result = await self.list_objects("USER FUNCTIONS")
         out = []
         if df_result is not None:
             df_result = df_result[df_result["schema_name"] == self.session.schema_name]
@@ -343,7 +330,7 @@ class SnowflakeSchemaInitializer(BaseSchemaInitializer):
         return out
 
     async def list_procedures(self) -> list[str]:
-        df_result = await self._list_objects("PROCEDURES")
+        df_result = await self.list_objects("PROCEDURES")
         out = []
         if df_result is not None:
             df_result = df_result[df_result["schema_name"] == self.session.schema_name]
@@ -354,27 +341,32 @@ class SnowflakeSchemaInitializer(BaseSchemaInitializer):
     def _format_arguments_to_be_droppable(arguments_list: list[str]) -> list[str]:
         return [arguments.split(" RETURN", 1)[0] for arguments in arguments_list]
 
-    async def _drop_object(self, object_type: str, name: str) -> None:
-        query = f"DROP {object_type} {self._fully_qualified(name)}"
-        await self.session.execute_query(query)
-
     async def drop_all_objects_in_working_schema(self) -> None:
         if not await self.schema_exists():
             return
 
-        objects = await self._list_objects("USER FUNCTIONS")
+        objects = await self.list_objects("USER FUNCTIONS")
         if objects.shape[0]:
             for func_name_with_args in self._format_arguments_to_be_droppable(
                 objects["arguments"].tolist()
             ):
-                await self._drop_object("FUNCTION", func_name_with_args)
+                await self.drop_object("FUNCTION", func_name_with_args)
 
-        objects = await self._list_objects("USER PROCEDURES")
+        objects = await self.list_objects("USER PROCEDURES")
         if objects.shape[0]:
             for func_name_with_args in self._format_arguments_to_be_droppable(
                 objects["arguments"].tolist()
             ):
-                await self._drop_object("PROCEDURE", func_name_with_args)
+                await self.drop_object("PROCEDURE", func_name_with_args)
 
         for name in await self.list_droppable_tables_in_working_schema():
-            await self._drop_object("TABLE", name)
+            await self.drop_object("TABLE", name)
+
+    def _fully_qualified(self, name: str) -> str:
+        if "(" in name:
+            # handle functions with arguments, e.g. MY_UDF(a INT, b INT)
+            parts = name.split("(", 1)
+            name = f"{quoted_identifier(parts[0])}({parts[1]}"
+        else:
+            name = f"{quoted_identifier(name)}"
+        return f"{self._schema_qualifier}.{name}"
