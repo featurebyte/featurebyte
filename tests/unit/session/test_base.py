@@ -103,6 +103,9 @@ def base_schema_initializer_test_fixture():
         async def drop_all_objects_in_working_schema(self) -> None:
             return
 
+        async def drop_object(self, object_type: str, name: str) -> None:
+            return
+
     return BaseSchemaInitializerTestFixture
 
 
