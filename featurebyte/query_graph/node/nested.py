@@ -75,11 +75,11 @@ class ProxyInputNode(BaseNode):
         operation_structure = global_state.proxy_input_operation_structures[proxy_input_order]
         return OperationStructure(
             columns=[
-                col.clone(node_names=[self.name], node_name=self.name)
+                col.clone(node_names={self.name}, node_name=self.name)
                 for col in operation_structure.columns
             ],
             aggregations=[
-                agg.clone(node_names=[self.name], node_name=self.name)
+                agg.clone(node_names={self.name}, node_name=self.name)
                 for agg in operation_structure.aggregations
             ],
             output_type=operation_structure.output_type,
