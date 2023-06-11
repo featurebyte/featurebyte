@@ -171,6 +171,7 @@ def add_pruning_sensitive_operation(
             )
         ),
         aggressive=True,
+        operation_structure_info=operation_structure_info,
     )
 
     # flatten the pruned graph before further operations
