@@ -7,15 +7,16 @@ from typing import Dict, List
 
 from dataclasses import dataclass
 
-from featurebyte.enum import StrEnum
+from featurebyte.enum import OrderedStrEnum, StrEnum
 
 
-class DepType(StrEnum):
+class DepType(OrderedStrEnum):
     """
     DepType enums
 
     They are prefixed with numbers to ensure that they are initialized in the correct order. For example, if a class
-    has dependencies on all 4 types, the dependencies will be initialized in the followingo rder
+    has dependencies on all 4 types, the dependencies will be initialized in the following order:
+
     - no deps
     - basic services
     - services with extra deps

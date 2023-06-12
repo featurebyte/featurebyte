@@ -48,6 +48,9 @@ def get_all_deps_for_key(
 
     # Recursively get all dependencies of the children
     for dep in dependencies:
+        # Can skip if the dependency has been traversed before already.
+        if dep in all_deps:
+            continue
         children_deps = get_all_deps_for_key(dep, class_def_mapping, base_deps)
         children_deps.extend(all_deps)
         all_deps = children_deps
