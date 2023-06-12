@@ -3,6 +3,7 @@ Tile Generate online store Job Script
 """
 from typing import Any, Union
 
+import textwrap
 from datetime import datetime
 
 import pandas as pd
@@ -94,6 +95,7 @@ class TileScheduleOnlineStore(BaselSqlModel):
                 InternalName.ONLINE_STORE_RESULT_NAME_COLUMN
             )
             quoted_value_column = self.quote_column(InternalName.ONLINE_STORE_VALUE_COLUMN)
+            quoted_version_column = self.quote_column(InternalName.ONLINE_STORE_VERSION_COLUMN)
             quoted_entity_columns = (
                 [self.quote_column(col.replace('"', "")) for col in f_entity_columns.split(",")]
                 if f_entity_columns
@@ -109,7 +111,7 @@ class TileScheduleOnlineStore(BaselSqlModel):
                 # feature store table does not exist, create table with the input feature sql
                 create_sql = construct_create_table_query(
                     fs_table,
-                    f"select {column_names} from ({f_sql})",
+                    f"select {column_names}, 0 AS {quoted_version_column} from ({f_sql})",
                     session=self._session,
                     partition_keys=quoted_result_name_column,
                 )
@@ -130,41 +132,30 @@ class TileScheduleOnlineStore(BaselSqlModel):
             else:
                 # feature store table already exists, insert records with the input feature sql
 
-                value_args = []
-                if quoted_entity_columns:
-                    value_args.extend([f"b.{element}" for element in quoted_entity_columns])
-                value_args += [f"b.{quoted_result_name_column}", f"b.{quoted_value_column}"]
-                value_args = ", ".join(value_args)  # type: ignore[assignment]
+                # get current version
+                current_version = (
+                    await self._session.execute_query(
+                        f"""
+                        SELECT MAX({quoted_version_column}) AS OUT
+                        FROM {fs_table}
+                        WHERE {quoted_result_name_column} = '{f_name}'
+                        """
+                    )
+                ).iloc[0]["OUT"]
+                if pd.isna(current_version):
+                    next_version = 0
+                else:
+                    next_version = current_version + 1
 
-                # Note: the last condition of "a.{quoted_result_name_column} = '{f_name}'" is
-                # required to avoid the ConcurrentAppendException error in delta tables in addition
-                # to setting the partition keys.
-                keys = " AND ".join(
-                    [f"a.{col} = b.{col}" for col in quoted_entity_columns]
-                    + [f"a.{quoted_result_name_column} = b.{quoted_result_name_column}"]
-                    + [f"a.{quoted_result_name_column} = '{f_name}'"]
-                )
-
-                # update or insert feature values for entities that are in entity universe
-                merge_sql = f"""
-                     merge into {fs_table} a using ({f_sql}) b
-                         on {keys}
-                         when matched then
-                             update set
-                               a.{quoted_value_column} = b.{quoted_value_column},
-                               a.UPDATED_AT = to_timestamp('{current_ts}')
-                         when not matched then
-                             insert ({column_names}, UPDATED_AT)
-                                 values ({value_args}, to_timestamp('{current_ts}'))
-                 """
-
-                await self.retry_sql(sql=merge_sql)
-
-                # remove feature values for entities that are not in entity universe
-                remove_values_sql = f"""
-                    UPDATE {fs_table} SET {quoted_value_column} = NULL
-                    WHERE
-                      UPDATED_AT < to_timestamp('{current_ts}')
-                      AND {quoted_result_name_column} = '{f_name}'
+                insert_query = textwrap.dedent(
+                    f"""
+                    INSERT INTO {fs_table} ({column_names}, {quoted_version_column}, UPDATED_AT)
+                    SELECT {column_names}, {next_version}, to_timestamp('{current_ts}')
+                    FROM ({f_sql})
                     """
-                await self.retry_sql(sql=remove_values_sql)
+                )
+                await self._session.execute_query(insert_query)
+                logger.debug(
+                    "Done inserting to online store",
+                    extra={"fs_table": fs_table, "result_name": f_name, "version": next_version},
+                )

@@ -476,13 +476,58 @@ class TileBasedAggregator(Aggregator[TileBasedAggregationSpec], ABC):
         """
         literal_agg_result_names = [make_literal_value(name) for name in agg_result_names]
         value_column = self.adapter.online_store_pivot_prepare_value_column(dtype)
+
+        # Get the latest version of the online store table
+        latest_result_version = (
+            select(
+                quoted_identifier(InternalName.ONLINE_STORE_RESULT_NAME_COLUMN),
+                alias_(
+                    expressions.Max(
+                        this=quoted_identifier(InternalName.ONLINE_STORE_VERSION_COLUMN)
+                    ),
+                    alias="LATEST_VERSION",
+                ),
+            )
+            .from_(table_name)
+            .group_by(
+                quoted_identifier(InternalName.ONLINE_STORE_RESULT_NAME_COLUMN),
+            )
+        )
+        latest_online_store_table = (
+            select("R.*")
+            .from_(latest_result_version.subquery(alias="L"))
+            .join(
+                table_name,
+                join_alias="R",
+                join_type="inner",
+                on=expressions.and_(
+                    expressions.EQ(
+                        this=get_qualified_column_identifier(
+                            InternalName.ONLINE_STORE_RESULT_NAME_COLUMN, "R"
+                        ),
+                        expression=get_qualified_column_identifier(
+                            InternalName.ONLINE_STORE_RESULT_NAME_COLUMN, "L"
+                        ),
+                    ),
+                    expressions.EQ(
+                        this=get_qualified_column_identifier(
+                            InternalName.ONLINE_STORE_VERSION_COLUMN, "R"
+                        ),
+                        expression=get_qualified_column_identifier("LATEST_VERSION", "L"),
+                    ),
+                ),
+            )
+        )
+
+        # Filter the latest version of the online store table to only include the required
+        # aggregation results
         filtered_online_store = (
             select(
                 *[quoted_identifier(serving_name) for serving_name in serving_names],
                 quoted_identifier(InternalName.ONLINE_STORE_RESULT_NAME_COLUMN),
                 value_column,
             )
-            .from_(table_name)
+            .from_(latest_online_store_table.subquery())
             .where(
                 expressions.In(
                     this=quoted_identifier(InternalName.ONLINE_STORE_RESULT_NAME_COLUMN),
