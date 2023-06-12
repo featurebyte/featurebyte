@@ -7,7 +7,7 @@ from typing import Dict, List
 
 from dataclasses import dataclass
 
-from featurebyte.enum import OrderedStrEnum, StrEnum
+from featurebyte.enum import OrderedStrEnum
 
 
 class DepType(OrderedStrEnum):
