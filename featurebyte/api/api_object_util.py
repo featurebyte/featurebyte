@@ -4,6 +4,7 @@ API Object Util
 from typing import Any, Optional
 
 import ctypes
+import os
 import threading
 
 from featurebyte.config import Configurations
@@ -113,3 +114,17 @@ class NameAttributeUpdatableMixin:
             except RecordRetrievalException:
                 pass
         return super().__getattribute__(item)
+
+
+def is_server_mode() -> bool:
+    """
+    Check if the code is running in server mode. Server mode is used when running the SDK code inside
+    featurebyte worker.
+
+    Returns
+    -------
+    bool
+        True if the code is running in server mode
+    """
+    sdk_execution_mode = os.environ.get("FEATUREBYTE_SDK_EXECUTION_MODE")
+    return sdk_execution_mode == "SERVER"

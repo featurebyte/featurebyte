@@ -6,7 +6,6 @@ from __future__ import annotations
 
 from typing import Any, ClassVar, Dict, List, Literal, Optional, Sequence, Tuple, Type, Union, cast
 
-import os
 import time
 from http import HTTPStatus
 
@@ -16,6 +15,7 @@ from pydantic import Field, root_validator
 from typeguard import typechecked
 
 from featurebyte.api.api_object import ConflictResolution
+from featurebyte.api.api_object_util import is_server_mode
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature_job import FeatureJobMixin
 from featurebyte.api.feature_namespace import FeatureNamespace
@@ -718,8 +718,7 @@ class Feature(
         ... )["InvoiceAmountAvg_60days"]
         >>> invoice_amount_avg_60days.save()  # doctest: +SKIP
         """
-        sdk_execution_mode = os.environ.get("FEATUREBYTE_SDK_EXECUTION_MODE")
-        if sdk_execution_mode == "SERVER":
+        if is_server_mode():
             # server mode save a feature by POST /feature/ endpoint directly without running the feature definition.
             super().save(conflict_resolution=conflict_resolution, _id=_id)
         else:
