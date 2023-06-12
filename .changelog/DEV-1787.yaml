@@ -2,7 +2,7 @@
 change_type: enhancement
 
 # The name of the component
-component: feature
+component: target
 
 # (Optional) One or more tracking issues or pull requests related to the change
 issues: []
