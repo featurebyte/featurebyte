@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from typing import Any, List, Optional, Set, Tuple
 
+import pandas as pd
+
 from featurebyte.common.model_util import convert_version_string_to_dict
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.model.column_info import ColumnInfo
@@ -144,4 +146,15 @@ def version_validator(cls: Any, value: Any) -> Any:
     # DEV-556: converted older record string value to dictionary format
     if isinstance(value, str):
         return convert_version_string_to_dict(value)
+    return value
+
+
+def duration_string_validator(cls: Any, value: Any) -> Any:
+    """
+    Test whether a duration string is valid.
+    """
+    _ = cls
+    if isinstance(value, str):
+        # Try to parse using pandas#Timedelta. If it fails, a ValueError will be thrown.
+        pd.Timedelta(value)
     return value
