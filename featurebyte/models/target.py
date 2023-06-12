@@ -6,8 +6,9 @@ from __future__ import annotations
 from typing import List
 
 import pymongo
-from pydantic import Field
+from pydantic import Field, validator
 
+from featurebyte.common.validator import duration_string_validator
 from featurebyte.models.base import (
     FeatureByteCatalogBaseDocumentModel,
     PydanticObjectId,
@@ -40,6 +41,11 @@ class TargetModel(FeatureByteCatalogBaseDocumentModel):
     window: str
     blind_spot: str
     entity_ids: List[PydanticObjectId]
+
+    # pydantic validators
+    _duration_validator = validator("window", "blind_spot", pre=True, allow_reuse=True)(
+        duration_string_validator
+    )
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
