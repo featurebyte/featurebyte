@@ -3,7 +3,7 @@ This module contains Target related models
 """
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import List
 
 import pymongo
 from pydantic import Field
@@ -34,8 +34,6 @@ class TargetModel(FeatureByteCatalogBaseDocumentModel):
     # Recipe
     graph: QueryGraph = Field(allow_mutation=False)
     node_name: str
-
-    description: Optional[str]
 
     # These fields will either be inferred from the recipe, or manually provided by the user only if they're creating
     # a target without a recipe.

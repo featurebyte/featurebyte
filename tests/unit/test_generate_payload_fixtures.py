@@ -144,7 +144,6 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         name="target",
         graph=feature_sum_30m.graph,
         node_name=feature_sum_30m.node_name,
-        description="feature sum 30m description",
         window="7d",
         blind_spot="1d",
         entity_ids=[cust_id_entity.id],

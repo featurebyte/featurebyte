@@ -28,7 +28,6 @@ class TargetCreate(FeatureByteBaseModel):
     name: StrictStr
     graph: QueryGraph
     node_name: str
-    description: Optional[str]
     window: str
     blind_spot: str
     entity_ids: List[PydanticObjectId]

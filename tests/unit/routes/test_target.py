@@ -30,10 +30,10 @@ class TestTargetApi(BaseCatalogApiTestSuite):
     ]
     create_unprocessable_payload_expected_detail_pairs = [
         (
-            {**payload, "description": ["cust_id"]},
+            {**payload, "node_name": ["cust_id"]},
             [
                 {
-                    "loc": ["body", "description"],
+                    "loc": ["body", "node_name"],
                     "msg": "str type expected",
                     "type": "type_error.str",
                 }
