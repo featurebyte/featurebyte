@@ -9,7 +9,7 @@ WORKDIR /app
 COPY pyproject.toml poetry.lock /app/
 
 # Installing featurebyte dependencies
-RUN pip install poetry==1.3.1 && \
+RUN pip install poetry==1.5.1 && \
     python -m venv /opt/venv && \
     poetry config virtualenvs.create false && \
     . /opt/venv/bin/activate && \
