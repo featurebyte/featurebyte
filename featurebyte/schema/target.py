@@ -47,7 +47,6 @@ class TargetUpdate(FeatureByteBaseModel):
     """
 
     name: StrictStr
-    description: str
 
 
 class TargetInfo(FeatureByteBaseModel):

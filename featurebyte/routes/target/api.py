@@ -59,7 +59,7 @@ async def list_target(
 @router.get("/{target_id}", response_model=TargetModel)
 async def get_target(request: Request, target_id: PydanticObjectId) -> TargetModel:
     """
-    Retrieve relationship info
+    Retrieve Target
     """
     controller = request.state.app_container.target_controller
     target: TargetModel = await controller.get(
