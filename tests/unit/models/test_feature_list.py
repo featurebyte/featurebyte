@@ -67,7 +67,7 @@ def feature_list_namespace_model_dict_fixture():
 def test_feature_list_model(feature_list_model_dict):
     """Test feature list model"""
     feature_list = FeatureListModel.parse_obj(feature_list_model_dict)
-    serialized_feature_list = feature_list.dict(exclude={"id": True})
+    serialized_feature_list = feature_list.dict(exclude={"id": True}, by_alias=True)
     feature_list_dict_sorted_ids = {
         key: sorted(value) if key.endswith("_ids") and key != "feature_ids" else value
         for key, value in feature_list_model_dict.items()
@@ -96,7 +96,9 @@ def test_feature_list_model(feature_list_model_dict):
 def test_feature_list_namespace_model(feature_list_namespace_model_dict):
     """Test feature list namespace model"""
     feature_list_namespace = FeatureListNamespaceModel.parse_obj(feature_list_namespace_model_dict)
-    serialized_feature_list_namespace = feature_list_namespace.dict(exclude={"id": True})
+    serialized_feature_list_namespace = feature_list_namespace.dict(
+        exclude={"id": True}, by_alias=True
+    )
     feature_list_namespace_model_dict_sorted_ids = {
         key: sorted(value) if key.endswith("_ids") else value
         for key, value in feature_list_namespace_model_dict.items()

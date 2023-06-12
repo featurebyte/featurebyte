@@ -442,7 +442,7 @@ class FeatureController(
         feature = await self.service.get_document(feature_id)
         return await self.feature_store_warehouse_service.get_feature_job_logs(
             feature_store_id=feature.tabular_source.feature_store_id,
-            features=[ExtendedFeatureModel(**feature.dict())],
+            features=[ExtendedFeatureModel(**feature.dict(by_alias=True))],
             hour_limit=hour_limit,
             get_credential=get_credential,
         )

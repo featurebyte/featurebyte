@@ -24,6 +24,8 @@ class ContextModel(FeatureByteCatalogBaseDocumentModel):
         Graph to store the context view
     """
 
+    # TODO: make graph attribute lazy
+
     entity_ids: List[PydanticObjectId]
     graph: Optional[QueryGraph]
     node_name: Optional[str]

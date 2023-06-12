@@ -105,7 +105,6 @@ class OnlineEnableService(BaseService):
         self,
         feature_namespace_id: ObjectId,
         feature: FeatureModel,
-        document: Optional[FeatureNamespaceModel] = None,
         return_document: bool = True,
     ) -> Optional[FeatureNamespaceModel]:
         """
@@ -117,8 +116,6 @@ class OnlineEnableService(BaseService):
             FeatureNamespace ID
         feature: FeatureModel
             Updated Feature object
-        document: Optional[FeatureNamespaceModel]
-            Document to be updated (when provided, this method won't query persistent for retrieval)
         return_document: bool
             Whether to return updated document
 
@@ -159,7 +156,7 @@ class OnlineEnableService(BaseService):
         task_manager: Optional[TaskManager]
             TaskManager object
         """
-        extended_feature_model = ExtendedFeatureModel(**feature.dict())
+        extended_feature_model = ExtendedFeatureModel(**feature.dict(by_alias=True))
         online_feature_spec = OnlineFeatureSpec(feature=extended_feature_model)
 
         if not online_feature_spec.is_online_store_eligible:

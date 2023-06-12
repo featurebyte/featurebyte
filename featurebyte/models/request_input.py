@@ -3,11 +3,11 @@ RequestInput is the base class for all request input types.
 """
 from __future__ import annotations
 
-from typing import Dict, List, Literal, Optional, cast
+from typing import Any, Dict, List, Literal, Optional, cast
 
 from abc import abstractmethod
 
-from pydantic import Field, StrictStr
+from pydantic import Field, PrivateAttr, StrictStr
 from sqlglot.expressions import Select
 
 from featurebyte.enum import SourceType, StrEnum
@@ -185,9 +185,30 @@ class ViewRequestInput(BaseRequestInput):
         The type of the input. Must be VIEW for this class
     """
 
-    graph: QueryGraphModel
     node_name: StrictStr
     type: Literal[RequestInputType.VIEW] = Field(RequestInputType.VIEW, const=True)
+
+    # special handling for those attributes that are expensive to deserialize
+    # internal_* is used to store the raw data from persistence, _* is used as a cache
+    internal_graph: Any = Field(alias="graph")
+    _graph: Optional[QueryGraphModel] = PrivateAttr(default=None)
+
+    @property
+    def graph(self) -> QueryGraphModel:
+        """
+        Get the graph. If the graph is not loaded, load it first.
+
+        Returns
+        -------
+        QueryGraphModel
+        """
+        # TODO: make this a cached_property for pydantic v2
+        if self._graph is None:
+            if isinstance(self.internal_graph, dict):
+                self._graph = QueryGraphModel(**self.internal_graph)
+            else:
+                self._graph = self.internal_graph
+        return self._graph
 
     def get_query_expr(self, source_type: SourceType) -> Select:
         return get_view_expr(graph=self.graph, node_name=self.node_name, source_type=source_type)
