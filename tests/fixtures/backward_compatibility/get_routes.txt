@@ -25,4 +25,5 @@
 /static_source_table
 /status
 /table
+/target
 /task

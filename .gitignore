@@ -120,7 +120,7 @@ docs/_build/
 docs/source/_autosummary/
 
 # PyBuilder
-target/
+/target/
 
 # pyenv
 .python-version

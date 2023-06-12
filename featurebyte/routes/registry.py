@@ -30,6 +30,7 @@ from featurebyte.routes.scd_table.controller import SCDTableController
 from featurebyte.routes.semantic.controller import SemanticController
 from featurebyte.routes.static_source_table.controller import StaticSourceTableController
 from featurebyte.routes.table.controller import TableController
+from featurebyte.routes.target.controller import TargetController
 from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.service.catalog import CatalogService
@@ -70,6 +71,7 @@ from featurebyte.service.static_source_table import StaticSourceTableService
 from featurebyte.service.table import TableService
 from featurebyte.service.table_columns_info import TableColumnsInfoService
 from featurebyte.service.table_status import TableStatusService
+from featurebyte.service.target import TargetService
 from featurebyte.service.user_service import UserService
 from featurebyte.service.version import VersionService
 from featurebyte.service.view_construction import ViewConstructionService
@@ -218,6 +220,7 @@ app_container_config.add_basic_service("entity_relationship_service", EntityRela
 app_container_config.add_basic_service("semantic_relationship_service", SemanticRelationshipService)
 app_container_config.add_basic_service("info_service", InfoService)
 app_container_config.add_basic_service("catalog_service", CatalogService)
+app_container_config.add_basic_service("target_service", TargetService)
 app_container_config.add_basic_service("relationship_info_service", RelationshipInfoService)
 app_container_config.add_basic_service("user_service", UserService)
 app_container_config.add_basic_service("view_construction_service", ViewConstructionService)
@@ -228,6 +231,11 @@ app_container_config.add_service_with_extra_deps(
     ["feature_store_warehouse_service"],
 )
 
+app_container_config.add_controller(
+    "target_controller",
+    TargetController,
+    ["target_service", "info_service"],
+)
 app_container_config.add_controller(
     "relationship_info_controller",
     RelationshipInfoController,
