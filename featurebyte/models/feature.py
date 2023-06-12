@@ -272,13 +272,13 @@ class FeatureModel(FeatureByteCatalogBaseDocumentModel):
         if self._graph is None:
             if isinstance(self.internal_graph, QueryGraph):
                 self._graph = self.internal_graph
-
-            if isinstance(self.internal_graph, dict):
-                graph_dict = self.internal_graph
             else:
-                # for example, QueryGraphModel
-                graph_dict = self.internal_graph.dict(by_alias=True)
-            self._graph = QueryGraph(**graph_dict)
+                if isinstance(self.internal_graph, dict):
+                    graph_dict = self.internal_graph
+                else:
+                    # for example, QueryGraphModel
+                    graph_dict = self.internal_graph.dict(by_alias=True)
+                self._graph = QueryGraph(**graph_dict)
         return self._graph
 
     def extract_pruned_graph_and_node(self, **kwargs: Any) -> tuple[QueryGraphModel, Node]:
