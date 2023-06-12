@@ -50,9 +50,9 @@ def test_feature_model(feature_model_dict, api_object_to_id):
     feature = FeatureModel(**feature_model_dict)
     feature_json = feature.json(by_alias=True)
     loaded_feature = FeatureModel.parse_raw(feature_json)
-    feature_dict = feature.dict()
+    feature_dict = feature.dict(by_alias=True)
     assert loaded_feature.id == feature.id
-    assert loaded_feature.dict() == feature_dict
+    assert loaded_feature.dict(by_alias=True) == feature_dict
     assert feature_dict == {
         "created_at": None,
         "deployed_feature_list_ids": [],
@@ -65,7 +65,7 @@ def test_feature_model(feature_model_dict, api_object_to_id):
             "edges": feature_dict["graph"]["edges"],
             "nodes": feature_dict["graph"]["nodes"],
         },
-        "id": ObjectId(feature_model_dict["_id"]),
+        "_id": ObjectId(feature_model_dict["_id"]),
         "name": "sum_30m",
         "node_name": "project_1",
         "online_enabled": False,

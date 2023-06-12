@@ -7,7 +7,7 @@ from typing import Any, List, Optional
 
 import pymongo
 from bson.objectid import ObjectId
-from pydantic import Field, StrictStr, root_validator, validator
+from pydantic import Field, PrivateAttr, StrictStr, root_validator, validator
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import construct_sort_validator, version_validator
@@ -193,13 +193,17 @@ class FeatureModel(FeatureByteCatalogBaseDocumentModel):
     """
 
     dtype: DBVarType = Field(allow_mutation=False, default=DBVarType.UNKNOWN)
-    graph: QueryGraph = Field(allow_mutation=False)
     node_name: str
     tabular_source: TabularSource = Field(allow_mutation=False)
     readiness: FeatureReadiness = Field(allow_mutation=False, default=FeatureReadiness.DRAFT)
     version: VersionIdentifier = Field(allow_mutation=False, default=None)
     online_enabled: bool = Field(allow_mutation=False, default=False)
     definition: Optional[str] = Field(allow_mutation=False, default=None)
+
+    # special handling for those attributes that are expensive to deserialize
+    # internal_* is used to store the raw data from persistence, _* is used to store the deserialized data
+    internal_graph: Any = Field(allow_mutation=False, alias="graph")
+    _graph: Optional[QueryGraph] = PrivateAttr(default=None)
 
     # list of IDs attached to this feature
     entity_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
@@ -226,7 +230,7 @@ class FeatureModel(FeatureByteCatalogBaseDocumentModel):
         if any(not x for x in derived_attributes):
             # only derive attributes if any of them is missing
             # extract table ids & entity ids from the graph
-            graph = values["graph"]
+            graph = QueryGraph(**values["internal_graph"])
             node_name = values["node_name"]
             values["primary_table_ids"] = graph.get_primary_table_ids(node_name=node_name)
             values["table_ids"] = graph.get_table_ids(node_name=node_name)
@@ -253,6 +257,29 @@ class FeatureModel(FeatureByteCatalogBaseDocumentModel):
         """
 
         return self.graph.get_node_by_name(self.node_name)
+
+    @property
+    def graph(self) -> QueryGraph:
+        """
+        Retrieve graph
+
+        Returns
+        -------
+        QueryGraph
+            QueryGraph object
+        """
+        # TODO: make this a cached_property for pydantic v2
+        if self._graph is None:
+            if isinstance(self.internal_graph, QueryGraph):
+                self._graph = self.internal_graph
+
+            if isinstance(self.internal_graph, dict):
+                graph_dict = self.internal_graph
+            else:
+                # for example, QueryGraphModel
+                graph_dict = self.internal_graph.dict(by_alias=True)
+            self._graph = QueryGraph(**graph_dict)
+        return self._graph
 
     def extract_pruned_graph_and_node(self, **kwargs: Any) -> tuple[QueryGraphModel, Node]:
         """
