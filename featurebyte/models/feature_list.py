@@ -10,7 +10,7 @@ from collections import defaultdict
 
 import pymongo
 from bson.objectid import ObjectId
-from pydantic import Field, StrictStr, root_validator, validator
+from pydantic import Field, PrivateAttr, StrictStr, root_validator, validator
 from typeguard import typechecked
 
 from featurebyte.common.doc_util import FBAutoDoc
@@ -478,9 +478,11 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
     deployed: bool = Field(allow_mutation=False, default=False)
 
     # special handling for those attributes that are expensive to deserialize
+    # internal_* is used to store the raw data from persistence, _* is used to store the deserialized data
     internal_feature_clusters: Optional[List[Any]] = Field(
         allow_mutation=False, alias="feature_clusters"
-    )  # DEV-556
+    )
+    _feature_clusters: Optional[List[FeatureCluster]] = PrivateAttr(default=None)
 
     # list of IDs attached to this feature list
     feature_ids: List[PydanticObjectId]
@@ -583,7 +585,11 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         # TODO: make this a cached_property for pydantic v2
         if self.internal_feature_clusters is None:
             return None
-        return [FeatureCluster(**cluster) for cluster in self.internal_feature_clusters]
+        if self._feature_clusters is None:
+            self._feature_clusters = [
+                FeatureCluster(**cluster) for cluster in self.internal_feature_clusters
+            ]
+        return self._feature_clusters
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
