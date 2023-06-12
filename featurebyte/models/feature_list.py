@@ -478,7 +478,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
     deployed: bool = Field(allow_mutation=False, default=False)
 
     # special handling for those attributes that are expensive to deserialize
-    # internal_* is used to store the raw data from persistence, _* is used to store the deserialized data
+    # internal_* is used to store the raw data from persistence, _* is used as a cache
     internal_feature_clusters: Optional[List[Any]] = Field(
         allow_mutation=False, alias="feature_clusters"
     )

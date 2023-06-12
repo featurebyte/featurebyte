@@ -201,7 +201,7 @@ class FeatureModel(FeatureByteCatalogBaseDocumentModel):
     definition: Optional[str] = Field(allow_mutation=False, default=None)
 
     # special handling for those attributes that are expensive to deserialize
-    # internal_* is used to store the raw data from persistence, _* is used to store the deserialized data
+    # internal_* is used to store the raw data from persistence, _* is used as a cache
     internal_graph: Any = Field(allow_mutation=False, alias="graph")
     _graph: Optional[QueryGraph] = PrivateAttr(default=None)
 
@@ -261,7 +261,7 @@ class FeatureModel(FeatureByteCatalogBaseDocumentModel):
     @property
     def graph(self) -> QueryGraph:
         """
-        Retrieve graph
+        Get the graph. If the graph is not loaded, load it first.
 
         Returns
         -------
