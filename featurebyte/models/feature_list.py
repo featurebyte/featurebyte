@@ -464,12 +464,11 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         Feature list namespace id of the object
     created_at: Optional[datetime]
         Datetime when the FeatureList was first saved or published
-    feature_clusters: List[FeatureCluster]
+    internal_feature_clusters: Optional[List[Any]]
         List of combined graphs for features from the same feature store
     """
 
     version: VersionIdentifier = Field(allow_mutation=False, description="Feature list version")
-    feature_clusters: Optional[List[FeatureCluster]] = Field(allow_mutation=False)  # DEV-556
     relationships_info: Optional[List[EntityRelationshipInfo]] = Field(
         allow_mutation=False, default=None  # DEV-556
     )
@@ -477,6 +476,11 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         allow_mutation=False, default_factory=list
     )
     deployed: bool = Field(allow_mutation=False, default=False)
+
+    # special handling for those attributes that are expensive to deserialize
+    internal_feature_clusters: Optional[List[Any]] = Field(
+        allow_mutation=False, alias="feature_clusters"
+    )  # DEV-556
 
     # list of IDs attached to this feature list
     feature_ids: List[PydanticObjectId]
@@ -566,6 +570,20 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
                 )
             )
         return feature_clusters
+
+    @property
+    def feature_clusters(self) -> Optional[List[FeatureCluster]]:
+        """
+        List of combined graphs for features from the same feature store
+
+        Returns
+        -------
+        Optional[List[FeatureCluster]]
+        """
+        # TODO: make this a cached_property for pydantic v2
+        if self.internal_feature_clusters is None:
+            return None
+        return [FeatureCluster(**cluster) for cluster in self.internal_feature_clusters]
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
