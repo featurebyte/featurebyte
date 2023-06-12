@@ -12,6 +12,7 @@ import pytest_asyncio
 from pandas.testing import assert_frame_equal
 
 from featurebyte.app import get_celery
+from featurebyte.enum import InternalName
 from featurebyte.feature_manager.manager import FeatureManager
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.base import DEFAULT_CATALOG_ID, User
@@ -29,8 +30,13 @@ def feature_sql_fixture():
     Feature sql fixture
     """
     return f"""
-    SELECT *, 'test_quote', 1 as "sum_30m", 2 as "sum_30m_2", row_number() over (order by CUST_ID desc) as "cust_id" FROM TEMP_TABLE
-"""
+        SELECT
+          row_number() over (order by CUST_ID desc) as "cust_id",
+          'sum_30m' AS {InternalName.ONLINE_STORE_RESULT_NAME_COLUMN},
+          1 AS {InternalName.ONLINE_STORE_VALUE_COLUMN},
+          'test_quote'
+        FROM TEMP_TABLE
+        """
 
 
 @pytest.fixture(name="feature_store_table_name")
@@ -243,8 +249,9 @@ async def test_online_enabled_feature_spec(
     result = await session.execute_query(sql)
     assert len(result) == 100
     expect_cols = online_feature_spec.precompute_queries[0].serving_names[:]
-    expect_cols.append(online_feature_spec.feature.name)
-    assert list(result)[:2] == expect_cols
+    expect_cols.append(InternalName.ONLINE_STORE_RESULT_NAME_COLUMN)
+    expect_cols.append(InternalName.ONLINE_STORE_VALUE_COLUMN)
+    assert list(result)[:3] == expect_cols
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
@@ -341,7 +348,7 @@ async def test_online_disable__tile_in_use(
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_online_disable___re_enable(
+async def test_online_disable__re_enable(
     session,
     snowflake_feature_expected_tile_spec_dict,
     feature_manager_no_sf_scheduling,
@@ -392,7 +399,7 @@ async def test_online_disable___re_enable(
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_online_enable___re_deploy_from_latest_tile_start(
+async def test_online_enable__re_deploy_from_latest_tile_start(
     session,
     feature_manager_no_sf_scheduling,
     online_enabled_feature_spec,

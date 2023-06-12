@@ -10,7 +10,7 @@ from dataclasses import dataclass
 
 import pandas as pd
 from sqlglot import expressions, parse_one
-from sqlglot.expressions import Expression, select
+from sqlglot.expressions import Expression, alias_, select
 
 from featurebyte.common.utils import prepare_dataframe_for_json
 from featurebyte.enum import InternalName, SourceType, SpecialColumnName
@@ -18,12 +18,12 @@ from featurebyte.logging import get_logger
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.batch_request_table import BatchRequestTableModel
 from featurebyte.models.parent_serving import ParentServingPreparation
-from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
     REQUEST_TABLE_NAME,
     get_fully_qualified_table_name,
@@ -32,12 +32,9 @@ from featurebyte.query_graph.sql.common import (
 )
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
-from featurebyte.query_graph.sql.online_serving_util import (
-    get_online_store_table_name_from_entity_ids,
-)
+from featurebyte.query_graph.sql.online_serving_util import get_online_store_table_name
 from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
 from featurebyte.query_graph.sql.tile_util import calculate_first_and_last_tile_indices
-from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 from featurebyte.session.base import BaseSession
 
 logger = get_logger(__name__)
@@ -92,18 +89,12 @@ class PrecomputeQueryParams:
     """
     Information required to generate a OnlineStorePrecomputeQuery
 
-    pruned_graph: QueryGraphModel
-        Graph pruned to produce the aggregated column described by agg_spec
-    pruned_node: Node
-        Pruned node, see above
     agg_spec: TileBasedAggregationSpec
         Aggregation specification
     universe: OnlineStoreUniverse
         Query that produces the universe entities for the aggregation
     """
 
-    pruned_graph: QueryGraphModel
-    pruned_node: Node
     agg_spec: TileBasedAggregationSpec
     universe: OnlineStoreUniverse
 
@@ -184,32 +175,29 @@ class OnlineStorePrecomputePlan:
         source_type: SourceType,
     ) -> OnlineStorePrecomputeQuery:
         planner = FeatureExecutionPlanner(
-            params.pruned_graph,
+            params.agg_spec.pruned_graph,
             source_type=source_type,
             is_online_serving=False,
         )
-        plan = planner.generate_plan([params.pruned_node])
+        plan = planner.generate_plan([params.agg_spec.pruned_node])
 
-        sql_expr = plan.construct_combined_sql(
-            request_table_name=REQUEST_TABLE_NAME,
-            point_in_time_column=SpecialColumnName.POINT_IN_TIME,
-            request_table_columns=params.universe.columns,
-            prior_cte_statements=[(REQUEST_TABLE_NAME, params.universe.expr)],
-            exclude_post_aggregation=True,
+        result_type = self.adapter.get_physical_type_from_dtype(params.agg_spec.dtype)
+        table_name = get_online_store_table_name(
+            set(params.agg_spec.entity_ids if params.agg_spec.entity_ids is not None else []),
+            result_type=result_type,
+        )
+        sql_expr = self._convert_to_online_store_schema(
+            plan.construct_combined_sql(
+                request_table_name=REQUEST_TABLE_NAME,
+                point_in_time_column=SpecialColumnName.POINT_IN_TIME,
+                request_table_columns=params.universe.columns,
+                prior_cte_statements=[(REQUEST_TABLE_NAME, params.universe.expr)],
+                exclude_post_aggregation=True,
+            ),
+            serving_names=sorted(params.agg_spec.serving_names),
+            result_name=params.agg_spec.agg_result_name,
         )
         sql = sql_to_string(sql_expr, source_type)
-        table_name = get_online_store_table_name_from_entity_ids(
-            set(params.agg_spec.entity_ids if params.agg_spec.entity_ids is not None else [])
-        )
-
-        op_struct = (
-            OperationStructureExtractor(graph=params.pruned_graph)
-            .extract(node=params.pruned_node)
-            .operation_structure_map[params.pruned_node.name]
-        )
-        assert len(op_struct.aggregations) == 1
-        aggregation = op_struct.aggregations[0]
-        result_type = self.adapter.get_physical_type_from_dtype(aggregation.dtype)
 
         return OnlineStorePrecomputeQuery(
             sql=sql,
@@ -220,6 +208,50 @@ class OnlineStorePrecomputePlan:
             result_type=result_type,
             serving_names=sorted(params.agg_spec.serving_names),
         )
+
+    @staticmethod
+    def _convert_to_online_store_schema(
+        aggregation_expr: expressions.Select,
+        serving_names: list[str],
+        result_name: str,
+    ) -> expressions.Select:
+        """
+        Convert the aggregation expression to the online store schema in long format with fixed
+        columns: SERVING_NAME_1[, ..., SERVING_NAME_N], AGGREGATION_RESULT_NAME, VALUE
+
+        Parameters
+        ----------
+        aggregation_expr: expressions.Select
+            Aggregation expression
+        serving_names: list[str]
+            Serving names
+        result_name: str
+            Aggregation result name
+
+        Returns
+        -------
+        expressions.Select
+        """
+        output_expr = select().from_(aggregation_expr.subquery())
+
+        output_expr = output_expr.select(
+            *[quoted_identifier(serving_name) for serving_name in serving_names]
+        )
+
+        output_expr = output_expr.select(
+            alias_(
+                make_literal_value(result_name),
+                alias=InternalName.ONLINE_STORE_RESULT_NAME_COLUMN,
+                quoted=True,
+            ),
+            alias_(
+                quoted_identifier(result_name),
+                alias=InternalName.ONLINE_STORE_VALUE_COLUMN,
+                quoted=True,
+            ),
+        )
+
+        return output_expr
 
     def _construct_online_store_universe(
         self,
@@ -280,20 +312,12 @@ class OnlineStorePrecomputePlan:
         """
         groupby_nodes = list(graph.iterate_nodes(node, NodeType.GROUPBY))
         for groupby_node in groupby_nodes:
-            agg_specs = TileBasedAggregationSpec.from_groupby_query_node(groupby_node, self.adapter)
+            agg_specs = TileBasedAggregationSpec.from_groupby_query_node(
+                graph, groupby_node, self.adapter
+            )
             for agg_spec in agg_specs:
                 universe = self._construct_online_store_universe(agg_spec)
-                project_node = graph.add_operation(
-                    NodeType.PROJECT,
-                    node_params={"columns": [agg_spec.feature_name]},
-                    node_output_type=NodeOutputType.SERIES,
-                    input_nodes=[groupby_node],
-                )
-                pruned_graph, node_name_map = graph.prune(project_node, aggressive=True)
-                pruned_node = pruned_graph.get_node_by_name(node_name_map[project_node.name])
                 self.params_by_agg_result_name[agg_spec.agg_result_name] = PrecomputeQueryParams(
-                    pruned_graph=pruned_graph,
-                    pruned_node=pruned_node,
                     agg_spec=agg_spec,
                     universe=universe,
                 )

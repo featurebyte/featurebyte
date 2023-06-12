@@ -36,6 +36,12 @@ def features_fixture(event_table, source_type):
         windows=["2h", "24h"],
         feature_names=["AMOUNT_SUM_2h", "AMOUNT_SUM_24h"],
     )
+    feature_group_2 = event_view.groupby("ÜSER ID").aggregate_over(
+        "ÀMOUNT",
+        method="max",
+        windows=["48h"],
+        feature_names=["AMOUNT_MAX_48h"],
+    )
     feature_group_dict = event_view.groupby("ÜSER ID", category="PRODUCT_ACTION").aggregate_over(
         method="count",
         windows=["24h"],
@@ -64,12 +70,14 @@ def features_fixture(event_table, source_type):
     if source_type == "spark":
         features = [
             feature_group["AMOUNT_SUM_2h"],
+            feature_group_2["AMOUNT_MAX_48h"],
             feature_group_dict["EVENT_COUNT_BY_ACTION_24h"],
         ]
     else:
         features = [
             feature_group["AMOUNT_SUM_2h"],
             feature_group["AMOUNT_SUM_24h"],
+            feature_group_2["AMOUNT_MAX_48h"],
             feature_group_dict["EVENT_COUNT_BY_ACTION_24h"],
             feature_complex_1,
             feature_complex_2,
@@ -146,6 +154,7 @@ async def test_online_serving_sql(
             df_historical[columns],
             online_features[columns],
             dict_like_columns=["EVENT_COUNT_BY_ACTION_24h"],
+            sort_by_columns=["üser id"],
         )
 
         # Check online_features route
@@ -219,6 +228,7 @@ def check_get_batch_features(deployment, batch_request_table, df_historical, col
         df_historical[columns],
         preview_df[columns],
         dict_like_columns=["EVENT_COUNT_BY_ACTION_24h"],
+        sort_by_columns=["üser id"],
     )
 
     # delete batch feature table and check the materialized table is deleted
@@ -253,7 +263,8 @@ async def check_concurrent_online_store_table_updates(
         if len(agg_ids) > 1:
             table_with_concurrent_updates = table_name
             break
-    assert table_with_concurrent_updates is not None, "No table with concurrent updates found"
+    if table_with_concurrent_updates is None:
+        raise AssertionError("No table with concurrent updates found")
 
     aggregation_ids = list(online_store_table_name_to_aggregation_id[table_with_concurrent_updates])
 
@@ -266,7 +277,7 @@ async def check_concurrent_online_store_table_updates(
             session=session,
             aggregation_id=aggregation_id,
             job_schedule_ts_str=job_schedule_ts_str,
-            retry_num=10,  # no issue because of retry
+            retry_num=1,  # no issue even without retry
         )
         try:
             await online_store_job.execute()

@@ -86,3 +86,23 @@ def test_create_table_as(source_type, expected):
     expr = parse_one("SELECT * FROM A")
     new_expr = get_sql_adapter(source_type).create_table_as(table_details, cast(Select, expr))
     assert new_expr.sql(dialect=source_type).strip() == expected
+
+
+@pytest.mark.parametrize(
+    "column_name, will_be_quoted",
+    [
+        ("CUSTOMER_ID", False),
+        ("CUSTOMER_ID_123", False),
+        ("_CUSTOMER_ID", False),
+        ("_CUSTOMER$ID", False),
+        ("1CUSTOMER$ID", True),
+        ("$CUSTOMER_ID", True),
+        ("customerID", True),
+        ("123", True),
+    ],
+)
+def test_will_pivoted_column_name_be_quoted(column_name, will_be_quoted):
+    """
+    Test will_pivoted_column_name_be_quoted for SnowflakeAdapter
+    """
+    assert SnowflakeAdapter.will_pivoted_column_name_be_quoted(column_name) is will_be_quoted

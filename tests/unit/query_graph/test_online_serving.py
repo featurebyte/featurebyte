@@ -22,9 +22,9 @@ from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
 from tests.util.helper import assert_equal_with_expected_fixture
 
 
-def get_aggregation_specs(groupby_node) -> List[TileBasedAggregationSpec]:
+def get_aggregation_specs(graph, groupby_node) -> List[TileBasedAggregationSpec]:
     agg_specs = TileBasedAggregationSpec.from_groupby_query_node(
-        groupby_node, get_sql_adapter(SourceType.SNOWFLAKE)
+        graph, groupby_node, get_sql_adapter(SourceType.SNOWFLAKE)
     )
     return agg_specs
 
@@ -59,7 +59,7 @@ def test_construct_universe_sql(query_graph_with_groupby):
     plan = OnlineStorePrecomputePlan(
         query_graph_with_groupby, node, get_sql_adapter(SourceType.SNOWFLAKE)
     )
-    agg_specs = get_aggregation_specs(node)
+    agg_specs = get_aggregation_specs(query_graph_with_groupby, node)
 
     # window size of 2h
     universe = plan._construct_online_store_universe(agg_specs[0])
@@ -116,7 +116,7 @@ def test_construct_universe_sql__category(query_graph_with_category_groupby):
     graph = query_graph_with_category_groupby
     node = graph.get_node_by_name("groupby_1")
     plan = OnlineStorePrecomputePlan(graph, node, get_sql_adapter(SourceType.SNOWFLAKE))
-    agg_specs = get_aggregation_specs(node)
+    agg_specs = get_aggregation_specs(graph, node)
     universe = plan._construct_online_store_universe(agg_specs[0])
     expected_sql = textwrap.dedent(
         """
@@ -151,7 +151,7 @@ def test_construct_universe_sql__unbounded_latest(
         latest_value_without_window_feature_node,
         get_sql_adapter(SourceType.SNOWFLAKE),
     )
-    agg_specs = get_aggregation_specs(global_graph.get_node_by_name("groupby_1"))
+    agg_specs = get_aggregation_specs(global_graph, global_graph.get_node_by_name("groupby_1"))
     universe = plan._construct_online_store_universe(agg_specs[0])
     expected_sql = textwrap.dedent(
         """
@@ -200,7 +200,7 @@ def test_online_store_feature_compute_sql(query_graph_with_groupby, update_fixtu
     expected_query_params = {
         "tile_id": f"TILE_F3600_M1800_B900_{tile_id}",
         "aggregation_id": f"avg_{aggregation_id}",
-        "table_name": "online_store_e5af66c4b0ef5ccf86de19f3403926d5100d9de6",
+        "table_name": "online_store_b3bad6f0a450e950306704a0ef7bd384756a05cc",
         "result_type": "FLOAT",
         "serving_names": ["CUSTOMER_ID"],
     }
@@ -243,14 +243,14 @@ def test_complex_features(complex_feature_query_graph, update_fixtures):
     expected_query_params_tile_1 = {
         "tile_id": "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
         "aggregation_id": "avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb",
-        "table_name": "online_store_e5af66c4b0ef5ccf86de19f3403926d5100d9de6",
+        "table_name": "online_store_b3bad6f0a450e950306704a0ef7bd384756a05cc",
         "result_type": "FLOAT",
         "serving_names": ["CUSTOMER_ID"],
     }
     expected_query_params_tile_2 = {
         "tile_id": "TILE_F3600_M1800_B900_7BD30FF1B8E84ADD2B289714C473F1A21E9BC624",
         "aggregation_id": "sum_ea3e51f28222785a9bc856e4f09a8ce4642bc6c8",
-        "table_name": "online_store_b8cd14c914ca8a3a31bbfdf21e684d0d6c1936f3",
+        "table_name": "online_store_51064268424bf868a2ea2dc2f5789e7cb4df29bf",
         "result_type": "FLOAT",
         "serving_names": ["BUSINESS_ID"],
     }

@@ -1,17 +1,19 @@
 """
 Module for helper classes to generate engine specific SQL expressions
 """
+# pylint: disable=too-many-lines
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Literal, Optional, cast
 
 import re
+import string
 from abc import abstractmethod
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, alias_, select
 
-from featurebyte.enum import DBVarType, SourceType, StrEnum
+from featurebyte.enum import DBVarType, InternalName, SourceType, StrEnum
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql import expression as fb_expressions
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
@@ -25,7 +27,7 @@ from featurebyte.query_graph.sql.common import (
 FB_QUALIFY_CONDITION_COLUMN = "__fb_qualify_condition_column"
 
 
-class BaseAdapter:
+class BaseAdapter:  # pylint: disable=too-many-public-methods
     """
     Helper class to generate engine specific SQL expressions
     """
@@ -477,6 +479,81 @@ class BaseAdapter:
         """
         return expressions.Anonymous(this="ANY_VALUE", expressions=[expr])
 
+    @classmethod
+    def online_store_pivot_prepare_value_column(
+        cls,
+        dtype: DBVarType,
+    ) -> Expression:
+        """
+        Prepare the online store value column for pivot query
+
+        Parameters
+        ----------
+        dtype: DBVarType
+            Data type of the value column
+
+        Returns
+        -------
+        Expression
+        """
+        _ = dtype
+        return quoted_identifier(InternalName.ONLINE_STORE_VALUE_COLUMN.value)
+
+    @classmethod
+    def online_store_pivot_aggregation_func(cls, value_column_expr: Expression) -> Expression:
+        """
+        Aggregation function for online store pivot query
+
+        Parameters
+        ----------
+        value_column_expr: Expression
+            Expression for the value column to be aggregated
+
+        Returns
+        -------
+        Expression
+        """
+        return cls.any_value(value_column_expr)
+
+    @classmethod
+    def online_store_pivot_finalise_value_column(
+        cls,
+        agg_result_name: str,
+        dtype: DBVarType,
+    ) -> Expression:
+        """
+        Finalise the online store value column after pivot query
+
+        Parameters
+        -----------
+        agg_result_name: str
+            Name of the aggregation result column after pivot query
+        dtype: DBVarType
+            Original data type of the aggregation result column
+
+        Returns
+        -------
+        Expression
+        """
+        _ = dtype
+        return expressions.Identifier(this=f"{agg_result_name}", quoted=True)
+
+    @classmethod
+    def online_store_pivot_finalise_serving_name(cls, serving_name: str) -> Expression:
+        """
+        Finalise the online store serving name after pivot query
+
+        Parameters
+        ----------
+        serving_name: str
+            Serving name
+
+        Returns
+        -------
+        Expression
+        """
+        return quoted_identifier(serving_name)
+
 
 class SnowflakeAdapter(BaseAdapter):
     """
@@ -627,6 +704,99 @@ class SnowflakeAdapter(BaseAdapter):
             kind="TABLE",
             expression=select_expr,
         )
+
+    @classmethod
+    def online_store_pivot_prepare_value_column(
+        cls,
+        dtype: DBVarType,
+    ) -> Expression:
+        value_column_expr = quoted_identifier(InternalName.ONLINE_STORE_VALUE_COLUMN.value)
+
+        # In Snowflake, we use the MAX aggregation function when pivoting the online store table
+        # which doesn't support OBJECT type. Therefore, we need to convert the OBJECT type to a
+        # string type.
+        if dtype == DBVarType.OBJECT:
+            return cast(
+                Expression,
+                alias_(
+                    expressions.Anonymous(
+                        this="TO_JSON",
+                        expressions=[value_column_expr],
+                    ),
+                    alias=InternalName.ONLINE_STORE_VALUE_COLUMN.value,
+                    quoted=True,
+                ),
+            )
+
+        return value_column_expr
+
+    @classmethod
+    def online_store_pivot_finalise_value_column(
+        cls,
+        agg_result_name: str,
+        dtype: DBVarType,
+    ) -> Expression:
+        # Snowflake's PIVOT surrounds the pivoted fields with single quotes (')
+        agg_result_name_expr = quoted_identifier(f"'{agg_result_name}'")
+
+        # Convert string type to OBJECT type if needed
+        if dtype == DBVarType.OBJECT:
+            return expressions.Anonymous(
+                this="PARSE_JSON",
+                expressions=[agg_result_name_expr],
+            )
+
+        return agg_result_name_expr
+
+    @classmethod
+    def online_store_pivot_aggregation_func(cls, value_column_expr: Expression) -> Expression:
+        # Snowflake's PIVOT supports only a limited set of aggregation functions. Ideally we would
+        # use ANY_VALUE, but since that is not supported we use MAX instead.
+        return expressions.Max(this=value_column_expr)
+
+    @classmethod
+    def online_store_pivot_finalise_serving_name(cls, serving_name: str) -> Expression:
+        # Snowflake's PIVOT surrounds the pivoted index column (the serving names) with double
+        # quotes (") in some cases. This Alias removes them.
+        if cls.will_pivoted_column_name_be_quoted(serving_name):
+            return expressions.Alias(
+                this=quoted_identifier(f'""{serving_name}""'),
+                alias=quoted_identifier(serving_name),
+            )
+        return quoted_identifier(serving_name)
+
+    @classmethod
+    def will_pivoted_column_name_be_quoted(cls, column_name: str) -> bool:
+        """
+        If a column name is simple enough to be unquoted and when unquoted resolves to itself
+        based on Snowflake's identifier resolution rules, the pivoted column name will not be
+        quoted. This happens when the column name satisfies all the following conditions:
+
+        * Start with a letter (A-Z, a-z) or an underscore (“_”).
+        * Contain only letters, underscores, decimal digits (0-9), and dollar signs (“$”).
+        * All the alphabetic characters are uppercase.
+
+        See also: https://docs.snowflake.com/en/sql-reference/identifiers-syntax
+
+        Parameters
+        ----------
+        column_name: str
+            The column name to be checked
+
+        Returns
+        -------
+        bool
+        """
+        starts_with_letter_or_underscore = column_name[0].isalpha() or column_name[0] == "_"
+        invalid_characters = set(column_name) - set(string.ascii_letters + string.digits + "_$")
+        does_not_contain_invalid_characters = len(invalid_characters) == 0
+        all_alphabetic_chars_are_uppercase = column_name.isupper()
+        will_not_be_quoted = (
+            starts_with_letter_or_underscore
+            and does_not_contain_invalid_characters
+            and all_alphabetic_chars_are_uppercase
+        )
+        return not will_not_be_quoted
 
 
 class DatabricksAdapter(BaseAdapter):

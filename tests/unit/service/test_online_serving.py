@@ -82,7 +82,7 @@ def expected_online_feature_query_fixture():
     """Expected query for online feature"""
     # pylint: disable=line-too-long
     return textwrap.dedent(
-        """
+        '''
         WITH ONLINE_REQUEST_TABLE AS (
           SELECT
             REQ."cust_id",
@@ -101,7 +101,20 @@ def expected_online_feature_query_fixture():
             SELECT
               "cust_id" AS "cust_id",
               "_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481"
-            FROM online_store_ff698d3d3703c3afda95ec949ba386a02c6bd61d
+            FROM (
+              SELECT
+                """cust_id""" AS "cust_id",
+                "'_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481'" AS "_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481"
+              FROM (
+                SELECT
+                  "cust_id",
+                  "AGGREGATION_RESULT_NAME",
+                  "VALUE"
+                FROM online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c
+                WHERE
+                  "AGGREGATION_RESULT_NAME" IN ('_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481')
+              )   PIVOT(  MAX("VALUE") FOR "AGGREGATION_RESULT_NAME" IN ('_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481'))
+            )
           ) AS T0
             ON REQ."cust_id" = T0."cust_id"
         )
@@ -109,7 +122,7 @@ def expected_online_feature_query_fixture():
           AGG."cust_id",
           "_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481" AS "sum_30m"
         FROM _FB_AGGREGATED AS AGG
-        """
+        '''
     ).strip()
 
 
@@ -226,10 +239,8 @@ async def test_feature_list_deployed_with_batch_request_table(
     args, _ = mock_session_for_online_serving.execute_query.call_args
 
     # pylint: disable=line-too-long
-    assert (
-        args[0]
-        == textwrap.dedent(
-            """
+    expected = textwrap.dedent(
+        '''
         WITH ONLINE_REQUEST_TABLE AS (
           SELECT
             REQ."cust_id",
@@ -249,7 +260,20 @@ async def test_feature_list_deployed_with_batch_request_table(
             SELECT
               "cust_id" AS "cust_id",
               "_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481"
-            FROM online_store_ff698d3d3703c3afda95ec949ba386a02c6bd61d
+            FROM (
+              SELECT
+                """cust_id""" AS "cust_id",
+                "'_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481'" AS "_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481"
+              FROM (
+                SELECT
+                  "cust_id",
+                  "AGGREGATION_RESULT_NAME",
+                  "VALUE"
+                FROM online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c
+                WHERE
+                  "AGGREGATION_RESULT_NAME" IN ('_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481')
+              )   PIVOT(  MAX("VALUE") FOR "AGGREGATION_RESULT_NAME" IN ('_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481'))
+            )
           ) AS T0
             ON REQ."cust_id" = T0."cust_id"
         )
@@ -257,6 +281,6 @@ async def test_feature_list_deployed_with_batch_request_table(
           AGG."cust_id",
           "_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481" AS "sum_30m"
         FROM _FB_AGGREGATED AS AGG
-        """
-        ).strip()
-    )
+        '''
+    ).strip()
+    assert args[0] == expected

@@ -14,14 +14,40 @@ WITH ONLINE_MY_REQUEST_TABLE AS (
     SELECT
       "CUSTOMER_ID" AS "CUSTOMER_ID",
       "_fb_internal_window_w7200_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb"
-    FROM online_store_e5af66c4b0ef5ccf86de19f3403926d5100d9de6
+    FROM (
+      SELECT
+        "CUSTOMER_ID",
+        "'_fb_internal_window_w7200_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb'" AS "_fb_internal_window_w7200_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb"
+      FROM (
+        SELECT
+          "CUSTOMER_ID",
+          "AGGREGATION_RESULT_NAME",
+          "VALUE"
+        FROM online_store_b3bad6f0a450e950306704a0ef7bd384756a05cc
+        WHERE
+          "AGGREGATION_RESULT_NAME" IN ('_fb_internal_window_w7200_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb')
+      )   PIVOT(  MAX("VALUE") FOR "AGGREGATION_RESULT_NAME" IN ('_fb_internal_window_w7200_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb'))
+    )
   ) AS T0
     ON REQ."CUSTOMER_ID" = T0."CUSTOMER_ID"
   LEFT JOIN (
     SELECT
       "BUSINESS_ID" AS "BUSINESS_ID",
       "_fb_internal_window_w604800_sum_ea3e51f28222785a9bc856e4f09a8ce4642bc6c8"
-    FROM online_store_b8cd14c914ca8a3a31bbfdf21e684d0d6c1936f3
+    FROM (
+      SELECT
+        "BUSINESS_ID",
+        "'_fb_internal_window_w604800_sum_ea3e51f28222785a9bc856e4f09a8ce4642bc6c8'" AS "_fb_internal_window_w604800_sum_ea3e51f28222785a9bc856e4f09a8ce4642bc6c8"
+      FROM (
+        SELECT
+          "BUSINESS_ID",
+          "AGGREGATION_RESULT_NAME",
+          "VALUE"
+        FROM online_store_51064268424bf868a2ea2dc2f5789e7cb4df29bf
+        WHERE
+          "AGGREGATION_RESULT_NAME" IN ('_fb_internal_window_w604800_sum_ea3e51f28222785a9bc856e4f09a8ce4642bc6c8')
+      )   PIVOT(  MAX("VALUE") FOR "AGGREGATION_RESULT_NAME" IN ('_fb_internal_window_w604800_sum_ea3e51f28222785a9bc856e4f09a8ce4642bc6c8'))
+    )
   ) AS T1
     ON REQ."BUSINESS_ID" = T1."BUSINESS_ID"
 )
