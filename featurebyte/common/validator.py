@@ -152,6 +152,17 @@ def version_validator(cls: Any, value: Any) -> Any:
 def duration_string_validator(cls: Any, value: Any) -> Any:
     """
     Test whether a duration string is valid.
+
+    Parameters
+    ----------
+    cls: Any
+        Class handle
+    value: Any
+        Input duration string value
+
+    Returns
+    -------
+    Any
     """
     _ = cls
     if isinstance(value, str):
