@@ -196,10 +196,6 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureServiceCreate, Fea
 
         # create feature definition
         graph, node_name = document.graph, document.node_name
-        if graph is None:
-            import pdb
-
-            pdb.set_trace()
         sdk_code_gen_state = SDKCodeExtractor(graph=graph).extract(
             node=graph.get_node_by_name(node_name),
             to_use_saved_data=True,
