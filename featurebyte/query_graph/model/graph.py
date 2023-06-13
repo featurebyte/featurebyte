@@ -448,34 +448,58 @@ class QueryGraphModel(FeatureByteBaseModel):
         self.node_type_counter[node_type] += 1
         return f"{node_type}_{self.node_type_counter[node_type]}"
 
-    def _add_node(
-        self, node_type: NodeType, node_params: Dict[str, Any], node_output_type: NodeOutputType
-    ) -> Node:
+    def _add_node(self, node: Node) -> Node:
         """
         Add node to the graph by specifying node type, parameters & output type
 
         Parameters
         ----------
-        node_type: NodeType
-            node type
-        node_params: dict[str, Any]
-            parameters in dictionary format
-        node_output_type: NodeOutputType
-            node output type
+        node: Node
+            Node to add
 
         Returns
         -------
         node: Node
         """
-        node_dict = {
-            "name": self._generate_node_name(node_type),
-            "type": node_type,
-            "parameters": node_params,
-            "output_type": node_output_type,
-        }
-        node = construct_node(**node_dict)
+        node = node.copy()
+        node.name = self._generate_node_name(node.type)
         self.nodes.append(node)
         self.nodes_map[node.name] = node
+        return node
+
+    def add_operation_node(self, node: Node, input_nodes: List[Node]) -> Node:
+        """
+        Add operation node to the query graph.
+
+        Parameters
+        ----------
+        node: Node
+            operation node to add
+        input_nodes: list[Node]
+            list of input nodes
+
+        Returns
+        -------
+        Node
+            operation node of the given input
+        """
+        input_node_refs = [self.node_name_to_ref[node.name] for node in input_nodes]
+        # create a temp_node to validate the node parameters & use only the required parameters to hash
+        node_ref = hash_node(
+            node.type,
+            self._get_node_parameter_for_compute_node_hash(node),
+            node.output_type,
+            input_node_refs,
+        )
+        if node_ref not in self.ref_to_node_name:
+            node = self._add_node(node)
+            for input_node in input_nodes:
+                self._add_edge(input_node, node)
+
+            self.ref_to_node_name[node_ref] = node.name
+            self.node_name_to_ref[node.name] = node_ref
+        else:
+            node = self.nodes_map[self.ref_to_node_name[node_ref]]
         return node
 
     def add_operation(
@@ -504,7 +528,6 @@ class QueryGraphModel(FeatureByteBaseModel):
         Node
             operation node of the given input
         """
-        input_node_refs = [self.node_name_to_ref[node.name] for node in input_nodes]
         # create a temp_node to validate the node parameters & use only the required parameters to hash
         temp_node = construct_node(
             name=str(node_type),
@@ -512,22 +535,7 @@ class QueryGraphModel(FeatureByteBaseModel):
             parameters=node_params,
             output_type=node_output_type,
         )
-        node_ref = hash_node(
-            temp_node.type,
-            self._get_node_parameter_for_compute_node_hash(temp_node),
-            temp_node.output_type,
-            input_node_refs,
-        )
-        if node_ref not in self.ref_to_node_name:
-            node = self._add_node(node_type, node_params, node_output_type)
-            for input_node in input_nodes:
-                self._add_edge(input_node, node)
-
-            self.ref_to_node_name[node_ref] = node.name
-            self.node_name_to_ref[node.name] = node_ref
-        else:
-            node = self.nodes_map[self.ref_to_node_name[node_ref]]
-        return node
+        return self.add_operation_node(node=temp_node, input_nodes=input_nodes)
 
 
 NodeNameMap = Dict[str, str]

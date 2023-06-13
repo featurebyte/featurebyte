@@ -211,11 +211,8 @@ class NodeParametersPruningExtractor(
             )
 
         # add the pruned node back to a graph to reconstruct a parameters-pruned graph
-        node_pruned = global_state.graph.add_operation(
-            node_type=node.type,
-            node_params=node.parameters.dict(),
-            node_output_type=node.output_type,
-            input_nodes=mapped_input_nodes,
+        node_pruned = global_state.graph.add_operation_node(
+            node=node, input_nodes=mapped_input_nodes
         )
         global_state.node_name_map[node.name] = node_pruned.name
         return super()._post_compute(
@@ -432,11 +429,8 @@ class GraphStructurePruningExtractor(
                 aggressive=global_state.aggressive,
             )
 
-        node_pruned = global_state.graph.add_operation(
-            node_type=node.type,
-            node_params=node.parameters.dict(),
-            node_output_type=node.output_type,
-            input_nodes=mapped_input_nodes,
+        node_pruned = global_state.graph.add_operation_node(
+            node=node, input_nodes=mapped_input_nodes
         )
 
         # update the containers to store the mapped node name & processed nodes information

@@ -234,11 +234,8 @@ class GraphReconstructionTransformer(
                 input_node=input_nodes[0],
             )
         else:
-            inserted_node = global_state.graph.add_operation(
-                node_type=node.type,
-                node_params=node_to_insert.parameters.dict(),
-                node_output_type=node_to_insert.output_type,
-                input_nodes=input_nodes,
+            inserted_node = global_state.graph.add_operation_node(
+                node=node_to_insert, input_nodes=input_nodes
             )
 
         # update node name mapping between original graph & reconstructed graph
