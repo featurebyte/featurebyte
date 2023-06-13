@@ -661,7 +661,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
     def _get_create_payload(self) -> dict[str, Any]:
         feature_ids = [feature.id for feature in self.feature_objects.values()]
         data = FeatureListCreate(
-            **{**self.json_dict(exclude_none=True), "feature_ids": feature_ids}
+            **{**self.dict(by_alias=True, exclude_none=True), "feature_ids": feature_ids}
         )
         return data.json_dict()
 
@@ -677,9 +677,9 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
                     feat = Feature.get(name=feat_name)
                     self.feature_objects[feat_name] = feat
                 except RecordRetrievalException:
-                    feature_payloads.append(FeatureCreate(**feat.json_dict()))
+                    feature_payloads.append(FeatureCreate(**feat.dict(by_alias=True)))
             if conflict_resolution == "raise" and not feat.saved:
-                feature_payloads.append(FeatureCreate(**feat.json_dict()))
+                feature_payloads.append(FeatureCreate(**feat.dict(by_alias=True)))
 
         self.post_async_task(
             route="/feature/batch",
