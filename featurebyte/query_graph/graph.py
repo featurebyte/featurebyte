@@ -21,7 +21,7 @@ from bson import ObjectId
 from pydantic import Field
 
 from featurebyte.common.singleton import SingletonMeta
-from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.model.graph import Edge, GraphNodeNameMap, QueryGraphModel
 from featurebyte.query_graph.node import Node
@@ -229,12 +229,7 @@ class QueryGraph(QueryGraphModel):
                 self.get_node_by_name(node_name_map[input_node_name])
                 for input_node_name in graph.backward_edges_map[node.name]
             ]
-            node_global = self.add_operation(
-                node_type=NodeType(node.type),
-                node_params=node.parameters.dict(),
-                node_output_type=NodeOutputType(node.output_type),
-                input_nodes=input_nodes,
-            )
+            node_global = self.add_operation_node(node=node, input_nodes=input_nodes)
             node_name_map[node.name] = node_global.name
         return self, node_name_map
 

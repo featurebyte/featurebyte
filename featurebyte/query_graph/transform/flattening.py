@@ -51,11 +51,8 @@ class GraphFlatteningTransformer(
                 input_order = nested_node.parameters.input_order
                 nested_node_name_map[nested_node.name] = graph_input_nodes[input_order].name
             else:
-                inserted_node = global_state.graph.add_operation(
-                    node_type=nested_node.type,
-                    node_params=nested_node.parameters.dict(),
-                    node_output_type=nested_node.output_type,
-                    input_nodes=input_nodes,
+                inserted_node = global_state.graph.add_operation_node(
+                    node=nested_node, input_nodes=input_nodes
                 )
                 nested_node_name_map[nested_node.name] = inserted_node.name
 
@@ -78,11 +75,8 @@ class GraphFlatteningTransformer(
                 global_state=global_state, node=node, graph_input_nodes=input_nodes
             )
         else:
-            inserted_node = global_state.graph.add_operation(
-                node_type=node.type,
-                node_params=node.parameters.dict(),
-                node_output_type=node.output_type,
-                input_nodes=input_nodes,
+            inserted_node = global_state.graph.add_operation_node(
+                node=node, input_nodes=input_nodes
             )
             global_state.node_name_map[node.name] = inserted_node.name
 
