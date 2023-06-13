@@ -3,7 +3,6 @@ This model contains query graph internal model structures
 """
 from typing import Any, DefaultDict, Dict, Iterator, List, Optional, Set, Tuple
 
-import json
 from collections import defaultdict
 
 from pydantic import Field, root_validator, validator
