@@ -111,7 +111,7 @@ class Feature(
         return {"feature_store": self.feature_store}
 
     def _get_create_payload(self) -> dict[str, Any]:
-        data = FeatureCreate(**self.json_dict())
+        data = FeatureCreate(**self.dict(by_alias=True))
         return data.json_dict(exclude_none=True)
 
     def _get_feature_tiles_specs(self) -> List[Tuple[str, List[TileSpec]]]:

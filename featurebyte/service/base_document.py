@@ -775,7 +775,7 @@ class BaseDocumentService(
 
         # perform validation first before actual update
         update_dict = data.dict(exclude_none=exclude_none)
-        updated_document = self.document_class(**{**document.json_dict(), **update_dict})
+        updated_document = self.document_class(**{**document.dict(by_alias=True), **update_dict})
 
         # check any conflict with existing documents
         await self._check_document_unique_constraints(
