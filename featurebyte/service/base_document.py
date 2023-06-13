@@ -146,7 +146,7 @@ class BaseDocumentService(
 
         document = self.document_class(
             **{
-                **data.json_dict(),
+                **data.dict(by_alias=True),
                 **kwargs,
                 "user_id": self.user.id,
             },

@@ -55,6 +55,7 @@ def prune_query_graph(
     target_columns: Optional[List[str]] = None,
     proxy_input_operation_structures: Optional[List[OperationStructure]] = None,
     aggressive: bool = False,
+    operation_structure_info: Optional[OperationStructureInfo] = None,
 ) -> Tuple[QueryGraphModel, NodeNameMap, str]:
     """
     Prune the query graph given target node. There are 2 modes in graph pruning:
@@ -83,12 +84,17 @@ def prune_query_graph(
         Whether to enable aggressive pruning mode. For non-aggressive mode, all travelled nodes will be kept.
         For aggressive mode, node could be removed if it does not contribute to the final output and node
         parameters could be pruned if it is not used.
+    operation_structure_info: Optional[OperationStructureInfo]
+        Operation structure info for the given graph and node. If not provided, it will be extracted from the
+        graph.
 
     Returns
     -------
     Tuple[QueryGraphModel, NodeNameMap, str]
     """
-    pruned_graph, node_name_map = GraphStructurePruningExtractor(graph=graph).extract(
+    pruned_graph, node_name_map = GraphStructurePruningExtractor(
+        graph=graph, operation_structure_info=operation_structure_info
+    ).extract(
         node=node,
         target_columns=target_columns,
         proxy_input_operation_structures=proxy_input_operation_structures,
@@ -288,6 +294,14 @@ class GraphStructurePruningExtractor(
     nodes will be removed if it does not contribute to the final output.
     """
 
+    def __init__(
+        self,
+        graph: QueryGraphModel,
+        operation_structure_info: Optional[OperationStructureInfo] = None,
+    ):
+        super().__init__(graph=graph)
+        self.operation_structure_info = operation_structure_info
+
     def _pre_compute(
         self,
         branch_state: GraphPruningBranchState,
@@ -436,10 +450,14 @@ class GraphStructurePruningExtractor(
         aggressive: bool = False,
         **kwargs: Any,
     ) -> GraphNodeNameMap:
-        op_struct_info = OperationStructureExtractor(graph=self.graph).extract(
-            node=node,
-            proxy_input_operation_structures=proxy_input_operation_structures,
-        )
+        if self.operation_structure_info is None:
+            op_struct_info = OperationStructureExtractor(graph=self.graph).extract(
+                node=node,
+                proxy_input_operation_structures=proxy_input_operation_structures,
+            )
+        else:
+            op_struct_info = self.operation_structure_info
+
         operation_structure = op_struct_info.operation_structure_map[node.name]
         temp_node_name = "temp"
         if target_columns:

@@ -116,7 +116,7 @@ class CredentialService(
         -------
         CredentialModel
         """
-        credential = self.document_class(**data.json_dict())
+        credential = self.document_class(**data.dict(by_alias=True))
         await self._validate_credential(credential=credential)
         credential.encrypt()
         return await super().create_document(data=CredentialCreate(**credential.json_dict()))

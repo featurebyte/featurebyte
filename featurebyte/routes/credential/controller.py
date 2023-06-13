@@ -55,7 +55,7 @@ class CredentialController(
             CredentialRead object
         """
         document = await self.service.create_document(data=data)
-        return CredentialRead(**document.json_dict())
+        return CredentialRead(**document.dict(by_alias=True))
 
     async def update_credential(
         self,
@@ -82,7 +82,7 @@ class CredentialController(
             data=CredentialServiceUpdate(**data.dict()),
         )
         assert document is not None
-        return CredentialRead(**document.json_dict())
+        return CredentialRead(**document.dict(by_alias=True))
 
     async def delete_credential(
         self,

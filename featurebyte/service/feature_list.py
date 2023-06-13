@@ -200,7 +200,7 @@ class FeatureListService(
         # sort feature_ids before saving to persistent storage to ease feature_ids comparison in uniqueness check
         document = FeatureListModel(
             **{
-                **data.json_dict(),
+                **data.dict(by_alias=True),
                 "version": await self._get_feature_list_version(data.name),
                 "user_id": self.user.id,
                 "catalog_id": self.catalog_id,

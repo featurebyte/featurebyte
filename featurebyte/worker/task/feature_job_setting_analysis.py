@@ -81,7 +81,7 @@ class FeatureJobSettingAnalysisTask(BaseTask):
         self.update_progress(percent=5, message="Running Analysis")
         analysis = await create_feature_job_settings_analysis(
             event_dataset=event_dataset,
-            **payload.json_dict(),
+            **payload.dict(by_alias=True),
         )
 
         # store analysis doc in persistent
