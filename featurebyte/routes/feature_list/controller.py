@@ -105,7 +105,7 @@ class FeatureListController(
         """
         payload = FeatureListCreateWithBatchFeatureCreationPayload(
             **{
-                **data.json_dict(),
+                **data.dict(by_alias=True),
                 "catalog_id": self.service.catalog_id,
             }
         )

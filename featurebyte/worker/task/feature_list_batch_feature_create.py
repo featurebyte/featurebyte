@@ -49,33 +49,29 @@ class FeatureListCreateWithBatchFeatureCreationTask(BatchFeatureCreateTask):
                 ] = feat_namespace.default_feature_id
 
         # identify features to create
-        feature_creates = []
+        feature_items = []
         feature_list_feature_ids = []
-        for feature_create in payload.iterate_features():
-            if feature_create.id in saved_feature_ids:
+        for feature_item in payload.features:
+            if feature_item.id in saved_feature_ids:
                 # skip if the feature is already saved
-                feature_list_feature_ids.append(feature_create.id)
+                feature_list_feature_ids.append(feature_item.id)
                 continue
 
             if (
                 payload.conflict_resolution == "retrieve"
-                and feature_create.name in conflict_to_resolution_feature_id_map
+                and feature_item.name in conflict_to_resolution_feature_id_map
             ):
                 # if the feature name is in conflict, use the resolution feature id
-                resolved_feature_id = conflict_to_resolution_feature_id_map[feature_create.name]
+                resolved_feature_id = conflict_to_resolution_feature_id_map[feature_item.name]
                 feature_list_feature_ids.append(resolved_feature_id)
             else:
                 # add the feature create payload for batch feature creation
-                feature_creates.append(feature_create)
-                feature_list_feature_ids.append(feature_create.id)
+                feature_items.append(feature_item)
+                feature_list_feature_ids.append(feature_item.id)
 
         # create batch feature create payload
-        batch_feature_create_payload = BatchFeatureCreateTaskPayload.create(
-            features=feature_creates
-        )
         batch_feature_create_task_payload = BatchFeatureCreateTaskPayload(
-            **batch_feature_create_payload.json_dict(),
-            catalog_id=payload.catalog_id,
+            **{**payload.dict(by_alias=True), "features": feature_items}
         )
 
         # create list of features
