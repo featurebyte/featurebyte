@@ -521,6 +521,8 @@ async def get_online_features(
         Request data as a dataframe or a BatchRequestTableModel
     source_type: SourceType
         Source type information
+    online_store_table_version_service: OnlineStoreTableVersionService
+        Online store table version service
     parent_serving_preparation: Optional[ParentServingPreparation]
         Preparation required for serving parent features
     output_table_details: Optional[TableDetails]

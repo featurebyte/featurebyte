@@ -26,6 +26,8 @@ def tile_manager_from_session(
         Input session
     task_manager: Optional[TaskManager]
         Input task manager
+    online_store_table_version_service: Optional[OnlineStoreTableVersionService]
+        Online store table version service
 
     Returns
     -------

@@ -77,6 +77,11 @@ class OnlineStoreTableVersionService(
             Aggregation result name
         version: int
             New version to be associated with the aggregation result name
+
+        Raises
+        ------
+        DocumentNotFoundError
+            If the aggregation result name is not found
         """
         query_filter = {"aggregation_result_name": aggregation_result_name}
         document_id = None

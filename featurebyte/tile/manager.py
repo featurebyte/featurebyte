@@ -54,6 +54,8 @@ class TileManager(BaseModel):
             input session for datasource
         task_manager: Optional[TaskManager]
             input task manager
+        online_store_table_version_service: Optional[OnlineStoreTableVersionService]
+            Online store table version service
         kw: Any
             constructor arguments
         """

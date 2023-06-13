@@ -15,7 +15,6 @@ from featurebyte import FeatureList, RecordRetrievalException
 from featurebyte.common.date_util import get_next_job_datetime
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.online_store import OnlineFeatureSpec
-from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 from featurebyte.sql.tile_schedule_online_store import TileScheduleOnlineStore
 from tests.util.helper import create_batch_request_table_from_dataframe, fb_assert_frame_equal

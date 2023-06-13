@@ -161,6 +161,8 @@ class OnlineEnableService(BaseService):
             Session object
         feature: FeatureModel
             Updated Feature object
+        online_store_table_version_service: OnlineStoreTableVersionService
+            Online store table version service
         task_manager: Optional[TaskManager]
             TaskManager object
         """

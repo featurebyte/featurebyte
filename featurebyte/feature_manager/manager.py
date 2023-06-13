@@ -56,6 +56,8 @@ class FeatureManager(BaseModel):
         ----------
         session: BaseSession
             input session for datasource
+        online_store_table_version_service: OnlineStoreTableVersionService
+            Online store table version service
         task_manager: Optional[TaskManager]
             input task manager
         kw: Any
