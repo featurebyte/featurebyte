@@ -49,8 +49,10 @@ class SimpleTestView(View):
     def get_join_column(self) -> str:
         return self.join_col
 
-    def json_dict(self, **kwargs: Any) -> Dict[str, Any]:
-        return {}
+    def dict(self, **kwargs: Any) -> Dict[str, Any]:
+        if "exclude" in kwargs:
+            return {}
+        return super().dict(**kwargs)
 
     def set_join_col_override(self, join_col_override: str):
         """
