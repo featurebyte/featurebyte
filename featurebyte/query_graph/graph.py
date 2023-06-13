@@ -34,6 +34,7 @@ from featurebyte.query_graph.node.metadata.operation import (
     SourceDataColumn,
 )
 from featurebyte.query_graph.node.mixin import BaseGroupbyParameters
+from featurebyte.query_graph.transform.entity_extractor import EntityExtractor
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 from featurebyte.query_graph.transform.pruning import prune_query_graph
@@ -130,15 +131,10 @@ class QueryGraph(QueryGraphModel):
         List[ObjectId]
             List of entity IDs in the query graph
         """
-        output = []
-        target_node = self.get_node_by_name(node_name)
-        for node in self.iterate_nodes(target_node=target_node, node_type=None):
-            if isinstance(node.parameters, BaseGroupbyParameters):
-                if node.parameters.entity_ids:
-                    output.extend(node.parameters.entity_ids)
-            elif isinstance(node, LookupNode):
-                output.append(node.parameters.entity_id)
-        return sorted(set(output))
+        entity_state = EntityExtractor(graph=self).extract(
+            node=self.get_node_by_name(node_name=node_name)
+        )
+        return sorted(entity_state.entity_ids)
 
     def get_entity_columns(self, node_name: str) -> List[str]:
         """

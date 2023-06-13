@@ -187,6 +187,14 @@ def test_sdk_code_generation__complex_feature(
         saved_event_table.id,
     ]
 
+    # check entity ids extracted from the graph,
+    assert feat_item_sum.entity_ids == [transaction_entity.id]
+    assert feat_event_sum.entity_ids == [saved_event_table.cust_id.info.entity_id]
+    comp = feat_event_sum + feat_item_sum
+    assert comp.entity_ids == sorted(
+        [saved_event_table.cust_id.info.entity_id, transaction_entity.id]
+    )
+
 
 def test_sdk_code_generation__multi_table_feature(
     saved_event_table, saved_item_table, transaction_entity, cust_id_entity, update_fixtures
