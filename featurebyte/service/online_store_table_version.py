@@ -84,5 +84,5 @@ class OnlineStoreTableVersionService(
             document_id = doc["_id"]
             break
         if document_id is None:
-            raise DocumentNotFoundError()
+            raise DocumentNotFoundError("Aggregation result name not found")
         await self.update_document(document_id, OnlineStoreTableVersionUpdate(version=version))

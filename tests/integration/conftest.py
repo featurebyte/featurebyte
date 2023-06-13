@@ -880,18 +880,6 @@ async def tile_spec_fixture(session):
         yield created_tile_spec
 
 
-@pytest.fixture
-def tile_manager(session, online_store_table_version_service):
-    """
-    Tile Manager fixture
-
-    TODO: is this actually needed?
-    """
-    return tile_manager_from_session(
-        session=session, online_store_table_version_service=online_store_table_version_service
-    )
-
-
 @pytest.fixture(name="feature_model_dict")
 def feature_model_dict_feature(test_dir):
     """Fixture for a Feature dict"""
