@@ -113,11 +113,18 @@ class TileScheduleOnlineStore(BaselSqlModel):
 
             current_ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+            # get current version
+            current_version = await self._online_store_table_version_service.get_version(f_name)
+            if current_version is None:
+                next_version = 0
+            else:
+                next_version = current_version + 1
+
             if not fs_table_exist_flag:
                 # feature store table does not exist, create table with the input feature sql
                 create_sql = construct_create_table_query(
                     fs_table,
-                    f"select {column_names}, 0 AS {quoted_version_column} from ({f_sql})",
+                    f"select {column_names}, {next_version} AS {quoted_version_column} from ({f_sql})",
                     session=self._session,
                     partition_keys=quoted_result_name_column,
                 )
@@ -136,35 +143,8 @@ class TileScheduleOnlineStore(BaselSqlModel):
                     sql=f"UPDATE {fs_table} SET UPDATED_AT = to_timestamp('{current_ts}')",
                 )
 
-                # update online store table version in mongo
-                version_model = OnlineStoreTableVersion(
-                    online_store_table_name=fs_table,
-                    aggregation_result_name=f_name,
-                    version=0,
-                )
-                await self._online_store_table_version_service.create_document(version_model)
             else:
                 # feature store table already exists, insert records with the input feature sql
-
-                # get current version
-                current_version = await self._online_store_table_version_service.get_version(f_name)
-                if current_version is None:
-                    next_version = 0
-                else:
-                    next_version = current_version + 1
-                # current_version = (
-                #     await self._session.execute_query(
-                #         f"""
-                #         SELECT MAX({quoted_version_column}) AS OUT
-                #         FROM {fs_table}
-                #         WHERE {quoted_result_name_column} = '{f_name}'
-                #         """
-                #     )
-                # ).iloc[0]["OUT"]
-                # if pd.isna(current_version):
-                #     next_version = 0
-                # else:
-                #     next_version = current_version + 1
 
                 insert_query = textwrap.dedent(
                     f"""
@@ -179,15 +159,13 @@ class TileScheduleOnlineStore(BaselSqlModel):
                     extra={"fs_table": fs_table, "result_name": f_name, "version": next_version},
                 )
 
-                # update online store table version in mongo
-                if current_version is None:
-                    version_model = OnlineStoreTableVersion(
-                        online_store_table_name=fs_table,
-                        aggregation_result_name=f_name,
-                        version=next_version,
-                    )
-                    await self._online_store_table_version_service.create_document(version_model)
-                else:
-                    await self._online_store_table_version_service.update_version(
-                        f_name, next_version
-                    )
+            # update online store table version in mongo
+            if current_version is None:
+                version_model = OnlineStoreTableVersion(
+                    online_store_table_name=fs_table,
+                    aggregation_result_name=f_name,
+                    version=next_version,
+                )
+                await self._online_store_table_version_service.create_document(version_model)
+            else:
+                await self._online_store_table_version_service.update_version(f_name, next_version)

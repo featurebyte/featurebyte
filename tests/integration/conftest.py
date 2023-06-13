@@ -41,7 +41,7 @@ from featurebyte.enum import InternalName, SourceType, StorageType
 from featurebyte.feature_manager.manager import FeatureManager
 from featurebyte.feature_manager.model import ExtendedFeatureListModel
 from featurebyte.logging import get_logger
-from featurebyte.models.base import User
+from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.models.credential import (
     AccessTokenCredential,
     CredentialModel,
@@ -56,6 +56,7 @@ from featurebyte.persistent.mongo import MongoDB
 from featurebyte.query_graph.node.schema import SparkDetails, SQLiteDetails, TableDetails
 from featurebyte.schema.task import TaskStatus
 from featurebyte.schema.worker.task.base import BaseTaskPayload
+from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.session.base_spark import BaseSparkSchemaInitializer
 from featurebyte.session.manager import SessionManager
 from featurebyte.storage import LocalStorage, LocalTempStorage
@@ -880,11 +881,15 @@ async def tile_spec_fixture(session):
 
 
 @pytest.fixture
-def tile_manager(session):
+def tile_manager(session, online_store_table_version_service):
     """
     Tile Manager fixture
+
+    TODO: is this actually needed?
     """
-    return tile_manager_from_session(session=session)
+    return tile_manager_from_session(
+        session=session, online_store_table_version_service=online_store_table_version_service
+    )
 
 
 @pytest.fixture(name="feature_model_dict")
@@ -1393,3 +1398,14 @@ def user():
     user = Mock()
     user.id = ObjectId()
     return user
+
+
+@pytest.fixture()
+def online_store_table_version_service(user, persistent):
+    """
+    Fixture for online store table version service
+    """
+    service = OnlineStoreTableVersionService(
+        user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
+    )
+    yield service

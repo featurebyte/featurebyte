@@ -18,7 +18,7 @@ from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.online_store import OnlineFeatureSpec
 from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
-from featurebyte.query_graph.sql.online_serving import get_online_store_retrieval_expr
+from featurebyte.query_graph.sql.online_serving import get_online_store_retrieval_template
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.sql.tile_schedule_online_store import TileScheduleOnlineStore
@@ -91,17 +91,6 @@ def features_fixture(event_table, source_type):
     return features
 
 
-@pytest.fixture
-def online_store_table_version_service(user, persistent):
-    """
-    Fixture for online store table version service
-    """
-    service = OnlineStoreTableVersionService(
-        user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
-    )
-    return service
-
-
 @pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 @pytest.mark.asyncio
 async def test_online_serving_sql(
@@ -152,7 +141,7 @@ async def test_online_serving_sql(
         df_entities = pd.DataFrame({"üser id": user_ids})
         request_table_expr = construct_dataframe_sql_expr(df_entities, date_cols=[])
         feature_clusters = feature_list._get_feature_clusters()
-        # online_retrieval_template = get_online_store_retrieval_expr(
+        # online_retrieval_template = get_online_store_retrieval_template(
         #     feature_clusters[0].graph,
         #     feature_clusters[0].nodes,
         #     source_type=session.source_type,

@@ -10,12 +10,11 @@ import pandas as pd
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
-from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.query_graph.sql.online_serving import (
     OnlineStorePrecomputePlan,
     get_online_store_precompute_queries,
-    get_online_store_retrieval_expr,
+    get_online_store_retrieval_template,
     is_online_store_eligible,
 )
 from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
@@ -39,7 +38,7 @@ def get_online_store_retrieval_sql(
     parent_serving_preparation=None,
 ):
     """Generate SQL for retrieving online store data"""
-    retrieval_template = get_online_store_retrieval_expr(
+    retrieval_template = get_online_store_retrieval_template(
         graph=graph,
         nodes=nodes,
         source_type=source_type,

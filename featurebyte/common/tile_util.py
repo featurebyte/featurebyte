@@ -14,8 +14,8 @@ from featurebyte.tile.manager import TileManager
 
 def tile_manager_from_session(
     session: BaseSession,
-    online_store_table_version_service: OnlineStoreTableVersionService,
     task_manager: Optional[TaskManager] = None,
+    online_store_table_version_service: Optional[OnlineStoreTableVersionService] = None,
 ) -> TileManager:
     """
     Derive implementing TileManager instance based on input sessions

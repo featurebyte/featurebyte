@@ -36,6 +36,8 @@ NonTileBasedAggregationSpecT = TypeVar(
     "NonTileBasedAggregationSpecT", bound=NonTileBasedAggregationSpec
 )
 
+LATEST_VERSION = "LATEST_VERSION"
+
 
 @dataclass
 class AggregationResult:
@@ -494,12 +496,12 @@ class TileBasedAggregator(Aggregator[TileBasedAggregationSpec], ABC):
             this=expressions.Identifier(this="version_table"),
             columns=[
                 quoted_identifier(InternalName.ONLINE_STORE_RESULT_NAME_COLUMN),
-                "LATEST_VERSION",
+                quoted_identifier(LATEST_VERSION),
             ],
         )
         latest_result_version = select(
             quoted_identifier(InternalName.ONLINE_STORE_RESULT_NAME_COLUMN),
-            "LATEST_VERSION",
+            quoted_identifier(LATEST_VERSION),
         ).from_(expressions.Values(expressions=values_expressions, alias=values_alias))
         latest_online_store_table = (
             select("R.*")
@@ -521,7 +523,7 @@ class TileBasedAggregator(Aggregator[TileBasedAggregationSpec], ABC):
                         this=get_qualified_column_identifier(
                             InternalName.ONLINE_STORE_VERSION_COLUMN, "R"
                         ),
-                        expression=get_qualified_column_identifier("LATEST_VERSION", "L"),
+                        expression=get_qualified_column_identifier(LATEST_VERSION, "L"),
                     ),
                 ),
             )

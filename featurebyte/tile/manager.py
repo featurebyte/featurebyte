@@ -36,13 +36,13 @@ class TileManager(BaseModel):
 
     _session: BaseSession = PrivateAttr()
     _task_manager: Optional[TaskManager] = PrivateAttr()
-    _online_store_table_version_service: OnlineStoreTableVersionService = PrivateAttr()
+    _online_store_table_version_service: Optional[OnlineStoreTableVersionService] = PrivateAttr()
 
     def __init__(
         self,
         session: BaseSession,
-        online_store_table_version_service: OnlineStoreTableVersionService,
         task_manager: Optional[TaskManager] = None,
+        online_store_table_version_service: Optional[OnlineStoreTableVersionService] = None,
         **kw: Any,
     ) -> None:
         """
@@ -143,6 +143,7 @@ class TileManager(BaseModel):
         job_schedule_ts_str: str
             timestamp string of the job schedule
         """
+        assert self._online_store_table_version_service is not None
         executor = TileScheduleOnlineStore(
             session=self._session,
             aggregation_id=tile_spec.aggregation_id,
@@ -332,6 +333,8 @@ class TileManager(BaseModel):
 
         if not self._task_manager:
             raise TileScheduleNotSupportedError("Task manager is not initialized")
+
+        assert self._online_store_table_version_service is not None
 
         scheduler = TileScheduler(task_manager=self._task_manager)
         exist_job = await scheduler.get_job_details(job_id=job_id)

@@ -66,8 +66,8 @@ class FeatureManager(BaseModel):
         self._adapter = get_sql_adapter(session.source_type)
         self._tile_manager = tile_manager_from_session(
             session=session,
-            online_store_table_version_service=online_store_table_version_service,
             task_manager=task_manager,
+            online_store_table_version_service=online_store_table_version_service,
         )
 
     async def online_enable(

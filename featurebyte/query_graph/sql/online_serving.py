@@ -386,7 +386,16 @@ def is_online_store_eligible(graph: QueryGraph, node: Node) -> bool:
 
 
 @dataclass
-class OnlineStoreRetrievalSql:
+class OnlineStoreRetrievalTemplate:
+    """
+    SQL code template for retrieving data from online store
+
+    sql_template: SqlExpressionTemplate
+        SQL code template with online store table version placeholders
+    aggregation_result_names: list[str]
+        Aggregation result names involved in the online serving query
+    """
+
     sql_template: SqlExpressionTemplate
     aggregation_result_names: list[str]
 
@@ -412,7 +421,7 @@ class OnlineStoreRetrievalSql:
         )
 
 
-def get_online_store_retrieval_expr(
+def get_online_store_retrieval_template(
     graph: QueryGraph,
     nodes: list[Node],
     source_type: SourceType,
@@ -420,7 +429,7 @@ def get_online_store_retrieval_expr(
     request_table_name: Optional[str] = None,
     request_table_expr: Optional[expressions.Select] = None,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
-) -> OnlineStoreRetrievalSql:
+) -> OnlineStoreRetrievalTemplate:
     """
     Construct SQL code that can be used to lookup pre-computed features from online store
 
@@ -481,7 +490,7 @@ def get_online_store_retrieval_expr(
         exclude_columns={SpecialColumnName.POINT_IN_TIME},
     )
 
-    return OnlineStoreRetrievalSql(
+    return OnlineStoreRetrievalTemplate(
         sql_template=SqlExpressionTemplate(output_expr, source_type),
         aggregation_result_names=plan.tile_based_aggregation_result_names,
     )
@@ -533,7 +542,7 @@ async def get_online_features(
         )
         request_table_columns = [col.name for col in request_data.columns_info]
 
-    retrieval_template = get_online_store_retrieval_expr(
+    retrieval_template = get_online_store_retrieval_template(
         graph,
         nodes,
         source_type=source_type,

@@ -25,7 +25,21 @@ WITH ONLINE_MY_REQUEST_TABLE AS (
           "CUSTOMER_ID",
           "AGGREGATION_RESULT_NAME",
           "VALUE"
-        FROM online_store_b3bad6f0a450e950306704a0ef7bd384756a05cc
+        FROM (
+          SELECT
+            R.*
+          FROM (
+            SELECT
+              "AGGREGATION_RESULT_NAME",
+              "LATEST_VERSION"
+            FROM (VALUES
+              ('_fb_internal_window_w172800_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb', _fb_internal_window_w172800_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb_VERSION_PLACEHOLDER),
+              ('_fb_internal_window_w7200_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb', _fb_internal_window_w7200_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb_VERSION_PLACEHOLDER)) AS version_table("AGGREGATION_RESULT_NAME", "LATEST_VERSION")
+          ) AS L
+          INNER JOIN online_store_b3bad6f0a450e950306704a0ef7bd384756a05cc AS R
+            ON R."AGGREGATION_RESULT_NAME" = L."AGGREGATION_RESULT_NAME"
+            AND R."VERSION" = L."LATEST_VERSION"
+        )
         WHERE
           "AGGREGATION_RESULT_NAME" IN ('_fb_internal_window_w172800_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb', '_fb_internal_window_w7200_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb')
       )   PIVOT(  MAX("VALUE") FOR "AGGREGATION_RESULT_NAME" IN ('_fb_internal_window_w172800_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb', '_fb_internal_window_w7200_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb'))
