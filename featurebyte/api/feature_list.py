@@ -697,7 +697,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
 
         feature_payloads = []
         for feat in self.feature_objects.values():
-            feature_payloads.append(FeatureCreate(**feat.json_dict()))
+            feature_payloads.append(FeatureCreate(**feat.dict(by_alias=True)))
 
         assert self.name is not None, "FeatureList name cannot be None"
         feature_list_create = FeatureListCreateWithBatchFeatureCreation.create(
