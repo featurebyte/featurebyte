@@ -43,7 +43,7 @@ class EntityExtractor(
             # if groupby node has entity_ids, skip further exploration on input nodes
             if node.parameters.entity_ids:
                 global_state.entity_ids.update(node.parameters.entity_ids)
-                skip_input_nodes = True
+            skip_input_nodes = True
         elif isinstance(node, LookupNode):
             global_state.entity_ids.add(node.parameters.entity_id)
         return [] if skip_input_nodes else input_node_names, False
