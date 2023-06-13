@@ -1008,7 +1008,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         return type(self)(
             feature_store=self.feature_store,
             **{
-                **self.json_dict(exclude={"feature_store": True}),
+                **self.dict(by_alias=True, exclude={"feature_store": True}),
                 "graph": self.graph,
                 "node_name": new_node_name,
                 "columns_info": joined_columns_info,

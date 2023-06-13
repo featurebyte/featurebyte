@@ -41,7 +41,7 @@ class Entity(NameAttributeUpdatableMixin, SavableApiObject):
     internal_serving_names: List[str] = Field(alias="serving_names")
 
     def _get_create_payload(self) -> dict[str, Any]:
-        data = EntityCreate(serving_name=self.serving_name, **self.json_dict())
+        data = EntityCreate(serving_name=self.serving_name, **self.dict(by_alias=True))
         return data.json_dict()
 
     @property

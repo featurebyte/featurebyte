@@ -71,7 +71,7 @@ class FeatureListNamespaceController(
             document_id=document_id, exception_detail=exception_detail
         )
         output = FeatureListNamespaceModelResponse(
-            **document.json_dict(),
+            **document.dict(by_alias=True),
             primary_entity_ids=await self.derive_primary_entity_ids(entity_ids=document.entity_ids),
         )
         return cast(Document, output)

@@ -116,10 +116,12 @@ class CredentialService(
         -------
         CredentialModel
         """
-        credential = self.document_class(**data.json_dict())
+        credential = self.document_class(**data.dict(by_alias=True))
         await self._validate_credential(credential=credential)
         credential.encrypt()
-        return await super().create_document(data=CredentialCreate(**credential.json_dict()))
+        return await super().create_document(
+            data=CredentialCreate(**credential.dict(by_alias=True))
+        )
 
     async def update_document(
         self,
@@ -160,7 +162,7 @@ class CredentialService(
 
         # verify credential is valid
         update_dict = data.dict(exclude_none=exclude_none)
-        updated_document = self.document_class(**{**document.json_dict(), **update_dict})
+        updated_document = self.document_class(**{**document.dict(by_alias=True), **update_dict})
         await self._validate_credential(credential=updated_document)
         data.encrypt()
 

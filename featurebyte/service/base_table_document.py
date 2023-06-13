@@ -122,7 +122,7 @@ class BaseTableDocumentService(BaseDocumentService[Document, DocumentCreate, Doc
 
         # create document ID if it is None
         data_doc_id = data.id or ObjectId()
-        payload_dict = {**data.json_dict(), "_id": data_doc_id}
+        payload_dict = {**data.dict(by_alias=True), "_id": data_doc_id}
         if self.is_catalog_specific:
             payload_dict = {**payload_dict, "catalog_id": self.catalog_id}
 
