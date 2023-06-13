@@ -131,7 +131,7 @@ class BatchFeatureCreateTask(BaseTask):
         for i, feature_create_data in enumerate(payload.iterate_features()):
             # prepare the feature document & definition
             document = await feature_service.prepare_feature_model(
-                data=FeatureServiceCreate(**feature_create_data.json_dict()),
+                data=FeatureServiceCreate(**feature_create_data.dict(by_alias=True)),
                 sanitize_for_definition=True,
             )
             definition = await feature_service.prepare_feature_definition(document=document)

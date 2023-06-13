@@ -151,7 +151,7 @@ class FeatureStoreController(
             )
             # Try to persist credential
             await self.credential_service.create_document(
-                data=CredentialCreate(**credential.json_dict())
+                data=CredentialCreate(**credential.dict(by_alias=True))
             )
             # If no error thrown from creating, try to create the metadata table with the feature store ID.
             metadata_schema_initializer = MetadataSchemaInitializer(session)

@@ -97,7 +97,7 @@ class FeatureListController(
         """
         if isinstance(data, FeatureListCreate):
             document = await self.service.create_document(
-                data=FeatureListServiceCreate(**data.json_dict())
+                data=FeatureListServiceCreate(**data.dict(by_alias=True))
             )
         else:
             document = await self.version_service.create_new_feature_list_version(data=data)

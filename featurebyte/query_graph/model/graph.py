@@ -46,7 +46,7 @@ class QueryGraphModel(FeatureByteBaseModel):
     ref_to_node_name: Dict[str, str] = Field(default_factory=dict, exclude=True)
 
     def __repr__(self) -> str:
-        return json.dumps(self.json_dict(), indent=4)
+        return self.json(by_alias=True, indent=4)
 
     def __str__(self) -> str:
         return repr(self)

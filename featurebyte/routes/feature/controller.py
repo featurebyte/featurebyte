@@ -103,7 +103,7 @@ class FeatureController(
         """
         payload = BatchFeatureCreateTaskPayload(
             **{
-                **data.json_dict(),
+                **data.dict(by_alias=True),
                 "catalog_id": self.service.catalog_id,
             }
         )
@@ -128,7 +128,7 @@ class FeatureController(
         """
         if isinstance(data, FeatureCreate):
             document = await self.service.create_document(
-                data=FeatureServiceCreate(**data.json_dict())
+                data=FeatureServiceCreate(**data.dict(by_alias=True))
             )
         else:
             document = await self.version_service.create_new_feature_version(data=data)

@@ -156,7 +156,7 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureServiceCreate, Fea
         """
         document = FeatureModel(
             **{
-                **data.json_dict(),
+                **data.dict(by_alias=True),
                 "readiness": FeatureReadiness.DRAFT,
                 "version": await self._get_feature_version(data.name),
                 "user_id": self.user.id,
@@ -170,7 +170,9 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureServiceCreate, Fea
         )
 
         # create a new feature document (so that the derived attributes like table_ids is generated properly)
-        return FeatureModel(**{**document.json_dict(), "graph": graph, "node_name": node_name})
+        return FeatureModel(
+            **{**document.dict(by_alias=True), "graph": graph, "node_name": node_name}
+        )
 
     async def prepare_feature_definition(self, document: FeatureModel) -> str:
         """
