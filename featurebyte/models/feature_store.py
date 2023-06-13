@@ -41,7 +41,7 @@ class FeatureStoreModel(FeatureByteBaseDocumentModel, FeatureStoreDetails):
         -------
         FeatureStoreDetails
         """
-        return FeatureStoreDetails(**self.json_dict())
+        return FeatureStoreDetails(**self.dict(by_alias=True))
 
     class Settings(FeatureByteBaseDocumentModel.Settings):
         """
@@ -175,7 +175,7 @@ class TableModel(BaseTableData, ConstructGraphMixin, FeatureByteCatalogBaseDocum
         -------
         BaseTableData
         """
-        return self._table_data_class(**self.json_dict())
+        return self._table_data_class(**self.dict(by_alias=True))
 
     @property
     @abstractmethod

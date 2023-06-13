@@ -164,7 +164,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         BaseTableData
             Table data object used for SQL query construction.
         """
-        return self._table_data_class(**self.json_dict())
+        return self._table_data_class(**self.dict(by_alias=True))
 
     @property
     def frame(self) -> TableDataFrame:

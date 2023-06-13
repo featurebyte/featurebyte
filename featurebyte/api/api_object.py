@@ -620,7 +620,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
             raise NotImplementedError
 
         data = self._update_schema_class(  # pylint: disable=not-callable
-            **{**self.json_dict(), **update_payload}
+            **{**self.dict(by_alias=True), **update_payload}
         )
         client = Configurations().get_client()
         response = client.patch(url=f"{self._route}/{self.id}", json=data.json_dict())

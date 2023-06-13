@@ -91,7 +91,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
             return self.internal_default_feature_store_ids
 
     def _get_create_payload(self) -> Dict[str, Any]:
-        data = CatalogCreate(**self.json_dict())
+        data = CatalogCreate(**self.dict(by_alias=True))
         return data.json_dict()
 
     def info(self, verbose: bool = False) -> Dict[str, Any]:

@@ -658,7 +658,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
     def _get_create_payload(self) -> dict[str, Any]:
         feature_ids = [feature.id for feature in self.feature_objects.values()]
         data = FeatureListCreate(
-            **{**self.json_dict(exclude_none=True), "feature_ids": feature_ids}
+            **{**self.dict(by_alias=True, exclude_none=True), "feature_ids": feature_ids}
         )
         return data.json_dict()
 

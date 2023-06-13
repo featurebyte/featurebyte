@@ -549,9 +549,9 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
             Table data object used for SQL query construction.
         """
         try:
-            return self._table_data_class(**self.cached_model.json_dict())
+            return self._table_data_class(**self.cached_model.dict(by_alias=True))
         except RecordRetrievalException:
-            return self._table_data_class(**self.json_dict())
+            return self._table_data_class(**self.dict(by_alias=True))
 
     @property
     def columns_info(self) -> List[ColumnInfo]:
@@ -697,7 +697,7 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
 
     def _get_create_payload(self) -> dict[str, Any]:
         assert self._create_schema_class is not None
-        data = self._create_schema_class(**self.json_dict())  # pylint: disable=not-callable
+        data = self._create_schema_class(**self.dict(by_alias=True))  # pylint: disable=not-callable
         return data.json_dict()
 
     @classmethod
@@ -755,7 +755,7 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
             response_dict = response.json()
             if not response_dict["data"]:
                 table = cls(
-                    **data.json_dict(),
+                    **data.dict(by_alias=True),
                     feature_store=source_table.feature_store,
                     _validate_schema=True,
                 )
