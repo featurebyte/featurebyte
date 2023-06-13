@@ -1383,3 +1383,13 @@ def mock_task_manager(request, persistent, storage, temp_storage, get_cred, mock
                 mock_get_celery.return_value.AsyncResult.side_effect = get_task
                 mock_get_celery_worker.return_value.AsyncResult.side_effect = get_task
                 yield
+
+
+@pytest.fixture(scope="session")
+def user():
+    """
+    Mock user
+    """
+    user = Mock()
+    user.id = ObjectId()
+    return user

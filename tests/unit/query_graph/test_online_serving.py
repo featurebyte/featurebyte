@@ -39,7 +39,7 @@ def get_online_store_retrieval_sql(
     parent_serving_preparation=None,
 ):
     """Generate SQL for retrieving online store data"""
-    expr = get_online_store_retrieval_expr(
+    retrieval_template = get_online_store_retrieval_expr(
         graph=graph,
         nodes=nodes,
         source_type=source_type,
@@ -48,7 +48,7 @@ def get_online_store_retrieval_sql(
         request_table_expr=request_table_expr,
         parent_serving_preparation=parent_serving_preparation,
     )
-    return sql_to_string(expr, SourceType.SNOWFLAKE)
+    return retrieval_template.sql_template.render()
 
 
 def test_construct_universe_sql(query_graph_with_groupby):

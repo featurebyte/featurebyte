@@ -22,6 +22,7 @@ from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.base import BaseSession
@@ -55,6 +56,9 @@ class OnlineEnableService(BaseService):
             user=user, persistent=persistent, catalog_id=catalog_id
         )
         self.feature_list_service = FeatureListService(
+            user=user, persistent=persistent, catalog_id=catalog_id
+        )
+        self.online_store_table_version_service = OnlineStoreTableVersionService(
             user=user, persistent=persistent, catalog_id=catalog_id
         )
         self._task_manager = task_manager
@@ -144,6 +148,7 @@ class OnlineEnableService(BaseService):
     async def update_data_warehouse_with_session(
         session: BaseSession,
         feature: FeatureModel,
+        online_store_table_version_service: OnlineStoreTableVersionService,
         task_manager: Optional[TaskManager] = None,
     ) -> None:
         """
@@ -165,7 +170,11 @@ class OnlineEnableService(BaseService):
         if not online_feature_spec.is_online_store_eligible:
             return
 
-        feature_manager = FeatureManager(session=session, task_manager=task_manager)
+        feature_manager = FeatureManager(
+            session=session,
+            task_manager=task_manager,
+            online_store_table_version_service=online_store_table_version_service,
+        )
 
         if feature.online_enabled:
             await feature_manager.online_enable(online_feature_spec)
@@ -200,7 +209,10 @@ class OnlineEnableService(BaseService):
             feature_store_model, get_credential
         )
         await self.update_data_warehouse_with_session(
-            session=session, feature=updated_feature, task_manager=self._task_manager
+            session=session,
+            feature=updated_feature,
+            online_store_table_version_service=self.online_store_table_version_service,
+            task_manager=self._task_manager,
         )
 
     async def update_feature(

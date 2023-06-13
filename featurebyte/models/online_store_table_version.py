@@ -1,0 +1,40 @@
+"""
+OnlineStoreTableVersion model
+"""
+from __future__ import annotations
+
+from typing import List
+
+import pymongo
+from pydantic import StrictStr
+
+from featurebyte.models.base import FeatureByteCatalogBaseDocumentModel, UniqueValuesConstraint
+from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
+
+
+class OnlineStoreTableVersion(FeatureByteCatalogBaseDocumentModel):
+    """Model for a OnlineStoreTableVersion"""
+
+    online_store_table_name: StrictStr
+    aggregation_result_name: StrictStr
+    version: int
+
+    class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
+        """
+        MongoDB settings
+        """
+
+        collection_name: str = "online_store_table_version"
+        unique_constraints: List[UniqueValuesConstraint] = []
+
+        indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
+            pymongo.operations.IndexModel("aggregation_result_name"),
+        ]
+
+
+class OnlineStoreTableVersionUpdate(BaseDocumentServiceUpdateSchema):
+    """
+    Schema for OnlineStoreTableVersionUpdate
+    """
+
+    version: int

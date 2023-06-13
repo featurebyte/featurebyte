@@ -24,6 +24,7 @@ from featurebyte.logging import get_logger
 from featurebyte.models.online_store import OnlineFeatureSpec
 from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
+from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.manager import TileManager
@@ -44,6 +45,7 @@ class FeatureManager(BaseModel):
     def __init__(
         self,
         session: BaseSession,
+        online_store_table_version_service: OnlineStoreTableVersionService,
         task_manager: Optional[TaskManager] = None,
         **kw: Any,
     ) -> None:
@@ -64,6 +66,7 @@ class FeatureManager(BaseModel):
         self._adapter = get_sql_adapter(session.source_type)
         self._tile_manager = tile_manager_from_session(
             session=session,
+            online_store_table_version_service=online_store_table_version_service,
             task_manager=task_manager,
         )
 

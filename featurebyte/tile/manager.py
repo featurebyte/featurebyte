@@ -16,6 +16,7 @@ from featurebyte.enum import InternalName
 from featurebyte.exception import TileScheduleNotSupportedError
 from featurebyte.logging import get_logger
 from featurebyte.models.tile import TileSpec, TileType
+from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.base import BaseSession
 from featurebyte.sql.tile_generate import TileGenerate
@@ -35,9 +36,14 @@ class TileManager(BaseModel):
 
     _session: BaseSession = PrivateAttr()
     _task_manager: Optional[TaskManager] = PrivateAttr()
+    _online_store_table_version_service: OnlineStoreTableVersionService = PrivateAttr()
 
     def __init__(
-        self, session: BaseSession, task_manager: Optional[TaskManager] = None, **kw: Any
+        self,
+        session: BaseSession,
+        online_store_table_version_service: OnlineStoreTableVersionService,
+        task_manager: Optional[TaskManager] = None,
+        **kw: Any,
     ) -> None:
         """
         Custom constructor for TileSnowflake to instantiate a datasource session
@@ -54,6 +60,7 @@ class TileManager(BaseModel):
         super().__init__(**kw)
         self._session = session
         self._task_manager = task_manager
+        self._online_store_table_version_service = online_store_table_version_service
 
     async def generate_tiles_on_demand(
         self,
@@ -140,6 +147,7 @@ class TileManager(BaseModel):
             session=self._session,
             aggregation_id=tile_spec.aggregation_id,
             job_schedule_ts_str=job_schedule_ts_str,
+            online_store_table_version_service=self._online_store_table_version_service,
         )
         await executor.execute()
 
@@ -331,6 +339,7 @@ class TileManager(BaseModel):
             logger.info(f"Creating new job {job_id}")
             tile_schedule_ins = TileGenerateSchedule(
                 session=self._session,
+                online_store_table_version_service=self._online_store_table_version_service,
                 tile_id=tile_spec.tile_id,
                 tile_modulo_frequency_second=tile_spec.time_modulo_frequency_second,
                 blind_spot_second=tile_spec.blind_spot_second,

@@ -18,6 +18,7 @@ from featurebyte.schema.deployment import OnlineFeaturesResponseModel
 from featurebyte.service.base_service import BaseService
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.session_manager import SessionManagerService
 
 
@@ -33,6 +34,7 @@ class OnlineServingService(BaseService):
         catalog_id: ObjectId,
         session_manager_service: SessionManagerService,
         entity_validation_service: EntityValidationService,
+        online_table_version_service: OnlineStoreTableVersionService,
     ):
         super().__init__(user, persistent, catalog_id)
         self.feature_store_service = FeatureStoreService(
@@ -40,6 +42,7 @@ class OnlineServingService(BaseService):
         )
         self.session_manager_service = session_manager_service
         self.entity_validation_service = entity_validation_service
+        self.online_store_table_version_service = online_table_version_service
 
     async def get_online_features_from_feature_list(
         self,
@@ -113,6 +116,7 @@ class OnlineServingService(BaseService):
             source_type=feature_store.type,
             parent_serving_preparation=parent_serving_preparation,
             output_table_details=output_table_details,
+            online_store_table_version_service=self.online_store_table_version_service,
         )
         if features is None:
             return None

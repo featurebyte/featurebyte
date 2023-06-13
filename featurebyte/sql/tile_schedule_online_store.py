@@ -7,10 +7,12 @@ import textwrap
 from datetime import datetime
 
 import pandas as pd
-from pydantic import Field
+from pydantic import Field, PrivateAttr
 
 from featurebyte.enum import InternalName, SourceType
 from featurebyte.logging import get_logger
+from featurebyte.models.online_store_table_version import OnlineStoreTableVersion
+from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.session.base import BaseSession
 from featurebyte.sql.base import BaselSqlModel
 from featurebyte.sql.common import construct_create_table_query, retry_sql
@@ -26,6 +28,8 @@ class TileScheduleOnlineStore(BaselSqlModel):
     aggregation_id: str
     job_schedule_ts_str: str
     retry_num: int = Field(default=10)
+
+    _online_store_table_version_service: OnlineStoreTableVersionService = PrivateAttr()
 
     async def retry_sql(self, sql: str) -> Union[pd.DataFrame, None]:
         """
@@ -53,6 +57,8 @@ class TileScheduleOnlineStore(BaselSqlModel):
         kwargs: Any
             constructor arguments
         """
+        online_store_table_version_service = kwargs.pop("online_store_table_version_service")
+        self._online_store_table_version_service = online_store_table_version_service
         super().__init__(session=session, **kwargs)
 
     async def execute(self) -> None:
@@ -129,23 +135,36 @@ class TileScheduleOnlineStore(BaselSqlModel):
                 await self.retry_sql(
                     sql=f"UPDATE {fs_table} SET UPDATED_AT = to_timestamp('{current_ts}')",
                 )
+
+                # update online store table version in mongo
+                version_model = OnlineStoreTableVersion(
+                    online_store_table_name=fs_table,
+                    aggregation_result_name=f_name,
+                    version=0,
+                )
+                await self._online_store_table_version_service.create_document(version_model)
             else:
                 # feature store table already exists, insert records with the input feature sql
 
                 # get current version
-                current_version = (
-                    await self._session.execute_query(
-                        f"""
-                        SELECT MAX({quoted_version_column}) AS OUT
-                        FROM {fs_table}
-                        WHERE {quoted_result_name_column} = '{f_name}'
-                        """
-                    )
-                ).iloc[0]["OUT"]
-                if pd.isna(current_version):
+                current_version = await self._online_store_table_version_service.get_version(f_name)
+                if current_version is None:
                     next_version = 0
                 else:
                     next_version = current_version + 1
+                # current_version = (
+                #     await self._session.execute_query(
+                #         f"""
+                #         SELECT MAX({quoted_version_column}) AS OUT
+                #         FROM {fs_table}
+                #         WHERE {quoted_result_name_column} = '{f_name}'
+                #         """
+                #     )
+                # ).iloc[0]["OUT"]
+                # if pd.isna(current_version):
+                #     next_version = 0
+                # else:
+                #     next_version = current_version + 1
 
                 insert_query = textwrap.dedent(
                     f"""
@@ -159,3 +178,16 @@ class TileScheduleOnlineStore(BaselSqlModel):
                     "Done inserting to online store",
                     extra={"fs_table": fs_table, "result_name": f_name, "version": next_version},
                 )
+
+                # update online store table version in mongo
+                if current_version is None:
+                    version_model = OnlineStoreTableVersion(
+                        online_store_table_name=fs_table,
+                        aggregation_result_name=f_name,
+                        version=next_version,
+                    )
+                    await self._online_store_table_version_service.create_document(version_model)
+                else:
+                    await self._online_store_table_version_service.update_version(
+                        f_name, next_version
+                    )

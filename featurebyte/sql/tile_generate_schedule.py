@@ -6,11 +6,13 @@ from typing import Any, Dict, List, Optional
 from datetime import datetime, timedelta
 
 import dateutil.parser
-from pydantic import Field
+from pydantic import Field, PrivateAttr
 
 from featurebyte.common import date_util
 from featurebyte.enum import InternalName
 from featurebyte.logging import get_logger
+from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
+from featurebyte.session.base import BaseSession
 from featurebyte.sql.common import retry_sql
 from featurebyte.sql.tile_common import TileCommon
 from featurebyte.sql.tile_generate import TileGenerate
@@ -29,6 +31,23 @@ class TileGenerateSchedule(TileCommon):
     tile_type: str
     monitor_periods: int
     job_schedule_ts: Optional[str] = Field(default=None)
+
+    _online_store_table_version_service: OnlineStoreTableVersionService = PrivateAttr()
+
+    def __init__(self, session: BaseSession, **kwargs: Any):
+        """
+        Initialize TileGenerateSchedule
+
+        Parameters
+        ----------
+        session: BaseSession
+            input SparkSession
+        kwargs: Any
+            constructor arguments
+        """
+        online_store_table_version_service = kwargs.pop("online_store_table_version_service")
+        self._online_store_table_version_service = online_store_table_version_service
+        super().__init__(session=session, **kwargs)
 
     # pylint: disable=too-many-locals,too-many-statements
     async def execute(self) -> None:
@@ -174,6 +193,7 @@ class TileGenerateSchedule(TileCommon):
             session=self._session,
             aggregation_id=self.aggregation_id,
             job_schedule_ts_str=last_tile_end_ts.strftime(date_format),
+            online_store_table_version_service=self._online_store_table_version_service,
         )
 
         step_specs: List[Dict[str, Any]] = [

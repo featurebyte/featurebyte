@@ -21,7 +21,10 @@ from featurebyte.query_graph.sql.common import (
     get_qualified_column_identifier,
     quoted_identifier,
 )
-from featurebyte.query_graph.sql.online_serving_util import get_online_store_table_name
+from featurebyte.query_graph.sql.online_serving_util import (
+    get_online_store_table_name,
+    get_version_placeholder,
+)
 from featurebyte.query_graph.sql.specs import (
     AggregationSpec,
     NonTileBasedAggregationSpec,
@@ -478,21 +481,26 @@ class TileBasedAggregator(Aggregator[TileBasedAggregationSpec], ABC):
         value_column = self.adapter.online_store_pivot_prepare_value_column(dtype)
 
         # Get the latest version of the online store table
-        latest_result_version = (
-            select(
-                quoted_identifier(InternalName.ONLINE_STORE_RESULT_NAME_COLUMN),
-                alias_(
-                    expressions.Max(
-                        this=quoted_identifier(InternalName.ONLINE_STORE_VERSION_COLUMN)
-                    ),
-                    alias="LATEST_VERSION",
-                ),
+        values_expressions = [
+            expressions.Tuple(
+                expressions=[
+                    make_literal_value(agg_result_name),
+                    expressions.Identifier(this=get_version_placeholder(agg_result_name)),
+                ]
             )
-            .from_(table_name)
-            .group_by(
+            for agg_result_name in agg_result_names
+        ]
+        values_alias = expressions.TableAlias(
+            this=expressions.Identifier(this="version_table"),
+            columns=[
                 quoted_identifier(InternalName.ONLINE_STORE_RESULT_NAME_COLUMN),
-            )
+                "LATEST_VERSION",
+            ],
         )
+        latest_result_version = select(
+            quoted_identifier(InternalName.ONLINE_STORE_RESULT_NAME_COLUMN),
+            "LATEST_VERSION",
+        ).from_(expressions.Values(expressions=values_expressions, alias=values_alias))
         latest_online_store_table = (
             select("R.*")
             .from_(latest_result_version.subquery(alias="L"))

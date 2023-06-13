@@ -8,6 +8,8 @@ import json
 
 from bson import ObjectId
 
+from featurebyte.enum import InternalName
+
 
 def get_online_store_table_name(entity_ids_set: set[ObjectId], result_type: str) -> str:
     """
@@ -31,3 +33,19 @@ def get_online_store_table_name(entity_ids_set: set[ObjectId], result_type: str)
     identifier = hasher.hexdigest(20)
     online_store_table_name = f"online_store_{identifier}"
     return online_store_table_name
+
+
+def get_version_placeholder(aggregation_result_name: str) -> str:
+    """
+    Get the version placeholder for the given aggregation result name
+
+    Parameters
+    ----------
+    aggregation_result_name : str
+        Aggregation result name
+
+    Returns
+    -------
+    str
+    """
+    return aggregation_result_name + InternalName.ONLINE_STORE_VERSION_PLACEHOLDER_SUFFIX

@@ -32,9 +32,14 @@ from featurebyte.query_graph.sql.common import (
 )
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
-from featurebyte.query_graph.sql.online_serving_util import get_online_store_table_name
+from featurebyte.query_graph.sql.online_serving_util import (
+    get_online_store_table_name,
+    get_version_placeholder,
+)
 from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
+from featurebyte.query_graph.sql.template import SqlExpressionTemplate
 from featurebyte.query_graph.sql.tile_util import calculate_first_and_last_tile_indices
+from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.session.base import BaseSession
 
 logger = get_logger(__name__)
@@ -380,6 +385,33 @@ def is_online_store_eligible(graph: QueryGraph, node: Node) -> bool:
     return has_point_in_time_groupby
 
 
+@dataclass
+class OnlineStoreRetrievalSql:
+    sql_template: SqlExpressionTemplate
+    aggregation_result_names: list[str]
+
+    def fill_version_placeholders(self, versions: Dict[str, int]) -> expressions.Select:
+        """
+        Fill the version placeholders in the SQL template
+
+        Parameters
+        ----------
+        versions : Dict[str, int]
+            Mapping from aggregation result name to version
+
+        Returns
+        -------
+        expressions.Select
+        """
+        placeholders_mapping = {
+            get_version_placeholder(agg_result_name): version
+            for (agg_result_name, version) in versions.items()
+        }
+        return cast(
+            expressions.Select, self.sql_template.render(placeholders_mapping, as_str=False)
+        )
+
+
 def get_online_store_retrieval_expr(
     graph: QueryGraph,
     nodes: list[Node],
@@ -388,7 +420,7 @@ def get_online_store_retrieval_expr(
     request_table_name: Optional[str] = None,
     request_table_expr: Optional[expressions.Select] = None,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
-) -> expressions.Select:
+) -> OnlineStoreRetrievalSql:
     """
     Construct SQL code that can be used to lookup pre-computed features from online store
 
@@ -448,7 +480,11 @@ def get_online_store_retrieval_expr(
         prior_cte_statements=ctes,
         exclude_columns={SpecialColumnName.POINT_IN_TIME},
     )
-    return output_expr
+
+    return OnlineStoreRetrievalSql(
+        sql_template=SqlExpressionTemplate(output_expr, source_type),
+        aggregation_result_names=plan.tile_based_aggregation_result_names,
+    )
 
 
 async def get_online_features(
@@ -457,6 +493,7 @@ async def get_online_features(
     nodes: list[Node],
     request_data: Union[pd.DataFrame, BatchRequestTableModel],
     source_type: SourceType,
+    online_store_table_version_service: OnlineStoreTableVersionService,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
     output_table_details: Optional[TableDetails] = None,
 ) -> Optional[List[Dict[str, Any]]]:
@@ -496,7 +533,7 @@ async def get_online_features(
         )
         request_table_columns = [col.name for col in request_data.columns_info]
 
-    retrieval_expr = get_online_store_retrieval_expr(
+    retrieval_template = get_online_store_retrieval_expr(
         graph,
         nodes,
         source_type=source_type,
@@ -504,6 +541,10 @@ async def get_online_features(
         request_table_expr=request_table_expr,
         parent_serving_preparation=parent_serving_preparation,
     )
+    versions = await online_store_table_version_service.get_versions(
+        retrieval_template.aggregation_result_names
+    )
+    retrieval_expr = retrieval_template.fill_version_placeholders(versions)
     logger.debug(f"OnlineServingService sql prep elapsed: {time.time() - tic:.6f}s")
 
     tic = time.time()

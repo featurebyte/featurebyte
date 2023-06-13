@@ -60,7 +60,11 @@ class TileTask(BaseTask):
         )
         db_session = await session_manager.get_session(feature_store)
 
-        instance = instance_class(session=db_session, **instance_json)
+        instance = instance_class(
+            session=db_session,
+            online_store_table_version_service=self.app_container.online_store_table_version_service,
+            **instance_json,
+        )
 
         await instance.execute()
 

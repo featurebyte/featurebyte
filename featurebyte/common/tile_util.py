@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Optional
 
 from featurebyte import SourceType
+from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.manager import TileManager
@@ -13,6 +14,7 @@ from featurebyte.tile.manager import TileManager
 
 def tile_manager_from_session(
     session: BaseSession,
+    online_store_table_version_service: OnlineStoreTableVersionService,
     task_manager: Optional[TaskManager] = None,
 ) -> TileManager:
     """
@@ -35,6 +37,10 @@ def tile_manager_from_session(
         if TileManager for session source type is not implemented yet
     """
     if session.source_type in [SourceType.SPARK, SourceType.SNOWFLAKE, SourceType.DATABRICKS]:
-        return TileManager(session=session, task_manager=task_manager)
+        return TileManager(
+            session=session,
+            online_store_table_version_service=online_store_table_version_service,
+            task_manager=task_manager,
+        )
 
     raise ValueError(f"Tile Manager for {session.source_type} has not been implemented")
