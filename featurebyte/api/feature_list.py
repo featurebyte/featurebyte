@@ -70,7 +70,7 @@ from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.schema.deployment import DeploymentCreate
-from featurebyte.schema.feature import BatchFeatureCreate, BatchFeatureItem, FeatureCreate
+from featurebyte.schema.feature import BatchFeatureCreate, BatchFeatureItem
 from featurebyte.schema.feature_list import (
     FeatureListCreate,
     FeatureListGetHistoricalFeatures,

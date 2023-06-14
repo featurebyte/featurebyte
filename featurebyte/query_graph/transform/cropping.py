@@ -1,7 +1,7 @@
 """
 This module contains graph cropping related classes.
 """
-from typing import Dict, List, Set, Tuple
+from typing import Dict, List, Set
 
 from pydantic import BaseModel, Field
 
@@ -53,7 +53,7 @@ class GraphCroppingTransformer(BaseGraphTransformer[GraphCroppingOutput, GraphCr
     def _extract_node_names_to_keep(
         cls, graph: QueryGraphModel, target_node_names: List[str]
     ) -> Set[str]:
-        node_names_to_keep = set()
+        node_names_to_keep: Set[str] = set()
         for node_name in target_node_names:
             cls._dfs_traversal(
                 graph=graph, node_name=node_name, node_names_to_keep=node_names_to_keep
@@ -61,6 +61,19 @@ class GraphCroppingTransformer(BaseGraphTransformer[GraphCroppingOutput, GraphCr
         return node_names_to_keep
 
     def transform(self, target_node_names: List[str]) -> GraphCroppingOutput:
+        """
+        Transform the graph by cropping the graph to only contain the target nodes and their
+        dependencies.
+
+        Parameters
+        ----------
+        target_node_names: List[str]
+            The target node names to keep in the graph.
+
+        Returns
+        -------
+        GraphCroppingOutput
+        """
         node_names_to_keep = self._extract_node_names_to_keep(
             graph=self.graph, target_node_names=target_node_names
         )
