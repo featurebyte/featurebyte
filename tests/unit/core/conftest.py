@@ -6,11 +6,10 @@ import textwrap
 import pytest
 
 from featurebyte.core.frame import Frame
-from featurebyte.core.generic import QueryObject
 from featurebyte.core.series import Series
 from featurebyte.core.timedelta import to_timedelta
 from featurebyte.enum import DBVarType
-from featurebyte.query_graph.graph import NodeOutputType, NodeType
+from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from tests.util.helper import reset_global_graph
 
 
