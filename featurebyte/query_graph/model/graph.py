@@ -484,7 +484,6 @@ class QueryGraphModel(FeatureByteBaseModel):
             operation node of the given input
         """
         input_node_refs = [self.node_name_to_ref[node.name] for node in input_nodes]
-        # create a temp_node to validate the node parameters & use only the required parameters to hash
         node_ref = hash_node(
             node.type,
             self._get_node_parameter_for_compute_node_hash(node),
@@ -540,3 +539,4 @@ class QueryGraphModel(FeatureByteBaseModel):
 
 NodeNameMap = Dict[str, str]
 GraphNodeNameMap = Tuple[QueryGraphModel, NodeNameMap]
+GraphCroppingOutput = Tuple[QueryGraphModel, List[str]]
