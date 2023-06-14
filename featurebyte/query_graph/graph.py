@@ -23,7 +23,12 @@ from pydantic import Field
 from featurebyte.common.singleton import SingletonMeta
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph_node.base import GraphNode
-from featurebyte.query_graph.model.graph import Edge, GraphNodeNameMap, QueryGraphModel
+from featurebyte.query_graph.model.graph import (
+    Edge,
+    GraphCroppingOutput,
+    GraphNodeNameMap,
+    QueryGraphModel,
+)
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.base import NodeT
 from featurebyte.query_graph.node.generic import GroupByNode, LookupNode
@@ -34,6 +39,7 @@ from featurebyte.query_graph.node.metadata.operation import (
     SourceDataColumn,
 )
 from featurebyte.query_graph.node.mixin import BaseGroupbyParameters
+from featurebyte.query_graph.transform.cropping import GraphCroppingTransformer
 from featurebyte.query_graph.transform.entity_extractor import EntityExtractor
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
@@ -280,6 +286,26 @@ class QueryGraph(QueryGraphModel):
             graph=self, node=target_node, aggressive=aggressive
         )
         return pruned_graph, node_name_map
+
+    def crop(self, target_node_names: List[str]) -> GraphCroppingOutput:
+        """
+        Crop the query graph and return the cropped graph & mapped node.
+
+        To crop the graph, this function first traverses from the target node to the input node.
+        The unused branches of the graph will get pruned in this step. After that, a new graph is
+        reconstructed by adding the required nodes back.
+
+        Parameters
+        ----------
+        target_node_names: List[str]
+            Target end node names
+
+        Returns
+        -------
+        GraphCroppingOutput
+            Tuple of pruned graph & its mapped target node names
+        """
+        return GraphCroppingTransformer(graph=self).transform(target_node_names=target_node_names)
 
     def reconstruct(
         self, node_name_to_replacement_node: Dict[str, Node], regenerate_groupby_hash: bool
