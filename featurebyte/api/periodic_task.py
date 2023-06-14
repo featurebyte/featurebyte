@@ -24,7 +24,7 @@ class PeriodicTask(PeriodicTaskModel, SavableApiObject):
     _get_schema = PeriodicTaskModel
 
     @classmethod
-    def list_handler(cls) -> Optional[ListHandler]:
+    def _list_handler(cls) -> Optional[ListHandler]:
         return ListHandler(
             route=cls._route,
             list_schema=PeriodicTaskModel,

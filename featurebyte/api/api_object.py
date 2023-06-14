@@ -368,7 +368,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
         return cls._list(include_id=include_id)
 
     @classmethod
-    def list_handler(cls) -> Optional[ListHandler]:
+    def _list_handler(cls) -> Optional[ListHandler]:
         """
         Get list handler
         """
@@ -394,8 +394,8 @@ class ApiObject(FeatureByteBaseDocumentModel):
             Table of objects
         """
         # Use list handler
-        if cls.list_handler():
-            return cls.list_handler().list(include_id=include_id, params=params)
+        if cls._list_handler():
+            return cls._list_handler().list(include_id=include_id, params=params)
 
         # Use previous logic
         params = params or {}

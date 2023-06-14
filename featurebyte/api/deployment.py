@@ -55,7 +55,7 @@ class Deployment(ApiObject):
     _update_schema_class = DeploymentUpdate
 
     @classmethod
-    def list_handler(cls) -> Optional[ListHandler]:
+    def _list_handler(cls) -> Optional[ListHandler]:
         return ListHandler(
             route=cls._route,
             list_schema=DeploymentModel,
