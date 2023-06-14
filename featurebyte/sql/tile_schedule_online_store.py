@@ -122,9 +122,17 @@ class TileScheduleOnlineStore(BaselSqlModel):
 
             if not fs_table_exist_flag:
                 # feature store table does not exist, create table with the input feature sql
+                query = textwrap.dedent(
+                    f"""
+                    SELECT
+                      {column_names},
+                      CAST({next_version} AS INT) AS {quoted_version_column}
+                    FROM ({f_sql})
+                    """
+                ).strip()
                 create_sql = construct_create_table_query(
                     fs_table,
-                    f"select {column_names}, {next_version} AS {quoted_version_column} from ({f_sql})",
+                    query,
                     session=self._session,
                     partition_keys=quoted_result_name_column,
                 )
