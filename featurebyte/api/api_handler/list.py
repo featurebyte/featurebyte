@@ -1,6 +1,8 @@
 """
 List handler
 """
+from __future__ import annotations
+
 from typing import Any, Dict, List, Optional, Type
 
 from functools import partial
@@ -28,7 +30,7 @@ class ListHandler:
         self,
         route: str,
         list_schema: Type[FeatureByteBaseDocumentModel],
-        list_fields: List[str] = ("name", "created_at"),
+        list_fields: Optional[List[str]] = None,
         list_foreign_keys: List[ForeignKeyMapping] = (),
     ):
         """
@@ -47,7 +49,7 @@ class ListHandler:
         """
         self.route = route
         self.list_schema = list_schema
-        self.list_fields = list_fields
+        self.list_fields = list_fields or ["name", "created_at"]
         self.list_foreign_keys = list_foreign_keys
 
     def list(

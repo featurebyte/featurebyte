@@ -368,16 +368,33 @@ class ApiObject(FeatureByteBaseDocumentModel):
         return cls._list(include_id=include_id)
 
     @classmethod
-    def _list_handler(cls) -> Optional[ListHandler]:
+    def _list_handler(cls) -> ListHandler:
         """
         Get list handler.
 
         Returns
         -------
-        Optional[ListHandler]
+        ListHandler
             List handler
         """
-        return None
+        return ListHandler(
+            route=cls._route,
+            list_schema=cls._list_schema,
+            list_fields=cls._list_fields,
+            list_foreign_keys=cls._list_foreign_keys,
+        )
+
+    @classmethod
+    def use_new_list_handler(cls) -> bool:
+        """
+        Whether to use new list handler.
+
+        Returns
+        -------
+        bool
+            Whether to use new list handler
+        """
+        return False
 
     @classmethod
     def _list(
@@ -399,7 +416,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
             Table of objects
         """
         # Use list handler
-        if cls._list_handler():
+        if cls.use_new_list_handler():
             return cls._list_handler().list(include_id=include_id, params=params)
 
         # Use previous logic
