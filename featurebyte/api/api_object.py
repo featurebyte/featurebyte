@@ -22,6 +22,7 @@ from typeguard import typechecked
 
 from featurebyte.api.api_handler.list import ListHandler
 from featurebyte.api.api_object_util import (
+    PAGINATED_CALL_PAGE_SIZE,
     ForeignKeyMapping,
     ProgressThread,
     iterate_api_object_using_paginated_routes,
@@ -45,7 +46,6 @@ from featurebyte.schema.task import TaskStatus
 ApiObjectT = TypeVar("ApiObjectT", bound="ApiObject")
 ModelT = TypeVar("ModelT", bound=FeatureByteBaseDocumentModel)
 ConflictResolution = Literal["raise", "retrieve"]
-PAGINATED_CALL_PAGE_SIZE = 100
 POLLING_INTERVAL = 3
 
 

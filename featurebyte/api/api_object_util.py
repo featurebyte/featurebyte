@@ -20,6 +20,9 @@ from featurebyte.logging import get_logger
 logger = get_logger(__name__)
 
 
+PAGINATED_CALL_PAGE_SIZE = 100
+
+
 @dataclass
 class ForeignKeyMapping:
     """

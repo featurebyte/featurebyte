@@ -9,6 +9,7 @@ from itertools import groupby
 from pandas import DataFrame
 
 from featurebyte.api.api_object_util import (
+    PAGINATED_CALL_PAGE_SIZE,
     ForeignKeyMapping,
     iterate_api_object_using_paginated_routes,
     map_dict_list_to_name,
@@ -16,11 +17,13 @@ from featurebyte.api.api_object_util import (
 )
 from featurebyte.models.base import FeatureByteBaseDocumentModel
 
-# TODO: consolidate this with the one in api_object.py
-PAGINATED_CALL_PAGE_SIZE = 100
-
 
 class ListHandler:
+    """
+    ListHandler is a class that handles listing of objects. ApiObject classes can use this class to configure how
+    to list objects.
+    """
+
     def __init__(
         self,
         route: str,
@@ -28,6 +31,18 @@ class ListHandler:
         list_fields: List[str] = ("name", "created_at"),
         list_foreign_keys: List[ForeignKeyMapping] = (),
     ):
+        """
+        Parameters
+        ----------
+        route: str
+            Route to list objects
+        list_schema: Type[FeatureByteBaseDocumentModel]
+            Schema to use to parse list response
+        list_fields: List[str]
+            Fields to include in list
+        list_foreign_keys: List[ForeignKeyMapping]
+            List of foreign keys that can be mapped to an object name
+        """
         self.route = route
         self.list_schema = list_schema
         self.list_fields = list_fields
