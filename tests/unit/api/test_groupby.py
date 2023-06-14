@@ -6,7 +6,7 @@ from typing import List, Type
 import pytest
 
 from featurebyte import FeatureJobSetting
-from featurebyte.api.base_aggregator import BaseAggregator
+from featurebyte.api.aggregator.base_aggregator import BaseAggregator
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.api.groupby import GroupBy
