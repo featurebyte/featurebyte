@@ -7,10 +7,10 @@ from typing import Any, List, Optional
 
 from pydantic import Field, StrictStr
 
-from featurebyte import RecordRetrievalException
 from featurebyte.api.api_object import ForeignKeyMapping
 from featurebyte.api.entity import Entity
 from featurebyte.api.savable_api_object import SavableApiObject
+from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.target import TargetModel
 from featurebyte.schema.target import TargetUpdate
