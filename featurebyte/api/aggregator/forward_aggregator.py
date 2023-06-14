@@ -7,6 +7,7 @@ from featurebyte import ChangeView, EventView, ItemView
 from featurebyte.api.aggregator.base_aggregator import BaseAggregator
 from featurebyte.api.view import View
 from featurebyte.common.model_util import parse_duration_string
+from featurebyte.query_graph.node.generic import GroupByNode
 
 
 class ForwardAggregator(BaseAggregator):
