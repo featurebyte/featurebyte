@@ -392,7 +392,9 @@ def test_online_store_feature_retrieval_sql__version_placeholders_filled(
         request_table_name="MY_REQUEST_TABLE",
         request_table_columns=["CUSTOMER_ID", "order_id"],
     )
-    versions_mapping = {k: i for (i, k) in enumerate(retrieval_template.aggregation_result_names)}
+    versions_mapping = {
+        k: i for (i, k) in enumerate(sorted(retrieval_template.aggregation_result_names))
+    }
     sql = sql_to_string(
         retrieval_template.fill_version_placeholders(versions_mapping), SourceType.SNOWFLAKE
     )

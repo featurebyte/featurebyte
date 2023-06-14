@@ -40,8 +40,8 @@ WITH ONLINE_MY_REQUEST_TABLE AS (
               "AGGREGATION_RESULT_NAME",
               "LATEST_VERSION"
             FROM (VALUES
-              ('_fb_internal_window_w172800_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb', 1),
-              ('_fb_internal_window_w7200_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb', 0)) AS version_table("AGGREGATION_RESULT_NAME", "LATEST_VERSION")
+              ('_fb_internal_window_w172800_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb', 0),
+              ('_fb_internal_window_w7200_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb', 1)) AS version_table("AGGREGATION_RESULT_NAME", "LATEST_VERSION")
           ) AS L
           INNER JOIN online_store_b3bad6f0a450e950306704a0ef7bd384756a05cc AS R
             ON R."AGGREGATION_RESULT_NAME" = L."AGGREGATION_RESULT_NAME"
