@@ -15,6 +15,8 @@ from featurebyte.common.utils import (
     get_version,
 )
 from featurebyte.enum import DBVarType
+from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.schema.feature import BatchFeatureCreate, BatchFeatureItem
 
 
 @pytest.fixture(name="data_to_convert")
@@ -85,3 +87,24 @@ def test_get_version():
     """
     data = toml.load("pyproject.toml")
     assert get_version() == data["tool"]["poetry"]["version"]
+
+
+def create_batch_feature_create(features):
+    """Create batch feature create object"""
+    query_graph = QueryGraph()
+    feature_items = []
+    for feature in features:
+        query_graph, node_name_map = query_graph.load(feature.graph)
+        feature_items.append(
+            BatchFeatureItem(
+                id=feature.id,
+                name=feature.name,
+                node_name=node_name_map[feature.node_name],
+                tabular_source=feature.tabular_source,
+            )
+        )
+
+    return BatchFeatureCreate(
+        graph=query_graph,
+        features=feature_items,
+    )
