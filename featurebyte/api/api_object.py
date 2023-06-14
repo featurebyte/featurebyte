@@ -370,7 +370,12 @@ class ApiObject(FeatureByteBaseDocumentModel):
     @classmethod
     def _list_handler(cls) -> Optional[ListHandler]:
         """
-        Get list handler
+        Get list handler.
+
+        Returns
+        -------
+        Optional[ListHandler]
+            List handler
         """
         return None
 
