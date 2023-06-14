@@ -19,7 +19,7 @@ from featurebyte.models.feature_list import (
 )
 from featurebyte.query_graph.node.validator import construct_unique_name_validator
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
-from featurebyte.schema.feature import BaseBatchFeatureCreate, BatchFeatureCreate, FeatureCreate
+from featurebyte.schema.feature import BatchFeatureCreate
 
 
 class FeatureListCreate(FeatureByteBaseModel):
@@ -40,7 +40,7 @@ class FeatureListServiceCreate(FeatureListCreate):
     feature_list_namespace_id: Optional[PydanticObjectId] = Field(default_factory=ObjectId)
 
 
-class FeatureListCreateWithBatchFeatureCreation(BaseBatchFeatureCreate):
+class FeatureListCreateWithBatchFeatureCreation(BatchFeatureCreate):
     """
     Feature List Creation with Batch Feature Creation schema
     """
@@ -48,41 +48,6 @@ class FeatureListCreateWithBatchFeatureCreation(BaseBatchFeatureCreate):
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
     conflict_resolution: ConflictResolution
-
-    @classmethod
-    def create(
-        cls,
-        name: str,
-        features: List[FeatureCreate],
-        conflict_resolution: ConflictResolution,
-        _id: ObjectId,
-    ) -> FeatureListCreateWithBatchFeatureCreation:
-        """
-        Create FeatureListCreateWithBatchFeatureCreation from list of FeatureCreate
-
-        Parameters
-        ----------
-        name: str
-            Name of feature list
-        features: List[FeatureCreate]
-            List of FeatureCreate to be created
-        conflict_resolution: ConflictResolution
-            Conflict resolution strategy
-        _id: ObjectId
-            Feature list object id
-
-        Returns
-        -------
-        FeatureListCreateWithBatchFeatureCreation
-        """
-        batch_feature_create = BatchFeatureCreate.create(features=features)
-        return cls(
-            name=name,
-            conflict_resolution=conflict_resolution,
-            graph=batch_feature_create.graph,
-            features=batch_feature_create.features,
-            _id=_id,
-        )
 
 
 class FeatureVersionInfo(FeatureByteBaseModel):

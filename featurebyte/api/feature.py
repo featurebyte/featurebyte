@@ -42,13 +42,14 @@ from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.relationship_analysis import derive_primary_entity
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.feature_job_setting import TableFeatureJobSetting
 from featurebyte.query_graph.node.cleaning_operation import TableCleaningOperation
 from featurebyte.query_graph.node.generic import AliasNode, ProjectNode
 from featurebyte.schema.feature import (
-    BatchFeatureCreate,
-    FeatureCreate,
+    BatchFeatureCreatePayload,
+    BatchFeatureItem,
     FeatureModelResponse,
     FeaturePreview,
     FeatureSQL,
@@ -109,10 +110,6 @@ class Feature(
 
     def _get_init_params_from_object(self) -> dict[str, Any]:
         return {"feature_store": self.feature_store}
-
-    def _get_create_payload(self) -> dict[str, Any]:
-        data = FeatureCreate(**self.dict(by_alias=True))
-        return data.json_dict(exclude_none=True)
 
     def _get_feature_tiles_specs(self) -> List[Tuple[str, List[TileSpec]]]:
         tile_specs = ExtendedFeatureModel(**self.dict()).tile_specs
@@ -726,16 +723,25 @@ class Feature(
             # feature definition and save the feature. The task is executed asynchronously. The feature definition is
             # validated before saving the feature.
             self._check_object_not_been_saved(conflict_resolution=conflict_resolution)
-            feature_create = FeatureCreate(**self._get_create_payload())
-            assert feature_create.id is not None
+            cropped_graph, mapped_node_names = GlobalQueryGraph().crop(
+                target_node_names=[self.node_name]
+            )
+            feature_item = BatchFeatureItem(
+                id=self.id,
+                name=self.name,
+                node_name=mapped_node_names[0],
+                tabular_source=self.tabular_source,
+            )
             try:
                 self.post_async_task(
                     route="/feature/batch",
-                    payload=BatchFeatureCreate.create([feature_create]).json_dict(),
+                    payload=BatchFeatureCreatePayload(
+                        graph=cropped_graph, features=[feature_item]
+                    ).json_dict(),
                     retrieve_result=False,
                     has_output_url=False,
                 )
-                object_dict = self._get_object_dict_by_id(id_value=feature_create.id)
+                object_dict = self._get_object_dict_by_id(id_value=feature_item.id)
             except RecordCreationException as exc:
                 traceback_message = exc.response.json()["traceback"]
                 has_dup_exception = False
@@ -744,7 +750,7 @@ class Feature(
                         "featurebyte.exception.DuplicatedRecordException" in traceback_message
                     )
                 if conflict_resolution == "retrieve" and has_dup_exception:
-                    object_dict = self._get_object_dict_by_name(name=feature_create.name)
+                    object_dict = self._get_object_dict_by_name(name=feature_item.name)
                 else:
                     raise exc
 

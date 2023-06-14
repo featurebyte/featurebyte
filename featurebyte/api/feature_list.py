@@ -63,7 +63,7 @@ from featurebyte.models.feature_list import (
     FrozenFeatureListNamespaceModel,
 )
 from featurebyte.models.tile import TileSpec
-from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
+from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.schema.deployment import DeploymentCreate
 from featurebyte.schema.feature import BatchFeatureItem
@@ -714,7 +714,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         feature_list_create = FeatureListCreateWithBatchFeatureCreation(
             name=self.name,
             conflict_resolution=conflict_resolution,
-            graph=QueryGraph(**cropped_graph.dict(by_alias=True)),
+            graph=cropped_graph,
             features=batch_feature_items,
             _id=self.id,
         )

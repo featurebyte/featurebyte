@@ -293,7 +293,8 @@ class QueryGraph(QueryGraphModel):
 
         To crop the graph, this function first traverses from the target node to the input node.
         The unused branches of the graph will get pruned in this step. After that, a new graph is
-        reconstructed by adding the required nodes back.
+        reconstructed by adding the required nodes back. Crop is less expensive than prune as it
+        does not extract the operation structure.
 
         Parameters
         ----------

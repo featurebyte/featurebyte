@@ -15,6 +15,7 @@ from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.feature_job_setting import TableFeatureJobSetting
+from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node.cleaning_operation import TableCleaningOperation
 from featurebyte.query_graph.node.validator import construct_unique_name_validator
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
@@ -46,17 +47,33 @@ class BatchFeatureItem(FeatureByteBaseModel):
     Batch Feature Item schema
     """
 
-    id: Optional[PydanticObjectId]
+    id: PydanticObjectId
     name: StrictStr
     node_name: str
     tabular_source: TabularSource
 
 
-class BaseBatchFeatureCreate(FeatureByteBaseModel):
+class BatchFeatureCreatePayload(FeatureByteBaseModel):
     """
-    Base Batch Feature Creation schema
+    Batch Feature Creation schema
+    Batch Feature Creation schema (used by the client to prepare the payload)
     """
 
+    graph: QueryGraph
+    # output of the crop operation is a QueryGraphModel type, not QueryGraph,
+    # since their serialization output is the same, QueryGraphModel is used here to avoid
+    # additional serialization/deserialization
+    graph: QueryGraphModel
+    features: List[BatchFeatureItem]
+
+
+class BatchFeatureCreate(FeatureByteBaseModel):
+    """
+    Batch Feature Creation schema (used by the feature controller side)
+    """
+
+    # while receiving the payload at the server side, the graph is converted to QueryGraph type
+    # so that it can be used for further processing without additional serialization/deserialization
     graph: QueryGraph
     features: List[BatchFeatureItem]
 
@@ -81,44 +98,6 @@ class BaseBatchFeatureCreate(FeatureByteBaseModel):
                 graph=pruned_graph,
                 tabular_source=feature.tabular_source,
             )
-
-
-class BatchFeatureCreate(BaseBatchFeatureCreate):
-    """
-    Batch Feature Creation schema
-    """
-
-    @classmethod
-    def create(cls, features: List[FeatureCreate]) -> BatchFeatureCreate:
-        """
-        Create a batch feature create payload from a list of feature create payloads
-
-        Parameters
-        ----------
-        features: List[FeatureCreate]
-            List of feature create payloads
-
-        Returns
-        -------
-        BatchFeatureCreate
-        """
-        query_graph = QueryGraph()
-        feature_items = []
-        for feature in features:
-            query_graph, node_name_map = query_graph.load(feature.graph)
-            feature_items.append(
-                BatchFeatureItem(
-                    id=feature.id,
-                    name=feature.name,
-                    node_name=node_name_map[feature.node_name],
-                    tabular_source=feature.tabular_source,
-                )
-            )
-
-        return BatchFeatureCreate(
-            graph=query_graph,
-            features=feature_items,
-        )
 
 
 class FeatureNewVersionCreate(FeatureByteBaseModel):
