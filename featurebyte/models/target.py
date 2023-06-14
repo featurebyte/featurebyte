@@ -38,8 +38,8 @@ class TargetModel(FeatureByteCatalogBaseDocumentModel):
 
     # These fields will either be inferred from the recipe, or manually provided by the user only if they're creating
     # a target without a recipe.
-    horizon: str
-    blind_spot: str
+    horizon: Optional[str]
+    blind_spot: Optional[str]
     entity_ids: Optional[List[PydanticObjectId]] = Field(allow_mutation=False)
 
     # pydantic validators

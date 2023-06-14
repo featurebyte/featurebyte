@@ -1,6 +1,8 @@
 """
 Target API object
 """
+from __future__ import annotations
+
 from typing import Any, List, Optional
 
 from pydantic import Field
@@ -19,8 +21,8 @@ class Target(SavableApiObject):
     """
 
     internal_entity_ids: Optional[List[PydanticObjectId]] = Field(alias="entity_ids")
-    horizon: str
-    blind_spot: str
+    horizon: Optional[str]
+    blind_spot: Optional[str]
 
     _route = "/target"
     _update_schema_class = TargetUpdate
@@ -46,7 +48,12 @@ class Target(SavableApiObject):
         return [Entity.get_by_id(entity_id) for entity_id in self.internal_entity_ids]
 
     def __init__(
-        self, name: str, entities: Optional[List[str]], horizon: str, blind_spot: str, **kwargs: Any
+        self,
+        name: str,
+        entities: Optional[List[str]] = None,
+        horizon: Optional[str] = None,
+        blind_spot: Optional[str] = None,
+        **kwargs: Any,
     ):
         internal_kwargs = kwargs.copy()
         entity_ids = None

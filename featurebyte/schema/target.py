@@ -28,7 +28,7 @@ class TargetCreate(FeatureByteBaseModel):
     name: StrictStr
     graph: Optional[QueryGraph]
     node_name: Optional[str]
-    horizon: str
+    horizon: Optional[str]
     blind_spot: Optional[str]
     entity_ids: Optional[List[PydanticObjectId]]
 
