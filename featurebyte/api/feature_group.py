@@ -15,7 +15,7 @@ from bson import ObjectId
 from pydantic import Field, parse_obj_as, root_validator
 from typeguard import typechecked
 
-from featurebyte.api.api_object import ConflictResolution
+from featurebyte.api.api_object import AsyncMixin, ConflictResolution
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from featurebyte.common.doc_util import FBAutoDoc
@@ -26,16 +26,16 @@ from featurebyte.core.mixin import ParentMixin
 from featurebyte.core.series import Series
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.logging import get_logger
-from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureCluster, FeatureListModel
 from featurebyte.models.relationship_analysis import derive_primary_entity
+from featurebyte.schema.feature import BatchFeatureCreate, FeatureCreate
 from featurebyte.schema.feature_list import FeatureListPreview, FeatureListSQL
 
 logger = get_logger(__name__)
 
 
-class BaseFeatureGroup(FeatureByteBaseModel):
+class BaseFeatureGroup(AsyncMixin):
     """
     BaseFeatureGroup class
 
@@ -324,6 +324,29 @@ class BaseFeatureGroup(FeatureByteBaseModel):
             response.json(),
         )
 
+    def _batch_feature_save(self, conflict_resolution: ConflictResolution) -> None:
+        feature_payloads = []
+        for feat in self.feature_objects.values():
+            if conflict_resolution == "retrieve":
+                # If conflict_resolution is retrieve, we will retrieve the feature from the catalog based on the
+                # feature name and update the feature object with the retrieved feature.
+                feat_name = feat.name
+                assert feat_name is not None
+                try:
+                    feat = Feature.get(name=feat_name)
+                    self.feature_objects[feat_name] = feat
+                except RecordRetrievalException:
+                    feature_payloads.append(FeatureCreate(**feat.dict(by_alias=True)))
+            if conflict_resolution == "raise" and not feat.saved:
+                feature_payloads.append(FeatureCreate(**feat.dict(by_alias=True)))
+
+        self.post_async_task(
+            route="/feature/batch",
+            payload=BatchFeatureCreate.create(feature_payloads).json_dict(),
+            retrieve_result=False,
+            has_output_url=False,
+        )
+
 
 class FeatureGroup(BaseFeatureGroup, ParentMixin):
     """
@@ -397,5 +420,4 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
         ... ])
         >>> features.save()  # doctest: +SKIP
         """
-        for feature_name in self.feature_names:
-            self[feature_name].save(conflict_resolution=conflict_resolution)
+        self._batch_feature_save(conflict_resolution=conflict_resolution)

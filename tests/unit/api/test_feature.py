@@ -953,8 +953,12 @@ def test_list_versions(saved_feature):
                 "entities": [["customer"]] * 3,
                 "primary_entities": [["customer"]] * 3,
                 "created_at": [
-                    feature_group["new_feat2"].created_at,
-                    feature_group["new_feat1"].created_at,
+                    feature_group[
+                        "new_feat2"
+                    ].cached_model.created_at,  # DEV-1820: created_at is not synced
+                    feature_group[
+                        "new_feat1"
+                    ].cached_model.created_at,  # DEV-1820: created_at is not synced
                     saved_feature.created_at,
                 ],
             }
