@@ -11,10 +11,22 @@ from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.sql.tile_schedule_online_store import TileScheduleOnlineStore
 
 
+async def retrieve_online_store_content(session, feature_store_table_name, aggregation_result_name):
+    """
+    Helper function to retrieve online store content
+    """
+    sql = f"""
+        SELECT * FROM {feature_store_table_name}
+        WHERE {InternalName.ONLINE_STORE_RESULT_NAME_COLUMN} = '{aggregation_result_name}'
+        ORDER BY {InternalName.ONLINE_STORE_VERSION_COLUMN}, __FB_TILE_START_DATE_COLUMN
+        """
+    return await session.execute_query(sql)
+
+
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_schedule_update_feature_store__update_feature_value(
-    session, tile_task_prep_spark, base_sql_model
+    session, tile_task_prep_spark, base_sql_model, online_store_table_version_service
 ):
     """
     Test the stored procedure for updating feature store
@@ -27,17 +39,14 @@ async def test_schedule_update_feature_store__update_feature_value(
         session=session,
         aggregation_id=agg_id,
         job_schedule_ts_str=date_ts_str,
+        online_store_table_version_service=online_store_table_version_service,
     )
     await tile_online_store_ins.execute()
 
-    sql = f"""
-        SELECT * FROM {feature_store_table_name}
-        WHERE {InternalName.ONLINE_STORE_RESULT_NAME_COLUMN} = '{feature_name}'
-        order by __FB_TILE_START_DATE_COLUMN
-        """
-    result = await session.execute_query(sql)
+    result = await retrieve_online_store_content(session, feature_store_table_name, feature_name)
     assert len(result) == 2
     assert result[InternalName.ONLINE_STORE_VALUE_COLUMN].tolist() == [3, 6]
+    assert result[InternalName.ONLINE_STORE_VERSION_COLUMN].tolist() == [0, 0]
     assert result["PRODUCT_ACTION"].tolist() == ["view", "view"]
 
     number_records = 2
@@ -64,23 +73,21 @@ async def test_schedule_update_feature_store__update_feature_value(
         session=session,
         aggregation_id=agg_id,
         job_schedule_ts_str=date_ts_str,
+        online_store_table_version_service=online_store_table_version_service,
     )
     await tile_online_store_ins.execute()
 
-    sql = f"""
-        SELECT * FROM {feature_store_table_name}
-        WHERE {InternalName.ONLINE_STORE_RESULT_NAME_COLUMN} = '{feature_name}'
-        """
-    result = await session.execute_query(sql)
-    assert len(result) == 2
-    assert result[InternalName.ONLINE_STORE_VALUE_COLUMN].tolist() == [100, 100]
-    assert result["PRODUCT_ACTION"].tolist() == ["view", "view"]
+    result = await retrieve_online_store_content(session, feature_store_table_name, feature_name)
+    assert len(result) == 4
+    assert result[InternalName.ONLINE_STORE_VALUE_COLUMN].tolist() == [3, 6, 100, 100]
+    assert result[InternalName.ONLINE_STORE_VERSION_COLUMN].tolist() == [0, 0, 1, 1]
+    assert result["PRODUCT_ACTION"].tolist() == ["view", "view", "view", "view"]
 
 
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_schedule_update_feature_store__insert_with_new_feature_column(
-    session, tile_task_prep_spark, base_sql_model
+    session, tile_task_prep_spark, base_sql_model, online_store_table_version_service
 ):
     """
     Test the stored procedure for updating feature store
@@ -93,18 +100,15 @@ async def test_schedule_update_feature_store__insert_with_new_feature_column(
         session=session,
         aggregation_id=agg_id,
         job_schedule_ts_str=date_ts_str,
+        online_store_table_version_service=online_store_table_version_service,
     )
     await tile_online_store_ins.execute()
 
     # verify existing feature store table
-    sql = f"""
-        SELECT * FROM {feature_store_table_name}
-        WHERE {InternalName.ONLINE_STORE_RESULT_NAME_COLUMN} = '{feature_name}'
-        order by __FB_TILE_START_DATE_COLUMN
-        """
-    result = await session.execute_query(sql)
+    result = await retrieve_online_store_content(session, feature_store_table_name, feature_name)
     assert len(result) == 2
     assert result[InternalName.ONLINE_STORE_VALUE_COLUMN].tolist() == [3, 6]
+    assert result[InternalName.ONLINE_STORE_VERSION_COLUMN].tolist() == [0, 0]
     assert result["PRODUCT_ACTION"].tolist() == ["view", "view"]
 
     new_feature_name = feature_name + "_2"
@@ -151,25 +155,31 @@ async def test_schedule_update_feature_store__insert_with_new_feature_column(
         session=session,
         aggregation_id=agg_id,
         job_schedule_ts_str=date_ts_str,
+        online_store_table_version_service=online_store_table_version_service,
     )
     await tile_online_store_ins.execute()
 
-    for fname in [feature_name, new_feature_name]:
-        sql = f"""
-            SELECT * FROM {feature_store_table_name}
-            WHERE {InternalName.ONLINE_STORE_RESULT_NAME_COLUMN} = '{fname}'
-            order by __FB_TILE_START_DATE_COLUMN
-            """
-        result = await session.execute_query(sql)
-        assert len(result) == 2
-        assert result[InternalName.ONLINE_STORE_VALUE_COLUMN].tolist() == [3, 6]
-        assert result["PRODUCT_ACTION"].tolist() == ["view", "view"]
+    # Check existing aggregation which is updated twice now
+    result = await retrieve_online_store_content(session, feature_store_table_name, feature_name)
+    assert len(result) == 4
+    assert result[InternalName.ONLINE_STORE_VALUE_COLUMN].tolist() == [3, 6, 3, 6]
+    assert result[InternalName.ONLINE_STORE_VERSION_COLUMN].tolist() == [0, 0, 1, 1]
+    assert result["PRODUCT_ACTION"].tolist() == ["view", "view", "view", "view"]
+
+    # Check new aggregation which is updated once
+    result = await retrieve_online_store_content(
+        session, feature_store_table_name, new_feature_name
+    )
+    assert len(result) == 2
+    assert result[InternalName.ONLINE_STORE_VALUE_COLUMN].tolist() == [3, 6]
+    assert result[InternalName.ONLINE_STORE_VERSION_COLUMN].tolist() == [0, 0]
+    assert result["PRODUCT_ACTION"].tolist() == ["view", "view"]
 
 
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_schedule_online_feature_store__change_entity_universe(
-    session, tile_task_prep_spark, base_sql_model
+    session, tile_task_prep_spark, base_sql_model, online_store_table_version_service
 ):
     """
     Test the stored procedure for updating feature store
@@ -182,17 +192,14 @@ async def test_schedule_online_feature_store__change_entity_universe(
         session=session,
         aggregation_id=agg_id,
         job_schedule_ts_str=date_ts_str,
+        online_store_table_version_service=online_store_table_version_service,
     )
     await tile_online_store_ins.execute()
 
-    sql = f"""
-        SELECT * FROM {feature_store_table_name}
-        WHERE {InternalName.ONLINE_STORE_RESULT_NAME_COLUMN} = '{feature_name}'
-        order by __FB_TILE_START_DATE_COLUMN
-        """
-    result = await session.execute_query(sql)
+    result = await retrieve_online_store_content(session, feature_store_table_name, feature_name)
     assert len(result) == 2
     assert result[InternalName.ONLINE_STORE_VALUE_COLUMN].tolist() == [3, 6]
+    assert result[InternalName.ONLINE_STORE_VERSION_COLUMN].tolist() == [0, 0]
     assert result["PRODUCT_ACTION"].tolist() == ["view", "view"]
 
     quote_feature_name = base_sql_model.quote_column(feature_name)
@@ -219,18 +226,16 @@ async def test_schedule_online_feature_store__change_entity_universe(
         session=session,
         aggregation_id=agg_id,
         job_schedule_ts_str=date_ts_str,
+        online_store_table_version_service=online_store_table_version_service,
     )
     await tile_online_store_ins.execute()
 
-    sql = f"""
-        SELECT * FROM {feature_store_table_name}
-        WHERE {InternalName.ONLINE_STORE_RESULT_NAME_COLUMN} = '{feature_name}'
-        order by UPDATED_AT
-        """
-    result = await session.execute_query(sql)
-    assert len(result) == 4
+    # Version 1 doesn't have the old entity "view" since it's not in the universe
+    result = await retrieve_online_store_content(session, feature_store_table_name, feature_name)
+    result = result[result["VERSION"] == 1]
+    assert len(result) == 2
     np.testing.assert_allclose(
         result[InternalName.ONLINE_STORE_VALUE_COLUMN],
-        [np.nan, np.nan, 100, 100],
+        [100, 100],
     )
-    assert result["PRODUCT_ACTION"].tolist() == ["view", "view", "action", "action"]
+    assert result["PRODUCT_ACTION"].tolist() == ["action", "action"]

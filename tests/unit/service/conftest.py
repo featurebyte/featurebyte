@@ -217,6 +217,12 @@ def online_serving_service_fixture(app_container):
     return app_container.online_serving_service
 
 
+@pytest.fixture(name="online_store_table_version_service")
+def online_store_table_version_service_fixture(app_container):
+    """OnlineStoreTableVersionService fixture"""
+    return app_container.online_store_table_version_service
+
+
 @pytest.fixture(name="version_service")
 def version_service_fixture(user, persistent):
     """VersionService fixture"""

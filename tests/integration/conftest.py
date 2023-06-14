@@ -36,12 +36,11 @@ from featurebyte import Configurations, DatabricksDetails, FeatureJobSetting, Sn
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.app import app
-from featurebyte.common.tile_util import tile_manager_from_session
 from featurebyte.enum import InternalName, SourceType, StorageType
 from featurebyte.feature_manager.manager import FeatureManager
 from featurebyte.feature_manager.model import ExtendedFeatureListModel
 from featurebyte.logging import get_logger
-from featurebyte.models.base import User
+from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.models.credential import (
     AccessTokenCredential,
     CredentialModel,
@@ -56,6 +55,7 @@ from featurebyte.persistent.mongo import MongoDB
 from featurebyte.query_graph.node.schema import SparkDetails, SQLiteDetails, TableDetails
 from featurebyte.schema.task import TaskStatus
 from featurebyte.schema.worker.task.base import BaseTaskPayload
+from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.session.base_spark import BaseSparkSchemaInitializer
 from featurebyte.session.manager import SessionManager
 from featurebyte.storage import LocalStorage, LocalTempStorage
@@ -879,14 +879,6 @@ async def tile_spec_fixture(session):
         yield created_tile_spec
 
 
-@pytest.fixture
-def tile_manager(session):
-    """
-    Tile Manager fixture
-    """
-    return tile_manager_from_session(session=session)
-
-
 @pytest.fixture(name="feature_model_dict")
 def feature_model_dict_feature(test_dir):
     """Fixture for a Feature dict"""
@@ -1383,3 +1375,24 @@ def mock_task_manager(request, persistent, storage, temp_storage, get_cred, mock
                 mock_get_celery.return_value.AsyncResult.side_effect = get_task
                 mock_get_celery_worker.return_value.AsyncResult.side_effect = get_task
                 yield
+
+
+@pytest.fixture(scope="session")
+def user():
+    """
+    Mock user
+    """
+    user = Mock()
+    user.id = ObjectId()
+    return user
+
+
+@pytest.fixture()
+def online_store_table_version_service(user, persistent):
+    """
+    Fixture for online store table version service
+    """
+    service = OnlineStoreTableVersionService(
+        user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
+    )
+    yield service

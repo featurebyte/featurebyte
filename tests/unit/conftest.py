@@ -1234,14 +1234,30 @@ def mock_snowflake_feature(
     return feature
 
 
+@pytest.fixture(name="online_store_table_version_service")
+def online_store_table_version_service_fixture(app_container):
+    """
+    OnlineStoreTableVersionService fixture
+    """
+    return app_container.online_store_table_version_service
+
+
 @pytest_asyncio.fixture
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-async def feature_manager(mock_execute_query, session_manager, snowflake_feature_store):
+async def feature_manager(
+    mock_execute_query,
+    session_manager,
+    snowflake_feature_store,
+    online_store_table_version_service,
+):
     """
     Feature Manager fixture
     """
     _ = mock_execute_query
-    return FeatureManager(session=await session_manager.get_session(snowflake_feature_store))
+    return FeatureManager(
+        session=await session_manager.get_session(snowflake_feature_store),
+        online_store_table_version_service=online_store_table_version_service,
+    )
 
 
 @pytest.fixture

@@ -3,13 +3,16 @@ Tile Generate online store Job Script
 """
 from typing import Any, Union
 
+import textwrap
 from datetime import datetime
 
 import pandas as pd
-from pydantic import Field
+from pydantic import Field, PrivateAttr
 
 from featurebyte.enum import InternalName, SourceType
 from featurebyte.logging import get_logger
+from featurebyte.models.online_store_table_version import OnlineStoreTableVersion
+from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.session.base import BaseSession
 from featurebyte.sql.base import BaselSqlModel
 from featurebyte.sql.common import construct_create_table_query, retry_sql
@@ -25,6 +28,8 @@ class TileScheduleOnlineStore(BaselSqlModel):
     aggregation_id: str
     job_schedule_ts_str: str
     retry_num: int = Field(default=10)
+
+    _online_store_table_version_service: OnlineStoreTableVersionService = PrivateAttr()
 
     async def retry_sql(self, sql: str) -> Union[pd.DataFrame, None]:
         """
@@ -52,6 +57,8 @@ class TileScheduleOnlineStore(BaselSqlModel):
         kwargs: Any
             constructor arguments
         """
+        online_store_table_version_service = kwargs.pop("online_store_table_version_service")
+        self._online_store_table_version_service = online_store_table_version_service
         super().__init__(session=session, **kwargs)
 
     async def execute(self) -> None:
@@ -94,6 +101,7 @@ class TileScheduleOnlineStore(BaselSqlModel):
                 InternalName.ONLINE_STORE_RESULT_NAME_COLUMN
             )
             quoted_value_column = self.quote_column(InternalName.ONLINE_STORE_VALUE_COLUMN)
+            quoted_version_column = self.quote_column(InternalName.ONLINE_STORE_VERSION_COLUMN)
             quoted_entity_columns = (
                 [self.quote_column(col.replace('"', "")) for col in f_entity_columns.split(",")]
                 if f_entity_columns
@@ -105,11 +113,26 @@ class TileScheduleOnlineStore(BaselSqlModel):
 
             current_ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+            # get current version
+            current_version = await self._online_store_table_version_service.get_version(f_name)
+            if current_version is None:
+                next_version = 0
+            else:
+                next_version = current_version + 1
+
             if not fs_table_exist_flag:
                 # feature store table does not exist, create table with the input feature sql
+                query = textwrap.dedent(
+                    f"""
+                    SELECT
+                      {column_names},
+                      CAST({next_version} AS INT) AS {quoted_version_column}
+                    FROM ({f_sql})
+                    """
+                ).strip()
                 create_sql = construct_create_table_query(
                     fs_table,
-                    f"select {column_names} from ({f_sql})",
+                    query,
                     session=self._session,
                     partition_keys=quoted_result_name_column,
                 )
@@ -127,44 +150,30 @@ class TileScheduleOnlineStore(BaselSqlModel):
                 await self.retry_sql(
                     sql=f"UPDATE {fs_table} SET UPDATED_AT = to_timestamp('{current_ts}')",
                 )
+
             else:
                 # feature store table already exists, insert records with the input feature sql
 
-                value_args = []
-                if quoted_entity_columns:
-                    value_args.extend([f"b.{element}" for element in quoted_entity_columns])
-                value_args += [f"b.{quoted_result_name_column}", f"b.{quoted_value_column}"]
-                value_args = ", ".join(value_args)  # type: ignore[assignment]
-
-                # Note: the last condition of "a.{quoted_result_name_column} = '{f_name}'" is
-                # required to avoid the ConcurrentAppendException error in delta tables in addition
-                # to setting the partition keys.
-                keys = " AND ".join(
-                    [f"a.{col} = b.{col}" for col in quoted_entity_columns]
-                    + [f"a.{quoted_result_name_column} = b.{quoted_result_name_column}"]
-                    + [f"a.{quoted_result_name_column} = '{f_name}'"]
+                insert_query = textwrap.dedent(
+                    f"""
+                    INSERT INTO {fs_table} ({column_names}, {quoted_version_column}, UPDATED_AT)
+                    SELECT {column_names}, {next_version}, to_timestamp('{current_ts}')
+                    FROM ({f_sql})
+                    """
+                )
+                await self._session.execute_query(insert_query)
+                logger.debug(
+                    "Done inserting to online store",
+                    extra={"fs_table": fs_table, "result_name": f_name, "version": next_version},
                 )
 
-                # update or insert feature values for entities that are in entity universe
-                merge_sql = f"""
-                     merge into {fs_table} a using ({f_sql}) b
-                         on {keys}
-                         when matched then
-                             update set
-                               a.{quoted_value_column} = b.{quoted_value_column},
-                               a.UPDATED_AT = to_timestamp('{current_ts}')
-                         when not matched then
-                             insert ({column_names}, UPDATED_AT)
-                                 values ({value_args}, to_timestamp('{current_ts}'))
-                 """
-
-                await self.retry_sql(sql=merge_sql)
-
-                # remove feature values for entities that are not in entity universe
-                remove_values_sql = f"""
-                    UPDATE {fs_table} SET {quoted_value_column} = NULL
-                    WHERE
-                      UPDATED_AT < to_timestamp('{current_ts}')
-                      AND {quoted_result_name_column} = '{f_name}'
-                    """
-                await self.retry_sql(sql=remove_values_sql)
+            # update online store table version in mongo
+            if current_version is None:
+                version_model = OnlineStoreTableVersion(
+                    online_store_table_name=fs_table,
+                    aggregation_result_name=f_name,
+                    version=next_version,
+                )
+                await self._online_store_table_version_service.create_document(version_model)
+            else:
+                await self._online_store_table_version_service.update_version(f_name, next_version)

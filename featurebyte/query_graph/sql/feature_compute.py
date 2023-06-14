@@ -16,6 +16,7 @@ from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.aggregator.asat import AsAtAggregator
+from featurebyte.query_graph.sql.aggregator.base import TileBasedAggregator
 from featurebyte.query_graph.sql.aggregator.item import ItemAggregator
 from featurebyte.query_graph.sql.aggregator.latest import LatestAggregator
 from featurebyte.query_graph.sql.aggregator.lookup import LookupAggregator
@@ -108,6 +109,21 @@ class FeatureExecutionPlan:
         list[str]
         """
         return list(self.feature_specs.keys())
+
+    @property
+    def tile_based_aggregation_result_names(self) -> list[str]:
+        """Returns the list of tile based aggregation result names
+
+        Returns
+        -------
+        list[str]
+        """
+        out = set()
+        for aggregator in self.iter_aggregators():
+            if isinstance(aggregator, TileBasedAggregator):
+                for result_names in aggregator.agg_result_names_by_online_store_table.values():
+                    out.update(result_names)
+        return list(out)
 
     def iter_aggregators(self) -> Iterable[AggregatorType]:
         """Iterate over all the aggregators

@@ -23,7 +23,20 @@ WITH ONLINE_MY_REQUEST_TABLE AS (
           "CUSTOMER_ID",
           "AGGREGATION_RESULT_NAME",
           "VALUE"
-        FROM online_store_b3bad6f0a450e950306704a0ef7bd384756a05cc
+        FROM (
+          SELECT
+            R.*
+          FROM (
+            SELECT
+              "AGGREGATION_RESULT_NAME",
+              "LATEST_VERSION"
+            FROM (VALUES
+              ('_fb_internal_window_w7200_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb', _fb_internal_window_w7200_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb_VERSION_PLACEHOLDER)) AS version_table("AGGREGATION_RESULT_NAME", "LATEST_VERSION")
+          ) AS L
+          INNER JOIN online_store_b3bad6f0a450e950306704a0ef7bd384756a05cc AS R
+            ON R."AGGREGATION_RESULT_NAME" = L."AGGREGATION_RESULT_NAME"
+            AND R."VERSION" = L."LATEST_VERSION"
+        )
         WHERE
           "AGGREGATION_RESULT_NAME" IN ('_fb_internal_window_w7200_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb')
       )   PIVOT(  MAX("VALUE") FOR "AGGREGATION_RESULT_NAME" IN ('_fb_internal_window_w7200_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb'))
@@ -43,7 +56,20 @@ WITH ONLINE_MY_REQUEST_TABLE AS (
           "BUSINESS_ID",
           "AGGREGATION_RESULT_NAME",
           "VALUE"
-        FROM online_store_51064268424bf868a2ea2dc2f5789e7cb4df29bf
+        FROM (
+          SELECT
+            R.*
+          FROM (
+            SELECT
+              "AGGREGATION_RESULT_NAME",
+              "LATEST_VERSION"
+            FROM (VALUES
+              ('_fb_internal_window_w604800_sum_ea3e51f28222785a9bc856e4f09a8ce4642bc6c8', _fb_internal_window_w604800_sum_ea3e51f28222785a9bc856e4f09a8ce4642bc6c8_VERSION_PLACEHOLDER)) AS version_table("AGGREGATION_RESULT_NAME", "LATEST_VERSION")
+          ) AS L
+          INNER JOIN online_store_51064268424bf868a2ea2dc2f5789e7cb4df29bf AS R
+            ON R."AGGREGATION_RESULT_NAME" = L."AGGREGATION_RESULT_NAME"
+            AND R."VERSION" = L."LATEST_VERSION"
+        )
         WHERE
           "AGGREGATION_RESULT_NAME" IN ('_fb_internal_window_w604800_sum_ea3e51f28222785a9bc856e4f09a8ce4642bc6c8')
       )   PIVOT(  MAX("VALUE") FOR "AGGREGATION_RESULT_NAME" IN ('_fb_internal_window_w604800_sum_ea3e51f28222785a9bc856e4f09a8ce4642bc6c8'))

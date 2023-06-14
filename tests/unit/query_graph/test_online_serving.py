@@ -15,7 +15,7 @@ from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.query_graph.sql.online_serving import (
     OnlineStorePrecomputePlan,
     get_online_store_precompute_queries,
-    get_online_store_retrieval_expr,
+    get_online_store_retrieval_template,
     is_online_store_eligible,
 )
 from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
@@ -39,7 +39,7 @@ def get_online_store_retrieval_sql(
     parent_serving_preparation=None,
 ):
     """Generate SQL for retrieving online store data"""
-    expr = get_online_store_retrieval_expr(
+    retrieval_template = get_online_store_retrieval_template(
         graph=graph,
         nodes=nodes,
         source_type=source_type,
@@ -48,7 +48,7 @@ def get_online_store_retrieval_sql(
         request_table_expr=request_table_expr,
         parent_serving_preparation=parent_serving_preparation,
     )
-    return sql_to_string(expr, SourceType.SNOWFLAKE)
+    return retrieval_template.sql_template.render()
 
 
 def test_construct_universe_sql(query_graph_with_groupby):
@@ -374,5 +374,32 @@ def test_online_store_feature_retrieval_sql__scd_lookup_with_current_flag_column
     assert_equal_with_expected_fixture(
         sql,
         "tests/fixtures/expected_online_feature_retrieval_scd_current_flag.sql",
+        update_fixture=update_fixtures,
+    )
+
+
+def test_online_store_feature_retrieval_sql__version_placeholders_filled(
+    mixed_point_in_time_and_item_aggregations_features, update_fixtures
+):
+    """
+    Test retrieval sql with version placeholders filled
+    """
+    graph, *nodes = mixed_point_in_time_and_item_aggregations_features
+    retrieval_template = get_online_store_retrieval_template(
+        graph=graph,
+        nodes=nodes,
+        source_type=SourceType.SNOWFLAKE,
+        request_table_name="MY_REQUEST_TABLE",
+        request_table_columns=["CUSTOMER_ID", "order_id"],
+    )
+    versions_mapping = {
+        k: i for (i, k) in enumerate(sorted(retrieval_template.aggregation_result_names))
+    }
+    sql = sql_to_string(
+        retrieval_template.fill_version_placeholders(versions_mapping), SourceType.SNOWFLAKE
+    )
+    assert_equal_with_expected_fixture(
+        sql,
+        "tests/fixtures/expected_online_feature_retrieval_filled_versions.sql",
         update_fixture=update_fixtures,
     )
