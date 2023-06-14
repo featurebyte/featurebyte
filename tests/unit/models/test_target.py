@@ -17,7 +17,7 @@ def test_duration_validator():
     TargetModel(
         graph=graph,
         node_name="node name",
-        window="7d",
+        horizon="7d",
         blind_spot="1d",
         entity_ids=[],
     )
@@ -27,7 +27,7 @@ def test_duration_validator():
         TargetModel(
             graph=graph,
             node_name="node name",
-            window="7d",
+            horizon="7d",
             blind_spot="random",
             entity_ids=[],
         )
@@ -38,8 +38,8 @@ def test_duration_validator():
         TargetModel(
             graph=graph,
             node_name="node name",
-            window="random",
+            horizon="random",
             blind_spot="1d",
             entity_ids=[],
         )
-    assert "window" in str(exc)
+    assert "horizon" in str(exc)
