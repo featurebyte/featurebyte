@@ -44,7 +44,8 @@ from featurebyte.models.feature_list import FeatureListStatus
 from featurebyte.models.task import Task as TaskModel
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.graph import GlobalQueryGraph
-from featurebyte.routes.app_container import AppContainer
+from featurebyte.routes.lazy_app_container import LazyAppContainer
+from featurebyte.routes.registry import app_container_config
 from featurebyte.schema.task import TaskStatus
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.service.task_manager import TaskManager
@@ -1358,13 +1359,14 @@ def app_container_fixture(persistent):
     task_manager = TaskManager(
         user=user, persistent=persistent, celery=get_celery(), catalog_id=DEFAULT_CATALOG_ID
     )
-    return AppContainer.get_instance(
+    return LazyAppContainer(
         user=user,
         persistent=persistent,
         temp_storage=LocalTempStorage(),
         task_manager=task_manager,
         storage=LocalTempStorage(),
-        container_id=DEFAULT_CATALOG_ID,
+        catalog_id=DEFAULT_CATALOG_ID,
+        app_container_config=app_container_config,
     )
 
 

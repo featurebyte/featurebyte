@@ -3,9 +3,30 @@ App container config module.
 
 This contains all our registrations for dependency injection.
 """
-from typing import List
+from typing import Dict, List
 
 from dataclasses import dataclass
+
+from featurebyte.enum import OrderedStrEnum
+
+
+class DepType(OrderedStrEnum):
+    """
+    DepType enums
+
+    They are prefixed with numbers to ensure that they are initialized in the correct order. For example, if a class
+    has dependencies on all 4 types, the dependencies will be initialized in the following order:
+
+    - no deps
+    - basic services
+    - services with extra deps
+    - controllers
+    """
+
+    NO_DEPS = "10_no_deps"
+    BASIC_SERVICE = "20_basic_service"
+    SERVICE_WITH_EXTRA_DEPS = "30_service_with_extra_deps"
+    CONTROLLER = "40_controller"
 
 
 @dataclass
@@ -20,6 +41,7 @@ class ClassDefinition:
     name: str
     class_: type
     dependencies: List[str]
+    dep_type: DepType
 
 
 class AppContainerConfig:
@@ -37,6 +59,21 @@ class AppContainerConfig:
         # Controllers can depend on any object defined above.
         self.controllers: List[ClassDefinition] = []
 
+        self.dependency_mapping: Dict[str, ClassDefinition] = {}
+
+    def get_class_def_mapping(self) -> Dict[str, ClassDefinition]:
+        """
+        Get class definitions, keyed by name.
+        """
+        # Return if already populated
+        if self.dependency_mapping:
+            return self.dependency_mapping
+
+        # Populate
+        for dep in self._all_dependencies():
+            self.dependency_mapping[dep.name] = dep
+        return self.dependency_mapping
+
     def add_no_dep_objects(self, name: str, class_: type) -> None:
         """
         Register a class with no dependencies.
@@ -49,7 +86,7 @@ class AppContainerConfig:
             type we are registering
         """
         self.no_dependency_objects.append(
-            ClassDefinition(name=name, class_=class_, dependencies=[])
+            ClassDefinition(name=name, class_=class_, dependencies=[], dep_type=DepType.NO_DEPS)
         )
 
     def add_service_with_extra_deps(self, name: str, class_: type, dependencies: List[str]) -> None:
@@ -70,6 +107,7 @@ class AppContainerConfig:
                 name=name,
                 class_=class_,
                 dependencies=dependencies,
+                dep_type=DepType.SERVICE_WITH_EXTRA_DEPS,
             )
         )
 
@@ -89,6 +127,7 @@ class AppContainerConfig:
                 name=name,
                 class_=class_,
                 dependencies=[],
+                dep_type=DepType.BASIC_SERVICE,
             )
         )
 
@@ -107,9 +146,7 @@ class AppContainerConfig:
         """
         self.controllers.append(
             ClassDefinition(
-                name=name,
-                class_=class_,
-                dependencies=dependencies,
+                name=name, class_=class_, dependencies=dependencies, dep_type=DepType.CONTROLLER
             )
         )
 
