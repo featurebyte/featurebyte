@@ -32,6 +32,7 @@ from featurebyte.api.relationship import Relationship
 from featurebyte.api.savable_api_object import SavableApiObject
 from featurebyte.api.static_source_table import StaticSourceTable
 from featurebyte.api.table import Table
+from featurebyte.api.target import Target
 from featurebyte.api.view import View
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.exception import RecordRetrievalException
@@ -528,6 +529,27 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return Table.list(include_id=include_id, entity=entity)
 
     @update_and_reset_catalog
+    def list_targets(self, include_id: Optional[bool] = True) -> pd.DataFrame:
+        """
+        Returns a DataFrame that contains various attributes of the registered targets in the catalog
+
+        Parameters
+        ----------
+        include_id: Optional[bool]
+            Whether to include id in the list.
+
+        Returns
+        -------
+        pd.DataFrame
+            Dataframe of targets
+
+        Examples
+        --------
+        >>> targets = catalog.list_targets()
+        """
+        return Target.list(include_id=include_id)
+
+    @update_and_reset_catalog
     def list_relationships(
         self, include_id: Optional[bool] = True, relationship_type: Optional[Literal[tuple(RelationshipType)]] = None  # type: ignore
     ) -> pd.DataFrame:
@@ -937,6 +959,27 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         >>> item_table = catalog.get_table("INVOICEITEMS")
         """
         return Table.get(name=name)
+
+    @update_and_reset_catalog
+    def get_target(self, name: str) -> Any:
+        """
+        Gets a Target object from the catalog based on its name.
+
+        Parameters
+        ----------
+        name: str
+            Target name.
+
+        Returns
+        -------
+        Any
+            Retrieved target.
+
+        Examples
+        --------
+        >>> target = catalog.get_target("target_name")  # doctest: +SKIP
+        """
+        return Target.get(name=name)
 
     @update_and_reset_catalog
     def get_relationship(self, name: str) -> Relationship:

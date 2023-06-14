@@ -7,8 +7,8 @@ from typing import Any, List, Optional
 
 from pydantic import Field
 
-from featurebyte import Entity
 from featurebyte.api.api_object import ForeignKeyMapping
+from featurebyte.api.entity import Entity
 from featurebyte.api.savable_api_object import SavableApiObject
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.target import TargetModel
