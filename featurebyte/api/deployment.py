@@ -53,24 +53,18 @@ class Deployment(ApiObject):
     _list_schema = DeploymentModel
     _get_schema = DeploymentModel
     _update_schema_class = DeploymentUpdate
-    _list_fields = (
-        [
-            "name",
-            "feature_list_name",
-            "feature_list_version",
-            "num_feature",
-            "enabled",
-        ],
-    )
-    _list_foreign_keys = (
-        [
-            ForeignKeyMapping("feature_list_id", FeatureList, "feature_list_name", "name", True),
-            ForeignKeyMapping(
-                "feature_list_id", FeatureList, "feature_list_version", "version", True
-            ),
-            ForeignKeyMapping("feature_list_id", FeatureList, "num_feature", "num_feature", True),
-        ],
-    )
+    _list_fields = [
+        "name",
+        "feature_list_name",
+        "feature_list_version",
+        "num_feature",
+        "enabled",
+    ]
+    _list_foreign_keys = [
+        ForeignKeyMapping("feature_list_id", FeatureList, "feature_list_name", "name", True),
+        ForeignKeyMapping("feature_list_id", FeatureList, "feature_list_version", "version", True),
+        ForeignKeyMapping("feature_list_id", FeatureList, "num_feature", "num_feature", True),
+    ]
 
     @classmethod
     def use_new_list_handler(cls) -> bool:
