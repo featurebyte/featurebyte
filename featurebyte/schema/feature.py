@@ -55,11 +55,9 @@ class BatchFeatureItem(FeatureByteBaseModel):
 
 class BatchFeatureCreatePayload(FeatureByteBaseModel):
     """
-    Batch Feature Creation schema
     Batch Feature Creation schema (used by the client to prepare the payload)
     """
 
-    graph: QueryGraph
     # output of the crop operation is a QueryGraphModel type, not QueryGraph,
     # since their serialization output is the same, QueryGraphModel is used here to avoid
     # additional serialization/deserialization
@@ -67,15 +65,14 @@ class BatchFeatureCreatePayload(FeatureByteBaseModel):
     features: List[BatchFeatureItem]
 
 
-class BatchFeatureCreate(FeatureByteBaseModel):
+class BatchFeatureCreate(BatchFeatureCreatePayload):
     """
-    Batch Feature Creation schema (used by the feature controller side)
+    Batch Feature Creation schema (used by the featurebyte server side)
     """
 
     # while receiving the payload at the server side, the graph is converted to QueryGraph type
     # so that it can be used for further processing without additional serialization/deserialization
     graph: QueryGraph
-    features: List[BatchFeatureItem]
 
     def iterate_features(self) -> Iterator[FeatureCreate]:
         """

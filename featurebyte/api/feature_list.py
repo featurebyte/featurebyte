@@ -69,7 +69,7 @@ from featurebyte.schema.deployment import DeploymentCreate
 from featurebyte.schema.feature import BatchFeatureItem
 from featurebyte.schema.feature_list import (
     FeatureListCreate,
-    FeatureListCreateWithBatchFeatureCreation,
+    FeatureListCreateWithBatchFeatureCreationPayload,
     FeatureListGetHistoricalFeatures,
     FeatureListUpdate,
     FeatureVersionInfo,
@@ -711,7 +711,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
             )
 
         assert self.name is not None, "FeatureList name cannot be None"
-        feature_list_create = FeatureListCreateWithBatchFeatureCreation(
+        feature_list_create = FeatureListCreateWithBatchFeatureCreationPayload(
             name=self.name,
             conflict_resolution=conflict_resolution,
             graph=cropped_graph,
