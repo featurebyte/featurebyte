@@ -31,7 +31,7 @@ class ListHandler:
         route: str,
         list_schema: Type[FeatureByteBaseDocumentModel],
         list_fields: Optional[List[str]] = None,
-        list_foreign_keys: List[ForeignKeyMapping] = (),
+        list_foreign_keys: Optional[List[ForeignKeyMapping]] = None,
     ):
         """
         Creates a new list handler.
@@ -50,7 +50,7 @@ class ListHandler:
         self.route = route
         self.list_schema = list_schema
         self.list_fields = list_fields or ["name", "created_at"]
-        self.list_foreign_keys = list_foreign_keys
+        self.list_foreign_keys = list_foreign_keys or []
 
     def list(
         self, include_id: Optional[bool] = False, params: Optional[Dict[str, Any]] = None

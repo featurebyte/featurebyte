@@ -28,8 +28,9 @@ from bson.objectid import ObjectId
 from pydantic import Field, root_validator
 from typeguard import typechecked
 
-from featurebyte.api.api_object import PAGINATED_CALL_PAGE_SIZE, ApiObject, ConflictResolution
+from featurebyte.api.api_object import ApiObject, ConflictResolution
 from featurebyte.api.api_object_util import (
+    PAGINATED_CALL_PAGE_SIZE,
     ForeignKeyMapping,
     iterate_api_object_using_paginated_routes,
 )
