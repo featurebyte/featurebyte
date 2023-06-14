@@ -5,8 +5,9 @@ from __future__ import annotations
 
 from typing import Any, List, Optional
 
-from pydantic import Field
+from pydantic import Field, StrictStr
 
+from featurebyte import RecordRetrievalException
 from featurebyte.api.api_object import ForeignKeyMapping
 from featurebyte.api.entity import Entity
 from featurebyte.api.savable_api_object import SavableApiObject
@@ -21,8 +22,8 @@ class Target(SavableApiObject):
     """
 
     internal_entity_ids: Optional[List[PydanticObjectId]] = Field(alias="entity_ids")
-    horizon: Optional[str]
-    blind_spot: Optional[str]
+    horizon: Optional[StrictStr]
+    blind_spot: Optional[StrictStr]
 
     _route = "/target"
     _update_schema_class = TargetUpdate
@@ -43,9 +44,11 @@ class Target(SavableApiObject):
         -------
         List[Entity]
         """
-        if not self.internal_entity_ids:
-            return []
-        return [Entity.get_by_id(entity_id) for entity_id in self.internal_entity_ids]
+        try:
+            entity_ids = self.cached_model.internal_entity_ids
+        except RecordRetrievalException:
+            entity_ids = self.internal_entity_ids
+        return [Entity.get_by_id(entity_id) for entity_id in entity_ids]
 
     def __init__(
         self,
