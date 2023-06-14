@@ -32,6 +32,8 @@ class ListHandler:
         list_foreign_keys: List[ForeignKeyMapping] = (),
     ):
         """
+        Creates a new list handler.
+
         Parameters
         ----------
         route: str
