@@ -8,7 +8,7 @@ from typing import Any, Dict, Optional
 from pydantic import Field
 from typeguard import typechecked
 
-from featurebyte.api.api_object import ForeignKeyMapping
+from featurebyte.api.api_object_util import ForeignKeyMapping
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.savable_api_object import DeletableApiObject, SavableApiObject
 from featurebyte.common.doc_util import FBAutoDoc

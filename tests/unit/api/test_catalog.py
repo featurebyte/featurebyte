@@ -149,7 +149,9 @@ def test_all_relevant_methods_are_in_list():
     """
     methods = dir(Catalog)
     # Verify all list methods are present
-    list_methods = {method for method in methods if method.startswith("list_")}
+    list_methods = {
+        method for method in methods if method.startswith("list_") and method != "list_handler"
+    }
     assert len(list_methods) == len(catalog_list_methods_to_test_list())
     for method in catalog_list_methods_to_test_list():
         assert method.catalog_method_name in list_methods
@@ -527,7 +529,7 @@ def test_get_catalog():
     assert_frame_equal(catalog_list, expected_catalog_list[catalog_list.columns])
 
     # test unexpected retrieval exception for Catalog.list
-    with mock.patch("featurebyte.api.api_object.Configurations"):
+    with mock.patch("featurebyte.api.api_object_util.Configurations"):
         with pytest.raises(RecordRetrievalException) as exc:
             Catalog.list()
     assert "Failed to list /catalog." in str(exc.value)

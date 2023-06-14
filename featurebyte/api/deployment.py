@@ -13,7 +13,9 @@ from bson import ObjectId
 from jinja2 import Template
 from typeguard import typechecked
 
-from featurebyte.api.api_object import ApiObject, ForeignKeyMapping
+from featurebyte.api.api_handler.list import ListHandler
+from featurebyte.api.api_object import ApiObject
+from featurebyte.api.api_object_util import ForeignKeyMapping
 from featurebyte.api.batch_feature_table import BatchFeatureTable
 from featurebyte.api.batch_request_table import BatchRequestTable
 from featurebyte.api.entity import Entity
@@ -49,21 +51,33 @@ class Deployment(ApiObject):
 
     # class variables
     _route = "/deployment"
-    _list_schema = DeploymentModel
     _get_schema = DeploymentModel
     _update_schema_class = DeploymentUpdate
-    _list_fields = [
-        "name",
-        "feature_list_name",
-        "feature_list_version",
-        "num_feature",
-        "enabled",
-    ]
-    _list_foreign_keys = [
-        ForeignKeyMapping("feature_list_id", FeatureList, "feature_list_name", "name", True),
-        ForeignKeyMapping("feature_list_id", FeatureList, "feature_list_version", "version", True),
-        ForeignKeyMapping("feature_list_id", FeatureList, "num_feature", "num_feature", True),
-    ]
+
+    @classmethod
+    def list_handler(cls) -> Optional[ListHandler]:
+        return ListHandler(
+            route=cls._route,
+            list_schema=DeploymentModel,
+            list_fields=[
+                "name",
+                "feature_list_name",
+                "feature_list_version",
+                "num_feature",
+                "enabled",
+            ],
+            list_foreign_keys=[
+                ForeignKeyMapping(
+                    "feature_list_id", FeatureList, "feature_list_name", "name", True
+                ),
+                ForeignKeyMapping(
+                    "feature_list_id", FeatureList, "feature_list_version", "version", True
+                ),
+                ForeignKeyMapping(
+                    "feature_list_id", FeatureList, "num_feature", "num_feature", True
+                ),
+            ],
+        )
 
     @property
     def enabled(self) -> bool:

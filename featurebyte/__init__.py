@@ -6,6 +6,7 @@ from http import HTTPStatus
 
 import pandas as pd
 
+from featurebyte.api.api_object_util import iterate_api_object_using_paginated_routes
 from featurebyte.api.batch_feature_table import BatchFeatureTable
 from featurebyte.api.batch_request_table import BatchRequestTable
 from featurebyte.api.catalog import Catalog
@@ -353,7 +354,7 @@ def list_deployments(
     - [FeatureList.deploy](/reference/featurebyte.api.feature_list.FeatureList.deploy/) Deploy / Undeploy a feature list
     """
     output = []
-    for item_dict in Deployment.iterate_api_object_using_paginated_routes(
+    for item_dict in iterate_api_object_using_paginated_routes(
         route="/deployment/all/", params={"enabled": True}
     ):
         output.append(item_dict)
