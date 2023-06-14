@@ -25,7 +25,13 @@ class OnlineStoreTableVersion(FeatureByteCatalogBaseDocumentModel):
         """
 
         collection_name: str = "online_store_table_version"
-        unique_constraints: List[UniqueValuesConstraint] = []
+        unique_constraints: List[UniqueValuesConstraint] = [
+            UniqueValuesConstraint(
+                fields=("_id",),
+                conflict_fields_signature={"id": ["_id"]},
+                resolution_signature=None,
+            ),
+        ]
 
         indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
             pymongo.operations.IndexModel("aggregation_result_name"),
