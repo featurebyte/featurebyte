@@ -18,7 +18,6 @@ class Target(SavableApiObject):
     Target class used to represent a Target in FeatureByte.
     """
 
-    # Fields that a Target can be created with
     internal_entity_ids: Optional[List[PydanticObjectId]] = Field(alias="entity_ids")
     horizon: str
     blind_spot: str

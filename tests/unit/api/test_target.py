@@ -56,8 +56,8 @@ def test_create_target_from_constructor(test_entity, get_test_target):
     # Get target
     retrieved_target = Target.get(target.name)
     assert retrieved_target.name == target.name
-    # TODO: how to fix this?
-    # assert retrieved_target.entities == ["test_entity"]
+    actual_entity_names = [entity.name for entity in retrieved_target.entities]
+    assert actual_entity_names == ["test_entity"]
     assert retrieved_target.horizon == target.horizon
     assert retrieved_target.blind_spot == target.blind_spot
 
