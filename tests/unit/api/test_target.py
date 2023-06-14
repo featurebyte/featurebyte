@@ -38,7 +38,7 @@ def get_test_target_fixture():
 
 def test_create_target_from_constructor(test_entity, get_test_target):
     test_entity.save()
-    target = get_test_target([test_entity.name])
+    target = get_test_target(["test_entity"])
     target.save()
 
     # List target

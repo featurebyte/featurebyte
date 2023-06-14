@@ -42,12 +42,35 @@ class Target(SavableApiObject):
         -------
         List[Entity]
         """
+        if not self.internal_entity_ids:
+            return []
         return [Entity.get_by_id(entity_id) for entity_id in self.internal_entity_ids]
 
     def __init__(
         self, name: str, entities: Optional[List[str]], horizon: str, blind_spot: str, **kwargs: Any
     ):
-        entity_ids = [Entity.get(entity_name).id for entity_name in entities]
+        internal_kwargs = kwargs.copy()
+        entity_ids = None
+        if "entity_ids" in internal_kwargs:
+            entity_ids = internal_kwargs.pop("entity_ids")
+        if entities:
+            entity_ids = [Entity.get(entity_name).id for entity_name in entities]
         super().__init__(
-            name=name, entity_ids=entity_ids, horizon=horizon, blind_spot=blind_spot, **kwargs
+            name=name,
+            entity_ids=entity_ids,
+            horizon=horizon,
+            blind_spot=blind_spot,
+            **internal_kwargs,
         )
+
+    def _get_init_params_from_object(self) -> dict[str, Any]:
+        entity_names = None
+        if self.internal_entity_ids:
+            entity_names = [
+                Entity.get_by_id(entity_id).name for entity_id in self.internal_entity_ids
+            ]
+        return {"entities": entity_names}
+
+    @classmethod
+    def _get_init_params(cls) -> dict[str, Any]:
+        return {"entities": None}
