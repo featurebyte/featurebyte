@@ -103,14 +103,11 @@ class FeatureManager(BaseModel):
             extra={"unscheduled_result_names": list(unscheduled_result_names)},
         )
 
-        # TODO: safer to move this after _populate_feature_store to prevent concurrent jobs updating
-        #  the same aggregation result name?
         # insert records into tile-feature mapping table
         await self._update_tile_feature_mapping_table(feature_spec)
 
-        aggregation_id_to_tile_spec = {}
-
         # enable tile generation with scheduled jobs
+        aggregation_id_to_tile_spec = {}
         for tile_spec in feature_spec.feature.tile_specs:
             aggregation_id_to_tile_spec[tile_spec.aggregation_id] = tile_spec
             tile_job_exists = await self._tile_manager.tile_job_exists(tile_spec=tile_spec)
@@ -148,6 +145,15 @@ class FeatureManager(BaseModel):
         This means that we need to run a one-off job to populate the online store for them.
         Otherwise, there is nothing do to as one of the scheduled tile jobs would have already
         computed them.
+
+        Parameters
+        ----------
+        feature_spec: OnlineFeatureSpec
+            Instance of OnlineFeatureSpec
+
+        Returns
+        -------
+        Set[str]
         """
         result_names = [query.result_name for query in feature_spec.precompute_queries]
         query = (

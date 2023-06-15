@@ -149,6 +149,8 @@ class TileManager(BaseModel):
             the input TileSpec
         job_schedule_ts_str: str
             timestamp string of the job schedule
+        aggregation_result_name: str
+            aggregation result name to populate
         """
         assert self._online_store_table_version_service is not None
         executor = TileScheduleOnlineStore(
