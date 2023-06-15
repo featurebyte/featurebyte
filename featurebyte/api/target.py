@@ -45,7 +45,7 @@ class Target(SavableApiObject):
         List[Entity]
         """
         try:
-            entity_ids = self.cached_model.entity_ids  # pylint: disable=attr-defined
+            entity_ids = self.cached_model.entity_ids  # type: ignore[attr-defined]
         except RecordRetrievalException:
             entity_ids = self.internal_entity_ids
         return [Entity.get_by_id(entity_id) for entity_id in entity_ids]
