@@ -44,6 +44,7 @@ from featurebyte.api.savable_api_object import DeletableApiObject, SavableApiObj
 from featurebyte.api.scd_table import SCDTable
 from featurebyte.api.static_source_table import StaticSourceTable
 from featurebyte.api.table import Table
+from featurebyte.api.target import Target
 from featurebyte.exception import (
     DuplicatedRecordException,
     RecordRetrievalException,
@@ -92,6 +93,7 @@ def catalog_list_methods_to_test_list():
         MethodMetadata("list_batch_feature_tables", BatchFeatureTable, "list"),
         MethodMetadata("list_deployments", Deployment, "list"),
         MethodMetadata("list_static_source_tables", StaticSourceTable, "list"),
+        MethodMetadata("list_targets", Target, "list"),
     ]
 
 
@@ -111,6 +113,7 @@ def catalog_get_methods_to_test_list():
         MethodMetadata("get_batch_feature_table", BatchFeatureTable, "get"),
         MethodMetadata("get_deployment", Deployment, "get"),
         MethodMetadata("get_static_source_table", StaticSourceTable, "get"),
+        MethodMetadata("get_target", Target, "get"),
     ]
 
 

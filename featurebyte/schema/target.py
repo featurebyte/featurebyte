@@ -26,11 +26,11 @@ class TargetCreate(FeatureByteBaseModel):
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
-    graph: QueryGraph
-    node_name: str
-    window: str
-    blind_spot: str
-    entity_ids: List[PydanticObjectId]
+    graph: Optional[QueryGraph]
+    node_name: Optional[str]
+    horizon: Optional[str]
+    blind_spot: Optional[str]
+    entity_ids: Optional[List[PydanticObjectId]]
 
 
 class TargetList(PaginationMixin):
