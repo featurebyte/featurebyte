@@ -42,12 +42,15 @@ class ForwardAggregator(BaseAggregator):
         node_params = self._prepare_node_parameters(
             value_column=value_column, method=method, horizon=horizon, target_name=target_name
         )
+        # Don't need this as there's no tile IDs in the parameters
+        # Can just call graph.add_operation directly
         groupby_node = add_pruning_sensitive_operation(
             graph=self.view.graph,
-            node_cls=GroupByNode,
+            node_cls=GroupByNode,  # create a new node - ForwardAggregateNode
             node_params=node_params,
             input_node=self.view.node,
         )
+        # Potentially include projection, so that the SQL generation logic can be similar with the other aggregations.
 
         # Build and return Target
         return Target(
@@ -56,6 +59,12 @@ class ForwardAggregator(BaseAggregator):
             horizon=horizon,
             blind_spot="",
         )
+
+    # Notes
+    # - materialization: Target.materialize(observation_table|dataframe) -> this will trigger the SQL generation
+    # - can target interact w/ other targets/features?
+    #   will influence how the SQL generation is done; can reuse some of the feature part
+    # expected SQL after generation can be found in expected_preview_sql.sql
 
     def _prepare_node_parameters(
         self,
