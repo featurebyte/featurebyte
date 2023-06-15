@@ -723,20 +723,20 @@ class Feature(
             # feature definition and save the feature. The task is executed asynchronously. The feature definition is
             # validated before saving the feature.
             self._check_object_not_been_saved(conflict_resolution=conflict_resolution)
-            cropped_graph, mapped_node_names = GlobalQueryGraph().crop(
+            pruned_graph, node_name_map = GlobalQueryGraph().quick_prune(
                 target_node_names=[self.node_name]
             )
             feature_item = BatchFeatureItem(
                 id=self.id,
                 name=self.name,
-                node_name=mapped_node_names[0],
+                node_name=node_name_map[self.node_name],
                 tabular_source=self.tabular_source,
             )
             try:
                 self.post_async_task(
                     route="/feature/batch",
                     payload=BatchFeatureCreatePayload(
-                        graph=cropped_graph, features=[feature_item]
+                        graph=pruned_graph, features=[feature_item]
                     ).json_dict(),
                     retrieve_result=False,
                     has_output_url=False,

@@ -16,16 +16,6 @@ from tests.util.helper import (
 )
 
 
-@pytest.fixture(scope="session")
-def user():
-    """
-    Mock user
-    """
-    user = Mock()
-    user.id = ObjectId()
-    return user
-
-
 @pytest.fixture(name="deployed_feature_list_deployment", scope="module")
 def deployed_feature_list_and_deployment_fixture(event_table):
     """

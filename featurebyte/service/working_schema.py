@@ -15,6 +15,7 @@ from featurebyte.persistent import Persistent
 from featurebyte.service.base_service import BaseService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.online_enable import OnlineEnableService
+from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.base import BaseSession, MetadataSchemaInitializer
 
@@ -55,6 +56,9 @@ class WorkingSchemaService(BaseService):
         )
         self._task_manager = TaskManager(
             user=user, persistent=persistent, celery=celery, catalog_id=catalog_id
+        )
+        self._online_store_table_version_service = OnlineStoreTableVersionService(
+            user=user, persistent=persistent, catalog_id=catalog_id
         )
 
     async def recreate_working_schema(
@@ -107,5 +111,8 @@ class WorkingSchemaService(BaseService):
                 logger.info(f'Rescheduling jobs for online enabled feature: {feature_doc["name"]}')
                 feature = FeatureModel(**feature_doc)
                 await OnlineEnableService.update_data_warehouse_with_session(
-                    session=session, feature=feature, task_manager=self._task_manager
+                    session=session,
+                    feature=feature,
+                    task_manager=self._task_manager,
+                    online_store_table_version_service=self._online_store_table_version_service,
                 )

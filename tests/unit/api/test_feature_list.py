@@ -391,7 +391,7 @@ def test_deserialization(production_ready_feature, draft_feature):
     feature_list_dict["version"] = expected_version
 
     with patch(
-        "featurebyte.api.feature_list.FeatureList.iterate_api_object_using_paginated_routes"
+        "featurebyte.api.feature_list.iterate_api_object_using_paginated_routes"
     ) as mock_iterate:
         with patch("featurebyte.api.feature_store.FeatureStore._get_by_id") as mock_get_by_id:
             mock_get_by_id.return_value = production_ready_feature.feature_store
@@ -508,7 +508,7 @@ def test_get_feature_list(saved_feature_list):
     )
 
     # check unexpected exception in audit
-    with patch("featurebyte.api.api_object.Configurations"):
+    with patch("featurebyte.api.api_object_util.Configurations"):
         with pytest.raises(RecordRetrievalException) as exc:
             saved_feature_list.audit()
     assert f"Failed to list /feature_list/audit/{saved_feature_list.id}." in str(exc.value)

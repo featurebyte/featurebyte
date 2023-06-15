@@ -170,7 +170,6 @@ def add_pruning_sensitive_operation(
                 available_column_names=input_operation_structure.output_column_names,
             )
         ),
-        aggressive=True,
         operation_structure_info=operation_structure_info,
     )
 

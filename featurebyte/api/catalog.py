@@ -11,6 +11,8 @@ from bson import ObjectId
 from pydantic import Field
 from typeguard import typechecked
 
+from featurebyte.api.api_handler.catalog_list_handler import CatalogListHandler
+from featurebyte.api.api_handler.list import ListHandler
 from featurebyte.api.api_object_util import NameAttributeUpdatableMixin
 from featurebyte.api.batch_feature_table import BatchFeatureTable
 from featurebyte.api.batch_request_table import BatchRequestTable
@@ -256,13 +258,17 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return cls.get_by_id(get_active_catalog_id())
 
     @classmethod
-    def _post_process_list(cls, item_list: pd.DataFrame) -> pd.DataFrame:
-        item_list = super()._post_process_list(item_list)
+    def _list_handler(cls) -> ListHandler:
+        return CatalogListHandler(
+            route=cls._route,
+            list_schema=cls._list_schema,
+            list_fields=cls._list_fields,
+            list_foreign_keys=cls._list_foreign_keys,
+        )
 
-        # add column to indicate whether catalog is active
-        item_list["active"] = item_list.id == get_active_catalog_id()
-
-        return item_list
+    @classmethod
+    def use_new_list_handler(cls) -> bool:
+        return True
 
     @typechecked
     def update_name(self, name: str) -> None:

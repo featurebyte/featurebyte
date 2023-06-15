@@ -12,7 +12,12 @@ from featurebyte.sql.tile_generate_schedule import TileGenerateSchedule
 
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_schedule_generate_tile_online(session, tile_task_prep_spark, base_sql_model):
+async def test_schedule_generate_tile_online(
+    session,
+    tile_task_prep_spark,
+    base_sql_model,
+    online_store_table_version_service,
+):
     """
     Test the stored procedure of generating tiles
     """
@@ -36,6 +41,7 @@ async def test_schedule_generate_tile_online(session, tile_task_prep_spark, base
 
     tile_schedule_ins = TileGenerateSchedule(
         session=session,
+        online_store_table_version_service=online_store_table_version_service,
         tile_id=tile_id,
         tile_modulo_frequency_second=183,
         blind_spot_second=3,
@@ -80,7 +86,9 @@ async def test_schedule_generate_tile_online(session, tile_task_prep_spark, base
 
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_schedule_monitor_tile_online(session, base_sql_model):
+async def test_schedule_monitor_tile_online(
+    session, online_store_table_version_service, base_sql_model
+):
     """
     Test the stored procedure of monitoring tiles
     """
@@ -108,6 +116,7 @@ async def test_schedule_monitor_tile_online(session, base_sql_model):
 
     tile_schedule_ins = TileGenerateSchedule(
         session=session,
+        online_store_table_version_service=online_store_table_version_service,
         tile_id=tile_id,
         tile_modulo_frequency_second=183,
         blind_spot_second=3,
@@ -136,6 +145,7 @@ async def test_schedule_monitor_tile_online(session, base_sql_model):
     tile_end_ts_2 = "2022-06-05T23:58:03Z"
     tile_schedule_ins = TileGenerateSchedule(
         session=session,
+        online_store_table_version_service=online_store_table_version_service,
         tile_id=tile_id,
         tile_modulo_frequency_second=183,
         blind_spot_second=3,
@@ -163,7 +173,9 @@ async def test_schedule_monitor_tile_online(session, base_sql_model):
 
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_schedule_generate_tile__with_registry(session, tile_task_prep_spark, base_sql_model):
+async def test_schedule_generate_tile__with_registry(
+    session, tile_task_prep_spark, base_sql_model, online_store_table_version_service
+):
     """
     Test the stored procedure of generating tiles
     """
@@ -187,6 +199,7 @@ async def test_schedule_generate_tile__with_registry(session, tile_task_prep_spa
 
     tile_schedule_ins = TileGenerateSchedule(
         session=session,
+        online_store_table_version_service=online_store_table_version_service,
         tile_id=tile_id,
         tile_modulo_frequency_second=183,
         blind_spot_second=3,
@@ -236,7 +249,7 @@ async def test_schedule_generate_tile__with_registry(session, tile_task_prep_spa
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_schedule_generate_tile__no_default_job_ts(
-    session, tile_task_prep_spark, base_sql_model
+    session, tile_task_prep_spark, base_sql_model, online_store_table_version_service
 ):
     """
     Test the stored procedure of generating tiles
@@ -267,6 +280,7 @@ async def test_schedule_generate_tile__no_default_job_ts(
     used_job_schedule_ts = "2023-05-04 14:33:03"
     tile_schedule_ins = TileGenerateSchedule(
         session=session,
+        online_store_table_version_service=online_store_table_version_service,
         tile_id=tile_id,
         tile_modulo_frequency_second=tile_modulo_frequency_second,
         blind_spot_second=blind_spot_second,
@@ -293,6 +307,7 @@ async def test_schedule_generate_tile__no_default_job_ts(
     used_job_schedule_ts = "2023-05-04 14:33:30"
     tile_schedule_ins = TileGenerateSchedule(
         session=session,
+        online_store_table_version_service=online_store_table_version_service,
         tile_id=tile_id,
         tile_modulo_frequency_second=tile_modulo_frequency_second,
         blind_spot_second=blind_spot_second,

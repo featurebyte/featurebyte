@@ -21,7 +21,10 @@ from featurebyte.query_graph.sql.common import (
     get_qualified_column_identifier,
     quoted_identifier,
 )
-from featurebyte.query_graph.sql.online_serving_util import get_online_store_table_name
+from featurebyte.query_graph.sql.online_serving_util import (
+    get_online_store_table_name,
+    get_version_placeholder,
+)
 from featurebyte.query_graph.sql.specs import (
     AggregationSpec,
     NonTileBasedAggregationSpec,
@@ -32,6 +35,8 @@ AggregationSpecT = TypeVar("AggregationSpecT", bound=AggregationSpec)
 NonTileBasedAggregationSpecT = TypeVar(
     "NonTileBasedAggregationSpecT", bound=NonTileBasedAggregationSpec
 )
+
+LATEST_VERSION = "LATEST_VERSION"
 
 
 @dataclass
@@ -476,13 +481,63 @@ class TileBasedAggregator(Aggregator[TileBasedAggregationSpec], ABC):
         """
         literal_agg_result_names = [make_literal_value(name) for name in agg_result_names]
         value_column = self.adapter.online_store_pivot_prepare_value_column(dtype)
+
+        # Get the latest version of the online store table
+        values_expressions = [
+            expressions.Tuple(
+                expressions=[
+                    make_literal_value(agg_result_name),
+                    expressions.Identifier(this=get_version_placeholder(agg_result_name)),
+                ]
+            )
+            for agg_result_name in agg_result_names
+        ]
+        values_alias = expressions.TableAlias(
+            this=expressions.Identifier(this="version_table"),
+            columns=[
+                quoted_identifier(InternalName.ONLINE_STORE_RESULT_NAME_COLUMN),
+                quoted_identifier(LATEST_VERSION),
+            ],
+        )
+        latest_result_version = select(
+            quoted_identifier(InternalName.ONLINE_STORE_RESULT_NAME_COLUMN),
+            quoted_identifier(LATEST_VERSION),
+        ).from_(expressions.Values(expressions=values_expressions, alias=values_alias))
+        latest_online_store_table = (
+            select("R.*")
+            .from_(latest_result_version.subquery(alias="L"))
+            .join(
+                table_name,
+                join_alias="R",
+                join_type="inner",
+                on=expressions.and_(
+                    expressions.EQ(
+                        this=get_qualified_column_identifier(
+                            InternalName.ONLINE_STORE_RESULT_NAME_COLUMN, "R"
+                        ),
+                        expression=get_qualified_column_identifier(
+                            InternalName.ONLINE_STORE_RESULT_NAME_COLUMN, "L"
+                        ),
+                    ),
+                    expressions.EQ(
+                        this=get_qualified_column_identifier(
+                            InternalName.ONLINE_STORE_VERSION_COLUMN, "R"
+                        ),
+                        expression=get_qualified_column_identifier(LATEST_VERSION, "L"),
+                    ),
+                ),
+            )
+        )
+
+        # Filter the latest version of the online store table to only include the required
+        # aggregation results
         filtered_online_store = (
             select(
                 *[quoted_identifier(serving_name) for serving_name in serving_names],
                 quoted_identifier(InternalName.ONLINE_STORE_RESULT_NAME_COLUMN),
                 value_column,
             )
-            .from_(table_name)
+            .from_(latest_online_store_table.subquery())
             .where(
                 expressions.In(
                     this=quoted_identifier(InternalName.ONLINE_STORE_RESULT_NAME_COLUMN),

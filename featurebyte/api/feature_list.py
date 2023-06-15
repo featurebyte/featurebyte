@@ -28,7 +28,12 @@ from bson.objectid import ObjectId
 from pydantic import Field, root_validator
 from typeguard import typechecked
 
-from featurebyte.api.api_object import PAGINATED_CALL_PAGE_SIZE, ApiObject, ForeignKeyMapping
+from featurebyte.api.api_object import ApiObject
+from featurebyte.api.api_object_util import (
+    PAGINATED_CALL_PAGE_SIZE,
+    ForeignKeyMapping,
+    iterate_api_object_using_paginated_routes,
+)
 from featurebyte.api.base_table import TableApiObject
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
@@ -346,7 +351,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
                 title="Loading Feature(s)",
                 **get_alive_bar_additional_params(),
             ) as progress_bar:
-                for feature_dict in cls.iterate_api_object_using_paginated_routes(
+                for feature_dict in iterate_api_object_using_paginated_routes(
                     route="/feature",
                     params={"feature_list_id": id_value, "page_size": PAGINATED_CALL_PAGE_SIZE},
                 ):
@@ -696,16 +701,16 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         """
         self._check_object_not_been_saved(conflict_resolution=conflict_resolution)
 
-        cropped_graph, mapped_node_names = GlobalQueryGraph().crop(
+        pruned_graph, node_name_map = GlobalQueryGraph().quick_prune(
             target_node_names=[feat.node_name for feat in self.feature_objects.values()]
         )
         batch_feature_items = []
-        for feat, node_name in zip(self.feature_objects.values(), mapped_node_names):
+        for feat in self.feature_objects.values():
             batch_feature_items.append(
                 BatchFeatureItem(
                     id=feat.id,
                     name=feat.name,
-                    node_name=node_name,
+                    node_name=node_name_map[feat.node_name],
                     tabular_source=feat.tabular_source,
                 )
             )
@@ -714,7 +719,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         feature_list_create = FeatureListCreateWithBatchFeatureCreationPayload(
             name=self.name,
             conflict_resolution=conflict_resolution,
-            graph=cropped_graph,
+            graph=pruned_graph,
             features=batch_feature_items,
             _id=self.id,
         )

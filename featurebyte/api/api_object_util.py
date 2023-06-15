@@ -1,17 +1,48 @@
 """
 API Object Util
 """
-from typing import Any, Optional
+from __future__ import annotations
+
+from typing import Any, Dict, Iterator, List, Optional, Union
 
 import ctypes
 import os
 import threading
+from dataclasses import dataclass
+from http import HTTPStatus
+
+from bson import ObjectId
 
 from featurebyte.config import Configurations
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.logging import get_logger
 
 logger = get_logger(__name__)
+
+
+PAGINATED_CALL_PAGE_SIZE = 100
+
+
+@dataclass
+class ForeignKeyMapping:
+    """
+    ForeignKeyMapping contains information about a foreign key field mapping that we can use to map
+    IDs to their names in the list API response.
+    """
+
+    # Field name of the existing ID field in the list API response.
+    foreign_key_field: str
+    # Object class that we will be trying to retrieve the data from.
+    object_class: Any
+    # New field name that we want to display in the list API response
+    new_field_name: str
+    # Field to display instead of `name` from the retrieved list API response.
+    # By default, we will pull the `name` from the retrieved values. This will override that behaviour
+    # to pull a different field.
+    display_field_override: Optional[str] = None
+    # Whether to use list or list_versions to retrieve the data. By default, we will use list.
+    # This will override that behaviour to use list_versions.
+    use_list_versions: bool = False
 
 
 class ProgressThread(threading.Thread):
@@ -128,3 +159,113 @@ def is_server_mode() -> bool:
     """
     sdk_execution_mode = os.environ.get("FEATUREBYTE_SDK_EXECUTION_MODE")
     return sdk_execution_mode == "SERVER"
+
+
+def map_object_id_to_name(
+    object_map: Dict[Optional[ObjectId], str], object_id: Union[ObjectId, List[ObjectId]]
+) -> Union[Optional[str], List[Optional[str]]]:
+    """
+    Map list of object ids object names
+
+    Parameters
+    ----------
+    object_map: Dict[Optional[ObjectId], str],
+        Dict that maps ObjectId to name
+    object_id: Union[ObjectId, List[ObjectId]]
+        List of object ids to map, or object id to map
+
+    Returns
+    -------
+    Union[Optional[str], List[Optional[str]]]
+    """
+    if isinstance(object_id, list):
+        return [object_map.get(_id) for _id in object_id]
+    return object_map.get(object_id)
+
+
+def map_dict_list_to_name(
+    object_map: Dict[Optional[ObjectId], str],
+    object_id_field: str,
+    object_dict: Union[Dict[str, ObjectId], List[Dict[str, ObjectId]]],
+) -> Union[Optional[str], List[Optional[str]]]:
+    """
+    Map list of object dict to object names
+
+    Parameters
+    ----------
+    object_map: Dict[Optional[ObjectId], str],
+        Dict that maps ObjectId to name
+    object_id_field: str
+        Name of field in object dict to get object id from
+    object_dict: Union[Dict[str, ObjectId], List[Dict[str, ObjectId]]]
+        List of dict to map
+
+    Returns
+    -------
+    Union[Optional[str], List[Optional[str]]]
+    """
+    if isinstance(object_dict, list):
+        return [
+            object_map.get(_obj_dict.get(object_id_field))
+            for _obj_dict in object_dict
+            if _obj_dict.get(object_id_field)
+        ]
+    return object_map.get(object_dict.get(object_id_field))
+
+
+def to_request_func(response_dict: dict[str, Any], page: int) -> bool:
+    """
+    Default helper function to check whether to continue calling list route
+
+    Parameters
+    ----------
+    response_dict: dict[str, Any]
+        Response data
+    page: int
+        Page number
+
+    Returns
+    -------
+    Flag to indicate whether to continue calling list route
+    """
+    return bool(response_dict["total"] > (page * response_dict["page_size"]))
+
+
+def iterate_api_object_using_paginated_routes(
+    route: str, params: Optional[dict[str, Any]] = None
+) -> Iterator[dict[str, Any]]:
+    """
+    Api object generator by iterating listing route
+
+    Parameters
+    ----------
+    route: str
+        List route
+    params: dict[str, Any] | None
+        Route parameters
+
+    Yields
+    -------
+    Iterator[dict[str, Any]]
+        Iterator of api object records
+
+    Raises
+    ------
+    RecordRetrievalException
+        When failed to retrieve from list route
+    """
+    client = Configurations().get_client()
+    to_request, page = True, 1
+    params = params or {}
+    while to_request:
+        params = params.copy()
+        params["page"] = page
+        response = client.get(url=route, params=params)
+        if response.status_code == HTTPStatus.OK:
+            response_dict = response.json()
+            to_request = to_request_func(response_dict, page)
+            page += 1
+            for obj_dict in response_dict["data"]:
+                yield obj_dict
+        else:
+            raise RecordRetrievalException(response, f"Failed to list {route}.")

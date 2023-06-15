@@ -3,12 +3,13 @@ Base models for task and task payload
 """
 from __future__ import annotations
 
-from typing import Any, Dict, cast
+from typing import Any, Dict, Optional
 
 from abc import abstractmethod
 from enum import Enum
 
-from featurebyte.routes.app_container import AppContainer
+from featurebyte.routes.lazy_app_container import LazyAppContainer
+from featurebyte.routes.registry import app_container_config
 from featurebyte.schema.worker.progress import ProgressModel
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.service.task_manager import TaskManager
@@ -44,7 +45,7 @@ class BaseTask:  # pylint: disable=too-many-instance-attributes
         self.get_credential = get_credential
         self.get_celery = get_celery
         self.progress = progress
-        self._app_container = None
+        self._app_container: Optional[LazyAppContainer] = None
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
@@ -71,16 +72,16 @@ class BaseTask:  # pylint: disable=too-many-instance-attributes
             self.progress.put(progress.dict(exclude_none=True))
 
     @property
-    def app_container(self) -> AppContainer:
+    def app_container(self) -> LazyAppContainer:
         """
         Get an AppContainer instance
 
         Returns
         -------
-        AppContainer
+        LazyAppContainer
         """
         if self._app_container is None:
-            self._app_container = AppContainer.get_instance(
+            self._app_container = LazyAppContainer(
                 user=self.user,
                 persistent=self.get_persistent(),
                 temp_storage=self.get_temp_storage(),
@@ -91,9 +92,10 @@ class BaseTask:  # pylint: disable=too-many-instance-attributes
                     catalog_id=self.payload.catalog_id,
                 ),
                 storage=self.get_storage(),
-                container_id=self.payload.catalog_id,
+                catalog_id=self.payload.catalog_id,
+                app_container_config=app_container_config,
             )
-        return cast(AppContainer, self._app_container)
+        return self._app_container
 
     @abstractmethod
     async def execute(self) -> Any:

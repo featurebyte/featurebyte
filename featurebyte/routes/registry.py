@@ -58,6 +58,7 @@ from featurebyte.service.item_table import ItemTableService
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.online_enable import OnlineEnableService
 from featurebyte.service.online_serving import OnlineServingService
+from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.parent_serving import ParentEntityLookupService
 from featurebyte.service.periodic_task import PeriodicTaskService
 from featurebyte.service.preview import PreviewService
@@ -108,7 +109,7 @@ app_container_config.add_service_with_extra_deps(
 app_container_config.add_service_with_extra_deps(
     "online_serving_service",
     OnlineServingService,
-    ["session_manager_service", "entity_validation_service"],
+    ["session_manager_service", "entity_validation_service", "online_store_table_version_service"],
 )
 app_container_config.add_service_with_extra_deps(
     "feature_list_status_service",
@@ -146,6 +147,9 @@ app_container_config.add_basic_service("scd_table_service", SCDTableService)
 app_container_config.add_basic_service("feature_service", FeatureService)
 app_container_config.add_basic_service("feature_list_service", FeatureListService)
 app_container_config.add_basic_service("deployment_service", DeploymentService)
+app_container_config.add_basic_service(
+    "online_store_table_version_service", OnlineStoreTableVersionService
+)
 app_container_config.add_service_with_extra_deps(
     "observation_table_service",
     ObservationTableService,

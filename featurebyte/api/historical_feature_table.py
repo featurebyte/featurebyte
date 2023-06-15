@@ -9,7 +9,8 @@ from pathlib import Path
 
 import pandas as pd
 
-from featurebyte.api.api_object import ApiObject, ForeignKeyMapping
+from featurebyte.api.api_object import ApiObject
+from featurebyte.api.api_object_util import ForeignKeyMapping
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.materialized_table import MaterializedTableMixin
 from featurebyte.api.observation_table import ObservationTable

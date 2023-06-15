@@ -3,26 +3,29 @@ ApiObject class
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, Iterator, List, Optional, Type, TypeVar, Union
+from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar, Union
 
 import operator
-import time
-from dataclasses import dataclass
 from functools import partial
 from http import HTTPStatus
 from itertools import groupby
 
 import pandas as pd
-from alive_progress import alive_bar
 from bson.objectid import ObjectId
 from cachetools import TTLCache, cachedmethod
 from cachetools.keys import hashkey
 from pandas import DataFrame
-from requests.models import Response
 from typeguard import typechecked
 
-from featurebyte.api.api_object_util import ProgressThread
-from featurebyte.common.env_util import get_alive_bar_additional_params
+from featurebyte.api.api_handler.list import ListHandler
+from featurebyte.api.api_object_util import (
+    PAGINATED_CALL_PAGE_SIZE,
+    ForeignKeyMapping,
+    iterate_api_object_using_paginated_routes,
+    map_dict_list_to_name,
+    map_object_id_to_name,
+)
+from featurebyte.api.mixin import AsyncMixin
 from featurebyte.common.formatting_util import InfoDict
 from featurebyte.common.utils import construct_repr_string
 from featurebyte.config import Configurations
@@ -34,13 +37,9 @@ from featurebyte.exception import (
 )
 from featurebyte.logging import get_logger
 from featurebyte.models.base import FeatureByteBaseDocumentModel, FeatureByteBaseModel
-from featurebyte.schema.task import TaskStatus
 
 ApiObjectT = TypeVar("ApiObjectT", bound="ApiObject")
 ModelT = TypeVar("ModelT", bound=FeatureByteBaseDocumentModel)
-PAGINATED_CALL_PAGE_SIZE = 100
-POLLING_INTERVAL = 3
-
 
 logger = get_logger(__name__)
 
@@ -74,29 +73,7 @@ def get_api_object_cache_key(
     return hashkey(collection_name, obj.id, *args, **kwargs)
 
 
-@dataclass
-class ForeignKeyMapping:
-    """
-    ForeignKeyMapping contains information about a foreign key field mapping that we can use to map
-    IDs to their names in the list API response.
-    """
-
-    # Field name of the existing ID field in the list API response.
-    foreign_key_field: str
-    # Object class that we will be trying to retrieve the data from.
-    object_class: Any
-    # New field name that we want to display in the list API response
-    new_field_name: str
-    # Field to display instead of `name` from the retrieved list API response.
-    # By default, we will pull the `name` from the retrieved values. This will override that behaviour
-    # to pull a different field.
-    display_field_override: Optional[str] = None
-    # Whether to use list or list_versions to retrieve the data. By default, we will use list.
-    # This will override that behaviour to use list_versions.
-    use_list_versions: bool = False
-
-
-class ApiObject(FeatureByteBaseDocumentModel):
+class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
     """
     ApiObject contains common methods used to retrieve data
     """
@@ -357,64 +334,6 @@ class ApiObject(FeatureByteBaseDocumentModel):
         """
         return cls._get_by_id(id)
 
-    @staticmethod
-    def _to_request_func(response_dict: dict[str, Any], page: int) -> bool:
-        """
-        Default helper function to check whether to continue calling list route
-
-        Parameters
-        ----------
-        response_dict: dict[str, Any]
-            Response data
-        page: int
-            Page number
-
-        Returns
-        -------
-        Flag to indicate whether to continue calling list route
-        """
-        return bool(response_dict["total"] > (page * response_dict["page_size"]))
-
-    @classmethod
-    def iterate_api_object_using_paginated_routes(
-        cls, route: str, params: dict[str, Any] | None = None
-    ) -> Iterator[dict[str, Any]]:
-        """
-        Api object generator by iterating listing route
-
-        Parameters
-        ----------
-        route: str
-            List route
-        params: dict[str, Any] | None
-            Route parameters
-
-        Yields
-        -------
-        Iterator[dict[str, Any]]
-            Iterator of api object records
-
-        Raises
-        ------
-        RecordRetrievalException
-            When failed to retrieve from list route
-        """
-        client = Configurations().get_client()
-        to_request, page = True, 1
-        params = params or {}
-        while to_request:
-            params = params.copy()
-            params["page"] = page
-            response = client.get(url=route, params=params)
-            if response.status_code == HTTPStatus.OK:
-                response_dict = response.json()
-                to_request = cls._to_request_func(response_dict, page)
-                page += 1
-                for obj_dict in response_dict["data"]:
-                    yield obj_dict
-            else:
-                raise RecordRetrievalException(response, f"Failed to list {route}.")
-
     @classmethod
     def list(cls, include_id: Optional[bool] = True) -> DataFrame:
         """
@@ -441,6 +360,35 @@ class ApiObject(FeatureByteBaseDocumentModel):
         return cls._list(include_id=include_id)
 
     @classmethod
+    def _list_handler(cls) -> ListHandler:
+        """
+        Get list handler.
+
+        Returns
+        -------
+        ListHandler
+            List handler
+        """
+        return ListHandler(
+            route=cls._route,
+            list_schema=cls._list_schema,
+            list_fields=cls._list_fields,
+            list_foreign_keys=cls._list_foreign_keys,
+        )
+
+    @classmethod
+    def use_new_list_handler(cls) -> bool:
+        """
+        Whether to use new list handler.
+
+        Returns
+        -------
+        bool
+            Whether to use new list handler
+        """
+        return False
+
+    @classmethod
     def _list(
         cls, include_id: Optional[bool] = False, params: Optional[Dict[str, Any]] = None
     ) -> DataFrame:
@@ -459,9 +407,14 @@ class ApiObject(FeatureByteBaseDocumentModel):
         DataFrame
             Table of objects
         """
+        # Use list handler
+        if cls.use_new_list_handler():
+            return cls._list_handler().list(include_id=include_id, params=params)
+
+        # Use previous logic
         params = params or {}
         output = []
-        for item_dict in cls.iterate_api_object_using_paginated_routes(
+        for item_dict in iterate_api_object_using_paginated_routes(
             route=cls._route, params={"page_size": PAGINATED_CALL_PAGE_SIZE, **params}
         ):
             output.append(cls._list_schema(**item_dict).dict())
@@ -475,58 +428,6 @@ class ApiObject(FeatureByteBaseDocumentModel):
 
         # apply post-processing on object listing
         return cls._post_process_list(DataFrame.from_records(output))[fields]
-
-    @staticmethod
-    def map_dict_list_to_name(
-        object_map: Dict[Optional[ObjectId], str],
-        object_id_field: str,
-        object_dict: Union[Dict[str, ObjectId], List[Dict[str, ObjectId]]],
-    ) -> Union[Optional[str], List[Optional[str]]]:
-        """
-        Map list of object dict to object names
-
-        Parameters
-        ----------
-        object_map: Dict[Optional[ObjectId], str],
-            Dict that maps ObjectId to name
-        object_id_field: str
-            Name of field in object dict to get object id from
-        object_dict: Union[Dict[str, ObjectId], List[Dict[str, ObjectId]]]
-            List of dict to map
-
-        Returns
-        -------
-        Union[Optional[str], List[Optional[str]]]
-        """
-        if isinstance(object_dict, list):
-            return [
-                object_map.get(_obj_dict.get(object_id_field))
-                for _obj_dict in object_dict
-                if _obj_dict.get(object_id_field)
-            ]
-        return object_map.get(object_dict.get(object_id_field))
-
-    @staticmethod
-    def map_object_id_to_name(
-        object_map: Dict[Optional[ObjectId], str], object_id: Union[ObjectId, List[ObjectId]]
-    ) -> Union[Optional[str], List[Optional[str]]]:
-        """
-        Map list of object ids object names
-
-        Parameters
-        ----------
-        object_map: Dict[Optional[ObjectId], str],
-            Dict that maps ObjectId to name
-        object_id: Union[ObjectId, List[ObjectId]]
-            List of object ids to map, or object id to map
-
-        Returns
-        -------
-        Union[Optional[str], List[Optional[str]]]
-        """
-        if isinstance(object_id, list):
-            return [object_map.get(_id) for _id in object_id]
-        return object_map.get(object_id)
 
     @classmethod
     def _post_process_list(cls, item_list: DataFrame) -> DataFrame:
@@ -575,11 +476,11 @@ class ApiObject(FeatureByteBaseDocumentModel):
                         # foreign_key is a dict
                         foreign_key_field, object_id_field = foreign_key_field.split(".")
                         mapping_function = partial(
-                            cls.map_dict_list_to_name, object_map, object_id_field
+                            map_dict_list_to_name, object_map, object_id_field
                         )
                     else:
                         # foreign_key is an objectid
-                        mapping_function = partial(cls.map_object_id_to_name, object_map)
+                        mapping_function = partial(map_object_id_to_name, object_map)
                     new_field_values = item_list[foreign_key_field].apply(mapping_function)
                 else:
                     new_field_values = [[]] * item_list.shape[0]
@@ -675,7 +576,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
             List of audit log
         """
         audit_records = []
-        for audit_record in self.iterate_api_object_using_paginated_routes(
+        for audit_record in iterate_api_object_using_paginated_routes(
             route=f"{self._route}/audit/{self.id}", params={"page_size": PAGINATED_CALL_PAGE_SIZE}
         ):
             audit_records.append(self._prepare_audit_record(audit_record))
@@ -735,156 +636,3 @@ class ApiObject(FeatureByteBaseDocumentModel):
             info["class_name"] = self.__class__.__name__
             return InfoDict(info)
         raise RecordRetrievalException(response, "Failed to retrieve object info.")
-
-    @classmethod
-    def _poll_async_task(
-        cls,
-        task_response: Response,
-        delay: float = POLLING_INTERVAL,
-        retrieve_result: bool = True,
-        has_output_url: bool = True,
-    ) -> dict[str, Any]:
-        response_dict = task_response.json()
-        status = response_dict["status"]
-        task_id = response_dict["id"]
-
-        # poll the task route (if the task is still running)
-        client = Configurations().get_client()
-        task_get_response = None
-
-        with alive_bar(
-            manual=True,
-            title="Working...",
-            **get_alive_bar_additional_params(),
-        ) as progress_bar:
-            try:
-                # create progress update thread
-                thread = ProgressThread(task_id=task_id, progress_bar=progress_bar)
-                thread.daemon = True
-                thread.start()
-
-                while status in [
-                    TaskStatus.STARTED,
-                    TaskStatus.PENDING,
-                ]:  # retrieve task status
-                    task_get_response = client.get(url=f"/task/{task_id}")
-                    if task_get_response.status_code == HTTPStatus.OK:
-                        status = task_get_response.json()["status"]
-                        time.sleep(delay)
-                    else:
-                        raise RecordRetrievalException(task_get_response)
-
-                if status == TaskStatus.SUCCESS:
-                    progress_bar.title = "Done!"
-                    progress_bar(1)  # pylint: disable=not-callable
-            finally:
-                thread.raise_exception()
-                thread.join(timeout=0)
-
-        # check the task status
-        if status != TaskStatus.SUCCESS:
-            raise RecordCreationException(response=task_get_response or task_response)
-
-        # retrieve task result
-        output_url = response_dict.get("output_path")
-        if output_url is None and task_get_response:
-            output_url = task_get_response.json().get("output_path")
-        if output_url is None and has_output_url:
-            raise RecordRetrievalException(response=task_get_response or task_response)
-
-        if not retrieve_result:
-            return {"output_url": output_url}
-
-        logger.debug("Retrieving task result", extra={"output_url": output_url})
-        result_response = client.get(url=output_url)
-        if result_response.status_code == HTTPStatus.OK:
-            return dict(result_response.json())
-        raise RecordRetrievalException(response=result_response)
-
-    @classmethod
-    def post_async_task(
-        cls,
-        route: str,
-        payload: dict[str, Any],
-        delay: float = POLLING_INTERVAL,
-        retrieve_result: bool = True,
-        has_output_url: bool = True,
-        is_payload_json: bool = True,
-        files: Optional[dict[str, Any]] = None,
-    ) -> dict[str, Any]:
-        """
-        Post async task to the worker & retrieve the results (blocking)
-
-        Parameters
-        ----------
-        route: str
-            Async task route
-        payload: dict[str, Any]
-            Task payload
-        delay: float
-            Delay used in polling the task
-        retrieve_result: bool
-            Whether to retrieve result from output_url
-        has_output_url: bool
-            Whether the task response has output_url
-        is_payload_json: bool
-            Whether the payload should be passed via the json parameter. If False, the payload will
-            be passed via the data parameter. Set this to False for routes that expects
-            multipart/form-data encoding.
-        files: Optional[dict[str, Any]]
-            Optional files to be passed to the request
-
-        Returns
-        -------
-        dict[str, Any]
-            Response data
-
-        Raises
-        ------
-        RecordCreationException
-            When unexpected creation failure
-        """
-        client = Configurations().get_client()
-        post_kwargs = {"url": route, "files": files}
-        if is_payload_json:
-            post_kwargs["json"] = payload
-        else:
-            post_kwargs["data"] = payload
-        create_response = client.post(**post_kwargs)  # type: ignore[arg-type]
-        if create_response.status_code != HTTPStatus.CREATED:
-            raise RecordCreationException(response=create_response)
-        return cls._poll_async_task(
-            task_response=create_response,
-            delay=delay,
-            retrieve_result=retrieve_result,
-            has_output_url=has_output_url,
-        )
-
-    def patch_async_task(
-        self, route: str, payload: dict[str, Any], delay: float = POLLING_INTERVAL
-    ) -> None:
-        """
-        Patch async task to the worker & wait for the task to finish (blocking)
-
-        Parameters
-        ----------
-        route: str
-            Async task route
-        payload: dict[str, Any]
-            Task payload
-        delay: float
-            Delay used in polling the task
-
-        Raises
-        ------
-        RecordUpdateException
-            When unexpected update failure
-        """
-        client = Configurations().get_client()
-        update_response = client.patch(url=route, json=payload)
-        if update_response.status_code != HTTPStatus.OK:
-            raise RecordUpdateException(response=update_response)
-        if update_response.json():
-            self._poll_async_task(task_response=update_response, delay=delay, retrieve_result=False)
-        # call get to update the object cache as retrieve result is False
-        self.get_by_id(self.id)

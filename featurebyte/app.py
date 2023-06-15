@@ -39,7 +39,8 @@ from featurebyte.common.utils import get_version
 from featurebyte.logging import get_logger
 from featurebyte.middleware import ExceptionMiddleware
 from featurebyte.models.base import DEFAULT_CATALOG_ID, PydanticObjectId, User
-from featurebyte.routes.app_container import AppContainer
+from featurebyte.routes.lazy_app_container import LazyAppContainer
+from featurebyte.routes.registry import app_container_config
 from featurebyte.schema import APIServiceStatus
 from featurebyte.schema.task import TaskId
 from featurebyte.service.task_manager import TaskManager
@@ -83,7 +84,7 @@ def _get_api_deps() -> Callable[[Request, PydanticObjectId], None]:
         ).get_credential
         request.state.get_storage = get_storage
         request.state.get_temp_storage = get_temp_storage
-        request.state.app_container = AppContainer.get_instance(
+        request.state.app_container = LazyAppContainer(
             user=request.state.user,
             persistent=request.state.persistent,
             temp_storage=get_temp_storage(),
@@ -94,7 +95,8 @@ def _get_api_deps() -> Callable[[Request, PydanticObjectId], None]:
                 catalog_id=active_catalog_id,
             ),
             storage=get_storage(),
-            container_id=active_catalog_id,
+            catalog_id=active_catalog_id,
+            app_container_config=app_container_config,
         )
 
     return _dep_injection_func

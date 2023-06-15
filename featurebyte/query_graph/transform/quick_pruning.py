@@ -1,17 +1,17 @@
 """
-This module contains graph cropping related classes.
+This module contains graph quick pruning related classes.
 """
 from typing import Dict, List, Set
 
 from pydantic import BaseModel, Field
 
-from featurebyte.query_graph.model.graph import GraphCroppingOutput, QueryGraphModel
+from featurebyte.query_graph.model.graph import GraphNodeNameMap, QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.transform.base import BaseGraphTransformer
 
 
-class GraphCroppingGlobalState(BaseModel):
-    """GraphCroppingGlobalState class"""
+class QuickGraphPruningGlobalState(BaseModel):
+    """QuickGraphPruningGlobalState class"""
 
     graph: QueryGraphModel = Field(default_factory=QueryGraphModel)
     node_name_map: Dict[str, str] = Field(default_factory=dict)
@@ -20,10 +20,12 @@ class GraphCroppingGlobalState(BaseModel):
     node_names_to_keep: Set[str]
 
 
-class GraphCroppingTransformer(BaseGraphTransformer[GraphCroppingOutput, GraphCroppingGlobalState]):
-    """GraphCroppingTransformer class"""
+class QuickGraphStructurePruningTransformer(
+    BaseGraphTransformer[GraphNodeNameMap, QuickGraphPruningGlobalState]
+):
+    """QuickGraphStructurePruningTransformer class"""
 
-    def _compute(self, global_state: GraphCroppingGlobalState, node: Node) -> None:
+    def _compute(self, global_state: QuickGraphPruningGlobalState, node: Node) -> None:
         if node.name in global_state.node_names_to_keep:
             input_nodes = [
                 global_state.graph.get_node_by_name(global_state.node_name_map[input_node_name])
@@ -45,7 +47,7 @@ class GraphCroppingTransformer(BaseGraphTransformer[GraphCroppingOutput, GraphCr
             return
         node_names_to_keep.add(node_name)
         for input_node_name in graph.backward_edges_map[node_name]:
-            GraphCroppingTransformer._dfs_traversal(
+            QuickGraphStructurePruningTransformer._dfs_traversal(
                 graph=graph, node_name=input_node_name, node_names_to_keep=node_names_to_keep
             )
 
@@ -60,10 +62,10 @@ class GraphCroppingTransformer(BaseGraphTransformer[GraphCroppingOutput, GraphCr
             )
         return node_names_to_keep
 
-    def transform(self, target_node_names: List[str]) -> GraphCroppingOutput:
+    def transform(self, target_node_names: List[str]) -> GraphNodeNameMap:
         """
-        Transform the graph by cropping the graph to only contain the target nodes and their
-        dependencies.
+        Transform the graph by pruning the graph to only contain the target nodes and their
+        dependencies without modifying existing node parameters.
 
         Parameters
         ----------
@@ -72,14 +74,11 @@ class GraphCroppingTransformer(BaseGraphTransformer[GraphCroppingOutput, GraphCr
 
         Returns
         -------
-        GraphCroppingOutput
+        GraphNodeNameMap
         """
         node_names_to_keep = self._extract_node_names_to_keep(
             graph=self.graph, target_node_names=target_node_names
         )
-        global_state = GraphCroppingGlobalState(node_names_to_keep=node_names_to_keep)
+        global_state = QuickGraphPruningGlobalState(node_names_to_keep=node_names_to_keep)
         self._transform(global_state=global_state)
-        mapped_target_node_names = [
-            global_state.node_name_map[target_node_name] for target_node_name in target_node_names
-        ]
-        return global_state.graph, mapped_target_node_names
+        return global_state.graph, global_state.node_name_map

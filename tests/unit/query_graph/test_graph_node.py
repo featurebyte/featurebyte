@@ -162,7 +162,7 @@ def test_graph_node_create__non_empty_input_nodes(input_node_params):
         "is_time_based": False,
     }
     # check neither node nor edge is pruned
-    pruned_graph, node_name_map = graph.prune(target_node=inserted_graph_node, aggressive=True)
+    pruned_graph, node_name_map = graph.prune(target_node=inserted_graph_node)
     assert len(pruned_graph.nodes) == len(graph.nodes)
     assert len(pruned_graph.edges) == len(graph.edges)
 
@@ -231,7 +231,7 @@ def nested_input_graph_fixture(input_node_params):
         "is_time_based": False,
     }
     # check graph pruning
-    pruned_graph, node_name_map = graph.prune(target_node=add_node, aggressive=True)
+    pruned_graph, node_name_map = graph.prune(target_node=add_node)
     assert pruned_graph == graph
     assert all(from_name == to_name for from_name, to_name in node_name_map.items())
     return graph
@@ -299,7 +299,7 @@ def nested_output_graph_fixture(input_node_params):
         "is_time_based": False,
     }
     # check graph pruning
-    pruned_graph, node_name_map = graph.prune(target_node=inserted_graph_node, aggressive=True)
+    pruned_graph, node_name_map = graph.prune(target_node=inserted_graph_node)
     assert pruned_graph == graph
     assert all(from_name == to_name for from_name, to_name in node_name_map.items())
     return graph
@@ -389,7 +389,7 @@ def deep_nested_graph_fixture(input_node_params):
         "is_time_based": False,
     }
     # check graph pruning
-    pruned_graph, node_name_map = graph.prune(target_node=inserted_graph_node, aggressive=True)
+    pruned_graph, node_name_map = graph.prune(target_node=inserted_graph_node)
     assert pruned_graph == graph
     assert all(from_name == to_name for from_name, to_name in node_name_map.items())
     return graph
@@ -494,7 +494,7 @@ def test_graph_node__redundant_graph_node(input_node_params):
         "is_time_based": False,
     }
     # the cleaning graph node is pruned as it does not contribute to the final output
-    pruned_graph, node_name_map = graph.prune(target_node=proj_node, aggressive=True)
+    pruned_graph, node_name_map = graph.prune(target_node=proj_node)
     assert pruned_graph.edges_map == {"input_1": ["project_1"]}
 
 
@@ -624,7 +624,7 @@ def test_graph_node_keep_only_required_target_columns(input_node_params):
     )
 
     # check the graph node in the final pruned graph does not contain the assign node
-    pruned_graph, _ = graph.prune(target_node=proj_col_int_node, aggressive=True)
+    pruned_graph, _ = graph.prune(target_node=proj_col_int_node)
     graph_node = pruned_graph.get_node_by_name("graph_1")
     assert list(graph_node.parameters.graph.nodes_map.keys()) == ["input_1"]
     assert graph_node.parameters.graph.edges == []
@@ -639,7 +639,7 @@ def test_graph_node_keep_only_required_target_columns(input_node_params):
             proj_col_int_node,
         ],  # proj_col_int_node served as a filter condition
     )
-    pruned_graph, _ = graph.prune(target_node=filter_node, aggressive=True)
+    pruned_graph, _ = graph.prune(target_node=filter_node)
     graph_node = pruned_graph.get_node_by_name("graph_1")
     assert list(graph_node.parameters.graph.nodes_map.keys()) == ["input_1", "assign_1"]
     assert graph_node.parameters.graph.edges == [{"source": "input_1", "target": "assign_1"}]

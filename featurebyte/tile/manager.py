@@ -16,6 +16,7 @@ from featurebyte.enum import InternalName
 from featurebyte.exception import TileScheduleNotSupportedError
 from featurebyte.logging import get_logger
 from featurebyte.models.tile import TileSpec, TileType
+from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.base import BaseSession
 from featurebyte.sql.tile_generate import TileGenerate
@@ -35,9 +36,14 @@ class TileManager(BaseModel):
 
     _session: BaseSession = PrivateAttr()
     _task_manager: Optional[TaskManager] = PrivateAttr()
+    _online_store_table_version_service: Optional[OnlineStoreTableVersionService] = PrivateAttr()
 
     def __init__(
-        self, session: BaseSession, task_manager: Optional[TaskManager] = None, **kw: Any
+        self,
+        session: BaseSession,
+        task_manager: Optional[TaskManager] = None,
+        online_store_table_version_service: Optional[OnlineStoreTableVersionService] = None,
+        **kw: Any,
     ) -> None:
         """
         Custom constructor for TileSnowflake to instantiate a datasource session
@@ -48,12 +54,15 @@ class TileManager(BaseModel):
             input session for datasource
         task_manager: Optional[TaskManager]
             input task manager
+        online_store_table_version_service: Optional[OnlineStoreTableVersionService]
+            Online store table version service
         kw: Any
             constructor arguments
         """
         super().__init__(**kw)
         self._session = session
         self._task_manager = task_manager
+        self._online_store_table_version_service = online_store_table_version_service
 
     async def generate_tiles_on_demand(
         self,
@@ -136,10 +145,12 @@ class TileManager(BaseModel):
         job_schedule_ts_str: str
             timestamp string of the job schedule
         """
+        assert self._online_store_table_version_service is not None
         executor = TileScheduleOnlineStore(
             session=self._session,
             aggregation_id=tile_spec.aggregation_id,
             job_schedule_ts_str=job_schedule_ts_str,
+            online_store_table_version_service=self._online_store_table_version_service,
         )
         await executor.execute()
 
@@ -325,12 +336,15 @@ class TileManager(BaseModel):
         if not self._task_manager:
             raise TileScheduleNotSupportedError("Task manager is not initialized")
 
+        assert self._online_store_table_version_service is not None
+
         scheduler = TileScheduler(task_manager=self._task_manager)
         exist_job = await scheduler.get_job_details(job_id=job_id)
         if not exist_job:
             logger.info(f"Creating new job {job_id}")
             tile_schedule_ins = TileGenerateSchedule(
                 session=self._session,
+                online_store_table_version_service=self._online_store_table_version_service,
                 tile_id=tile_spec.tile_id,
                 tile_modulo_frequency_second=tile_spec.time_modulo_frequency_second,
                 blind_spot_second=tile_spec.blind_spot_second,

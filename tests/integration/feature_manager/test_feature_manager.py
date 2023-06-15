@@ -49,11 +49,18 @@ def feature_store_table_name_fixture():
 
 
 @pytest.fixture(name="feature_manager_no_sf_scheduling")
-def snowflake_feature_manager_no_sf_scheduling_fixture(extended_feature_model, persistent, session):
+def snowflake_feature_manager_no_sf_scheduling_fixture(
+    extended_feature_model,
+    persistent,
+    session,
+    online_store_table_version_service,
+):
     """
     Feature store table name fixture
     """
-    feature_manager = FeatureManager(session=session)
+    feature_manager = FeatureManager(
+        session=session, online_store_table_version_service=online_store_table_version_service
+    )
     task_manager = TaskManager(
         user=User(id=extended_feature_model.user_id),
         persistent=persistent,
@@ -123,6 +130,9 @@ async def test_online_enabled__without_snowflake_scheduling(
             )
             await session.execute_query(
                 f"DELETE FROM ONLINE_STORE_MAPPING WHERE TILE_ID = '{online_feature_spec.tile_ids[0]}'"
+            )
+            await session.execute_query(
+                f"DELETE FROM {feature_store_table_name} WHERE {InternalName.ONLINE_STORE_RESULT_NAME_COLUMN} = 'sum_30m'"
             )
 
 

@@ -13,7 +13,8 @@ from bson import ObjectId
 from jinja2 import Template
 from typeguard import typechecked
 
-from featurebyte.api.api_object import ApiObject, ForeignKeyMapping
+from featurebyte.api.api_object import ApiObject
+from featurebyte.api.api_object_util import ForeignKeyMapping
 from featurebyte.api.batch_feature_table import BatchFeatureTable
 from featurebyte.api.batch_request_table import BatchRequestTable
 from featurebyte.api.entity import Entity
@@ -65,6 +66,10 @@ class Deployment(ApiObject):
         ForeignKeyMapping("feature_list_id", FeatureList, "num_feature", "num_feature", True),
     ]
 
+    @classmethod
+    def use_new_list_handler(cls) -> bool:
+        return True
+
     @property
     def enabled(self) -> bool:
         """
@@ -97,6 +102,8 @@ class Deployment(ApiObject):
         >>> deployment.enable()  # doctest: +SKIP
         """
         self.patch_async_task(route=f"{self._route}/{self.id}", payload={"enabled": True})
+        # call get to update the object cache
+        self.get_by_id(self.id)
 
     def disable(self) -> None:
         """
@@ -108,6 +115,8 @@ class Deployment(ApiObject):
         >>> deployment.disable()  # doctest: +SKIP
         """
         self.patch_async_task(route=f"{self._route}/{self.id}", payload={"enabled": False})
+        # call get to update the object cache
+        self.get_by_id(self.id)
 
     @typechecked
     def compute_batch_feature_table(

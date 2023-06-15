@@ -140,8 +140,8 @@ def test_feature__cond_assign_unnamed(float_feature, bool_feature):
         {"source": "input_1", "target": "graph_1"},
         {"source": "graph_1", "target": "groupby_1"},
         {"source": "groupby_1", "target": "project_1"},
-        {"source": "project_1", "target": "gt_1"},
         {"source": "project_1", "target": "add_1"},
+        {"source": "project_1", "target": "gt_1"},
         {"source": "add_1", "target": "conditional_1"},
         {"source": "gt_1", "target": "conditional_1"},
     ]
@@ -953,8 +953,12 @@ def test_list_versions(saved_feature):
                 "entities": [["customer"]] * 3,
                 "primary_entities": [["customer"]] * 3,
                 "created_at": [
-                    feature_group["new_feat2"].created_at,
-                    feature_group["new_feat1"].created_at,
+                    feature_group[
+                        "new_feat2"
+                    ].cached_model.created_at,  # DEV-1820: created_at is not synced
+                    feature_group[
+                        "new_feat1"
+                    ].cached_model.created_at,  # DEV-1820: created_at is not synced
                     saved_feature.created_at,
                 ],
             }

@@ -44,7 +44,8 @@ from featurebyte.models.feature_list import FeatureListStatus
 from featurebyte.models.task import Task as TaskModel
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.graph import GlobalQueryGraph
-from featurebyte.routes.app_container import AppContainer
+from featurebyte.routes.lazy_app_container import LazyAppContainer
+from featurebyte.routes.registry import app_container_config
 from featurebyte.schema.task import TaskStatus
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.service.task_manager import TaskManager
@@ -1233,14 +1234,30 @@ def mock_snowflake_feature(
     return feature
 
 
+@pytest.fixture(name="online_store_table_version_service")
+def online_store_table_version_service_fixture(app_container):
+    """
+    OnlineStoreTableVersionService fixture
+    """
+    return app_container.online_store_table_version_service
+
+
 @pytest_asyncio.fixture
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-async def feature_manager(mock_execute_query, session_manager, snowflake_feature_store):
+async def feature_manager(
+    mock_execute_query,
+    session_manager,
+    snowflake_feature_store,
+    online_store_table_version_service,
+):
     """
     Feature Manager fixture
     """
     _ = mock_execute_query
-    return FeatureManager(session=await session_manager.get_session(snowflake_feature_store))
+    return FeatureManager(
+        session=await session_manager.get_session(snowflake_feature_store),
+        online_store_table_version_service=online_store_table_version_service,
+    )
 
 
 @pytest.fixture
@@ -1358,13 +1375,14 @@ def app_container_fixture(persistent):
     task_manager = TaskManager(
         user=user, persistent=persistent, celery=get_celery(), catalog_id=DEFAULT_CATALOG_ID
     )
-    return AppContainer.get_instance(
+    return LazyAppContainer(
         user=user,
         persistent=persistent,
         temp_storage=LocalTempStorage(),
         task_manager=task_manager,
         storage=LocalTempStorage(),
-        container_id=DEFAULT_CATALOG_ID,
+        catalog_id=DEFAULT_CATALOG_ID,
+        app_container_config=app_container_config,
     )
 
 

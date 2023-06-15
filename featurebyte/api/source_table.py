@@ -8,19 +8,15 @@ from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Tuple, Type, Ty
 
 from abc import ABC, abstractmethod
 from datetime import datetime
-from http import HTTPStatus
 
 import pandas as pd
 from bson import ObjectId
 from pydantic import Field
 from typeguard import typechecked
 
-from featurebyte.api.api_object_util import is_server_mode
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.config import Configurations
 from featurebyte.core.frame import BaseFrame
 from featurebyte.enum import DBVarType
-from featurebyte.exception import RecordRetrievalException
 from featurebyte.logging import get_logger
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.batch_request_table import SourceTableBatchRequestInput
@@ -33,7 +29,6 @@ from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.model.table import AllTableDataT, SourceTableData
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.input import InputNode
-from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.batch_request_table import BatchRequestTableCreate
 from featurebyte.schema.observation_table import ObservationTableCreate
 from featurebyte.schema.static_source_table import StaticSourceTableCreate
@@ -80,7 +75,7 @@ class TableDataFrame(BaseFrame):
             if graph_node:
                 node = self.graph.add_node(node=graph_node, input_nodes=[self.node])
 
-        pruned_graph, node_name_map = self.graph.prune(target_node=node, aggressive=True)
+        pruned_graph, node_name_map = self.graph.prune(target_node=node)
         mapped_node = pruned_graph.get_node_by_name(node_name_map[node.name])
         return pruned_graph, mapped_node
 
@@ -101,10 +96,9 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
     internal_columns_info: List[ColumnInfo] = Field(alias="columns_info")
 
     def __init__(self, **kwargs: Any):
-        # Construct feature_store, input node & set the graph related parameters based on the given input dictionary
+        # construct feature_store based on the given input dictionary
         values = kwargs
         tabular_source = dict(values["tabular_source"])
-        table_details = tabular_source["table_details"]
         if "feature_store" not in values:
             # attempt to set feature_store object if it does not exist in the input
             from featurebyte.api.feature_store import (  # pylint: disable=import-outside-toplevel,cyclic-import
@@ -112,44 +106,6 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
             )
 
             values["feature_store"] = FeatureStore.get_by_id(id=tabular_source["feature_store_id"])
-
-        feature_store = values["feature_store"]
-        if isinstance(table_details, dict):
-            table_details = TableDetails(**table_details)
-
-        to_validate_schema = values.get("_validate_schema") or "columns_info" not in values
-        to_validate_schema &= not is_server_mode()
-        if to_validate_schema:
-            client = Configurations().get_client()
-            response = client.post(
-                url=(
-                    f"/feature_store/column?"
-                    f"database_name={table_details.database_name}&"
-                    f"schema_name={table_details.schema_name}&"
-                    f"table_name={table_details.table_name}"
-                ),
-                json=feature_store.json_dict(),
-            )
-            if response.status_code == HTTPStatus.OK:
-                column_specs = response.json()
-                recent_schema = {
-                    column_spec["name"]: DBVarType(column_spec["dtype"])
-                    for column_spec in column_specs
-                }
-            else:
-                raise RecordRetrievalException(response)
-
-            if "columns_info" in values:
-                columns_info = [ColumnInfo(**dict(col)) for col in values["columns_info"]]
-                schema = {col.name: col.dtype for col in columns_info}
-                if not recent_schema.items() >= schema.items():
-                    logger.warning("Table schema has been changed.")
-            else:
-                columns_info = [
-                    ColumnInfo(name=name, dtype=var_type)
-                    for name, var_type in recent_schema.items()
-                ]
-                values["columns_info"] = columns_info
 
         # call pydantic constructor to validate input parameters
         super().__init__(**values)

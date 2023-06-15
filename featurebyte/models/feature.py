@@ -296,7 +296,7 @@ class FeatureModel(FeatureByteCatalogBaseDocumentModel):
             Pruned graph and node
         """
         _ = kwargs
-        pruned_graph, node_name_map = self.graph.prune(target_node=self.node, aggressive=True)
+        pruned_graph, node_name_map = self.graph.prune(target_node=self.node)
         mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
         return pruned_graph, mapped_node
 
