@@ -220,7 +220,10 @@ def check_get_batch_features(deployment, batch_request_table, df_historical, col
 
 
 async def check_concurrent_online_store_table_updates(
-    get_session_callback, feature_list, job_schedule_ts_str, online_store_table_version_service
+    get_session_callback,
+    feature_list,
+    job_schedule_ts_str,
+    online_store_table_version_service_factory,
 ):
     """
     Test concurrent online store table updates
@@ -257,7 +260,7 @@ async def check_concurrent_online_store_table_updates(
             aggregation_id=aggregation_id,
             job_schedule_ts_str=job_schedule_ts_str,
             retry_num=1,  # no issue even without retry
-            online_store_table_version_service=online_store_table_version_service,
+            online_store_table_version_service=online_store_table_version_service_factory(),
         )
         try:
             await online_store_job.execute()
