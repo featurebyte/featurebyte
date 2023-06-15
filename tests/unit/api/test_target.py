@@ -26,7 +26,7 @@ def get_test_target_fixture():
     """
 
     def get_target(entity_names: List[str]):
-        return Target(
+        return Target.create(
             name="test_target",
             entities=entity_names,
             horizon="3d",
@@ -39,7 +39,6 @@ def get_test_target_fixture():
 def test_create_target_from_constructor(test_entity, get_test_target):
     test_entity.save()
     target = get_test_target(["test_entity"])
-    target.save()
 
     # List target
     target_list = Target.list()
@@ -65,7 +64,6 @@ def test_create_target_from_constructor(test_entity, get_test_target):
 def test_target_info(test_entity, get_test_target):
     test_entity.save()
     target = get_test_target([test_entity.name])
-    target.save()
 
     retrieved_target = Target.get(target.name)
     target_info = retrieved_target.info()
