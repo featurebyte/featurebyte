@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import List, Optional
 
 from pydantic import Field, StrictStr
+from typeguard import typechecked
 
 from featurebyte.api.api_object import ForeignKeyMapping
 from featurebyte.api.entity import Entity
@@ -22,8 +23,8 @@ class Target(SavableApiObject):
     """
 
     internal_entity_ids: Optional[List[PydanticObjectId]] = Field(alias="entity_ids")
-    horizon: Optional[StrictStr]
-    blind_spot: Optional[StrictStr]
+    internal_horizon: Optional[StrictStr] = Field(alias="horizon")
+    internal_blind_spot: Optional[StrictStr] = Field(alias="blind_spot")
 
     _route = "/target"
     _update_schema_class = TargetUpdate
@@ -50,7 +51,36 @@ class Target(SavableApiObject):
             entity_ids = self.internal_entity_ids
         return [Entity.get_by_id(entity_id) for entity_id in entity_ids]
 
+    @property
+    def horizon(self) -> str:
+        """
+        Returns the horizon of this target.
+
+        Returns
+        -------
+        str
+        """
+        try:
+            return self.cached_model.horizon
+        except RecordRetrievalException:
+            return self.horizon
+
+    @property
+    def blind_spot(self) -> str:
+        """
+        Returns the blind_spot of this target.
+
+        Returns
+        -------
+        str
+        """
+        try:
+            return self.cached_model.blind_spot
+        except RecordRetrievalException:
+            return self.blind_spot
+
     @classmethod
+    @typechecked
     def create(
         cls,
         name: str,
