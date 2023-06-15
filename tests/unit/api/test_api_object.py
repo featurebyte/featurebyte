@@ -194,7 +194,7 @@ def mock_clients_fixture():
             "/get_result_failure": FakeResponse(status_code=HTTPStatus.NOT_FOUND, response_dict={}),
         }[url]
 
-    with patch("featurebyte.api.api_object.Configurations") as mock_config:
+    with patch("featurebyte.api.mixin.Configurations") as mock_config:
         mock_client = mock_config.return_value.get_client.return_value
         mock_client.post.side_effect = post_side_effect
         mock_client.get.side_effect = get_side_effect

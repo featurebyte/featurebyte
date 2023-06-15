@@ -67,10 +67,8 @@ from featurebyte.models.feature_list import (
     FrozenFeatureListNamespaceModel,
 )
 from featurebyte.models.tile import TileSpec
-from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.schema.deployment import DeploymentCreate
-from featurebyte.schema.feature import BatchFeatureCreatePayload, BatchFeatureItem
 from featurebyte.schema.feature_list import (
     FeatureListCreate,
     FeatureListGetHistoricalFeatures,
@@ -666,45 +664,6 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         )
         return data.json_dict()
 
-    def _pre_save_operations(self, conflict_resolution: ConflictResolution = "raise") -> None:
-        features = []
-        for feat in self.feature_objects.values():
-            if conflict_resolution == "retrieve":
-                # If conflict_resolution is retrieve, we will retrieve the feature from the catalog based on the
-                # feature name and update the feature object with the retrieved feature.
-                feat_name = feat.name
-                assert feat_name is not None
-                try:
-                    feat = Feature.get(name=feat_name)
-                    self.feature_objects[feat_name] = feat
-                except RecordRetrievalException:
-                    features.append(feat)
-            if conflict_resolution == "raise" and not feat.saved:
-                features.append(feat)
-
-        pruned_graph, node_name_map = GlobalQueryGraph().quick_prune(
-            target_node_names=[feat.node_name for feat in features]
-        )
-        batch_feature_items = []
-        for feat in features:
-            batch_feature_items.append(
-                BatchFeatureItem(
-                    id=feat.id,
-                    name=feat.name,
-                    node_name=node_name_map[feat.node_name],
-                    tabular_source=feat.tabular_source,
-                )
-            )
-
-        self.post_async_task(
-            route="/feature/batch",
-            payload=BatchFeatureCreatePayload(
-                graph=pruned_graph, features=batch_feature_items
-            ).json_dict(),
-            retrieve_result=False,
-            has_output_url=False,
-        )
-
     def save(
         self, conflict_resolution: ConflictResolution = "raise", _id: Optional[ObjectId] = None
     ) -> None:
@@ -736,6 +695,11 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         ... ], name="feature_lists_invoice_features")
         >>> feature_list.save()  # doctest: +SKIP
         """
+        # Do not raise error if the feature has been saved. Only raise the error if the FeatureList has been saved.
+        self._batch_feature_save(
+            conflict_resolution=conflict_resolution,
+            to_raise_object_has_been_saved_error=False,
+        )
         try:
             super().save(conflict_resolution=conflict_resolution)
         except DuplicatedRecordException as exc:

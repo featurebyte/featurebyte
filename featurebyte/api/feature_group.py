@@ -18,24 +18,26 @@ from typeguard import typechecked
 from featurebyte.api.api_object import ConflictResolution
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
+from featurebyte.api.mixin import AsyncMixin
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.typing import Scalar
 from featurebyte.common.utils import dataframe_from_json, enforce_observation_set_row_order
 from featurebyte.config import Configurations
 from featurebyte.core.mixin import ParentMixin
 from featurebyte.core.series import Series
-from featurebyte.exception import RecordRetrievalException
+from featurebyte.exception import ObjectHasBeenSavedError, RecordRetrievalException
 from featurebyte.logging import get_logger
-from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureCluster, FeatureListModel
 from featurebyte.models.relationship_analysis import derive_primary_entity
+from featurebyte.query_graph.graph import GlobalQueryGraph
+from featurebyte.schema.feature import BatchFeatureCreatePayload, BatchFeatureItem
 from featurebyte.schema.feature_list import FeatureListPreview, FeatureListSQL
 
 logger = get_logger(__name__)
 
 
-class BaseFeatureGroup(FeatureByteBaseModel):
+class BaseFeatureGroup(AsyncMixin):
     """
     BaseFeatureGroup class
 
@@ -324,6 +326,53 @@ class BaseFeatureGroup(FeatureByteBaseModel):
             response.json(),
         )
 
+    def _batch_feature_save(
+        self, conflict_resolution: ConflictResolution, to_raise_object_has_been_saved_error: bool
+    ) -> None:
+        features = []
+        for feat in self.feature_objects.values():
+            if conflict_resolution == "retrieve":
+                # If conflict_resolution is retrieve, we will retrieve the feature from the catalog based on the
+                # feature name and update the feature object with the retrieved feature.
+                feat_name = feat.name
+                assert feat_name is not None
+                try:
+                    feat = Feature.get(name=feat_name)
+                    self.feature_objects[feat_name] = feat
+                except RecordRetrievalException:
+                    features.append(feat)
+            if conflict_resolution == "raise":
+                if feat.saved:
+                    if to_raise_object_has_been_saved_error:
+                        raise ObjectHasBeenSavedError(
+                            f'Feature (id: "{feat.id}") has been saved before.'
+                        )
+                else:
+                    features.append(feat)
+
+        pruned_graph, node_name_map = GlobalQueryGraph().quick_prune(
+            target_node_names=[feat.node_name for feat in features]
+        )
+        batch_feature_items = []
+        for feat in features:
+            batch_feature_items.append(
+                BatchFeatureItem(
+                    id=feat.id,
+                    name=feat.name,
+                    node_name=node_name_map[feat.node_name],
+                    tabular_source=feat.tabular_source,
+                )
+            )
+
+        self.post_async_task(
+            route="/feature/batch",
+            payload=BatchFeatureCreatePayload(
+                graph=pruned_graph, features=batch_feature_items
+            ).json_dict(),
+            retrieve_result=False,
+            has_output_url=False,
+        )
+
 
 class FeatureGroup(BaseFeatureGroup, ParentMixin):
     """
@@ -397,5 +446,9 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
         ... ])
         >>> features.save()  # doctest: +SKIP
         """
-        for feature_name in self.feature_names:
-            self[feature_name].save(conflict_resolution=conflict_resolution)
+        # Raise error if the feature has been saved (as feature group saving equals to saving feature individually).
+        # Save an already saved feature on Feature level will raise the same ObjectHasBeenSavedError.
+        self._batch_feature_save(
+            conflict_resolution=conflict_resolution,
+            to_raise_object_has_been_saved_error=True,
+        )
