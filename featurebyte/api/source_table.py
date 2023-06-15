@@ -80,7 +80,7 @@ class TableDataFrame(BaseFrame):
             if graph_node:
                 node = self.graph.add_node(node=graph_node, input_nodes=[self.node])
 
-        pruned_graph, node_name_map = self.graph.prune(target_node=node, aggressive=True)
+        pruned_graph, node_name_map = self.graph.prune(target_node=node)
         mapped_node = pruned_graph.get_node_by_name(node_name_map[node.name])
         return pruned_graph, mapped_node
 

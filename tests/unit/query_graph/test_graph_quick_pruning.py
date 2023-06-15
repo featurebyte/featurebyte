@@ -10,20 +10,18 @@ def check_quick_pruned_graph(original_graph, quick_pruned_graph, target_nodes, m
     """Check the quick-pruned graph with non-aggressive pruned graph"""
     for target_node, mapped_node_name in zip(target_nodes, mapped_node_names):
         # perform pruning original graph
-        pruned_graph, node_name_map = original_graph.prune(
-            target_node=target_node, aggressive=False
-        )
+        pruned_graph, node_name_map = original_graph.prune(target_node=target_node)
         pruned_target_node_name = node_name_map[target_node.name]
 
         # convert query graph from QueryGraphModel to QueryGraph
         quick_pruned_graph = QueryGraph(**quick_pruned_graph.dict())
-        target_node_quick_pruned = quick_pruned_graph.get_node_by_name(mapped_node_name)
+        target_node_quick = quick_pruned_graph.get_node_by_name(mapped_node_name)
 
         # perform pruning on quick-pruned graph
         pruned_graph_from_quick_pruned, node_name_map = quick_pruned_graph.prune(
-            target_node=target_node_quick_pruned, aggressive=False
+            target_node=target_node_quick
         )
-        pruned_target_node_name_from_quick_pruned = node_name_map[target_node_quick_pruned.name]
+        pruned_target_node_name_from_quick_pruned = node_name_map[target_node_quick.name]
 
         # compare both pruned graphs and they should be the same
         assert pruned_graph == pruned_graph_from_quick_pruned

@@ -123,7 +123,7 @@ class QueryObject(FeatureByteBaseModel):
 
         # prune the flattened graph as view graph node is not pruned before flattened
         graph = QueryGraph(**flattened_graph.dict())
-        pruned_flattened_graph, pruned_node_name_map = graph.prune(flattened_node, aggressive=True)
+        pruned_flattened_graph, pruned_node_name_map = graph.prune(flattened_node)
         pruned_flattened_node = pruned_flattened_graph.get_node_by_name(
             pruned_node_name_map[flattened_node.name]
         )
@@ -168,9 +168,7 @@ class QueryObject(FeatureByteBaseModel):
             QueryGraph & mapped Node object (within the pruned graph)
         """
         _ = kwargs
-        pruned_graph, node_name_map = GlobalQueryGraph().prune(
-            target_node=self.node, aggressive=True
-        )
+        pruned_graph, node_name_map = GlobalQueryGraph().prune(target_node=self.node)
         mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
         return pruned_graph, mapped_node
 

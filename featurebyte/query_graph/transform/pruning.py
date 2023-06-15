@@ -54,16 +54,13 @@ def prune_query_graph(
     node: Node,
     target_columns: Optional[List[str]] = None,
     proxy_input_operation_structures: Optional[List[OperationStructure]] = None,
-    aggressive: bool = False,
     operation_structure_info: Optional[OperationStructureInfo] = None,
 ) -> Tuple[QueryGraphModel, NodeNameMap, str]:
     """
-    Prune the query graph given target node. There are 2 modes in graph pruning:
-    - non-aggressive: prune the query graph by doing a graph traversal and keeps all the travelled nodes
-    - aggressive: in addition to the graph traversal, further prune the graph by removing the nodes that does not
-      contribute to final output and prunes the node parameters by removing unused parameters.
+    Prune the query graph given target node. In addition to the removing unused nodes, this function
+    further prune the graph by removing the node parameters that do not contribute to final output.
 
-    For aggressive graph pruning, there are 2 major steps:
+    There are 2 major steps in this graph pruning function:
     - graph structure pruning is performed first by removing useless graph node
     - node parameter pruning is performed then to prune the node parameters on the structure-pruned graph
 
@@ -80,10 +77,6 @@ def prune_query_graph(
         All ProxyInputNode operation structures for nested graph pruning to map (operation structure of
         ProxyInputNode in the nested graph) to (the operation structure that the proxy input node refers
         to in the external graph)
-    aggressive: bool
-        Whether to enable aggressive pruning mode. For non-aggressive mode, all travelled nodes will be kept.
-        For aggressive mode, node could be removed if it does not contribute to the final output and node
-        parameters could be pruned if it is not used.
     operation_structure_info: Optional[OperationStructureInfo]
         Operation structure info for the given graph and node. If not provided, it will be extracted from the
         graph.
@@ -98,33 +91,27 @@ def prune_query_graph(
         node=node,
         target_columns=target_columns,
         proxy_input_operation_structures=proxy_input_operation_structures,
-        aggressive=aggressive,
     )
-    if aggressive:
-        # if aggressive mode enabled, further prune the node parameters
-        # first get the output node name in the pruned graph, use `map_and_resolve_node_name` as the target node
-        # could be pruned if `target_columns` is used (means that not all output columns of the target node are
-        # required).
-        output_node_name = map_and_resolve_node_name(
-            graph=graph, node_name_map=node_name_map, node_name=node.name
-        )
-        mapped_node = pruned_graph.get_node_by_name(node_name_map[output_node_name])
-        output_graph, pruned_node_name_map = NodeParametersPruningExtractor(
-            graph=pruned_graph
-        ).extract(
-            node=mapped_node,
-            target_columns=target_columns,
-            proxy_input_operation_structures=proxy_input_operation_structures,
-        )
+    # first get the output node name in the pruned graph, use `map_and_resolve_node_name` as the target node
+    # could be pruned if `target_columns` is used (means that not all output columns of the target node are
+    # required).
+    output_node_name = map_and_resolve_node_name(
+        graph=graph, node_name_map=node_name_map, node_name=node.name
+    )
+    mapped_node = pruned_graph.get_node_by_name(node_name_map[output_node_name])
+    output_graph, pruned_node_name_map = NodeParametersPruningExtractor(graph=pruned_graph).extract(
+        node=mapped_node,
+        target_columns=target_columns,
+        proxy_input_operation_structures=proxy_input_operation_structures,
+    )
 
-        # node_name_map => map (original graph node name) to (structure-pruned graph node name)
-        # pruned_node_name_map => map (structure-pruned graph node name) to (parameters-pruned graph node name)
-        # output_node_name_map => map (original graph node name) to (parameters-pruned graph node name)
-        output_node_name_map = {
-            key: pruned_node_name_map[value] for key, value in node_name_map.items()
-        }
-        return output_graph, output_node_name_map, output_node_name_map[output_node_name]
-    return pruned_graph, node_name_map, node_name_map[node.name]
+    # node_name_map => map (original graph node name) to (structure-pruned graph node name)
+    # pruned_node_name_map => map (structure-pruned graph node name) to (parameters-pruned graph node name)
+    # output_node_name_map => map (original graph node name) to (parameters-pruned graph node name)
+    output_node_name_map = {
+        key: pruned_node_name_map[value] for key, value in node_name_map.items()
+    }
+    return output_graph, output_node_name_map, output_node_name_map[output_node_name]
 
 
 class NodeParametersPruningGlobalState(OperationStructureInfo):
@@ -261,7 +248,6 @@ class GraphPruningGlobalState(OperationStructureInfo):
         graph: Optional[QueryGraphModel] = None,
         node_name_map: Optional[NodeNameMap] = None,
         target_columns: Optional[List[str]] = None,
-        aggressive: bool = False,
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
@@ -277,9 +263,6 @@ class GraphPruningGlobalState(OperationStructureInfo):
         self.target_columns = target_columns
         self.target_node_name = target_node_name
 
-        # variables to control pruning behavior
-        self.aggressive = aggressive
-
 
 class GraphStructurePruningExtractor(
     BaseGraphExtractor[GraphNodeNameMap, GraphPruningBranchState, GraphPruningGlobalState]
@@ -287,8 +270,6 @@ class GraphStructurePruningExtractor(
     """
     GraphStructurePruningExtractor is used to prune the graph structure (remove redundant nodes).
     This pruning operation travels the graph from the target node back to input nodes (uni-direction).
-    For non-aggressive pruning, all the travelled nodes will be kept. For aggressive pruning, the travelled
-    nodes will be removed if it does not contribute to the final output.
     """
 
     def __init__(
@@ -306,17 +287,12 @@ class GraphStructurePruningExtractor(
         node: Node,
         input_node_names: List[str],
     ) -> Tuple[List[str], bool]:
-        if (
-            global_state.aggressive
-            and isinstance(node, BasePrunableNode)
-            and node.name not in global_state.node_names
-        ):
+        if isinstance(node, BasePrunableNode) and node.name not in global_state.node_names:
             if isinstance(node, BaseGraphNode) and not node.is_prunable:
                 # graph node is not prunable
                 return input_node_names, False
 
             # prune the graph structure if
-            # - pruning mode is aggressive (means that travelled node can be removed)
             # - node is prunable
             # - node does not contribute to the final output
             selected_node_name = node.resolve_node_pruned(input_node_names)
@@ -355,7 +331,6 @@ class GraphStructurePruningExtractor(
         node: BaseGraphNode,
         target_columns: Optional[List[str]],
         proxy_input_operation_structures: List[OperationStructure],
-        aggressive: bool,
     ) -> Node:
         output_node_name = node.parameters.output_node_name
         graph = node.parameters.graph
@@ -371,7 +346,6 @@ class GraphStructurePruningExtractor(
                 node=nested_target_node,
                 target_columns=target_columns,
                 proxy_input_operation_structures=proxy_input_operation_structures,
-                aggressive=aggressive,
             )
 
         return node.clone(
@@ -416,7 +390,7 @@ class GraphStructurePruningExtractor(
             mapped_input_nodes.append(global_state.graph.get_node_by_name(mapped_input_node_name))
 
         # add the node back to the pruned graph
-        if global_state.aggressive and isinstance(node, BaseGraphNode):
+        if isinstance(node, BaseGraphNode):
             proxy_input_operation_structures = [
                 global_state.operation_structure_map[node_name]
                 for node_name in self.graph.get_input_node_names(node=node)
@@ -426,7 +400,6 @@ class GraphStructurePruningExtractor(
                 node=node,
                 target_columns=target_columns,
                 proxy_input_operation_structures=proxy_input_operation_structures,
-                aggressive=global_state.aggressive,
             )
 
         node_pruned = global_state.graph.add_operation_node(
@@ -441,7 +414,6 @@ class GraphStructurePruningExtractor(
         node: Node,
         target_columns: Optional[List[str]] = None,
         proxy_input_operation_structures: Optional[List[OperationStructure]] = None,
-        aggressive: bool = False,
         **kwargs: Any,
     ) -> GraphNodeNameMap:
         if self.operation_structure_info is None:
@@ -473,7 +445,6 @@ class GraphStructurePruningExtractor(
             target_node_name=node.name,
             target_columns=target_columns,
             operation_structure_map=op_struct_info.operation_structure_map,
-            aggressive=aggressive,
         )
         branch_state = GraphPruningBranchState()
         self._extract(

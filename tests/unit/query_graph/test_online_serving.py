@@ -232,7 +232,7 @@ def test_complex_features(complex_feature_query_graph, update_fixtures):
 
     # Prune graph to remove unused windows (in the actual code paths, graph is always pruned before
     # any sql generation)
-    pruned_graph_model, node_name_map = graph.prune(node, aggressive=True)
+    pruned_graph_model, node_name_map = graph.prune(node)
     pruned_node = pruned_graph_model.get_node_by_name(node_name_map[node.name])
     pruned_graph, loaded_node_name_map = QueryGraph().load(pruned_graph_model)
     pruned_node = pruned_graph.get_node_by_name(loaded_node_name_map[pruned_node.name])

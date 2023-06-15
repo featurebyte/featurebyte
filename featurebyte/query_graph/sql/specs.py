@@ -267,9 +267,7 @@ class TileBasedAggregationSpec(AggregationSpec):
             node_output_type=NodeOutputType.SERIES,
             input_nodes=[groupby_node],
         )
-        pruned_graph, node_name_map, _ = prune_query_graph(
-            graph=graph, node=project_node, aggressive=True
-        )
+        pruned_graph, node_name_map, _ = prune_query_graph(graph=graph, node=project_node)
         pruned_node = pruned_graph.get_node_by_name(node_name_map[project_node.name])
         op_struct = (
             OperationStructureExtractor(graph=pruned_graph)
