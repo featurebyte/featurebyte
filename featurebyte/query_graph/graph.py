@@ -34,11 +34,11 @@ from featurebyte.query_graph.node.metadata.operation import (
     SourceDataColumn,
 )
 from featurebyte.query_graph.node.mixin import BaseGroupbyParameters
-from featurebyte.query_graph.transform.cropping import GraphCroppingTransformer
 from featurebyte.query_graph.transform.entity_extractor import EntityExtractor
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 from featurebyte.query_graph.transform.pruning import prune_query_graph
+from featurebyte.query_graph.transform.quick_pruning import QuickGraphStructurePruningTransformer
 from featurebyte.query_graph.transform.reconstruction import GraphReconstructionTransformer
 
 
@@ -282,14 +282,13 @@ class QueryGraph(QueryGraphModel):
         )
         return pruned_graph, node_name_map
 
-    def crop(self, target_node_names: List[str]) -> GraphNodeNameMap:
+    def quick_prune(self, target_node_names: List[str]) -> GraphNodeNameMap:
         """
-        Crop the query graph and return the cropped graph & mapped node.
+        Quick prune the query graph and return the pruned graph & mapped node.
 
-        To crop the graph, this function first traverses from the target node to the input node.
-        The unused branches of the graph will get pruned in this step. After that, a new graph is
-        reconstructed by adding the required nodes back. Crop is less expensive than prune as it
-        does not extract the operation structure.
+        The main difference between `quick_prune` and `prune` is that `quick_prune` does not change existing
+        node parameters. The generated graph's node parameters are the same as the input graph. It is less
+        expensive than `prune` as it does not perform any operation structure extraction.
 
         Parameters
         ----------
@@ -300,7 +299,9 @@ class QueryGraph(QueryGraphModel):
         -------
         GraphNodeNameMap
         """
-        return GraphCroppingTransformer(graph=self).transform(target_node_names=target_node_names)
+        return QuickGraphStructurePruningTransformer(graph=self).transform(
+            target_node_names=target_node_names
+        )
 
     def reconstruct(
         self, node_name_to_replacement_node: Dict[str, Node], regenerate_groupby_hash: bool

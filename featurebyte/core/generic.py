@@ -225,7 +225,7 @@ class QueryObject(FeatureByteBaseModel):
 
     def dict(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
         if isinstance(self.graph, GlobalQueryGraph):
-            pruned_graph, node_name_map = self.graph.crop(target_node_names=[self.node_name])
+            pruned_graph, node_name_map = self.graph.quick_prune(target_node_names=[self.node_name])
             mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
             new_object = self.copy()
             new_object.node_name = mapped_node.name
