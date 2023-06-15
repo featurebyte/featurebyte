@@ -166,42 +166,6 @@ async def test_online_serving_sql(
         assert deployment.enabled is False
 
 
-<<<<<<< Updated upstream
-=======
-def get_online_feature_spec(feature):
-    """
-    Helper function to create an online feature spec from a feature
-    """
-    return OnlineFeatureSpec(feature=ExtendedFeatureModel(**feature.dict(by_alias=True)))
-
-
-def get_online_store_table_name_to_aggregation_id(feature_list):
-    """
-    Helper function to get a mapping from online store table name to aggregation ids
-    """
-    online_store_table_name_to_aggregation_id = defaultdict(set)
-    for _, feature_object in feature_list.feature_objects.items():
-        for query in get_online_feature_spec(feature_object).precompute_queries:
-            online_store_table_name_to_aggregation_id[query.table_name].add(query.aggregation_id)
-    return online_store_table_name_to_aggregation_id
-
-
-async def sanity_check_online_store_tables(session, feature_list):
-    """
-    Verify that online enabling related features do not trigger redundant online store updates
-    """
-    table_names = list(get_online_store_table_name_to_aggregation_id(feature_list).keys())
-    for table_name in table_names:
-        df = await session.execute_query(
-            f"SELECT MAX({InternalName.ONLINE_STORE_VERSION_COLUMN}) AS OUT FROM {table_name}"
-        )
-        max_version = df.iloc[0]["OUT"]
-        # Verify that all results are at the very first version. If that is not the case, some
-        # results were calculated more than once.
-        assert max_version == 0
-
-
->>>>>>> Stashed changes
 def check_online_features_route(deployment, config, df_historical, columns):
     """
     Online enable a feature and call the online features endpoint
