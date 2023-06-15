@@ -8,10 +8,14 @@ from datetime import datetime
 
 import pandas as pd
 from pydantic import Field, PrivateAttr
+from sqlglot import expressions
+from sqlglot.expressions import select
 
 from featurebyte.enum import InternalName, SourceType
 from featurebyte.logging import get_logger
 from featurebyte.models.online_store_table_version import OnlineStoreTableVersion
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
+from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.session.base import BaseSession
 from featurebyte.sql.base import BaselSqlModel
@@ -67,20 +71,8 @@ class TileScheduleOnlineStore(BaselSqlModel):
         Execute tile schedule online store operation
         """
         # pylint: disable=too-many-locals,too-many-statements
-        select_sql = f"""
-            SELECT
-              RESULT_ID,
-              SQL_QUERY,
-              ONLINE_STORE_TABLE_NAME,
-              ENTITY_COLUMN_NAMES,
-              RESULT_TYPE
-            FROM ONLINE_STORE_MAPPING
-            WHERE
-              AGGREGATION_ID ILIKE '{self.aggregation_id}'
-        """
-        if self.aggregation_result_name is not None:
-            select_sql += f" AND RESULT_ID ILIKE '{self.aggregation_result_name}'"
-        online_store_df = await self._session.execute_query(select_sql)
+        online_store_df = await self._retrieve_online_store_mapping()
+
         if online_store_df is None or len(online_store_df) == 0:
             return
 
@@ -181,3 +173,29 @@ class TileScheduleOnlineStore(BaselSqlModel):
                 await self._online_store_table_version_service.create_document(version_model)
             else:
                 await self._online_store_table_version_service.update_version(f_name, next_version)
+
+    async def _retrieve_online_store_mapping(self) -> Optional[pd.DataFrame]:
+        query = select(
+            "RESULT_ID",
+            "SQL_QUERY",
+            "ONLINE_STORE_TABLE_NAME",
+            "ENTITY_COLUMN_NAMES",
+            "RESULT_TYPE",
+        ).from_("ONLINE_STORE_MAPPING")
+
+        if self.aggregation_result_name is not None:
+            # Retrieve entries specific to a particular result_id (e.g. a_sum_7d)
+            query = query.where(
+                expressions.EQ(
+                    this="RESULT_ID", expression=make_literal_value(self.aggregation_result_name)
+                )
+            )
+        else:
+            # Retrieve all entries for the aggregation_id (e.g. a_sum_24h, a_sum_7d, a_sum_30d, etc)
+            query = query.where(
+                expressions.ILike(
+                    this="AGGREGATION_ID", expression=make_literal_value(self.aggregation_id)
+                )
+            )
+
+        return await self._session.execute_query(sql_to_string(query, self._session.source_type))
