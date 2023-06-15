@@ -38,6 +38,7 @@ from featurebyte.query_graph.transform.entity_extractor import EntityExtractor
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 from featurebyte.query_graph.transform.pruning import prune_query_graph
+from featurebyte.query_graph.transform.quick_pruning import QuickGraphStructurePruningTransformer
 from featurebyte.query_graph.transform.reconstruction import GraphReconstructionTransformer
 
 
@@ -251,7 +252,7 @@ class QueryGraph(QueryGraphModel):
         op_struct_info = OperationStructureExtractor(graph=self).extract(node=node, **kwargs)
         return op_struct_info.operation_structure_map[node.name]
 
-    def prune(self, target_node: Node, aggressive: bool) -> GraphNodeNameMap:
+    def prune(self, target_node: Node) -> GraphNodeNameMap:
         """
         Prune the query graph and return the pruned graph & mapped node.
 
@@ -263,23 +264,35 @@ class QueryGraph(QueryGraphModel):
         ----------
         target_node: Node
             Target end node
-        aggressive: bool
-            Flag to enable aggressive mode. When the `aggressive` is True, those prunable nodes
-            may get removed if they do not contribute to the target node output. In addition,
-            all the node parameters will get pruned based on the output of the node. When the
-            `aggressive` is False, a graph traversal from the target node to the input node
-            is performed, all the traversed nodes will be kept without any modification on the
-            node parameters.
 
         Returns
         -------
         GraphNodeNameMap
             Tuple of pruned graph & its node name mapping
         """
-        pruned_graph, node_name_map, _ = prune_query_graph(
-            graph=self, node=target_node, aggressive=aggressive
-        )
+        pruned_graph, node_name_map, _ = prune_query_graph(graph=self, node=target_node)
         return pruned_graph, node_name_map
+
+    def quick_prune(self, target_node_names: List[str]) -> GraphNodeNameMap:
+        """
+        Quick prune the query graph and return the pruned graph & mapped node.
+
+        The main difference between `quick_prune` and `prune` is that `quick_prune` does not change existing
+        node parameters. The generated graph's node parameters are the same as the input graph. It is less
+        expensive than `prune` as it does not perform any operation structure extraction.
+
+        Parameters
+        ----------
+        target_node_names: List[str]
+            Target end node names
+
+        Returns
+        -------
+        GraphNodeNameMap
+        """
+        return QuickGraphStructurePruningTransformer(graph=self).transform(
+            target_node_names=target_node_names
+        )
 
     def reconstruct(
         self, node_name_to_replacement_node: Dict[str, Node], regenerate_groupby_hash: bool

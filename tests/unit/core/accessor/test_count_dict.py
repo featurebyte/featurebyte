@@ -81,8 +81,8 @@ def test_cosine_similarity(
         {"source": "graph_1", "target": "groupby_1"},
         {"source": "groupby_1", "target": "project_1"},
         {"source": "groupby_1", "target": "project_2"},
-        {"source": "project_1", "target": "cosine_similarity_1"},
         {"source": "project_2", "target": "cosine_similarity_1"},
+        {"source": "project_1", "target": "cosine_similarity_1"},
     ]
     cos_sim_node = get_node(result_dict["graph"], "cosine_similarity_1")
     assert cos_sim_node == {

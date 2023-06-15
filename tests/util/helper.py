@@ -124,16 +124,15 @@ def check_aggressively_pruned_graph(left_obj_dict, right_obj_dict):
     """
     Check aggressively pruned graph of the left & right graphs
     """
-    # as serialization only perform non-aggressive pruning (all travelled nodes are kept)
-    # here we need to perform aggressive pruning & compare the final graph to make sure they are the same
+    # as serialization only perform quick pruning (all travelled nodes are kept)
+    # here we need to perform (aggressive) pruning & compare the final graph to make sure they are the same
     left_graph = QueryGraph(**dict(left_obj_dict["graph"]))
     right_graph = QueryGraph(**dict(right_obj_dict["graph"]))
     left_pruned_graph, _ = left_graph.prune(
-        target_node=left_graph.get_node_by_name(left_obj_dict["node_name"]), aggressive=True
+        target_node=left_graph.get_node_by_name(left_obj_dict["node_name"])
     )
     right_pruned_graph, _ = right_graph.prune(
-        target_node=right_graph.get_node_by_name(right_obj_dict["node_name"]),
-        aggressive=True,
+        target_node=right_graph.get_node_by_name(right_obj_dict["node_name"])
     )
     assert left_pruned_graph == right_pruned_graph
 

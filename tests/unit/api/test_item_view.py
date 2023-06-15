@@ -91,8 +91,8 @@ class TestItemView(BaseViewTestSuite):
             "mask": view_under_test[self.col] > 1000,
             "expected_backward_edges_map": {
                 "filter_1": ["project_1", "gt_1"],
-                "graph_1": ["input_2"],
-                "graph_2": ["input_1", "graph_1"],
+                "graph_1": ["input_1"],
+                "graph_2": ["input_2", "graph_1"],
                 "gt_1": ["project_1"],
                 "project_1": ["graph_2"],
             },
@@ -573,8 +573,8 @@ def test_item_view_groupby__item_table_column(
     )["item_amount_sum_24h"]
     feature_dict = feature.dict()
     assert feature_dict["graph"]["edges"] == [
-        {"source": "input_2", "target": "graph_1"},
-        {"source": "input_1", "target": "graph_2"},
+        {"source": "input_1", "target": "graph_1"},
+        {"source": "input_2", "target": "graph_2"},
         {"source": "graph_1", "target": "graph_2"},
         {"source": "graph_2", "target": "groupby_1"},
         {"source": "groupby_1", "target": "project_1"},
@@ -724,8 +724,8 @@ def test_item_view_groupby__event_id_column(
     assert isinstance(feature, Feature)
     feature_dict = feature.dict()
     assert feature_dict["graph"]["edges"] == [
-        {"source": "input_2", "target": "graph_1"},
-        {"source": "input_1", "target": "graph_2"},
+        {"source": "input_1", "target": "graph_1"},
+        {"source": "input_2", "target": "graph_2"},
         {"source": "graph_1", "target": "graph_2"},
         {"source": "graph_2", "target": "item_groupby_1"},
         {"source": "item_groupby_1", "target": "project_1"},

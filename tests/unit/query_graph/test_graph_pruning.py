@@ -24,7 +24,7 @@ def test_prune__redundant_assign_nodes(dataframe):
         name="assign_3", type="assign", parameters={"name": "target"}, output_type="frame"
     )
     target_node = dataframe["target"].node
-    pruned_graph, node_name_map = dataframe.graph.prune(target_node=target_node, aggressive=True)
+    pruned_graph, node_name_map = dataframe.graph.prune(target_node=target_node)
     mapped_node = pruned_graph.get_node_by_name(node_name_map[dataframe.node.name])
     assert pruned_graph.edges_map == {
         "assign_1": ["project_3"],
@@ -49,7 +49,7 @@ def test_prune__redundant_assign_node_with_same_target_column_name(dataframe):
     dataframe["VALUE"] = 1
     dataframe["VALUE"] = dataframe["CUST_ID"] * 10
     # convert the dataframe into dictionary & compare some attribute values (non-aggressive pruning)
-    pruned_graph, node_name_map = dataframe.graph.prune(target_node=dataframe.node, aggressive=True)
+    pruned_graph, node_name_map = dataframe.graph.prune(target_node=dataframe.node)
     assert pruned_graph.edges == [
         {"source": "input_1", "target": "project_1"},
         {"source": "project_1", "target": "mul_1"},
@@ -68,7 +68,7 @@ def test_prune__redundant_project_nodes(dataframe):
     _ = dataframe["CUST_ID"]
     _ = dataframe["VALUE"]
     mask = dataframe["MASK"]
-    pruned_graph, node_name_map = dataframe.graph.prune(target_node=mask.node, aggressive=True)
+    pruned_graph, node_name_map = dataframe.graph.prune(target_node=mask.node)
     mapped_node = pruned_graph.get_node_by_name(node_name_map[mask.node.name])
     assert pruned_graph.edges_map == {"input_1": ["project_1"]}
     assert pruned_graph.nodes_map["project_1"].parameters.columns == ["MASK"]
@@ -83,7 +83,7 @@ def test_prune__multiple_non_redundant_assign_nodes__interactive_pattern(datafra
     dataframe["requiredB"] = dataframe["VALUE"] + 10
     dataframe["target"] = dataframe["requiredA"] * dataframe["requiredB"]
     target_node = dataframe["target"].node
-    pruned_graph, node_name_map = dataframe.graph.prune(target_node=target_node, aggressive=True)
+    pruned_graph, node_name_map = dataframe.graph.prune(target_node=target_node)
     assert pruned_graph.edges_map == {
         "input_1": ["project_1", "assign_1"],
         "project_1": ["div_1"],
@@ -115,7 +115,7 @@ def test_prune__multiple_non_redundant_assign_nodes__cascading_pattern(dataframe
     dataframe["requiredA"] = dataframe["CUST_ID"] / 10
     dataframe["requiredB"] = dataframe["requiredA"] + 10
     dataframe["target"] = dataframe["requiredB"] * 10
-    pruned_graph, node_name_map = dataframe.graph.prune(target_node=dataframe.node, aggressive=True)
+    pruned_graph, node_name_map = dataframe.graph.prune(target_node=dataframe.node)
     mapped_node = pruned_graph.get_node_by_name(node_name_map[dataframe.node.name])
     assert pruned_graph.edges_map == {
         "input_1": ["project_1", "assign_1"],
@@ -147,7 +147,7 @@ def test_prune__item_view_join_event_view(test_dir):
 
     # check that assign node not get pruned
     target_node = query_graph.get_node_by_name("join_2")
-    pruned_graph, _ = query_graph.prune(target_node=target_node, aggressive=True)
+    pruned_graph, _ = query_graph.prune(target_node=target_node)
     assert "assign_1" in pruned_graph.nodes_map
 
 
@@ -159,7 +159,7 @@ def test_join_feature_node_is_prunable(global_graph, order_size_feature_join_nod
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[order_size_feature_join_node],
     )
-    pruned_graph, _ = global_graph.prune(target_node=project_ts, aggressive=True)
+    pruned_graph, _ = global_graph.prune(target_node=project_ts)
     assert pruned_graph.edges_map == {"input_1": ["project_1"]}
     assert pruned_graph.get_node_by_name("project_1") == {
         "name": "project_1",
@@ -227,7 +227,7 @@ def test_join_with_assign_node__join_node_parameters_pruning(
         {
             "name": "item_type",
             "node_name": "join_1",
-            "node_names": {"join_1", "input_2"},
+            "node_names": {"join_1", "input_1"},
             "table_id": None,
             "table_type": "item_table",
             "type": "source",
@@ -254,7 +254,7 @@ def test_join_with_assign_node__join_node_parameters_pruning(
 
     # prune the graph & generate operation structure of the pruned graph
     # check non-aggressive mode (all travelled nodes will be kept)
-    pruned_graph, node_name_map = global_graph.prune(target_node=groupby_node, aggressive=False)
+    pruned_graph, node_name_map = global_graph.quick_prune(target_node_names=[groupby_node.name])
     pruned_graph = QueryGraph(**pruned_graph.json_dict())
     pruned_node = pruned_graph.get_node_by_name(node_name_map[groupby_node.name])
 
@@ -267,7 +267,7 @@ def test_join_with_assign_node__join_node_parameters_pruning(
     assert pruned_join_node.parameters == join_node_parameters
 
     # check aggressive mode (node could be removed and its parameters could be pruned)
-    pruned_graph, node_name_map = global_graph.prune(target_node=groupby_node, aggressive=True)
+    pruned_graph, node_name_map = global_graph.prune(target_node=groupby_node)
     pruned_graph = QueryGraph(**pruned_graph.json_dict())
     pruned_node = pruned_graph.get_node_by_name(node_name_map[groupby_node.name])
 
@@ -303,7 +303,6 @@ def test_join_with_assign_node__join_node_parameters_pruning(
         target_columns=groupby_node._get_required_input_columns(
             input_index=0, available_column_names=[]
         ),
-        aggressive=True,
     )
     pruned_join_node = pruned_graph.get_node_by_name("join_1")
     assert pruned_join_node.parameters == expected_pruned_join_node_params
@@ -331,7 +330,7 @@ def test_join_is_prunable(
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[event_table_input_node, item_table_input_node],
     )
-    pruned_graph, node_name_map = global_graph.prune(target_node=join_node, aggressive=True)
+    pruned_graph, node_name_map = global_graph.prune(target_node=join_node)
     pruned_graph = QueryGraph(**pruned_graph.dict())
     pruned_ev_node = pruned_graph.get_node_by_name(node_name_map[event_table_input_node.name])
     pruned_it_node = pruned_graph.get_node_by_name(node_name_map[item_table_input_node.name])
@@ -359,7 +358,7 @@ def test_join_is_prunable(
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[join_node],
     )
-    pruned_graph, node_name_map = global_graph.prune(target_node=proj_cust_id, aggressive=True)
+    pruned_graph, node_name_map = global_graph.prune(target_node=proj_cust_id)
     assert pruned_graph.edges_map == {"input_1": ["project_1"]}
     assert node_name_map[proj_cust_id.name] == "project_1"
 
@@ -370,7 +369,7 @@ def test_join_is_prunable(
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[join_node],
     )
-    pruned_graph, node_name_map = global_graph.prune(target_node=proj_item_type, aggressive=True)
+    pruned_graph, node_name_map = global_graph.prune(target_node=proj_item_type)
     assert pruned_graph.edges_map == {
         "input_1": ["join_1"],
         "input_2": ["join_1"],
@@ -392,9 +391,7 @@ def test_join_is_prunable(
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[inner_join_node],
     )
-    pruned_graph, node_name_map = global_graph.prune(
-        target_node=proj_cust_id_inner, aggressive=True
-    )
+    pruned_graph, node_name_map = global_graph.prune(target_node=proj_cust_id_inner)
     assert pruned_graph.edges_map == {
         "input_1": ["join_1"],
         "input_2": ["join_1"],
@@ -420,7 +417,7 @@ def test_project_node_parameters_pruning(query_graph_and_assign_node):
     )
 
     # after pruning, the project node parameters should be pruned
-    pruned_graph, node_name_map = graph.prune(target_node=target_node, aggressive=True)
+    pruned_graph, node_name_map = graph.prune(target_node=target_node)
     mapped_proj_node_name = node_name_map[proj_node.name]
     mapped_proj_node = pruned_graph.get_node_by_name(mapped_proj_node_name)
     assert mapped_proj_node.parameters.columns == ["ts", "cust_id", "a", "b"]

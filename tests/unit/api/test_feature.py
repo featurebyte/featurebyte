@@ -140,8 +140,8 @@ def test_feature__cond_assign_unnamed(float_feature, bool_feature):
         {"source": "input_1", "target": "graph_1"},
         {"source": "graph_1", "target": "groupby_1"},
         {"source": "groupby_1", "target": "project_1"},
-        {"source": "project_1", "target": "gt_1"},
         {"source": "project_1", "target": "add_1"},
+        {"source": "project_1", "target": "gt_1"},
         {"source": "add_1", "target": "conditional_1"},
         {"source": "gt_1", "target": "conditional_1"},
     ]

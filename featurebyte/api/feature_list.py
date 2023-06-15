@@ -67,9 +67,10 @@ from featurebyte.models.feature_list import (
     FrozenFeatureListNamespaceModel,
 )
 from featurebyte.models.tile import TileSpec
+from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.schema.deployment import DeploymentCreate
-from featurebyte.schema.feature import BatchFeatureCreate, FeatureCreate
+from featurebyte.schema.feature import BatchFeatureCreatePayload, BatchFeatureItem
 from featurebyte.schema.feature_list import (
     FeatureListCreate,
     FeatureListGetHistoricalFeatures,
@@ -666,7 +667,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         return data.json_dict()
 
     def _pre_save_operations(self, conflict_resolution: ConflictResolution = "raise") -> None:
-        feature_payloads = []
+        features = []
         for feat in self.feature_objects.values():
             if conflict_resolution == "retrieve":
                 # If conflict_resolution is retrieve, we will retrieve the feature from the catalog based on the
@@ -677,13 +678,29 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
                     feat = Feature.get(name=feat_name)
                     self.feature_objects[feat_name] = feat
                 except RecordRetrievalException:
-                    feature_payloads.append(FeatureCreate(**feat.dict(by_alias=True)))
+                    features.append(feat)
             if conflict_resolution == "raise" and not feat.saved:
-                feature_payloads.append(FeatureCreate(**feat.dict(by_alias=True)))
+                features.append(feat)
+
+        pruned_graph, node_name_map = GlobalQueryGraph().quick_prune(
+            target_node_names=[feat.node_name for feat in features]
+        )
+        batch_feature_items = []
+        for feat in features:
+            batch_feature_items.append(
+                BatchFeatureItem(
+                    id=feat.id,
+                    name=feat.name,
+                    node_name=node_name_map[feat.node_name],
+                    tabular_source=feat.tabular_source,
+                )
+            )
 
         self.post_async_task(
             route="/feature/batch",
-            payload=BatchFeatureCreate.create(feature_payloads).json_dict(),
+            payload=BatchFeatureCreatePayload(
+                graph=pruned_graph, features=batch_feature_items
+            ).json_dict(),
             retrieve_result=False,
             has_output_url=False,
         )
