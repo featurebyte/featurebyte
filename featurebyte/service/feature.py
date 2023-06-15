@@ -131,7 +131,7 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureServiceCreate, Fea
 
         # prune the graph to remove unused nodes
         pruned_graph, pruned_node_name_map = QueryGraph(**graph.dict(by_alias=True)).prune(
-            target_node=node, aggressive=True
+            target_node=node
         )
         if sanitize_for_definition:
             pruned_graph = sanitize_query_graph_for_feature_definition(graph=pruned_graph)

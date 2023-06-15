@@ -169,7 +169,6 @@ class VersionService(BaseService):
         # prune the graph to remove unused nodes
         pruned_graph, node_name_map = QueryGraph(**graph.dict(by_alias=True)).prune(
             target_node=graph.get_node_by_name(node_name),
-            aggressive=True,
         )
         pruned_node_name = node_name_map[node_name]
 

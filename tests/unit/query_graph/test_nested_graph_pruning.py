@@ -139,7 +139,7 @@ def test_nested_graph_pruning(input_details, groupby_node_params):
     }
 
     # check pruned graph
-    pruned_graph, node_name_map = graph.prune(target_node=node_proj_2h_avg, aggressive=True)
+    pruned_graph, node_name_map = graph.prune(target_node=node_proj_2h_avg)
     assert node_name_map == {"input_1": "input_1", "graph_1": "graph_1", "project_1": "project_1"}
     assert pruned_graph.edges_map == {"input_1": ["graph_1"], "graph_1": ["project_1"]}
 
@@ -187,7 +187,7 @@ def test_graph_node__when_graph_node_is_output_node(input_details):
     )
 
     # check operation structure
-    pruned_graph, node_name_map = graph.prune(target_node=proj_node, aggressive=True)
+    pruned_graph, node_name_map = graph.prune(target_node=proj_node)
     assert pruned_graph.edges_map == {"input_1": ["graph_1"], "graph_1": ["project_1"]}
 
     # check nested graph edges (check all the unused nested nodes get pruned)

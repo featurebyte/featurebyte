@@ -18,8 +18,9 @@ from featurebyte.common.model_util import get_version
 from featurebyte.common.utils import dataframe_from_json
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.query_graph.model.graph import QueryGraphModel
-from featurebyte.schema.feature import BatchFeatureCreate, FeatureCreate
+from featurebyte.schema.feature import FeatureCreate
 from featurebyte.session.snowflake import SnowflakeSession
+from tests.unit.common.test_utils import create_batch_feature_create
 from tests.unit.routes.base import BaseCatalogApiTestSuite
 
 
@@ -798,7 +799,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         feature_create_1 = FeatureCreate(**payload_1)
         feature_create_2 = FeatureCreate(**payload_2)
         feature_creates = [feature_create_1, feature_create_2]
-        batch_feature_create = BatchFeatureCreate.create(features=feature_creates)
+        batch_feature_create = create_batch_feature_create(features=feature_creates)
 
         # check feature is not created
         for feat_create in feature_creates:
@@ -841,7 +842,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
 
         # prepare batch feature create payload
         feature_create = FeatureCreate(**self.payload)
-        batch_feature_create = BatchFeatureCreate.create(features=[feature_create])
+        batch_feature_create = create_batch_feature_create(features=[feature_create])
 
         # create batch feature create task
         task_response = test_api_client.post(

@@ -1,7 +1,8 @@
 """
 Tests for BatchFeature schema
 """
-from featurebyte.schema.feature import BatchFeatureCreate, FeatureCreate
+from featurebyte.schema.feature import FeatureCreate
+from tests.unit.common.test_utils import create_batch_feature_create
 
 
 def check_batch_feature_create(features):
@@ -10,7 +11,7 @@ def check_batch_feature_create(features):
     for feature in features:
         name_to_feat_payload[feature.name] = FeatureCreate(**feature.json_dict())
 
-    batch_feat_create = BatchFeatureCreate.create(features=list(name_to_feat_payload.values()))
+    batch_feat_create = create_batch_feature_create(features=list(name_to_feat_payload.values()))
     for feat_create in batch_feat_create.iterate_features():
         # check post-processed feature payload is consistent with input feature payload
         input_feat_create = name_to_feat_payload.pop(feat_create.name)
