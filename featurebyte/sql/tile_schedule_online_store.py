@@ -1,7 +1,7 @@
 """
 Tile Generate online store Job Script
 """
-from typing import Any, Union
+from typing import Any, Optional, Union
 
 import textwrap
 from datetime import datetime
@@ -28,6 +28,7 @@ class TileScheduleOnlineStore(BaselSqlModel):
     aggregation_id: str
     job_schedule_ts_str: str
     retry_num: int = Field(default=10)
+    aggregation_result_name: Optional[str] = Field(default=None)
 
     _online_store_table_version_service: OnlineStoreTableVersionService = PrivateAttr()
 
@@ -75,9 +76,11 @@ class TileScheduleOnlineStore(BaselSqlModel):
               RESULT_TYPE
             FROM ONLINE_STORE_MAPPING
             WHERE
-              AGGREGATION_ID ILIKE '{self.aggregation_id}' AND IS_DELETED = FALSE
+              AGGREGATION_ID ILIKE '{self.aggregation_id}'
         """
-        online_store_df = await self.retry_sql(select_sql)
+        if self.aggregation_result_name is not None:
+            select_sql += f" AND RESULT_ID ILIKE '{self.aggregation_result_name}'"
+        online_store_df = await self._session.execute_query(select_sql)
         if online_store_df is None or len(online_store_df) == 0:
             return
 
@@ -86,16 +89,17 @@ class TileScheduleOnlineStore(BaselSqlModel):
             f_sql = row["SQL_QUERY"]
             fs_table = row["ONLINE_STORE_TABLE_NAME"]
             f_entity_columns = row["ENTITY_COLUMN_NAMES"]
-            f_value_type = row["RESULT_TYPE"]
             f_sql = f_sql.replace(
                 "__FB_POINT_IN_TIME_SQL_PLACEHOLDER", "'" + self.job_schedule_ts_str + "'"
             )
 
-            logger.debug(f"{f_name}, {fs_table}, {f_entity_columns}, {f_value_type}")
+            logger.debug(
+                "Populating online store table",
+                extra={"aggregation_result_name": f_name, "online_store_table_name": fs_table},
+            )
 
             # check if feature store table exists
             fs_table_exist_flag = await self.table_exists(fs_table)
-            logger.debug(f"fs_table_exist_flag: {fs_table_exist_flag}")
 
             quoted_result_name_column = self.quote_column(
                 InternalName.ONLINE_STORE_RESULT_NAME_COLUMN

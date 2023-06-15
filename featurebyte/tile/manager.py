@@ -134,7 +134,12 @@ class TileManager(BaseModel):
         job_id = f"{TileType.ONLINE}_{tile_spec.aggregation_id}"
         return await scheduler.get_job_details(job_id=job_id) is not None
 
-    async def populate_feature_store(self, tile_spec: TileSpec, job_schedule_ts_str: str) -> None:
+    async def populate_feature_store(
+        self,
+        tile_spec: TileSpec,
+        job_schedule_ts_str: str,
+        aggregation_result_name: str,
+    ) -> None:
         """
         Populate feature store with the given tile_spec and timestamp string
 
@@ -151,6 +156,7 @@ class TileManager(BaseModel):
             aggregation_id=tile_spec.aggregation_id,
             job_schedule_ts_str=job_schedule_ts_str,
             online_store_table_version_service=self._online_store_table_version_service,
+            aggregation_result_name=aggregation_result_name,
         )
         await executor.execute()
 

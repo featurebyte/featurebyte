@@ -29,7 +29,6 @@ class TileGenerate(TileCommon):
         """
         # pylint: disable=too-many-statements
         tile_table_exist_flag = await self.table_exists(self.tile_id)
-        logger.debug(f"tile_table_exist_flag: {tile_table_exist_flag}")
 
         # 2. Update TILE_REGISTRY & Add New Columns TILE Table
         tile_sql = self.sql.replace("'", "''")
@@ -74,11 +73,6 @@ class TileGenerate(TileCommon):
         value_insert_cols_str = ",".join(value_insert_cols)
         value_update_cols_str = ",".join(value_update_cols)
 
-        logger.debug(f"entity_insert_cols_str: {entity_insert_cols_str}")
-        logger.debug(f"entity_filter_cols_str: {entity_filter_cols_str}")
-        logger.debug(f"value_insert_cols_str: {value_insert_cols_str}")
-        logger.debug(f"value_update_cols_str: {value_update_cols_str}")
-
         # insert new records and update existing records
         if not tile_table_exist_flag:
             logger.debug(f"creating tile table: {self.tile_id}")
@@ -86,6 +80,7 @@ class TileGenerate(TileCommon):
             await retry_sql(self._session, create_sql)
             logger.debug(f"done creating table: {self.tile_id}")
         else:
+            logger.debug("merging into tile table", extra={"tile_id": self.tile_id})
             if self.entity_column_names:
                 on_condition_str = f"a.INDEX = b.INDEX AND {entity_filter_cols_str}"
                 insert_str = f"INDEX, {self.entity_column_names_str}, {self.value_column_names_str}, CREATED_AT"
@@ -107,8 +102,6 @@ class TileGenerate(TileCommon):
             await retry_sql(session=self._session, sql=merge_sql)
 
         if self.last_tile_start_str:
-            logger.debug(f"last_tile_start_str: {self.last_tile_start_str}")
-
             ind_value = date_util.timestamp_utc_to_tile_index(
                 dateutil.parser.isoparse(self.last_tile_start_str),
                 self.tile_modulo_frequency_second,
@@ -116,7 +109,10 @@ class TileGenerate(TileCommon):
                 self.frequency_minute,
             )
 
-            logger.debug(f"ind_value: {ind_value}")
+            logger.debug(
+                "Using specified last_tile_start_str",
+                extra={"last_tile_start_str": self.last_tile_start_str, "ind_value": ind_value},
+            )
 
             update_tile_last_ind_sql = f"""
                 UPDATE TILE_REGISTRY
