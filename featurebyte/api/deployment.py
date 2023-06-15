@@ -97,6 +97,8 @@ class Deployment(ApiObject):
         >>> deployment.enable()  # doctest: +SKIP
         """
         self.patch_async_task(route=f"{self._route}/{self.id}", payload={"enabled": True})
+        # call get to update the object cache
+        self.get_by_id(self.id)
 
     def disable(self) -> None:
         """
@@ -108,6 +110,8 @@ class Deployment(ApiObject):
         >>> deployment.disable()  # doctest: +SKIP
         """
         self.patch_async_task(route=f"{self._route}/{self.id}", payload={"enabled": False})
+        # call get to update the object cache
+        self.get_by_id(self.id)
 
     @typechecked
     def compute_batch_feature_table(
