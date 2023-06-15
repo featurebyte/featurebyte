@@ -147,6 +147,7 @@ class OnlineEnableService(BaseService):
         feature: FeatureModel,
         online_store_table_version_service: OnlineStoreTableVersionService,
         task_manager: Optional[TaskManager] = None,
+        is_recreating_schema: bool = False,
     ) -> None:
         """
         Update data warehouse registry upon changes to online enable status, such as enabling or
@@ -162,6 +163,9 @@ class OnlineEnableService(BaseService):
             Online store table version service
         task_manager: Optional[TaskManager]
             TaskManager object
+        is_recreating_schema: bool
+            Whether we are recreating the working schema from scratch. Only set as True when called
+            by WorkingSchemaService.
         """
         extended_feature_model = ExtendedFeatureModel(**feature.dict(by_alias=True))
         online_feature_spec = OnlineFeatureSpec(feature=extended_feature_model)
@@ -176,7 +180,9 @@ class OnlineEnableService(BaseService):
         )
 
         if feature.online_enabled:
-            await feature_manager.online_enable(online_feature_spec)
+            await feature_manager.online_enable(
+                online_feature_spec, is_recreating_schema=is_recreating_schema
+            )
         else:
             await feature_manager.online_disable(online_feature_spec)
 

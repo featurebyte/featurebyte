@@ -77,7 +77,10 @@ class FeatureManager(BaseModel):
         )
 
     async def online_enable(
-        self, feature_spec: OnlineFeatureSpec, schedule_time: datetime = datetime.utcnow()
+        self,
+        feature_spec: OnlineFeatureSpec,
+        schedule_time: datetime = datetime.utcnow(),
+        is_recreating_schema: bool = False,
     ) -> None:
         """
         Schedule both online and offline tile jobs
@@ -88,6 +91,9 @@ class FeatureManager(BaseModel):
             Instance of OnlineFeatureSpec
         schedule_time: datetime
             the moment of scheduling the job
+        is_recreating_schema: bool
+            Whether we are recreating the working schema from scratch. Only set as True when called
+            by WorkingSchemaService.
         """
         logger.info(
             "online_enable",
@@ -125,6 +131,11 @@ class FeatureManager(BaseModel):
                 logger.debug(f"Done schedule_offline_tiles for {tile_spec.aggregation_id}")
 
                 # generate historical tiles
+                await self._generate_historical_tiles(tile_spec=tile_spec)
+
+            elif is_recreating_schema:
+                # if this is called when recreating the schema, we cannot assume that the historical
+                # tiles are available even if there is an active tile jobs.
                 await self._generate_historical_tiles(tile_spec=tile_spec)
 
         # populate feature store
