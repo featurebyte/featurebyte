@@ -249,17 +249,32 @@ def persistent_fixture():
     client.drop_database(database_name)
 
 
+@pytest.fixture(name="mongo_database_name")
+def mongo_database_name():
+    """
+    Mongo database name used by integration tests
+    """
+    return f"test_{ObjectId()}"
+
+
+def get_new_persistent(database_name):
+    """
+    Get a new persistent instance
+    """
+    client = pymongo.MongoClient(MONGO_CONNECTION)
+    persistent = MongoDB(uri=MONGO_CONNECTION, database=database_name)
+    return persistent, client
+
+
 @pytest.fixture(name="mongo_persistent")
-def mongo_persistent_fixture():
+def mongo_persistent_fixture(mongo_database_name):
     """
     Mongo persistent fixture that uses a non-async client. Used by some integration tests that
     interact with the persistent directly.
     """
-    database_name = f"test_{ObjectId()}"
-    client = pymongo.MongoClient(MONGO_CONNECTION)
-    persistent = MongoDB(uri=MONGO_CONNECTION, database=database_name)
-    yield persistent, client[database_name]
-    client.drop_database(database_name)
+    persistent, client = get_new_persistent(mongo_database_name)
+    yield persistent, client[mongo_database_name]
+    client.drop_database(mongo_database_name)
 
 
 @pytest.fixture(name="mock_get_persistent", scope="session")
@@ -1388,11 +1403,30 @@ def user():
 
 
 @pytest.fixture()
-def online_store_table_version_service(user, persistent):
+def online_store_table_version_service(user, mongo_persistent):
     """
     Fixture for online store table version service
     """
     service = OnlineStoreTableVersionService(
-        user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
+        user=user, persistent=mongo_persistent[0], catalog_id=DEFAULT_CATALOG_ID
     )
     yield service
+
+
+@pytest.fixture()
+def online_store_table_version_service_factory(mongo_database_name):
+    """
+    Fixture for a callback that returns a new OnlineStoreTableVersionService with a new persistent
+
+    This is needed in tests where we need new instances of the persistent for different threads
+    (the persistent object is not threadsafe)
+    """
+
+    def factory():
+        return OnlineStoreTableVersionService(
+            user=user(),
+            persistent=get_new_persistent(mongo_database_name)[0],
+            catalog_id=DEFAULT_CATALOG_ID,
+        )
+
+    return factory
