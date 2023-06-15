@@ -1418,8 +1418,8 @@ def online_store_table_version_service_factory(mongo_database_name):
     """
     Fixture for a callback that returns a new OnlineStoreTableVersionService with a new persistent
 
-    This is needed in tests where we need a threadsafe instance of the persistent (which cannot be
-    the global one).
+    This is needed in tests where we need new instances of the persistent for different threads
+    (the persistent object is not threadsafe)
     """
 
     def factory():
