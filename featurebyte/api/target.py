@@ -8,7 +8,7 @@ from typing import List, Optional
 from pydantic import Field, StrictStr
 from typeguard import typechecked
 
-from featurebyte.api.api_object import ForeignKeyMapping
+from featurebyte.api.api_object_util import ForeignKeyMapping
 from featurebyte.api.entity import Entity
 from featurebyte.api.savable_api_object import SavableApiObject
 from featurebyte.exception import RecordRetrievalException
