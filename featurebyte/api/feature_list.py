@@ -682,16 +682,16 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
             if conflict_resolution == "raise" and not feat.saved:
                 features.append(feat)
 
-        cropped_graph, mapped_node_names = GlobalQueryGraph().crop(
+        pruned_graph, node_name_map = GlobalQueryGraph().quick_prune(
             target_node_names=[feat.node_name for feat in features]
         )
         batch_feature_items = []
-        for feat, node_name in zip(features, mapped_node_names):
+        for feat in features:
             batch_feature_items.append(
                 BatchFeatureItem(
                     id=feat.id,
                     name=feat.name,
-                    node_name=node_name,
+                    node_name=node_name_map[feat.node_name],
                     tabular_source=feat.tabular_source,
                 )
             )
@@ -699,7 +699,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         self.post_async_task(
             route="/feature/batch",
             payload=BatchFeatureCreatePayload(
-                graph=cropped_graph, features=batch_feature_items
+                graph=pruned_graph, features=batch_feature_items
             ).json_dict(),
             retrieve_result=False,
             has_output_url=False,
