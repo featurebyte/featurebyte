@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional, Type
 from functools import partial
 from itertools import groupby
 
+import pandas as pd
 from pandas import DataFrame
 
 from featurebyte.api.api_object_util import (
@@ -142,4 +143,20 @@ class ListHandler:
                 else:
                     new_field_values = [[]] * item_list.shape[0]
                 item_list[foreign_key_mapping.new_field_name] = new_field_values
+        additionally_processed_list = self.additional_post_processing(item_list)
+        return additionally_processed_list
+
+    def additional_post_processing(self, item_list: pd.DataFrame) -> pd.DataFrame:
+        """
+        Additional post processing to apply to list output.
+
+        Parameters
+        ----------
+        item_list: pd.DataFrame
+            List of items
+
+        Returns
+        -------
+        pd.DataFrame
+        """
         return item_list
