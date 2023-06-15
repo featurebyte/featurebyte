@@ -15,6 +15,7 @@ from featurebyte.config import Configurations
 from featurebyte.enum import SourceType
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.feature_store import FeatureStoreModel
+from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
 
@@ -162,6 +163,29 @@ class DataSource:
             return cast(List[str], response.json())
         raise RecordRetrievalException(response)
 
+    def _construct_columns_info(
+        self,
+        table_name: str,
+        database_name: Optional[str] = None,
+        schema_name: Optional[str] = None,
+    ) -> List[ColumnInfo]:
+        client = Configurations().get_client()
+        response = client.post(
+            url=(
+                f"/feature_store/column?"
+                f"database_name={database_name}&"
+                f"schema_name={schema_name}&"
+                f"table_name={table_name}"
+            ),
+            json=self._feature_store.json_dict(),
+        )
+        if response.status_code != HTTPStatus.OK:
+            raise RecordRetrievalException(response)
+
+        # parse response & return column info
+        column_specs = response.json()
+        return [ColumnInfo(**dict(col)) for col in column_specs]
+
     @typechecked
     def get_source_table(
         self,
@@ -202,6 +226,11 @@ class DataSource:
         --------
         - [SourceTable](/reference/featurebyte.api.source_table.SourceTable/): SourceTable
         """
+        columns_info = self._construct_columns_info(
+            table_name=table_name,
+            database_name=database_name,
+            schema_name=schema_name,
+        )
         return SourceTable(
             feature_store=self._feature_store,
             tabular_source=TabularSource(
@@ -212,4 +241,5 @@ class DataSource:
                     table_name=table_name,
                 ),
             ),
+            columns_info=columns_info,
         )

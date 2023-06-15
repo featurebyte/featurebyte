@@ -666,37 +666,6 @@ def test_get_event_table(snowflake_event_table, mock_config_path_env):
     assert expected_msg in str(exc.value)
 
 
-@patch("featurebyte.api.source_table.logger")
-@patch("featurebyte.service.session_manager.SessionManager.get_session")
-def test_get_event_table__schema_has_been_changed(mock_get_session, mock_logger, saved_event_table):
-    """
-    Test retrieving event table after table schema has been changed
-    """
-    recent_schema = {"column": "INT"}
-    mock_get_session.return_value.list_databases.return_value = ["sf_database"]
-    mock_get_session.return_value.list_schemas.return_value = ["sf_schema"]
-    mock_get_session.return_value.list_tables.return_value = ["sf_table"]
-    mock_get_session.return_value.list_table_schema.return_value = recent_schema
-    _ = EventTable.get_by_id(saved_event_table.id)
-    assert mock_logger.warning.call_args.args[0] == "Table schema has been changed."
-
-    # this is ok as additional column should not break backward compatibility
-    recent_schema = {
-        "col_binary": "BINARY",
-        "col_boolean": "BOOL",
-        "col_char": "CHAR",
-        "col_float": "FLOAT",
-        "col_int": "INT",
-        "col_text": "VARCHAR",
-        "created_at": "TIMESTAMP",
-        "cust_id": "INT",
-        "event_timestamp": "TIMESTAMP",
-        "additional_column": "INT",
-    }
-    mock_get_session.return_value.list_table_schema.return_value = recent_schema
-    _ = EventTable.get_by_id(saved_event_table.id)
-
-
 def test_default_feature_job_setting_history(saved_event_table):
     """
     Test default_feature_job_setting_history on saved event table
