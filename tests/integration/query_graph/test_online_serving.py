@@ -94,7 +94,8 @@ async def test_online_serving_sql(
     config,
     data_source,
     get_session_callback,
-    online_store_table_version_service,
+    online_store_table_version_service_factory,
+    mongo_database_name,
 ):
     """
     Test executing feature compute sql and feature retrieval SQL for online store
@@ -159,7 +160,7 @@ async def test_online_serving_sql(
             get_session_callback,
             feature_list,
             next_job_datetime.strftime("%Y-%m-%d %H:%M:%S"),
-            online_store_table_version_service,
+            online_store_table_version_service_factory,
         )
     finally:
         deployment.disable()

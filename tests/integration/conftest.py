@@ -1414,7 +1414,7 @@ def online_store_table_version_service(user, mongo_persistent):
 
 
 @pytest.fixture()
-def online_store_table_version_service_factory():
+def online_store_table_version_service_factory(mongo_database_name):
     """
     Fixture for a callback that returns a new OnlineStoreTableVersionService with a new persistent
 
@@ -1425,7 +1425,7 @@ def online_store_table_version_service_factory():
     def factory():
         return OnlineStoreTableVersionService(
             user=user(),
-            persistent=get_new_persistent(mongo_database_name())[0],
+            persistent=get_new_persistent(mongo_database_name)[0],
             catalog_id=DEFAULT_CATALOG_ID,
         )
 
