@@ -85,10 +85,7 @@ class BatchFeatureCreate(BatchFeatureCreatePayload):
             List of feature create payloads
         """
         for feature in self.features:
-            target_node = self.graph.get_node_by_name(feature.node_name)
-            pruned_graph, node_name_map = self.graph.prune(
-                target_node=target_node, aggressive=False
-            )
+            pruned_graph, node_name_map = self.graph.crop(target_node_names=[feature.node_name])
             yield FeatureCreate(
                 _id=feature.id,
                 name=feature.name,
