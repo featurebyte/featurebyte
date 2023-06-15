@@ -169,6 +169,8 @@ class FeatureManager(BaseModel):
         df_scheduled_result_names = await self._session.execute_query(
             sql_to_string(query, self._session.source_type)
         )
+        if df_scheduled_result_names is None:
+            return set(result_names)
         return set(result_names) - set(df_scheduled_result_names["RESULT_ID"])
 
     async def _populate_feature_store(

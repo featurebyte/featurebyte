@@ -2,6 +2,7 @@
 This module contains unit tests for FeatureManagerSnowflake
 """
 from unittest import mock
+from unittest.mock import AsyncMock
 
 import pandas as pd
 import pytest
@@ -30,6 +31,23 @@ def mock_snowflake_feature_fixture(mock_snowflake_feature):
     )
 
 
+@pytest.fixture(name="feature_spec")
+def feature_spec_fixture(mock_snowflake_feature):
+    """
+    OnlineFeatureSpec object fixture
+    """
+    feature_spec = OnlineFeatureSpec(
+        feature=mock_snowflake_feature,
+        feature_sql="select * from temp",
+        feature_store_table_name="feature_store_table_1",
+    )
+    with mock.patch(
+        "featurebyte.feature_manager.manager.FeatureManager._get_unscheduled_aggregation_result_names",
+        AsyncMock(return_value=[feature_spec.precompute_queries[0].result_name]),
+    ):
+        yield feature_spec
+
+
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
 @mock.patch("featurebyte.tile.manager.TileManager.schedule_online_tiles")
 @mock.patch("featurebyte.tile.manager.TileManager.schedule_offline_tiles")
@@ -41,18 +59,12 @@ async def test_online_enable(
     mock_schedule_online_tiles,
     mock_execute_query,
     mock_snowflake_feature,
+    feature_spec,
     feature_manager,
 ):
     """
     Test online_enable
     """
-
-    feature_spec = OnlineFeatureSpec(
-        feature=mock_snowflake_feature,
-        feature_sql="select * from temp",
-        feature_store_table_name="feature_store_table_1",
-    )
-
     mock_execute_query.return_value = []
 
     with mock.patch("featurebyte.tile.manager.TileManager.tile_job_exists") as mock_tile_job_exists:
@@ -107,6 +119,7 @@ async def test_online_enable_duplicate_tile_task(
     mock_schedule_online_tiles,
     mock_execute_query,
     mock_snowflake_feature,
+    feature_spec,
     feature_manager,
 ):
     """
@@ -114,12 +127,6 @@ async def test_online_enable_duplicate_tile_task(
     """
     _ = mock_schedule_offline_tiles
     _ = mock_schedule_online_tiles
-
-    feature_spec = OnlineFeatureSpec(
-        feature=mock_snowflake_feature,
-        feature_sql="select * from temp",
-        feature_store_table_name="feature_store_table_1",
-    )
 
     mock_execute_query.side_effect = [
         None,
@@ -132,7 +139,7 @@ async def test_online_enable_duplicate_tile_task(
     with mock.patch("featurebyte.tile.manager.TileManager.tile_job_exists") as mock_tile_job_exists:
         with mock.patch(
             "featurebyte.feature_manager.manager.FeatureManager._generate_historical_tiles"
-        ) as _:
+        ) as mock_generate_historical_tiles:
             with mock.patch(
                 "featurebyte.feature_manager.manager.FeatureManager._populate_feature_store"
             ) as _:
@@ -141,6 +148,7 @@ async def test_online_enable_duplicate_tile_task(
 
     mock_schedule_online_tiles.assert_not_called()
     mock_schedule_offline_tiles.assert_not_called()
+    mock_generate_historical_tiles.assert_not_called()
 
 
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
@@ -173,7 +181,7 @@ async def test_online_disable(
     assert mock_execute_query.call_args_list[0] == mock.call(delete_sql)
 
     delete_sql = tm_delete_online_store_mapping.render(
-        aggregation_id=feature_spec.aggregation_ids[0],
+        result_id=feature_spec.precompute_queries[0].result_name,
     )
     assert mock_execute_query.call_args_list[1] == mock.call(delete_sql)
 

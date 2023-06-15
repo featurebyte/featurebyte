@@ -54,7 +54,6 @@ WITH "REQUEST_TABLE_W1800_F1800_BS600_M300_cust_id" AS (
     "T0"."_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481" AS "_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481",
     "T1"."_fb_internal_window_w7200_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481" AS "_fb_internal_window_w7200_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481",
     "T2"."_fb_internal_window_w86400_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481" AS "_fb_internal_window_w86400_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481"
-    "T3"."_fb_internal_target_2d_max" AS "_fb_internal_target_2d_max"
   FROM REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
@@ -162,12 +161,8 @@ WITH "REQUEST_TABLE_W1800_F1800_BS600_M300_cust_id" AS (
   ) AS T2
     ON REQ."POINT_IN_TIME" = T2."POINT_IN_TIME" AND REQ."cust_id" = T2."cust_id"
 )
-LEFT JOIN (
-
-) T3
 SELECT
   AGG."POINT_IN_TIME",
   AGG."CUSTOMER_ID",
   "_fb_internal_window_w86400_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481" AS "sum_1d"
-  "_fb_internal_window_w86400_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481" * 2 AS "sum_1d_times_2"
 FROM _FB_AGGREGATED AS AGG
