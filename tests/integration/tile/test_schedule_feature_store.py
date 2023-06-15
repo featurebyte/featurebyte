@@ -134,7 +134,6 @@ async def test_schedule_update_feature_store__insert_with_new_feature_column(
                 SQL_QUERY,
                 ONLINE_STORE_TABLE_NAME,
                 ENTITY_COLUMN_NAMES,
-                IS_DELETED,
                 CREATED_AT
             )
             values (
@@ -145,7 +144,6 @@ async def test_schedule_update_feature_store__insert_with_new_feature_column(
                 '{new_sql_query}',
                 '{feature_store_table_name}',
                 '{entity_col_names}',
-                false,
                 current_timestamp()
             )
     """
