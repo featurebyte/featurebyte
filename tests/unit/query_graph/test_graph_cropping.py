@@ -35,9 +35,10 @@ def check_cropped_graph(original_graph, cropped_graph, target_nodes, mapped_node
 def test_crop__simple_case(dataframe, target_columns, expected_node_num):
     """Test cropping a simple graph"""
     target_nodes = [dataframe[col].node for col in target_columns]
-    cropped_graph, mapped_node_names = dataframe.graph.crop(
+    cropped_graph, node_name_map = dataframe.graph.crop(
         target_node_names=[node.name for node in target_nodes]
     )
+    mapped_node_names = [node_name_map[node.name] for node in target_nodes]
     check_cropped_graph(dataframe.graph, cropped_graph, target_nodes, mapped_node_names)
     assert len(cropped_graph.nodes) == expected_node_num
 
@@ -59,9 +60,10 @@ def test_crop(
         order_size_feature_node,
         lookup_node,
     ][:target_node_num]
-    cropped_graph, mapped_node_names = graph.crop(
+    cropped_graph, node_name_map = graph.crop(
         target_node_names=[node.name for node in target_nodes]
     )
+    mapped_node_names = [node_name_map[node.name] for node in target_nodes]
     check_cropped_graph(
         graph,
         cropped_graph,

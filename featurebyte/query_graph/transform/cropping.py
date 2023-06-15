@@ -5,7 +5,7 @@ from typing import Dict, List, Set
 
 from pydantic import BaseModel, Field
 
-from featurebyte.query_graph.model.graph import GraphCroppingOutput, QueryGraphModel
+from featurebyte.query_graph.model.graph import GraphNodeNameMap, QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.transform.base import BaseGraphTransformer
 
@@ -20,7 +20,7 @@ class GraphCroppingGlobalState(BaseModel):
     node_names_to_keep: Set[str]
 
 
-class GraphCroppingTransformer(BaseGraphTransformer[GraphCroppingOutput, GraphCroppingGlobalState]):
+class GraphCroppingTransformer(BaseGraphTransformer[GraphNodeNameMap, GraphCroppingGlobalState]):
     """GraphCroppingTransformer class"""
 
     def _compute(self, global_state: GraphCroppingGlobalState, node: Node) -> None:
@@ -60,7 +60,7 @@ class GraphCroppingTransformer(BaseGraphTransformer[GraphCroppingOutput, GraphCr
             )
         return node_names_to_keep
 
-    def transform(self, target_node_names: List[str]) -> GraphCroppingOutput:
+    def transform(self, target_node_names: List[str]) -> GraphNodeNameMap:
         """
         Transform the graph by cropping the graph to only contain the target nodes and their
         dependencies.
@@ -72,14 +72,11 @@ class GraphCroppingTransformer(BaseGraphTransformer[GraphCroppingOutput, GraphCr
 
         Returns
         -------
-        GraphCroppingOutput
+        GraphNodeNameMap
         """
         node_names_to_keep = self._extract_node_names_to_keep(
             graph=self.graph, target_node_names=target_node_names
         )
         global_state = GraphCroppingGlobalState(node_names_to_keep=node_names_to_keep)
         self._transform(global_state=global_state)
-        mapped_target_node_names = [
-            global_state.node_name_map[target_node_name] for target_node_name in target_node_names
-        ]
-        return global_state.graph, mapped_target_node_names
+        return global_state.graph, global_state.node_name_map

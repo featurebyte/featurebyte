@@ -23,12 +23,7 @@ from pydantic import Field
 from featurebyte.common.singleton import SingletonMeta
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph_node.base import GraphNode
-from featurebyte.query_graph.model.graph import (
-    Edge,
-    GraphCroppingOutput,
-    GraphNodeNameMap,
-    QueryGraphModel,
-)
+from featurebyte.query_graph.model.graph import Edge, GraphNodeNameMap, QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.base import NodeT
 from featurebyte.query_graph.node.generic import GroupByNode, LookupNode
@@ -287,7 +282,7 @@ class QueryGraph(QueryGraphModel):
         )
         return pruned_graph, node_name_map
 
-    def crop(self, target_node_names: List[str]) -> GraphCroppingOutput:
+    def crop(self, target_node_names: List[str]) -> GraphNodeNameMap:
         """
         Crop the query graph and return the cropped graph & mapped node.
 
@@ -303,8 +298,7 @@ class QueryGraph(QueryGraphModel):
 
         Returns
         -------
-        GraphCroppingOutput
-            Tuple of pruned graph & its mapped target node names
+        GraphNodeNameMap
         """
         return GraphCroppingTransformer(graph=self).transform(target_node_names=target_node_names)
 

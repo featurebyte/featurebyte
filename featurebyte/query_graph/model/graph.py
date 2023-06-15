@@ -539,4 +539,3 @@ class QueryGraphModel(FeatureByteBaseModel):
 
 NodeNameMap = Dict[str, str]
 GraphNodeNameMap = Tuple[QueryGraphModel, NodeNameMap]
-GraphCroppingOutput = Tuple[QueryGraphModel, List[str]]
