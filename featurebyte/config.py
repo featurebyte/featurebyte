@@ -296,11 +296,27 @@ class Configurations:
             )
 
         self.storage: LocalStorageSettings = LocalStorageSettings()
-        self.profile: Optional[Profile] = None
+        self._profile: Optional[Profile] = None
         self.profiles: Optional[List[Profile]] = None
         self.settings: Dict[str, Any] = {}
         self.logging: LoggingSettings = LoggingSettings()
         self._parse_config(self._config_file_path)
+
+    @property
+    def profile(self) -> Profile:
+        """
+        Get active profile
+
+        Returns
+        -------
+        Profile
+            Active profile
+        """
+        if not self._profile:
+            raise InvalidSettingsError(
+                'No valid profile specified. Update config file or specify valid profile name with "use_profile".'
+            )
+        return self._profile
 
     @property
     def config_file_path(self) -> Path:
@@ -347,14 +363,10 @@ class Configurations:
             self.profiles = ProfileList(profiles=profile_settings).profiles
 
         if self.profiles:
-            # use first profile as fallback
-            self.profile = self.profiles[0]
+            profile_map = {profile.name: profile for profile in self.profiles}
+            default_profile = self.settings.pop("default_profile", None)
             selected_profile_name = os.environ.get("FEATUREBYTE_PROFILE")
-            if selected_profile_name:
-                for profile in self.profiles:
-                    if profile.name == selected_profile_name:
-                        self.profile = profile
-                        break
+            self._profile = profile_map.get(selected_profile_name, profile_map.get(default_profile))
 
     @classmethod
     def check_sdk_versions(cls) -> Dict[str, str]:
@@ -447,13 +459,7 @@ class Configurations:
 
         # configure logger
         reconfigure_loggers(self)
-
-        if self.profile:
-            client = APIClient(api_url=self.profile.api_url, api_token=self.profile.api_token)
-        else:
-            raise InvalidSettingsError("No profile setting specified")
-
-        return client
+        return APIClient(api_url=self.profile.api_url, api_token=self.profile.api_token)
 
     @contextmanager
     def get_websocket_client(self, task_id: str) -> Iterator[WebsocketClient]:
@@ -475,13 +481,10 @@ class Configurations:
         InvalidSettingsError
             Invalid settings
         """
-        if self.profile:
-            url = self.profile.api_url.replace("http://", "ws://").replace("https://", "wss://")
-            url = f"{url}/ws/{task_id}"
-            websocket_client = WebsocketClient(url=url, access_token=self.profile.api_token)
-            try:
-                yield websocket_client
-            finally:
-                websocket_client.close()
-        else:
-            raise InvalidSettingsError("No profile setting specified")
+        url = self.profile.api_url.replace("http://", "ws://").replace("https://", "wss://")
+        url = f"{url}/ws/{task_id}"
+        websocket_client = WebsocketClient(url=url, access_token=self.profile.api_token)
+        try:
+            yield websocket_client
+        finally:
+            websocket_client.close()

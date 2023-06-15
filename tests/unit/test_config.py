@@ -71,7 +71,10 @@ def test_get_client_no_persistence_settings():
     """
     with pytest.raises(InvalidSettingsError) as exc_info:
         Configurations("tests/fixtures/config/invalid_config.yaml").get_client()
-    assert str(exc_info.value) == "No profile setting specified"
+    assert (
+        str(exc_info.value)
+        == 'No valid profile specified. Update config file or specify valid profile name with "use_profile".'
+    )
 
 
 def test_get_client__success():

@@ -14,3 +14,5 @@ logging:
 
 storage:
   local_path: ~/.featurebyte_custom/data
+
+default_profile: featurebyte1

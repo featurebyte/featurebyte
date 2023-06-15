@@ -157,7 +157,8 @@ def use_profile(profile: str) -> None:
     finally:
         # report active profile
         try:
-            get_active_profile()
+            # get_active_profile()
+            log_env_summary()
         except InvalidSettingsError:
             pass
 

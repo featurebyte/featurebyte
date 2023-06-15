@@ -26,6 +26,7 @@ def config_file_fixture():
                 "api_token": "token",
             },
         ],
+        "default_profile": "local",
         "logging": {
             "level": "DEBUG",
         },
