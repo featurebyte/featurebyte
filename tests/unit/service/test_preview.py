@@ -238,7 +238,9 @@ async def test_get_historical_features__feature_list_not_saved(
     """
     Test compute_historical_features when feature list is not saved
     """
-    feature_list = FeatureList([Feature(**production_ready_feature.dict())], name="mylist")
+    feature_list = FeatureList(
+        [Feature(**production_ready_feature.dict(by_alias=True))], name="mylist"
+    )
     featurelist_get_historical_features = FeatureListGetHistoricalFeatures(
         feature_list_id=feature_list.id,
         feature_clusters=feature_list._get_feature_clusters(),
