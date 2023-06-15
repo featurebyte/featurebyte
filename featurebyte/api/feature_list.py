@@ -433,7 +433,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
     def _get_feature_tiles_specs(self) -> List[Tuple[str, List[TileSpec]]]:
         feature_tile_specs = []
         for feature in self.feature_objects.values():
-            tile_specs = ExtendedFeatureModel(**feature.dict()).tile_specs
+            tile_specs = ExtendedFeatureModel(**feature.dict(by_alias=True)).tile_specs
             if tile_specs:
                 feature_tile_specs.append((str(feature.name), tile_specs))
         return feature_tile_specs
