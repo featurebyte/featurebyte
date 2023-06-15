@@ -237,7 +237,7 @@ def test_get_entity():
     assert_frame_equal(entity_list, expected_entity_list[entity_list.columns])
 
     # test unexpected retrieval exception for Entity.list
-    with mock.patch("featurebyte.api.api_object.Configurations"):
+    with mock.patch("featurebyte.api.api_object_util.Configurations"):
         with pytest.raises(RecordRetrievalException) as exc:
             Entity.list()
     assert "Failed to list /entity." in str(exc.value)

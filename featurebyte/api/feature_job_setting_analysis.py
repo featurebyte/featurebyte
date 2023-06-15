@@ -12,7 +12,8 @@ import pandas as pd
 from bson import ObjectId
 from typeguard import typechecked
 
-from featurebyte.api.api_object import ApiObject, ForeignKeyMapping
+from featurebyte.api.api_object import ApiObject
+from featurebyte.api.api_object_util import ForeignKeyMapping
 from featurebyte.api.base_table import TableApiObject
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.env_util import display_html_in_notebook
