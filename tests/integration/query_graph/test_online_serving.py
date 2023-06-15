@@ -95,7 +95,6 @@ async def test_online_serving_sql(
     data_source,
     get_session_callback,
     online_store_table_version_service_factory,
-    mongo_database_name,
 ):
     """
     Test executing feature compute sql and feature retrieval SQL for online store
