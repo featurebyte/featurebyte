@@ -112,7 +112,7 @@ class Feature(
         return {"feature_store": self.feature_store}
 
     def _get_feature_tiles_specs(self) -> List[Tuple[str, List[TileSpec]]]:
-        tile_specs = ExtendedFeatureModel(**self.dict()).tile_specs
+        tile_specs = ExtendedFeatureModel(**self.dict(by_alias=True)).tile_specs
         return [(str(self.name), tile_specs)] if tile_specs else []
 
     @root_validator(pre=True)

@@ -1196,7 +1196,7 @@ def test_non_float_tile_value_added_to_tile_table(event_view, source_type):
     feature_list_2 = FeatureList([feature_group_2], name="feature_list_2")
 
     def _get_tile_table_id(feature_obj):
-        return ExtendedFeatureModel(**feature_obj.dict()).tile_specs[0].tile_id
+        return ExtendedFeatureModel(**feature_obj.dict(by_alias=True)).tile_specs[0].tile_id
 
     assert _get_tile_table_id(feature_group_1["COUNT_2h"]) == _get_tile_table_id(
         feature_group_2["LATEST_EVENT_TIMESTAMP_BY_USER"]
