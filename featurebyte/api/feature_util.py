@@ -5,7 +5,7 @@ from typing import List, Optional, Union
 
 import pandas as pd
 
-from featurebyte.api.api_object import ForeignKeyMapping
+from featurebyte.api.api_object_util import ForeignKeyMapping
 from featurebyte.api.base_table import TableApiObject
 from featurebyte.api.entity import Entity
 from featurebyte.common.utils import convert_to_list_of_strings

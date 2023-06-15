@@ -7,7 +7,7 @@ from featurebyte.query_graph.graph import QueryGraph
 
 
 def check_quick_pruned_graph(original_graph, quick_pruned_graph, target_nodes, mapped_node_names):
-    """Check the quick-pruned graph with non-aggressive pruned graph"""
+    """Check the aggressively prune graph of the original graph and the quick pruned graph are the same"""
     for target_node, mapped_node_name in zip(target_nodes, mapped_node_names):
         # perform pruning original graph
         pruned_graph, node_name_map = original_graph.prune(target_node=target_node)

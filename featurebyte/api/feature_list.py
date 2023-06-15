@@ -28,11 +28,11 @@ from bson.objectid import ObjectId
 from pydantic import Field, root_validator
 from typeguard import typechecked
 
-from featurebyte.api.api_object import (
+from featurebyte.api.api_object import ApiObject, ConflictResolution
+from featurebyte.api.api_object_util import (
     PAGINATED_CALL_PAGE_SIZE,
-    ApiObject,
-    ConflictResolution,
     ForeignKeyMapping,
+    iterate_api_object_using_paginated_routes,
 )
 from featurebyte.api.base_table import TableApiObject
 from featurebyte.api.entity import Entity
@@ -347,7 +347,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
                 title="Loading Feature(s)",
                 **get_alive_bar_additional_params(),
             ) as progress_bar:
-                for feature_dict in cls.iterate_api_object_using_paginated_routes(
+                for feature_dict in iterate_api_object_using_paginated_routes(
                     route="/feature",
                     params={"feature_list_id": id_value, "page_size": PAGINATED_CALL_PAGE_SIZE},
                 ):

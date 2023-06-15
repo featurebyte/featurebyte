@@ -3,11 +3,10 @@ ApiObject class
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, Iterator, List, Literal, Optional, Type, TypeVar, Union
+from typing import Any, ClassVar, Dict, List, Literal, Optional, Type, TypeVar, Union
 
 import operator
 import time
-from dataclasses import dataclass
 from functools import partial
 from http import HTTPStatus
 from itertools import groupby
@@ -21,7 +20,15 @@ from pandas import DataFrame
 from requests.models import Response
 from typeguard import typechecked
 
-from featurebyte.api.api_object_util import ProgressThread
+from featurebyte.api.api_handler.list import ListHandler
+from featurebyte.api.api_object_util import (
+    PAGINATED_CALL_PAGE_SIZE,
+    ForeignKeyMapping,
+    ProgressThread,
+    iterate_api_object_using_paginated_routes,
+    map_dict_list_to_name,
+    map_object_id_to_name,
+)
 from featurebyte.common.env_util import get_alive_bar_additional_params
 from featurebyte.common.formatting_util import InfoDict
 from featurebyte.common.utils import construct_repr_string
@@ -39,7 +46,6 @@ from featurebyte.schema.task import TaskStatus
 ApiObjectT = TypeVar("ApiObjectT", bound="ApiObject")
 ModelT = TypeVar("ModelT", bound=FeatureByteBaseDocumentModel)
 ConflictResolution = Literal["raise", "retrieve"]
-PAGINATED_CALL_PAGE_SIZE = 100
 POLLING_INTERVAL = 3
 
 
@@ -73,28 +79,6 @@ def get_api_object_cache_key(
     else:
         collection_name = obj.Settings.collection_name
     return hashkey(collection_name, obj.id, *args, **kwargs)
-
-
-@dataclass
-class ForeignKeyMapping:
-    """
-    ForeignKeyMapping contains information about a foreign key field mapping that we can use to map
-    IDs to their names in the list API response.
-    """
-
-    # Field name of the existing ID field in the list API response.
-    foreign_key_field: str
-    # Object class that we will be trying to retrieve the data from.
-    object_class: Any
-    # New field name that we want to display in the list API response
-    new_field_name: str
-    # Field to display instead of `name` from the retrieved list API response.
-    # By default, we will pull the `name` from the retrieved values. This will override that behaviour
-    # to pull a different field.
-    display_field_override: Optional[str] = None
-    # Whether to use list or list_versions to retrieve the data. By default, we will use list.
-    # This will override that behaviour to use list_versions.
-    use_list_versions: bool = False
 
 
 class AsyncMixin(FeatureByteBaseModel):
@@ -516,64 +500,6 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
         """
         return cls._get_by_id(id)
 
-    @staticmethod
-    def _to_request_func(response_dict: dict[str, Any], page: int) -> bool:
-        """
-        Default helper function to check whether to continue calling list route
-
-        Parameters
-        ----------
-        response_dict: dict[str, Any]
-            Response data
-        page: int
-            Page number
-
-        Returns
-        -------
-        Flag to indicate whether to continue calling list route
-        """
-        return bool(response_dict["total"] > (page * response_dict["page_size"]))
-
-    @classmethod
-    def iterate_api_object_using_paginated_routes(
-        cls, route: str, params: dict[str, Any] | None = None
-    ) -> Iterator[dict[str, Any]]:
-        """
-        Api object generator by iterating listing route
-
-        Parameters
-        ----------
-        route: str
-            List route
-        params: dict[str, Any] | None
-            Route parameters
-
-        Yields
-        -------
-        Iterator[dict[str, Any]]
-            Iterator of api object records
-
-        Raises
-        ------
-        RecordRetrievalException
-            When failed to retrieve from list route
-        """
-        client = Configurations().get_client()
-        to_request, page = True, 1
-        params = params or {}
-        while to_request:
-            params = params.copy()
-            params["page"] = page
-            response = client.get(url=route, params=params)
-            if response.status_code == HTTPStatus.OK:
-                response_dict = response.json()
-                to_request = cls._to_request_func(response_dict, page)
-                page += 1
-                for obj_dict in response_dict["data"]:
-                    yield obj_dict
-            else:
-                raise RecordRetrievalException(response, f"Failed to list {route}.")
-
     @classmethod
     def list(cls, include_id: Optional[bool] = True) -> DataFrame:
         """
@@ -600,6 +526,35 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
         return cls._list(include_id=include_id)
 
     @classmethod
+    def _list_handler(cls) -> ListHandler:
+        """
+        Get list handler.
+
+        Returns
+        -------
+        ListHandler
+            List handler
+        """
+        return ListHandler(
+            route=cls._route,
+            list_schema=cls._list_schema,
+            list_fields=cls._list_fields,
+            list_foreign_keys=cls._list_foreign_keys,
+        )
+
+    @classmethod
+    def use_new_list_handler(cls) -> bool:
+        """
+        Whether to use new list handler.
+
+        Returns
+        -------
+        bool
+            Whether to use new list handler
+        """
+        return False
+
+    @classmethod
     def _list(
         cls, include_id: Optional[bool] = False, params: Optional[Dict[str, Any]] = None
     ) -> DataFrame:
@@ -618,9 +573,14 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
         DataFrame
             Table of objects
         """
+        # Use list handler
+        if cls.use_new_list_handler():
+            return cls._list_handler().list(include_id=include_id, params=params)
+
+        # Use previous logic
         params = params or {}
         output = []
-        for item_dict in cls.iterate_api_object_using_paginated_routes(
+        for item_dict in iterate_api_object_using_paginated_routes(
             route=cls._route, params={"page_size": PAGINATED_CALL_PAGE_SIZE, **params}
         ):
             output.append(cls._list_schema(**item_dict).dict())
@@ -634,58 +594,6 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
 
         # apply post-processing on object listing
         return cls._post_process_list(DataFrame.from_records(output))[fields]
-
-    @staticmethod
-    def map_dict_list_to_name(
-        object_map: Dict[Optional[ObjectId], str],
-        object_id_field: str,
-        object_dict: Union[Dict[str, ObjectId], List[Dict[str, ObjectId]]],
-    ) -> Union[Optional[str], List[Optional[str]]]:
-        """
-        Map list of object dict to object names
-
-        Parameters
-        ----------
-        object_map: Dict[Optional[ObjectId], str],
-            Dict that maps ObjectId to name
-        object_id_field: str
-            Name of field in object dict to get object id from
-        object_dict: Union[Dict[str, ObjectId], List[Dict[str, ObjectId]]]
-            List of dict to map
-
-        Returns
-        -------
-        Union[Optional[str], List[Optional[str]]]
-        """
-        if isinstance(object_dict, list):
-            return [
-                object_map.get(_obj_dict.get(object_id_field))
-                for _obj_dict in object_dict
-                if _obj_dict.get(object_id_field)
-            ]
-        return object_map.get(object_dict.get(object_id_field))
-
-    @staticmethod
-    def map_object_id_to_name(
-        object_map: Dict[Optional[ObjectId], str], object_id: Union[ObjectId, List[ObjectId]]
-    ) -> Union[Optional[str], List[Optional[str]]]:
-        """
-        Map list of object ids object names
-
-        Parameters
-        ----------
-        object_map: Dict[Optional[ObjectId], str],
-            Dict that maps ObjectId to name
-        object_id: Union[ObjectId, List[ObjectId]]
-            List of object ids to map, or object id to map
-
-        Returns
-        -------
-        Union[Optional[str], List[Optional[str]]]
-        """
-        if isinstance(object_id, list):
-            return [object_map.get(_id) for _id in object_id]
-        return object_map.get(object_id)
 
     @classmethod
     def _post_process_list(cls, item_list: DataFrame) -> DataFrame:
@@ -734,11 +642,11 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
                         # foreign_key is a dict
                         foreign_key_field, object_id_field = foreign_key_field.split(".")
                         mapping_function = partial(
-                            cls.map_dict_list_to_name, object_map, object_id_field
+                            map_dict_list_to_name, object_map, object_id_field
                         )
                     else:
                         # foreign_key is an objectid
-                        mapping_function = partial(cls.map_object_id_to_name, object_map)
+                        mapping_function = partial(map_object_id_to_name, object_map)
                     new_field_values = item_list[foreign_key_field].apply(mapping_function)
                 else:
                     new_field_values = [[]] * item_list.shape[0]
@@ -834,7 +742,7 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
             List of audit log
         """
         audit_records = []
-        for audit_record in self.iterate_api_object_using_paginated_routes(
+        for audit_record in iterate_api_object_using_paginated_routes(
             route=f"{self._route}/audit/{self.id}", params={"page_size": PAGINATED_CALL_PAGE_SIZE}
         ):
             audit_records.append(self._prepare_audit_record(audit_record))
