@@ -265,7 +265,6 @@ class FeatureManager(BaseModel):
                 sql_query=self._adapter.escape_quote_char(query.sql),
                 online_store_table_name=query.table_name,
                 entity_column_names=",".join(escape_column_names(query.serving_names)),
-                is_deleted=False,
             )
             await self._session.execute_query(upsert_sql)
             logger.debug(f"Done insert tile_feature_mapping for {query.result_name}")

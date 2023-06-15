@@ -102,8 +102,7 @@ tm_upsert_online_store_mapping = Template(
             '{{result_type}}' as RESULT_TYPE,
             '{{sql_query}}' as SQL_QUERY,
             '{{online_store_table_name}}' as ONLINE_STORE_TABLE_NAME,
-            '{{entity_column_names}}' as ENTITY_COLUMN_NAMES,
-            {{is_deleted}} as IS_DELETED
+            '{{entity_column_names}}' as ENTITY_COLUMN_NAMES
     ) b
     ON
         a.RESULT_ID = b.RESULT_ID
