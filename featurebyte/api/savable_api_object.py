@@ -35,18 +35,6 @@ class SavableApiObject(ApiObject):
         """
         return self.json_dict(exclude_none=True)
 
-    def _pre_save_operations(self, conflict_resolution: ConflictResolution) -> None:
-        """
-        Operations to be executed before saving the api object
-
-        Parameters
-        ----------
-        conflict_resolution: ConflictResolution
-            "raise" raises error when then counters conflict error (default)
-            "retrieve" handle conflict error by retrieving object with the same name
-        """
-        _ = conflict_resolution
-
     def _check_object_not_been_saved(self, conflict_resolution: ConflictResolution) -> None:
         if self.saved and conflict_resolution == "raise":
             raise ObjectHasBeenSavedError(
@@ -99,7 +87,6 @@ class SavableApiObject(ApiObject):
         Entity (id: <entity.id>) has been saved before.
         """
         self._check_object_not_been_saved(conflict_resolution=conflict_resolution)
-        self._pre_save_operations(conflict_resolution=conflict_resolution)
         client = Configurations().get_client()
         payload = self._get_create_payload()
         if _id is not None:

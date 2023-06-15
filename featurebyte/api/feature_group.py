@@ -24,7 +24,7 @@ from featurebyte.common.utils import dataframe_from_json, enforce_observation_se
 from featurebyte.config import Configurations
 from featurebyte.core.mixin import ParentMixin
 from featurebyte.core.series import Series
-from featurebyte.exception import RecordRetrievalException
+from featurebyte.exception import ObjectHasBeenSavedError, RecordRetrievalException
 from featurebyte.logging import get_logger
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureCluster, FeatureListModel
@@ -325,7 +325,9 @@ class BaseFeatureGroup(AsyncMixin):
             response.json(),
         )
 
-    def _batch_feature_save(self, conflict_resolution: ConflictResolution) -> None:
+    def _batch_feature_save(
+        self, conflict_resolution: ConflictResolution, to_raise_object_has_been_saved_error: bool
+    ) -> None:
         features = []
         for feat in self.feature_objects.values():
             if conflict_resolution == "retrieve":
@@ -338,8 +340,14 @@ class BaseFeatureGroup(AsyncMixin):
                     self.feature_objects[feat_name] = feat
                 except RecordRetrievalException:
                     features.append(feat)
-            if conflict_resolution == "raise" and not feat.saved:
-                features.append(feat)
+            if conflict_resolution == "raise":
+                if feat.saved:
+                    if to_raise_object_has_been_saved_error:
+                        raise ObjectHasBeenSavedError(
+                            f'Feature (id: "{feat.id}") has been saved before.'
+                        )
+                else:
+                    features.append(feat)
 
         pruned_graph, node_name_map = GlobalQueryGraph().quick_prune(
             target_node_names=[feat.node_name for feat in features]
@@ -437,4 +445,9 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
         ... ])
         >>> features.save()  # doctest: +SKIP
         """
-        self._batch_feature_save(conflict_resolution=conflict_resolution)
+        # Raise error if the feature has been saved (as feature group saving equals to saving feature individually).
+        # Save an already saved feature on Feature level will raise the same ObjectHasBeenSavedError.
+        self._batch_feature_save(
+            conflict_resolution=conflict_resolution,
+            to_raise_object_has_been_saved_error=True,
+        )

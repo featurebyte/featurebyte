@@ -664,9 +664,6 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         )
         return data.json_dict()
 
-    def _pre_save_operations(self, conflict_resolution: ConflictResolution = "raise") -> None:
-        self._batch_feature_save(conflict_resolution=conflict_resolution)
-
     def save(
         self, conflict_resolution: ConflictResolution = "raise", _id: Optional[ObjectId] = None
     ) -> None:
@@ -698,6 +695,11 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         ... ], name="feature_lists_invoice_features")
         >>> feature_list.save()  # doctest: +SKIP
         """
+        # Do not raise error if the feature has been saved. Only raise the error if the FeatureList has been saved.
+        self._batch_feature_save(
+            conflict_resolution=conflict_resolution,
+            to_raise_object_has_been_saved_error=False,
+        )
         try:
             super().save(conflict_resolution=conflict_resolution)
         except DuplicatedRecordException as exc:
