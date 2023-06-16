@@ -471,10 +471,14 @@ class LagNode(BaseSeriesOutputNode):
 
 class ForwardAggregateNode(BaseNode):
     """
-    ForwardAggregateNode class
+    ForwardAggregateNode class.
     """
 
     class Parameters(BaseModel):
+        """
+        Forward aggregate parameters
+        """
+
         horizon: Optional[str]
         blind_spot: Optional[str]
         keys: List[InColumnStr]  # group by keys
@@ -483,6 +487,7 @@ class ForwardAggregateNode(BaseNode):
         value_by: InColumnStr  # aggregate column
         serving_name: str
         entity_ids: Optional[List[PydanticObjectId]]
+        # TableDetails are needed because we will be performing the aggregation query directly on the calling table.
         table_details: TableDetails
 
     type: Literal[NodeType.FORWARD_AGGREGATE] = Field(NodeType.FORWARD_AGGREGATE, const=True)
