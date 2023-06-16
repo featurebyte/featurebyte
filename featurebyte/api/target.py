@@ -55,13 +55,13 @@ class Target(SavableApiObject):
         return [Entity.get_by_id(entity_id) for entity_id in entity_ids]
 
     @property
-    def horizon(self) -> str:
+    def horizon(self) -> Optional[str]:
         """
         Returns the horizon of this target.
 
         Returns
         -------
-        str
+        Optional[str]
         """
         try:
             return self.cached_model.horizon
@@ -69,13 +69,13 @@ class Target(SavableApiObject):
             return self.internal_horizon
 
     @property
-    def blind_spot(self) -> str:
+    def blind_spot(self) -> Optional[str]:
         """
         Returns the blind_spot of this target.
 
         Returns
         -------
-        str
+        Optional[str]
         """
         try:
             return self.cached_model.blind_spot
