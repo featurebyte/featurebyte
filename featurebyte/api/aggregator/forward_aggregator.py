@@ -162,6 +162,7 @@ class ForwardAggregator(BaseAggregator):
         Raises
         ------
         ValueError
+            raised when target is not specified
         """
         self._validate_method_and_value_column(method=method, value_column=value_column)
 
