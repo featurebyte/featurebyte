@@ -173,7 +173,7 @@ def get_online_feature_spec(feature):
     """
     Helper function to create an online feature spec from a feature
     """
-    return OnlineFeatureSpec(feature=ExtendedFeatureModel(**feature.dict()))
+    return OnlineFeatureSpec(feature=ExtendedFeatureModel(**feature.dict(by_alias=True)))
 
 
 def get_online_store_table_name_to_aggregation_id(feature_list):
