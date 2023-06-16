@@ -26,12 +26,32 @@ class ForwardAggregator(BaseAggregator):
 
     def forward_aggregate(
         self,
-        value_column: Optional[str] = None,
+        value_column: str,
         method: Optional[str] = None,
         horizon: Optional[str] = None,
         blind_spot: Optional[str] = None,
         target_name: Optional[str] = None,
     ) -> Target:
+        """
+        Aggregate given value_column for each group specified in keys over a list of time windows.
+
+        Parameters
+        ----------
+        value_column: str
+            Column to be aggregated
+        method: str
+            Aggregation method
+        horizon: str
+            Horizon of the aggregation
+        blind_spot: str
+            Blind spot of the aggregation
+        target_name: str
+            Name of the target column
+
+        Returns
+        -------
+        Target
+        """
         # Validation
         self._validate_parameters(
             value_column=value_column,
@@ -49,7 +69,7 @@ class ForwardAggregator(BaseAggregator):
             target_name=target_name,
         )
         # Add forward aggregate node to graph.
-        groupby_node = self.view.graph.add_operation(
+        forward_aggregate_node = self.view.graph.add_operation(
             node_type=NodeType.FORWARD_AGGREGATE,
             node_params=node_params,
             node_output_type=NodeOutputType.SERIES,
@@ -60,7 +80,7 @@ class ForwardAggregator(BaseAggregator):
             node_type=NodeType.PROJECT,
             node_params={"columns": [target_name]},
             node_output_type=NodeOutputType.SERIES,
-            input_nodes=[groupby_node],
+            input_nodes=[forward_aggregate_node],
         )
         # Build and return Target
         return Target(
@@ -80,6 +100,26 @@ class ForwardAggregator(BaseAggregator):
         blind_spot: Optional[str],
         target_name: Optional[str],
     ) -> dict[str, Any]:
+        """
+        Helper function to prepare node parameters.
+
+        Parameters
+        ----------
+        value_column: str
+            Column to be aggregated
+        method: str
+            Aggregation method
+        horizon: str
+            Horizon of the aggregation
+        blind_spot: str
+            Blind spot of the aggregation
+        target_name: str
+            Name of the target column
+
+        Returns
+        -------
+        dict[str, Any]
+        """
         return {
             "keys": self.keys,
             "parent": value_column,
@@ -100,6 +140,22 @@ class ForwardAggregator(BaseAggregator):
         blind_spot: Optional[str] = None,
         target_name: Optional[str] = None,
     ) -> None:
+        """
+        Helper function to validate parameters.
+
+        Parameters
+        ----------
+        value_column: str
+            Column to be aggregated
+        method: str
+            Aggregation method
+        horizon: str
+            Horizon of the aggregation
+        blind_spot: str
+            Blind spot of the aggregation
+        target_name: str
+            Name of the target column
+        """
         self._validate_method_and_value_column(method=method, value_column=value_column)
 
         if not target_name:
