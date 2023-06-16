@@ -98,7 +98,7 @@ jobs:
     - name: Configure Poetry
       run: poetry config virtualenvs.in-project true
     - name: Install packages needed for build
-      run: sudo apt-get install libsasl2-dev gcc
+      run: sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
     - name: Install packages needed for Kerberos
       run: sudo apt-get install libkrb5-dev
     - name: Install wkhtmltopdf
@@ -158,7 +158,7 @@ jobs:
     - name: Configure Poetry
       run: poetry config virtualenvs.in-project true
     - name: Install packages needed for build
-      run: sudo apt-get install libsasl2-dev gcc
+      run: sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
     - name: Install packages needed for Kerberos
       run: sudo apt-get install libkrb5-dev
     - name: Install wkhtmltopdf
@@ -216,7 +216,7 @@ jobs:
     - name: Configure Poetry
       run: poetry config virtualenvs.in-project true
     - name: Install packages needed for build
-      run: sudo apt-get install libsasl2-dev gcc
+      run: sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
     - name: Install packages needed for Kerberos
       run: sudo apt-get install libkrb5-dev
     - name: Install wkhtmltopdf
@@ -297,7 +297,7 @@ jobs:
     - name: Configure Poetry
       run: poetry config virtualenvs.in-project true
     - name: Install packages needed for build
-      run: sudo apt-get install libsasl2-dev gcc
+      run: sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
     - name: Install packages needed for Kerberos
       run: sudo apt-get install libkrb5-dev
     - name: Install wkhtmltopdf
@@ -355,7 +355,7 @@ jobs:
     - name: Configure Poetry
       run: poetry config virtualenvs.in-project true
     - name: Install packages needed for build
-      run: sudo apt-get install libsasl2-dev gcc
+      run: sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
     - name: Install packages needed for Kerberos
       run: sudo apt-get install libkrb5-dev
     - name: Install wkhtmltopdf
