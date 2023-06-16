@@ -1307,3 +1307,22 @@ def test_feature_list_save__different_feature_are_used_due_to_conflict_resolutio
     feature_list = FeatureList([float_feature], name="my_fl")
     feature_list.save(conflict_resolution="retrieve")
     assert feature_list[feat_name].id == new_feat.id
+
+
+def test_feature_list_save__check_feature_list_ids_correctly_set(float_feature):
+    """Test feature_list_ids are correctly set"""
+    float_feature.save()
+    assert float_feature.feature_list_ids == []
+
+    # save a new feature list
+    feature_list = FeatureList([float_feature], name="test_feature_list")
+    feature_list.save()
+
+    # check feature_list_ids are correctly set
+    assert float_feature.feature_list_ids == [feature_list.id]
+
+    # delete the feature list
+    feature_list.delete()
+
+    # check feature_list_ids are correctly set
+    assert float_feature.feature_list_ids == []

@@ -3,7 +3,7 @@ FeatureListService class
 """
 from __future__ import annotations
 
-from typing import Any, AsyncIterator, Dict, List, Optional, Sequence, cast
+from typing import Any, AsyncIterator, Dict, List, Optional, Sequence
 
 from bson.objectid import ObjectId
 
@@ -18,7 +18,6 @@ from featurebyte.models.feature_list import (
     FeatureListNamespaceModel,
 )
 from featurebyte.persistent import Persistent
-from featurebyte.schema.feature import FeatureServiceUpdate
 from featurebyte.schema.feature_list import FeatureListServiceCreate, FeatureListServiceUpdate
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService
@@ -169,23 +168,20 @@ class FeatureListService(
 
     async def _update_features(
         self,
-        features: list[FeatureModel],
+        feature_ids: Sequence[ObjectId],
         inserted_feature_list_id: Optional[ObjectId] = None,
         deleted_feature_list_id: Optional[ObjectId] = None,
     ) -> None:
-        for feature in features:
-            feature_list_ids = cast(List[ObjectId], feature.feature_list_ids)
-            if inserted_feature_list_id:
-                feature_list_ids = self.include_object_id(
-                    feature_list_ids, inserted_feature_list_id
-                )
-            if deleted_feature_list_id:
-                feature_list_ids = self.exclude_object_id(feature_list_ids, deleted_feature_list_id)
-            await self.feature_service.update_document(
-                document_id=feature.id,
-                data=FeatureServiceUpdate(feature_list_ids=feature_list_ids),
-                document=feature,
-                return_document=False,
+        if inserted_feature_list_id:
+            await self.feature_service.update_documents(
+                query_filter={"_id": {"$in": feature_ids}},
+                update={"$addToSet": {"feature_list_ids": inserted_feature_list_id}},
+            )
+
+        if deleted_feature_list_id:
+            await self.feature_service.update_documents(
+                query_filter={"_id": {"$in": feature_ids}},
+                update={"$pull": {"feature_list_ids": deleted_feature_list_id}},
             )
 
     async def _get_feature_list_version(self, name: str) -> VersionIdentifier:
@@ -264,9 +260,7 @@ class FeatureListService(
                 )
 
             # update feature's feature_list_ids attribute
-            await self._update_features(
-                feature_data["features"], inserted_feature_list_id=insert_id
-            )
+            await self._update_features(document.feature_ids, inserted_feature_list_id=insert_id)
         return await self.get_document(document_id=insert_id)
 
     async def delete_document(
@@ -293,13 +287,8 @@ class FeatureListService(
             )  # type: ignore[assignment]
 
             # update feature's feature_list_ids attribute
-            features = [
-                feature
-                async for feature in self._feature_iterator(feature_ids=feature_list.feature_ids)
-            ]
             await self._update_features(
-                features=features,
-                deleted_feature_list_id=document_id,
+                feature_ids=feature_list.feature_ids, deleted_feature_list_id=document_id
             )
 
             if not feature_list_namespace.feature_list_ids:
