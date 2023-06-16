@@ -158,6 +158,10 @@ class ForwardAggregator(BaseAggregator):
             Blind spot of the aggregation
         target_name: str
             Name of the target column
+
+        Raises
+        ------
+        ValueError
         """
         self._validate_method_and_value_column(method=method, value_column=value_column)
 
