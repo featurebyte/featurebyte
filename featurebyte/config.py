@@ -311,6 +311,11 @@ class Configurations:
         -------
         Profile
             Active profile
+
+        Raises
+        ------
+        InvalidSettingsError
+            No valid profile specified
         """
         if not self._profile:
             raise InvalidSettingsError(
@@ -366,7 +371,12 @@ class Configurations:
             profile_map = {profile.name: profile for profile in self.profiles}
             default_profile = self.settings.pop("default_profile", None)
             selected_profile_name = os.environ.get("FEATUREBYTE_PROFILE")
-            self._profile = profile_map.get(selected_profile_name, profile_map.get(default_profile))
+            if selected_profile_name:
+                self._profile = profile_map.get(
+                    selected_profile_name, profile_map.get(default_profile)
+                )
+            else:
+                self._profile = profile_map.get(default_profile)
 
     @classmethod
     def check_sdk_versions(cls) -> Dict[str, str]:
@@ -448,11 +458,6 @@ class Configurations:
         -------
         APIClient
             API client
-
-        Raises
-        ------
-        InvalidSettingsError
-            Invalid settings
         """
         # pylint: disable=import-outside-toplevel,cyclic-import
         from featurebyte.logging import reconfigure_loggers
@@ -475,11 +480,6 @@ class Configurations:
         -------
         WebsocketClient
             Websocket client
-
-        Raises
-        ------
-        InvalidSettingsError
-            Invalid settings
         """
         url = self.profile.api_url.replace("http://", "ws://").replace("https://", "wss://")
         url = f"{url}/ws/{task_id}"
