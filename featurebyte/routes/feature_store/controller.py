@@ -80,6 +80,10 @@ class FeatureStoreController(
         FeatureStoreModel
             Newly created feature store document
 
+        Raises
+        ------
+        Exception
+            If feature store already exists or initialization fails
         """
         # Validate whether the feature store trying to be created, collides with another feature store
         #
@@ -96,52 +100,51 @@ class FeatureStoreController(
         # If the feature store ID is already in use, this will throw an error.
         # Create the new feature store. If one already exists, we'll throw an error here.
         logger.debug("Start create_feature_store")
-
         document = await self.service.create_document(data)
-        # Check credentials
-        credential = CredentialModel(
-            name=document.name,
-            feature_store_id=document.id,
-            database_credential=data.database_credential,
-            storage_credential=data.storage_credential,
-        )
+        credential_doc = None
+        try:
+            # Check credentials
+            credential = CredentialModel(
+                name=document.name,
+                feature_store_id=document.id,
+                database_credential=data.database_credential,
+                storage_credential=data.storage_credential,
+            )
 
-        async def _updated_get_credential(user_id: str, feature_store_name: str) -> Any:
-            """
-            Updated get_credential will try to look up the credentials from config.
+            async def _updated_get_credential(user_id: str, feature_store_name: str) -> Any:
+                """
+                Updated get_credential will try to look up the credentials from config.
 
-            If there are credentials in the config, we will ignore whatever is passed in here.
-            If not, we will use the params that are passed in.
+                If there are credentials in the config, we will ignore whatever is passed in here.
+                If not, we will use the params that are passed in.
 
-            Parameters
-            ----------
-            user_id: str
-                user id
-            feature_store_name: str
-                feature store name
+                Parameters
+                ----------
+                user_id: str
+                    user id
+                feature_store_name: str
+                    feature store name
 
-            Returns
-            -------
-            Any
-                credentials
-            """
-            cred = await get_credential(user_id, feature_store_name)
-            if cred is not None:
-                return cred
-            return credential
+                Returns
+                -------
+                Any
+                    credentials
+                """
+                cred = await get_credential(user_id, feature_store_name)
+                if cred is not None:
+                    return cred
+                return credential
 
-        get_credential_to_use = _updated_get_credential
-        await self.session_validator_service.validate_feature_store_id_not_used_in_warehouse(
-            feature_store_name=data.name,
-            session_type=data.type,
-            details=data.details,
-            get_credential=get_credential_to_use,
-            users_feature_store_id=document.id,
-        )
-        logger.debug("End validate_feature_store_id_not_used_in_warehouse")
+            get_credential_to_use = _updated_get_credential
+            await self.session_validator_service.validate_feature_store_id_not_used_in_warehouse(
+                feature_store_name=data.name,
+                session_type=data.type,
+                details=data.details,
+                get_credential=get_credential_to_use,
+                users_feature_store_id=document.id,
+            )
+            logger.debug("End validate_feature_store_id_not_used_in_warehouse")
 
-        async with self.service.persistent.start_transaction():
-            logger.debug("Start transaction")
             # Retrieve a session for initializing
             session = await self.session_manager_service.get_feature_store_session(
                 feature_store=FeatureStoreModel(
@@ -150,12 +153,19 @@ class FeatureStoreController(
                 get_credential=get_credential_to_use,
             )
             # Try to persist credential
-            await self.credential_service.create_document(
+            credential_doc = await self.credential_service.create_document(
                 data=CredentialCreate(**credential.dict(by_alias=True))
             )
+
             # If no error thrown from creating, try to create the metadata table with the feature store ID.
             metadata_schema_initializer = MetadataSchemaInitializer(session)
             await metadata_schema_initializer.update_feature_store_id(str(document.id))
+        except Exception:
+            # If there is an error, delete the feature store + credential and re-raise the error.
+            await self.service.delete_document(document.id)
+            if credential_doc:
+                await self.credential_service.delete_document(credential_doc.id)
+            raise
 
         return document
 

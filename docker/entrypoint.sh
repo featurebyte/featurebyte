@@ -27,16 +27,44 @@ setup_permissions() {
     fi
     if [ "$HOST_UID" = '1000' ]; then
       echo "Using default user id 1000, skipping user modification."
-    else
-      usermod -u "${HOST_UID}" -o "${NON_PRIVUSER}"
+    else usermod -u "${HOST_UID}" -o "${NON_PRIVUSER}"
     fi
     chown -R "${HOST_UID}:${HOST_GID}" /app
   fi
 }
 
+setup_kdc() {
+  echo "Setting up KDC"
+  export KRB5_CONFIG=/app/krb5.conf
+
+  if [ -f "${KRB5_CONFIG}" ]; then
+    echo "KRB5_CONFIG already exists, skipping KDC setup"
+    return
+  fi
+
+  # skip if KRB5_REALM or KRB5_KDC is not set
+  if [ -z "${KRB5_REALM}" ]; then
+    echo "KRB5_REALM not set, skipping KDC setup"
+
+  elif [ -z "${KRB5_KDC}" ]; then
+    echo "KRB5_KDC not set, skipping KDC setup"
+  else
+    echo "Setting up KDC"
+    cat <<EOF > ${KRB5_CONFIG}
+[libdefaults]
+    default_realm = ${KRB5_REALM}
+
+[realms]
+    ${KRB5_REALM} = {
+        kdc = ${KRB5_KDC}
+    }
+EOF
+  fi
+}
+
 _main() {
   setup_permissions
-
+  setup_kdc
   if [ "$(id -u)" = '0' ]; then
     # Running as root, downgrading to normal user
     exec gosu "${NON_PRIVUSER}:${NON_PRIVGROUP}" "$BASH_SOURCE" "$@"

@@ -57,6 +57,7 @@ from featurebyte.models.credential import (
     AccessTokenCredential,
     AzureBlobStorageCredential,
     GCSStorageCredential,
+    KerberosKeytabCredential,
     S3StorageCredential,
     UsernamePasswordCredential,
 )
@@ -304,6 +305,8 @@ def stop(clean: bool = False) -> None:
 
 def playground(
     datasets: Optional[List[str]] = None,
+    krb5_realm: Optional[str] = None,
+    krb5_kdc: Optional[str] = None,
     force_import: bool = False,
 ) -> None:
     """
@@ -313,11 +316,17 @@ def playground(
     ----------
     datasets : Optional[List[str]]
         List of datasets to import, by default None (import all datasets)
+    krb5_realm : Optional[str]
+        Kerberos realm, by default None
+    krb5_kdc : Optional[str]
+        Kerberos kdc of the krb5_realm, by default None
     force_import: bool
         Import datasets even if they are already imported, by default False
     """
     _start_playground(
         datasets=datasets,
+        krb5_realm=krb5_realm,
+        krb5_kdc=krb5_kdc,
         force_import=force_import,
         verbose=False,
     )

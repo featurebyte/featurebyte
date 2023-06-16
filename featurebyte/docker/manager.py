@@ -41,18 +41,33 @@ console = Console()
 
 
 @contextmanager
-def get_docker_client() -> Generator[DockerClient, None, None]:
+def get_docker_client(krb5_realm: Optional[str] = None,
+                      krb5_kdc: Optional[str] = None) -> Generator[DockerClient, None, None]:
     """
     Get docker client
+
+    Parameters
+    ----------
+    krb5_realm : Optional[str]
+        Kerberos realm, by default None
+    krb5_kdc : Optional[str]
+        Kerberos kdc of the krb5_realm, by default None
 
     Yields
     -------
     Generator[DockerClient, None, None]
         Docker client
     """
+    # Set as empty strings if None
+    krb5_realm = krb5_realm if krb5_realm is not None else ""
+    krb5_kdc = krb5_kdc if krb5_kdc else ""
+
     with tempfile.TemporaryDirectory() as temp_dir:
         compose_env_file = os.path.join(temp_dir, ".env")
-        env_file_lines = []
+        env_file_lines = [
+            f"KRB5_REALM={krb5_realm}\n",
+            f"KRB5_KDC={krb5_kdc}\n",
+        ]
         if sys.platform != "win32":
             import pwd  # pylint: disable=import-outside-toplevel
             uid = os.getuid()
@@ -136,6 +151,8 @@ def print_logs(service_name: str, tail: int) -> None:
 
 def start_app(
     app_name: ApplicationName,
+    krb5_realm: Optional[str] = None,
+    krb5_kdc: Optional[str] = None,
     services: List[str] = None,
     verbose: bool = True,
 ) -> None:
@@ -146,6 +163,10 @@ def start_app(
     ----------
     app_name : ApplicationName
         Application name
+    krb5_realm : Optional[str]
+        Kerberos realm, by default None
+    krb5_kdc : Optional[str]
+        Kerberos kdc of the krb5_realm, by default None
     services : List[str]
         List of services to start
     verbose : bool
@@ -163,7 +184,7 @@ def start_app(
         Configurations()
         __setup_network()
 
-        with get_docker_client() as docker:
+        with get_docker_client(krb5_realm=krb5_realm, krb5_kdc=krb5_kdc) as docker:
             docker.compose.up(services=services, detach=True)
 
             # Wait for all services to be healthy
@@ -205,7 +226,10 @@ def start_app(
         raise DockerError(f"Failed to start application: {exc.stderr}") from exc
 
 def start_playground(datasets: Optional[List[str]] = None,
-                     force_import: bool = False, verbose: bool = True) -> None:
+                     krb5_realm: Optional[str] = None,
+                     krb5_kdc: Optional[str] = None,
+                     force_import: bool = False,
+                     verbose: bool = True) -> None:
     """
     Start featurebyte playground environment
 
@@ -213,6 +237,10 @@ def start_playground(datasets: Optional[List[str]] = None,
     ----------
     datasets : Optional[List[str]]
         List of datasets to import, by default None (import all datasets)
+    krb5_realm : Optional[str]
+        Kerberos realm, by default None
+    krb5_kdc : Optional[str]
+        Kerberos kdc of the krb5_realm, by default None
     force_import : bool
         Import datasets even if they are already imported, by default False
     verbose : bool
@@ -225,7 +253,7 @@ def start_playground(datasets: Optional[List[str]] = None,
 
     step = 1
     logger.info(f"({step}/{num_steps}) Starting featurebyte services")
-    start_app(ApplicationName.FEATUREBYTE, services=services, verbose=verbose)
+    start_app(ApplicationName.FEATUREBYTE, krb5_realm=krb5_realm, krb5_kdc=krb5_kdc, services=services, verbose=verbose)
     step += 1
 
     # create local spark feature store
