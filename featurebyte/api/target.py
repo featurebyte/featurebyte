@@ -66,7 +66,7 @@ class Target(SavableApiObject):
         try:
             return self.cached_model.horizon
         except RecordRetrievalException:
-            return self.horizon
+            return self.internal_horizon
 
     @property
     def blind_spot(self) -> str:
@@ -80,7 +80,7 @@ class Target(SavableApiObject):
         try:
             return self.cached_model.blind_spot
         except RecordRetrievalException:
-            return self.blind_spot
+            return self.internal_blind_spot
 
     @classmethod
     @typechecked

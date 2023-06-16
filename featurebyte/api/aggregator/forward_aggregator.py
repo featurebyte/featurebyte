@@ -94,7 +94,7 @@ class ForwardAggregator(BaseAggregator):
 
     def _prepare_node_parameters(
         self,
-        value_column: Optional[str],
+        value_column: str,
         method: Optional[str],
         horizon: Optional[str],
         blind_spot: Optional[str],
@@ -127,14 +127,15 @@ class ForwardAggregator(BaseAggregator):
             "horizon": horizon,
             "blind_spot": blind_spot,
             "name": target_name,
-            "serving_names": self.serving_names,
+            "serving_name": self.serving_names[0],
+            "value_by": value_column,
             "entity_ids": self.entity_ids,
             "table_details": self.view.tabular_source.table_details,
         }
 
     def _validate_parameters(
         self,
-        value_column: Optional[str] = None,
+        value_column: str,
         method: Optional[str] = None,
         horizon: Optional[str] = None,
         blind_spot: Optional[str] = None,
