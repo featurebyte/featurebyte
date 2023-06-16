@@ -21,6 +21,7 @@ from featurebyte.api.api_handler.list import ListHandler
 from featurebyte.api.api_object_util import (
     PAGINATED_CALL_PAGE_SIZE,
     ForeignKeyMapping,
+    get_api_object_by_id,
     iterate_api_object_using_paginated_routes,
     map_dict_list_to_name,
     map_object_id_to_name,
@@ -199,13 +200,9 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
 
     @classmethod
     def _get_object_dict_by_id(cls: Type[ApiObjectT], id_value: ObjectId) -> dict[str, Any]:
-        client = Configurations().get_client()
-        response = client.get(url=f"{cls._route}/{id_value}")
-        if response.status_code == HTTPStatus.OK:
-            object_dict = dict(response.json())
-            cls._update_cache(object_dict)
-            return object_dict
-        raise RecordRetrievalException(response, "Failed to retrieve specified object.")
+        object_dict = get_api_object_by_id(route=cls._route, id_value=id_value)
+        cls._update_cache(object_dict)
+        return object_dict
 
     @classmethod
     def _get(
