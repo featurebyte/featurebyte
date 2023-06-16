@@ -1,6 +1,8 @@
 """
 Forward aggregator module
 """
+from __future__ import annotations
+
 from typing import Any, List, Optional, Type
 
 from featurebyte import ChangeView, EventView, ItemView
