@@ -25,7 +25,12 @@ from featurebyte.models.base import (
     UniqueConstraintResolutionSignature,
     VersionIdentifier,
 )
-from featurebyte.models.persistent import AuditActionType, FieldValueHistory, QueryFilter
+from featurebyte.models.persistent import (
+    AuditActionType,
+    DocumentUpdate,
+    FieldValueHistory,
+    QueryFilter,
+)
 from featurebyte.persistent.base import Persistent
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, BaseInfo
 from featurebyte.service.mixin import Document, DocumentCreateSchema, OpsServiceMixin, SortDir
@@ -627,7 +632,7 @@ class BaseDocumentService(
 
     async def _check_document_unique_constraint(
         self,
-        query_filter: dict[str, Any],
+        query_filter: QueryFilter,
         conflict_signature: dict[str, Any],
         resolution_signature: UniqueConstraintResolutionSignature | None,
     ) -> None:
@@ -636,7 +641,7 @@ class BaseDocumentService(
 
         Parameters
         ----------
-        query_filter: dict[str, Any]
+        query_filter: QueryFilter
             Query filter that will be passed to persistent
         conflict_signature: dict[str, Any]
             Document representation that shows user the conflict fields
@@ -794,6 +799,34 @@ class BaseDocumentService(
         if return_document:
             return await self.get_document(document_id=document_id)
         return None
+
+    async def update_documents(
+        self,
+        query_filter: QueryFilter,
+        update: DocumentUpdate,
+    ) -> int:
+        """
+        Update documents at persistent
+
+        Parameters
+        ----------
+        query_filter: QueryFilter
+            Query filter
+        update: DocumentUpdate
+            Document update payload object
+
+        Returns
+        -------
+        int
+            Number of documents updated
+        """
+        updated_count = await self.persistent.update_many(
+            collection_name=self.collection_name,
+            query_filter=query_filter,
+            update=update,
+            user_id=self.user.id,
+        )
+        return int(updated_count)
 
     async def historical_document_generator(
         self, document_id: ObjectId
