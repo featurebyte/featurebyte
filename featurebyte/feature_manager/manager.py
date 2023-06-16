@@ -79,7 +79,7 @@ class FeatureManager(BaseModel):
     async def online_enable(
         self,
         feature_spec: OnlineFeatureSpec,
-        schedule_time: datetime = datetime.utcnow(),
+        schedule_time: Optional[datetime] = None,
         is_recreating_schema: bool = False,
     ) -> None:
         """
@@ -89,14 +89,17 @@ class FeatureManager(BaseModel):
         ----------
         feature_spec: OnlineFeatureSpec
             Instance of OnlineFeatureSpec
-        schedule_time: datetime
+        schedule_time: Optional[datetime]
             the moment of scheduling the job
         is_recreating_schema: bool
             Whether we are recreating the working schema from scratch. Only set as True when called
             by WorkingSchemaService.
         """
+        if schedule_time is None:
+            schedule_time = datetime.utcnow()
+
         logger.info(
-            "online_enable",
+            "Online enabling a feature",
             extra={"feature_name": feature_spec.feature.name, "schedule_time": schedule_time},
         )
 
