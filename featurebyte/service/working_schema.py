@@ -115,4 +115,5 @@ class WorkingSchemaService(BaseService):
                     feature=feature,
                     task_manager=self._task_manager,
                     online_store_table_version_service=self._online_store_table_version_service,
+                    is_recreating_schema=True,
                 )

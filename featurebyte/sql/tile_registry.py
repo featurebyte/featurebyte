@@ -22,10 +22,8 @@ class TileRegistry(TileCommon):
         """
 
         input_value_columns = [value for value in self.value_column_names if value.strip()]
-        logger.debug(f"input_value_columns: {input_value_columns}")
 
         input_value_columns_types = [value for value in self.value_column_types if value.strip()]
-        logger.debug(f"input_value_columns_types: {input_value_columns_types}")
 
         registry_df = await retry_sql(
             self._session,

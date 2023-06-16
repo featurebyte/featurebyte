@@ -102,13 +102,10 @@ tm_upsert_online_store_mapping = Template(
             '{{result_type}}' as RESULT_TYPE,
             '{{sql_query}}' as SQL_QUERY,
             '{{online_store_table_name}}' as ONLINE_STORE_TABLE_NAME,
-            '{{entity_column_names}}' as ENTITY_COLUMN_NAMES,
-            {{is_deleted}} as IS_DELETED
+            '{{entity_column_names}}' as ENTITY_COLUMN_NAMES
     ) b
     ON
         a.RESULT_ID = b.RESULT_ID
-    WHEN MATCHED THEN
-        UPDATE SET a.IS_DELETED = b.IS_DELETED
     WHEN NOT MATCHED THEN
         INSERT (
             TILE_ID,
@@ -117,8 +114,7 @@ tm_upsert_online_store_mapping = Template(
             RESULT_TYPE,
             SQL_QUERY,
             ONLINE_STORE_TABLE_NAME,
-            ENTITY_COLUMN_NAMES,
-            IS_DELETED
+            ENTITY_COLUMN_NAMES
         ) VALUES (
             b.TILE_ID,
             b.AGGREGATION_ID,
@@ -126,15 +122,14 @@ tm_upsert_online_store_mapping = Template(
             b.RESULT_TYPE,
             b.SQL_QUERY,
             b.ONLINE_STORE_TABLE_NAME,
-            b.ENTITY_COLUMN_NAMES,
-            b.IS_DELETED
+            b.ENTITY_COLUMN_NAMES
         )
 """
 )
 
 tm_delete_online_store_mapping = Template(
     """
-    UPDATE ONLINE_STORE_MAPPING SET IS_DELETED = TRUE
-    WHERE AGGREGATION_ID = '{{agg_id}}'
+    DELETE FROM ONLINE_STORE_MAPPING
+    WHERE RESULT_ID = '{{result_id}}'
 """
 )

@@ -55,7 +55,6 @@ async def tile_task_online_store_prep(
                 SQL_QUERY,
                 ONLINE_STORE_TABLE_NAME,
                 ENTITY_COLUMN_NAMES,
-                IS_DELETED,
                 CREATED_AT
             )
             values (
@@ -66,7 +65,6 @@ async def tile_task_online_store_prep(
                 '{sql_query}',
                 '{feature_store_table_name}',
                 '{entity_col_names}',
-                false,
                 current_timestamp()
             )
     """

@@ -233,7 +233,6 @@ async def test_online_enabled_feature_spec(
             "SQL_QUERY": feature_sql,
             "ONLINE_STORE_TABLE_NAME": feature_store_table_name,
             "ENTITY_COLUMN_NAMES": ['"cust_id"'],
-            "IS_DELETED": [False],
         }
     )
     result = result.drop(columns=["CREATED_AT"])

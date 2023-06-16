@@ -3,12 +3,14 @@ Feature Manager class
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Optional, Set
 
 from datetime import datetime, timedelta, timezone
 
 import pandas as pd
 from pydantic import BaseModel, PrivateAttr
+from sqlglot import expressions
+from sqlglot.expressions import select
 
 from featurebyte.common import date_util
 from featurebyte.common.date_util import get_next_job_datetime
@@ -24,6 +26,8 @@ from featurebyte.logging import get_logger
 from featurebyte.models.online_store import OnlineFeatureSpec
 from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
+from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.base import BaseSession
@@ -73,7 +77,10 @@ class FeatureManager(BaseModel):
         )
 
     async def online_enable(
-        self, feature_spec: OnlineFeatureSpec, schedule_time: datetime = datetime.utcnow()
+        self,
+        feature_spec: OnlineFeatureSpec,
+        schedule_time: Optional[datetime] = None,
+        is_recreating_schema: bool = False,
     ) -> None:
         """
         Schedule both online and offline tile jobs
@@ -82,19 +89,36 @@ class FeatureManager(BaseModel):
         ----------
         feature_spec: OnlineFeatureSpec
             Instance of OnlineFeatureSpec
-        schedule_time: datetime
+        schedule_time: Optional[datetime]
             the moment of scheduling the job
+        is_recreating_schema: bool
+            Whether we are recreating the working schema from scratch. Only set as True when called
+            by WorkingSchemaService.
         """
+        if schedule_time is None:
+            schedule_time = datetime.utcnow()
+
         logger.info(
-            "online_enable",
+            "Online enabling a feature",
             extra={"feature_name": feature_spec.feature.name, "schedule_time": schedule_time},
+        )
+
+        # get aggregation result names that need to be populated
+        unscheduled_result_names = await self._get_unscheduled_aggregation_result_names(
+            feature_spec
+        )
+        logger.debug(
+            "Done retrieving unscheduled aggregation result names",
+            extra={"unscheduled_result_names": list(unscheduled_result_names)},
         )
 
         # insert records into tile-feature mapping table
         await self._update_tile_feature_mapping_table(feature_spec)
 
         # enable tile generation with scheduled jobs
+        aggregation_id_to_tile_spec = {}
         for tile_spec in feature_spec.feature.tile_specs:
+            aggregation_id_to_tile_spec[tile_spec.aggregation_id] = tile_spec
             tile_job_exists = await self._tile_manager.tile_job_exists(tile_spec=tile_spec)
             if not tile_job_exists:
                 # enable online tiles scheduled job
@@ -109,13 +133,63 @@ class FeatureManager(BaseModel):
                 await self._tile_manager.schedule_offline_tiles(tile_spec=tile_spec)
                 logger.debug(f"Done schedule_offline_tiles for {tile_spec.aggregation_id}")
 
-            # generate historical tiles
-            await self._generate_historical_tiles(tile_spec=tile_spec)
+                # generate historical tiles
+                await self._generate_historical_tiles(tile_spec=tile_spec)
 
-            # populate feature store
-            await self._populate_feature_store(tile_spec=tile_spec, schedule_time=schedule_time)
+            elif is_recreating_schema:
+                # if this is called when recreating the schema, we cannot assume that the historical
+                # tiles are available even if there is an active tile jobs.
+                await self._generate_historical_tiles(tile_spec=tile_spec)
 
-    async def _populate_feature_store(self, tile_spec: TileSpec, schedule_time: datetime) -> None:
+        # populate feature store
+        for query in feature_spec.precompute_queries:
+            if query.result_name in unscheduled_result_names:
+                await self._populate_feature_store(
+                    tile_spec=aggregation_id_to_tile_spec[query.aggregation_id],
+                    schedule_time=schedule_time,
+                    aggregation_result_name=query.result_name,
+                )
+
+    async def _get_unscheduled_aggregation_result_names(
+        self, feature_spec: OnlineFeatureSpec
+    ) -> Set[str]:
+        """
+        Get the aggregation result names that are not yet scheduled
+
+        This means that we need to run a one-off job to populate the online store for them.
+        Otherwise, there is nothing do to as one of the scheduled tile jobs would have already
+        computed them.
+
+        Parameters
+        ----------
+        feature_spec: OnlineFeatureSpec
+            Instance of OnlineFeatureSpec
+
+        Returns
+        -------
+        Set[str]
+        """
+        result_names = [query.result_name for query in feature_spec.precompute_queries]
+        query = (
+            select("RESULT_ID")
+            .from_("ONLINE_STORE_MAPPING")
+            .where(
+                expressions.In(
+                    this=expressions.Identifier(this="RESULT_ID"),
+                    expressions=[make_literal_value(result_name) for result_name in result_names],
+                ),
+            )
+        )
+        df_scheduled_result_names = await self._session.execute_query(
+            sql_to_string(query, self._session.source_type)
+        )
+        if df_scheduled_result_names is None:
+            return set(result_names)
+        return set(result_names) - set(df_scheduled_result_names["RESULT_ID"])
+
+    async def _populate_feature_store(
+        self, tile_spec: TileSpec, schedule_time: datetime, aggregation_result_name: str
+    ) -> None:
         next_job_time = get_next_job_datetime(
             input_dt=schedule_time,
             frequency_minutes=tile_spec.frequency_minute,
@@ -123,8 +197,9 @@ class FeatureManager(BaseModel):
         )
         job_schedule_ts = next_job_time - timedelta(minutes=tile_spec.frequency_minute)
         job_schedule_ts_str = job_schedule_ts.strftime("%Y-%m-%d %H:%M:%S")
-
-        await self._tile_manager.populate_feature_store(tile_spec, job_schedule_ts_str)
+        await self._tile_manager.populate_feature_store(
+            tile_spec, job_schedule_ts_str, aggregation_result_name
+        )
 
     async def _generate_historical_tiles(self, tile_spec: TileSpec) -> None:
         # generate historical tile_values
@@ -212,7 +287,6 @@ class FeatureManager(BaseModel):
                 sql_query=self._adapter.escape_quote_char(query.sql),
                 online_store_table_name=query.table_name,
                 entity_column_names=",".join(escape_column_names(query.serving_names)),
-                is_deleted=False,
             )
             await self._session.execute_query(upsert_sql)
             logger.debug(f"Done insert tile_feature_mapping for {query.result_name}")
@@ -235,8 +309,9 @@ class FeatureManager(BaseModel):
             )
             await self._session.execute_query(delete_sql)
             logger.debug(f"Done delete tile_feature_mapping for {agg_id}")
-            delete_sql = tm_delete_online_store_mapping.render(aggregation_id=agg_id)
-            await self._session.execute_query(delete_sql)
+            for query in feature_spec.precompute_queries:
+                delete_sql = tm_delete_online_store_mapping.render(result_id=query.result_name)
+                await self._session.execute_query(delete_sql)
             logger.debug(f"Done delete online_store_mapping for {agg_id}")
 
         # disable tile scheduled jobs

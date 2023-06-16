@@ -13,6 +13,7 @@ import pytest
 
 from featurebyte import FeatureList, RecordRetrievalException
 from featurebyte.common.date_util import get_next_job_datetime
+from featurebyte.enum import InternalName
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.online_store import OnlineFeatureSpec
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
@@ -122,6 +123,8 @@ async def test_online_serving_sql(
         deployment.enable()
         assert deployment.enabled is True
 
+    await sanity_check_online_store_tables(session, feature_list)
+
     user_ids = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, -999]
     df_training_events = pd.DataFrame(
         {
@@ -164,6 +167,39 @@ async def test_online_serving_sql(
     finally:
         deployment.disable()
         assert deployment.enabled is False
+
+
+def get_online_feature_spec(feature):
+    """
+    Helper function to create an online feature spec from a feature
+    """
+    return OnlineFeatureSpec(feature=ExtendedFeatureModel(**feature.dict(by_alias=True)))
+
+
+def get_online_store_table_name_to_aggregation_id(feature_list):
+    """
+    Helper function to get a mapping from online store table name to aggregation ids
+    """
+    online_store_table_name_to_aggregation_id = defaultdict(set)
+    for _, feature_object in feature_list.feature_objects.items():
+        for query in get_online_feature_spec(feature_object).precompute_queries:
+            online_store_table_name_to_aggregation_id[query.table_name].add(query.aggregation_id)
+    return online_store_table_name_to_aggregation_id
+
+
+async def sanity_check_online_store_tables(session, feature_list):
+    """
+    Verify that online enabling related features do not trigger redundant online store updates
+    """
+    table_names = list(get_online_store_table_name_to_aggregation_id(feature_list).keys())
+    for table_name in table_names:
+        df = await session.execute_query(
+            f"SELECT MAX({InternalName.ONLINE_STORE_VERSION_COLUMN}) AS OUT FROM {table_name}"
+        )
+        max_version = df.iloc[0]["OUT"]
+        # Verify that all results are at the very first version. If that is not the case, some
+        # results were calculated more than once.
+        assert max_version == 0
 
 
 def check_online_features_route(deployment, config, df_historical, columns):
@@ -228,17 +264,12 @@ async def check_concurrent_online_store_table_updates(
     """
     Test concurrent online store table updates
     """
-
-    def get_online_feature_spec(feature):
-        return OnlineFeatureSpec(feature=ExtendedFeatureModel(**feature.dict()))
-
     # Find concurrent online store table updates given a FeatureList. Concurrent online store table
     # updates occur when tile jobs associated with different aggregation ids write to the same
     # online store table. The logic below finds such a table and the associated aggregation ids.
-    online_store_table_name_to_aggregation_id = defaultdict(set)
-    for _, feature_object in feature_list.feature_objects.items():
-        for query in get_online_feature_spec(feature_object).precompute_queries:
-            online_store_table_name_to_aggregation_id[query.table_name].add(query.aggregation_id)
+    online_store_table_name_to_aggregation_id = get_online_store_table_name_to_aggregation_id(
+        feature_list
+    )
 
     table_with_concurrent_updates = None
     for table_name, agg_ids in online_store_table_name_to_aggregation_id.items():
