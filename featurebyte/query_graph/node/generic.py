@@ -7,7 +7,7 @@ from typing import Any, ClassVar, Dict, List, Literal, Optional, Sequence, Set, 
 
 from pydantic import BaseModel, Field, root_validator, validator
 
-from featurebyte.enum import DBVarType
+from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.base import (
@@ -44,6 +44,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     get_object_class_from_function_call,
 )
 from featurebyte.query_graph.node.mixin import AggregationOpStructMixin, BaseGroupbyParameters
+from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.util import append_to_lineage
 
 
@@ -466,6 +467,51 @@ class LagNode(BaseSeriesOutputNode):
         offset = ValueStr.create(self.parameters.offset)
         expression = f"{col_name}.lag(entity_columns={entity_columns}, offset={offset})"
         return [], ExpressionStr(expression)
+
+
+class ForwardAggregateNode(BaseNode):
+    """
+    ForwardAggregateNode class
+    """
+
+    class Parameters(BaseModel):
+        horizon: Optional[str]
+        blind_spot: Optional[str]
+        keys: List[InColumnStr]  # group by keys
+        parent: Optional[InColumnStr]
+        agg_func: AggFunc
+        value_by: InColumnStr  # aggregate column
+        serving_name: str
+        entity_ids: Optional[List[PydanticObjectId]]
+        table_details: TableDetails
+
+    type: Literal[NodeType.FORWARD_AGGREGATE] = Field(NodeType.FORWARD_AGGREGATE, const=True)
+    output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
+    parameters: Parameters
+
+    @property
+    def max_input_count(self) -> int:
+        return 1
+
+    def _derive_node_operation_info(
+        self,
+        inputs: List[OperationStructure],
+        branch_state: OperationStructureBranchState,
+        global_state: OperationStructureInfo,
+    ) -> OperationStructure:
+        input_op_structure = inputs[0]
+        assert input_op_structure is not None
+        return OperationStructure(
+            output_type=NodeOutputType.SERIES,
+            output_category=NodeOutputCategory.TARGET,
+            columns=input_op_structure.columns,
+            row_index_lineage=(self.name,),
+        )
+
+    def _get_required_input_columns(
+        self, input_index: int, available_column_names: List[str]
+    ) -> Sequence[str]:
+        return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
 
 
 class GroupByNode(AggregationOpStructMixin, BaseNode):

@@ -34,6 +34,7 @@ class NodeOutputCategory(StrEnum):
 
     VIEW = "view"
     FEATURE = "feature"
+    TARGET = "target"
 
 
 class ViewDataColumnType(StrEnum):
@@ -438,7 +439,7 @@ class OperationStructure:
 
     # When NodeOutputType is:
     # - NodeOutputType.VIEW -> columns represents the output columns
-    # - NodeOutputType.FEATURE -> columns represents the input columns
+    # - NodeOutputType.FEATURE or TARGET -> columns represents the input columns
     output_type: NodeOutputType
     output_category: NodeOutputCategory
     row_index_lineage: Tuple[str, ...]

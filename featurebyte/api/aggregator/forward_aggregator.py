@@ -1,16 +1,14 @@
 """
 Forward aggregator module
 """
-from typing import Any, List, Optional, Type, cast
+from typing import Any, List, Optional, Type
 
-from featurebyte import AggFunc, ChangeView, EventView, ItemView
+from featurebyte import ChangeView, EventView, ItemView
 from featurebyte.api.aggregator.base_aggregator import BaseAggregator
 from featurebyte.api.target import Target
 from featurebyte.api.view import View
 from featurebyte.common.model_util import parse_duration_string
-from featurebyte.query_graph.node.agg_func import construct_agg_func
-from featurebyte.query_graph.node.generic import GroupByNode
-from featurebyte.query_graph.transform.reconstruction import add_pruning_sensitive_operation
+from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
 
 class ForwardAggregator(BaseAggregator):
@@ -31,46 +29,55 @@ class ForwardAggregator(BaseAggregator):
         value_column: Optional[str] = None,
         method: Optional[str] = None,
         horizon: Optional[str] = None,
+        blind_spot: Optional[str] = None,
         target_name: Optional[str] = None,
     ) -> Target:
         # Validation
         self._validate_parameters(
-            value_column=value_column, method=method, horizon=horizon, target_name=target_name
+            value_column=value_column,
+            method=method,
+            horizon=horizon,
+            blind_spot=blind_spot,
+            target_name=target_name,
         )
-
-        # Create new node
+        # Create new node parameters
         node_params = self._prepare_node_parameters(
-            value_column=value_column, method=method, horizon=horizon, target_name=target_name
+            value_column=value_column,
+            method=method,
+            horizon=horizon,
+            blind_spot=blind_spot,
+            target_name=target_name,
         )
-        # Don't need this as there's no tile IDs in the parameters
-        # Can just call graph.add_operation directly
-        groupby_node = add_pruning_sensitive_operation(
-            graph=self.view.graph,
-            node_cls=GroupByNode,  # create a new node - ForwardAggregateNode
+        # Add forward aggregate node to graph.
+        groupby_node = self.view.graph.add_operation(
+            node_type=NodeType.FORWARD_AGGREGATE,
             node_params=node_params,
-            input_node=self.view.node,
+            node_output_type=NodeOutputType.SERIES,
+            input_nodes=[self.view.node],
         )
-        # Potentially include projection, so that the SQL generation logic can be similar with the other aggregations.
-
+        # Project target node.
+        target_node = self.view.graph.add_operation(
+            node_type=NodeType.PROJECT,
+            node_params={"columns": [target_name]},
+            node_output_type=NodeOutputType.SERIES,
+            input_nodes=[groupby_node],
+        )
         # Build and return Target
         return Target(
             name=target_name,
             entity_ids=self.entity_ids,
             horizon=horizon,
-            blind_spot="",
+            blind_spot=blind_spot,
+            graph=self.view.graph,
+            node_name=target_node.name,
         )
-
-    # Notes
-    # - materialization: Target.materialize(observation_table|dataframe) -> this will trigger the SQL generation
-    # - can target interact w/ other targets/features?
-    #   will influence how the SQL generation is done; can reuse some of the feature part
-    # expected SQL after generation can be found in expected_preview_sql.sql
 
     def _prepare_node_parameters(
         self,
         value_column: Optional[str],
         method: Optional[str],
         horizon: Optional[str],
+        blind_spot: Optional[str],
         target_name: Optional[str],
     ) -> dict[str, Any]:
         return {
@@ -78,9 +85,11 @@ class ForwardAggregator(BaseAggregator):
             "parent": value_column,
             "agg_func": method,
             "horizon": horizon,
+            "blind_spot": blind_spot,
             "name": target_name,
             "serving_names": self.serving_names,
             "entity_ids": self.entity_ids,
+            "table_details": self.view.tabular_source.table_details,
         }
 
     def _validate_parameters(
@@ -88,6 +97,7 @@ class ForwardAggregator(BaseAggregator):
         value_column: Optional[str] = None,
         method: Optional[str] = None,
         horizon: Optional[str] = None,
+        blind_spot: Optional[str] = None,
         target_name: Optional[str] = None,
     ) -> None:
         self._validate_method_and_value_column(method=method, value_column=value_column)
@@ -97,3 +107,6 @@ class ForwardAggregator(BaseAggregator):
 
         if horizon:
             parse_duration_string(horizon)
+
+        if blind_spot:
+            parse_duration_string(blind_spot)

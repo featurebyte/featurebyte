@@ -14,6 +14,7 @@ from featurebyte.api.savable_api_object import SavableApiObject
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.target import TargetModel
+from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.schema.target import TargetUpdate
 
 
@@ -25,6 +26,8 @@ class Target(SavableApiObject):
     internal_entity_ids: Optional[List[PydanticObjectId]] = Field(alias="entity_ids")
     internal_horizon: Optional[StrictStr] = Field(alias="horizon")
     internal_blind_spot: Optional[StrictStr] = Field(alias="blind_spot")
+    internal_graph: Optional[QueryGraph] = Field(allow_mutation=False, alias="graph")
+    internal_node_name: Optional[str] = Field(allow_mutation=False, alias="node_name")
 
     _route = "/target"
     _update_schema_class = TargetUpdate
