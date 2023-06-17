@@ -10,13 +10,14 @@ from http import HTTPStatus
 from bson import ObjectId
 from typeguard import typechecked
 
-from featurebyte.api.api_object import ApiObject, ConflictResolution
+from featurebyte.api.api_object import ApiObject
+from featurebyte.api.api_object_util import delete_api_object_by_id
 from featurebyte.config import Configurations
+from featurebyte.enum import ConflictResolution
 from featurebyte.exception import (
     DuplicatedRecordException,
     ObjectHasBeenSavedError,
     RecordCreationException,
-    RecordDeletionException,
 )
 
 
@@ -122,7 +123,4 @@ class DeletableApiObject(ApiObject):
     """
 
     def _delete(self) -> None:
-        client = Configurations().get_client()
-        response = client.delete(url=f"{self._route}/{self.id}")
-        if response.status_code != HTTPStatus.OK:
-            raise RecordDeletionException(response, "Failed to delete the specified object.")
+        delete_api_object_by_id(route=self._route, id_value=self.id)

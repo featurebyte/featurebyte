@@ -26,7 +26,7 @@ from bson.objectid import ObjectId
 from pydantic import Field, root_validator
 from typeguard import typechecked
 
-from featurebyte.api.api_object import ApiObject, ConflictResolution
+from featurebyte.api.api_object import ApiObject
 from featurebyte.api.api_object_util import ForeignKeyMapping
 from featurebyte.api.base_table import TableApiObject
 from featurebyte.api.entity import Entity
@@ -44,11 +44,8 @@ from featurebyte.common.utils import (
     enforce_observation_set_row_order,
 )
 from featurebyte.config import Configurations
-from featurebyte.exception import (
-    DuplicatedRecordException,
-    RecordCreationException,
-    RecordRetrievalException,
-)
+from featurebyte.enum import ConflictResolution
+from featurebyte.exception import RecordCreationException, RecordRetrievalException
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.base import PydanticObjectId, VersionIdentifier, get_active_catalog_id
 from featurebyte.models.feature import DefaultVersionMode
@@ -635,11 +632,6 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         _id: Optional[ObjectId]
             The object ID to be used when saving the object. If not provided, a new object ID will be generated.
 
-        Raises
-        ------
-        DuplicatedRecordException
-            When a record with the same key exists at the persistent data store.
-
         Examples
         --------
         >>> feature_list = fb.FeatureList([
@@ -648,20 +640,23 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         ... ], name="feature_lists_invoice_features")
         >>> feature_list.save()  # doctest: +SKIP
         """
-        # Do not raise error if the feature has been saved. Only raise the error if the FeatureList has been saved.
-        self._batch_feature_save(
+        assert self.name is not None, "FeatureList name cannot be None"
+        self._check_object_not_been_saved(conflict_resolution=conflict_resolution)
+
+        # prepare feature list batch feature create payload
+        feature_list_batch_feature_create = self._get_feature_list_batch_feature_create_payload(
+            feature_list_id=self.id,
+            feature_list_name=self.name,
             conflict_resolution=conflict_resolution,
-            to_raise_object_has_been_saved_error=False,
         )
-        try:
-            super().save(conflict_resolution=conflict_resolution)
-        except DuplicatedRecordException as exc:
-            if conflict_resolution == "raise":
-                raise DuplicatedRecordException(
-                    exc.response,
-                    resolution=' Or try `feature_list.save(conflict_resolution = "retrieve")` to resolve conflict.',
-                ) from exc
-            raise exc
+        self.post_async_task(
+            route="/feature_list/batch",
+            payload=feature_list_batch_feature_create.json_dict(),
+            retrieve_result=False,
+            has_output_url=False,
+        )
+        object_dict = self._get_object_dict_by_id(id_value=feature_list_batch_feature_create.id)
+        type(self).__init__(self, **object_dict, **self._get_init_params_from_object())
 
     def delete(self) -> None:
         """

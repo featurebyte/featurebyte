@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional, OrderedDict, Sequence, Set, Tuple,
 
 import collections
 import time
+from datetime import datetime
 from http import HTTPStatus
 
 import pandas as pd
@@ -16,9 +17,10 @@ from bson import ObjectId
 from pydantic import Field, parse_obj_as
 from typeguard import typechecked
 
-from featurebyte.api.api_object import ConflictResolution
 from featurebyte.api.api_object_util import (
     PAGINATED_CALL_PAGE_SIZE,
+    delete_api_object_by_id,
+    get_api_object_by_id,
     iterate_api_object_using_paginated_routes,
 )
 from featurebyte.api.entity import Entity
@@ -32,15 +34,20 @@ from featurebyte.common.utils import dataframe_from_json, enforce_observation_se
 from featurebyte.config import Configurations
 from featurebyte.core.mixin import ParentMixin
 from featurebyte.core.series import Series
-from featurebyte.exception import ObjectHasBeenSavedError, RecordRetrievalException
+from featurebyte.enum import ConflictResolution
+from featurebyte.exception import RecordRetrievalException
 from featurebyte.logging import get_logger
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureCluster, FeatureListModel
 from featurebyte.models.relationship_analysis import derive_primary_entity
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
-from featurebyte.schema.feature import BatchFeatureCreatePayload, BatchFeatureItem
-from featurebyte.schema.feature_list import FeatureListPreview, FeatureListSQL
+from featurebyte.schema.feature import BatchFeatureItem
+from featurebyte.schema.feature_list import (
+    FeatureListCreateWithBatchFeatureCreationPayload,
+    FeatureListPreview,
+    FeatureListSQL,
+)
 
 logger = get_logger(__name__)
 
@@ -97,7 +104,7 @@ class BaseFeatureGroup(AsyncMixin):
 
     @staticmethod
     def _initialize_items_and_feature_objects_from_persistent(
-        feature_list_id: ObjectId, feature_ids: Sequence[ObjectId]
+        feature_list_id: ObjectId, feature_ids: List[str]
     ) -> Tuple[Sequence[Item], FeatureObjects]:
         feature_id_to_object = {}
         feature_store_map: Dict[ObjectId, FeatureStore] = {}
@@ -375,35 +382,17 @@ class BaseFeatureGroup(AsyncMixin):
             response.json(),
         )
 
-    def _batch_feature_save(
-        self, conflict_resolution: ConflictResolution, to_raise_object_has_been_saved_error: bool
-    ) -> None:
-        features = []
-        for feat in self.feature_objects.values():
-            if conflict_resolution == "retrieve":
-                # If conflict_resolution is retrieve, we will retrieve the feature from the catalog based on the
-                # feature name and update the feature object with the retrieved feature.
-                feat_name = feat.name
-                assert feat_name is not None
-                try:
-                    feat = Feature.get(name=feat_name)
-                    self.feature_objects[feat_name] = feat
-                except RecordRetrievalException:
-                    features.append(feat)
-            if conflict_resolution == "raise":
-                if feat.saved:
-                    if to_raise_object_has_been_saved_error:
-                        raise ObjectHasBeenSavedError(
-                            f'Feature (id: "{feat.id}") has been saved before.'
-                        )
-                else:
-                    features.append(feat)
-
+    def _get_feature_list_batch_feature_create_payload(
+        self,
+        feature_list_id: ObjectId,
+        feature_list_name: str,
+        conflict_resolution: ConflictResolution,
+    ) -> FeatureListCreateWithBatchFeatureCreationPayload:
         pruned_graph, node_name_map = GlobalQueryGraph().quick_prune(
-            target_node_names=[feat.node_name for feat in features]
+            target_node_names=[feat.node_name for feat in self.feature_objects.values()]
         )
         batch_feature_items = []
-        for feat in features:
+        for feat in self.feature_objects.values():
             batch_feature_items.append(
                 BatchFeatureItem(
                     id=feat.id,
@@ -412,15 +401,14 @@ class BaseFeatureGroup(AsyncMixin):
                     tabular_source=feat.tabular_source,
                 )
             )
-
-        self.post_async_task(
-            route="/feature/batch",
-            payload=BatchFeatureCreatePayload(
-                graph=pruned_graph, features=batch_feature_items
-            ).json_dict(),
-            retrieve_result=False,
-            has_output_url=False,
+        feature_list_create = FeatureListCreateWithBatchFeatureCreationPayload(
+            name=feature_list_name,
+            conflict_resolution=conflict_resolution,
+            graph=pruned_graph,
+            features=batch_feature_items,
+            _id=feature_list_id,
         )
+        return feature_list_create
 
 
 class FeatureGroup(BaseFeatureGroup, ParentMixin):
@@ -495,9 +483,31 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
         ... ])
         >>> features.save()  # doctest: +SKIP
         """
-        # Raise error if the feature has been saved (as feature group saving equals to saving feature individually).
-        # Save an already saved feature on Feature level will raise the same ObjectHasBeenSavedError.
-        self._batch_feature_save(
+        # prepare batch feature create payload
+        feature_list_batch_feature_create = self._get_feature_list_batch_feature_create_payload(
+            feature_list_id=ObjectId(),
+            feature_list_name=f"_temporary_feature_list_{datetime.now()}",
             conflict_resolution=conflict_resolution,
-            to_raise_object_has_been_saved_error=True,
+        )
+
+        # save temporary feature list with list of features
+        self.post_async_task(
+            route="/feature_list/batch",
+            payload=feature_list_batch_feature_create.json_dict(),
+            retrieve_result=False,
+            has_output_url=False,
+        )
+        feature_list_dict = get_api_object_by_id(
+            route="/feature_list", id_value=feature_list_batch_feature_create.id
+        )
+        items, feature_objects = self._initialize_items_and_feature_objects_from_persistent(
+            feature_list_id=feature_list_batch_feature_create.id,
+            feature_ids=feature_list_dict["feature_ids"],
+        )
+        self.items = items
+        self.feature_objects = feature_objects
+
+        # delete temporary feature list
+        delete_api_object_by_id(
+            route="/feature_list", id_value=feature_list_batch_feature_create.id
         )

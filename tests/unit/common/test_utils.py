@@ -107,4 +107,5 @@ def create_batch_feature_create(features):
     return BatchFeatureCreate(
         graph=query_graph,
         features=feature_items,
+        conflict_resolution="raise",
     )

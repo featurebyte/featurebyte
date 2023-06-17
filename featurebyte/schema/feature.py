@@ -3,13 +3,14 @@ Feature API payload schema
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Iterator, List, Optional
+from typing import Any, Dict, List, Optional
 
 from datetime import datetime
 
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, validator
 
+from featurebyte.enum import ConflictResolution
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, VersionIdentifier
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.query_graph.graph import QueryGraph
@@ -63,38 +64,17 @@ class BatchFeatureCreatePayload(FeatureByteBaseModel):
     # additional serialization/deserialization
     graph: QueryGraphModel
     features: List[BatchFeatureItem]
+    conflict_resolution: ConflictResolution
 
 
 class BatchFeatureCreate(BatchFeatureCreatePayload):
     """
-    Batch Feature Creation schema (used by the feature controller side)
+    Batch Feature Creation schema (used by the featurebyte server side)
     """
 
     # while receiving the payload at the server side, the graph is converted to QueryGraph type
     # so that it can be used for further processing without additional serialization/deserialization
     graph: QueryGraph
-    features: List[BatchFeatureItem]
-
-    def iterate_features(self) -> Iterator[FeatureCreate]:
-        """
-        Iterate over the batch feature create payload and yield feature create payloads
-
-        Yields
-        -------
-        Iterator[FeatureCreate]
-            List of feature create payloads
-        """
-        for feature in self.features:
-            pruned_graph, node_name_map = self.graph.quick_prune(
-                target_node_names=[feature.node_name]
-            )
-            yield FeatureCreate(
-                _id=feature.id,
-                name=feature.name,
-                node_name=node_name_map[feature.node_name],
-                graph=pruned_graph,
-                tabular_source=feature.tabular_source,
-            )
 
 
 class FeatureNewVersionCreate(FeatureByteBaseModel):

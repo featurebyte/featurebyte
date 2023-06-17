@@ -3,7 +3,7 @@ ApiObject class
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List, Literal, Optional, Type, TypeVar, Union
+from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar, Union
 
 import operator
 from functools import partial
@@ -41,7 +41,6 @@ from featurebyte.models.base import FeatureByteBaseDocumentModel, FeatureByteBas
 
 ApiObjectT = TypeVar("ApiObjectT", bound="ApiObject")
 ModelT = TypeVar("ModelT", bound=FeatureByteBaseDocumentModel)
-ConflictResolution = Literal["raise", "retrieve"]
 
 logger = get_logger(__name__)
 

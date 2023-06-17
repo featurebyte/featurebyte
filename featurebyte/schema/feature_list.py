@@ -18,6 +18,7 @@ from featurebyte.models.feature_list import (
 )
 from featurebyte.query_graph.node.validator import construct_unique_name_validator
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
+from featurebyte.schema.feature import BatchFeatureCreate, BatchFeatureCreatePayload
 
 
 class FeatureListCreate(FeatureByteBaseModel):
@@ -36,6 +37,29 @@ class FeatureListServiceCreate(FeatureListCreate):
     """
 
     feature_list_namespace_id: Optional[PydanticObjectId] = Field(default_factory=ObjectId)
+
+
+class FeatureListCreateWithBatchFeatureCreationMixin(FeatureByteBaseModel):
+    """Feature List Creation with Batch Feature Creation mixin"""
+
+    id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
+    name: StrictStr
+
+
+class FeatureListCreateWithBatchFeatureCreationPayload(
+    BatchFeatureCreatePayload, FeatureListCreateWithBatchFeatureCreationMixin
+):
+    """
+    Feature List Creation with Batch Feature Creation schema (used by the client to prepare the payload)
+    """
+
+
+class FeatureListCreateWithBatchFeatureCreation(
+    BatchFeatureCreate, FeatureListCreateWithBatchFeatureCreationMixin
+):
+    """
+    Feature List Creation with Batch Feature Creation schema (used by the featurebyte server side)
+    """
 
 
 class FeatureVersionInfo(FeatureByteBaseModel):
