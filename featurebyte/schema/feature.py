@@ -10,7 +10,6 @@ from datetime import datetime
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, validator
 
-from featurebyte.enum import ConflictResolution
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, VersionIdentifier
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.query_graph.graph import QueryGraph
@@ -64,7 +63,6 @@ class BatchFeatureCreatePayload(FeatureByteBaseModel):
     # additional serialization/deserialization
     graph: QueryGraphModel
     features: List[BatchFeatureItem]
-    conflict_resolution: ConflictResolution
 
 
 class BatchFeatureCreate(BatchFeatureCreatePayload):

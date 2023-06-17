@@ -738,7 +738,6 @@ class Feature(
                     payload=BatchFeatureCreatePayload(
                         graph=pruned_graph,
                         features=[feature_item],
-                        conflict_resolution="raise",
                     ).json_dict(),
                     retrieve_result=False,
                     has_output_url=False,

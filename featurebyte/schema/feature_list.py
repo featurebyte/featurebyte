@@ -10,6 +10,7 @@ from pydantic import Field, StrictStr, validator
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import version_validator
+from featurebyte.enum import ConflictResolution
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, VersionIdentifier
 from featurebyte.models.feature_list import (
     FeatureCluster,
@@ -44,6 +45,7 @@ class FeatureListCreateWithBatchFeatureCreationMixin(FeatureByteBaseModel):
 
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
+    conflict_resolution: ConflictResolution
 
 
 class FeatureListCreateWithBatchFeatureCreationPayload(
