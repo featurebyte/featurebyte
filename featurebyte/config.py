@@ -293,6 +293,7 @@ class Configurations:
                 "profile:\n"
                 "  - name: local\n"
                 "    api_url: http://127.0.0.1:8088\n\n"
+                "default_profile: local\n\n"
             )
 
         self.storage: LocalStorageSettings = LocalStorageSettings()
@@ -425,11 +426,13 @@ class Configurations:
         Content of configuration file at `~/.featurebyte/config.yaml`
         ```
         profile:
-          - name: featurebyte
+          - name: local
             api_url: https://app.featurebyte.com/api/v1
             api_token: API_TOKEN_VALUE
+
+        default_profile: local
         ```
-        Use service profile `featurebyte`
+        Use service profile `local`
 
         >>> fb.Configurations().use_profile("local")
         """
