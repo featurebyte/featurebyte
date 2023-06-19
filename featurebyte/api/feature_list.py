@@ -4,6 +4,7 @@ FeatureListVersion class
 # pylint: disable=too-many-lines
 from __future__ import annotations
 
+from http import HTTPStatus
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -19,14 +20,13 @@ from typing import (
     cast,
 )
 
-from http import HTTPStatus
-
 import pandas as pd
 from bson.objectid import ObjectId
 from pydantic import Field, root_validator
 from typeguard import typechecked
 
 from featurebyte.api.api_handler.feature_list import FeatureListListHandler
+from featurebyte.api.api_handler.feature_list_list_handler import FeatureListListHandler
 from featurebyte.api.api_handler.list import ListHandler
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.api_object_util import ForeignKeyMapping

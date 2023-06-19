@@ -4,10 +4,9 @@ Feature and FeatureList classes
 # pylint: disable=too-many-lines
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List, Literal, Optional, Sequence, Tuple, Type, Union, cast
-
 import time
 from http import HTTPStatus
+from typing import Any, ClassVar, Dict, List, Literal, Optional, Sequence, Tuple, Type, Union, cast
 
 import pandas as pd
 from bson import ObjectId
@@ -15,6 +14,7 @@ from pydantic import Field, root_validator
 from typeguard import typechecked
 
 from featurebyte.api.api_handler.feature import FeatureListHandler
+from featurebyte.api.api_handler.feature_list_handler import FeatureListHandler
 from featurebyte.api.api_handler.list import ListHandler
 from featurebyte.api.api_object_util import is_server_mode
 from featurebyte.api.entity import Entity
