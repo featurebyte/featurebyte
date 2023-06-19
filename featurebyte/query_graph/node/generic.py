@@ -7,7 +7,7 @@ from typing import Any, ClassVar, Dict, List, Literal, Optional, Sequence, Set, 
 
 from pydantic import BaseModel, Field, root_validator, validator
 
-from featurebyte.enum import AggFunc, DBVarType
+from featurebyte.enum import DBVarType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.base import (
