@@ -7,9 +7,9 @@ import pandas as pd
 from featurebyte.api.api_handler.list import ListHandler
 
 
-class FeatureJobSettingListHandler(ListHandler):
+class FeatureJobSettingAnalysisListHandler(ListHandler):
     """
-    Additional handling for feature job setting.
+    Additional handling for feature job setting analysis.
     """
 
     def additional_post_processing(self, records: pd.DataFrame) -> pd.DataFrame:

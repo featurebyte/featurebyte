@@ -13,7 +13,7 @@ from bson import ObjectId
 from typeguard import typechecked
 
 from featurebyte.api.api_handler.feature_job_setting_list_handler import (
-    FeatureJobSettingListHandler,
+    FeatureJobSettingAnalysisListHandler,
 )
 from featurebyte.api.api_handler.list import ListHandler
 from featurebyte.api.api_object import ApiObject
@@ -66,7 +66,7 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, ApiObject):
 
     @classmethod
     def _list_handler(cls) -> ListHandler:
-        return FeatureJobSettingListHandler(
+        return FeatureJobSettingAnalysisListHandler(
             route=cls._route,
             list_schema=cls._list_schema,
             list_fields=cls._list_fields,
