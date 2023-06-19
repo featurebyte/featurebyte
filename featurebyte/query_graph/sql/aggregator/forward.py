@@ -7,19 +7,19 @@ from sqlglot.expressions import Select
 
 from featurebyte.query_graph.sql.aggregator.base import AggregationResult, NonTileBasedAggregator
 from featurebyte.query_graph.sql.common import CteStatements
-from featurebyte.query_graph.sql.specs import TargetSpec
+from featurebyte.query_graph.sql.specs import ForwardAggregateSpec
 
 
-class TargetAggregator(NonTileBasedAggregator[TargetSpec]):
+class ForwardAggregator(NonTileBasedAggregator[ForwardAggregateSpec]):
     """
-    TargetAggregator is responsible for generating SQL for targets.
+    ForwardAggregator is responsible for generating SQL for forward aggregate targets.
     """
 
     def get_common_table_expressions(self, request_table_name: str) -> CteStatements:
         _ = request_table_name
         return []
 
-    def additional_update(self, aggregation_spec: TargetSpec) -> None:
+    def additional_update(self, aggregation_spec: ForwardAggregateSpec) -> None:
         return
 
     def update_aggregation_table_expr(

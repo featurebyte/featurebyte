@@ -22,6 +22,8 @@ from featurebyte.query_graph.node.generic import (
     AggregateAsAtNode,
     AggregateAsAtParameters,
     EventLookupParameters,
+    ForwardAggregateNode,
+    ForwardAggregateParameters,
     GroupByNode,
     ItemGroupbyNode,
     ItemGroupbyParameters,
@@ -53,7 +55,7 @@ class AggregationType(StrEnum):
     WINDOW = "window"
     ITEM = "item"
     AS_AT = "as_at"
-    TARGET = "target"
+    FORWARD = "forward"
 
 
 @dataclass  # type: ignore[misc]
@@ -700,20 +702,19 @@ class LookupSpec(NonTileBasedAggregationSpec):
 
 
 @dataclass
-class TargetSpec(NonTileBasedAggregationSpec):
+class ForwardAggregateSpec(NonTileBasedAggregationSpec):
     """
-    TargetSpec contains all information required to generate sql for a target.
+    ForwardAggregateSpec contains all information required to generate sql for a forward aggregate target.
     """
 
-    # TODO update to target parameters?
-    parameters: BaseGroupbyParameters
+    parameters: ForwardAggregateParameters
 
     def agg_result_name(self) -> str:
         return self.get_agg_result_name_from_groupby_parameters(self.parameters)
 
     @property
     def aggregation_type(self) -> AggregationType:
-        return AggregationType.TARGET
+        return AggregationType.FORWARD
 
     def get_source_hash_parameters(self) -> dict[str, Any]:
         # TODO:
@@ -729,10 +730,9 @@ class TargetSpec(NonTileBasedAggregationSpec):
         aggregation_source: AggregationSource,
         serving_names_mapping: Optional[dict[str, str]],
     ) -> list[NonTileBasedAggregationSpecT]:
-        # TODO: update to target node
-        assert isinstance(node, AggregateAsAtNode)
+        assert isinstance(node, ForwardAggregateNode)
         return [
-            TargetSpec(
+            ForwardAggregateSpec(
                 parameters=node.parameters,
                 aggregation_source=aggregation_source,
                 entity_ids=cast(List[ObjectId], node.parameters.entity_ids),

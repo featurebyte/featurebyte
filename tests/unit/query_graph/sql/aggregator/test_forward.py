@@ -1,5 +1,5 @@
 """
-Test target aggregator
+Test forward aggregator
 """
 import textwrap
 
@@ -8,12 +8,12 @@ from sqlglot import select
 
 from featurebyte import SourceType
 from featurebyte.query_graph.node.mixin import BaseGroupbyParameters
-from featurebyte.query_graph.sql.aggregator.target import TargetAggregator
-from featurebyte.query_graph.sql.specs import AggregationSource, TargetSpec
+from featurebyte.query_graph.sql.aggregator.forward import ForwardAggregator
+from featurebyte.query_graph.sql.specs import AggregationSource, ForwardAggregateSpec
 
 
-@pytest.fixture(name="target_node_parameters")
-def target_node_parameters_fixture(entity_id):
+@pytest.fixture(name="forward_node_parameters")
+def forward_node_parameters_fixture(entity_id):
     return BaseGroupbyParameters(
         keys=["cust_id"],
         serving_names=["serving_cust_id"],
@@ -26,15 +26,15 @@ def target_node_parameters_fixture(entity_id):
     )
 
 
-@pytest.fixture(name="target_spec")
-def target_spec_fixture(target_node_parameters, entity_id):
+@pytest.fixture(name="forward_spec")
+def forward_spec_fixture(forward_node_parameters, entity_id):
     """
-    Target spec fixture
+    forward spec fixture
     """
-    return TargetSpec(
+    return ForwardAggregateSpec(
         serving_names=["serving_cust_id"],
         serving_names_mapping=None,
-        parameters=target_node_parameters,
+        parameters=forward_node_parameters,
         aggregation_source=AggregationSource(
             expr=select("*").from_("tab"), query_node_name="input_1"
         ),
@@ -42,12 +42,12 @@ def target_spec_fixture(target_node_parameters, entity_id):
     )
 
 
-def test_target_aggregator(target_spec):
+def test_forward_aggregator(forward_spec):
     """
-    Test target aggregator
+    Test forward aggregator
     """
-    aggregator = TargetAggregator(source_type=SourceType.SNOWFLAKE)
-    aggregator.update(target_spec)
+    aggregator = ForwardAggregator(source_type=SourceType.SNOWFLAKE)
+    aggregator.update(forward_spec)
 
     result = aggregator.update_aggregation_table_expr(
         select("a", "b", "c").from_("REQUEST_TABLE"), "POINT_INT_TIME", ["a", "b", "c"], 0
