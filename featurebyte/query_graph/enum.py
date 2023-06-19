@@ -50,6 +50,7 @@ class NodeType(StrEnum):
     JOIN = "join"
     JOIN_FEATURE = "join_feature"
     TRACK_CHANGES = "track_changes"
+    FORWARD_AGGREGATE = "forward_aggregate"
 
     # other operations
     ASSIGN = "assign"

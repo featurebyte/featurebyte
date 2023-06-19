@@ -34,6 +34,7 @@ class NodeOutputCategory(StrEnum):
 
     VIEW = "view"
     FEATURE = "feature"
+    TARGET = "target"
 
 
 class ViewDataColumnType(StrEnum):
@@ -350,6 +351,7 @@ class AggregationColumn(BaseDataColumn):
         NodeType.LOOKUP,
         NodeType.AGGREGATE_AS_AT,
         NodeType.REQUEST_COLUMN,
+        NodeType.FORWARD_AGGREGATE,
     ]
     type: Literal[FeatureDataColumnType.AGGREGATION] = FeatureDataColumnType.AGGREGATION
 
@@ -438,7 +440,7 @@ class OperationStructure:
 
     # When NodeOutputType is:
     # - NodeOutputType.VIEW -> columns represents the output columns
-    # - NodeOutputType.FEATURE -> columns represents the input columns
+    # - NodeOutputType.FEATURE or TARGET -> columns represents the input columns
     output_type: NodeOutputType
     output_category: NodeOutputCategory
     row_index_lineage: Tuple[str, ...]

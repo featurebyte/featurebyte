@@ -7,7 +7,7 @@ from typing import List, Optional, Type, cast
 
 from typeguard import typechecked
 
-from featurebyte.api.base_aggregator import BaseAggregator
+from featurebyte.api.aggregator.base_aggregator import BaseAggregator
 from featurebyte.api.feature import Feature
 from featurebyte.api.scd_view import SCDView
 from featurebyte.api.view import View

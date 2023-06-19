@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import List, Literal, Optional, Type
 
-from featurebyte.api.base_aggregator import BaseAggregator
+from featurebyte.api.aggregator.base_aggregator import BaseAggregator
 from featurebyte.api.feature import Feature
 from featurebyte.api.item_view import ItemView
 from featurebyte.api.view import View
