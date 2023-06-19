@@ -14,6 +14,7 @@ from featurebyte.api.savable_api_object import SavableApiObject
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.target import TargetModel
+from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.schema.target import TargetUpdate
 
 
@@ -25,6 +26,8 @@ class Target(SavableApiObject):
     internal_entity_ids: Optional[List[PydanticObjectId]] = Field(alias="entity_ids")
     internal_horizon: Optional[StrictStr] = Field(alias="horizon")
     internal_blind_spot: Optional[StrictStr] = Field(alias="blind_spot")
+    internal_graph: Optional[QueryGraph] = Field(allow_mutation=False, alias="graph")
+    internal_node_name: Optional[str] = Field(allow_mutation=False, alias="node_name")
 
     _route = "/target"
     _update_schema_class = TargetUpdate
@@ -52,32 +55,32 @@ class Target(SavableApiObject):
         return [Entity.get_by_id(entity_id) for entity_id in entity_ids]
 
     @property
-    def horizon(self) -> str:
+    def horizon(self) -> Optional[str]:
         """
         Returns the horizon of this target.
 
         Returns
         -------
-        str
+        Optional[str]
         """
         try:
             return self.cached_model.horizon
         except RecordRetrievalException:
-            return self.horizon
+            return self.internal_horizon
 
     @property
-    def blind_spot(self) -> str:
+    def blind_spot(self) -> Optional[str]:
         """
         Returns the blind_spot of this target.
 
         Returns
         -------
-        str
+        Optional[str]
         """
         try:
             return self.cached_model.blind_spot
         except RecordRetrievalException:
-            return self.blind_spot
+            return self.internal_blind_spot
 
     @classmethod
     @typechecked

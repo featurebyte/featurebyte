@@ -44,6 +44,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     get_object_class_from_function_call,
 )
 from featurebyte.query_graph.node.mixin import AggregationOpStructMixin, BaseGroupbyParameters
+from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.util import append_to_lineage
 
 
@@ -466,6 +467,67 @@ class LagNode(BaseSeriesOutputNode):
         offset = ValueStr.create(self.parameters.offset)
         expression = f"{col_name}.lag(entity_columns={entity_columns}, offset={offset})"
         return [], ExpressionStr(expression)
+
+
+class ForwardAggregateNode(AggregationOpStructMixin, BaseNode):
+    """
+    ForwardAggregateNode class.
+    """
+
+    class Parameters(BaseGroupbyParameters):
+        """
+        Forward aggregate parameters
+        """
+
+        name: str
+        horizon: Optional[str]
+        blind_spot: Optional[str]
+        # TableDetails are needed because we will be performing the aggregation query directly on the calling table.
+        table_details: TableDetails
+
+    type: Literal[NodeType.FORWARD_AGGREGATE] = Field(NodeType.FORWARD_AGGREGATE, const=True)
+    output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
+    parameters: Parameters
+
+    @property
+    def max_input_count(self) -> int:
+        return 1
+
+    def _get_aggregations(
+        self,
+        columns: List[ViewDataColumn],
+        node_name: str,
+        other_node_names: Set[str],
+        output_var_type: DBVarType,
+    ) -> List[AggregationColumn]:
+        col_name_map = {col.name: col for col in columns}
+        return [
+            AggregationColumn(
+                name=self.parameters.name,
+                method=self.parameters.agg_func,
+                keys=self.parameters.keys,
+                window=self.parameters.horizon,
+                category=self.parameters.value_by,
+                column=col_name_map.get(self.parameters.parent),
+                filter=any(col.filter for col in columns),
+                aggregation_type=self.type,
+                node_names={node_name}.union(other_node_names),
+                node_name=node_name,
+                dtype=output_var_type,
+            )
+        ]
+
+    def _exclude_source_columns(self) -> List[str]:
+        cols = self.parameters.keys
+        return [str(col) for col in cols]
+
+    def _is_time_based(self) -> bool:
+        return True
+
+    def _get_required_input_columns(
+        self, input_index: int, available_column_names: List[str]
+    ) -> Sequence[str]:
+        return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
 
 
 class GroupByNode(AggregationOpStructMixin, BaseNode):

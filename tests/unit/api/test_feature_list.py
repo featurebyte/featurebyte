@@ -570,6 +570,7 @@ def test_list_versions(saved_feature_list):
                     flist_1.created_at,
                     saved_feature_list.created_at,
                 ],
+                "is_default": [True] * 3,
             }
         ),
     )
@@ -1009,6 +1010,7 @@ def test_list_features(saved_feature_list, float_feature):
                 "entities": [["customer"]],
                 "primary_entities": [["customer"]],
                 "created_at": [float_feature.created_at],
+                "is_default": [True],
             }
         ),
     )
