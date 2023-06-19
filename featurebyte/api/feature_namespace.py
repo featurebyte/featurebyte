@@ -108,10 +108,6 @@ class FeatureNamespace(FrozenFeatureNamespaceModel, ApiObject):
         )
 
     @classmethod
-    def use_new_list_handler(cls) -> bool:
-        return True
-
-    @classmethod
     def list(
         cls,
         include_id: Optional[bool] = False,

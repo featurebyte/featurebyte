@@ -29,7 +29,3 @@ class PeriodicTask(PeriodicTaskModel, SavableApiObject):
         "max_run_count",
         "last_run_at",
     ]
-
-    @classmethod
-    def use_new_list_handler(cls) -> bool:
-        return True

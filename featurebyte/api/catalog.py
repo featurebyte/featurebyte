@@ -267,10 +267,6 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
             list_foreign_keys=cls._list_foreign_keys,
         )
 
-    @classmethod
-    def use_new_list_handler(cls) -> bool:
-        return True
-
     @typechecked
     def update_name(self, name: str) -> None:
         """

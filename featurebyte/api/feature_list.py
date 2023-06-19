@@ -231,10 +231,6 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
         )
 
     @classmethod
-    def use_new_list_handler(cls) -> bool:
-        return True
-
-    @classmethod
     def list(
         cls,
         include_id: Optional[bool] = False,
@@ -929,10 +925,6 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
             list_fields=cls._list_fields,
             list_foreign_keys=cls._list_foreign_keys,
         )
-
-    @classmethod
-    def use_new_list_handler(cls) -> bool:
-        return True
 
     @classmethod
     def _list_versions(cls, include_id: Optional[bool] = True) -> pd.DataFrame:

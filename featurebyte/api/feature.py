@@ -351,10 +351,6 @@ class Feature(
         )
 
     @classmethod
-    def use_new_list_handler(cls) -> bool:
-        return True
-
-    @classmethod
     def _list_versions(
         cls,
         include_id: Optional[bool] = True,
