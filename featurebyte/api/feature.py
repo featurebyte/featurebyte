@@ -353,6 +353,7 @@ class Feature(
         include_id: Optional[bool] = True,
         feature_list_id: Optional[ObjectId] = None,
     ) -> pd.DataFrame:
+        # pylint: disable=line-too-long
         """
         Returns a DataFrame that presents a summary of the feature versions belonging to the namespace of the
         Feature object. The DataFrame contains multiple attributes of the feature versions, such as their version
@@ -375,18 +376,22 @@ class Feature(
         --------
         List saved Feature versions
 
-        >>> Feature.list_versions()  # doctest: +SKIP
-            name        version  dtype readiness  online_enabled             table    entities              created_at
-        0  new_feat2  V230323  FLOAT     DRAFT           False      [sf_event_table]  [customer] 2023-03-23 07:16:21.244
-        1  new_feat1  V230323  FLOAT     DRAFT           False      [sf_event_table]  [customer] 2023-03-23 07:16:21.166
-        2     sum_1d  V230323  FLOAT     DRAFT           False      [sf_event_table]  [customer] 2023-03-23 07:16:21.009
+        >>> Feature.list_versions(include_id=False)  # doctest: +ELLIPSIS
+                                     name  version      dtype         readiness  online_enabled                                          tables    primary_tables           entities   primary_entities  created_at  is_default
+        0  CustomerLatestInvoiceTimestamp      ...  TIMESTAMP  PRODUCTION_READY           False                                [GROCERYINVOICE]  [GROCERYINVOICE]  [grocerycustomer]  [grocerycustomer]         ...  True
+        1                    InvoiceCount      ...      FLOAT             DRAFT           False                  [GROCERYINVOICE, INVOICEITEMS]    [INVOICEITEMS]   [groceryinvoice]   [groceryinvoice]         ...  True
+        2              ProductGroupLookup      ...    VARCHAR             DRAFT           False                                [GROCERYPRODUCT]  [GROCERYPRODUCT]   [groceryproduct]   [groceryproduct]         ...  True
+        3  CustomerProductGroupCounts_90d      ...     OBJECT             DRAFT           False  [GROCERYINVOICE, INVOICEITEMS, GROCERYPRODUCT]    [INVOICEITEMS]  [grocerycustomer]  [grocerycustomer]         ...  True
+        4   CustomerProductGroupCounts_7d      ...     OBJECT             DRAFT           False  [GROCERYINVOICE, INVOICEITEMS, GROCERYPRODUCT]    [INVOICEITEMS]  [grocerycustomer]  [grocerycustomer]         ...  True
+        5         InvoiceAmountAvg_60days      ...      FLOAT  PRODUCTION_READY           False                                [GROCERYINVOICE]  [GROCERYINVOICE]  [grocerycustomer]  [grocerycustomer]         ...  True
+        6             InvoiceCount_60days      ...      FLOAT  PRODUCTION_READY           False                                [GROCERYINVOICE]  [GROCERYINVOICE]  [grocerycustomer]  [grocerycustomer]         ...  True
 
         List Feature versions with the same name
 
         >>> feature = catalog.get_feature("InvoiceCount_60days")
-        >>> feature.list_versions()  # doctest: +SKIP
-                name  version  dtype readiness  online_enabled             table    entities              created_at
-            0  sum_1d  V230323  FLOAT     DRAFT           False  [sf_event_table]  [customer] 2023-03-23 06:19:35.838
+        >>> feature.list_versions(include_id=False)  # doctest: +ELLIPSIS
+                              name  version  dtype         readiness  online_enabled            tables    primary_tables           entities   primary_entities  created_at  is_default
+            0  InvoiceCount_60days      ...  FLOAT  PRODUCTION_READY           False  [GROCERYINVOICE]  [GROCERYINVOICE]  [grocerycustomer]  [grocerycustomer]         ...  True
         """
         params = {}
         if feature_list_id:
@@ -412,9 +417,9 @@ class Feature(
         Examples
         --------
         >>> feature = catalog.get_feature("InvoiceCount_60days")
-        >>> feature.list_versions()  # doctest: +ELLIPSIS
-                id                 name  version  dtype         readiness  online_enabled            tables    primary_tables           entities   primary_entities  created_at  is_default
-            0  ...  InvoiceCount_60days      ...  FLOAT  PRODUCTION_READY           False  [GROCERYINVOICE]  [GROCERYINVOICE]  [grocerycustomer]  [grocerycustomer]         ...        True
+        >>> feature.list_versions(include_id=False)  # doctest: +ELLIPSIS
+                              name  version  dtype         readiness  online_enabled            tables    primary_tables           entities   primary_entities  created_at  is_default
+            0  InvoiceCount_60days      ...  FLOAT  PRODUCTION_READY           False  [GROCERYINVOICE]  [GROCERYINVOICE]  [grocerycustomer]  [grocerycustomer]         ...        True
         """
         output = self._list(include_id=True, params={"name": self.name})
         default_feature_id = self.feature_namespace.default_feature_id
