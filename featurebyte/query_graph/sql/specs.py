@@ -53,6 +53,7 @@ class AggregationType(StrEnum):
     WINDOW = "window"
     ITEM = "item"
     AS_AT = "as_at"
+    TARGET = "target"
 
 
 @dataclass  # type: ignore[misc]
@@ -696,6 +697,49 @@ class LookupSpec(NonTileBasedAggregationSpec):
             )
             specs.append(spec)
         return specs
+
+
+@dataclass
+class TargetSpec(NonTileBasedAggregationSpec):
+    """
+    TargetSpec contains all information required to generate sql for a target.
+    """
+
+    # TODO update to target parameters?
+    parameters: BaseGroupbyParameters
+
+    def agg_result_name(self) -> str:
+        return self.get_agg_result_name_from_groupby_parameters(self.parameters)
+
+    @property
+    def aggregation_type(self) -> AggregationType:
+        return AggregationType.TARGET
+
+    def get_source_hash_parameters(self) -> dict[str, Any]:
+        # TODO:
+        params: dict[str, Any] = {
+            "source_expr": self.source_expr.sql(),
+        }
+        return params
+
+    @classmethod
+    def construct_specs(
+        cls: Type[NonTileBasedAggregationSpecT],
+        node: Node,
+        aggregation_source: AggregationSource,
+        serving_names_mapping: Optional[dict[str, str]],
+    ) -> list[NonTileBasedAggregationSpecT]:
+        # TODO: update to target node
+        assert isinstance(node, AggregateAsAtNode)
+        return [
+            TargetSpec(
+                parameters=node.parameters,
+                aggregation_source=aggregation_source,
+                entity_ids=cast(List[ObjectId], node.parameters.entity_ids),
+                serving_names=node.parameters.serving_names,
+                serving_names_mapping=serving_names_mapping,
+            )
+        ]
 
 
 @dataclass
