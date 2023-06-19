@@ -479,6 +479,7 @@ class ForwardAggregateParameters(BaseGroupbyParameters):
     blind_spot: Optional[str]
     # TableDetails are needed because we will be performing the aggregation query directly on the calling table.
     table_details: TableDetails
+    timestamp_col: InColumnStr
 
 
 class ForwardAggregateNode(AggregationOpStructMixin, BaseNode):

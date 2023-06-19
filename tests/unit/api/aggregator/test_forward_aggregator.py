@@ -58,6 +58,7 @@ def test_forward_aggregate(forward_aggregator):
         "value_by": "col_float",
         "entity_ids": forward_aggregator.entity_ids,
         "table_details": forward_aggregator.view.tabular_source.table_details.dict(),
+        "timestamp_col": "event_timestamp",
     }
 
     # Assert Target's current node is the project node
@@ -82,6 +83,7 @@ def test_prepare_node_parameters(forward_aggregator):
         horizon="7d",
         blind_spot="1d",
         target_name="target",
+        timestamp_col="timestamp_col",
     )
     assert node_params == {
         "keys": forward_aggregator.keys,
@@ -94,6 +96,7 @@ def test_prepare_node_parameters(forward_aggregator):
         "value_by": "col_float",
         "entity_ids": forward_aggregator.entity_ids,
         "table_details": forward_aggregator.view.tabular_source.table_details,
+        "timestamp_col": "timestamp_col",
     }
 
 

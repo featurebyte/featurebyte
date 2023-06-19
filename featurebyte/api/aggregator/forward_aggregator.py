@@ -69,6 +69,7 @@ class ForwardAggregator(BaseAggregator):
             horizon=horizon,
             blind_spot=blind_spot,
             target_name=target_name,
+            timestamp_col=self.view.timestamp_column,
         )
         # Add forward aggregate node to graph.
         forward_aggregate_node = self.view.graph.add_operation(
@@ -101,6 +102,7 @@ class ForwardAggregator(BaseAggregator):
         horizon: Optional[str],
         blind_spot: Optional[str],
         target_name: Optional[str],
+        timestamp_col: str,
     ) -> dict[str, Any]:
         """
         Helper function to prepare node parameters.
@@ -133,6 +135,7 @@ class ForwardAggregator(BaseAggregator):
             "value_by": value_column,
             "entity_ids": self.entity_ids,
             "table_details": self.view.tabular_source.table_details,
+            "timestamp_col": timestamp_col,
         }
 
     def _validate_parameters(
