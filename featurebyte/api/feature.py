@@ -4,9 +4,10 @@ Feature and FeatureList classes
 # pylint: disable=too-many-lines
 from __future__ import annotations
 
+from typing import Any, ClassVar, Dict, List, Literal, Optional, Sequence, Tuple, Type, Union, cast
+
 import time
 from http import HTTPStatus
-from typing import Any, ClassVar, Dict, List, Literal, Optional, Sequence, Tuple, Type, Union, cast
 
 import pandas as pd
 from bson import ObjectId

@@ -4,7 +4,6 @@ FeatureListVersion class
 # pylint: disable=too-many-lines
 from __future__ import annotations
 
-from http import HTTPStatus
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -19,6 +18,8 @@ from typing import (
     Union,
     cast,
 )
+
+from http import HTTPStatus
 
 import pandas as pd
 from bson.objectid import ObjectId
