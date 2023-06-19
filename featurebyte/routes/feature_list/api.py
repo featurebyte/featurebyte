@@ -12,7 +12,6 @@ from http import HTTPStatus
 from fastapi import APIRouter, File, Form, Query, Request, UploadFile
 
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
@@ -29,6 +28,7 @@ from featurebyte.schema.common.base import DeleteResponse
 from featurebyte.schema.feature_list import (
     FeatureListCreate,
     FeatureListGetHistoricalFeatures,
+    FeatureListModelResponse,
     FeatureListNewVersionCreate,
     FeatureListPaginatedList,
     FeatureListPreview,
@@ -40,37 +40,39 @@ from featurebyte.schema.info import FeatureListInfo
 router = APIRouter(prefix="/feature_list")
 
 
-@router.post("", response_model=FeatureListModel, status_code=HTTPStatus.CREATED)
+@router.post("", response_model=FeatureListModelResponse, status_code=HTTPStatus.CREATED)
 async def create_feature_list(
     request: Request, data: Union[FeatureListCreate, FeatureListNewVersionCreate]
-) -> FeatureListModel:
+) -> FeatureListModelResponse:
     """
     Create FeatureList
     """
     controller = request.state.app_container.feature_list_controller
-    feature_list: FeatureListModel = await controller.create_feature_list(data=data)
+    feature_list: FeatureListModelResponse = await controller.create_feature_list(data=data)
     return feature_list
 
 
-@router.get("/{feature_list_id}", response_model=FeatureListModel)
-async def get_feature_list(request: Request, feature_list_id: PydanticObjectId) -> FeatureListModel:
+@router.get("/{feature_list_id}", response_model=FeatureListModelResponse)
+async def get_feature_list(
+    request: Request, feature_list_id: PydanticObjectId
+) -> FeatureListModelResponse:
     """
     Get FeatureList
     """
     controller = request.state.app_container.feature_list_controller
-    feature_list: FeatureListModel = await controller.get(document_id=feature_list_id)
+    feature_list: FeatureListModelResponse = await controller.get(document_id=feature_list_id)
     return feature_list
 
 
-@router.patch("/{feature_list_id}", response_model=FeatureListModel)
+@router.patch("/{feature_list_id}", response_model=FeatureListModelResponse)
 async def update_feature_list(
     request: Request, feature_list_id: PydanticObjectId, data: FeatureListUpdate
-) -> FeatureListModel:
+) -> FeatureListModelResponse:
     """
     Update FeatureList
     """
     controller = request.state.app_container.feature_list_controller
-    feature_list: FeatureListModel = await controller.update_feature_list(
+    feature_list: FeatureListModelResponse = await controller.update_feature_list(
         feature_list_id=feature_list_id,
         data=data,
     )

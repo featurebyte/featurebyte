@@ -27,6 +27,7 @@ from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.feature_list import (
     FeatureListCreate,
     FeatureListGetHistoricalFeatures,
+    FeatureListModelResponse,
     FeatureListNewVersionCreate,
     FeatureListPaginatedList,
     FeatureListPreview,
@@ -81,7 +82,7 @@ class FeatureListController(
 
     async def create_feature_list(
         self, data: Union[FeatureListCreate, FeatureListNewVersionCreate]
-    ) -> FeatureListModel:
+    ) -> FeatureListModelResponse:
         """
         Create FeatureList at persistent (GitDB or MongoDB)
 
@@ -92,7 +93,7 @@ class FeatureListController(
 
         Returns
         -------
-        FeatureListModel
+        FeatureListModelResponse
             Newly created feature list object
         """
         if isinstance(data, FeatureListCreate):
@@ -107,13 +108,29 @@ class FeatureListController(
             feature_list_namespace_id=document.feature_list_namespace_id,
             return_document=False,
         )
-        return document
+        return await self.get(document_id=document.id)
+
+    async def get(
+        self, document_id: ObjectId, exception_detail: str | None = None
+    ) -> FeatureListModelResponse:
+        document = await self.service.get_document(
+            document_id=document_id,
+            exception_detail=exception_detail,
+        )
+        namespace = await self.feature_list_namespace_service.get_document(
+            document_id=document.feature_list_namespace_id
+        )
+        output = FeatureListModelResponse(
+            **document.dict(by_alias=True),
+            is_default=namespace.default_feature_list_id == document.id,
+        )
+        return output
 
     async def update_feature_list(
         self,
         feature_list_id: ObjectId,
         data: FeatureListUpdate,
-    ) -> FeatureListModel:
+    ) -> FeatureListModelResponse:
         """
         Update FeatureList at persistent
 
@@ -126,7 +143,7 @@ class FeatureListController(
 
         Returns
         -------
-        FeatureListModel
+        FeatureListModelResponse
             FeatureList object with updated attribute(s)
         """
         if data.make_production_ready:
@@ -138,7 +155,6 @@ class FeatureListController(
                     ignore_guardrails=bool(data.ignore_guardrails),
                     return_document=False,
                 )
-
         return await self.get(document_id=feature_list_id)
 
     async def delete_feature_list(self, feature_list_id: ObjectId) -> None:
@@ -221,6 +237,7 @@ class FeatureListController(
         FeatureListPaginatedList
             List of documents fulfilled the filtering condition
         """
+        # pylint: disable=too-many-locals
         params: Dict[str, Any] = {"search": search, "name": name}
         if version:
             params["version"] = VersionIdentifier.from_str(version).dict()
@@ -230,13 +247,40 @@ class FeatureListController(
             query_filter["feature_list_namespace_id"] = feature_list_namespace_id
             params["query_filter"] = query_filter
 
-        return await self.list(
+        # list documents from persistent
+        document_data = await self.service.list_documents(
             page=page,
             page_size=page_size,
             sort_by=sort_by,
             sort_dir=sort_dir,
             **params,
         )
+
+        # prepare mappings to add additional attributes
+        namespace_ids = {
+            document["feature_list_namespace_id"] for document in document_data["data"]
+        }
+        namespace_id_to_default_id = {}
+        async for namespace in self.feature_list_namespace_service.list_documents_iterator(
+            query_filter={"_id": {"$in": list(namespace_ids)}}
+        ):
+            namespace_id_to_default_id[namespace["_id"]] = namespace["default_feature_list_id"]
+
+        # prepare output
+        output = []
+        for feature_list in document_data["data"]:
+            default_feature_list_id = namespace_id_to_default_id.get(
+                feature_list["feature_list_namespace_id"]
+            )
+            output.append(
+                FeatureListModelResponse(
+                    **feature_list,
+                    is_default=default_feature_list_id == feature_list["_id"],
+                )
+            )
+
+        document_data["data"] = output
+        return self.paginated_document_class(**document_data)
 
     async def preview(
         self, featurelist_preview: FeatureListPreview, get_credential: Any

@@ -3,7 +3,7 @@ Feature API route controller
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Literal, Optional, Union, cast
+from typing import Any, Dict, Literal, Optional, Union
 
 from http import HTTPStatus
 from pprint import pformat
@@ -19,11 +19,7 @@ from featurebyte.exception import (
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature import DefaultVersionMode, FeatureModel, FeatureReadiness
-from featurebyte.routes.common.base import (
-    BaseDocumentController,
-    DerivePrimaryEntityMixin,
-    PaginatedDocument,
-)
+from featurebyte.routes.common.base import BaseDocumentController, DerivePrimaryEntityMixin
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.feature import (
     BatchFeatureCreate,
@@ -46,7 +42,6 @@ from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.service.info import InfoService
-from featurebyte.service.mixin import Document
 from featurebyte.service.preview import PreviewService
 from featurebyte.service.version import VersionService
 
@@ -141,51 +136,21 @@ class FeatureController(
         return await self.get(document_id=document.id)
 
     async def get(
-        self,
-        document_id: ObjectId,
-        exception_detail: str | None = None,
-    ) -> Document:
+        self, document_id: ObjectId, exception_detail: str | None = None
+    ) -> FeatureModelResponse:
         document = await self.service.get_document(
             document_id=document_id,
             exception_detail=exception_detail,
         )
+        namespace = await self.feature_namespace_service.get_document(
+            document_id=document.feature_namespace_id
+        )
         output = FeatureModelResponse(
             **document.dict(by_alias=True),
+            is_default=namespace.default_feature_id == document.id,
             primary_entity_ids=await self.derive_primary_entity_ids(entity_ids=document.entity_ids),
         )
-        return cast(Document, output)
-
-    async def list(
-        self,
-        page: int = 1,
-        page_size: int = 10,
-        sort_by: str | None = "created_at",
-        sort_dir: Literal["asc", "desc"] = "desc",
-        **kwargs: Any,
-    ) -> PaginatedDocument:
-        document_data = await self.service.list_documents(
-            page=page,
-            page_size=page_size,
-            sort_by=sort_by,
-            sort_dir=sort_dir,
-            **kwargs,
-        )
-        entity_id_to_entity = await self.get_entity_id_to_entity(doc_list=document_data["data"])
-
-        output = []
-        for feature in document_data["data"]:
-            primary_entity_ids = await self.derive_primary_entity_ids(
-                entity_ids=feature["entity_ids"], entity_id_to_entity=entity_id_to_entity
-            )
-            output.append(
-                FeatureModelResponse(
-                    **feature,
-                    primary_entity_ids=primary_entity_ids,
-                )
-            )
-
-        document_data["data"] = output
-        return cast(PaginatedDocument, self.paginated_document_class(**document_data))
+        return output
 
     async def update_feature(
         self,
@@ -326,6 +291,7 @@ class FeatureController(
         FeaturePaginatedList
             List of documents fulfilled the filtering condition
         """
+        # pylint: disable=too-many-locals
         params: Dict[str, Any] = {"search": search, "name": name}
         if version:
             params["version"] = VersionIdentifier.from_str(version).dict()
@@ -341,13 +307,41 @@ class FeatureController(
             query_filter["feature_namespace_id"] = feature_namespace_id
             params["query_filter"] = query_filter
 
-        return await self.list(
+        # list documents from persistent
+        document_data = await self.service.list_documents(
             page=page,
             page_size=page_size,
             sort_by=sort_by,
             sort_dir=sort_dir,
             **params,
         )
+
+        # prepare mappings to add additional attributes
+        entity_id_to_entity = await self.get_entity_id_to_entity(doc_list=document_data["data"])
+        namespace_ids = {document["feature_namespace_id"] for document in document_data["data"]}
+        namespace_id_to_default_id = {}
+        async for namespace in self.feature_namespace_service.list_documents_iterator(
+            query_filter={"_id": {"$in": list(namespace_ids)}}
+        ):
+            namespace_id_to_default_id[namespace["_id"]] = namespace["default_feature_id"]
+
+        # prepare output
+        output = []
+        for feature in document_data["data"]:
+            default_feature_id = namespace_id_to_default_id.get(feature["feature_namespace_id"])
+            primary_entity_ids = await self.derive_primary_entity_ids(
+                entity_ids=feature["entity_ids"], entity_id_to_entity=entity_id_to_entity
+            )
+            output.append(
+                FeatureModelResponse(
+                    **feature,
+                    is_default=default_feature_id == feature["_id"],
+                    primary_entity_ids=primary_entity_ids,
+                )
+            )
+
+        document_data["data"] = output
+        return self.paginated_document_class(**document_data)
 
     async def preview(self, feature_preview: FeaturePreview, get_credential: Any) -> dict[str, Any]:
         """

@@ -72,6 +72,7 @@ from featurebyte.schema.deployment import DeploymentCreate
 from featurebyte.schema.feature_list import (
     FeatureListCreate,
     FeatureListGetHistoricalFeatures,
+    FeatureListModelResponse,
     FeatureListUpdate,
     FeatureVersionInfo,
 )
@@ -315,8 +316,8 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
     # class variables
     _route = "/feature_list"
     _update_schema_class = FeatureListUpdate
-    _list_schema = FeatureListModel
-    _get_schema = FeatureListModel
+    _list_schema = FeatureListModelResponse
+    _get_schema = FeatureListModelResponse
     _list_fields = [
         "name",
         "version",
