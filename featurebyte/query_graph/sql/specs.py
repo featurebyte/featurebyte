@@ -709,6 +709,7 @@ class ForwardAggregateSpec(NonTileBasedAggregationSpec):
 
     parameters: ForwardAggregateParameters
 
+    @property
     def agg_result_name(self) -> str:
         return self.get_agg_result_name_from_groupby_parameters(self.parameters)
 
