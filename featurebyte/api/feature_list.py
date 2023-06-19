@@ -83,10 +83,10 @@ class FeatureListNamespaceListHandler(ListHandler):
     Additional handling for feature list namespace.
     """
 
-    def additional_post_processing(self, feature_lists: pd.DataFrame) -> pd.DataFrame:
+    def additional_post_processing(self, item_list: pd.DataFrame) -> pd.DataFrame:
         # add information about default feature list version
         feature_list_versions = FeatureList.list_versions(include_id=True)
-        feature_lists = feature_lists.merge(
+        feature_lists = item_list.merge(
             feature_list_versions[["id", "online_frac", "deployed"]].rename(
                 columns={"id": "default_feature_list_id"}
             ),
