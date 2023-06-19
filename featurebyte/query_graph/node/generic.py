@@ -469,49 +469,60 @@ class LagNode(BaseSeriesOutputNode):
         return [], ExpressionStr(expression)
 
 
-class ForwardAggregateNode(BaseNode):
+class ForwardAggregateNode(AggregationOpStructMixin, BaseNode):
     """
     ForwardAggregateNode class.
     """
 
-    class Parameters(BaseModel):
+    class Parameters(BaseGroupbyParameters):
         """
         Forward aggregate parameters
         """
 
+        name: Optional[str]
         horizon: Optional[str]
         blind_spot: Optional[str]
-        keys: List[InColumnStr]  # group by keys
-        parent: Optional[InColumnStr]
-        agg_func: AggFunc
-        value_by: InColumnStr  # aggregate column
-        serving_name: str
-        entity_ids: Optional[List[PydanticObjectId]]
         # TableDetails are needed because we will be performing the aggregation query directly on the calling table.
         table_details: TableDetails
 
     type: Literal[NodeType.FORWARD_AGGREGATE] = Field(NodeType.FORWARD_AGGREGATE, const=True)
-    output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
+    output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: Parameters
 
     @property
     def max_input_count(self) -> int:
         return 1
 
-    def _derive_node_operation_info(
+    def _get_aggregations(
         self,
-        inputs: List[OperationStructure],
-        branch_state: OperationStructureBranchState,
-        global_state: OperationStructureInfo,
-    ) -> OperationStructure:
-        input_op_structure = inputs[0]
-        assert input_op_structure is not None
-        return OperationStructure(
-            output_type=NodeOutputType.SERIES,
-            output_category=NodeOutputCategory.TARGET,
-            columns=input_op_structure.columns,
-            row_index_lineage=(self.name,),
-        )
+        columns: List[ViewDataColumn],
+        node_name: str,
+        other_node_names: Set[str],
+        output_var_type: DBVarType,
+    ) -> List[AggregationColumn]:
+        col_name_map = {col.name: col for col in columns}
+        return [
+            AggregationColumn(
+                name=self.parameters.name,
+                method=self.parameters.agg_func,
+                keys=self.parameters.keys,
+                window=self.parameters.horizon,
+                category=self.parameters.value_by,
+                column=col_name_map.get(self.parameters.parent),
+                filter=any(col.filter for col in columns),
+                aggregation_type=self.type,
+                node_names={node_name}.union(other_node_names),
+                node_name=node_name,
+                dtype=output_var_type,
+            )
+        ]
+
+    def _exclude_source_columns(self) -> List[str]:
+        cols = self.parameters.keys
+        return [str(col) for col in cols]
+
+    def _is_time_based(self) -> bool:
+        return True
 
     def _get_required_input_columns(
         self, input_index: int, available_column_names: List[str]

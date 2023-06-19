@@ -29,13 +29,13 @@ class ForwardAggregator(BaseAggregator):
     def forward_aggregate(
         self,
         value_column: str,
-        method: Optional[str] = None,
+        method: str,
         horizon: Optional[str] = None,
         blind_spot: Optional[str] = None,
         target_name: Optional[str] = None,
     ) -> Target:
         """
-        Aggregate given value_column for each group specified in keys over a list of time windows.
+        Aggregate given value_column for each group specified in keys over a time horizon.
 
         Parameters
         ----------
@@ -74,7 +74,7 @@ class ForwardAggregator(BaseAggregator):
         forward_aggregate_node = self.view.graph.add_operation(
             node_type=NodeType.FORWARD_AGGREGATE,
             node_params=node_params,
-            node_output_type=NodeOutputType.SERIES,
+            node_output_type=NodeOutputType.FRAME,
             input_nodes=[self.view.node],
         )
         # Project target node.
@@ -97,7 +97,7 @@ class ForwardAggregator(BaseAggregator):
     def _prepare_node_parameters(
         self,
         value_column: str,
-        method: Optional[str],
+        method: str,
         horizon: Optional[str],
         blind_spot: Optional[str],
         target_name: Optional[str],
@@ -129,7 +129,7 @@ class ForwardAggregator(BaseAggregator):
             "horizon": horizon,
             "blind_spot": blind_spot,
             "name": target_name,
-            "serving_name": self.serving_names[0],
+            "serving_names": self.serving_names,
             "value_by": value_column,
             "entity_ids": self.entity_ids,
             "table_details": self.view.tabular_source.table_details,

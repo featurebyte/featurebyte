@@ -46,13 +46,15 @@ def test_forward_aggregate(forward_aggregator):
     assert len(forward_aggregate_nodes) == 1
     forward_aggregate_node = forward_aggregate_nodes[0]
     assert forward_aggregate_node.type == NodeType.FORWARD_AGGREGATE
+    assert forward_aggregate_node.output_type == NodeOutputType.FRAME
     assert forward_aggregate_node.parameters.dict() == {
         "keys": forward_aggregator.keys,
+        "name": "target",
         "parent": "col_float",
         "agg_func": AggFunc.SUM,
         "horizon": "7d",
         "blind_spot": "1d",
-        "serving_name": forward_aggregator.serving_names[0],
+        "serving_names": forward_aggregator.serving_names,
         "value_by": "col_float",
         "entity_ids": forward_aggregator.entity_ids,
         "table_details": forward_aggregator.view.tabular_source.table_details.dict(),
@@ -64,6 +66,10 @@ def test_forward_aggregate(forward_aggregator):
     assert target_node.parameters.dict() == {
         "columns": ["target"],
     }
+
+    # Get operation structure to verify output category
+    operation_structure = target.internal_graph.extract_operation_structure(target_node)
+    assert operation_structure.output_category == "target"
 
 
 def test_prepare_node_parameters(forward_aggregator):
@@ -84,7 +90,7 @@ def test_prepare_node_parameters(forward_aggregator):
         "horizon": "7d",
         "blind_spot": "1d",
         "name": "target",
-        "serving_name": forward_aggregator.serving_names[0],
+        "serving_names": forward_aggregator.serving_names,
         "value_by": "col_float",
         "entity_ids": forward_aggregator.entity_ids,
         "table_details": forward_aggregator.view.tabular_source.table_details,
