@@ -231,6 +231,35 @@ def to_request_func(response_dict: dict[str, Any], page: int) -> bool:
     return bool(response_dict["total"] > (page * response_dict["page_size"]))
 
 
+def get_api_object_by_id(route: str, id_value: ObjectId) -> dict[str, Any]:
+    """
+    Retrieve api object by given route & id
+
+    Parameters
+    ----------
+    route: str
+        Route to retrieve object
+    id_value: ObjectId
+        Id of object to retrieve
+
+    Returns
+    -------
+    dict[str, Any]
+        Retrieved object in dict
+
+    Raises
+    ------
+    RecordRetrievalException
+        When failed to retrieve from list route
+    """
+    client = Configurations().get_client()
+    response = client.get(url=f"{route}/{id_value}")
+    if response.status_code == HTTPStatus.OK:
+        object_dict = dict(response.json())
+        return object_dict
+    raise RecordRetrievalException(response, "Failed to retrieve specified object.")
+
+
 def iterate_api_object_using_paginated_routes(
     route: str, params: Optional[dict[str, Any]] = None
 ) -> Iterator[dict[str, Any]]:

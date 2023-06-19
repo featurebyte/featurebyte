@@ -19,33 +19,25 @@ from typing import (
     cast,
 )
 
-import collections
 from http import HTTPStatus
 
 import pandas as pd
-from alive_progress import alive_bar
 from bson.objectid import ObjectId
 from pydantic import Field, root_validator
 from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiObject, ConflictResolution
-from featurebyte.api.api_object_util import (
-    PAGINATED_CALL_PAGE_SIZE,
-    ForeignKeyMapping,
-    iterate_api_object_using_paginated_routes,
-)
+from featurebyte.api.api_object_util import ForeignKeyMapping
 from featurebyte.api.base_table import TableApiObject
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
-from featurebyte.api.feature_group import BaseFeatureGroup, FeatureGroup
+from featurebyte.api.feature_group import BaseFeatureGroup, FeatureGroup, Item
 from featurebyte.api.feature_job import FeatureJobMixin, FeatureJobStatusResult
-from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.historical_feature_table import HistoricalFeatureTable
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.savable_api_object import DeletableApiObject, SavableApiObject
 from featurebyte.common.descriptor import ClassInstanceMethodDescriptor
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.env_util import get_alive_bar_additional_params
 from featurebyte.common.utils import (
     convert_to_list_of_strings,
     dataframe_to_arrow_bytes,
@@ -67,7 +59,6 @@ from featurebyte.models.feature_list import (
     FrozenFeatureListNamespaceModel,
 )
 from featurebyte.models.tile import TileSpec
-from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.schema.deployment import DeploymentCreate
 from featurebyte.schema.feature_list import (
     FeatureListCreate,
@@ -332,53 +323,6 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
     )
     internal_feature_ids: List[PydanticObjectId] = Field(alias="feature_ids", default_factory=list)
 
-    @root_validator(pre=True)
-    @classmethod
-    def _initialize_feature_objects_and_items(cls, values: dict[str, Any]) -> dict[str, Any]:
-        if "feature_ids" in values:
-            # FeatureList object constructed in SDK will not have feature_ids attribute,
-            # only the record retrieved from the persistent contains this attribute.
-            # Use this check to decide whether to make API call to retrieve features.
-            feature_id_to_object = {}
-            id_value = values["_id"]
-            feature_store_map: Dict[ObjectId, FeatureStore] = {}
-            with alive_bar(
-                total=len(values["feature_ids"]),
-                title="Loading Feature(s)",
-                **get_alive_bar_additional_params(),
-            ) as progress_bar:
-                for feature_dict in iterate_api_object_using_paginated_routes(
-                    route="/feature",
-                    params={"feature_list_id": id_value, "page_size": PAGINATED_CALL_PAGE_SIZE},
-                ):
-                    # store the feature store retrieve result to reuse it if same feature store are called again
-                    feature_store_id = TabularSource(
-                        **feature_dict["tabular_source"]
-                    ).feature_store_id
-                    if feature_store_id not in feature_store_map:
-                        feature_store_map[feature_store_id] = FeatureStore.get_by_id(
-                            feature_store_id
-                        )
-                    feature_dict["feature_store"] = feature_store_map[feature_store_id]
-
-                    # deserialize feature record into feature object
-                    feature = Feature.from_persistent_object_dict(object_dict=feature_dict)
-                    feature_id_to_object[str(feature.id)] = feature
-                    progress_bar.text = feature.name
-                    progress_bar()  # pylint: disable=not-callable
-
-                # preserve the order of features
-                items = []
-                feature_objects = collections.OrderedDict()
-                for feature_id in values["feature_ids"]:
-                    feature = feature_id_to_object[str(feature_id)]
-                    feature_objects[feature.name] = feature
-                    items.append(feature)
-
-            values["items"] = items
-            values["feature_objects"] = feature_objects
-        return values
-
     @root_validator
     @classmethod
     def _initialize_feature_list_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
@@ -389,7 +333,16 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         return values
 
     @typechecked
-    def __init__(self, items: Sequence[Union[Feature, BaseFeatureGroup]], name: str, **kwargs: Any):
+    def __init__(self, items: Sequence[Item], name: str, **kwargs: Any):
+        if "_id" in kwargs and "feature_ids" in kwargs:
+            # FeatureList object constructed in SDK will not have _id & feature_ids attribute,
+            # only the record retrieved from the persistent if kwargs contain these attributes.
+            # Use this check to decide whether to make API call to retrieve features.
+            items, feature_objects = self._initialize_items_and_feature_objects_from_persistent(
+                feature_list_id=kwargs["_id"], feature_ids=kwargs["feature_ids"]
+            )
+            kwargs["feature_objects"] = feature_objects
+
         super().__init__(items=items, name=name, **kwargs)
 
     @property

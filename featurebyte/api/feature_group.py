@@ -4,22 +4,29 @@ Feature group module.
 
 from __future__ import annotations
 
-from typing import Any, List, Optional, OrderedDict, Sequence, Set, Tuple, Union, cast
+from typing import Any, Dict, List, Optional, OrderedDict, Sequence, Set, Tuple, Union, cast
 
 import collections
 import time
 from http import HTTPStatus
 
 import pandas as pd
+from alive_progress import alive_bar
 from bson import ObjectId
-from pydantic import Field, parse_obj_as, root_validator
+from pydantic import Field, parse_obj_as
 from typeguard import typechecked
 
 from featurebyte.api.api_object import ConflictResolution
+from featurebyte.api.api_object_util import (
+    PAGINATED_CALL_PAGE_SIZE,
+    iterate_api_object_using_paginated_routes,
+)
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
+from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.mixin import AsyncMixin
 from featurebyte.common.doc_util import FBAutoDoc
+from featurebyte.common.env_util import get_alive_bar_additional_params
 from featurebyte.common.typing import Scalar
 from featurebyte.common.utils import dataframe_from_json, enforce_observation_set_row_order
 from featurebyte.config import Configurations
@@ -31,10 +38,15 @@ from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureCluster, FeatureListModel
 from featurebyte.models.relationship_analysis import derive_primary_entity
 from featurebyte.query_graph.graph import GlobalQueryGraph
+from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.schema.feature import BatchFeatureCreatePayload, BatchFeatureItem
 from featurebyte.schema.feature_list import FeatureListPreview, FeatureListSQL
 
 logger = get_logger(__name__)
+
+
+Item = Union[Feature, "BaseFeatureGroup"]
+FeatureObjects = OrderedDict[str, Feature]
 
 
 class BaseFeatureGroup(AsyncMixin):
@@ -45,20 +57,93 @@ class BaseFeatureGroup(AsyncMixin):
 
     Parameters
     ----------
-    items: Sequence[Union[Feature, BaseFeatureGroup]]
+    items: Sequence[Item]
         List of feature like objects to be used to create the FeatureList
-    feature_objects: OrderedDict[str, Feature]
+    feature_objects: FeatureObjects
         Dictionary of feature name to feature object
     """
 
-    items: Sequence[Union[Feature, BaseFeatureGroup]] = Field(
+    items: Sequence[Item] = Field(
         exclude=True,
         description="A sequence that consists of Feature, FeatureList, and FeatureGroup objects. This sequence is used "
         "to create a new FeatureGroup that contains the Feature objects found within the provided items.",
     )
-    feature_objects: OrderedDict[str, Feature] = Field(
-        exclude=True, default_factory=collections.OrderedDict
-    )
+    feature_objects: FeatureObjects = Field(exclude=True, default_factory=collections.OrderedDict)
+
+    @classmethod
+    def _flatten_items(cls, items: Sequence[Item]) -> FeatureObjects:
+        feature_objects = collections.OrderedDict()
+        feature_ids = set()
+        for item in items:
+            if isinstance(item, Feature):
+                if item.name is None:
+                    raise ValueError(f'Feature (feature.id: "{item.id}") name must not be None!')
+                if item.name in feature_objects:
+                    raise ValueError(f'Duplicated feature name (feature.name: "{item.name}")!')
+                if item.id in feature_ids:
+                    raise ValueError(f'Duplicated feature id (feature.id: "{item.id}")!')
+                feature_objects[item.name] = item
+                feature_ids.add(item.id)
+            else:
+                for name, feature in item.feature_objects.items():
+                    if feature.name in feature_objects:
+                        raise ValueError(
+                            f'Duplicated feature name (feature.name: "{feature.name}")!'
+                        )
+                    if feature.id in feature_ids:
+                        raise ValueError(f'Duplicated feature id (feature.id: "{feature.id}")!')
+                    feature_objects[name] = feature
+        return feature_objects
+
+    @staticmethod
+    def _initialize_items_and_feature_objects_from_persistent(
+        feature_list_id: ObjectId, feature_ids: Sequence[ObjectId]
+    ) -> Tuple[Sequence[Item], FeatureObjects]:
+        feature_id_to_object = {}
+        feature_store_map: Dict[ObjectId, FeatureStore] = {}
+        with alive_bar(
+            total=len(feature_ids),
+            title="Loading Feature(s)",
+            **get_alive_bar_additional_params(),
+        ) as progress_bar:
+            for feature_dict in iterate_api_object_using_paginated_routes(
+                route="/feature",
+                params={"feature_list_id": feature_list_id, "page_size": PAGINATED_CALL_PAGE_SIZE},
+            ):
+                # store the feature store retrieve result to reuse it if same feature store are called again
+                feature_store_id = TabularSource(**feature_dict["tabular_source"]).feature_store_id
+                if feature_store_id not in feature_store_map:
+                    feature_store_map[feature_store_id] = FeatureStore.get_by_id(feature_store_id)
+                feature_dict["feature_store"] = feature_store_map[feature_store_id]
+
+                # deserialize feature record into feature object
+                feature = Feature.from_persistent_object_dict(object_dict=feature_dict)
+                feature_id_to_object[str(feature.id)] = feature
+                progress_bar.text = feature.name
+                progress_bar()  # pylint: disable=not-callable
+
+            # preserve the order of features
+            items = []
+            feature_objects = collections.OrderedDict()
+            for feature_id in feature_ids:
+                feature = feature_id_to_object[str(feature_id)]
+                assert feature.name is not None
+                feature_objects[feature.name] = feature
+                items.append(feature)
+        return items, feature_objects
+
+    @typechecked
+    def __init__(self, items: Sequence[Item], **kwargs: Any):
+        if items:
+            # handle the case where the object is created from a list of
+            # Feature / FeatureGroup / FeatureList objects
+            kwargs["feature_objects"] = self._flatten_items(items)
+
+        super().__init__(items=items, **kwargs)
+        # sanity check: make sure we don't make a copy on global query graph
+        for item_origin, item in zip(items, self.items):
+            if isinstance(item_origin, Feature) and isinstance(item, Feature):
+                assert id(item_origin.graph.nodes) == id(item.graph.nodes)
 
     @property
     def _features(self) -> list[Feature]:
@@ -127,42 +212,6 @@ class BaseFeatureGroup(AsyncMixin):
             [Entity.get_by_id(entity_id) for entity_id in entity_ids]
         )
         return primary_entity
-
-    @root_validator
-    @classmethod
-    def _set_feature_objects(cls, values: dict[str, Any]) -> dict[str, Any]:
-        feature_objects = collections.OrderedDict()
-        feature_ids = set()
-        items = values.get("items", [])
-        for item in items:
-            if isinstance(item, Feature):
-                if item.name is None:
-                    raise ValueError(f'Feature (feature.id: "{item.id}") name must not be None!')
-                if item.name in feature_objects:
-                    raise ValueError(f'Duplicated feature name (feature.name: "{item.name}")!')
-                if item.id in feature_ids:
-                    raise ValueError(f'Duplicated feature id (feature.id: "{item.id}")!')
-                feature_objects[item.name] = item
-                feature_ids.add(item.id)
-            else:
-                for name, feature in item.feature_objects.items():
-                    if feature.name in feature_objects:
-                        raise ValueError(
-                            f'Duplicated feature name (feature.name: "{feature.name}")!'
-                        )
-                    if feature.id in feature_ids:
-                        raise ValueError(f'Duplicated feature id (feature.id: "{feature.id}")!')
-                    feature_objects[name] = feature
-        values["feature_objects"] = feature_objects
-        return values
-
-    @typechecked
-    def __init__(self, items: Sequence[Union[Feature, BaseFeatureGroup]], **kwargs: Any):
-        super().__init__(items=items, **kwargs)
-        # sanity check: make sure we don't make a copy on global query graph
-        for item_origin, item in zip(items, self.items):
-            if isinstance(item_origin, Feature) and isinstance(item, Feature):
-                assert id(item_origin.graph.nodes) == id(item.graph.nodes)
 
     def _subset_single_column(self, column: str) -> Feature:
         return self.feature_objects[column]
