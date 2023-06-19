@@ -72,12 +72,20 @@ class FeatureListNewVersionCreate(FeatureByteBaseModel):
     )
 
 
+class FeatureListModelResponse(FeatureListModel):
+    """
+    Extended FeatureListModel with additional fields
+    """
+
+    is_default: bool
+
+
 class FeatureListPaginatedList(PaginationMixin):
     """
     Paginated list of Entity
     """
 
-    data: List[FeatureListModel]
+    data: List[FeatureListModelResponse]
 
 
 class FeatureListUpdate(FeatureByteBaseModel):

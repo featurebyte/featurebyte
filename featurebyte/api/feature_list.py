@@ -63,6 +63,7 @@ from featurebyte.schema.deployment import DeploymentCreate
 from featurebyte.schema.feature_list import (
     FeatureListCreate,
     FeatureListGetHistoricalFeatures,
+    FeatureListModelResponse,
     FeatureListUpdate,
     FeatureVersionInfo,
 )
@@ -306,8 +307,8 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
     # class variables
     _route = "/feature_list"
     _update_schema_class = FeatureListUpdate
-    _list_schema = FeatureListModel
-    _get_schema = FeatureListModel
+    _list_schema = FeatureListModelResponse
+    _get_schema = FeatureListModelResponse
     _list_fields = [
         "name",
         "version",
@@ -315,6 +316,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         "online_frac",
         "deployed",
         "created_at",
+        "is_default",
     ]
 
     # pydantic instance variable (internal use)
@@ -939,16 +941,16 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         --------
         List saved FeatureList versions (calling from FeatureList class):
 
-        >>> FeatureList.list_versions()  # doctest: +SKIP
-                           name  num_feature  online_frac  deployed              created_at
-        0  invoice_feature_list            1          0.0     False 2023-03-24 05:05:24.875
+        >>> FeatureList.list_versions(include_id=False)  # doctest: +ELLIPSIS
+                           name  version  num_feature  online_frac  deployed  created_at  is_default
+        0  invoice_feature_list      ...            1          0.0     False         ...  True
 
         List FeatureList versions with the same name (calling from FeatureList object):
 
-        >>> feature_list = catalog.get_feature_list("invoice_feature_list") # doctest: +SKIP
-        >>> feature_list.list_versions()  # doctest: +SKIP
-                           name  num_feature  online_frac  deployed              created_at
-        0  invoice_feature_list            1          0.0     False 2023-03-24 01:53:51.515
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")  # doctest: +ELLIPSIS
+        >>> feature_list.list_versions(include_id=False)  # doctest: +ELLIPSIS
+                           name  version  online_frac  deployed created_at  is_default
+        0  invoice_feature_list      ...          0.0     False        ...        True
 
         See Also
         --------
@@ -973,9 +975,9 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         Examples
         --------
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
-        >>> feature_list.list_versions()  # doctest: +SKIP
-                           name  online_frac  deployed              created_at  is_default
-        0  invoice_feature_list          0.0     False 2023-03-24 01:53:51.515        True
+        >>> feature_list.list_versions(include_id=False)  # doctest: +ELLIPSIS
+                           name  version  online_frac  deployed  created_at  is_default
+        0  invoice_feature_list      ...          0.0     False         ...        True
         """
         output = self._list(include_id=True, params={"name": self.name})
         default_feature_list_id = self.feature_list_namespace.default_feature_list_id

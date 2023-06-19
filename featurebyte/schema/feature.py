@@ -120,6 +120,7 @@ class FeatureModelResponse(FeatureModel):
     Extended Feature model
     """
 
+    is_default: bool
     primary_entity_ids: List[PydanticObjectId]
 
 
