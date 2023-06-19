@@ -8,7 +8,7 @@ component: list_versions
 issues: []
 
 # A brief description of the change.
-note: "update Feature's & FeatureList's `list_versions` method"
+note: "update Feature's & FeatureList's `list_versions` method by adding `is_default` to the dataframe output"
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
