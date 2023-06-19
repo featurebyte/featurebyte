@@ -147,7 +147,7 @@ def test_feature_list_creation__not_a_list():
         FeatureList("my_feature", name="my_feature_list")
     expected_error = (
         'type of argument "items"[0] must be one of (featurebyte.api.feature.Feature,'
-        " BaseFeatureGroup); got str instead"
+        " featurebyte.api.feature_group.BaseFeatureGroup); got str instead"
     )
     assert expected_error in str(exc_info.value)
 
@@ -165,7 +165,7 @@ def test_feature_list_creation__invalid_item():
         FeatureList(["my_feature"], name="my_feature_list")
     error_message = (
         'type of argument "items"[0] must be one of '
-        "(featurebyte.api.feature.Feature, BaseFeatureGroup); got str instead"
+        "(featurebyte.api.feature.Feature, featurebyte.api.feature_group.BaseFeatureGroup); got str instead"
     )
     assert error_message in str(exc_info.value)
 
