@@ -410,9 +410,9 @@ class Feature(
         Examples
         --------
         >>> feature = catalog.get_feature("InvoiceCount_60days")
-        >>> feature.list_versions()  # doctest: +SKIP
-                 name  version  dtype readiness  online_enabled             table    entities              created_at  is_default
-            0  sum_1d  V230323  FLOAT     DRAFT           False  [sf_event_table]  [customer] 2023-03-23 06:19:35.838        True
+        >>> feature.list_versions()  # doctest: +ELLIPSIS
+                id                 name  version  dtype         readiness  online_enabled            tables    primary_tables           entities   primary_entities  created_at  is_default
+            0  ...  InvoiceCount_60days      ...  FLOAT  PRODUCTION_READY           False  [GROCERYINVOICE]  [GROCERYINVOICE]  [grocerycustomer]  [grocerycustomer]         ...        True
         """
         output = self._list(include_id=True, params={"name": self.name})
         default_feature_id = self.feature_namespace.default_feature_id

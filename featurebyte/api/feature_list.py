@@ -1020,9 +1020,9 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         Examples
         --------
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
-        >>> feature_list.list_versions()  # doctest: +SKIP
-                           name  online_frac  deployed              created_at  is_default
-        0  invoice_feature_list          0.0     False 2023-03-24 01:53:51.515        True
+        >>> feature_list.list_versions()  # doctest: +ELLIPSIS
+            id                  name  version  online_frac  deployed  created_at  is_default
+        0  ...  invoice_feature_list  V230619          0.0     False         ...        True
         """
         output = self._list(include_id=True, params={"name": self.name})
         default_feature_list_id = self.feature_list_namespace.default_feature_list_id
