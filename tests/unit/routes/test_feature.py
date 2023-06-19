@@ -292,6 +292,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
             self.base_route, params={"name": create_response_dict["name"], "version": version}
         )
         response_dict = response.json()
+        create_response_dict["is_default"] = False
         assert response_dict["total"] == 1
         assert response_dict["data"] == [create_response_dict]
 

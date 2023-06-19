@@ -100,6 +100,7 @@ class Feature(
         "name",
         "version",
         *FEATURE_COMMON_LIST_FIELDS,
+        "is_default",
     ]
     _list_foreign_keys = FEATURE_LIST_FOREIGN_KEYS
 

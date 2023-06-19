@@ -325,6 +325,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         "online_frac",
         "deployed",
         "created_at",
+        "is_default",
     ]
 
     # pydantic instance variable (internal use)
