@@ -12,6 +12,10 @@ import pandas as pd
 from bson import ObjectId
 from typeguard import typechecked
 
+from featurebyte.api.api_handler.feature_job_setting_list_handler import (
+    FeatureJobSettingListHandler,
+)
+from featurebyte.api.api_handler.list import ListHandler
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.api_object_util import ForeignKeyMapping
 from featurebyte.api.base_table import TableApiObject
@@ -61,21 +65,17 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, ApiObject):
     ]
 
     @classmethod
-    @typechecked
-    def _post_process_list(cls, item_list: pd.DataFrame) -> pd.DataFrame:
-        records = super()._post_process_list(item_list)
-        # format results into dataframe
-        analysis_options = pd.json_normalize(records.analysis_options)
-        recommendation = pd.json_normalize(records.recommended_feature_job_setting)
-
-        return pd.concat(
-            [
-                records[["id", "created_at", "event_table"]],
-                analysis_options,
-                recommendation,
-            ],
-            axis=1,
+    def _list_handler(cls) -> ListHandler:
+        return FeatureJobSettingListHandler(
+            route=cls._route,
+            list_schema=cls._list_schema,
+            list_fields=cls._list_fields,
+            list_foreign_keys=cls._list_foreign_keys,
         )
+
+    @classmethod
+    def use_new_list_handler(cls) -> bool:
+        return True
 
     @classmethod
     def list(
