@@ -119,6 +119,8 @@ class ForwardAggregator(BaseAggregator):
             Blind spot of the aggregation
         target_name: str
             Name of the target column
+        timestamp_col: str
+            Timestamp column
 
         Returns
         -------
