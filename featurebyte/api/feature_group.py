@@ -497,17 +497,20 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
             retrieve_result=False,
             has_output_url=False,
         )
-        feature_list_dict = get_api_object_by_id(
-            route="/feature_list", id_value=feature_list_batch_feature_create.id
-        )
-        items, feature_objects = self._initialize_items_and_feature_objects_from_persistent(
-            feature_list_id=feature_list_batch_feature_create.id,
-            feature_ids=feature_list_dict["feature_ids"],
-        )
-        self.items = items
-        self.feature_objects = feature_objects
 
-        # delete temporary feature list
-        delete_api_object_by_id(
-            route="/feature_list", id_value=feature_list_batch_feature_create.id
-        )
+        try:
+            feature_list_dict = get_api_object_by_id(
+                route="/feature_list", id_value=feature_list_batch_feature_create.id
+            )
+            items, feature_objects = self._initialize_items_and_feature_objects_from_persistent(
+                feature_list_id=feature_list_batch_feature_create.id,
+                feature_ids=feature_list_dict["feature_ids"],
+            )
+            self.items = items
+            self.feature_objects = feature_objects
+
+        finally:
+            # delete temporary feature list
+            delete_api_object_by_id(
+                route="/feature_list", id_value=feature_list_batch_feature_create.id
+            )
