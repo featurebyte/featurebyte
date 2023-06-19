@@ -6,9 +6,7 @@ from __future__ import annotations
 from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar, Union
 
 import operator
-from functools import partial
 from http import HTTPStatus
-from itertools import groupby
 
 import pandas as pd
 from bson.objectid import ObjectId
@@ -23,8 +21,6 @@ from featurebyte.api.api_object_util import (
     ForeignKeyMapping,
     get_api_object_by_id,
     iterate_api_object_using_paginated_routes,
-    map_dict_list_to_name,
-    map_object_id_to_name,
 )
 from featurebyte.api.mixin import AsyncMixin
 from featurebyte.common.formatting_util import InfoDict
