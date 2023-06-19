@@ -5,6 +5,8 @@ from typing import List, Optional, Union
 
 import pandas as pd
 
+from featurebyte.api.api_handler.feature_namespace_list_handler import FeatureNamespaceListHandler
+from featurebyte.api.api_handler.list import ListHandler
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.feature_util import (
     FEATURE_COMMON_LIST_FIELDS,
@@ -96,17 +98,17 @@ class FeatureNamespace(FrozenFeatureNamespaceModel, ApiObject):
         return self.cached_model.default_version_mode
 
     @classmethod
-    def _post_process_list(cls, item_list: pd.DataFrame) -> pd.DataFrame:
-        features = super()._post_process_list(item_list)
+    def _list_handler(cls) -> ListHandler:
+        return FeatureNamespaceListHandler(
+            route=cls._route,
+            list_schema=cls._list_schema,
+            list_fields=cls._list_fields,
+            list_foreign_keys=cls._list_foreign_keys,
+        )
 
-        # replace id with default_feature_id
-        features["id"] = features["default_feature_id"]
-
-        # add online_enabled
-        features["online_enabled"] = features[
-            ["default_feature_id", "online_enabled_feature_ids"]
-        ].apply(lambda row: row[0] in row[1], axis=1)
-        return features
+    @classmethod
+    def use_new_list_handler(cls) -> bool:
+        return True
 
     @classmethod
     def list(

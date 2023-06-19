@@ -14,6 +14,8 @@ from bson import ObjectId
 from pydantic import Field, root_validator
 from typeguard import typechecked
 
+from featurebyte.api.api_handler.feature_list_handler import FeatureListHandler
+from featurebyte.api.api_handler.list import ListHandler
 from featurebyte.api.api_object_util import is_server_mode
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature_job import FeatureJobMixin
@@ -36,7 +38,7 @@ from featurebyte.enum import ConflictResolution
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.logging import get_logger
-from featurebyte.models.base import PydanticObjectId, VersionIdentifier, get_active_catalog_id
+from featurebyte.models.base import PydanticObjectId, get_active_catalog_id
 from featurebyte.models.feature import DefaultVersionMode, FeatureModel, FeatureReadiness
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.relationship_analysis import derive_primary_entity
@@ -339,13 +341,17 @@ class Feature(
         )
 
     @classmethod
-    def _post_process_list(cls, item_list: pd.DataFrame) -> pd.DataFrame:
-        features = super()._post_process_list(item_list)
-        # convert version strings
-        features["version"] = features["version"].apply(
-            lambda version: VersionIdentifier(**version).to_str()
+    def _list_handler(cls) -> ListHandler:
+        return FeatureListHandler(
+            route=cls._route,
+            list_schema=cls._list_schema,
+            list_fields=cls._list_fields,
+            list_foreign_keys=cls._list_foreign_keys,
         )
-        return features
+
+    @classmethod
+    def use_new_list_handler(cls) -> bool:
+        return True
 
     @classmethod
     def _list_versions(
