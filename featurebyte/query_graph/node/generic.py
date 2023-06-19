@@ -479,7 +479,7 @@ class ForwardAggregateNode(AggregationOpStructMixin, BaseNode):
         Forward aggregate parameters
         """
 
-        name: Optional[str]
+        name: str
         horizon: Optional[str]
         blind_spot: Optional[str]
         # TableDetails are needed because we will be performing the aggregation query directly on the calling table.
