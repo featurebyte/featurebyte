@@ -1151,7 +1151,9 @@ class Feature(
     def as_default_version(self) -> None:
         """
         When a feature has its default version mode set to manual, this method designates the Feature object as the
-        default version for that specific feature.
+        default version for that specific feature. Note that the specified feature must be a version with the highest
+        level of readiness. This method is used when there are other version that share the same level of readiness
+        as the default version and the user wants to manually set the default version.
 
         Each feature is recognized by its name and can possess numerous versions, though only a single default
         version is allowed.
