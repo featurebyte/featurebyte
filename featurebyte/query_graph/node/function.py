@@ -6,7 +6,8 @@ from typing import Any, Dict, List, Literal, Optional, Sequence, Tuple
 
 from pydantic import BaseModel, Field
 
-from featurebyte.enum import DBVarType, StrEnum
+from featurebyte.enum import DBVarType, FuncArgForm
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.base import BaseSeriesOutputNode
 from featurebyte.query_graph.node.metadata.operation import (
@@ -20,25 +21,20 @@ from featurebyte.query_graph.node.metadata.operation import (
 from featurebyte.query_graph.node.metadata.sdk_code import (
     CodeGenerationConfig,
     CodeGenerationContext,
+    ExpressionStr,
     StatementT,
     VariableNameGenerator,
     VarNameExpressionInfo,
 )
 
 
-class FuncArgType(StrEnum):
-    """FuncArgType class"""
-
-    VALUE = "value"
-    COLUMN = "column"
-
-
 class FunctionArg(BaseModel):
     """FunctionArg class"""
 
     value: Optional[Any]
+    dtype: DBVarType
     column_name: Optional[str]
-    type: FuncArgType
+    input_form: FuncArgForm
 
 
 class GenericFunctionNode(BaseSeriesOutputNode):
@@ -50,6 +46,7 @@ class GenericFunctionNode(BaseSeriesOutputNode):
         function_name: str
         function_args: List[FunctionArg]
         output_dtype: DBVarType
+        function_id: Optional[PydanticObjectId]
 
     type: Literal[NodeType.GENERIC_FUNCTION] = Field(NodeType.GENERIC_FUNCTION, const=True)
     parameters: Parameters
@@ -57,7 +54,7 @@ class GenericFunctionNode(BaseSeriesOutputNode):
     def _get_column_function_args(self) -> List[Optional[str]]:
         column_input_args = []
         for func_arg in self.parameters.function_args:
-            if func_arg.type == FuncArgType.COLUMN:
+            if func_arg.input_form == FuncArgForm.COLUMN:
                 column_input_args.append(func_arg.column_name)
         return column_input_args
 
@@ -138,4 +135,16 @@ class GenericFunctionNode(BaseSeriesOutputNode):
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        raise NotImplementedError
+        function_args = []
+        node_input_count = 0
+        for func_arg in self.parameters.function_args:
+            if func_arg.input_form == FuncArgForm.COLUMN:
+                function_args.append(node_inputs[node_input_count])
+                node_input_count += 1
+            else:
+                # TODO: use FunctionArg.dtype to format value
+                function_args.append(func_arg.value)
+
+        function_args = [str(arg) for arg in function_args]
+        expression = f"{self.parameters.function_name}({', '.join(function_args)})"
+        return [], ExpressionStr(expression)
