@@ -26,6 +26,8 @@ from bson.objectid import ObjectId
 from pydantic import Field, root_validator
 from typeguard import typechecked
 
+from featurebyte.api.api_handler.feature_list import FeatureListListHandler
+from featurebyte.api.api_handler.list import ListHandler
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.api_object_util import ForeignKeyMapping
 from featurebyte.api.base_table import TableApiObject
@@ -47,7 +49,7 @@ from featurebyte.config import Configurations
 from featurebyte.enum import ConflictResolution
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
 from featurebyte.feature_manager.model import ExtendedFeatureModel
-from featurebyte.models.base import PydanticObjectId, VersionIdentifier, get_active_catalog_id
+from featurebyte.models.base import PydanticObjectId, get_active_catalog_id
 from featurebyte.models.feature import DefaultVersionMode
 from featurebyte.models.feature_list import (
     FeatureListModel,
@@ -74,6 +76,33 @@ if TYPE_CHECKING:
     from featurebyte.api.deployment import Deployment
 else:
     Deployment = TypeVar("Deployment")
+
+
+class FeatureListNamespaceListHandler(ListHandler):
+    """
+    Additional handling for feature list namespace.
+    """
+
+    def additional_post_processing(self, item_list: pd.DataFrame) -> pd.DataFrame:
+        # add information about default feature list version
+        feature_list_versions = FeatureList.list_versions(include_id=True)
+        feature_lists = item_list.merge(
+            feature_list_versions[["id", "online_frac", "deployed"]].rename(
+                columns={"id": "default_feature_list_id"}
+            ),
+            on="default_feature_list_id",
+        )
+
+        # replace id with default_feature_list_id
+        feature_lists["id"] = feature_lists["default_feature_list_id"]
+
+        feature_lists["num_feature"] = feature_lists.feature_namespace_ids.apply(len)
+        feature_lists["readiness_frac"] = feature_lists.readiness_distribution.apply(
+            lambda readiness_distribution: FeatureReadinessDistribution(
+                __root__=readiness_distribution
+            ).derive_production_ready_fraction()
+        )
+        return feature_lists
 
 
 class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
@@ -192,28 +221,17 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
         return self.cached_model.status
 
     @classmethod
-    def _post_process_list(cls, item_list: pd.DataFrame) -> pd.DataFrame:
-        feature_lists = super()._post_process_list(item_list)
-
-        # add information about default feature list version
-        feature_list_versions = FeatureList.list_versions(include_id=True)
-        feature_lists = feature_lists.merge(
-            feature_list_versions[["id", "online_frac", "deployed"]].rename(
-                columns={"id": "default_feature_list_id"}
-            ),
-            on="default_feature_list_id",
+    def _list_handler(cls) -> ListHandler:
+        return FeatureListNamespaceListHandler(
+            route=cls._route,
+            list_schema=cls._list_schema,
+            list_fields=cls._list_fields,
+            list_foreign_keys=cls._list_foreign_keys,
         )
 
-        # replace id with default_feature_list_id
-        feature_lists["id"] = feature_lists["default_feature_list_id"]
-
-        feature_lists["num_feature"] = feature_lists.feature_namespace_ids.apply(len)
-        feature_lists["readiness_frac"] = feature_lists.readiness_distribution.apply(
-            lambda readiness_distribution: FeatureReadinessDistribution(
-                __root__=readiness_distribution
-            ).derive_production_ready_fraction()
-        )
-        return feature_lists
+    @classmethod
+    def use_new_list_handler(cls) -> bool:
+        return True
 
     @classmethod
     def list(
@@ -903,16 +921,17 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         return self.feature_list_namespace.status
 
     @classmethod
-    def _post_process_list(cls, item_list: pd.DataFrame) -> pd.DataFrame:
-        feature_lists = super()._post_process_list(item_list)
-        feature_lists["version"] = feature_lists["version"].apply(
-            lambda version_dict: VersionIdentifier(**version_dict).to_str()
+    def _list_handler(cls) -> ListHandler:
+        return FeatureListListHandler(
+            route=cls._route,
+            list_schema=cls._list_schema,
+            list_fields=cls._list_fields,
+            list_foreign_keys=cls._list_foreign_keys,
         )
-        feature_lists["num_feature"] = feature_lists.feature_ids.apply(len)
-        feature_lists["online_frac"] = (
-            feature_lists.online_enabled_feature_ids.apply(len) / feature_lists["num_feature"]
-        )
-        return feature_lists
+
+    @classmethod
+    def use_new_list_handler(cls) -> bool:
+        return True
 
     @classmethod
     def _list_versions(cls, include_id: Optional[bool] = True) -> pd.DataFrame:

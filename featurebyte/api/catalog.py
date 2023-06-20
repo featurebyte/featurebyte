@@ -11,7 +11,7 @@ from bson import ObjectId
 from pydantic import Field
 from typeguard import typechecked
 
-from featurebyte.api.api_handler.catalog_list_handler import CatalogListHandler
+from featurebyte.api.api_handler.catalog import CatalogListHandler
 from featurebyte.api.api_handler.list import ListHandler
 from featurebyte.api.api_object_util import NameAttributeUpdatableMixin
 from featurebyte.api.batch_feature_table import BatchFeatureTable
