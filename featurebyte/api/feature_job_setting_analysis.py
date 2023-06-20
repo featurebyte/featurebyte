@@ -12,7 +12,7 @@ import pandas as pd
 from bson import ObjectId
 from typeguard import typechecked
 
-from featurebyte.api.api_handler.feature_job_setting_analysis_list_handler import (
+from featurebyte.api.api_handler.feature_job_setting_analysis import (
     FeatureJobSettingAnalysisListHandler,
 )
 from featurebyte.api.api_handler.list import ListHandler
