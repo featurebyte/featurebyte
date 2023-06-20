@@ -507,7 +507,7 @@ if is_notebook():
                 raise exc_cls(**exc_kwargs).with_traceback(invoke_frame) from None
         default_showtraceback(cls, *args, **kwargs)
 
-    IPython.core.interactiveshell.InteractiveShell.showtraceback = _showtraceback
+    IPython.core.interactiveshell.InteractiveShell.showtraceback = _showtraceback  # type: ignore
 
     # log environment summary
     try:
