@@ -102,7 +102,7 @@ class ForwardAggregator(BaseAggregator):
         horizon: Optional[str],
         blind_spot: Optional[str],
         target_name: Optional[str],
-        timestamp_col: str,
+        timestamp_col: Optional[str],
     ) -> dict[str, Any]:
         """
         Helper function to prepare node parameters.

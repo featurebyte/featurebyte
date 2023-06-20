@@ -110,7 +110,7 @@ class ForwardAggregator(NonTileBasedAggregator[ForwardAggregateSpec]):
                     if s.parameters.parent
                     else None
                 ),
-                result_name=s.agg_result_name(),
+                result_name=s.agg_result_name,
             )
             for s in specs
         ]
@@ -134,7 +134,7 @@ class ForwardAggregator(NonTileBasedAggregator[ForwardAggregateSpec]):
         )
         return LeftJoinableSubquery(
             expr=forward_agg_expr,
-            column_names=[s.agg_result_name() for s in specs],
+            column_names=[s.agg_result_name for s in specs],
             join_keys=[SpecialColumnName.POINT_IN_TIME.value] + spec.serving_names,
         )
 

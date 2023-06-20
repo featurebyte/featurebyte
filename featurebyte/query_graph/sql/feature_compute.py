@@ -46,7 +46,12 @@ from featurebyte.query_graph.sql.specs import (
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
 
 AggregatorType = Union[
-    LatestAggregator, LookupAggregator, WindowAggregator, ItemAggregator, AsAtAggregator
+    LatestAggregator,
+    LookupAggregator,
+    WindowAggregator,
+    ItemAggregator,
+    AsAtAggregator,
+    ForwardAggregator,
 ]
 AggregationSpecType = Union[TileBasedAggregationSpec, NonTileBasedAggregationSpec]
 
