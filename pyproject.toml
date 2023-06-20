@@ -149,6 +149,7 @@ server = ["cachetools", "databricks-cli", "fastapi", "motor", "snowflake-connect
 freezegun = "^1.2.1"
 httpx = "^0.24.0"
 junitparser = "^2.8.0"
+jupyterlab = "^4.0.2"
 mongomock = "^4.0.0"
 mongomock-motor = "^0.0.12"
 pip-licenses = "^3.5.4"
