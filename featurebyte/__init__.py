@@ -491,8 +491,8 @@ if is_notebook():
     # pylint: disable=import-outside-toplevel
     import IPython  # pylint: disable=import-error
 
-    shell = IPython.core.interactiveshell.InteractiveShell
-    default_showtraceback = shell.showtraceback
+    Shell = IPython.core.interactiveshell.InteractiveShell
+    default_showtraceback = Shell.showtraceback
 
     def _showtraceback(cls: Any, *args: Any, **kwargs: Any) -> None:
         exc_cls, exc_obj, tb_obj = sys.exc_info()
