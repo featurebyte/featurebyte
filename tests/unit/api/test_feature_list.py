@@ -18,8 +18,6 @@ from featurebyte.api.feature_group import BaseFeatureGroup, FeatureGroup
 from featurebyte.api.feature_list import FeatureList, FeatureListNamespace
 from featurebyte.enum import InternalName
 from featurebyte.exception import (
-    DuplicatedRecordException,
-    ObjectHasBeenSavedError,
     RecordCreationException,
     RecordDeletionException,
     RecordRetrievalException,
@@ -968,9 +966,16 @@ def test_save_feature_group(saved_feature_list):
     for feature in feature_group.feature_objects.values():
         assert feature.saved is True
 
-    # check that object has been saved error is thrown
-    with pytest.raises(ObjectHasBeenSavedError):
+    # update feature group & expect record conflict error while saving the feature group
+    feature_group["feat_0"] = feature_group["feat_0"] + 1
+    with pytest.raises(RecordCreationException) as exc:
         feature_group.save()
+
+    expected_msg = (
+        'FeatureNamespace (name: "feat_0") already exists. '
+        'Please rename object (name: "feat_0") to something else.'
+    )
+    assert expected_msg in str(exc.value)
 
     # check that "retrieve" conflict resolution works properly
     feature_group.save(conflict_resolution="retrieve")

@@ -4,7 +4,7 @@ Tests for FeatureList route
 import textwrap
 from collections import defaultdict
 from http import HTTPStatus
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import numpy as np
 import pandas as pd
@@ -17,6 +17,9 @@ from featurebyte.common.model_util import get_version
 from featurebyte.common.utils import dataframe_from_json
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.query_graph.model.graph import QueryGraphModel
+from featurebyte.schema.feature import FeatureCreate
+from featurebyte.session.snowflake import SnowflakeSession
+from tests.unit.common.test_utils import create_feature_list_batch_feature_create
 from tests.unit.routes.base import BaseCatalogApiTestSuite
 
 
@@ -72,6 +75,22 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
             ],
         ),
     ]
+
+    @pytest.fixture(name="mock_snowflake_session")
+    def mock_get_session_return_snowflake_session(self, mock_get_session):
+        """Mock get_session to return a SnowflakeSession object"""
+        mock_get_session.return_value = SnowflakeSession(
+            account="test_account",
+            warehouse="test_warehouse",
+            database="test_database",
+            sf_schema="test_schema",
+            database_credential={
+                "type": "USERNAME_PASSWORD",
+                "username": "test_username",
+                "password": "test_password",
+            },
+        )
+        yield mock_get_session
 
     def setup_creation_route(self, api_client, catalog_id=DEFAULT_CATALOG_ID):
         """
@@ -806,3 +825,99 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
             """
             ).strip()
         )
+
+    @pytest.mark.asyncio
+    async def test_feature_list_batch_feature_create__success(
+        self, test_api_client_persistent, mock_snowflake_session
+    ):
+        """Test feature list batch feature create async task (success)"""
+        _ = mock_snowflake_session
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        # prepare feature list batch feature create payload
+        payload = self.load_payload("tests/fixtures/request_payloads/feature_sum_2h.json")
+        feature_create = FeatureCreate(**payload)
+        feature_list_name, feature_list_id = "test_feature_list", ObjectId()
+        feature_list_batch_feature_create = create_feature_list_batch_feature_create(
+            features=[feature_create],
+            feature_list_name=feature_list_name,
+            feature_list_id=feature_list_id,
+            conflict_resolution="raise",
+        )
+
+        # check feature is not created
+        response = test_api_client.get(f"feature/{feature_create.id}")
+        assert response.status_code == HTTPStatus.NOT_FOUND
+
+        # create batch feature create task
+        task_response = test_api_client.post(
+            f"{self.base_route}/batch", json=feature_list_batch_feature_create.json_dict()
+        )
+        response = self.wait_for_results(test_api_client, task_response)
+        response_dict = response.json()
+        assert response_dict["status"] == "SUCCESS"
+        assert response_dict["output_path"] is None
+        assert response_dict["traceback"] is None
+
+        # check feature_list & feature is created
+        response = test_api_client.get(f"{self.base_route}/{feature_list_id}")
+        response_dict = response.json()
+        assert response_dict["name"] == feature_list_name
+        assert response.status_code == HTTPStatus.OK
+
+        response = test_api_client.get(f"feature/{feature_create.id}")
+        response_dict = response.json()
+        assert response_dict["name"] == feature_create.name
+        assert response.status_code == HTTPStatus.OK
+
+    @pytest.mark.asyncio
+    @patch(
+        "featurebyte.worker.task.batch_feature_create.BatchFeatureCreateTask.is_generated_feature_consistent",
+        new_callable=AsyncMock,
+    )
+    async def test_feature_list_batch_feature_create__failure(
+        self,
+        mock_is_generated_feature_consistent,
+        test_api_client_persistent,
+        mock_snowflake_session,
+        user_id,
+    ):
+        """Test batch feature create async task"""
+        _ = mock_snowflake_session
+        mock_is_generated_feature_consistent.return_value = False
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        # prepare batch feature create payload
+        payload = self.load_payload("tests/fixtures/request_payloads/feature_sum_2h.json")
+        feature_create = FeatureCreate(**payload)
+        feature_list_name, feature_list_id = "test_feature_list", ObjectId()
+        feature_list_batch_feature_create = create_feature_list_batch_feature_create(
+            features=[feature_create],
+            feature_list_name=feature_list_name,
+            feature_list_id=feature_list_id,
+            conflict_resolution="raise",
+        )
+
+        # create feature list batch feature create task
+        task_response = test_api_client.post(
+            f"{self.base_route}/batch", json=feature_list_batch_feature_create.json_dict()
+        )
+
+        # check user id
+        assert task_response.json()["payload"]["user_id"] == str(user_id)
+
+        # retrieve task results
+        response = self.wait_for_results(test_api_client, task_response)
+        response_dict = response.json()
+        expected_traceback = "featurebyte.exception.DocumentInconsistencyError: Inconsistent feature definition detected!"
+        assert expected_traceback in response_dict["traceback"]
+        assert response_dict["status"] == "FAILURE"
+
+        # check feature list &feature is not created
+        response = test_api_client.get(f"{self.base_route}/{feature_list_id}")
+        assert response.status_code == HTTPStatus.NOT_FOUND
+
+        response = test_api_client.get(f"feature/{feature_create.id}")
+        assert response.status_code == HTTPStatus.NOT_FOUND

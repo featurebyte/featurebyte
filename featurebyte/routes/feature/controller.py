@@ -96,9 +96,14 @@ class FeatureController(
         Optional[Task]
             Task object
         """
+        # as there is no direct way to get the conflict resolved feature id for batch feature creation task,
+        # the conflict resolution should only support "raise" for public API. Therefore, we should not include
+        # the conflict resolution in the API payload schema (BatchFeatureCreate).
         payload = BatchFeatureCreateTaskPayload(
             **{
                 **data.dict(by_alias=True),
+                "conflict_resolution": "raise",
+                "user_id": self.service.user.id,
                 "catalog_id": self.service.catalog_id,
             }
         )

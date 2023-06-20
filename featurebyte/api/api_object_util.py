@@ -14,7 +14,7 @@ from http import HTTPStatus
 from bson import ObjectId
 
 from featurebyte.config import Configurations
-from featurebyte.exception import RecordRetrievalException
+from featurebyte.exception import RecordDeletionException, RecordRetrievalException
 from featurebyte.logging import get_logger
 
 logger = get_logger(__name__)
@@ -258,6 +258,28 @@ def get_api_object_by_id(route: str, id_value: ObjectId) -> dict[str, Any]:
         object_dict = dict(response.json())
         return object_dict
     raise RecordRetrievalException(response, "Failed to retrieve specified object.")
+
+
+def delete_api_object_by_id(route: str, id_value: ObjectId) -> None:
+    """
+    Delete api object by given route & id
+
+    Parameters
+    ----------
+    route: str
+        Route to delete object
+    id_value: ObjectId
+        Id of object to delete
+
+    Raises
+    ------
+    RecordDeletionException
+        When failed to retrieve from list route
+    """
+    client = Configurations().get_client()
+    response = client.delete(url=f"{route}/{id_value}")
+    if response.status_code != HTTPStatus.OK:
+        raise RecordDeletionException(response, "Failed to delete specified object.")
 
 
 def iterate_api_object_using_paginated_routes(

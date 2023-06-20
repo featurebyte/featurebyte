@@ -17,6 +17,7 @@ from featurebyte.common.utils import (
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.schema.feature import BatchFeatureCreate, BatchFeatureItem
+from featurebyte.schema.feature_list import FeatureListCreateWithBatchFeatureCreation
 
 
 @pytest.fixture(name="data_to_convert")
@@ -89,8 +90,8 @@ def test_get_version():
     assert get_version() == data["tool"]["poetry"]["version"]
 
 
-def create_batch_feature_create(features):
-    """Create batch feature create object"""
+def create_batch_feature_items_and_graph(features):
+    """create batch feature items & graph"""
     query_graph = QueryGraph()
     feature_items = []
     for feature in features:
@@ -104,7 +105,24 @@ def create_batch_feature_create(features):
             )
         )
 
-    return BatchFeatureCreate(
+    return feature_items, query_graph
+
+
+def create_batch_feature_create(features):
+    """Create batch feature create object"""
+    feature_items, query_graph = create_batch_feature_items_and_graph(features)
+    return BatchFeatureCreate(graph=query_graph, features=feature_items)
+
+
+def create_feature_list_batch_feature_create(
+    features, feature_list_name, feature_list_id, conflict_resolution
+):
+    """Create feature list batch feature create object"""
+    feature_items, query_graph = create_batch_feature_items_and_graph(features)
+    return FeatureListCreateWithBatchFeatureCreation(
+        _id=feature_list_id,
+        name=feature_list_name,
+        conflict_resolution=conflict_resolution,
         graph=query_graph,
         features=feature_items,
     )

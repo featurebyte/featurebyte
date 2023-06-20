@@ -14,7 +14,6 @@ from bson import ObjectId
 from pydantic import Field, root_validator
 from typeguard import typechecked
 
-from featurebyte.api.api_object import ConflictResolution
 from featurebyte.api.api_object_util import is_server_mode
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature_job import FeatureJobMixin
@@ -33,6 +32,7 @@ from featurebyte.core.accessor.count_dict import CdAccessorMixin
 from featurebyte.core.accessor.feature_datetime import FeatureDtAccessorMixin
 from featurebyte.core.accessor.feature_string import FeatureStrAccessorMixin
 from featurebyte.core.series import FrozenSeries, FrozenSeriesT, Series
+from featurebyte.enum import ConflictResolution
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.logging import get_logger
@@ -743,7 +743,8 @@ class Feature(
                 self.post_async_task(
                     route="/feature/batch",
                     payload=BatchFeatureCreatePayload(
-                        graph=pruned_graph, features=[feature_item]
+                        graph=pruned_graph,
+                        features=[feature_item],
                     ).json_dict(),
                     retrieve_result=False,
                     has_output_url=False,

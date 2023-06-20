@@ -787,7 +787,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
 
     @pytest.mark.asyncio
     async def test_batch_feature_create__success(
-        self, test_api_client_persistent, mock_snowflake_session
+        self, test_api_client_persistent, mock_snowflake_session, user_id
     ):
         """Test batch feature create async task"""
         _ = mock_snowflake_session
@@ -811,6 +811,11 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         task_response = test_api_client.post(
             f"{self.base_route}/batch", json=batch_feature_create.json_dict()
         )
+
+        # check user id
+        assert task_response.json()["payload"]["user_id"] == str(user_id)
+
+        # retrieve task results
         response = self.wait_for_results(test_api_client, task_response)
         response_dict = response.json()
         assert response_dict["status"] == "SUCCESS"
