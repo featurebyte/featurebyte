@@ -730,7 +730,7 @@ class ForwardAggregateSpec(NonTileBasedAggregationSpec):
         node: Node,
         aggregation_source: AggregationSource,
         serving_names_mapping: Optional[dict[str, str]],
-    ) -> list[NonTileBasedAggregationSpecT]:
+    ) -> list[ForwardAggregateSpec]:
         assert isinstance(node, ForwardAggregateNode)
         return [
             ForwardAggregateSpec(
