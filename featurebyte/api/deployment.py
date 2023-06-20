@@ -66,10 +66,6 @@ class Deployment(ApiObject):
         ForeignKeyMapping("feature_list_id", FeatureList, "num_feature", "num_feature", True),
     ]
 
-    @classmethod
-    def use_new_list_handler(cls) -> bool:
-        return True
-
     @property
     def enabled(self) -> bool:
         """

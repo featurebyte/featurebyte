@@ -5,7 +5,7 @@ from typing import List, Optional, Union
 
 import pandas as pd
 
-from featurebyte.api.api_handler.feature_namespace import FeatureNamespaceListHandler
+from featurebyte.api.api_handler.feature_namespace_list_handler import FeatureNamespaceListHandler
 from featurebyte.api.api_handler.list import ListHandler
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.feature_util import (
@@ -105,10 +105,6 @@ class FeatureNamespace(FrozenFeatureNamespaceModel, ApiObject):
             list_fields=cls._list_fields,
             list_foreign_keys=cls._list_foreign_keys,
         )
-
-    @classmethod
-    def use_new_list_handler(cls) -> bool:
-        return True
 
     @classmethod
     def list(
