@@ -95,7 +95,7 @@ class EntityService(BaseDocumentService[EntityModel, EntityCreate, EntityService
 
         Parameters
         ----------
-        entity_ids: list[ObjectId]
+        entity_ids: set[ObjectId]
             Entity identifiers
 
         Returns
