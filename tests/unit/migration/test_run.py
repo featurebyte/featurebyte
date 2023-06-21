@@ -134,9 +134,9 @@ async def migration_check_user_persistent_fixture(test_dir, persistent):
 
 
 @pytest.mark.asyncio
-async def test_post_migration_sanity_check(persistent, user):
+async def test_post_migration_sanity_check(app_container):
     """Test post_migration_sanity_check"""
-    service = EntityService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
+    service = app_container.entity_service
     docs = []
     for i in range(20):
         doc = await service.create_document(

@@ -144,7 +144,10 @@ class InfoService(BaseService):
             user=user, persistent=persistent, catalog_id=catalog_id
         )
         self.context_service = ContextService(
-            user=user, persistent=persistent, catalog_id=catalog_id
+            user=user,
+            persistent=persistent,
+            catalog_id=catalog_id,
+            entity_service=self.entity_service,
         )
         self.observation_table_service = ObservationTableService(
             user=user,
