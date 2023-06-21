@@ -8,8 +8,11 @@ from typing import Any
 from bson import ObjectId
 
 from featurebyte.models.entity import EntityModel
+from featurebyte.persistent import Persistent
 from featurebyte.schema.entity import EntityCreate, EntityServiceUpdate
+from featurebyte.schema.info import EntityBriefInfoList
 from featurebyte.service.base_document import BaseDocumentService
+from featurebyte.service.catalog import CatalogService
 
 
 class EntityService(BaseDocumentService[EntityModel, EntityCreate, EntityServiceUpdate]):
@@ -18,6 +21,16 @@ class EntityService(BaseDocumentService[EntityModel, EntityCreate, EntityService
     """
 
     document_class = EntityModel
+
+    def __init__(
+        self,
+        user: Any,
+        persistent: Persistent,
+        catalog_id: ObjectId,
+        catalog_service: CatalogService,
+    ):
+        super().__init__(user, persistent, catalog_id)
+        self.catalog_service = catalog_service
 
     @staticmethod
     def _extract_additional_creation_kwargs(data: EntityCreate) -> dict[str, Any]:
@@ -75,3 +88,29 @@ class EntityService(BaseDocumentService[EntityModel, EntityCreate, EntityService
         """
         docs = self.list_documents_iterator(query_filter={"_id": {"$in": list(entity_ids)}})
         return [EntityModel(**doc) async for doc in docs]
+
+    async def get_entity_brief_info_list(self, entity_ids: set[ObjectId]) -> EntityBriefInfoList:
+        """
+        Retrieve entities given a list of entity ids
+
+        Parameters
+        ----------
+        entity_ids: list[ObjectId]
+            Entity identifiers
+
+        Returns
+        -------
+        EntityBriefInfoList
+        """
+        entities = await self.list_documents(
+            page=1, page_size=0, query_filter={"_id": {"$in": list(entity_ids)}}
+        )
+        if not entities:
+            return EntityBriefInfoList(data=[])
+        # Get catalog ID
+        catalog_id = entities["data"][0]["catalog_id"]
+        # get catalog info
+        catalog = await self.catalog_service.get_document(catalog_id)
+        for entity in entities["data"]:
+            entity["catalog_name"] = catalog.name
+        return EntityBriefInfoList.from_paginated_data(entities)

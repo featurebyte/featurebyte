@@ -113,7 +113,15 @@ class InfoService(BaseService):
         self.feature_store_service = FeatureStoreService(
             user=user, persistent=persistent, catalog_id=catalog_id
         )
-        self.entity_service = EntityService(user=user, persistent=persistent, catalog_id=catalog_id)
+        self.catalog_service = CatalogService(
+            user=user, persistent=persistent, catalog_id=catalog_id
+        )
+        self.entity_service = EntityService(
+            user=user,
+            persistent=persistent,
+            catalog_id=catalog_id,
+            catalog_service=self.catalog_service,
+        )
         self.feature_service = FeatureService(
             user=user, persistent=persistent, catalog_id=catalog_id
         )
@@ -127,9 +135,6 @@ class InfoService(BaseService):
             user=user, persistent=persistent, catalog_id=catalog_id
         )
         self.feature_job_setting_analysis_service = FeatureJobSettingAnalysisService(
-            user=user, persistent=persistent, catalog_id=catalog_id
-        )
-        self.catalog_service = CatalogService(
             user=user, persistent=persistent, catalog_id=catalog_id
         )
         self.credential_service = CredentialService(
@@ -279,19 +284,13 @@ class InfoService(BaseService):
         """
         _ = verbose
         target_doc = await self.target_service.get_document(document_id=document_id)
-        entities = await self.entity_service.list_documents(
-            page=1, page_size=0, query_filter={"_id": {"$in": target_doc.entity_ids}}
+        entity_brief_info_list = await self.entity_service.get_entity_brief_info_list(
+            set(target_doc.entity_ids)
         )
-        # get catalog info
-        catalog = await self.catalog_service.get_document(target_doc.catalog_id)
-        for entity in entities["data"]:
-            assert entity["catalog_id"] == catalog.id
-            entity["catalog_name"] = catalog.name
-
         return TargetInfo(
             id=document_id,
             target_name=target_doc.name,
-            entities=EntityBriefInfoList.from_paginated_data(entities),
+            entities=entity_brief_info_list,
             horizon=target_doc.horizon,
             blind_spot=target_doc.blind_spot,
             has_recipe=bool(target_doc.graph),
