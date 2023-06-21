@@ -44,7 +44,7 @@ class ItemTableController(
         -------
         ItemTableInfo
         """
-        info_document = await self.info_service.get_item_table_info(
+        info_document = await self.service.get_item_table_info(
             document_id=document_id, verbose=verbose
         )
         return info_document

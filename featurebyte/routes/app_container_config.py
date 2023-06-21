@@ -26,7 +26,8 @@ class DepType(OrderedStrEnum):
     NO_DEPS = "10_no_deps"
     BASIC_SERVICE = "20_basic_service"
     SERVICE_WITH_EXTRA_DEPS = "30_service_with_extra_deps"
-    CONTROLLER = "40_controller"
+    HELPER_SERVICE = "40_helper_service"
+    CONTROLLER = "50_controller"
 
 
 @dataclass
@@ -56,6 +57,8 @@ class AppContainerConfig:
         self.service_with_extra_deps: List[ClassDefinition] = []
         # These services only require the user, and persistent dependencies.
         self.basic_services: List[ClassDefinition] = []
+        # Helper services depend on other services only.
+        self.helper_service: List[ClassDefinition] = []
         # Controllers can depend on any object defined above.
         self.controllers: List[ClassDefinition] = []
 
@@ -128,6 +131,25 @@ class AppContainerConfig:
                 class_=class_,
                 dependencies=[],
                 dep_type=DepType.BASIC_SERVICE,
+            )
+        )
+
+    def add_helper_service(self, name: str, class_: type, dependencies: List[str]) -> None:
+        """
+        Register a helper service
+
+        Parameters
+        ----------
+        name: str
+            name of the object
+        class_: type
+            type we are registering
+        dependencies: list[str]
+            dependencies
+        """
+        self.controllers.append(
+            ClassDefinition(
+                name=name, class_=class_, dependencies=dependencies, dep_type=DepType.HELPER_SERVICE
             )
         )
 

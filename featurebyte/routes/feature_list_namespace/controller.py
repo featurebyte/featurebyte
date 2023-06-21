@@ -28,7 +28,6 @@ from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_list_status import FeatureListStatusService
 from featurebyte.service.feature_readiness import FeatureReadinessService
-from featurebyte.service.info import InfoService
 from featurebyte.service.mixin import Document
 
 
@@ -52,7 +51,6 @@ class FeatureListNamespaceController(
         default_version_mode_service: DefaultVersionModeService,
         feature_readiness_service: FeatureReadinessService,
         feature_list_status_service: FeatureListStatusService,
-        info_service: InfoService,
     ):
         super().__init__(service)
         self.entity_service = entity_service
@@ -60,7 +58,6 @@ class FeatureListNamespaceController(
         self.default_version_mode_service = default_version_mode_service
         self.feature_readiness_service = feature_readiness_service
         self.feature_list_status_service = feature_list_status_service
-        self.info_service = info_service
 
     async def get(
         self,
@@ -189,7 +186,7 @@ class FeatureListNamespaceController(
         -------
         InfoDocument
         """
-        info_document = await self.info_service.get_feature_list_namespace_info(
+        info_document = await self.service.get_feature_list_namespace_info(
             document_id=document_id, verbose=verbose
         )
         return info_document

@@ -21,7 +21,6 @@ from featurebyte.schema.feature_job_setting_analysis import (
 from featurebyte.schema.info import FeatureJobSettingAnalysisInfo
 from featurebyte.schema.task import Task
 from featurebyte.service.feature_job_setting_analysis import FeatureJobSettingAnalysisService
-from featurebyte.service.info import InfoService
 
 
 class FeatureJobSettingAnalysisController(
@@ -41,11 +40,9 @@ class FeatureJobSettingAnalysisController(
         self,
         service: FeatureJobSettingAnalysisService,
         task_controller: TaskController,
-        info_service: InfoService,
     ):
         super().__init__(service)
         self.task_controller = task_controller
-        self.info_service = info_service
 
     async def get_info(
         self,
@@ -66,7 +63,7 @@ class FeatureJobSettingAnalysisController(
         -------
         FeatureJobSettingAnalysisInfo
         """
-        info_document = await self.info_service.get_feature_job_setting_analysis_info(
+        info_document = await self.service.get_feature_job_setting_analysis_info(
             document_id=document_id, verbose=verbose
         )
         return info_document

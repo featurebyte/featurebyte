@@ -20,11 +20,9 @@ from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.schema.entity import EntityServiceUpdate
 from featurebyte.schema.relationship_info import RelationshipInfoCreate
 from featurebyte.service.base_service import BaseService
-from featurebyte.service.catalog import CatalogService
 from featurebyte.service.dimension_table import DimensionTableService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_table import EventTableService
-from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.item_table import ItemTableService
 from featurebyte.service.relationship import EntityRelationshipService
 from featurebyte.service.relationship_info import RelationshipInfoService
@@ -41,29 +39,21 @@ class TableColumnsInfoService(BaseService):
     TableColumnsInfoService is responsible to orchestrate the update of the table columns info.
     """
 
-    def __init__(self, user: Any, persistent: Persistent, catalog_id: ObjectId):
+    def __init__(
+        self,
+        user: Any,
+        persistent: Persistent,
+        catalog_id: ObjectId,
+        semantic_service: SemanticService,
+        entity_service: EntityService,
+        relationship_info_service: RelationshipInfoService,
+        entity_relationship_service: EntityRelationshipService,
+    ):
         super().__init__(user, persistent, catalog_id)
-        self.feature_store_service = FeatureStoreService(
-            user=user, persistent=persistent, catalog_id=catalog_id
-        )
-        self.semantic_service = SemanticService(
-            user=user, persistent=persistent, catalog_id=catalog_id
-        )
-        self.catalog_service = CatalogService(
-            user=user, persistent=persistent, catalog_id=catalog_id
-        )
-        self.entity_service = EntityService(
-            user=user,
-            persistent=persistent,
-            catalog_id=catalog_id,
-            catalog_service=self.catalog_service,
-        )
-        self.relationship_info_service = RelationshipInfoService(
-            user=user, persistent=persistent, catalog_id=catalog_id
-        )
-        self.entity_relationship_service = EntityRelationshipService(
-            user=user, persistent=persistent, catalog_id=catalog_id
-        )
+        self.semantic_service = semantic_service
+        self.entity_service = entity_service
+        self.relationship_info_service = relationship_info_service
+        self.entity_relationship_service = entity_relationship_service
 
     @staticmethod
     async def _validate_column_info_id_field_values(

@@ -8,7 +8,6 @@ from bson import ObjectId
 from featurebyte.models.target import TargetModel
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.target import TargetCreate, TargetInfo, TargetList
-from featurebyte.service.info import InfoService
 from featurebyte.service.target import TargetService
 
 
@@ -18,15 +17,6 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
     """
 
     paginated_document_class = TargetList
-
-    def __init__(
-        self,
-        target_service: TargetService,
-        info_service: InfoService,
-    ):
-        super().__init__(target_service)
-        self.target_service = target_service
-        self.info_service = info_service
 
     async def create_target(
         self,
@@ -45,7 +35,7 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
         TargetModel
             Newly created Target object
         """
-        return await self.target_service.create_document(data)
+        return await self.service.create_document(data)
 
     async def list_target(
         self,
@@ -103,4 +93,4 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
         -------
         TargetInfo
         """
-        return await self.info_service.get_target_info(document_id=document_id, verbose=verbose)
+        return await self.service.get_target_info(document_id=document_id, verbose=verbose)

@@ -22,20 +22,6 @@ def get_credential_provider_fixture(persistent):
     return MongoBackedCredentialProvider(persistent=persistent)
 
 
-@pytest.fixture(name="session_validator_service")
-def get_session_validator_service_fixture(persistent, credential_provider):
-    """
-    Fixture to get a session validator service
-    """
-    user = User()
-    return SessionValidatorService(
-        user=user,
-        persistent=persistent,
-        catalog_id=DEFAULT_CATALOG_ID,
-        credential_provider=credential_provider,
-    )
-
-
 @pytest.mark.asyncio
 async def test_get_feature_store_id_from_details(
     session_validator_service, snowflake_feature_store

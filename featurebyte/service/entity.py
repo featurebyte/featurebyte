@@ -5,14 +5,42 @@ from __future__ import annotations
 
 from typing import Any
 
+import copy
+
 from bson import ObjectId
 
 from featurebyte.models.entity import EntityModel
+from featurebyte.models.relationship_analysis import derive_primary_entity
 from featurebyte.persistent import Persistent
 from featurebyte.schema.entity import EntityCreate, EntityServiceUpdate
-from featurebyte.schema.info import EntityBriefInfoList
+from featurebyte.schema.info import EntityBriefInfoList, EntityInfo
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.catalog import CatalogService
+
+
+def get_primary_entity_from_entities(entities: dict[str, Any]) -> dict[str, Any]:
+    """
+    Get primary entity from entities data
+
+    Parameters
+    ----------
+    entities: dict[str, Any]
+        Entities listing result (with a "data" key and extras)
+
+    Returns
+    -------
+    dict[str, Any]
+        Filtered list of entities that are the main entities
+    """
+    main_entity_ids = {
+        entity.id
+        for entity in derive_primary_entity(
+            [EntityModel(**entity_dict) for entity_dict in entities["data"]]
+        )
+    }
+    primary_entity = copy.deepcopy(entities)
+    primary_entity["data"] = [d for d in entities["data"] if d["_id"] in main_entity_ids]
+    return primary_entity
 
 
 class EntityService(BaseDocumentService[EntityModel, EntityCreate, EntityServiceUpdate]):
@@ -114,3 +142,32 @@ class EntityService(BaseDocumentService[EntityModel, EntityCreate, EntityService
         for entity in entities["data"]:
             entity["catalog_name"] = catalog.name
         return EntityBriefInfoList.from_paginated_data(entities)
+
+    async def get_entity_info(self, document_id: ObjectId, verbose: bool) -> EntityInfo:
+        """
+        Get entity info
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+        verbose: bool
+            Verbose or not
+
+        Returns
+        -------
+        EntityInfo
+        """
+        _ = verbose
+        entity = await self.get_document(document_id=document_id)
+
+        # get catalog info
+        catalog = await self.catalog_service.get_document(entity.catalog_id)
+
+        return EntityInfo(
+            name=entity.name,
+            created_at=entity.created_at,
+            updated_at=entity.updated_at,
+            serving_names=entity.serving_names,
+            catalog_name=catalog.name,
+        )

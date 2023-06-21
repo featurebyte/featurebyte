@@ -40,9 +40,11 @@ class ViewConstructionService(BaseService):
     This service will retrieve the table from the table service and construct the view graph nodes.
     """
 
-    def __init__(self, user: Any, persistent: Persistent, catalog_id: ObjectId):
+    def __init__(
+        self, user: Any, persistent: Persistent, catalog_id: ObjectId, table_service: TableService
+    ):
         super().__init__(user, persistent, catalog_id)
-        self.table_service = TableService(user=user, persistent=persistent, catalog_id=catalog_id)
+        self.table_service = table_service
 
     @staticmethod
     def _get_additional_keyword_parameters_pairs(

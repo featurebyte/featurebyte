@@ -11,6 +11,7 @@ from featurebyte.models.base import FeatureByteBaseDocumentModel
 from featurebyte.models.static_source_table import StaticSourceTableModel
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.schema.info import StaticSourceTableInfo
 from featurebyte.schema.static_source_table import StaticSourceTableCreate
 from featurebyte.schema.worker.task.static_source_table import StaticSourceTableTaskPayload
 from featurebyte.service.feature_store import FeatureStoreService
@@ -100,3 +101,34 @@ class StaticSourceTableService(
             "columns_info": columns_info,
             "num_rows": num_rows,
         }
+
+    async def get_static_source_table_info(
+        self, document_id: ObjectId, verbose: bool
+    ) -> StaticSourceTableInfo:
+        """
+        Get static source table info
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+        verbose: bool
+            Verbose or not
+
+        Returns
+        -------
+        StaticSourceTableInfo
+        """
+        _ = verbose
+        static_source_table = await self.get_document(document_id=document_id)
+        feature_store = await self.feature_store_service.get_document(
+            document_id=static_source_table.location.feature_store_id
+        )
+        return StaticSourceTableInfo(
+            name=static_source_table.name,
+            type=static_source_table.request_input.type,
+            feature_store_name=feature_store.name,
+            table_details=static_source_table.location.table_details,
+            created_at=static_source_table.created_at,
+            updated_at=static_source_table.updated_at,
+        )

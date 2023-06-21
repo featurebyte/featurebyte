@@ -36,7 +36,6 @@ from featurebyte.service.catalog import CatalogService
 from featurebyte.service.context import ContextService
 from featurebyte.service.deployment import DeploymentService
 from featurebyte.service.feature_list import FeatureListService
-from featurebyte.service.info import InfoService
 from featurebyte.service.online_serving import OnlineServingService
 
 
@@ -56,7 +55,6 @@ class DeploymentController(
         context_service: ContextService,
         feature_list_service: FeatureListService,
         online_serving_service: OnlineServingService,
-        info_service: InfoService,
         task_controller: TaskController,
     ):
         super().__init__(service)
@@ -64,7 +62,6 @@ class DeploymentController(
         self.context_service = context_service
         self.feature_list_service = feature_list_service
         self.online_serving_service = online_serving_service
-        self.info_service = info_service
         self.task_controller = task_controller
 
     async def create_deployment(self, data: DeploymentCreate) -> Task:
@@ -143,7 +140,7 @@ class DeploymentController(
         -------
         DeploymentInfo
         """
-        info_document = await self.info_service.get_deployment_info(
+        info_document = await self.service.get_deployment_info(
             document_id=document_id, verbose=verbose
         )
         return info_document

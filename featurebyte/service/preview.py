@@ -73,11 +73,10 @@ class PreviewService(BaseService):
         session_manager_service: SessionManagerService,
         feature_list_service: FeatureListService,
         entity_validation_service: EntityValidationService,
+        feature_store_service: FeatureStoreService,
     ):
         super().__init__(user, persistent, catalog_id)
-        self.feature_store_service = FeatureStoreService(
-            user=user, persistent=persistent, catalog_id=catalog_id
-        )
+        self.feature_store_service = feature_store_service
         self.session_manager_service = session_manager_service
         self.feature_list_service = feature_list_service
         self.entity_validation_service = entity_validation_service

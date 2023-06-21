@@ -12,6 +12,7 @@ from featurebyte.models.base import FeatureByteBaseDocumentModel
 from featurebyte.models.batch_request_table import BatchRequestTableModel
 from featurebyte.persistent import Persistent
 from featurebyte.schema.batch_request_table import BatchRequestTableCreate
+from featurebyte.schema.info import BatchRequestTableInfo
 from featurebyte.schema.worker.task.batch_request_table import BatchRequestTableTaskPayload
 from featurebyte.service.context import ContextService
 from featurebyte.service.feature_store import FeatureStoreService
@@ -77,4 +78,35 @@ class BatchRequestTableService(
             user_id=self.user.id,
             catalog_id=self.catalog_id,
             output_document_id=output_document_id,
+        )
+
+    async def get_batch_request_table_info(
+        self, document_id: ObjectId, verbose: bool
+    ) -> BatchRequestTableInfo:
+        """
+        Get batch request table info
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+        verbose: bool
+            Verbose or not
+
+        Returns
+        -------
+        BatchRequestTableInfo
+        """
+        _ = verbose
+        batch_request_table = await self.get_document(document_id=document_id)
+        feature_store = await self.feature_store_service.get_document(
+            document_id=batch_request_table.location.feature_store_id
+        )
+        return BatchRequestTableInfo(
+            name=batch_request_table.name,
+            type=batch_request_table.request_input.type,
+            feature_store_name=feature_store.name,
+            table_details=batch_request_table.location.table_details,
+            created_at=batch_request_table.created_at,
+            updated_at=batch_request_table.updated_at,
         )

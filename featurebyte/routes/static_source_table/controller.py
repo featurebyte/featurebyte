@@ -11,7 +11,6 @@ from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.info import StaticSourceTableInfo
 from featurebyte.schema.static_source_table import StaticSourceTableCreate, StaticSourceTableList
 from featurebyte.schema.task import Task
-from featurebyte.service.info import InfoService
 from featurebyte.service.preview import PreviewService
 from featurebyte.service.static_source_table import StaticSourceTableService
 from featurebyte.service.table import TableService
@@ -34,12 +33,10 @@ class StaticSourceTableController(
         service: StaticSourceTableService,
         preview_service: PreviewService,
         table_service: TableService,
-        info_service: InfoService,
         task_controller: TaskController,
     ):
         super().__init__(service=service, preview_service=preview_service)
         self.table_service = table_service
-        self.info_service = info_service
         self.task_controller = task_controller
 
     async def create_static_source_table(
@@ -84,7 +81,7 @@ class StaticSourceTableController(
         -------
         StaticSourceTableInfo
         """
-        info_document = await self.info_service.get_static_source_table_info(
+        info_document = await self.service.get_static_source_table_info(
             document_id=document_id, verbose=verbose
         )
         return info_document

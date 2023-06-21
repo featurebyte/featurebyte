@@ -11,6 +11,7 @@ from featurebyte.exception import DocumentNotFoundError
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.catalog import CatalogModel
 from featurebyte.schema.catalog import CatalogCreate, CatalogServiceUpdate
+from featurebyte.schema.info import CatalogInfo
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.mixin import SortDir
 
@@ -69,4 +70,27 @@ class CatalogService(BaseDocumentService[CatalogModel, CatalogCreate, CatalogSer
             sort_dir=sort_dir,
             use_raw_query_filter=use_raw_query_filter,
             **kwargs,
+        )
+
+    async def get_catalog_info(self, document_id: ObjectId, verbose: bool) -> CatalogInfo:
+        """
+        Get catalog info
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+        verbose: bool
+            Verbose or not
+
+        Returns
+        -------
+        CatalogInfo
+        """
+        _ = verbose
+        catalog = await self.get_document(document_id=document_id)
+        return CatalogInfo(
+            name=catalog.name,
+            created_at=catalog.created_at,
+            updated_at=catalog.updated_at,
         )

@@ -1,14 +1,14 @@
 """
 Test lazy app container module
 """
-from typing import Any
+from typing import Any, List
 
 import pytest
 from bson import ObjectId
 
 from featurebyte.models.base import DEFAULT_CATALOG_ID, User
-from featurebyte.routes.app_container_config import AppContainerConfig
-from featurebyte.routes.lazy_app_container import LazyAppContainer
+from featurebyte.routes.app_container_config import AppContainerConfig, ClassDefinition, DepType
+from featurebyte.routes.lazy_app_container import LazyAppContainer, get_all_deps_for_key
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.utils.storage import get_storage, get_temp_storage
 from featurebyte.worker import get_celery
@@ -180,3 +180,37 @@ def test_construction__service_with_invalid_constructor(app_container_constructo
         _ = app_container.random
 
     assert "unexpected keyword argument" in str(exc)
+
+
+def get_class_def(key: str, deps: List[str]) -> ClassDefinition:
+    """
+    Helper method to get class def
+    """
+    return ClassDefinition(
+        name=key,
+        class_=TestService,
+        dependencies=deps,
+        dep_type=DepType.BASIC_SERVICE,
+    )
+
+
+def test_get_all_deps_for_key():
+    """
+    Test get_all_deps_for_key
+
+    Class dependency graph looks like
+          A
+        /  \
+       B    C
+        \  / \
+         D    E
+    """
+    class_def_mapping = {
+        "a": get_class_def("a", ["b", "c"]),
+        "b": get_class_def("b", ["d"]),
+        "c": get_class_def("c", ["d", "e"]),
+        "d": get_class_def("d", []),
+        "e": get_class_def("e", []),
+    }
+    deps = get_all_deps_for_key("a", class_def_mapping, {})
+    assert deps == ["e", "d", "c", "b", "a"]

@@ -43,24 +43,19 @@ class OnlineEnableService(BaseService):
         catalog_id: ObjectId,
         session_manager_service: SessionManagerService,
         task_manager: TaskManager,
+        feature_service: FeatureService,
+        feature_store_service: FeatureStoreService,
+        feature_namespace_service: FeatureNamespaceService,
+        feature_list_service: FeatureListService,
+        online_store_table_version_service: OnlineStoreTableVersionService,
     ):
         super().__init__(user, persistent, catalog_id)
-        self.feature_service = FeatureService(
-            user=user, persistent=persistent, catalog_id=catalog_id
-        )
+        self.feature_service = feature_service
         self.session_manager_service = session_manager_service
-        self.feature_store_service = FeatureStoreService(
-            user=user, persistent=persistent, catalog_id=catalog_id
-        )
-        self.feature_namespace_service = FeatureNamespaceService(
-            user=user, persistent=persistent, catalog_id=catalog_id
-        )
-        self.feature_list_service = FeatureListService(
-            user=user, persistent=persistent, catalog_id=catalog_id
-        )
-        self.online_store_table_version_service = OnlineStoreTableVersionService(
-            user=user, persistent=persistent, catalog_id=catalog_id
-        )
+        self.feature_store_service = feature_store_service
+        self.feature_namespace_service = feature_namespace_service
+        self.feature_list_service = feature_list_service
+        self.online_store_table_version_service = online_store_table_version_service
         self._task_manager = task_manager
 
     @classmethod

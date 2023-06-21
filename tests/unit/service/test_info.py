@@ -11,7 +11,7 @@ from featurebyte import (
     MissingValueImputation,
     TableCleaningOperation,
 )
-from featurebyte.models.base import DEFAULT_CATALOG_ID, PydanticObjectId
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.relationship import RelationshipType
 from featurebyte.query_graph.node.schema import SnowflakeDetails, TableDetails
 from featurebyte.schema.feature import (
@@ -40,19 +40,14 @@ from featurebyte.schema.info import (
 )
 from featurebyte.schema.relationship_info import RelationshipInfoCreate
 from featurebyte.schema.target import TargetInfo
-from featurebyte.service.info import InfoService
-
-
-@pytest.fixture(name="info_service")
-def info_service_fixture(user, persistent):
-    """InfoService fixture"""
-    return InfoService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
 
 
 @pytest.mark.asyncio
-async def test_get_feature_store_info(info_service, feature_store):
+async def test_get_feature_store_info(feature_store_service, feature_store):
     """Test get_feature_store_info"""
-    info = await info_service.get_feature_store_info(document_id=feature_store.id, verbose=False)
+    info = await feature_store_service.get_feature_store_info(
+        document_id=feature_store.id, verbose=False
+    )
     expected_info = FeatureStoreInfo(
         name="sf_featurestore",
         source="snowflake",
@@ -68,14 +63,16 @@ async def test_get_feature_store_info(info_service, feature_store):
     )
     assert info == expected_info
 
-    info = await info_service.get_feature_store_info(document_id=feature_store.id, verbose=True)
+    info = await feature_store_service.get_feature_store_info(
+        document_id=feature_store.id, verbose=True
+    )
     assert info == expected_info
 
 
 @pytest.mark.asyncio
-async def test_get_entity_info(info_service, entity):
+async def test_get_entity_info(entity_service, entity):
     """Test get_entity_info"""
-    info = await info_service.get_entity_info(document_id=entity.id, verbose=False)
+    info = await entity_service.get_entity_info(document_id=entity.id, verbose=False)
     expected_info = EntityInfo(
         name="customer",
         created_at=info.created_at,
@@ -85,14 +82,14 @@ async def test_get_entity_info(info_service, entity):
     )
     assert info == expected_info
 
-    info = await info_service.get_entity_info(document_id=entity.id, verbose=True)
+    info = await entity_service.get_entity_info(document_id=entity.id, verbose=True)
     assert info == expected_info
 
 
 @pytest.mark.asyncio
-async def test_get_event_table_info(info_service, event_table, entity):
+async def test_get_event_table_info(event_table_service, event_table, entity):
     """Test get_event_table_info"""
-    info = await info_service.get_event_table_info(document_id=event_table.id, verbose=False)
+    info = await event_table_service.get_event_table_info(document_id=event_table.id, verbose=False)
     expected_info = EventTableInfo(
         name="sf_event_table",
         status="PUBLIC_DRAFT",
@@ -119,7 +116,7 @@ async def test_get_event_table_info(info_service, event_table, entity):
     )
     assert info == expected_info
 
-    info = await info_service.get_event_table_info(document_id=event_table.id, verbose=True)
+    info = await event_table_service.get_event_table_info(document_id=event_table.id, verbose=True)
     assert info == EventTableInfo(
         **{
             **expected_info.dict(),
@@ -141,10 +138,10 @@ async def test_get_event_table_info(info_service, event_table, entity):
 
 
 @pytest.mark.asyncio
-async def test_get_item_table_info(info_service, item_table, event_table):
+async def test_get_item_table_info(item_table_service, item_table, event_table):
     """Test get_item_table_info"""
     _ = event_table
-    info = await info_service.get_item_table_info(document_id=item_table.id, verbose=False)
+    info = await item_table_service.get_item_table_info(document_id=item_table.id, verbose=False)
     expected_info = ItemTableInfo(
         name="sf_item_table",
         status="PUBLIC_DRAFT",
@@ -167,7 +164,7 @@ async def test_get_item_table_info(info_service, item_table, event_table):
     )
     assert info == expected_info
 
-    info = await info_service.get_item_table_info(document_id=item_table.id, verbose=True)
+    info = await item_table_service.get_item_table_info(document_id=item_table.id, verbose=True)
     assert info == ItemTableInfo(
         **{
             **expected_info.dict(),
@@ -184,9 +181,9 @@ async def test_get_item_table_info(info_service, item_table, event_table):
 
 
 @pytest.mark.asyncio
-async def test_get_dimension_table_info(info_service, dimension_table):
+async def test_get_dimension_table_info(dimension_table_service, dimension_table):
     """Test get_dimension_table_info"""
-    info = await info_service.get_dimension_table_info(
+    info = await dimension_table_service.get_dimension_table_info(
         document_id=dimension_table.id, verbose=False
     )
     expected_info = DimensionTableInfo(
@@ -209,7 +206,9 @@ async def test_get_dimension_table_info(info_service, dimension_table):
     )
     assert info == expected_info
 
-    info = await info_service.get_dimension_table_info(document_id=dimension_table.id, verbose=True)
+    info = await dimension_table_service.get_dimension_table_info(
+        document_id=dimension_table.id, verbose=True
+    )
     assert info == DimensionTableInfo(
         **{
             **expected_info.dict(),
@@ -229,9 +228,9 @@ async def test_get_dimension_table_info(info_service, dimension_table):
 
 
 @pytest.mark.asyncio
-async def test_get_scd_table_info(info_service, scd_table):
+async def test_get_scd_table_info(scd_table_service, scd_table):
     """Test get_scd_table_info"""
-    info = await info_service.get_scd_table_info(document_id=scd_table.id, verbose=False)
+    info = await scd_table_service.get_scd_table_info(document_id=scd_table.id, verbose=False)
     expected_info = SCDTableInfo(
         name="sf_scd_table",
         status="PUBLIC_DRAFT",
@@ -256,7 +255,7 @@ async def test_get_scd_table_info(info_service, scd_table):
     )
     assert info == expected_info
 
-    info = await info_service.get_scd_table_info(document_id=scd_table.id, verbose=True)
+    info = await scd_table_service.get_scd_table_info(document_id=scd_table.id, verbose=True)
     assert info == SCDTableInfo(
         **{
             **expected_info.dict(),
@@ -559,9 +558,11 @@ async def test_get_feature_namespace_info(info_service, feature_namespace):
 
 
 @pytest.mark.asyncio
-async def test_get_feature_list_info(info_service, feature_list, feature_list_namespace):
+async def test_get_feature_list_info(feature_list_service, feature_list, feature_list_namespace):
     """Test get_feature_list_info"""
-    info = await info_service.get_feature_list_info(document_id=feature_list.id, verbose=False)
+    info = await feature_list_service.get_feature_list_info(
+        document_id=feature_list.id, verbose=False
+    )
     expected_info = FeatureListInfo(
         name="sf_feature_list",
         entities=[
@@ -592,7 +593,9 @@ async def test_get_feature_list_info(info_service, feature_list, feature_list_na
     )
     assert info == expected_info
 
-    info = await info_service.get_feature_list_info(document_id=feature_list.id, verbose=True)
+    info = await feature_list_service.get_feature_list_info(
+        document_id=feature_list.id, verbose=True
+    )
     assert info == FeatureListInfo(
         **{
             **expected_info.dict(),
@@ -609,9 +612,11 @@ async def test_get_feature_list_info(info_service, feature_list, feature_list_na
 
 
 @pytest.mark.asyncio
-async def test_get_feature_list_namespace_info(info_service, feature_list_namespace, feature):
+async def test_get_feature_list_namespace_info(
+    feature_list_namespace_service, feature_list_namespace, feature
+):
     """Test get_feature_list_namespace_info"""
-    info = await info_service.get_feature_list_namespace_info(
+    info = await feature_list_namespace_service.get_feature_list_namespace_info(
         document_id=feature_list_namespace.id, verbose=False
     )
     expected_info = FeatureListNamespaceInfo(
@@ -639,19 +644,19 @@ async def test_get_feature_list_namespace_info(info_service, feature_list_namesp
     )
     assert info == expected_info
 
-    info = await info_service.get_feature_list_namespace_info(
+    info = await feature_list_namespace_service.get_feature_list_namespace_info(
         document_id=feature_list_namespace.id, verbose=True
     )
     assert info == expected_info
 
 
 @pytest.mark.asyncio
-async def test_get_target_info(info_service, entity, target):
+async def test_get_target_info(target_service, entity, target):
     """
     Test get_target_info
     """
     _ = entity
-    target_info = await info_service.get_target_info(target.id, verbose=False)
+    target_info = await target_service.get_target_info(target.id, verbose=False)
 
     expected_info = TargetInfo(
         id=target.id,
@@ -680,7 +685,7 @@ def transaction_entity_fixture():
 
 @pytest.mark.asyncio
 async def test_get_relationship_info_info(
-    relationship_info_service, info_service, event_table, entity, transaction_entity
+    relationship_info_service, event_table, entity, transaction_entity
 ):
     """
     Test get relationship info info
@@ -698,7 +703,9 @@ async def test_get_relationship_info_info(
             updated_by=PydanticObjectId(ObjectId()),
         )
     )
-    relationship_info = await info_service.get_relationship_info_info(created_relationship.id)
+    relationship_info = await relationship_info_service.get_relationship_info_info(
+        created_relationship.id
+    )
     assert relationship_info.relationship_type == relationship_type
     assert relationship_info.entity_name == "customer"
     assert relationship_info.related_entity_name == "transaction"

@@ -13,7 +13,6 @@ from featurebyte.schema.relationship_info import (
     RelationshipInfoList,
 )
 from featurebyte.service.entity import EntityService
-from featurebyte.service.info import InfoService
 from featurebyte.service.relationship_info import RelationshipInfoService
 from featurebyte.service.table import TableService
 
@@ -30,13 +29,11 @@ class RelationshipInfoController(
     def __init__(
         self,
         relationship_info_service: RelationshipInfoService,
-        info_service: InfoService,
         entity_service: EntityService,
         data_service: TableService,
     ):
         super().__init__(relationship_info_service)
         self.relationship_info_service = relationship_info_service
-        self.info_service = info_service
         self.entity_service = entity_service
         self.data_service = data_service
 
@@ -143,4 +140,4 @@ class RelationshipInfoController(
         -------
         RelationshipInfoInfo
         """
-        return await self.info_service.get_relationship_info_info(document_id=document_id)
+        return await self.service.get_relationship_info_info(document_id=document_id)

@@ -52,7 +52,10 @@ def get_all_deps_for_key(
         if dep in all_deps:
             continue
         children_deps = get_all_deps_for_key(dep, class_def_mapping, base_deps)
-        children_deps.extend(all_deps)
+        for current_all_dep in all_deps:
+            if current_all_dep in children_deps:
+                continue
+            children_deps.append(current_all_dep)
         all_deps = children_deps
 
     return all_deps
@@ -182,9 +185,6 @@ def build_deps(
     -------
     Dict[str, Any]
     """
-    # Sort deps by ascending ordering
-    deps = sorted(deps, key=lambda x: x.dep_type)
-
     # Build deps
     new_deps = {}
     new_deps.update(existing_deps)
@@ -197,6 +197,8 @@ def build_deps(
             new_deps[dep.name] = build_no_dep(dep)
         elif dep.dep_type == DepType.BASIC_SERVICE:
             new_deps[dep.name] = build_service(dep, user, persistent, catalog_id)
+        elif dep.dep_type == DepType.HELPER_SERVICE:
+            new_deps[dep.name] = build_controllers(dep, new_deps)
         elif dep.dep_type == DepType.SERVICE_WITH_EXTRA_DEPS:
             new_deps[dep.name] = build_service_with_deps(
                 dep, user, persistent, catalog_id, new_deps

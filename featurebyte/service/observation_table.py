@@ -18,6 +18,7 @@ from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.materialisation import get_most_recent_point_in_time_sql
+from featurebyte.schema.info import ObservationTableInfo
 from featurebyte.schema.observation_table import ObservationTableCreate
 from featurebyte.schema.worker.task.observation_table import ObservationTableTaskPayload
 from featurebyte.service.context import ContextService
@@ -176,3 +177,34 @@ class ObservationTableService(
             "num_rows": num_rows,
             "most_recent_point_in_time": most_recent_point_in_time,
         }
+
+    async def get_observation_table_info(
+        self, document_id: ObjectId, verbose: bool
+    ) -> ObservationTableInfo:
+        """
+        Get observation table info
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+        verbose: bool
+            Verbose or not
+
+        Returns
+        -------
+        ObservationTableInfo
+        """
+        _ = verbose
+        observation_table = await self.get_document(document_id=document_id)
+        feature_store = await self.feature_store_service.get_document(
+            document_id=observation_table.location.feature_store_id
+        )
+        return ObservationTableInfo(
+            name=observation_table.name,
+            type=observation_table.request_input.type,
+            feature_store_name=feature_store.name,
+            table_details=observation_table.location.table_details,
+            created_at=observation_table.created_at,
+            updated_at=observation_table.updated_at,
+        )

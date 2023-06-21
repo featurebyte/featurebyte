@@ -23,7 +23,6 @@ from featurebyte.schema.task import Task
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
-from featurebyte.service.info import InfoService
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.preview import PreviewService
 from featurebyte.storage import Storage
@@ -47,14 +46,12 @@ class HistoricalFeatureTableController(
         feature_store_service: FeatureStoreService,
         observation_table_service: ObservationTableService,
         entity_validation_service: EntityValidationService,
-        info_service: InfoService,
         task_controller: TaskController,
     ):
         super().__init__(service=service, preview_service=preview_service)
         self.feature_store_service = feature_store_service
         self.observation_table_service = observation_table_service
         self.entity_validation_service = entity_validation_service
-        self.info_service = info_service
         self.task_controller = task_controller
 
     async def create_historical_feature_table(
@@ -138,7 +135,7 @@ class HistoricalFeatureTableController(
         -------
         HistoricalFeatureTableInfo
         """
-        info_document = await self.info_service.get_historical_feature_table_info(
+        info_document = await self.service.get_historical_feature_table_info(
             document_id=document_id, verbose=verbose
         )
         return info_document

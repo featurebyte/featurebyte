@@ -186,7 +186,7 @@ class DataWarehouseMigrationMixin(FeatureStoreService, BaseMigrationServiceMixin
         credential_provider = MongoBackedCredentialProvider(persistent=self.persistent)
         user = User(id=feature_store.user_id)
         session_validator_service = SessionValidatorService(
-            user, self.persistent, self.catalog_id, credential_provider
+            user, self.persistent, self.catalog_id, credential_provider, self
         )
         session_manager_service = SessionManagerService(
             user=user,

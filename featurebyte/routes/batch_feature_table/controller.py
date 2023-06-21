@@ -17,7 +17,6 @@ from featurebyte.service.deployment import DeploymentService
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_store import FeatureStoreService
-from featurebyte.service.info import InfoService
 from featurebyte.service.preview import PreviewService
 
 
@@ -41,7 +40,6 @@ class BatchFeatureTableController(
         batch_request_table_service: BatchRequestTableService,
         deployment_service: DeploymentService,
         entity_validation_service: EntityValidationService,
-        info_service: InfoService,
         task_controller: TaskController,
     ):
         super().__init__(service=service, preview_service=preview_service)
@@ -50,7 +48,6 @@ class BatchFeatureTableController(
         self.batch_request_table_service = batch_request_table_service
         self.deployment_service = deployment_service
         self.entity_validation_service = entity_validation_service
-        self.info_service = info_service
         self.task_controller = task_controller
 
     async def create_batch_feature_table(
@@ -111,7 +108,7 @@ class BatchFeatureTableController(
         -------
         BatchFeatureTableInfo
         """
-        info_document = await self.info_service.get_batch_feature_table_info(
+        info_document = await self.service.get_batch_feature_table_info(
             document_id=document_id, verbose=verbose
         )
         return info_document

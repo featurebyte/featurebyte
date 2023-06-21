@@ -46,7 +46,7 @@ class DimensionTableController(
         -------
         DimensionTableInfo
         """
-        info_document = await self.info_service.get_dimension_table_info(
+        info_document = await self.service.get_dimension_table_info(
             document_id=document_id, verbose=verbose
         )
         return info_document
