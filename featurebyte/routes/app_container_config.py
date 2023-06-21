@@ -57,8 +57,6 @@ class AppContainerConfig:
         self.service_with_extra_deps: List[ClassDefinition] = []
         # These services only require the user, and persistent dependencies.
         self.basic_services: List[ClassDefinition] = []
-        # Helper services depend on other services only.
-        self.helper_service: List[ClassDefinition] = []
         # Controllers can depend on any object defined above.
         self.controllers: List[ClassDefinition] = []
 
