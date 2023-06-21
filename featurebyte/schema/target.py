@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import List, Optional
 
+from datetime import datetime
+
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr
 
@@ -17,6 +19,7 @@ from featurebyte.models.base import (
 from featurebyte.models.target import TargetModel
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
+from featurebyte.schema.info import EntityBriefInfoList
 
 
 class TargetCreate(FeatureByteBaseModel):
@@ -55,6 +58,13 @@ class TargetInfo(FeatureByteBaseModel):
     """
 
     id: PydanticObjectId
+    target_name: str
+    entities: EntityBriefInfoList
+    horizon: Optional[str]
+    blind_spot: Optional[str]
+    has_recipe: bool
+    created_at: datetime
+    updated_at: Optional[datetime]
 
 
 class TargetServiceUpdate(BaseDocumentServiceUpdateSchema):

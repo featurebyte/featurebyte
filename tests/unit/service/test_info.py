@@ -25,6 +25,7 @@ from featurebyte.schema.feature import (
 from featurebyte.schema.info import (
     DimensionTableInfo,
     EntityBriefInfo,
+    EntityBriefInfoList,
     EntityInfo,
     EventTableInfo,
     FeatureInfo,
@@ -39,6 +40,7 @@ from featurebyte.schema.info import (
     TableColumnInfo,
 )
 from featurebyte.schema.relationship_info import RelationshipInfoCreate
+from featurebyte.schema.target import TargetInfo
 from featurebyte.service.info import InfoService
 
 
@@ -642,6 +644,29 @@ async def test_get_feature_list_namespace_info(info_service, feature_list_namesp
         document_id=feature_list_namespace.id, verbose=True
     )
     assert info == expected_info
+
+
+@pytest.mark.asyncio
+async def test_get_target_info(info_service, entity, target):
+    """
+    Test get_target_info
+    """
+    _ = entity
+    target_info = await info_service.get_target_info(target.id, verbose=False)
+
+    expected_info = TargetInfo(
+        id=target.id,
+        target_name=target.name,
+        entities=[
+            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
+        ],
+        horizon=target.horizon,
+        blind_spot=target.blind_spot,
+        has_recipe=bool(target.graph),
+        created_at=target.created_at,
+        updated_at=target.updated_at,
+    )
+    assert target_info == expected_info
 
 
 @pytest.fixture(name="transaction_entity")

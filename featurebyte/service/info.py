@@ -52,6 +52,7 @@ from featurebyte.schema.info import (
 from featurebyte.schema.relationship_info import RelationshipInfoInfo
 from featurebyte.schema.semantic import SemanticList
 from featurebyte.schema.table import TableList
+from featurebyte.schema.target import TargetInfo
 from featurebyte.service.base_document import BaseDocumentService, DocumentUpdateSchema
 from featurebyte.service.base_service import BaseService
 from featurebyte.service.batch_feature_table import BatchFeatureTableService
@@ -78,6 +79,7 @@ from featurebyte.service.scd_table import SCDTableService
 from featurebyte.service.semantic import SemanticService
 from featurebyte.service.static_source_table import StaticSourceTableService
 from featurebyte.service.table import TableService
+from featurebyte.service.target import TargetService
 from featurebyte.service.user_service import UserService
 
 ObjectT = TypeVar("ObjectT")
@@ -175,6 +177,7 @@ class InfoService(BaseService):
             feature_store_service=self.feature_store_service,
         )
         self.user_service = UserService(user=user, persistent=persistent, catalog_id=catalog_id)
+        self.target_service = TargetService(user=user, persistent=persistent, catalog_id=catalog_id)
 
     @staticmethod
     async def _get_list_object(
@@ -257,6 +260,43 @@ class InfoService(BaseService):
             updated_at=entity.updated_at,
             serving_names=entity.serving_names,
             catalog_name=catalog.name,
+        )
+
+    async def get_target_info(self, document_id: ObjectId, verbose: bool) -> TargetInfo:
+        """
+        Get target info
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+        verbose: bool
+            Verbose or not
+
+        Returns
+        -------
+        TargetInfo
+        """
+        _ = verbose
+        target_doc = await self.target_service.get_document(document_id=document_id)
+        entities = await self.entity_service.list_documents(
+            page=1, page_size=0, query_filter={"_id": {"$in": target_doc.entity_ids}}
+        )
+        # get catalog info
+        catalog = await self.catalog_service.get_document(target_doc.catalog_id)
+        for entity in entities["data"]:
+            assert entity["catalog_id"] == catalog.id
+            entity["catalog_name"] = catalog.name
+
+        return TargetInfo(
+            id=document_id,
+            target_name=target_doc.name,
+            entities=EntityBriefInfoList.from_paginated_data(entities),
+            horizon=target_doc.horizon,
+            blind_spot=target_doc.blind_spot,
+            has_recipe=bool(target_doc.graph),
+            created_at=target_doc.created_at,
+            updated_at=target_doc.updated_at,
         )
 
     async def _get_table_info(self, data_document: TableModel, verbose: bool) -> Dict[str, Any]:
