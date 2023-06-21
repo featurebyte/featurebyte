@@ -44,8 +44,9 @@ class TargetService(BaseDocumentService[TargetModel, TargetCreate, TargetService
         """
         _ = verbose
         target_doc = await self.get_document(document_id=document_id)
+        entity_ids = target_doc.entity_ids or []
         entity_brief_info_list = await self.entity_service.get_entity_brief_info_list(
-            set(target_doc.entity_ids)
+            set(entity_ids)
         )
         return TargetInfo(
             id=document_id,
