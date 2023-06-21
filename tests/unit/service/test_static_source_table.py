@@ -9,7 +9,7 @@ from featurebyte.query_graph.model.common_table import TabularSource
 
 
 @pytest.fixture(name="static_source_table_from_source_table")
-def static_source_table_from_source_table_fixture(event_table):
+def static_source_table_from_source_table_fixture(event_table, user):
     """
     Fixture for an StaticSourceTable from a source table
     """
@@ -35,6 +35,7 @@ def static_source_table_from_source_table_fixture(event_table):
         ],
         num_rows=1000,
         most_recent_point_in_time="2023-01-15T10:00:00",
+        user_id=user.id,
     )
 
 
