@@ -73,6 +73,7 @@ from featurebyte.service.table_columns_info import TableColumnsInfoService
 from featurebyte.service.table_info import TableInfoService
 from featurebyte.service.table_status import TableStatusService
 from featurebyte.service.target import TargetService
+from featurebyte.service.user_defined_function import UserDefinedFunctionService
 from featurebyte.service.user_service import UserService
 from featurebyte.service.validator.production_ready_validator import ProductionReadyValidator
 from featurebyte.service.version import VersionService
@@ -198,6 +199,7 @@ app_container_config.add_service_with_extra_deps(
     ],
 )
 app_container_config.add_basic_service("deployment_service", DeploymentService)
+app_container_config.add_basic_service("user_defined_function_service", UserDefinedFunctionService)
 app_container_config.add_basic_service(
     "online_store_table_version_service", OnlineStoreTableVersionService
 )
