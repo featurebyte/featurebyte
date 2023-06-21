@@ -7,10 +7,9 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from featurebyte import FeatureStore
-from featurebyte.app import User
 from featurebyte.exception import FeatureStoreSchemaCollisionError, NoFeatureStorePresentError
-from featurebyte.models.base import DEFAULT_CATALOG_ID, PydanticObjectId
-from featurebyte.service.session_validator import SessionValidatorService, ValidateStatus
+from featurebyte.models.base import PydanticObjectId
+from featurebyte.service.session_validator import ValidateStatus
 from featurebyte.utils.credential import MongoBackedCredentialProvider
 
 

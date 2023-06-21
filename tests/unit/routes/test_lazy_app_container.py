@@ -199,11 +199,11 @@ def test_get_all_deps_for_key():
     Test get_all_deps_for_key
 
     Class dependency graph looks like
-          A
-        /  \
-       B    C
-        \  / \
-         D    E
+           A
+        //   \\
+       B      C
+       \\  //  \\
+         D      E
     """
     class_def_mapping = {
         "a": get_class_def("a", ["b", "c"]),
