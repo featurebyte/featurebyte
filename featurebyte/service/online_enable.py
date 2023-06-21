@@ -49,6 +49,7 @@ class OnlineEnableService(BaseService):
         feature_list_service: FeatureListService,
         online_store_table_version_service: OnlineStoreTableVersionService,
     ):
+        # pylint: disable=too-many-arguments
         super().__init__(user, persistent, catalog_id)
         self.feature_service = feature_service
         self.session_manager_service = session_manager_service
