@@ -127,7 +127,6 @@ class FeatureJobSettingAnalysisBacktestTask(BaseTask):
         """
         self.update_progress(percent=0, message="Preparing table")
         payload = cast(FeatureJobSettingAnalysisBackTestTaskPayload, self.payload)
-        persistent = self.get_persistent()
 
         # retrieve analysis doc from persistent
         feature_job_settings_analysis_service = (

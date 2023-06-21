@@ -136,9 +136,9 @@ def build_service_with_deps(
     return class_def.class_(*depend_instances)
 
 
-def build_controllers(class_definition: ClassDefinition, instance_map: Dict[str, Any]) -> Any:
+def build_class_with_deps(class_definition: ClassDefinition, instance_map: Dict[str, Any]) -> Any:
     """
-    Build a controller with the given dependencies.
+    Build a class with the given dependencies.
 
     Parameters
     ----------
@@ -197,14 +197,12 @@ def build_deps(
             new_deps[dep.name] = build_no_dep(dep)
         elif dep.dep_type == DepType.BASIC_SERVICE:
             new_deps[dep.name] = build_service(dep, user, persistent, catalog_id)
-        elif dep.dep_type == DepType.HELPER_SERVICE:
-            new_deps[dep.name] = build_controllers(dep, new_deps)
         elif dep.dep_type == DepType.SERVICE_WITH_EXTRA_DEPS:
             new_deps[dep.name] = build_service_with_deps(
                 dep, user, persistent, catalog_id, new_deps
             )
-        elif dep.dep_type == DepType.CONTROLLER:
-            new_deps[dep.name] = build_controllers(dep, new_deps)
+        elif dep.dep_type == DepType.CLASS_WITH_DEPS:
+            new_deps[dep.name] = build_class_with_deps(dep, new_deps)
     return new_deps
 
 

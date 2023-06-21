@@ -84,7 +84,7 @@ def test_app_config_fixture():
     app_container_config.add_service_with_extra_deps(
         "extra_deps", TestServiceWithOtherDeps, ["test_service"]
     )
-    app_container_config.add_controller("test_controller", TestController, ["test_service"])
+    app_container_config.add_class_with_deps("test_controller", TestController, ["test_service"])
     return app_container_config
 
 

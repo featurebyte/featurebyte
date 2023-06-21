@@ -86,12 +86,12 @@ app_container_config.add_service_with_extra_deps(
     SessionValidatorService,
     ["credential_provider", "feature_store_service"],
 )
-app_container_config.add_helper_service(
+app_container_config.add_class_with_deps(
     "production_ready_validator",
     ProductionReadyValidator,
     ["table_service", "feature_service", "version_service"],
 )
-app_container_config.add_helper_service(
+app_container_config.add_class_with_deps(
     "table_info_service",
     TableInfoService,
     ["entity_service", "semantic_service", "catalog_service"],
@@ -339,23 +339,25 @@ app_container_config.add_service_with_extra_deps(
     ["feature_store_warehouse_service", "feature_store_service"],
 )
 
-app_container_config.add_controller(
+app_container_config.add_class_with_deps(
     "target_controller",
     TargetController,
     ["target_service"],
 )
-app_container_config.add_controller(
+app_container_config.add_class_with_deps(
     "relationship_info_controller",
     RelationshipInfoController,
     ["relationship_info_service", "entity_service", "table_service"],
 )
-app_container_config.add_controller("context_controller", ContextController, ["context_service"])
-app_container_config.add_controller(
+app_container_config.add_class_with_deps(
+    "context_controller", ContextController, ["context_service"]
+)
+app_container_config.add_class_with_deps(
     "entity_controller",
     EntityController,
     ["entity_service", "entity_relationship_service"],
 )
-app_container_config.add_controller(
+app_container_config.add_class_with_deps(
     "event_table_controller",
     EventTableController,
     [
@@ -366,7 +368,7 @@ app_container_config.add_controller(
     ],
 )
 
-app_container_config.add_controller(
+app_container_config.add_class_with_deps(
     "dimension_table_controller",
     DimensionTableController,
     [
@@ -376,7 +378,7 @@ app_container_config.add_controller(
         "semantic_service",
     ],
 )
-app_container_config.add_controller(
+app_container_config.add_class_with_deps(
     "item_table_controller",
     ItemTableController,
     [
@@ -386,7 +388,7 @@ app_container_config.add_controller(
         "semantic_service",
     ],
 )
-app_container_config.add_controller(
+app_container_config.add_class_with_deps(
     "scd_table_controller",
     SCDTableController,
     [
@@ -396,7 +398,7 @@ app_container_config.add_controller(
         "semantic_service",
     ],
 )
-app_container_config.add_controller(
+app_container_config.add_class_with_deps(
     "feature_controller",
     FeatureController,
     [
@@ -412,7 +414,7 @@ app_container_config.add_controller(
         "task_controller",
     ],
 )
-app_container_config.add_controller(
+app_container_config.add_class_with_deps(
     "feature_list_controller",
     FeatureListController,
     [
@@ -427,12 +429,12 @@ app_container_config.add_controller(
         "task_controller",
     ],
 )
-app_container_config.add_controller(
+app_container_config.add_class_with_deps(
     "feature_job_setting_analysis_controller",
     FeatureJobSettingAnalysisController,
     ["feature_job_setting_analysis_service", "task_controller"],
 )
-app_container_config.add_controller(
+app_container_config.add_class_with_deps(
     "feature_list_namespace_controller",
     FeatureListNamespaceController,
     [
@@ -444,7 +446,7 @@ app_container_config.add_controller(
         "feature_list_status_service",
     ],
 )
-app_container_config.add_controller(
+app_container_config.add_class_with_deps(
     "feature_namespace_controller",
     FeatureNamespaceController,
     [
@@ -456,7 +458,7 @@ app_container_config.add_controller(
         "info_service",
     ],
 )
-app_container_config.add_controller(
+app_container_config.add_class_with_deps(
     "feature_store_controller",
     FeatureStoreController,
     [
@@ -469,18 +471,20 @@ app_container_config.add_controller(
     ],
 )
 
-app_container_config.add_controller(
+app_container_config.add_class_with_deps(
     "semantic_controller", SemanticController, ["semantic_service", "semantic_relationship_service"]
 )
-app_container_config.add_controller("table_controller", TableController, ["table_service"])
-app_container_config.add_controller("catalog_controller", CatalogController, ["catalog_service"])
-app_container_config.add_controller(
+app_container_config.add_class_with_deps("table_controller", TableController, ["table_service"])
+app_container_config.add_class_with_deps(
+    "catalog_controller", CatalogController, ["catalog_service"]
+)
+app_container_config.add_class_with_deps(
     "periodic_task_controller", PeriodicTaskController, ["periodic_task_service"]
 )
-app_container_config.add_controller(
+app_container_config.add_class_with_deps(
     "credential_controller", CredentialController, ["credential_service"]
 )
-app_container_config.add_controller(
+app_container_config.add_class_with_deps(
     "observation_table_controller",
     ObservationTableController,
     [
@@ -490,7 +494,7 @@ app_container_config.add_controller(
         "task_controller",
     ],
 )
-app_container_config.add_controller(
+app_container_config.add_class_with_deps(
     "historical_feature_table_controller",
     HistoricalFeatureTableController,
     [
@@ -502,7 +506,7 @@ app_container_config.add_controller(
         "task_controller",
     ],
 )
-app_container_config.add_controller(
+app_container_config.add_class_with_deps(
     "batch_request_table_controller",
     BatchRequestTableController,
     [
@@ -512,7 +516,7 @@ app_container_config.add_controller(
         "task_controller",
     ],
 )
-app_container_config.add_controller(
+app_container_config.add_class_with_deps(
     "batch_feature_table_controller",
     BatchFeatureTableController,
     [
@@ -526,7 +530,7 @@ app_container_config.add_controller(
         "task_controller",
     ],
 )
-app_container_config.add_controller(
+app_container_config.add_class_with_deps(
     "deployment_controller",
     DeploymentController,
     [
@@ -538,7 +542,7 @@ app_container_config.add_controller(
         "task_controller",
     ],
 )
-app_container_config.add_controller(
+app_container_config.add_class_with_deps(
     "static_source_table_controller",
     StaticSourceTableController,
     [
