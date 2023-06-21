@@ -138,9 +138,7 @@ app_container_config.add_service_with_extra_deps(
         "feature_store_service",
     ],
 )
-app_container_config.add_service_with_extra_deps(
-    "context_service", ContextService, ["entity_service"]
-)
+app_container_config.add_basic_service("context_service", ContextService)
 app_container_config.add_service_with_extra_deps(
     "entity_service", EntityService, ["catalog_service"]
 )
