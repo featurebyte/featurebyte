@@ -287,12 +287,10 @@ class InfoService(BaseService):
         """
         _ = verbose
         target_doc = await self.target_service.get_document(document_id=document_id)
-        entity_brief_info_list = EntityBriefInfoList()
-        entity_ids = target_doc.entity_ids
-        if entity_ids:
-            entity_brief_info_list = await self.entity_service.get_entity_brief_info_list(
-                set(entity_ids)
-            )
+        entity_ids = target_doc.entity_ids or {}
+        entity_brief_info_list = await self.entity_service.get_entity_brief_info_list(
+            set(entity_ids)
+        )
         return TargetInfo(
             id=document_id,
             target_name=target_doc.name,
