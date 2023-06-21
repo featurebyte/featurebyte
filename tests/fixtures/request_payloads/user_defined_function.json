@@ -12,5 +12,6 @@
             "test_value": null
         }
     ],
-    "name": "udf_test"
+    "name": "udf_test",
+    "output_dtype": "FLOAT"
 }

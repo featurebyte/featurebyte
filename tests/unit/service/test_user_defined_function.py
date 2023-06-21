@@ -44,6 +44,7 @@ def user_defined_function_dict_fixture():
             },
         ],
         "catalog_id": None,
+        "output_dtype": "FLOAT",
     }
 
 

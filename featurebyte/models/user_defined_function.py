@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Any, List, Optional
 
-from pydantic import validator
+from pydantic import Field, validator
 
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import (
@@ -43,6 +43,16 @@ class FunctionParameter(FeatureByteBaseModel):
     has_default_value: bool
     has_test_value: bool
 
+    @property
+    def signature(self) -> str:
+        """
+        Return the signature of the function parameter
+        """
+        param_type = DBVarType(self.dtype).to_type_str()
+        if self.has_default_value:
+            return f"{self.name}: {param_type} = {self.default_value}"
+        return f"{self.name}: {param_type}"
+
 
 class UserDefinedFunctionModel(FeatureByteBaseDocumentModel):
     """
@@ -58,7 +68,9 @@ class UserDefinedFunctionModel(FeatureByteBaseDocumentModel):
 
     function_name: str
     function_parameters: List[FunctionParameter]
+    output_dtype: DBVarType
     catalog_id: Optional[PydanticObjectId]
+    signature: str = Field(default_factory=str)
 
     @validator("function_name")
     @classmethod
@@ -82,6 +94,17 @@ class UserDefinedFunctionModel(FeatureByteBaseDocumentModel):
                 raise ValueError(f'Function parameter name "{func_param.name}" is not valid')
             func_names.add(func_param.name)
         return value
+
+    def _generate_signature(self) -> str:
+        # generate function signature
+        param_signature = ", ".join([param.signature for param in self.function_parameters])
+        output_type = DBVarType(self.output_dtype).to_type_str()
+        return f"{self.function_name}({param_signature}) -> {output_type}"
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        if not self.signature:
+            self.signature = self._generate_signature()
 
     class Settings(FeatureByteBaseDocumentModel.Settings):
         """

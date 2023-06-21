@@ -232,6 +232,7 @@ def test_generate_user_defined_function(update_fixtures, request_payload_dir):
                 has_test_value=False,
             )
         ],
+        output_dtype=DBVarType.FLOAT,
     )
     if update_fixtures:
         filename = f"{request_payload_dir}/user_defined_function.json"

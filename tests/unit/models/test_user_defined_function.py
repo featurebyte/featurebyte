@@ -4,13 +4,14 @@ Unit tests for the UserDefinedFunction model.
 import pytest
 from bson import ObjectId
 
+from featurebyte.enum import DBVarType
 from featurebyte.models.user_defined_function import UserDefinedFunctionModel
 
 
 @pytest.mark.parametrize(
-    "function_parameters,catalog_id",
+    "function_parameters,catalog_id,expected_signature",
     [
-        ([], None),
+        ([], None, "function_name() -> float"),
         (
             [
                 {
@@ -31,19 +32,23 @@ from featurebyte.models.user_defined_function import UserDefinedFunctionModel
                 },
             ],
             ObjectId(),
+            "function_name(param1: int, param2: float = 1.0) -> float",
         ),
     ],
 )
-def test_user_defined_function_model(function_parameters, catalog_id):
+def test_user_defined_function_model(function_parameters, catalog_id, expected_signature):
     """Test UserDefinedFunctionModel"""
     user_defined_function = UserDefinedFunctionModel(
         function_name="function_name",
         function_parameters=function_parameters,
+        output_dtype=DBVarType.FLOAT,
         catalog_id=catalog_id,
     )
     assert user_defined_function.function_name == "function_name"
     assert user_defined_function.function_parameters == function_parameters
     assert user_defined_function.catalog_id == catalog_id
+    assert user_defined_function.output_dtype == DBVarType.FLOAT
+    assert user_defined_function.signature == expected_signature
 
 
 def test_user_defined_function_model__validator():
@@ -60,6 +65,7 @@ def test_user_defined_function_model__validator():
         UserDefinedFunctionModel(
             function_name="function_name",
             function_parameters=[func_param, func_param],
+            output_dtype=DBVarType.FLOAT,
         )
     expected_msg = 'Function parameter name "param" is not unique'
     assert expected_msg in str(exc.value)
@@ -68,6 +74,7 @@ def test_user_defined_function_model__validator():
         UserDefinedFunctionModel(
             function_name="function_name",
             function_parameters=[{**func_param, "name": "invalid param name"}],
+            output_dtype=DBVarType.FLOAT,
         )
     expected_msg = 'Function parameter name "invalid param name" is not valid'
     assert expected_msg in str(exc.value)
@@ -76,6 +83,7 @@ def test_user_defined_function_model__validator():
         UserDefinedFunctionModel(
             function_name="invalid function name",
             function_parameters=[func_param],
+            output_dtype=DBVarType.FLOAT,
         )
     expected_msg = 'Function name "invalid function name" is not valid'
     assert expected_msg in str(exc.value)

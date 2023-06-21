@@ -6,6 +6,7 @@ from typing import List, Optional
 from bson import ObjectId
 from pydantic import Field, StrictStr
 
+from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.user_defined_function import FunctionParameter, UserDefinedFunctionModel
 from featurebyte.schema.common.base import PaginationMixin
@@ -20,6 +21,7 @@ class UserDefinedFunctionCreate(FeatureByteBaseModel):
     name: StrictStr
     function_name: StrictStr
     function_parameters: List[FunctionParameter]
+    output_dtype: DBVarType
     catalog_id: Optional[PydanticObjectId]
 
 

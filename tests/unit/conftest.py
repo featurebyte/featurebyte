@@ -105,6 +105,16 @@ def mock_websocket_client_fixture(request):
             yield mock_get_websocket_client
 
 
+@pytest.fixture(autouse=True)
+def mock_udf_iterate_api_object_using_paginated_routes():
+    """Mock iterate_api_object_using_paginated_routes in UserDefinedFunction"""
+    with mock.patch(
+        "featurebyte.api.user_defined_function.iterate_api_object_using_paginated_routes"
+    ) as mock_iterate_api_object_using_paginated_routes:
+        mock_iterate_api_object_using_paginated_routes.return_value = []
+        yield mock_iterate_api_object_using_paginated_routes
+
+
 @pytest.fixture(name="storage")
 def storage_fixture():
     """
