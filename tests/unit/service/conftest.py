@@ -28,31 +28,6 @@ from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
 from featurebyte.schema.feature_store import FeatureStoreCreate
 from featurebyte.schema.item_table import ItemTableCreate
 from featurebyte.schema.scd_table import SCDTableCreate
-from featurebyte.service.context import ContextService
-from featurebyte.service.dimension_table import DimensionTableService
-from featurebyte.service.entity import EntityService
-from featurebyte.service.event_table import EventTableService
-from featurebyte.service.feature import FeatureService
-from featurebyte.service.feature_list import FeatureListService
-from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
-from featurebyte.service.feature_namespace import FeatureNamespaceService
-from featurebyte.service.feature_store import FeatureStoreService
-from featurebyte.service.item_table import ItemTableService
-from featurebyte.service.scd_table import SCDTableService
-from featurebyte.service.semantic import SemanticService
-from featurebyte.service.table import TableService
-from featurebyte.service.table_columns_info import TableColumnsInfoService
-from featurebyte.service.version import VersionService
-
-
-@pytest.fixture(scope="session")
-def user():
-    """
-    Mock user
-    """
-    user = Mock()
-    user.id = ObjectId()
-    return user
 
 
 @pytest.fixture(name="get_credential")
@@ -69,89 +44,87 @@ def get_credential_fixture(credentials):
 
 
 @pytest.fixture(name="feature_store_service")
-def feature_store_service_fixture(user, persistent):
+def feature_store_service_fixture(app_container):
     """FeatureStore service"""
-    return FeatureStoreService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
+    return app_container.feature_store_service
 
 
 @pytest.fixture(name="entity_service")
-def entity_service_fixture(user, persistent):
+def entity_service_fixture(app_container):
     """Entity service"""
-    return EntityService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
+    return app_container.entity_service
 
 
 @pytest.fixture(name="semantic_service")
-def semantic_service_fixture(user, persistent):
+def semantic_service_fixture(app_container):
     """Semantic service"""
-    return SemanticService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
+    return app_container.semantic_service
 
 
 @pytest.fixture(name="context_service")
-def context_service_fixture(user, persistent):
+def context_service_fixture(app_container):
     """Context service"""
-    return ContextService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
+    return app_container.context_service
 
 
 @pytest.fixture(name="table_service")
-def table_service_fixture(user, persistent):
+def table_service_fixture(app_container):
     """Table service"""
-    return TableService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
+    return app_container.table_service
 
 
 @pytest.fixture(name="event_table_service")
-def event_table_service_fixture(user, persistent):
+def event_table_service_fixture(app_container):
     """EventTable service"""
-    return EventTableService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
+    return app_container.event_table_service
 
 
 @pytest.fixture(name="item_table_service")
-def item_table_service_fixture(user, persistent):
+def item_table_service_fixture(app_container):
     """ItemTable service"""
-    return ItemTableService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
+    return app_container.item_table_service
 
 
 @pytest.fixture(name="dimension_table_service")
-def dimension_table_service_fixture(user, persistent):
+def dimension_table_service_fixture(app_container):
     """DimensionTable service"""
-    return DimensionTableService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
+    return app_container.dimension_table_service
 
 
 @pytest.fixture(name="scd_table_service")
-def scd_table_service_fixture(user, persistent):
+def scd_table_service_fixture(app_container):
     """SCDTable service"""
-    return SCDTableService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
+    return app_container.scd_table_service
 
 
 @pytest.fixture(name="feature_namespace_service")
-def feature_namespace_service_fixture(user, persistent):
+def feature_namespace_service_fixture(app_container):
     """FeatureNamespaceService fixture"""
-    return FeatureNamespaceService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
+    return app_container.feature_namespace_service
 
 
 @pytest.fixture(name="feature_service")
-def feature_service_fixture(user, persistent):
+def feature_service_fixture(app_container):
     """FeatureService fixture"""
-    return FeatureService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
+    return app_container.feature_service
 
 
 @pytest.fixture(name="feature_list_namespace_service")
-def feature_list_namespace_service_fixture(user, persistent):
+def feature_list_namespace_service_fixture(app_container):
     """FeatureListNamespaceService fixture"""
-    return FeatureListNamespaceService(
-        user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
-    )
+    return app_container.feature_list_namespace_service
 
 
 @pytest.fixture(name="feature_list_service")
-def feature_list_service_fixture(user, persistent):
+def feature_list_service_fixture(app_container):
     """FeatureListService fixture"""
-    return FeatureListService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
+    return app_container.feature_list_service
 
 
 @pytest.fixture(name="table_columns_info_service")
-def table_columns_info_service_fixture(user, persistent):
+def table_columns_info_service_fixture(app_container):
     """TableColumnsInfoService fixture"""
-    return TableColumnsInfoService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
+    return app_container.table_columns_info_service
 
 
 @pytest.fixture(name="table_status_service")
@@ -224,9 +197,9 @@ def online_store_table_version_service_fixture(app_container):
 
 
 @pytest.fixture(name="version_service")
-def version_service_fixture(user, persistent):
+def version_service_fixture(app_container):
     """VersionService fixture"""
-    return VersionService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
+    return app_container.version_service
 
 
 @pytest.fixture(name="deploy_service")

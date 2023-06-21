@@ -1366,12 +1366,21 @@ def api_object_to_id_fixture():
     return output
 
 
+@pytest.fixture(scope="session")
+def user():
+    """
+    Mock user
+    """
+    user = User()
+    user.id = ObjectId()
+    return user
+
+
 @pytest.fixture(name="app_container")
-def app_container_fixture(persistent):
+def app_container_fixture(persistent, user):
     """
     Return an app container used in tests. This will allow us to easily retrieve instances of the right type.
     """
-    user = User()
     task_manager = TaskManager(
         user=user, persistent=persistent, celery=get_celery(), catalog_id=DEFAULT_CATALOG_ID
     )
