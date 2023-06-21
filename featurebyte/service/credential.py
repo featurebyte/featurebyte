@@ -35,8 +35,8 @@ class CredentialService(
         user: Any,
         persistent: Persistent,
         catalog_id: ObjectId,
-        feature_store_warehouse_service: Optional[FeatureStoreWarehouseService] = None,
-        feature_store_service: Optional[FeatureStoreService] = None,
+        feature_store_warehouse_service: FeatureStoreWarehouseService,
+        feature_store_service: FeatureStoreService,
     ):
         super().__init__(user=user, persistent=persistent, catalog_id=catalog_id)
         self.feature_store_warehouse_service = feature_store_warehouse_service
@@ -76,9 +76,6 @@ class CredentialService(
         credential: CredentialModel
             CredentialModel to validate
         """
-        # feature_store_warehouse_service needs to be provided
-        assert self.feature_store_warehouse_service
-
         # test credential works
         feature_store = (
             await self.feature_store_warehouse_service.feature_store_service.get_document(
