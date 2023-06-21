@@ -20,7 +20,7 @@ from featurebyte.session.base import BaseSession
 
 
 @pytest.fixture(name="observation_table_from_source_table")
-def observation_table_from_source_table_fixture(event_table):
+def observation_table_from_source_table_fixture(event_table, user):
     """
     Fixture for an ObservationTable from a source table
     """
@@ -46,6 +46,7 @@ def observation_table_from_source_table_fixture(event_table):
         ],
         num_rows=1000,
         most_recent_point_in_time="2023-01-15T10:00:00",
+        user_id=user.id,
     )
 
 
