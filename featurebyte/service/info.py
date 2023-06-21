@@ -3,7 +3,7 @@ InfoService class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Type, TypeVar
+from typing import Any, Dict, Optional, Type, TypeVar
 
 import copy
 
