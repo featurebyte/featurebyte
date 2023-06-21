@@ -287,14 +287,19 @@ class InfoService(BaseService):
         """
         _ = verbose
         target_doc = await self.target_service.get_document(document_id=document_id)
-        entity_ids = target_doc.entity_ids or []
-        entity_brief_info_list = await self.entity_service.get_entity_brief_info_list(
-            set(entity_ids)
+        entities = await self.entity_service.list_documents(
+            page=1, page_size=0, query_filter={"_id": {"$in": target_doc.entity_ids}}
         )
+        # get catalog info
+        catalog = await self.catalog_service.get_document(target_doc.catalog_id)
+        for entity in entities["data"]:
+            assert entity["catalog_id"] == catalog.id
+            entity["catalog_name"] = catalog.name
+
         return TargetInfo(
             id=document_id,
             target_name=target_doc.name,
-            entities=entity_brief_info_list,
+            entities=EntityBriefInfoList.from_paginated_data(entities),
             horizon=target_doc.horizon,
             blind_spot=target_doc.blind_spot,
             has_recipe=bool(target_doc.graph),
