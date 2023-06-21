@@ -28,6 +28,7 @@ from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
 from featurebyte.schema.feature_store import FeatureStoreCreate
 from featurebyte.schema.item_table import ItemTableCreate
 from featurebyte.schema.scd_table import SCDTableCreate
+from featurebyte.schema.target import TargetCreate
 
 
 @pytest.fixture(name="get_credential")
