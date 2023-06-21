@@ -18,6 +18,8 @@ from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent.base import Persistent
 from featurebyte.service.feature import FeatureService
+from featurebyte.service.table import TableService
+from featurebyte.service.view_construction import ViewConstructionService
 from featurebyte.service.working_schema import WorkingSchemaService
 from featurebyte.session.base import BaseSession
 
@@ -30,7 +32,22 @@ class TileColumnTypeExtractor:
     """
 
     def __init__(self, user: Any, persistent: Persistent):
-        self.feature_service = FeatureService(user, persistent, catalog_id=DEFAULT_CATALOG_ID)
+        self.table_service = TableService(
+            user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
+        )
+        self.view_construction_service = ViewConstructionService(
+            user=user,
+            persistent=persistent,
+            catalog_id=DEFAULT_CATALOG_ID,
+            table_service=self.table_service,
+        )
+        self.feature_service = FeatureService(
+            user,
+            persistent,
+            catalog_id=DEFAULT_CATALOG_ID,
+            table_service=self.table_service,
+            view_construction_service=self.view_construction_service,
+        )
         self.tile_column_name_to_type: Optional[dict[str, str]] = None
 
     async def setup(self) -> None:
