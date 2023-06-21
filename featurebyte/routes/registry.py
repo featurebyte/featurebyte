@@ -31,6 +31,7 @@ from featurebyte.routes.semantic.controller import SemanticController
 from featurebyte.routes.static_source_table.controller import StaticSourceTableController
 from featurebyte.routes.table.controller import TableController
 from featurebyte.routes.target.controller import TargetController
+from featurebyte.routes.user_defined_function.controller import UserDefinedFunctionController
 from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.service.catalog import CatalogService
@@ -542,4 +543,9 @@ app_container_config.add_class_with_deps(
         "task_controller",
         "feature_store_service",
     ],
+)
+app_container_config.add_controller(
+    "user_defined_function_controller",
+    UserDefinedFunctionController,
+    ["user_defined_function_service"],
 )

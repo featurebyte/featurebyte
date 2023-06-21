@@ -12,7 +12,6 @@ from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
     PydanticObjectId,
-    UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
 )
 

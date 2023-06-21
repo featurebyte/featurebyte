@@ -7,7 +7,8 @@ from bson import ObjectId
 from pydantic import Field, StrictStr
 
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
-from featurebyte.models.user_defined_function import FunctionParameter
+from featurebyte.models.user_defined_function import FunctionParameter, UserDefinedFunctionModel
+from featurebyte.schema.common.base import PaginationMixin
 
 
 class UserDefinedFunctionCreate(FeatureByteBaseModel):
@@ -26,3 +27,11 @@ class UserDefinedFunctionUpdate(FeatureByteBaseModel):
     """
     UserDefinedFunction update schema
     """
+
+
+class UserDefinedFunctionList(PaginationMixin):
+    """
+    Paginated list of UserDefinedFunction
+    """
+
+    data: List[UserDefinedFunctionModel]

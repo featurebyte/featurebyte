@@ -3,10 +3,14 @@ Test module for generating payload fixtures for testing api route
 """
 import json
 
+import pytest
+
 from featurebyte import AggFunc, FeatureJobSetting, FeatureList
+from featurebyte.enum import DBVarType
 from featurebyte.models.credential import UsernamePasswordCredential
 from featurebyte.models.relationship import RelationshipType
 from featurebyte.models.request_input import SourceTableRequestInput
+from featurebyte.models.user_defined_function import FunctionParameter
 from featurebyte.schema.batch_feature_table import BatchFeatureTableCreate
 from featurebyte.schema.batch_request_table import BatchRequestTableCreate
 from featurebyte.schema.catalog import CatalogCreate
@@ -20,11 +24,19 @@ from featurebyte.schema.observation_table import ObservationTableCreate
 from featurebyte.schema.relationship_info import RelationshipInfoCreate
 from featurebyte.schema.static_source_table import StaticSourceTableCreate
 from featurebyte.schema.target import TargetCreate
+from featurebyte.schema.user_defined_function import UserDefinedFunctionCreate
 from tests.util.helper import iet_entropy
+
+
+@pytest.fixture(name="request_payload_dir")
+def request_payload_dir_fixture():
+    """Request payload directory fixture"""
+    return "tests/fixtures/request_payloads"
 
 
 def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
     update_fixtures,
+    request_payload_dir,
     snowflake_feature_store,
     snowflake_event_table,
     snowflake_item_table,
@@ -202,3 +214,27 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
                 json_to_write["_COMMENT"] = generated_comment
                 fhandle.write(json.dumps(json_to_write, indent=4, sort_keys=True))
             output_filenames.append(filename)
+
+
+def test_generate_user_defined_function(update_fixtures, request_payload_dir):
+    """
+    Write request payload for user defined function route
+    """
+    user_defined_function = UserDefinedFunctionCreate(
+        _id="64928868668f720c5bebbbd4",
+        name="udf_test",
+        function_name="cos",
+        function_parameters=[
+            FunctionParameter(
+                name="x",
+                dtype=DBVarType.FLOAT,
+                has_default_value=False,
+                has_test_value=False,
+            )
+        ],
+    )
+    if update_fixtures:
+        filename = f"{request_payload_dir}/user_defined_function.json"
+        with open(filename, "w") as fhandle:
+            json_payload = user_defined_function.json_dict()
+            fhandle.write(json.dumps(json_payload, indent=4, sort_keys=True))
