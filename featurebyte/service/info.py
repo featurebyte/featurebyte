@@ -3,7 +3,7 @@ InfoService class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Type, TypeVar
+from typing import Any, Dict, List, Optional, Type, TypeVar
 
 import copy
 
@@ -287,7 +287,7 @@ class InfoService(BaseService):
         """
         _ = verbose
         target_doc = await self.target_service.get_document(document_id=document_id)
-        entity_ids: set[ObjectId] = target_doc.entity_ids or set()
+        entity_ids: List[ObjectId] = target_doc.entity_ids or []
         entity_brief_info_list = await self.entity_service.get_entity_brief_info_list(
             set(entity_ids)
         )
