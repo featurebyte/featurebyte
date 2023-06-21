@@ -25,7 +25,6 @@ from featurebyte.schema.feature import (
 from featurebyte.schema.info import (
     DimensionTableInfo,
     EntityBriefInfo,
-    EntityBriefInfoList,
     EntityInfo,
     EventTableInfo,
     FeatureInfo,
