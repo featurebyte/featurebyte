@@ -55,7 +55,10 @@ class WorkingSchemaService(BaseService):
         super().__init__(user, persistent, catalog_id)
         self.table_service = TableService(user=user, persistent=persistent, catalog_id=catalog_id)
         self.view_construction_service = ViewConstructionService(
-            user=user, persistent=persistent, catalog_id=catalog_id
+            user=user,
+            persistent=persistent,
+            catalog_id=catalog_id,
+            table_service=self.table_service,
         )
         self.feature_service = FeatureService(
             user=user,
