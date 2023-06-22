@@ -20,7 +20,6 @@ from featurebyte.exception import (
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.base import PydanticObjectId, VersionIdentifier
 from featurebyte.models.feature import DefaultVersionMode, FeatureModel, FeatureReadiness
-from featurebyte.models.persistent import Document
 from featurebyte.query_graph.enum import GraphNodeType
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
 from featurebyte.routes.common.base import BaseDocumentController, DerivePrimaryEntityMixin
@@ -51,7 +50,7 @@ from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
-from featurebyte.service.mixin import DocumentCreateSchema
+from featurebyte.service.mixin import Document, DocumentCreateSchema
 from featurebyte.service.preview import PreviewService
 from featurebyte.service.semantic import SemanticService
 from featurebyte.service.table import TableService
