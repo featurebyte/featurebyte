@@ -13,7 +13,6 @@ from featurebyte.models.credential import CredentialModel
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.persistent.base import Persistent
 from featurebyte.schema.credential import CredentialCreate, CredentialServiceUpdate
-from featurebyte.schema.info import CredentialInfo
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
@@ -77,10 +76,8 @@ class CredentialService(
             CredentialModel to validate
         """
         # test credential works
-        feature_store = (
-            await self.feature_store_warehouse_service.feature_store_service.get_document(
-                document_id=credential.feature_store_id
-            )
+        feature_store = await self.feature_store_service.get_document(
+            document_id=credential.feature_store_id
         )
 
         async def get_credential(**kwargs: Any) -> CredentialModel:
@@ -173,36 +170,4 @@ class CredentialService(
             exclude_none=exclude_none,
             document=document,
             return_document=return_document,
-        )
-
-    async def get_credential_info(self, document_id: ObjectId, verbose: bool) -> CredentialInfo:
-        """
-        Get credential info
-
-        Parameters
-        ----------
-        document_id: ObjectId
-            Document ID
-        verbose: bool
-            Verbose or not
-
-        Returns
-        -------
-        CredentialInfo
-        """
-        _ = verbose
-        credential = await self.get_document(document_id=document_id)
-        return CredentialInfo(
-            name=credential.name,
-            feature_store_info=await self.feature_store_service.get_feature_store_info(
-                document_id=credential.feature_store_id, verbose=verbose
-            ),
-            database_credential_type=credential.database_credential.type
-            if credential.database_credential
-            else None,
-            storage_credential_type=credential.storage_credential.type
-            if credential.storage_credential
-            else None,
-            created_at=credential.created_at,
-            updated_at=credential.updated_at,
         )

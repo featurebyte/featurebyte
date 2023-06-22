@@ -181,18 +181,10 @@ app_container_config.add_service_with_extra_deps(
 app_container_config.add_service_with_extra_deps(
     "entity_service", EntityService, ["catalog_service"]
 )
-app_container_config.add_service_with_extra_deps(
-    "dimension_table_service", DimensionTableService, ["table_info_service"]
-)
-app_container_config.add_service_with_extra_deps(
-    "event_table_service", EventTableService, ["table_info_service"]
-)
-app_container_config.add_service_with_extra_deps(
-    "item_table_service", ItemTableService, ["table_info_service", "event_table_service"]
-)
-app_container_config.add_service_with_extra_deps(
-    "scd_table_service", SCDTableService, ["table_info_service"]
-)
+app_container_config.add_basic_service("dimension_table_service", DimensionTableService)
+app_container_config.add_basic_service("event_table_service", EventTableService)
+app_container_config.add_basic_service("item_table_service", ItemTableService)
+app_container_config.add_basic_service("scd_table_service", SCDTableService)
 app_container_config.add_service_with_extra_deps(
     "feature_service", FeatureService, ["table_service", "view_construction_service"]
 )
@@ -206,9 +198,7 @@ app_container_config.add_service_with_extra_deps(
         "feature_list_namespace_service",
     ],
 )
-app_container_config.add_service_with_extra_deps(
-    "deployment_service", DeploymentService, ["feature_list_service"]
-)
+app_container_config.add_basic_service("deployment_service", DeploymentService)
 app_container_config.add_basic_service(
     "online_store_table_version_service", OnlineStoreTableVersionService
 )
@@ -223,7 +213,7 @@ app_container_config.add_service_with_extra_deps(
 app_container_config.add_service_with_extra_deps(
     "historical_feature_table_service",
     HistoricalFeatureTableService,
-    ["feature_store_service", "observation_table_service", "feature_list_service"],
+    ["feature_store_service"],
 )
 app_container_config.add_service_with_extra_deps(
     "batch_request_table_service",
@@ -236,7 +226,7 @@ app_container_config.add_service_with_extra_deps(
 app_container_config.add_service_with_extra_deps(
     "batch_feature_table_service",
     BatchFeatureTableService,
-    ["feature_store_service", "deployment_service", "batch_request_table_service"],
+    ["feature_store_service"],
 )
 app_container_config.add_service_with_extra_deps(
     "static_source_table_service",
@@ -267,7 +257,7 @@ app_container_config.add_service_with_extra_deps(
 app_container_config.add_service_with_extra_deps(
     "feature_job_setting_analysis_service",
     FeatureJobSettingAnalysisService,
-    ["event_table_service", "catalog_service"],
+    ["event_table_service"],
 )
 app_container_config.add_service_with_extra_deps(
     "feature_list_namespace_service",
@@ -320,14 +310,8 @@ app_container_config.add_service_with_extra_deps(
     ],
 )
 app_container_config.add_basic_service("catalog_service", CatalogService)
-app_container_config.add_service_with_extra_deps(
-    "target_service", TargetService, ["entity_service"]
-)
-app_container_config.add_service_with_extra_deps(
-    "relationship_info_service",
-    RelationshipInfoService,
-    ["entity_service", "table_service", "user_service"],
-)
+app_container_config.add_basic_service("target_service", TargetService)
+app_container_config.add_basic_service("relationship_info_service", RelationshipInfoService)
 app_container_config.add_basic_service("user_service", UserService)
 app_container_config.add_service_with_extra_deps(
     "view_construction_service", ViewConstructionService, ["table_service"]
@@ -342,12 +326,12 @@ app_container_config.add_service_with_extra_deps(
 app_container_config.add_class_with_deps(
     "target_controller",
     TargetController,
-    ["target_service"],
+    ["target_service", "entity_service"],
 )
 app_container_config.add_class_with_deps(
     "relationship_info_controller",
     RelationshipInfoController,
-    ["relationship_info_service", "entity_service", "table_service"],
+    ["relationship_info_service", "entity_service", "table_service", "user_service"],
 )
 app_container_config.add_class_with_deps(
     "context_controller", ContextController, ["context_service"]
@@ -355,7 +339,7 @@ app_container_config.add_class_with_deps(
 app_container_config.add_class_with_deps(
     "entity_controller",
     EntityController,
-    ["entity_service", "entity_relationship_service"],
+    ["entity_service", "entity_relationship_service", "catalog_service"],
 )
 app_container_config.add_class_with_deps(
     "event_table_controller",
@@ -365,6 +349,7 @@ app_container_config.add_class_with_deps(
         "table_columns_info_service",
         "table_status_service",
         "semantic_service",
+        "table_info_service",
     ],
 )
 
@@ -376,6 +361,7 @@ app_container_config.add_class_with_deps(
         "table_columns_info_service",
         "table_status_service",
         "semantic_service",
+        "table_info_service",
     ],
 )
 app_container_config.add_class_with_deps(
@@ -386,6 +372,8 @@ app_container_config.add_class_with_deps(
         "table_columns_info_service",
         "table_status_service",
         "semantic_service",
+        "table_info_service",
+        "event_table_service",
     ],
 )
 app_container_config.add_class_with_deps(
@@ -396,6 +384,7 @@ app_container_config.add_class_with_deps(
         "table_columns_info_service",
         "table_status_service",
         "semantic_service",
+        "table_info_service",
     ],
 )
 app_container_config.add_class_with_deps(
@@ -432,7 +421,12 @@ app_container_config.add_class_with_deps(
 app_container_config.add_class_with_deps(
     "feature_job_setting_analysis_controller",
     FeatureJobSettingAnalysisController,
-    ["feature_job_setting_analysis_service", "task_controller"],
+    [
+        "feature_job_setting_analysis_service",
+        "task_controller",
+        "event_table_service",
+        "catalog_service",
+    ],
 )
 app_container_config.add_class_with_deps(
     "feature_list_namespace_controller",
@@ -482,7 +476,7 @@ app_container_config.add_class_with_deps(
     "periodic_task_controller", PeriodicTaskController, ["periodic_task_service"]
 )
 app_container_config.add_class_with_deps(
-    "credential_controller", CredentialController, ["credential_service"]
+    "credential_controller", CredentialController, ["credential_service", "feature_store_service"]
 )
 app_container_config.add_class_with_deps(
     "observation_table_controller",
@@ -492,6 +486,7 @@ app_container_config.add_class_with_deps(
         "preview_service",
         "historical_feature_table_service",
         "task_controller",
+        "feature_store_service",
     ],
 )
 app_container_config.add_class_with_deps(
@@ -504,6 +499,7 @@ app_container_config.add_class_with_deps(
         "observation_table_service",
         "entity_validation_service",
         "task_controller",
+        "feature_list_service",
     ],
 )
 app_container_config.add_class_with_deps(
@@ -514,6 +510,7 @@ app_container_config.add_class_with_deps(
         "preview_service",
         "batch_feature_table_service",
         "task_controller",
+        "feature_store_service",
     ],
 )
 app_container_config.add_class_with_deps(
@@ -550,5 +547,6 @@ app_container_config.add_class_with_deps(
         "preview_service",
         "table_service",
         "task_controller",
+        "feature_store_service",
     ],
 )

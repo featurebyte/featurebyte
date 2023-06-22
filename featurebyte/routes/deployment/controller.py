@@ -140,10 +140,23 @@ class DeploymentController(
         -------
         DeploymentInfo
         """
-        info_document = await self.service.get_deployment_info(
-            document_id=document_id, verbose=verbose
+        _ = verbose
+        deployment = await self.service.get_document(document_id=document_id)
+        feature_list = await self.feature_list_service.get_document(
+            document_id=deployment.feature_list_id
         )
-        return info_document
+        return DeploymentInfo(
+            name=deployment.name,
+            feature_list_name=feature_list.name,
+            feature_list_version=feature_list.version.to_str(),
+            num_feature=len(feature_list.feature_ids),
+            enabled=deployment.enabled,
+            serving_endpoint=(
+                f"/deployment/{deployment.id}/online_features" if deployment.enabled else None
+            ),
+            created_at=deployment.created_at,
+            updated_at=deployment.updated_at,
+        )
 
     async def compute_online_features(
         self,

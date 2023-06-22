@@ -10,6 +10,7 @@ import pdfkit
 from bson import ObjectId
 from fastapi.responses import StreamingResponse
 
+from featurebyte import FeatureJobSetting
 from featurebyte.models.feature_job_setting_analysis import FeatureJobSettingAnalysisModel
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.routes.task.controller import TaskController
@@ -20,6 +21,8 @@ from featurebyte.schema.feature_job_setting_analysis import (
 )
 from featurebyte.schema.info import FeatureJobSettingAnalysisInfo
 from featurebyte.schema.task import Task
+from featurebyte.service.catalog import CatalogService
+from featurebyte.service.event_table import EventTableService
 from featurebyte.service.feature_job_setting_analysis import FeatureJobSettingAnalysisService
 
 
@@ -40,9 +43,13 @@ class FeatureJobSettingAnalysisController(
         self,
         service: FeatureJobSettingAnalysisService,
         task_controller: TaskController,
+        event_table_service: EventTableService,
+        catalog_service: CatalogService,
     ):
         super().__init__(service)
         self.task_controller = task_controller
+        self.event_table_service = event_table_service
+        self.catalog_service = catalog_service
 
     async def get_info(
         self,
@@ -63,10 +70,30 @@ class FeatureJobSettingAnalysisController(
         -------
         FeatureJobSettingAnalysisInfo
         """
-        info_document = await self.service.get_feature_job_setting_analysis_info(
-            document_id=document_id, verbose=verbose
+        _ = verbose
+        feature_job_setting_analysis = await self.service.get_document(document_id=document_id)
+        recommended_setting = (
+            feature_job_setting_analysis.analysis_result.recommended_feature_job_setting
         )
-        return info_document
+        event_table = await self.event_table_service.get_document(
+            document_id=feature_job_setting_analysis.event_table_id
+        )
+
+        # get catalog info
+        catalog = await self.catalog_service.get_document(feature_job_setting_analysis.catalog_id)
+
+        return FeatureJobSettingAnalysisInfo(
+            created_at=feature_job_setting_analysis.created_at,
+            event_table_name=event_table.name,
+            analysis_options=feature_job_setting_analysis.analysis_options,
+            analysis_parameters=feature_job_setting_analysis.analysis_parameters,
+            recommendation=FeatureJobSetting(
+                blind_spot=f"{recommended_setting.blind_spot}s",
+                time_modulo_frequency=f"{recommended_setting.job_time_modulo_frequency}s",
+                frequency=f"{recommended_setting.frequency}s",
+            ),
+            catalog_name=catalog.name,
+        )
 
     async def create_feature_job_setting_analysis(
         self,

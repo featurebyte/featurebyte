@@ -13,7 +13,7 @@ from featurebyte.models.entity import EntityModel
 from featurebyte.models.relationship_analysis import derive_primary_entity
 from featurebyte.persistent import Persistent
 from featurebyte.schema.entity import EntityCreate, EntityServiceUpdate
-from featurebyte.schema.info import EntityBriefInfoList, EntityInfo
+from featurebyte.schema.info import EntityBriefInfoList
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.catalog import CatalogService
 
@@ -142,32 +142,3 @@ class EntityService(BaseDocumentService[EntityModel, EntityCreate, EntityService
         for entity in entities["data"]:
             entity["catalog_name"] = catalog.name
         return EntityBriefInfoList.from_paginated_data(entities)
-
-    async def get_entity_info(self, document_id: ObjectId, verbose: bool) -> EntityInfo:
-        """
-        Get entity info
-
-        Parameters
-        ----------
-        document_id: ObjectId
-            Document ID
-        verbose: bool
-            Verbose or not
-
-        Returns
-        -------
-        EntityInfo
-        """
-        _ = verbose
-        entity = await self.get_document(document_id=document_id)
-
-        # get catalog info
-        catalog = await self.catalog_service.get_document(entity.catalog_id)
-
-        return EntityInfo(
-            name=entity.name,
-            created_at=entity.created_at,
-            updated_at=entity.updated_at,
-            serving_names=entity.serving_names,
-            catalog_name=catalog.name,
-        )

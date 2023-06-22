@@ -108,7 +108,19 @@ class BatchFeatureTableController(
         -------
         BatchFeatureTableInfo
         """
-        info_document = await self.service.get_batch_feature_table_info(
-            document_id=document_id, verbose=verbose
+        _ = verbose
+        batch_feature_table = await self.service.get_document(document_id=document_id)
+        batch_request_table = await self.batch_request_table_service.get_document(
+            document_id=batch_feature_table.batch_request_table_id
         )
-        return info_document
+        deployment = await self.deployment_service.get_document(
+            document_id=batch_feature_table.deployment_id
+        )
+        return BatchFeatureTableInfo(
+            name=batch_feature_table.name,
+            deployment_name=deployment.name,
+            batch_request_table_name=batch_request_table.name,
+            table_details=batch_feature_table.location.table_details,
+            created_at=batch_feature_table.created_at,
+            updated_at=batch_feature_table.updated_at,
+        )

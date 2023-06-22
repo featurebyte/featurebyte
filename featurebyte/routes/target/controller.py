@@ -8,6 +8,7 @@ from bson import ObjectId
 from featurebyte.models.target import TargetModel
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.target import TargetCreate, TargetInfo, TargetList
+from featurebyte.service.entity import EntityService
 from featurebyte.service.target import TargetService
 
 
@@ -17,6 +18,14 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
     """
 
     paginated_document_class = TargetList
+
+    def __init__(
+        self,
+        service: TargetService,
+        entity_service: EntityService,
+    ):
+        super().__init__(service)
+        self.entity_service = entity_service
 
     async def create_target(
         self,
@@ -93,4 +102,19 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
         -------
         TargetInfo
         """
-        return await self.service.get_target_info(document_id=document_id, verbose=verbose)
+        _ = verbose
+        target_doc = await self.service.get_document(document_id=document_id)
+        entity_ids = target_doc.entity_ids or []
+        entity_brief_info_list = await self.entity_service.get_entity_brief_info_list(
+            set(entity_ids)
+        )
+        return TargetInfo(
+            id=document_id,
+            target_name=target_doc.name,
+            entities=entity_brief_info_list,
+            horizon=target_doc.horizon,
+            blind_spot=target_doc.blind_spot,
+            has_recipe=bool(target_doc.graph),
+            created_at=target_doc.created_at,
+            updated_at=target_doc.updated_at,
+        )

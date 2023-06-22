@@ -13,6 +13,7 @@ from featurebyte.schema.info import BatchRequestTableInfo
 from featurebyte.schema.task import Task
 from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.batch_request_table import BatchRequestTableService
+from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.preview import PreviewService
 from featurebyte.service.validator.materialized_table_delete import check_delete_batch_request_table
 
@@ -34,10 +35,12 @@ class BatchRequestTableController(
         preview_service: PreviewService,
         batch_feature_table_service: BatchFeatureTableService,
         task_controller: TaskController,
+        feature_store_service: FeatureStoreService,
     ):
         super().__init__(service=service, preview_service=preview_service)
         self.batch_feature_table_service = batch_feature_table_service
         self.task_controller = task_controller
+        self.feature_store_service = feature_store_service
 
     async def create_batch_request_table(
         self,
@@ -81,7 +84,16 @@ class BatchRequestTableController(
         -------
         BatchRequestTableInfo
         """
-        info_document = await self.service.get_batch_request_table_info(
-            document_id=document_id, verbose=verbose
+        _ = verbose
+        batch_request_table = await self.service.get_document(document_id=document_id)
+        feature_store = await self.feature_store_service.get_document(
+            document_id=batch_request_table.location.feature_store_id
         )
-        return info_document
+        return BatchRequestTableInfo(
+            name=batch_request_table.name,
+            type=batch_request_table.request_input.type,
+            feature_store_name=feature_store.name,
+            table_details=batch_request_table.location.table_details,
+            created_at=batch_request_table.created_at,
+            updated_at=batch_request_table.updated_at,
+        )

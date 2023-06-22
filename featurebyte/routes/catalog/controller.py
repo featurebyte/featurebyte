@@ -91,7 +91,10 @@ class CatalogController(
         -------
         InfoDocument
         """
-        info_document = await self.service.get_catalog_info(
-            document_id=document_id, verbose=verbose
+        _ = verbose
+        catalog = await self.service.get_document(document_id=document_id)
+        return CatalogInfo(
+            name=catalog.name,
+            created_at=catalog.created_at,
+            updated_at=catalog.updated_at,
         )
-        return info_document
