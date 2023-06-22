@@ -29,10 +29,10 @@ def test_all_dependencies():
     Test all dependencies
     """
     config = AppContainerConfig()
-    config.add_class_with_deps("test_class_a", TestClassA)
-    config.add_class_with_deps("test_class_b", TestClassB, ["test_class_a"])
-    config.add_service_with_extra_deps("basic_service", TestClassA)
-    config.add_service_with_extra_deps("service_with_deps", TestClassB, ["test_class_a"])
+    config.register_class("test_class_a", TestClassA)
+    config.register_class("test_class_b", TestClassB, ["test_class_a"])
+    config.register_service("basic_service", TestClassA)
+    config.register_service("service_with_deps", TestClassB, ["test_class_a"])
 
     all_deps = config._all_dependencies()
     assert len(all_deps) == 4
@@ -43,8 +43,8 @@ def test_validate():
     Test validate
     """
     config = AppContainerConfig()
-    config.add_class_with_deps("test_class_a", TestClassA)
-    config.add_class_with_deps("test_class_a", TestClassB)
+    config.register_class("test_class_a", TestClassA)
+    config.register_class("test_class_a", TestClassB)
 
     with pytest.raises(ValueError) as exc:
         config.validate()

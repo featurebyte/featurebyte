@@ -7,25 +7,18 @@ from typing import Dict, List
 
 from dataclasses import dataclass
 
-from featurebyte.enum import OrderedStrEnum
+from featurebyte.enum import StrEnum
 
 
-class DepType(OrderedStrEnum):
+class DepType(StrEnum):
     """
-    DepType enums
+    DepType enums.
 
-    They are prefixed with numbers to ensure that they are initialized in the correct order. For example, if a class
-    has dependencies on all 4 types, the dependencies will be initialized in the following order:
-
-    - no deps
-    - basic services
-    - services with extra deps
-    - non-service classes with deps
+    Used to determine what type of dependency we have, so that we can build them correctly.
     """
 
-    BASIC_SERVICE = "20_basic_service"
-    SERVICE_WITH_EXTRA_DEPS = "30_service_with_extra_deps"
-    CLASS_WITH_DEPS = "40_class_with_deps"
+    SERVICE_WITH_EXTRA_DEPS = "service_with_extra_deps"
+    CLASS_WITH_DEPS = "class_with_deps"
 
 
 @dataclass
@@ -51,8 +44,6 @@ class AppContainerConfig:
     def __init__(self) -> None:
         # These services have dependencies in addition to the normal user, and persistent dependencies.
         self.service_with_extra_deps: List[ClassDefinition] = []
-        # These services only require the user, and persistent dependencies.
-        self.basic_services: List[ClassDefinition] = []
         # Classes with deps can depend on any object defined above.
         self.classes_with_deps: List[ClassDefinition] = []
 
@@ -71,11 +62,12 @@ class AppContainerConfig:
             self.dependency_mapping[dep.name] = dep
         return self.dependency_mapping
 
-    def add_service_with_extra_deps(
-        self, name: str, class_: type, dependencies: List[str] = ()
-    ) -> None:
+    def register_service(self, name: str, class_: type, dependencies: List[str] = ()) -> None:
         """
-        Register a service with extra dependencies
+        Register a service with extra dependencies if needed.
+
+        This endpoint is only for featurebyte services, as they'll automatically have a user, persistent, and catalog
+        ID, injected into the service initialization.
 
         Parameters
         ----------
@@ -95,9 +87,9 @@ class AppContainerConfig:
             )
         )
 
-    def add_class_with_deps(self, name: str, class_: type, dependencies: List[str] = ()) -> None:
+    def register_class(self, name: str, class_: type, dependencies: List[str] = ()) -> None:
         """
-        Register a helper service
+        Register a class, with dependencies if needed.
 
         Parameters
         ----------

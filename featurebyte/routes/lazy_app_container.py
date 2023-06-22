@@ -61,46 +61,6 @@ def get_all_deps_for_key(
     return all_deps
 
 
-def build_no_dep(class_def: ClassDefinition) -> Any:
-    """
-    Build a class with no dependencies.
-
-    Parameters
-    ----------
-    class_def: ClassDefinition
-        class definition
-
-    Returns
-    -------
-    Any
-    """
-    return class_def.class_()
-
-
-def build_service(
-    class_def: ClassDefinition, user: Any, persistent: Persistent, catalog_id: ObjectId
-) -> Any:
-    """
-    Build a service with the given dependencies.
-
-    Parameters
-    ----------
-    class_def: ClassDefinition
-        class definition
-    user: Any
-        user object
-    persistent: Persistent
-        persistent object
-    catalog_id: ObjectId
-        catalog id
-
-    Returns
-    -------
-    Any
-    """
-    return class_def.class_(user=user, persistent=persistent, catalog_id=catalog_id)
-
-
 def build_service_with_deps(
     class_def: ClassDefinition,
     user: Any,
