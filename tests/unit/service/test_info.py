@@ -70,9 +70,9 @@ async def test_get_feature_store_info(feature_store_service, feature_store):
 
 
 @pytest.mark.asyncio
-async def test_get_entity_info(entity_service, entity):
+async def test_get_entity_info(app_container, entity):
     """Test get_entity_info"""
-    info = await entity_service.get_entity_info(document_id=entity.id, verbose=False)
+    info = await app_container.entity_controller.get_info(document_id=entity.id, verbose=False)
     expected_info = EntityInfo(
         name="customer",
         created_at=info.created_at,
@@ -82,7 +82,7 @@ async def test_get_entity_info(entity_service, entity):
     )
     assert info == expected_info
 
-    info = await entity_service.get_entity_info(document_id=entity.id, verbose=True)
+    info = await app_container.entity_controller.get_info(document_id=entity.id, verbose=True)
     assert info == expected_info
 
 
