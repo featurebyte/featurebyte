@@ -101,10 +101,6 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
 
         Returns
         -------
-        InfoDocument
+        TargetInfo
         """
-        # TODO: stub out for now
-        _ = self, verbose
-        return TargetInfo(
-            id=document_id,
-        )
+        return await self.info_service.get_target_info(document_id=document_id, verbose=verbose)

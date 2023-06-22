@@ -28,6 +28,7 @@ from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
 from featurebyte.schema.feature_store import FeatureStoreCreate
 from featurebyte.schema.item_table import ItemTableCreate
 from featurebyte.schema.scd_table import SCDTableCreate
+from featurebyte.schema.target import TargetCreate
 
 
 @pytest.fixture(name="get_credential")
@@ -143,6 +144,12 @@ def feature_readiness_service_fixture(app_container):
 def default_version_mode_service_fixture(app_container):
     """DefaultVersionModeService fixture"""
     return app_container.default_version_mode_service
+
+
+@pytest.fixture(name="target_service")
+def target_service_fixture(app_container):
+    """TargetService fixture"""
+    return app_container.target_service
 
 
 @pytest.fixture(name="online_enable_service")
@@ -527,6 +534,15 @@ async def insert_feature_into_persistent(
             user_id=user.id,
         )
         return feature_id
+
+
+@pytest_asyncio.fixture(name="target")
+async def target_fixture(test_dir, target_service):
+    """Target model"""
+    fixture_path = os.path.join(test_dir, "fixtures/request_payloads/target.json")
+    with open(fixture_path, encoding="utf") as fhandle:
+        payload = json.loads(fhandle.read())
+        return await target_service.create_document(data=TargetCreate(**payload))
 
 
 @pytest_asyncio.fixture(name="setup_for_feature_readiness")

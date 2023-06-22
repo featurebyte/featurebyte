@@ -20,6 +20,7 @@ from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.schema.entity import EntityServiceUpdate
 from featurebyte.schema.relationship_info import RelationshipInfoCreate
 from featurebyte.service.base_service import BaseService
+from featurebyte.service.catalog import CatalogService
 from featurebyte.service.dimension_table import DimensionTableService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_table import EventTableService
@@ -48,7 +49,15 @@ class TableColumnsInfoService(BaseService):
         self.semantic_service = SemanticService(
             user=user, persistent=persistent, catalog_id=catalog_id
         )
-        self.entity_service = EntityService(user=user, persistent=persistent, catalog_id=catalog_id)
+        self.catalog_service = CatalogService(
+            user=user, persistent=persistent, catalog_id=catalog_id
+        )
+        self.entity_service = EntityService(
+            user=user,
+            persistent=persistent,
+            catalog_id=catalog_id,
+            catalog_service=self.catalog_service,
+        )
         self.relationship_info_service = RelationshipInfoService(
             user=user, persistent=persistent, catalog_id=catalog_id
         )

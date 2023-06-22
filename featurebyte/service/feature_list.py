@@ -21,6 +21,7 @@ from featurebyte.persistent import Persistent
 from featurebyte.schema.feature_list import FeatureListServiceCreate, FeatureListServiceUpdate
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService
+from featurebyte.service.catalog import CatalogService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
@@ -79,8 +80,14 @@ class FeatureListService(
 
     def __init__(self, user: Any, persistent: Persistent, catalog_id: ObjectId):
         super().__init__(user=user, persistent=persistent, catalog_id=catalog_id)
-        self.entity_service = EntityService(
+        self.catalog_service = CatalogService(
             user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
+        )
+        self.entity_service = EntityService(
+            user=self.user,
+            persistent=self.persistent,
+            catalog_id=self.catalog_id,
+            catalog_service=self.catalog_service,
         )
         self.relationship_info_service = RelationshipInfoService(
             user=self.user, persistent=self.persistent, catalog_id=self.catalog_id

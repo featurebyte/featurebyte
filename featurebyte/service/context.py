@@ -3,12 +3,13 @@ ContextService class
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional
 
 from bson import ObjectId
 
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.context import ContextModel
+from featurebyte.persistent import Persistent
 from featurebyte.query_graph.enum import NodeOutputType
 from featurebyte.query_graph.node.metadata.operation import NodeOutputCategory, OperationStructure
 from featurebyte.schema.context import ContextCreate, ContextUpdate
@@ -24,16 +25,15 @@ class ContextService(BaseDocumentService[ContextModel, ContextCreate, ContextUpd
 
     document_class = ContextModel
 
-    @property
-    def entity_service(self) -> EntityService:
-        """
-        Entity service instance
-
-        Returns
-        -------
-        EntityService
-        """
-        return EntityService(user=self.user, persistent=self.persistent, catalog_id=self.catalog_id)
+    def __init__(
+        self,
+        user: Any,
+        persistent: Persistent,
+        catalog_id: ObjectId,
+        entity_service: EntityService,
+    ):
+        super().__init__(user, persistent, catalog_id)
+        self.entity_service = entity_service
 
     async def create_document(self, data: ContextCreate) -> ContextModel:
         entities = await self.entity_service.list_documents(

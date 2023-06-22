@@ -52,6 +52,7 @@ from featurebyte.schema.info import (
 from featurebyte.schema.relationship_info import RelationshipInfoInfo
 from featurebyte.schema.semantic import SemanticList
 from featurebyte.schema.table import TableList
+from featurebyte.schema.target import TargetInfo
 from featurebyte.service.base_document import BaseDocumentService, DocumentUpdateSchema
 from featurebyte.service.base_service import BaseService
 from featurebyte.service.batch_feature_table import BatchFeatureTableService
@@ -78,6 +79,7 @@ from featurebyte.service.scd_table import SCDTableService
 from featurebyte.service.semantic import SemanticService
 from featurebyte.service.static_source_table import StaticSourceTableService
 from featurebyte.service.table import TableService
+from featurebyte.service.target import TargetService
 from featurebyte.service.user_service import UserService
 
 ObjectT = TypeVar("ObjectT")
@@ -88,7 +90,7 @@ class InfoService(BaseService):
     InfoService class is responsible for rendering the info of a specific api object.
     """
 
-    # pylint: disable=too-many-instance-attributes,too-many-lines
+    # pylint: disable=too-many-instance-attributes,too-many-lines,too-many-public-methods
 
     def __init__(self, user: Any, persistent: Persistent, catalog_id: ObjectId):
         super().__init__(user, persistent, catalog_id)
@@ -111,7 +113,15 @@ class InfoService(BaseService):
         self.feature_store_service = FeatureStoreService(
             user=user, persistent=persistent, catalog_id=catalog_id
         )
-        self.entity_service = EntityService(user=user, persistent=persistent, catalog_id=catalog_id)
+        self.catalog_service = CatalogService(
+            user=user, persistent=persistent, catalog_id=catalog_id
+        )
+        self.entity_service = EntityService(
+            user=user,
+            persistent=persistent,
+            catalog_id=catalog_id,
+            catalog_service=self.catalog_service,
+        )
         self.feature_service = FeatureService(
             user=user, persistent=persistent, catalog_id=catalog_id
         )
@@ -127,9 +137,6 @@ class InfoService(BaseService):
         self.feature_job_setting_analysis_service = FeatureJobSettingAnalysisService(
             user=user, persistent=persistent, catalog_id=catalog_id
         )
-        self.catalog_service = CatalogService(
-            user=user, persistent=persistent, catalog_id=catalog_id
-        )
         self.credential_service = CredentialService(
             user=user, persistent=persistent, catalog_id=catalog_id
         )
@@ -137,7 +144,10 @@ class InfoService(BaseService):
             user=user, persistent=persistent, catalog_id=catalog_id
         )
         self.context_service = ContextService(
-            user=user, persistent=persistent, catalog_id=catalog_id
+            user=user,
+            persistent=persistent,
+            catalog_id=catalog_id,
+            entity_service=self.entity_service,
         )
         self.observation_table_service = ObservationTableService(
             user=user,
@@ -175,6 +185,7 @@ class InfoService(BaseService):
             feature_store_service=self.feature_store_service,
         )
         self.user_service = UserService(user=user, persistent=persistent, catalog_id=catalog_id)
+        self.target_service = TargetService(user=user, persistent=persistent, catalog_id=catalog_id)
 
     @staticmethod
     async def _get_list_object(
@@ -257,6 +268,38 @@ class InfoService(BaseService):
             updated_at=entity.updated_at,
             serving_names=entity.serving_names,
             catalog_name=catalog.name,
+        )
+
+    async def get_target_info(self, document_id: ObjectId, verbose: bool) -> TargetInfo:
+        """
+        Get target info
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+        verbose: bool
+            Verbose or not
+
+        Returns
+        -------
+        TargetInfo
+        """
+        _ = verbose
+        target_doc = await self.target_service.get_document(document_id=document_id)
+        entity_ids = target_doc.entity_ids or []
+        entity_brief_info_list = await self.entity_service.get_entity_brief_info_list(
+            set(entity_ids)
+        )
+        return TargetInfo(
+            id=document_id,
+            target_name=target_doc.name,
+            entities=entity_brief_info_list,
+            horizon=target_doc.horizon,
+            blind_spot=target_doc.blind_spot,
+            has_recipe=bool(target_doc.graph),
+            created_at=target_doc.created_at,
+            updated_at=target_doc.updated_at,
         )
 
     async def _get_table_info(self, data_document: TableModel, verbose: bool) -> Dict[str, Any]:
