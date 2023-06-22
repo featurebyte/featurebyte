@@ -212,6 +212,9 @@ def test_client_redirection(mock_check_sdk_versions, mock_get_home_path):
             "Authorization": "Bearer API_TOKEN_VALUE1",
         }
 
+    # clean up environment variable
+    os.environ.pop("FEATUREBYTE_PROFILE")
+
 
 @pytest.mark.no_mock_websocket_client
 def test_websocket_ssl():

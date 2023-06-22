@@ -373,9 +373,7 @@ class Configurations:
             default_profile = self.settings.pop("default_profile", None)
             selected_profile_name = os.environ.get("FEATUREBYTE_PROFILE")
             if selected_profile_name:
-                self._profile = profile_map.get(
-                    selected_profile_name, profile_map.get(default_profile)
-                )
+                self._profile = profile_map.get(selected_profile_name)
             else:
                 self._profile = profile_map.get(default_profile)
 
