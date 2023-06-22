@@ -53,7 +53,6 @@ from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
-from featurebyte.service.info import InfoService
 from featurebyte.service.item_table import ItemTableService
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.online_enable import OnlineEnableService
@@ -297,18 +296,6 @@ app_container_config.add_service_with_extra_deps(
 )
 app_container_config.add_basic_service("entity_relationship_service", EntityRelationshipService)
 app_container_config.add_basic_service("semantic_relationship_service", SemanticRelationshipService)
-app_container_config.add_service_with_extra_deps(
-    "info_service",
-    InfoService,
-    [
-        "table_service",
-        "semantic_service",
-        "catalog_service",
-        "entity_service",
-        "feature_service",
-        "feature_namespace_service",
-    ],
-)
 app_container_config.add_basic_service("catalog_service", CatalogService)
 app_container_config.add_basic_service("target_service", TargetService)
 app_container_config.add_basic_service("relationship_info_service", RelationshipInfoService)
@@ -398,9 +385,12 @@ app_container_config.add_class_with_deps(
         "feature_readiness_service",
         "preview_service",
         "version_service",
-        "info_service",
         "feature_store_warehouse_service",
         "task_controller",
+        "catalog_service",
+        "table_service",
+        "feature_namespace_controller",
+        "semantic_service",
     ],
 )
 app_container_config.add_class_with_deps(
@@ -449,7 +439,8 @@ app_container_config.add_class_with_deps(
         "feature_service",
         "default_version_mode_service",
         "feature_readiness_service",
-        "info_service",
+        "table_service",
+        "catalog_service",
     ],
 )
 app_container_config.add_class_with_deps(

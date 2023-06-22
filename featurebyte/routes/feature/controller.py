@@ -3,7 +3,7 @@ Feature API route controller
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Literal, Optional, Union
+from typing import Any, Dict, Literal, Optional, Type, TypeVar, Union
 
 from http import HTTPStatus
 from pprint import pformat
@@ -11,18 +11,24 @@ from pprint import pformat
 from bson.objectid import ObjectId
 from fastapi.exceptions import HTTPException
 
+from featurebyte import FeatureJobSetting, TableCleaningOperation, TableFeatureJobSetting
 from featurebyte.exception import (
     DocumentDeletionError,
     MissingPointInTimeColumnError,
     RequiredEntityNotProvidedError,
 )
 from featurebyte.feature_manager.model import ExtendedFeatureModel
-from featurebyte.models.base import VersionIdentifier
+from featurebyte.models.base import PydanticObjectId, VersionIdentifier
 from featurebyte.models.feature import DefaultVersionMode, FeatureModel, FeatureReadiness
+from featurebyte.models.persistent import Document
+from featurebyte.query_graph.enum import GraphNodeType
+from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
 from featurebyte.routes.common.base import BaseDocumentController, DerivePrimaryEntityMixin
+from featurebyte.routes.feature_namespace.controller import FeatureNamespaceController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.feature import (
     BatchFeatureCreate,
+    FeatureBriefInfoList,
     FeatureCreate,
     FeatureModelResponse,
     FeatureNewVersionCreate,
@@ -33,17 +39,96 @@ from featurebyte.schema.feature import (
     FeatureUpdate,
 )
 from featurebyte.schema.info import FeatureInfo
+from featurebyte.schema.semantic import SemanticList
+from featurebyte.schema.table import TableList
 from featurebyte.schema.task import Task
 from featurebyte.schema.worker.task.batch_feature_create import BatchFeatureCreateTaskPayload
+from featurebyte.service.base_document import BaseDocumentService, DocumentUpdateSchema
+from featurebyte.service.catalog import CatalogService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
-from featurebyte.service.info import InfoService
+from featurebyte.service.mixin import DocumentCreateSchema
 from featurebyte.service.preview import PreviewService
+from featurebyte.service.semantic import SemanticService
+from featurebyte.service.table import TableService
 from featurebyte.service.version import VersionService
+
+ObjectT = TypeVar("ObjectT")
+
+
+def _extract_feature_table_cleaning_operations(
+    feature: FeatureModel, table_id_to_name: dict[ObjectId, str]
+) -> list[TableCleaningOperation]:
+    """
+    Helper method to extract table cleaning operations from a feature model.
+    """
+    table_cleaning_operations: list[TableCleaningOperation] = []
+    for view_graph_node in feature.graph.iterate_sorted_graph_nodes(
+        graph_node_types=GraphNodeType.view_graph_node_types()
+    ):
+        view_metadata = view_graph_node.parameters.metadata  # type: ignore
+        if view_metadata.column_cleaning_operations:
+            table_cleaning_operations.append(
+                TableCleaningOperation(
+                    table_name=table_id_to_name[view_metadata.table_id],
+                    column_cleaning_operations=view_metadata.column_cleaning_operations,
+                )
+            )
+    return table_cleaning_operations
+
+
+def _extract_table_feature_job_settings(
+    feature: FeatureModel, table_id_to_name: dict[ObjectId, str]
+) -> list[TableFeatureJobSetting]:
+    table_feature_job_settings = []
+    for group_by_node, data_id in feature.graph.iterate_group_by_node_and_table_id_pairs(
+        target_node=feature.node
+    ):
+        assert data_id is not None, "Event table ID not found"
+        table_name = table_id_to_name[data_id]
+        group_by_node_params = group_by_node.parameters
+        table_feature_job_settings.append(
+            TableFeatureJobSetting(
+                table_name=table_name,
+                feature_job_setting=FeatureJobSetting(
+                    blind_spot=f"{group_by_node_params.blind_spot}s",
+                    frequency=f"{group_by_node_params.frequency}s",
+                    time_modulo_frequency=f"{group_by_node_params.time_modulo_frequency}s",
+                ),
+            )
+        )
+    return table_feature_job_settings
+
+
+async def _get_list_object(
+    service: BaseDocumentService[Document, DocumentCreateSchema, DocumentUpdateSchema],
+    document_ids: list[PydanticObjectId],
+    list_object_class: Type[ObjectT],
+) -> ObjectT:
+    """
+    Retrieve object through list route & deserialize the records
+
+    Parameters
+    ----------
+    service: BaseDocumentService
+        Service
+    document_ids: list[ObjectId]
+        List of document IDs
+    list_object_class: Type[ObjectT]
+        List object class
+
+    Returns
+    -------
+    ObjectT
+    """
+    res = await service.list_documents(
+        page=1, page_size=0, query_filter={"_id": {"$in": document_ids}}
+    )
+    return list_object_class(**{**res, "page_size": 1})
 
 
 # pylint: disable=too-many-instance-attributes
@@ -66,9 +151,12 @@ class FeatureController(
         feature_readiness_service: FeatureReadinessService,
         preview_service: PreviewService,
         version_service: VersionService,
-        info_service: InfoService,
         feature_store_warehouse_service: FeatureStoreWarehouseService,
         task_controller: TaskController,
+        catalog_service: CatalogService,
+        table_service: TableService,
+        feature_namespace_controller: FeatureNamespaceController,
+        semantic_service: SemanticService,
     ):
         # pylint: disable=too-many-arguments
         super().__init__(service)
@@ -78,9 +166,12 @@ class FeatureController(
         self.feature_readiness_service = feature_readiness_service
         self.preview_service = preview_service
         self.version_service = version_service
-        self.info_service = info_service
         self.feature_store_warehouse_service = feature_store_warehouse_service
         self.task_controller = task_controller
+        self.catalog_service = catalog_service
+        self.table_service = table_service
+        self.feature_namespace_controller = feature_namespace_controller
+        self.semantic_service = semantic_service
 
     async def submit_batch_feature_create_task(self, data: BatchFeatureCreate) -> Optional[Task]:
         """
@@ -378,6 +469,74 @@ class FeatureController(
                 status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]
             ) from exc
 
+    async def _extract_feature_metadata(self, op_struct: GroupOperationStructure) -> dict[str, Any]:
+        # retrieve related tables & semantics
+        table_list = await _get_list_object(self.table_service, op_struct.table_ids, TableList)
+        semantic_list = await _get_list_object(
+            self.semantic_service, table_list.semantic_ids, SemanticList
+        )
+
+        # prepare column mapping
+        column_map: dict[tuple[Optional[ObjectId], str], Any] = {}
+        semantic_map = {semantic.id: semantic.name for semantic in semantic_list.data}
+        for table in table_list.data:
+            for column in table.columns_info:
+                column_map[(table.id, column.name)] = {
+                    "table_name": table.name,
+                    "semantic": semantic_map.get(column.semantic_id),  # type: ignore
+                }
+
+        # construct feature metadata
+        source_columns = {}
+        reference_map: dict[Any, str] = {}
+        for idx, src_col in enumerate(op_struct.source_columns):
+            column_metadata = column_map[(src_col.table_id, src_col.name)]
+            reference_map[src_col] = f"Input{idx}"
+            source_columns[reference_map[src_col]] = {
+                "data": column_metadata["table_name"],
+                "column_name": src_col.name,
+                "semantic": column_metadata["semantic"],
+            }
+
+        derived_columns = {}
+        for idx, drv_col in enumerate(op_struct.derived_columns):
+            columns = [reference_map[col] for col in drv_col.columns]
+            reference_map[drv_col] = f"X{idx}"
+            derived_columns[reference_map[drv_col]] = {
+                "name": drv_col.name,
+                "inputs": columns,
+                "transforms": drv_col.transforms,
+            }
+
+        aggregation_columns = {}
+        for idx, agg_col in enumerate(op_struct.aggregations):
+            reference_map[agg_col] = f"F{idx}"
+            aggregation_columns[reference_map[agg_col]] = {
+                "name": agg_col.name,
+                "column": reference_map.get(
+                    agg_col.column, None
+                ),  # for count aggregation, column is None
+                "function": agg_col.method,
+                "keys": agg_col.keys,
+                "window": agg_col.window,
+                "category": agg_col.category,
+                "filter": agg_col.filter,
+            }
+
+        post_aggregation = None
+        if op_struct.post_aggregation:
+            post_aggregation = {
+                "name": op_struct.post_aggregation.name,
+                "inputs": [reference_map[col] for col in op_struct.post_aggregation.columns],
+                "transforms": op_struct.post_aggregation.transforms,
+            }
+        return {
+            "input_columns": source_columns,
+            "derived_columns": derived_columns,
+            "aggregations": aggregation_columns,
+            "post_aggregation": post_aggregation,
+        }
+
     async def get_info(
         self,
         document_id: ObjectId,
@@ -397,10 +556,61 @@ class FeatureController(
         -------
         InfoDocument
         """
-        info_document = await self.info_service.get_feature_info(
-            document_id=document_id, verbose=verbose
+        feature = await self.service.get_document(document_id=document_id)
+        catalog = await self.catalog_service.get_document(feature.catalog_id)
+        data_id_to_doc = {}
+        async for doc in self.table_service.list_documents_iterator(
+            query_filter={"_id": {"$in": feature.table_ids}}
+        ):
+            doc["catalog_name"] = catalog.name
+            data_id_to_doc[doc["_id"]] = doc
+
+        data_id_to_name = {key: value["name"] for key, value in data_id_to_doc.items()}
+        namespace_info = await self.feature_namespace_controller.get_info(
+            document_id=feature.feature_namespace_id,
+            verbose=verbose,
         )
-        return info_document
+        default_feature = await self.service.get_document(
+            document_id=namespace_info.default_feature_id
+        )
+        versions_info = None
+        if verbose:
+            namespace = await self.feature_namespace_service.get_document(
+                document_id=feature.feature_namespace_id
+            )
+            versions_info = FeatureBriefInfoList.from_paginated_data(
+                await self.service.list_documents(
+                    page=1,
+                    page_size=0,
+                    query_filter={"_id": {"$in": namespace.feature_ids}},
+                )
+            )
+
+        op_struct = feature.extract_operation_structure()
+        metadata = await self._extract_feature_metadata(op_struct=op_struct)
+        return FeatureInfo(
+            **namespace_info.dict(),
+            version={"this": feature.version.to_str(), "default": default_feature.version.to_str()},
+            readiness={"this": feature.readiness, "default": default_feature.readiness},
+            table_feature_job_setting={
+                "this": _extract_table_feature_job_settings(
+                    feature=feature, table_id_to_name=data_id_to_name
+                ),
+                "default": _extract_table_feature_job_settings(
+                    feature=default_feature, table_id_to_name=data_id_to_name
+                ),
+            },
+            table_cleaning_operation={
+                "this": _extract_feature_table_cleaning_operations(
+                    feature=feature, table_id_to_name=data_id_to_name
+                ),
+                "default": _extract_feature_table_cleaning_operations(
+                    feature=default_feature, table_id_to_name=data_id_to_name
+                ),
+            },
+            versions_info=versions_info,
+            metadata=metadata,
+        )
 
     async def sql(self, feature_sql: FeatureSQL) -> str:
         """

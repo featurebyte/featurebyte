@@ -286,9 +286,9 @@ async def test_get_scd_table_info(app_container, scd_table):
 
 
 @pytest.mark.asyncio
-async def test_get_feature_info(info_service, production_ready_feature, feature_namespace):
+async def test_get_feature_info(app_container, production_ready_feature, feature_namespace):
     """Test get_feature_info"""
-    info = await info_service.get_feature_info(
+    info = await app_container.feature_controller.get_info(
         document_id=production_ready_feature.id, verbose=False
     )
     expected_metadata = {
@@ -353,7 +353,7 @@ async def test_get_feature_info(info_service, production_ready_feature, feature_
     )
     assert info == expected_info
 
-    info = await info_service.get_feature_info(
+    info = await app_container.feature_controller.get_info(
         document_id=production_ready_feature.id, verbose=True
     )
     assert info == FeatureInfo(
@@ -471,10 +471,12 @@ def expected_feature_iet_info_fixture(feature_iet):
 @pytest.mark.flaky(reruns=3)
 @pytest.mark.asyncio
 async def test_get_feature_info__complex_feature(
-    info_service, feature_iet, expected_feature_iet_info
+    app_container, feature_iet, expected_feature_iet_info
 ):
     """Test get_feature_info"""
-    info = await info_service.get_feature_info(document_id=feature_iet.id, verbose=False)
+    info = await app_container.feature_controller.get_info(
+        document_id=feature_iet.id, verbose=False
+    )
     expected = {
         **expected_feature_iet_info.dict(),
         "created_at": info.created_at,
@@ -485,7 +487,7 @@ async def test_get_feature_info__complex_feature(
 
 @pytest.mark.asyncio
 async def test_get_feature_info__complex_feature_with_cdi(
-    info_service, feature_iet, expected_feature_iet_info, version_service
+    app_container, feature_iet, expected_feature_iet_info, version_service
 ):
     """Test get_feature_info"""
     new_version = await version_service.create_new_feature_version(
@@ -505,7 +507,9 @@ async def test_get_feature_info__complex_feature_with_cdi(
         )
     )
 
-    info = await info_service.get_feature_info(document_id=new_version.id, verbose=False)
+    info = await app_container.feature_controller.get_info(
+        document_id=new_version.id, verbose=False
+    )
     expected_version = expected_feature_iet_info.version
     expected = {
         **expected_feature_iet_info.dict(),
@@ -532,9 +536,9 @@ async def test_get_feature_info__complex_feature_with_cdi(
 
 
 @pytest.mark.asyncio
-async def test_get_feature_namespace_info(info_service, feature_namespace):
+async def test_get_feature_namespace_info(app_container, feature_namespace):
     """Test get_feature_namespace_info"""
-    info = await info_service.get_feature_namespace_info(
+    info = await app_container.feature_namespace_controller.get_info(
         document_id=feature_namespace.id, verbose=False
     )
     expected_info = FeatureNamespaceInfo(
@@ -561,7 +565,7 @@ async def test_get_feature_namespace_info(info_service, feature_namespace):
     )
     assert info == expected_info
 
-    info = await info_service.get_feature_namespace_info(
+    info = await app_container.feature_namespace_controller.get_info(
         document_id=feature_namespace.id, verbose=True
     )
     assert info == expected_info
