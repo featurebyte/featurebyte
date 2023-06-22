@@ -17,7 +17,7 @@ from featurebyte.schema.credential import (
 )
 from featurebyte.schema.info import CredentialInfo
 from featurebyte.service.credential import CredentialService
-from featurebyte.service.info import InfoService
+from featurebyte.service.feature_store import FeatureStoreService
 
 
 class CredentialController(
@@ -29,13 +29,9 @@ class CredentialController(
 
     paginated_document_class = CredentialList
 
-    def __init__(
-        self,
-        service: CredentialService,
-        info_service: InfoService,
-    ):
+    def __init__(self, service: CredentialService, feature_store_service: FeatureStoreService):
         super().__init__(service)
-        self.info_service = info_service
+        self.feature_store_service = feature_store_service
 
     async def create_credential(
         self,
@@ -117,7 +113,19 @@ class CredentialController(
         -------
         CredentialInfo
         """
-        info_document = await self.info_service.get_credential_info(
-            document_id=credential_id, verbose=verbose
+        _ = verbose
+        credential = await self.service.get_document(document_id=credential_id)
+        return CredentialInfo(
+            name=credential.name,
+            feature_store_info=await self.feature_store_service.get_feature_store_info(
+                document_id=credential.feature_store_id, verbose=verbose
+            ),
+            database_credential_type=credential.database_credential.type
+            if credential.database_credential
+            else None,
+            storage_credential_type=credential.storage_credential.type
+            if credential.storage_credential
+            else None,
+            created_at=credential.created_at,
+            updated_at=credential.updated_at,
         )
-        return info_document

@@ -15,7 +15,6 @@ from featurebyte.schema.catalog import (
 )
 from featurebyte.schema.info import CatalogInfo
 from featurebyte.service.catalog import CatalogService
-from featurebyte.service.info import InfoService
 
 
 class CatalogController(
@@ -26,14 +25,6 @@ class CatalogController(
     """
 
     paginated_document_class = CatalogList
-
-    def __init__(
-        self,
-        service: CatalogService,
-        info_service: InfoService,
-    ):
-        super().__init__(service)
-        self.info_service = info_service
 
     async def create_catalog(
         self,
@@ -100,7 +91,10 @@ class CatalogController(
         -------
         InfoDocument
         """
-        info_document = await self.info_service.get_catalog_info(
-            document_id=document_id, verbose=verbose
+        _ = verbose
+        catalog = await self.service.get_document(document_id=document_id)
+        return CatalogInfo(
+            name=catalog.name,
+            created_at=catalog.created_at,
+            updated_at=catalog.updated_at,
         )
-        return info_document

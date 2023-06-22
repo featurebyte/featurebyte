@@ -67,7 +67,9 @@ async def test_update_document__inconsistency_error(feature_service, feature):
 
 
 @pytest.mark.asyncio
-async def test_get_document_by_name_and_version(feature_service, feature):
+async def test_get_document_by_name_and_version(
+    feature_service, table_service, view_construction_service, feature
+):
     """Test feature service - get_document_by_name_and_version"""
     doc = await feature_service.get_document_by_name_and_version(
         name=feature.name, version=feature.version
@@ -80,6 +82,8 @@ async def test_get_document_by_name_and_version(feature_service, feature):
             user=feature_service.user,
             persistent=feature_service.persistent,
             catalog_id=ObjectId(),
+            table_service=table_service,
+            view_construction_service=view_construction_service,
         )
         await another_feat_service.get_document_by_name_and_version(
             name=feature.name, version=feature.version

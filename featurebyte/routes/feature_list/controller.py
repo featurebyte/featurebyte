@@ -48,7 +48,6 @@ from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
-from featurebyte.service.info import InfoService
 from featurebyte.service.preview import PreviewService
 from featurebyte.service.version import VersionService
 
@@ -73,7 +72,6 @@ class FeatureListController(
         deploy_service: DeployService,
         preview_service: PreviewService,
         version_service: VersionService,
-        info_service: InfoService,
         feature_store_warehouse_service: FeatureStoreWarehouseService,
         task_controller: TaskController,
     ):
@@ -84,7 +82,6 @@ class FeatureListController(
         self.deploy_service = deploy_service
         self.preview_service = preview_service
         self.version_service = version_service
-        self.info_service = info_service
         self.feature_store_warehouse_service = feature_store_warehouse_service
         self.task_controller = task_controller
 
@@ -367,7 +364,7 @@ class FeatureListController(
         -------
         InfoDocument
         """
-        info_document = await self.info_service.get_feature_list_info(
+        info_document = await self.service.get_feature_list_info(
             document_id=document_id, verbose=verbose
         )
         return info_document

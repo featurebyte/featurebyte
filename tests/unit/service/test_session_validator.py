@@ -7,10 +7,9 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from featurebyte import FeatureStore
-from featurebyte.app import User
 from featurebyte.exception import FeatureStoreSchemaCollisionError, NoFeatureStorePresentError
-from featurebyte.models.base import DEFAULT_CATALOG_ID, PydanticObjectId
-from featurebyte.service.session_validator import SessionValidatorService, ValidateStatus
+from featurebyte.models.base import PydanticObjectId
+from featurebyte.service.session_validator import ValidateStatus
 from featurebyte.utils.credential import MongoBackedCredentialProvider
 
 
@@ -20,20 +19,6 @@ def get_credential_provider_fixture(persistent):
     Fixture to get a MongoBackedCredentialProvider
     """
     return MongoBackedCredentialProvider(persistent=persistent)
-
-
-@pytest.fixture(name="session_validator_service")
-def get_session_validator_service_fixture(persistent, credential_provider):
-    """
-    Fixture to get a session validator service
-    """
-    user = User()
-    return SessionValidatorService(
-        user=user,
-        persistent=persistent,
-        catalog_id=DEFAULT_CATALOG_ID,
-        credential_provider=credential_provider,
-    )
 
 
 @pytest.mark.asyncio

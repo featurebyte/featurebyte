@@ -21,9 +21,9 @@ from featurebyte.schema.historical_feature_table import (
 from featurebyte.schema.info import HistoricalFeatureTableInfo
 from featurebyte.schema.task import Task
 from featurebyte.service.entity_validation import EntityValidationService
+from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
-from featurebyte.service.info import InfoService
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.preview import PreviewService
 from featurebyte.storage import Storage
@@ -47,15 +47,15 @@ class HistoricalFeatureTableController(
         feature_store_service: FeatureStoreService,
         observation_table_service: ObservationTableService,
         entity_validation_service: EntityValidationService,
-        info_service: InfoService,
         task_controller: TaskController,
+        feature_list_service: FeatureListService,
     ):
         super().__init__(service=service, preview_service=preview_service)
         self.feature_store_service = feature_store_service
         self.observation_table_service = observation_table_service
         self.entity_validation_service = entity_validation_service
-        self.info_service = info_service
         self.task_controller = task_controller
+        self.feature_list_service = feature_list_service
 
     async def create_historical_feature_table(
         self,
@@ -138,7 +138,23 @@ class HistoricalFeatureTableController(
         -------
         HistoricalFeatureTableInfo
         """
-        info_document = await self.info_service.get_historical_feature_table_info(
-            document_id=document_id, verbose=verbose
+        _ = verbose
+        historical_feature_table = await self.service.get_document(document_id=document_id)
+        if historical_feature_table.observation_table_id is not None:
+            observation_table = await self.observation_table_service.get_document(
+                document_id=historical_feature_table.observation_table_id
+            )
+        else:
+            observation_table = None
+        feature_list = await self.feature_list_service.get_document(
+            document_id=historical_feature_table.feature_list_id
         )
-        return info_document
+        return HistoricalFeatureTableInfo(
+            name=historical_feature_table.name,
+            feature_list_name=feature_list.name,
+            feature_list_version=feature_list.version.to_str(),
+            observation_table_name=observation_table.name if observation_table else None,
+            table_details=historical_feature_table.location.table_details,
+            created_at=historical_feature_table.created_at,
+            updated_at=historical_feature_table.updated_at,
+        )

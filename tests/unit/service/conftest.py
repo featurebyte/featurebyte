@@ -56,10 +56,30 @@ def entity_service_fixture(app_container):
     return app_container.entity_service
 
 
+@pytest.fixture(name="session_validator_service")
+def get_session_validator_service_fixture(app_container):
+    """
+    Fixture to get a session validator service
+    """
+    return app_container.session_validator_service
+
+
 @pytest.fixture(name="semantic_service")
 def semantic_service_fixture(app_container):
     """Semantic service"""
     return app_container.semantic_service
+
+
+@pytest.fixture(name="info_service")
+def info_service_fixture(app_container):
+    """InfoService fixture"""
+    return app_container.info_service
+
+
+@pytest.fixture(name="view_construction_service")
+def view_construction_service_fixture(app_container):
+    """View construction service"""
+    return app_container.view_construction_service
 
 
 @pytest.fixture(name="context_service")

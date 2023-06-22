@@ -21,8 +21,6 @@ from featurebyte.schema.worker.task.feature_job_setting_analysis import (
     FeatureJobSettingAnalysisBackTestTaskPayload,
     FeatureJobSettingAnalysisTaskPayload,
 )
-from featurebyte.service.event_table import EventTableService
-from featurebyte.service.feature_job_setting_analysis import FeatureJobSettingAnalysisService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.session.manager import SessionManager
 from featurebyte.worker.task.base import BaseTask
@@ -46,9 +44,7 @@ class FeatureJobSettingAnalysisTask(BaseTask):
         persistent = self.get_persistent()
 
         # retrieve event data
-        event_table_service = EventTableService(
-            user=self.user, persistent=persistent, catalog_id=self.payload.catalog_id
-        )
+        event_table_service = self.app_container.event_table_service
         event_table = await event_table_service.get_document(document_id=payload.event_table_id)
 
         # retrieve feature store
@@ -97,8 +93,8 @@ class FeatureJobSettingAnalysisTask(BaseTask):
         )
 
         self.update_progress(percent=95, message="Saving Analysis")
-        feature_job_settings_analysis_service = FeatureJobSettingAnalysisService(
-            user=self.user, persistent=persistent, catalog_id=self.payload.catalog_id
+        feature_job_settings_analysis_service = (
+            self.app_container.feature_job_setting_analysis_service
         )
         analysis_doc = await feature_job_settings_analysis_service.create_document(
             data=analysis_doc
@@ -131,11 +127,10 @@ class FeatureJobSettingAnalysisBacktestTask(BaseTask):
         """
         self.update_progress(percent=0, message="Preparing table")
         payload = cast(FeatureJobSettingAnalysisBackTestTaskPayload, self.payload)
-        persistent = self.get_persistent()
 
         # retrieve analysis doc from persistent
-        feature_job_settings_analysis_service = FeatureJobSettingAnalysisService(
-            user=self.user, persistent=persistent, catalog_id=self.payload.catalog_id
+        feature_job_settings_analysis_service = (
+            self.app_container.feature_job_setting_analysis_service
         )
         analysis_doc = await feature_job_settings_analysis_service.get_document(
             document_id=payload.feature_job_setting_analysis_id

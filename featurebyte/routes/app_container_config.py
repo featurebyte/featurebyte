@@ -20,13 +20,13 @@ class DepType(OrderedStrEnum):
     - no deps
     - basic services
     - services with extra deps
-    - controllers
+    - non-service classes with deps
     """
 
     NO_DEPS = "10_no_deps"
     BASIC_SERVICE = "20_basic_service"
     SERVICE_WITH_EXTRA_DEPS = "30_service_with_extra_deps"
-    CONTROLLER = "40_controller"
+    CLASS_WITH_DEPS = "40_class_with_deps"
 
 
 @dataclass
@@ -56,8 +56,8 @@ class AppContainerConfig:
         self.service_with_extra_deps: List[ClassDefinition] = []
         # These services only require the user, and persistent dependencies.
         self.basic_services: List[ClassDefinition] = []
-        # Controllers can depend on any object defined above.
-        self.controllers: List[ClassDefinition] = []
+        # Classes with deps can depend on any object defined above.
+        self.classes_with_deps: List[ClassDefinition] = []
 
         self.dependency_mapping: Dict[str, ClassDefinition] = {}
 
@@ -131,9 +131,9 @@ class AppContainerConfig:
             )
         )
 
-    def add_controller(self, name: str, class_: type, dependencies: List[str]) -> None:
+    def add_class_with_deps(self, name: str, class_: type, dependencies: List[str]) -> None:
         """
-        Register a controller
+        Register a helper service
 
         Parameters
         ----------
@@ -144,9 +144,12 @@ class AppContainerConfig:
         dependencies: list[str]
             dependencies
         """
-        self.controllers.append(
+        self.classes_with_deps.append(
             ClassDefinition(
-                name=name, class_=class_, dependencies=dependencies, dep_type=DepType.CONTROLLER
+                name=name,
+                class_=class_,
+                dependencies=dependencies,
+                dep_type=DepType.CLASS_WITH_DEPS,
             )
         )
 
@@ -155,7 +158,7 @@ class AppContainerConfig:
         output.extend(self.no_dependency_objects)
         output.extend(self.basic_services)
         output.extend(self.service_with_extra_deps)
-        output.extend(self.controllers)
+        output.extend(self.classes_with_deps)
         return output
 
     def validate(self) -> None:

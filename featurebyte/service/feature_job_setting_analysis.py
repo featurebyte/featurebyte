@@ -3,11 +3,14 @@ FeatureJobSettingAnalysisService class
 """
 from __future__ import annotations
 
+from typing import Any
+
 from bson.objectid import ObjectId
 
 from featurebyte.exception import DocumentError
 from featurebyte.models.base import FeatureByteBaseDocumentModel
 from featurebyte.models.feature_job_setting_analysis import FeatureJobSettingAnalysisModel
+from featurebyte.persistent import Persistent
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.schema.feature_job_setting_analysis import (
     FeatureJobSettingAnalysisBacktest,
@@ -33,6 +36,16 @@ class FeatureJobSettingAnalysisService(
     """
 
     document_class = FeatureJobSettingAnalysisModel
+
+    def __init__(
+        self,
+        user: Any,
+        persistent: Persistent,
+        catalog_id: ObjectId,
+        event_table_service: EventTableService,
+    ):
+        super().__init__(user, persistent, catalog_id)
+        self.event_table_service = event_table_service
 
     async def create_document_creation_task(
         self, data: FeatureJobSettingAnalysisCreate
@@ -61,12 +74,7 @@ class FeatureJobSettingAnalysisService(
         )
 
         # check that event table exists
-        event_table_service = EventTableService(
-            user=self.user,
-            persistent=self.persistent,
-            catalog_id=self.catalog_id,
-        )
-        event_table = await event_table_service.get_document(document_id=data.event_table_id)
+        event_table = await self.event_table_service.get_document(document_id=data.event_table_id)
         if not event_table.record_creation_timestamp_column:
             raise DocumentError("Creation date column is not available for the event table.")
 

@@ -18,7 +18,6 @@ from featurebyte.routes.common.base import BaseDocumentController, PaginatedDocu
 from featurebyte.schema.table import TableServiceUpdate, TableUpdate
 from featurebyte.service.dimension_table import DimensionTableService
 from featurebyte.service.event_table import EventTableService
-from featurebyte.service.info import InfoService
 from featurebyte.service.item_table import ItemTableService
 from featurebyte.service.scd_table import SCDTableService
 from featurebyte.service.semantic import SemanticService
@@ -52,13 +51,11 @@ class BaseTableDocumentController(
         table_columns_info_service: TableColumnsInfoService,
         table_status_service: TableStatusService,
         semantic_service: SemanticService,
-        info_service: InfoService,
     ):
         super().__init__(service)  # type: ignore[arg-type]
         self.table_column_info_service = table_columns_info_service
         self.table_status_service = table_status_service
         self.semantic_service = semantic_service
-        self.info_service = info_service
 
     @abstractmethod
     async def _get_column_semantic_map(self, document: TableDocumentT) -> dict[str, Any]:

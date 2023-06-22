@@ -29,9 +29,7 @@ from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
-from featurebyte.service.table import TableService
 from featurebyte.service.validator.production_ready_validator import ProductionReadyValidator
-from featurebyte.service.version import VersionService
 
 
 class FeatureReadinessService(BaseService):
@@ -45,24 +43,18 @@ class FeatureReadinessService(BaseService):
         user: Any,
         persistent: Persistent,
         catalog_id: ObjectId,
-        table_service: TableService,
         feature_service: FeatureService,
         feature_namespace_service: FeatureNamespaceService,
         feature_list_service: FeatureListService,
         feature_list_namespace_service: FeatureListNamespaceService,
-        version_service: VersionService,
+        production_ready_validator: ProductionReadyValidator,
     ):
         super().__init__(user, persistent, catalog_id)
-        self.table_service = table_service
         self.feature_service = feature_service
         self.feature_namespace_service = feature_namespace_service
         self.feature_list_service = feature_list_service
         self.feature_list_namespace_service = feature_list_namespace_service
-        self.production_ready_validator = ProductionReadyValidator(
-            table_service=table_service,
-            feature_service=feature_service,
-            version_service=version_service,
-        )
+        self.production_ready_validator = production_ready_validator
 
     async def _get_default_feature_list(
         self, feature_list_ids: Sequence[ObjectId]

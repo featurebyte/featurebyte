@@ -30,7 +30,7 @@ def test_all_dependencies():
     """
     config = AppContainerConfig()
     config.add_no_dep_objects("test_class_a", TestClassA)
-    config.add_controller("test_class_b", TestClassB, ["test_class_a"])
+    config.add_class_with_deps("test_class_b", TestClassB, ["test_class_a"])
     config.add_basic_service("basic_service", TestClassA)
     config.add_service_with_extra_deps("service_with_deps", TestClassB, ["test_class_a"])
 

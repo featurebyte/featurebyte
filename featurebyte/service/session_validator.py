@@ -40,14 +40,13 @@ class SessionValidatorService:
         persistent: Persistent,
         catalog_id: ObjectId,
         credential_provider: MongoBackedCredentialProvider,
+        feature_store_service: FeatureStoreService,
     ):
         self.user = user
         self.persistent = persistent
         self.catalog_id = catalog_id
         self.credential_provider = credential_provider
-        self.feature_store_service = FeatureStoreService(
-            user=self.user, persistent=self.persistent, catalog_id=catalog_id
-        )
+        self.feature_store_service = feature_store_service
 
     @classmethod
     async def validate_existing_session(

@@ -21,14 +21,15 @@ from featurebyte.schema.feature_namespace import (
     FeatureNamespaceServiceUpdate,
     FeatureNamespaceUpdate,
 )
-from featurebyte.schema.info import FeatureNamespaceInfo
+from featurebyte.schema.info import EntityBriefInfoList, FeatureNamespaceInfo, TableBriefInfoList
+from featurebyte.service.catalog import CatalogService
 from featurebyte.service.default_version_mode import DefaultVersionModeService
-from featurebyte.service.entity import EntityService
+from featurebyte.service.entity import EntityService, get_primary_entity_from_entities
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_readiness import FeatureReadinessService
-from featurebyte.service.info import InfoService
 from featurebyte.service.mixin import Document
+from featurebyte.service.table import TableService
 
 
 class FeatureNamespaceController(
@@ -50,14 +51,16 @@ class FeatureNamespaceController(
         feature_service: FeatureService,
         default_version_mode_service: DefaultVersionModeService,
         feature_readiness_service: FeatureReadinessService,
-        info_service: InfoService,
+        table_service: TableService,
+        catalog_service: CatalogService,
     ):
         super().__init__(service)
         self.entity_service = entity_service
         self.feature_service = feature_service
         self.default_version_mode_service = default_version_mode_service
         self.feature_readiness_service = feature_readiness_service
-        self.info_service = info_service
+        self.table_service = table_service
+        self.catalog_service = catalog_service
 
     async def get(
         self,
@@ -215,7 +218,43 @@ class FeatureNamespaceController(
         -------
         InfoDocument
         """
-        info_document = await self.info_service.get_feature_namespace_info(
-            document_id=document_id, verbose=verbose
+        _ = verbose
+        namespace = await self.service.get_document(document_id=document_id)
+        entities = await self.entity_service.list_documents(
+            page=1, page_size=0, query_filter={"_id": {"$in": namespace.entity_ids}}
         )
-        return info_document
+        primary_entity = get_primary_entity_from_entities(entities=entities)
+
+        tables = await self.table_service.list_documents(
+            page=1, page_size=0, query_filter={"_id": {"$in": namespace.table_ids}}
+        )
+
+        # get catalog info
+        catalog = await self.catalog_service.get_document(namespace.catalog_id)
+        for entity in entities["data"]:
+            assert entity["catalog_id"] == catalog.id
+            entity["catalog_name"] = catalog.name
+        for table in tables["data"]:
+            assert table["catalog_id"] == catalog.id
+            table["catalog_name"] = catalog.name
+
+        # derive primary tables
+        table_id_to_doc = {table["_id"]: table for table in tables["data"]}
+        feature = await self.feature_service.get_document(document_id=namespace.default_feature_id)
+        primary_input_nodes = feature.graph.get_primary_input_nodes(node_name=feature.node_name)
+        primary_tables = [table_id_to_doc[node.parameters.id] for node in primary_input_nodes]
+
+        return FeatureNamespaceInfo(
+            name=namespace.name,
+            created_at=namespace.created_at,
+            updated_at=namespace.updated_at,
+            entities=EntityBriefInfoList.from_paginated_data(entities),
+            primary_entity=EntityBriefInfoList.from_paginated_data(primary_entity),
+            tables=TableBriefInfoList.from_paginated_data(tables),
+            primary_table=primary_tables,
+            default_version_mode=namespace.default_version_mode,
+            default_feature_id=namespace.default_feature_id,
+            dtype=namespace.dtype,
+            version_count=len(namespace.feature_ids),
+            catalog_name=catalog.name,
+        )

@@ -9,11 +9,9 @@ from bson import ObjectId
 
 from featurebyte.models.base import FeatureByteBaseDocumentModel
 from featurebyte.models.static_source_table import StaticSourceTableModel
-from featurebyte.persistent import Persistent
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.static_source_table import StaticSourceTableCreate
 from featurebyte.schema.worker.task.static_source_table import StaticSourceTableTaskPayload
-from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.materialized_table import BaseMaterializedTableService
 from featurebyte.session.base import BaseSession
 
@@ -27,15 +25,6 @@ class StaticSourceTableService(
 
     document_class = StaticSourceTableModel
     materialized_table_name_prefix = "STATIC_SOURCE_TABLE"
-
-    def __init__(
-        self,
-        user: Any,
-        persistent: Persistent,
-        catalog_id: ObjectId,
-        feature_store_service: FeatureStoreService,
-    ):
-        super().__init__(user, persistent, catalog_id, feature_store_service)
 
     @property
     def class_name(self) -> str:

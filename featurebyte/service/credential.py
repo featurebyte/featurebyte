@@ -14,6 +14,7 @@ from featurebyte.models.persistent import QueryFilter
 from featurebyte.persistent.base import Persistent
 from featurebyte.schema.credential import CredentialCreate, CredentialServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService
+from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 
 logger = get_logger(__name__)
@@ -33,10 +34,12 @@ class CredentialService(
         user: Any,
         persistent: Persistent,
         catalog_id: ObjectId,
-        feature_store_warehouse_service: Optional[FeatureStoreWarehouseService] = None,
+        feature_store_warehouse_service: FeatureStoreWarehouseService,
+        feature_store_service: FeatureStoreService,
     ):
         super().__init__(user=user, persistent=persistent, catalog_id=catalog_id)
         self.feature_store_warehouse_service = feature_store_warehouse_service
+        self.feature_store_service = feature_store_service
 
     def _construct_get_query_filter(
         self, document_id: ObjectId, use_raw_query_filter: bool = False, **kwargs: Any
@@ -72,14 +75,9 @@ class CredentialService(
         credential: CredentialModel
             CredentialModel to validate
         """
-        # feature_store_warehouse_service needs to be provided
-        assert self.feature_store_warehouse_service
-
         # test credential works
-        feature_store = (
-            await self.feature_store_warehouse_service.feature_store_service.get_document(
-                document_id=credential.feature_store_id
-            )
+        feature_store = await self.feature_store_service.get_document(
+            document_id=credential.feature_store_id
         )
 
         async def get_credential(**kwargs: Any) -> CredentialModel:

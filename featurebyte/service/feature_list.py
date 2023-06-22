@@ -20,8 +20,13 @@ from featurebyte.models.feature_list import (
 from featurebyte.persistent import Persistent
 from featurebyte.schema.feature_list import FeatureListServiceCreate, FeatureListServiceUpdate
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
+from featurebyte.schema.info import (
+    DefaultFeatureFractionComparison,
+    FeatureListBriefInfoList,
+    FeatureListInfo,
+    FeatureListNamespaceInfo,
+)
 from featurebyte.service.base_document import BaseDocumentService
-from featurebyte.service.catalog import CatalogService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
@@ -69,6 +74,41 @@ async def validate_feature_list_version_and_namespace_consistency(
         )
 
 
+def compute_default_feature_fraction(
+    feature_list: FeatureListModel,
+    default_feature_list: FeatureListModel,
+    feature_list_namespace_info: FeatureListNamespaceInfo,
+) -> DefaultFeatureFractionComparison:
+    """
+    Helper method to compute default feature fractions.
+
+    Parameters
+    ----------
+    feature_list: FeatureListModel
+        Feature list object
+    default_feature_list: FeatureListModel
+        Default feature list object
+    feature_list_namespace_info: FeatureListNamespaceInfo
+        Feature list namespace info object
+
+    Returns
+    -------
+    DefaultFeatureFractionComparison
+    """
+    default_feature_ids = set(feature_list_namespace_info.default_feature_ids)
+    this_count, default_count = 0, 0
+    for feat_id in feature_list.feature_ids:
+        if feat_id in default_feature_ids:
+            this_count += 1
+    for feat_id in default_feature_list.feature_ids:
+        if feat_id in default_feature_ids:
+            default_count += 1
+    return DefaultFeatureFractionComparison(
+        this=this_count / len(feature_list.feature_ids),
+        default=default_count / len(default_feature_list.feature_ids),
+    )
+
+
 class FeatureListService(
     BaseDocumentService[FeatureListModel, FeatureListServiceCreate, FeatureListServiceUpdate]
 ):
@@ -78,26 +118,21 @@ class FeatureListService(
 
     document_class = FeatureListModel
 
-    def __init__(self, user: Any, persistent: Persistent, catalog_id: ObjectId):
+    def __init__(
+        self,
+        user: Any,
+        persistent: Persistent,
+        catalog_id: ObjectId,
+        entity_service: EntityService,
+        relationship_info_service: RelationshipInfoService,
+        feature_service: FeatureService,
+        feature_list_namespace_service: FeatureListNamespaceService,
+    ):
         super().__init__(user=user, persistent=persistent, catalog_id=catalog_id)
-        self.catalog_service = CatalogService(
-            user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
-        )
-        self.entity_service = EntityService(
-            user=self.user,
-            persistent=self.persistent,
-            catalog_id=self.catalog_id,
-            catalog_service=self.catalog_service,
-        )
-        self.relationship_info_service = RelationshipInfoService(
-            user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
-        )
-        self.feature_service = FeatureService(
-            user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
-        )
-        self.feature_list_namespace_service = FeatureListNamespaceService(
-            user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
-        )
+        self.entity_service = entity_service
+        self.relationship_info_service = relationship_info_service
+        self.feature_service = feature_service
+        self.feature_list_namespace_service = feature_list_namespace_service
 
     async def _feature_iterator(
         self, feature_ids: Sequence[ObjectId]
@@ -305,3 +340,58 @@ class FeatureListService(
                 )
 
         return deleted_count
+
+    async def get_feature_list_info(self, document_id: ObjectId, verbose: bool) -> FeatureListInfo:
+        """
+        Get feature list info
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+        verbose: bool
+            Verbose or not
+
+        Returns
+        -------
+        FeatureListInfo
+        """
+        feature_list = await self.get_document(document_id=document_id)
+        namespace_info = await self.feature_list_namespace_service.get_feature_list_namespace_info(
+            document_id=feature_list.feature_list_namespace_id,
+            verbose=verbose,
+        )
+        default_feature_list = await self.get_document(
+            document_id=namespace_info.default_feature_list_id
+        )
+        versions_info = None
+        if verbose:
+            namespace = await self.feature_list_namespace_service.get_document(
+                document_id=feature_list.feature_list_namespace_id
+            )
+            versions_info = FeatureListBriefInfoList.from_paginated_data(
+                await self.list_documents(
+                    page=1,
+                    page_size=0,
+                    query_filter={"_id": {"$in": namespace.feature_list_ids}},
+                )
+            )
+
+        return FeatureListInfo(
+            **namespace_info.dict(),
+            version={
+                "this": feature_list.version.to_str() if feature_list.version else None,
+                "default": default_feature_list.version.to_str()
+                if default_feature_list.version
+                else None,
+            },
+            production_ready_fraction={
+                "this": feature_list.readiness_distribution.derive_production_ready_fraction(),
+                "default": default_feature_list.readiness_distribution.derive_production_ready_fraction(),
+            },
+            default_feature_fraction=compute_default_feature_fraction(
+                feature_list, default_feature_list, namespace_info
+            ),
+            versions_info=versions_info,
+            deployed=feature_list.deployed,
+        )

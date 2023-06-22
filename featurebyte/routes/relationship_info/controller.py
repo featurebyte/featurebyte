@@ -13,9 +13,9 @@ from featurebyte.schema.relationship_info import (
     RelationshipInfoList,
 )
 from featurebyte.service.entity import EntityService
-from featurebyte.service.info import InfoService
 from featurebyte.service.relationship_info import RelationshipInfoService
 from featurebyte.service.table import TableService
+from featurebyte.service.user_service import UserService
 
 
 class RelationshipInfoController(
@@ -30,15 +30,15 @@ class RelationshipInfoController(
     def __init__(
         self,
         relationship_info_service: RelationshipInfoService,
-        info_service: InfoService,
         entity_service: EntityService,
         data_service: TableService,
+        user_service: UserService,
     ):
         super().__init__(relationship_info_service)
         self.relationship_info_service = relationship_info_service
-        self.info_service = info_service
         self.entity_service = entity_service
         self.data_service = data_service
+        self.user_service = user_service
 
     async def create_relationship_info(
         self,
@@ -143,4 +143,24 @@ class RelationshipInfoController(
         -------
         RelationshipInfoInfo
         """
-        return await self.info_service.get_relationship_info_info(document_id=document_id)
+        relationship_info = await self.service.get_document(document_id=document_id)
+        table_info = await self.data_service.get_document(
+            document_id=relationship_info.relation_table_id
+        )
+        updated_user_name = self.user_service.get_user_name_for_id(relationship_info.updated_by)
+        entity = await self.entity_service.get_document(document_id=relationship_info.entity_id)
+        related_entity = await self.entity_service.get_document(
+            document_id=relationship_info.related_entity_id
+        )
+        return RelationshipInfoInfo(
+            id=relationship_info.id,
+            name=relationship_info.name,
+            created_at=relationship_info.created_at,
+            updated_at=relationship_info.updated_at,
+            relationship_type=relationship_info.relationship_type,
+            table_name=table_info.name,
+            data_type=table_info.type,
+            entity_name=entity.name,
+            related_entity_name=related_entity.name,
+            updated_by=updated_user_name,
+        )

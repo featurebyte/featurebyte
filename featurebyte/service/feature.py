@@ -104,11 +104,17 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureServiceCreate, Fea
 
     document_class = FeatureModel
 
-    def __init__(self, user: Any, persistent: Persistent, catalog_id: ObjectId):
+    def __init__(
+        self,
+        user: Any,
+        persistent: Persistent,
+        catalog_id: ObjectId,
+        table_service: TableService,
+        view_construction_service: ViewConstructionService,
+    ):
         super().__init__(user=user, persistent=persistent, catalog_id=catalog_id)
-        self.view_construction_service = ViewConstructionService(
-            user=user, persistent=persistent, catalog_id=catalog_id
-        )
+        self.table_service = table_service
+        self.view_construction_service = view_construction_service
 
     async def _get_feature_version(self, name: str) -> VersionIdentifier:
         version_name = get_version()
@@ -188,12 +194,9 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureServiceCreate, Fea
         str
         """
         # check whether table has been saved at persistent storage
-        table_service = TableService(
-            user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
-        )
         table_id_to_info: Dict[ObjectId, Dict[str, Any]] = {}
         for table_id in document.table_ids:
-            table = await table_service.get_document(document_id=table_id)
+            table = await self.table_service.get_document(document_id=table_id)
             table_id_to_info[table_id] = table.dict()
 
         # create feature definition

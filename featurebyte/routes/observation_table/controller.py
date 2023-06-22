@@ -11,8 +11,8 @@ from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.info import ObservationTableInfo
 from featurebyte.schema.observation_table import ObservationTableCreate, ObservationTableList
 from featurebyte.schema.task import Task
+from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
-from featurebyte.service.info import InfoService
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.preview import PreviewService
 from featurebyte.service.validator.materialized_table_delete import check_delete_observation_table
@@ -34,13 +34,13 @@ class ObservationTableController(
         service: ObservationTableService,
         preview_service: PreviewService,
         historical_feature_table_service: HistoricalFeatureTableService,
-        info_service: InfoService,
         task_controller: TaskController,
+        feature_store_service: FeatureStoreService,
     ):
         super().__init__(service=service, preview_service=preview_service)
         self.historical_feature_table_service = historical_feature_table_service
-        self.info_service = info_service
         self.task_controller = task_controller
+        self.feature_store_service = feature_store_service
 
     async def create_observation_table(
         self,
@@ -84,7 +84,16 @@ class ObservationTableController(
         -------
         ObservationTableInfo
         """
-        info_document = await self.info_service.get_observation_table_info(
-            document_id=document_id, verbose=verbose
+        _ = verbose
+        observation_table = await self.service.get_document(document_id=document_id)
+        feature_store = await self.feature_store_service.get_document(
+            document_id=observation_table.location.feature_store_id
         )
-        return info_document
+        return ObservationTableInfo(
+            name=observation_table.name,
+            type=observation_table.request_input.type,
+            feature_store_name=feature_store.name,
+            table_details=observation_table.location.table_details,
+            created_at=observation_table.created_at,
+            updated_at=observation_table.updated_at,
+        )

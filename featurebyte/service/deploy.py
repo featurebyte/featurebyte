@@ -41,22 +41,19 @@ class DeployService(BaseService):
         user: Any,
         persistent: Persistent,
         catalog_id: ObjectId,
+        feature_service: FeatureService,
         online_enable_service: OnlineEnableService,
         feature_list_status_service: FeatureListStatusService,
         deployment_service: DeploymentService,
+        feature_list_namespace_service: FeatureListNamespaceService,
+        feature_list_service: FeatureListService,
     ):
         super().__init__(user, persistent, catalog_id)
-        self.feature_service = FeatureService(
-            user=user, persistent=persistent, catalog_id=catalog_id
-        )
+        self.feature_service = feature_service
         self.online_enable_service = online_enable_service
-        self.feature_list_service = FeatureListService(
-            user=user, persistent=persistent, catalog_id=catalog_id
-        )
+        self.feature_list_service = feature_list_service
         self.feature_list_status_service = feature_list_status_service
-        self.feature_list_namespace_service = FeatureListNamespaceService(
-            user=user, persistent=persistent, catalog_id=catalog_id
-        )
+        self.feature_list_namespace_service = feature_list_namespace_service
         self.deployment_service = deployment_service
 
     @classmethod

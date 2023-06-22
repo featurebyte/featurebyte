@@ -24,7 +24,6 @@ from featurebyte.schema.info import FeatureStoreInfo
 from featurebyte.service.credential import CredentialService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
-from featurebyte.service.info import InfoService
 from featurebyte.service.preview import PreviewService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.session_validator import SessionValidatorService
@@ -46,7 +45,6 @@ class FeatureStoreController(
         self,
         service: FeatureStoreService,
         preview_service: PreviewService,
-        info_service: InfoService,
         session_manager_service: SessionManagerService,
         session_validator_service: SessionValidatorService,
         feature_store_warehouse_service: FeatureStoreWarehouseService,
@@ -54,7 +52,6 @@ class FeatureStoreController(
     ):
         super().__init__(service)
         self.preview_service = preview_service
-        self.info_service = info_service
         self.session_manager_service = session_manager_service
         self.session_validator_service = session_validator_service
         self.feature_store_warehouse_service = feature_store_warehouse_service
@@ -405,7 +402,7 @@ class FeatureStoreController(
         -------
         InfoDocument
         """
-        info_document = await self.info_service.get_feature_store_info(
+        info_document = await self.service.get_feature_store_info(
             document_id=document_id, verbose=verbose
         )
         return info_document

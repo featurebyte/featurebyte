@@ -16,7 +16,9 @@ from featurebyte.service.base_service import BaseService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.online_enable import OnlineEnableService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
+from featurebyte.service.table import TableService
 from featurebyte.service.task_manager import TaskManager
+from featurebyte.service.view_construction import ViewConstructionService
 from featurebyte.session.base import BaseSession, MetadataSchemaInitializer
 
 logger = get_logger(__name__)
@@ -51,8 +53,19 @@ class WorkingSchemaService(BaseService):
 
     def __init__(self, user: Any, persistent: Persistent, celery: Celery, catalog_id: ObjectId):
         super().__init__(user, persistent, catalog_id)
+        self.table_service = TableService(user=user, persistent=persistent, catalog_id=catalog_id)
+        self.view_construction_service = ViewConstructionService(
+            user=user,
+            persistent=persistent,
+            catalog_id=catalog_id,
+            table_service=self.table_service,
+        )
         self.feature_service = FeatureService(
-            user=user, persistent=persistent, catalog_id=catalog_id
+            user=user,
+            persistent=persistent,
+            catalog_id=catalog_id,
+            table_service=self.table_service,
+            view_construction_service=self.view_construction_service,
         )
         self._task_manager = TaskManager(
             user=user, persistent=persistent, celery=celery, catalog_id=catalog_id

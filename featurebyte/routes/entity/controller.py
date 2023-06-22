@@ -9,8 +9,8 @@ from featurebyte.models.entity import EntityModel
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.entity import EntityCreate, EntityList, EntityServiceUpdate, EntityUpdate
 from featurebyte.schema.info import EntityInfo
+from featurebyte.service.catalog import CatalogService
 from featurebyte.service.entity import EntityService
-from featurebyte.service.info import InfoService
 from featurebyte.service.relationship import EntityRelationshipService
 
 
@@ -25,11 +25,11 @@ class EntityController(BaseDocumentController[EntityModel, EntityService, Entity
         self,
         service: EntityService,
         entity_relationship_service: EntityRelationshipService,
-        info_service: InfoService,
+        catalog_service: CatalogService,
     ):
         super().__init__(service)
         self.relationship_service = entity_relationship_service
-        self.info_service = info_service
+        self.catalog_service = catalog_service
 
     async def create_entity(
         self,
@@ -81,20 +81,29 @@ class EntityController(BaseDocumentController[EntityModel, EntityService, Entity
         verbose: bool,
     ) -> EntityInfo:
         """
-        Get document info given document ID
+        Get entity info
 
         Parameters
         ----------
         document_id: ObjectId
             Document ID
         verbose: bool
-            Flag to control verbose level
+            Verbose or not
 
         Returns
         -------
-        InfoDocument
+        EntityInfo
         """
-        info_document = await self.info_service.get_entity_info(
-            document_id=document_id, verbose=verbose
+        _ = verbose
+        entity = await self.service.get_document(document_id=document_id)
+
+        # get catalog info
+        catalog = await self.catalog_service.get_document(entity.catalog_id)
+
+        return EntityInfo(
+            name=entity.name,
+            created_at=entity.created_at,
+            updated_at=entity.updated_at,
+            serving_names=entity.serving_names,
+            catalog_name=catalog.name,
         )
-        return info_document
