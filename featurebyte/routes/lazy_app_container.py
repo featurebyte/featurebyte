@@ -193,11 +193,7 @@ def build_deps(
         if dep.name in new_deps:
             continue
         # Build dependencies for this dep
-        if dep.dep_type == DepType.NO_DEPS:
-            new_deps[dep.name] = build_no_dep(dep)
-        elif dep.dep_type == DepType.BASIC_SERVICE:
-            new_deps[dep.name] = build_service(dep, user, persistent, catalog_id)
-        elif dep.dep_type == DepType.SERVICE_WITH_EXTRA_DEPS:
+        if dep.dep_type == DepType.SERVICE_WITH_EXTRA_DEPS:
             new_deps[dep.name] = build_service_with_deps(
                 dep, user, persistent, catalog_id, new_deps
             )

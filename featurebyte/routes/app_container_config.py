@@ -23,7 +23,6 @@ class DepType(OrderedStrEnum):
     - non-service classes with deps
     """
 
-    NO_DEPS = "10_no_deps"
     BASIC_SERVICE = "20_basic_service"
     SERVICE_WITH_EXTRA_DEPS = "30_service_with_extra_deps"
     CLASS_WITH_DEPS = "40_class_with_deps"
@@ -50,8 +49,6 @@ class AppContainerConfig:
     """
 
     def __init__(self) -> None:
-        # These are objects which don't take in any dependencies, and can be instantiated as is.
-        self.no_dependency_objects: List[ClassDefinition] = []
         # These services have dependencies in addition to the normal user, and persistent dependencies.
         self.service_with_extra_deps: List[ClassDefinition] = []
         # These services only require the user, and persistent dependencies.
@@ -74,22 +71,9 @@ class AppContainerConfig:
             self.dependency_mapping[dep.name] = dep
         return self.dependency_mapping
 
-    def add_no_dep_objects(self, name: str, class_: type) -> None:
-        """
-        Register a class with no dependencies.
-
-        Parameters
-        ----------
-        name: str
-            name of the object
-        class_: type
-            type we are registering
-        """
-        self.no_dependency_objects.append(
-            ClassDefinition(name=name, class_=class_, dependencies=[], dep_type=DepType.NO_DEPS)
-        )
-
-    def add_service_with_extra_deps(self, name: str, class_: type, dependencies: List[str]) -> None:
+    def add_service_with_extra_deps(
+        self, name: str, class_: type, dependencies: List[str] = ()
+    ) -> None:
         """
         Register a service with extra dependencies
 
@@ -111,27 +95,7 @@ class AppContainerConfig:
             )
         )
 
-    def add_basic_service(self, name: str, class_: type) -> None:
-        """
-        Register a basic service
-
-        Parameters
-        ----------
-        name: str
-            name of the object
-        class_: type
-            type we are registering
-        """
-        self.basic_services.append(
-            ClassDefinition(
-                name=name,
-                class_=class_,
-                dependencies=[],
-                dep_type=DepType.BASIC_SERVICE,
-            )
-        )
-
-    def add_class_with_deps(self, name: str, class_: type, dependencies: List[str]) -> None:
+    def add_class_with_deps(self, name: str, class_: type, dependencies: List[str] = ()) -> None:
         """
         Register a helper service
 
@@ -155,8 +119,6 @@ class AppContainerConfig:
 
     def _all_dependencies(self) -> List[ClassDefinition]:
         output = []
-        output.extend(self.no_dependency_objects)
-        output.extend(self.basic_services)
         output.extend(self.service_with_extra_deps)
         output.extend(self.classes_with_deps)
         return output

@@ -29,9 +29,9 @@ def test_all_dependencies():
     Test all dependencies
     """
     config = AppContainerConfig()
-    config.add_no_dep_objects("test_class_a", TestClassA)
+    config.add_class_with_deps("test_class_a", TestClassA)
     config.add_class_with_deps("test_class_b", TestClassB, ["test_class_a"])
-    config.add_basic_service("basic_service", TestClassA)
+    config.add_service_with_extra_deps("basic_service", TestClassA)
     config.add_service_with_extra_deps("service_with_deps", TestClassB, ["test_class_a"])
 
     all_deps = config._all_dependencies()
@@ -43,8 +43,8 @@ def test_validate():
     Test validate
     """
     config = AppContainerConfig()
-    config.add_no_dep_objects("test_class_a", TestClassA)
-    config.add_no_dep_objects("test_class_a", TestClassB)
+    config.add_class_with_deps("test_class_a", TestClassA)
+    config.add_class_with_deps("test_class_a", TestClassB)
 
     with pytest.raises(ValueError) as exc:
         config.validate()

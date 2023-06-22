@@ -79,8 +79,8 @@ def test_app_config_fixture():
     Test app config fixture
     """
     app_container_config = AppContainerConfig()
-    app_container_config.add_no_dep_objects("no_dep", NoDeps)
-    app_container_config.add_basic_service("test_service", TestService)
+    app_container_config.add_class_with_deps("no_dep", NoDeps)
+    app_container_config.add_service_with_extra_deps("test_service", TestService)
     app_container_config.add_service_with_extra_deps(
         "extra_deps", TestServiceWithOtherDeps, ["test_service"]
     )
@@ -170,16 +170,16 @@ def test_construction__service_with_invalid_constructor(app_container_constructo
     is tighter for users.
     """
     app_container_config = AppContainerConfig()
-    app_container_config.add_basic_service("random", TestController)
+    app_container_config.add_class_with_deps("random", TestController, ["test_service"])
 
     app_container = LazyAppContainer(
         **app_container_constructor_params,
         app_container_config=app_container_config,
     )
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(KeyError) as exc:
         _ = app_container.random
 
-    assert "unexpected keyword argument" in str(exc)
+    assert "KeyError('test_service')" in str(exc)
 
 
 def get_class_def(key: str, deps: List[str]) -> ClassDefinition:

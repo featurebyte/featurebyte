@@ -180,10 +180,10 @@ app_container_config.add_service_with_extra_deps(
 app_container_config.add_service_with_extra_deps(
     "entity_service", EntityService, ["catalog_service"]
 )
-app_container_config.add_basic_service("dimension_table_service", DimensionTableService)
-app_container_config.add_basic_service("event_table_service", EventTableService)
-app_container_config.add_basic_service("item_table_service", ItemTableService)
-app_container_config.add_basic_service("scd_table_service", SCDTableService)
+app_container_config.add_service_with_extra_deps("dimension_table_service", DimensionTableService)
+app_container_config.add_service_with_extra_deps("event_table_service", EventTableService)
+app_container_config.add_service_with_extra_deps("item_table_service", ItemTableService)
+app_container_config.add_service_with_extra_deps("scd_table_service", SCDTableService)
 app_container_config.add_service_with_extra_deps(
     "feature_service", FeatureService, ["table_service", "view_construction_service"]
 )
@@ -197,8 +197,8 @@ app_container_config.add_service_with_extra_deps(
         "feature_list_namespace_service",
     ],
 )
-app_container_config.add_basic_service("deployment_service", DeploymentService)
-app_container_config.add_basic_service(
+app_container_config.add_service_with_extra_deps("deployment_service", DeploymentService)
+app_container_config.add_service_with_extra_deps(
     "online_store_table_version_service", OnlineStoreTableVersionService
 )
 app_container_config.add_service_with_extra_deps(
@@ -263,7 +263,9 @@ app_container_config.add_service_with_extra_deps(
     FeatureListNamespaceService,
     ["entity_service", "table_service", "catalog_service", "feature_namespace_service"],
 )
-app_container_config.add_basic_service("feature_namespace_service", FeatureNamespaceService)
+app_container_config.add_service_with_extra_deps(
+    "feature_namespace_service", FeatureNamespaceService
+)
 app_container_config.add_service_with_extra_deps(
     "table_columns_info_service",
     TableColumnsInfoService,
@@ -279,9 +281,9 @@ app_container_config.add_service_with_extra_deps(
     DefaultVersionModeService,
     ["feature_namespace_service", "feature_readiness_service", "feature_list_namespace_service"],
 )
-app_container_config.add_basic_service("feature_store_service", FeatureStoreService)
-app_container_config.add_basic_service("semantic_service", SemanticService)
-app_container_config.add_basic_service("table_service", TableService)
+app_container_config.add_service_with_extra_deps("feature_store_service", FeatureStoreService)
+app_container_config.add_service_with_extra_deps("semantic_service", SemanticService)
+app_container_config.add_service_with_extra_deps("table_service", TableService)
 app_container_config.add_service_with_extra_deps(
     "version_service",
     VersionService,
@@ -294,16 +296,22 @@ app_container_config.add_service_with_extra_deps(
         "view_construction_service",
     ],
 )
-app_container_config.add_basic_service("entity_relationship_service", EntityRelationshipService)
-app_container_config.add_basic_service("semantic_relationship_service", SemanticRelationshipService)
-app_container_config.add_basic_service("catalog_service", CatalogService)
-app_container_config.add_basic_service("target_service", TargetService)
-app_container_config.add_basic_service("relationship_info_service", RelationshipInfoService)
-app_container_config.add_basic_service("user_service", UserService)
+app_container_config.add_service_with_extra_deps(
+    "entity_relationship_service", EntityRelationshipService
+)
+app_container_config.add_service_with_extra_deps(
+    "semantic_relationship_service", SemanticRelationshipService
+)
+app_container_config.add_service_with_extra_deps("catalog_service", CatalogService)
+app_container_config.add_service_with_extra_deps("target_service", TargetService)
+app_container_config.add_service_with_extra_deps(
+    "relationship_info_service", RelationshipInfoService
+)
+app_container_config.add_service_with_extra_deps("user_service", UserService)
 app_container_config.add_service_with_extra_deps(
     "view_construction_service", ViewConstructionService, ["table_service"]
 )
-app_container_config.add_basic_service("periodic_task_service", PeriodicTaskService)
+app_container_config.add_service_with_extra_deps("periodic_task_service", PeriodicTaskService)
 app_container_config.add_service_with_extra_deps(
     "credential_service",
     CredentialService,
