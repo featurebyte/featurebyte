@@ -65,6 +65,17 @@ def _extract_feature_table_cleaning_operations(
 ) -> list[TableCleaningOperation]:
     """
     Helper method to extract table cleaning operations from a feature model.
+
+    Parameters
+    ----------
+    feature: FeatureModel
+        Feature model
+    table_id_to_name: dict[ObjectId, str]
+        Table ID to table name mapping
+
+    Returns
+    -------
+    list[TableCleaningOperation]
     """
     table_cleaning_operations: list[TableCleaningOperation] = []
     for view_graph_node in feature.graph.iterate_sorted_graph_nodes(
@@ -84,6 +95,20 @@ def _extract_feature_table_cleaning_operations(
 def _extract_table_feature_job_settings(
     feature: FeatureModel, table_id_to_name: dict[ObjectId, str]
 ) -> list[TableFeatureJobSetting]:
+    """
+    Helper method to extract table feature job settings from a feature model.
+
+    Parameters
+    ----------
+    feature: FeatureModel
+        Feature model
+    table_id_to_name: dict[ObjectId, str]
+        Table ID to table name mapping
+
+    Returns
+    -------
+    list[TableFeatureJobSetting]
+    """
     table_feature_job_settings = []
     for group_by_node, data_id in feature.graph.iterate_group_by_node_and_table_id_pairs(
         target_node=feature.node
