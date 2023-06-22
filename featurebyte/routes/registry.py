@@ -31,6 +31,8 @@ from featurebyte.routes.semantic.controller import SemanticController
 from featurebyte.routes.static_source_table.controller import StaticSourceTableController
 from featurebyte.routes.table.controller import TableController
 from featurebyte.routes.target.controller import TargetController
+from featurebyte.routes.task.controller import TaskController
+from featurebyte.routes.temp_data.controller import TempDataController
 from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.service.catalog import CatalogService
@@ -73,10 +75,12 @@ from featurebyte.service.table_columns_info import TableColumnsInfoService
 from featurebyte.service.table_info import TableInfoService
 from featurebyte.service.table_status import TableStatusService
 from featurebyte.service.target import TargetService
+from featurebyte.service.task_manager import TaskManager
 from featurebyte.service.user_service import UserService
 from featurebyte.service.validator.production_ready_validator import ProductionReadyValidator
 from featurebyte.service.version import VersionService
 from featurebyte.service.view_construction import ViewConstructionService
+from featurebyte.utils.credential import MongoBackedCredentialProvider
 
 app_container_config = AppContainerConfig()
 
@@ -533,3 +537,12 @@ app_container_config.register_class(
         "feature_store_service",
     ],
 )
+
+app_container_config.register_class("task_controller", TaskController)
+app_container_config.register_class("tempdata_controller", TempDataController)
+app_container_config.register_class("credential_provider", MongoBackedCredentialProvider)
+app_container_config.register_class("task_manager", TaskManager)
+
+# Validate the config after all classes have been registered.
+# This should be the last line in this module.
+app_container_config.validate()

@@ -210,9 +210,6 @@ class LazyAppContainer:
         self.catalog_id = catalog_id
         self.app_container_config = app_container_config
 
-        # Validate the container config
-        app_container_config.validate()
-
         # Used to cache instances if they've already been built
         # Pre-load with some default deps
         self.instance_map: Dict[str, Any] = {

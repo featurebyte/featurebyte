@@ -3,7 +3,7 @@ App container config module.
 
 This contains all our registrations for dependency injection.
 """
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 from dataclasses import dataclass
 
@@ -115,17 +115,15 @@ class AppContainerConfig:
         output.extend(self.classes_with_deps)
         return output
 
-    def validate(self) -> None:
+    def _validate_duplicate_names(self):
         """
-        Validate the correctness of the config. We check that there's no duplicate names registered.
-        Can consider pushing this into each of the add functions so we can fail faster.
+        Validate that there's no duplicate names registered.
 
         Raises
         ------
         ValueError
             raised when a name has been defined already.
         """
-        # validate that there are no clashing names
         seen_names = set()
         for definition in self._all_dependencies():
             definition_name = definition.name
@@ -135,3 +133,89 @@ class AppContainerConfig:
                     "Consider changing the name of the dependency."
                 )
             seen_names.add(definition_name)
+
+    def _is_cyclic_dfs(
+        self,
+        class_def: ClassDefinition,
+        visited_nodes: dict[str, bool],
+        recursive_stack: dict[str, bool],
+        class_def_mapping: dict[str, ClassDefinition],
+    ) -> Tuple[bool, list[str]]:
+        """
+        DFS helper function to detect circular dependencies.
+
+        Parameters
+        ----------
+        class_def: ClassDefinition
+            class definition we are currently visiting
+        visited_nodes: dict[str, bool]
+            dictionary of visited nodes
+        recursive_stack: dict[str, bool]
+            dictionary of nodes currently in the recursive stack
+        class_def_mapping: dict[str, ClassDefinition]
+            dictionary of class definitions
+
+        Returns
+        -------
+        bool
+            True if there's a circular dependency, False otherwise.
+        """
+        # Mark current node as visited and adds to recursion stack.
+        visited_nodes[class_def.name] = True
+        recursive_stack[class_def.name] = True
+
+        # Iterate through the dependencies
+        # If any dependency has been visited before, and is in the current recursive stack, the
+        # dependency graph is cyclic.
+        for neighbour_name in class_def_mapping[class_def.name].dependencies:
+            neighbour = class_def_mapping[neighbour_name]
+            if not visited_nodes.get(neighbour.name, False):
+                is_cyclic, path = self._is_cyclic_dfs(
+                    neighbour, visited_nodes, recursive_stack, class_def_mapping
+                )
+                if is_cyclic:
+                    return True, path
+            elif recursive_stack[neighbour.name]:
+                cyclic_path = list(recursive_stack.keys())
+                cyclic_path.append(neighbour.name)
+                return True, cyclic_path
+
+        # The node needs to be popped from stack before function ends
+        recursive_stack[class_def.name] = False
+        return False, []
+
+    def _validate_circular_dependencies(self) -> None:
+        """
+        Validate that there are no circular dependencies.
+
+        We do this by iterating through the graph dependencies in a DFS manner, and look for a back edge.
+
+        Raises
+        ------
+        ValueError
+            raised when a circular dependency is detected.
+        """
+        class_def_mapping = self.get_class_def_mapping()
+        # Visited nodes keeps track of whether we have been to this node before.
+        visited_nodes = {}
+        # Recursive stack keeps track of nodes that are currently being visited in the recursive call.
+        # This is to allow us to see if there's a back edge.
+        recursive_stack = {}
+        for node in self._all_dependencies():
+            # Only need to recurse on nodes we have not been to before.
+            if not visited_nodes.get(node.name, False):
+                is_cyclic, path = self._is_cyclic_dfs(
+                    node, visited_nodes, recursive_stack, class_def_mapping
+                )
+                if is_cyclic:
+                    path_str = " -> ".join(path)
+                    raise ValueError(
+                        f"There's a circular dependency in the dependency graph.\n{path_str}"
+                    )
+
+    def validate(self) -> None:
+        """
+        Validate the correctness of the config.
+        """
+        self._validate_duplicate_names()
+        self._validate_circular_dependencies()
