@@ -70,6 +70,7 @@ def _process_keyword_arguments(
             input_form = FunctionParameterInputForm.COLUMN
             series_inputs.append(value)
             column_name = value.name
+            value = None
         else:
             input_form = FunctionParameterInputForm.VALUE
             column_name = None
