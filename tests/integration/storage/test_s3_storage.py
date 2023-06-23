@@ -23,16 +23,12 @@ class TestLocalStorageSuite(BaseStorageTestSuite):
         Storage object fixture
         """
 
-        with (
-            patch("featurebyte.utils.storage.S3_URL", "https://storage.googleapis.com"),
-            patch(
-                "featurebyte.utils.storage.S3_ACCESS_KEY_ID",
-                os.environ["DATABRICKS_STORAGE_ACCESS_KEY_ID"],
-            ),
-            patch(
-                "featurebyte.utils.storage.S3_SECRET_ACCESS_KEY",
-                os.environ["DATABRICKS_STORAGE_ACCESS_KEY_SECRET"],
-            ),
+        with patch("featurebyte.utils.storage.S3_URL", "https://storage.googleapis.com"), patch(
+            "featurebyte.utils.storage.S3_ACCESS_KEY_ID",
+            os.environ["DATABRICKS_STORAGE_ACCESS_KEY_ID"],
+        ), patch(
+            "featurebyte.utils.storage.S3_SECRET_ACCESS_KEY",
+            os.environ["DATABRICKS_STORAGE_ACCESS_KEY_SECRET"],
         ):
             bucket_name = "featurebyte_s3_test"
             prefix = str(ObjectId())
