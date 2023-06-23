@@ -12,10 +12,10 @@ import pandas as pd
 from bson import ObjectId
 from typeguard import typechecked
 
+from featurebyte.api.api_handler.base import ListHandler
 from featurebyte.api.api_handler.feature_job_setting_analysis import (
     FeatureJobSettingAnalysisListHandler,
 )
-from featurebyte.api.api_handler.list import ListHandler
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.api_object_util import ForeignKeyMapping
 from featurebyte.api.base_table import TableApiObject

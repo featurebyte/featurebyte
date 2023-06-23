@@ -4,7 +4,7 @@ Feature namespace list handler
 
 import pandas as pd
 
-from featurebyte.api.api_handler.list import ListHandler
+from featurebyte.api.api_handler.base import ListHandler
 
 
 class FeatureNamespaceListHandler(ListHandler):

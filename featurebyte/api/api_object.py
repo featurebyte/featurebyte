@@ -15,7 +15,7 @@ from cachetools.keys import hashkey
 from pandas import DataFrame
 from typeguard import typechecked
 
-from featurebyte.api.api_handler.list import ListHandler
+from featurebyte.api.api_handler.base import ListHandler
 from featurebyte.api.api_object_util import (
     PAGINATED_CALL_PAGE_SIZE,
     ForeignKeyMapping,
