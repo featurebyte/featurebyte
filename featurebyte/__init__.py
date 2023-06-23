@@ -35,6 +35,7 @@ from featurebyte.api.scd_table import SCDTable
 from featurebyte.api.scd_view import SCDView
 from featurebyte.api.source_table import SourceTable
 from featurebyte.api.table import Table
+from featurebyte.api.user_defined_function import UDF, UserDefinedFunction
 from featurebyte.common.env_util import is_notebook
 from featurebyte.common.utils import get_version
 from featurebyte.config import Configurations, Profile
@@ -64,6 +65,7 @@ from featurebyte.models.credential import (
 from featurebyte.models.feature import DefaultVersionMode
 from featurebyte.models.feature_list import FeatureListStatus
 from featurebyte.models.feature_store import TableStatus
+from featurebyte.models.user_defined_function import FunctionParameter
 from featurebyte.query_graph.model.feature_job_setting import (
     FeatureJobSetting,
     TableFeatureJobSetting,
@@ -393,7 +395,6 @@ __all__ = [
     "EventView",
     "Feature",
     "FeatureGroup",
-    "FeatureJobSetting",
     "FeatureJobSettingAnalysis",
     "FeatureList",
     "FeatureStore",
@@ -406,11 +407,7 @@ __all__ = [
     "SCDTable",
     "SCDView",
     "SourceTable",
-    "SnowflakeDetails",
-    "SparkDetails",
-    "to_timedelta",
-    "Table",
-    "TableFeatureJobSetting",
+    "UserDefinedFunction",
     # credentials
     "AzureBlobStorageCredential",
     "AccessTokenCredential",
@@ -435,14 +432,22 @@ __all__ = [
     "FeatureVersionInfo",
     # others
     "ColumnCleaningOperation",
-    "TableCleaningOperation",
+    "FeatureJobSetting",
+    "FunctionParameter",
     "PeriodicTask",
+    "SnowflakeDetails",
+    "SparkDetails",
+    "Table",
+    "TableCleaningOperation",
+    "TableFeatureJobSetting",
     # services
     "start",
     "stop",
     "playground",
     # utility
+    "UDF",
     "list_unsaved_features",
+    "to_timedelta",
 ]
 
 

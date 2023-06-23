@@ -18,7 +18,7 @@ from featurebyte.models.base import (
 
 class FunctionParameter(FeatureByteBaseModel):
     """
-    FunctionArg class
+    FunctionParameter class
 
     name: str
         Name of the generic function parameter (used for documentation purpose)
@@ -69,8 +69,9 @@ class UserDefinedFunctionModel(FeatureByteBaseDocumentModel):
     function_name: str
     function_parameters: List[FunctionParameter]
     output_dtype: DBVarType
-    catalog_id: Optional[PydanticObjectId]
     signature: str = Field(default_factory=str)
+    catalog_id: Optional[PydanticObjectId]
+    feature_store_id: PydanticObjectId
 
     @validator("function_name")
     @classmethod

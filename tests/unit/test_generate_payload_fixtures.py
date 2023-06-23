@@ -216,7 +216,9 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
             output_filenames.append(filename)
 
 
-def test_generate_user_defined_function(update_fixtures, request_payload_dir):
+def test_generate_user_defined_function(
+    update_fixtures, request_payload_dir, snowflake_feature_store
+):
     """
     Write request payload for user defined function route
     """
@@ -233,6 +235,7 @@ def test_generate_user_defined_function(update_fixtures, request_payload_dir):
             )
         ],
         output_dtype=DBVarType.FLOAT,
+        feature_store_id=snowflake_feature_store.id,
     )
     if update_fixtures:
         filename = f"{request_payload_dir}/user_defined_function.json"

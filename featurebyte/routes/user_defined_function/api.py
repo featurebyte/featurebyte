@@ -64,18 +64,20 @@ async def list_user_defined_functions(
     sort_dir: Optional[str] = SortDirQuery,
     search: Optional[str] = SearchQuery,
     name: Optional[str] = NameQuery,
+    feature_store_id: Optional[PydanticObjectId] = None,
 ) -> UserDefinedFunctionList:
     """
     List UserDefinedFunctions
     """
     controller = request.state.app_container.user_defined_function_controller
-    user_defined_functions: UserDefinedFunctionList = await controller.list(
+    user_defined_functions: UserDefinedFunctionList = await controller.list_user_defined_functions(
         page=page,
         page_size=page_size,
         sort_by=sort_by,
         sort_dir=sort_dir,
         search=search,
         name=name,
+        feature_store_id=feature_store_id,
     )
     return user_defined_functions
 

@@ -373,8 +373,8 @@ class MaterializedTableNamePrefix(StrEnum):
         return [c.value for c in cls]
 
 
-class FuncArgForm(StrEnum):
-    """Generic function's function argument type"""
+class FunctionParameterInputForm(StrEnum):
+    """Generic function's parameter input form type"""
 
     VALUE = "value"  # value is used as function argument
     COLUMN = "column"  # column is used as function argument

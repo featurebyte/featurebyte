@@ -9,7 +9,7 @@ from pydantic import Field, StrictStr
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.user_defined_function import FunctionParameter, UserDefinedFunctionModel
-from featurebyte.schema.common.base import PaginationMixin
+from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 
 
 class UserDefinedFunctionCreate(FeatureByteBaseModel):
@@ -23,9 +23,10 @@ class UserDefinedFunctionCreate(FeatureByteBaseModel):
     function_parameters: List[FunctionParameter]
     output_dtype: DBVarType
     catalog_id: Optional[PydanticObjectId]
+    feature_store_id: PydanticObjectId
 
 
-class UserDefinedFunctionUpdate(FeatureByteBaseModel):
+class UserDefinedFunctionUpdate(BaseDocumentServiceUpdateSchema):
     """
     UserDefinedFunction update schema
     """

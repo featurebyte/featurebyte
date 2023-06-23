@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Literal, Optional, Sequence, Tuple
 
 from pydantic import BaseModel, Field
 
-from featurebyte.enum import DBVarType, FuncArgForm
+from featurebyte.enum import DBVarType, FunctionParameterInputForm
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.base import BaseSeriesOutputNode
@@ -28,33 +28,34 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
 )
 
 
-class FunctionArg(BaseModel):
-    """FunctionArg class"""
+class FunctionParameterInput(BaseModel):
+    """FunctionParameterInput class"""
 
     value: Optional[Any]
     dtype: DBVarType
     column_name: Optional[str]
-    input_form: FuncArgForm
+    input_form: FunctionParameterInputForm
+
+
+class GenericFunctionNodeParameters(BaseModel):
+    """GenericFunctionNodeParameters class"""
+
+    function_name: str
+    function_parameters: List[FunctionParameterInput]
+    output_dtype: DBVarType
+    function_id: Optional[PydanticObjectId]
 
 
 class GenericFunctionNode(BaseSeriesOutputNode):
     """GenericFunctionNode class"""
 
-    class Parameters(BaseModel):
-        """Parameters"""
-
-        function_name: str
-        function_args: List[FunctionArg]
-        output_dtype: DBVarType
-        function_id: Optional[PydanticObjectId]
-
     type: Literal[NodeType.GENERIC_FUNCTION] = Field(NodeType.GENERIC_FUNCTION, const=True)
-    parameters: Parameters
+    parameters: GenericFunctionNodeParameters
 
     def _get_column_function_args(self) -> List[Optional[str]]:
         column_input_args = []
-        for func_arg in self.parameters.function_args:
-            if func_arg.input_form == FuncArgForm.COLUMN:
+        for func_arg in self.parameters.function_parameters:
+            if func_arg.input_form == FunctionParameterInputForm.COLUMN:
                 column_input_args.append(func_arg.column_name)
         return column_input_args
 
@@ -68,7 +69,7 @@ class GenericFunctionNode(BaseSeriesOutputNode):
         column_input_args = self._get_column_function_args()
         if column_input_args[input_index] is None:
             return []
-        return [column_input_args[input_index]]
+        return [column_input_args[input_index]]  # type: ignore
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return self.parameters.output_dtype
@@ -135,16 +136,16 @@ class GenericFunctionNode(BaseSeriesOutputNode):
         config: CodeGenerationConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        function_args = []
+        function_parameters = []
         node_input_count = 0
-        for func_arg in self.parameters.function_args:
-            if func_arg.input_form == FuncArgForm.COLUMN:
-                function_args.append(node_inputs[node_input_count])
+        for func_param in self.parameters.function_parameters:
+            if func_param.input_form == FunctionParameterInputForm.COLUMN:
+                function_parameters.append(node_inputs[node_input_count])
                 node_input_count += 1
             else:
                 # TODO: use FunctionArg.dtype to format value
-                function_args.append(func_arg.value)
+                function_parameters.append(func_param.value)
 
-        function_args = [str(arg) for arg in function_args]
-        expression = f"{self.parameters.function_name}({', '.join(function_args)})"
+        function_parameters = [str(arg) for arg in function_parameters]
+        expression = f"{self.parameters.function_name}({', '.join(function_parameters)})"
         return [], ExpressionStr(expression)

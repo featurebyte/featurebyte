@@ -544,7 +544,7 @@ app_container_config.add_class_with_deps(
         "feature_store_service",
     ],
 )
-app_container_config.add_controller(
+app_container_config.add_class_with_deps(
     "user_defined_function_controller",
     UserDefinedFunctionController,
     ["user_defined_function_service"],
