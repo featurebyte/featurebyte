@@ -12,9 +12,9 @@ from featurebyte.utils.storage import get_client
 from tests.integration.storage.base import BaseStorageTestSuite
 
 
-class TestLocalStorageSuite(BaseStorageTestSuite):
+class TestS3StorageSuite(BaseStorageTestSuite):
     """
-    Test suite for LocalStorage class
+    Test suite for S3Storage class
     """
 
     @pytest_asyncio.fixture(name="test_storage")

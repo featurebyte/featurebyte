@@ -10,9 +10,9 @@ from featurebyte.storage import LocalTempStorage
 from tests.integration.storage.base import BaseStorageTestSuite
 
 
-class TestLocalStorageSuite(BaseStorageTestSuite):
+class TestLocalTempStorageSuite(BaseStorageTestSuite):
     """
-    Test suite for LocalStorage class
+    Test suite for LocalTempStorage class
     """
 
     @pytest.fixture(name="test_storage")
