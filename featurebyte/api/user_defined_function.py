@@ -43,7 +43,7 @@ def _get_active_feature_store_id() -> Optional[ObjectId]:
 
 def _synchronize_user_defined_function(
     func_accessor: FunctionAccessor, route: str, feature_store_id: Optional[PydanticObjectId]
-):
+) -> None:
     if feature_store_id is None:
         active_catalog_id = get_active_catalog_id()
         catalog = Catalog.get_by_id(active_catalog_id)
@@ -137,7 +137,7 @@ class UserDefinedFunction(SavableApiObject):
         name: str,
         function_name: str,
         function_parameters: List[FunctionParameter],
-        output_dtype: Literal[tuple(DBVarType)],
+        output_dtype: Literal[tuple(DBVarType)],  # type: ignore[misc]
         is_global: bool = False,
     ) -> UserDefinedFunction:
         active_catalog_id = get_active_catalog_id()

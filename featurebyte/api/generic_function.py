@@ -11,7 +11,7 @@ import inspect
 from featurebyte.api.view import ViewColumn
 from featurebyte.core.series import Series
 from featurebyte.enum import FunctionParameterInputForm
-from featurebyte.models import FeatureStoreModel
+from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.user_defined_function import UserDefinedFunctionModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
@@ -133,6 +133,7 @@ class UserDefinedFunctionRegistry:
             )
 
         # assign the dynamic method to the function accessor
+        assert udf.name is not None
         dynamic_func = types.MethodType(_method_wrapper, func_accessor)
         setattr(func_accessor, udf.name, dynamic_func)
 
