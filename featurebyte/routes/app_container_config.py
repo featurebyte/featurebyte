@@ -5,7 +5,7 @@ This contains all our registrations for dependency injection.
 """
 from __future__ import annotations
 
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from dataclasses import dataclass
 
@@ -64,7 +64,9 @@ class AppContainerConfig:
             self.dependency_mapping[dep.name] = dep
         return self.dependency_mapping
 
-    def register_service(self, name: str, class_: type, dependencies: List[str] = ()) -> None:
+    def register_service(
+        self, name: str, class_: type, dependencies: Optional[List[str]] = None
+    ) -> None:
         """
         Register a service with extra dependencies if needed.
 
@@ -80,6 +82,8 @@ class AppContainerConfig:
         dependencies: list[str]
             dependencies
         """
+        if dependencies is None:
+            dependencies = []
         self.service_with_extra_deps.append(
             ClassDefinition(
                 name=name,
@@ -89,7 +93,9 @@ class AppContainerConfig:
             )
         )
 
-    def register_class(self, name: str, class_: type, dependencies: List[str] = ()) -> None:
+    def register_class(
+        self, name: str, class_: type, dependencies: Optional[List[str]] = None
+    ) -> None:
         """
         Register a class, with dependencies if needed.
 
@@ -102,6 +108,8 @@ class AppContainerConfig:
         dependencies: list[str]
             dependencies
         """
+        if dependencies is None:
+            dependencies = []
         self.classes_with_deps.append(
             ClassDefinition(
                 name=name,
@@ -117,7 +125,7 @@ class AppContainerConfig:
         output.extend(self.classes_with_deps)
         return output
 
-    def _validate_duplicate_names(self):
+    def _validate_duplicate_names(self) -> None:
         """
         Validate that there's no duplicate names registered.
 
@@ -199,10 +207,10 @@ class AppContainerConfig:
         """
         class_def_mapping = self.get_class_def_mapping()
         # Visited nodes keeps track of whether we have been to this node before.
-        visited_nodes = {}
+        visited_nodes: dict[str, bool] = {}
         # Recursive stack keeps track of nodes that are currently being visited in the recursive call.
         # This is to allow us to see if there's a back edge.
-        recursive_stack = {}
+        recursive_stack: dict[str, bool] = {}
         for node in self._all_dependencies():
             # Only need to recurse on nodes we have not been to before.
             if not visited_nodes.get(node.name, False):
