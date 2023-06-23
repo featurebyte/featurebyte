@@ -3,7 +3,7 @@ Test module for generating payload fixtures for testing api route
 """
 import json
 
-from featurebyte import AggFunc, FeatureJobSetting, FeatureList
+from featurebyte import AggFunc, DefaultVersionMode, FeatureJobSetting, FeatureList
 from featurebyte.models.credential import UsernamePasswordCredential
 from featurebyte.models.relationship import RelationshipType
 from featurebyte.models.request_input import SourceTableRequestInput
@@ -20,6 +20,7 @@ from featurebyte.schema.observation_table import ObservationTableCreate
 from featurebyte.schema.relationship_info import RelationshipInfoCreate
 from featurebyte.schema.static_source_table import StaticSourceTableCreate
 from featurebyte.schema.target import TargetCreate
+from featurebyte.schema.target_namespace import TargetNamespaceCreate
 from tests.util.helper import iet_entropy
 
 
@@ -148,6 +149,12 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         blind_spot="1d",
         entity_ids=[cust_id_entity.id],
     )
+    target_namespace = TargetNamespaceCreate(
+        name="target_namespace",
+        target_ids=[target.id],
+        default_target_id=target.id,
+        default_version_mode=DefaultVersionMode.AUTO,
+    )
 
     if update_fixtures:
         generated_comment = [
@@ -194,6 +201,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
             (catalog, "catalog"),
             (credential, "credential"),
             (target, "target"),
+            (target_namespace, "target_namespace"),
         ]
         for schema, name in schema_payload_name_pairs:
             filename = f"{base_path}/{name}.json"
