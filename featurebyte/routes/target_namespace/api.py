@@ -40,7 +40,7 @@ async def get_target_namespace(
     target_namespace: TargetNamespaceModel = await controller.get(
         document_id=target_namespace_id,
         exception_detail=(
-            f'TargetNamespace (id: "{target_namespace_id}") not found. Please save the Target object first.'
+            f'TargetNamespace (id: "{target_namespace_id}") not found. Please save the TargetNamespace object first.'
         ),
     )
     return target_namespace

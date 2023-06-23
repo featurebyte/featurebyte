@@ -31,6 +31,7 @@ from featurebyte.routes.semantic.controller import SemanticController
 from featurebyte.routes.static_source_table.controller import StaticSourceTableController
 from featurebyte.routes.table.controller import TableController
 from featurebyte.routes.target.controller import TargetController
+from featurebyte.routes.target_namespace.controller import TargetNamespaceController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.routes.temp_data.controller import TempDataController
 from featurebyte.service.batch_feature_table import BatchFeatureTableService
@@ -75,6 +76,7 @@ from featurebyte.service.table_columns_info import TableColumnsInfoService
 from featurebyte.service.table_info import TableInfoService
 from featurebyte.service.table_status import TableStatusService
 from featurebyte.service.target import TargetService
+from featurebyte.service.target_namespace import TargetNamespaceService
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.service.user_service import UserService
 from featurebyte.service.validator.production_ready_validator import ProductionReadyValidator
@@ -127,6 +129,7 @@ app_container_config.register_service(TableService)
 app_container_config.register_service(TableColumnsInfoService)
 app_container_config.register_service(TableStatusService)
 app_container_config.register_service(TargetService)
+app_container_config.register_service(TargetNamespaceService)
 app_container_config.register_service(UserService)
 app_container_config.register_service(VersionService)
 app_container_config.register_service(ViewConstructionService)
@@ -173,6 +176,9 @@ app_container_config.register_class(
 app_container_config.register_class(TableInfoService)
 app_container_config.register_class(
     TargetController, dependency_override={"service": "target_service"}
+)
+app_container_config.register_class(
+    TargetNamespaceController, dependency_override={"service": "target_namespace_service"}
 )
 
 

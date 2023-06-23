@@ -33,6 +33,7 @@ import featurebyte.routes.semantic.api as semantic_api
 import featurebyte.routes.static_source_table.api as static_source_table_api
 import featurebyte.routes.table.api as table_api
 import featurebyte.routes.target.api as target_api
+import featurebyte.routes.target_namespace.api as target_namespace_api
 import featurebyte.routes.task.api as task_api
 import featurebyte.routes.temp_data.api as temp_data_api
 from featurebyte.common.utils import get_version
@@ -142,6 +143,7 @@ def get_app() -> FastAPI:
         batch_request_table_api,
         batch_feature_table_api,
         target_api,
+        target_namespace_api,
     ]
     dependencies = _get_api_deps()
     for resource_api in resource_apis:

@@ -26,4 +26,5 @@
 /status
 /table
 /target
+/target_namespace
 /task
