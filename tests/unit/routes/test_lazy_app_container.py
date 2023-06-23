@@ -149,11 +149,12 @@ def test_construction__build_with_missing_deps(app_container_constructor_params)
     app_container_config.register_service("extra_deps", TestServiceWithOtherDeps, ["test_service"])
 
     # KeyError raised as no `test_service` dep found
+    app_container = LazyAppContainer(
+        **app_container_constructor_params,
+        app_container_config=app_container_config,
+    )
     with pytest.raises(KeyError):
-        LazyAppContainer(
-            **app_container_constructor_params,
-            app_container_config=app_container_config,
-        )
+        _ = app_container.extra_deps
 
 
 def test_construction__service_with_invalid_constructor(app_container_constructor_params):
@@ -167,11 +168,12 @@ def test_construction__service_with_invalid_constructor(app_container_constructo
     app_container_config = AppContainerConfig()
     app_container_config.register_class("random", TestController, ["test_service"])
 
+    app_container = LazyAppContainer(
+        **app_container_constructor_params,
+        app_container_config=app_container_config,
+    )
     with pytest.raises(KeyError) as exc:
-        LazyAppContainer(
-            **app_container_constructor_params,
-            app_container_config=app_container_config,
-        )
+        _ = app_container.random
     assert "test_service" in str(exc)
 
 
