@@ -200,7 +200,11 @@ app_container_config.add_service_with_extra_deps(
     ],
 )
 app_container_config.add_basic_service("deployment_service", DeploymentService)
-app_container_config.add_basic_service("user_defined_function_service", UserDefinedFunctionService)
+app_container_config.add_service_with_extra_deps(
+    "user_defined_function_service",
+    UserDefinedFunctionService,
+    ["feature_store_service"],
+)
 app_container_config.add_basic_service(
     "online_store_table_version_service", OnlineStoreTableVersionService
 )
