@@ -51,12 +51,12 @@ class BaseStorageTestSuite:
             yield file_obj.name
 
     @pytest_asyncio.fixture(name="remote_path")
-    async def remote_path_fixture(self, storage: Storage, local_path: Path):
+    async def remote_path_fixture(self, test_storage: Storage, local_path: Path):
         """
         Yield remote path of uploaded file
         """
         remote_path = Path("some/file")
-        await storage.put(local_path, remote_path=remote_path)
+        await test_storage.put(local_path, remote_path=remote_path)
         yield remote_path
 
     @pytest.mark.asyncio
@@ -68,112 +68,114 @@ class BaseStorageTestSuite:
         assert remote_path
 
     @pytest.mark.asyncio
-    async def test_put_file_fail(self, local_path: Path, remote_path: Path, storage: Storage):
+    async def test_put_file_fail(self, local_path: Path, remote_path: Path, test_storage: Storage):
         """
         Test file upload
         """
         # upload should fail if remote file already exist
         with pytest.raises(FileExistsError) as exc_info:
-            await storage.put(local_path, remote_path=remote_path)
+            await test_storage.put(local_path, remote_path=remote_path)
         assert str(exc_info.value) == "File already exists on remote path"
 
     @pytest.mark.asyncio
-    async def test_get_file_success(self, local_path: Path, remote_path: Path, storage: Storage):
+    async def test_get_file_success(
+        self, local_path: Path, remote_path: Path, test_storage: Storage
+    ):
         """
         Test file upload
         """
         with tempfile.NamedTemporaryFile() as file_obj:
             # download should work
-            await storage.get(remote_path, file_obj.name)
+            await test_storage.get(remote_path, file_obj.name)
 
             # contents should match
             assert filecmp.cmp(local_path, file_obj.name)
 
     @pytest.mark.asyncio
-    async def test_get_file_fail(self, storage: Storage):
+    async def test_get_file_fail(self, test_storage: Storage):
         """
         Test file upload
         """
         with tempfile.NamedTemporaryFile() as file_obj:
             # download should fail
             with pytest.raises(FileNotFoundError) as exc_info:
-                await storage.get(Path("non/existent/path"), file_obj.name)
+                await test_storage.get(Path("non/existent/path"), file_obj.name)
             assert str(exc_info.value) == "Remote file does not exist"
 
     @pytest.mark.asyncio
     async def test_stream_file_success(
-        self, remote_path: Path, storage: Storage, text_file_content: str
+        self, remote_path: Path, test_storage: Storage, text_file_content: str
     ):
         """
         Test file upload
         """
-        file_stream = storage.get_file_stream(remote_path, chunk_size=5)
+        file_stream = test_storage.get_file_stream(remote_path, chunk_size=5)
         read_bytes = b"".join([chunk async for chunk in file_stream])
         assert read_bytes.decode("utf-8") == text_file_content
 
     @pytest.mark.asyncio
-    async def test_stream_file_fail(self, storage: Storage):
+    async def test_stream_file_fail(self, test_storage: Storage):
         """
         Test file upload
         """
         # get stream should fail
         with pytest.raises(FileNotFoundError) as exc_info:
-            file_stream = storage.get_file_stream(Path("non/existent/path"), chunk_size=5)
+            file_stream = test_storage.get_file_stream(Path("non/existent/path"), chunk_size=5)
             b"".join([chunk async for chunk in file_stream])
 
         assert str(exc_info.value) == "Remote file does not exist"
 
     @pytest.mark.asyncio
-    async def test_get_text_success(self, storage: Storage, text_file_content):
+    async def test_get_text_success(self, test_storage: Storage, text_file_content):
         """
         Test file upload
         """
         # upload text
         remote_path = Path("some/text/file")
-        await storage.put_text(text=text_file_content, remote_path=remote_path)
+        await test_storage.put_text(text=text_file_content, remote_path=remote_path)
 
         # download should work
-        value = await storage.get_text(remote_path)
+        value = await test_storage.get_text(remote_path)
         assert value == text_file_content
 
     @pytest.mark.asyncio
-    async def test_get_object_success(self, storage: Storage, pydantic_object):
+    async def test_get_object_success(self, test_storage: Storage, pydantic_object):
         """
         Dict object upload
         """
         # upload text
         remote_path = Path("some/json/file")
-        await storage.put_object(data=pydantic_object, remote_path=remote_path)
+        await test_storage.put_object(data=pydantic_object, remote_path=remote_path)
 
         # download should work
-        value = await storage.get_object(remote_path)
+        value = await test_storage.get_object(remote_path)
         assert value == pydantic_object.dict()
 
     @pytest.mark.asyncio
-    async def test_delete_object_fail(self, storage: Storage):
+    async def test_delete_object_fail(self, test_storage: Storage):
         """
         Test file delete (missing)
         """
         with pytest.raises(FileNotFoundError) as exc_info:
-            await storage.delete(Path("non/existent/path"))
+            await test_storage.delete(Path("non/existent/path"))
 
         assert str(exc_info.value) == "Remote file does not exist"
 
     @pytest.mark.asyncio
-    async def test_delete_object_success(self, storage: Storage, text_file_content):
+    async def test_delete_object_success(self, test_storage: Storage, text_file_content):
         """
         Test file delete
         """
         # upload text
         remote_path = Path("some/delete/file")
-        await storage.put_text(text=text_file_content, remote_path=remote_path)
-        assert text_file_content == await storage.get_text(remote_path)
+        await test_storage.put_text(text=text_file_content, remote_path=remote_path)
+        assert text_file_content == await test_storage.get_text(remote_path)
 
         # Delete text
-        await storage.delete(remote_path)
+        await test_storage.delete(remote_path)
 
         # Check missing
         with pytest.raises(FileNotFoundError) as exc_info:
-            await storage.get_text(remote_path)
+            await test_storage.get_text(remote_path)
 
         assert str(exc_info.value) == "Remote file does not exist"
