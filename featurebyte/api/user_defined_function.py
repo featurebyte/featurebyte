@@ -3,8 +3,7 @@ UserDefinedFunction API object
 """
 from __future__ import annotations
 
-import types
-from typing import Any, ClassVar, List, Literal, Optional, Tuple
+from typing import Any, ClassVar, List, Literal, Optional
 
 from bson import ObjectId
 from pydantic import Field
@@ -18,22 +17,13 @@ from featurebyte.api.api_object_util import (
 )
 from featurebyte.api.catalog import Catalog
 from featurebyte.api.feature_store import FeatureStore
+from featurebyte.api.generic_function import FunctionAccessor, UserDefinedFunctionRegistry
 from featurebyte.api.savable_api_object import SavableApiObject
-from featurebyte.api.view import ViewColumn
-from featurebyte.core.series import Series
-from featurebyte.enum import DBVarType, FunctionParameterInputForm
+from featurebyte.enum import DBVarType
 from featurebyte.exception import DocumentCreationError, InvalidSettingsError
 from featurebyte.logging import get_logger
-from featurebyte.models import FeatureStoreModel
 from featurebyte.models.base import PydanticObjectId, get_active_catalog_id
 from featurebyte.models.user_defined_function import FunctionParameter, UserDefinedFunctionModel
-from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GlobalQueryGraph
-from featurebyte.query_graph.model.common_table import TabularSource
-from featurebyte.query_graph.node.function import (
-    FunctionParameterInput,
-    GenericFunctionNodeParameters,
-)
 from featurebyte.schema.user_defined_function import UserDefinedFunctionCreate
 
 logger = get_logger(__name__)
@@ -49,91 +39,6 @@ def _get_active_feature_store_id() -> Optional[ObjectId]:
         ), "Only one default feature store is allowed."
         return default_feature_store_ids[0]
     return None
-
-
-def _process_keyword_arguments(
-    udf: UserDefinedFunctionModel, **kwargs: Any
-) -> Tuple[List[FunctionParameterInput], List[str], FeatureStoreModel, TabularSource]:
-    # extract input parameters based on the function parameter specification
-    func_params = []
-    series_inputs: List[Series] = []
-    for param in udf.function_parameters:
-        if param.name not in kwargs:
-            if param.has_default_value:
-                value = param.default_value
-            else:
-                raise ValueError(f"Parameter {param.name} is not provided")
-        else:
-            value = kwargs.pop(param.name)
-
-        if isinstance(value, Series):
-            input_form = FunctionParameterInputForm.COLUMN
-            series_inputs.append(value)
-            column_name = value.name
-            value = None
-        else:
-            input_form = FunctionParameterInputForm.VALUE
-            column_name = None
-
-        func_params.append(
-            FunctionParameterInput(
-                value=value,
-                dtype=param.dtype,
-                input_form=input_form,
-                column_name=column_name,
-            )
-        )
-
-    # handle the remaining parameters
-    if kwargs:
-        raise ValueError(f"Unknown parameters {kwargs}")
-
-    if not series_inputs:
-        raise ValueError("At least one parameter must be a series.")
-
-    series_input = series_inputs[0]
-    input_node_names = [series_input.node_name for series_input in series_inputs]
-    return func_params, input_node_names, series_input.feature_store, series_input.tabular_source
-
-
-def _register_user_defined_function(
-    func_accessor: FunctionAccessor, udf: UserDefinedFunctionModel
-) -> None:
-    # register a user-defined function to the function accessor.
-
-    def method_wrapper(obj, **kwargs: Any):
-        _ = obj
-        func_params, input_node_names, feature_store, tabular_source = _process_keyword_arguments(
-            udf, **kwargs
-        )
-        node_params = GenericFunctionNodeParameters(
-            function_name=udf.function_name,
-            function_parameters=func_params,
-            output_dtype=udf.output_dtype,
-            function_id=udf.id,
-        )
-        graph = GlobalQueryGraph()
-        input_nodes = [
-            graph.get_node_by_name(input_node_name) for input_node_name in input_node_names
-        ]
-        node = graph.add_operation(
-            node_type=NodeType.GENERIC_FUNCTION,
-            node_params=node_params.dict(by_alias=True),
-            node_output_type=NodeOutputType.SERIES,
-            input_nodes=input_nodes,
-        )
-
-        return ViewColumn(
-            name=None,
-            node_name=node.name,
-            feature_store=feature_store,
-            tabular_source=tabular_source,
-            dtype=udf.output_dtype,
-        )
-
-    # assign the dynamic method to the function accessor
-    dynamic_func = types.MethodType(method_wrapper, func_accessor)
-    setattr(func_accessor, udf.name, dynamic_func)
 
 
 def _synchronize_user_defined_function(
@@ -156,17 +61,10 @@ def _synchronize_user_defined_function(
             route, params={"feature_store_id": feature_store_id}
         ):
             udf = UserDefinedFunctionModel(**udf_dict)
-            _register_user_defined_function(func_accessor, udf)
+            UserDefinedFunctionRegistry.register(func_accessor, udf)
     except InvalidSettingsError:
         # ignore invalid settings error due to fail to connect to the server
         logger.info("Failed to synchronize user-defined functions.")
-
-
-class FunctionAccessor:
-    """
-    FunctionAccessor class contains all user-defined functions as its methods.
-    Note: Do not add any methods to this class. All methods are dynamically added by the FunctionDescriptor class.
-    """
 
 
 class FunctionDescriptor:

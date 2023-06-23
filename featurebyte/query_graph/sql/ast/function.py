@@ -10,9 +10,10 @@ from dataclasses import dataclass
 from sqlglot import expressions
 from sqlglot.expressions import Expression
 
-from featurebyte.enum import FunctionParameterInputForm
+from featurebyte.enum import DBVarType, FunctionParameterInputForm
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.ast.base import ExpressionNode, SQLNodeContext
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
 
 
 @dataclass
@@ -37,7 +38,10 @@ class GenericFunctionNode(ExpressionNode):
                 parameters.append(input_sql_nodes[node_index].sql)
                 node_index += 1
             else:
-                parameters.append(func_param["value"])
+                cast_as_timestamp = func_param["dtype"] == DBVarType.TIMESTAMP
+                parameters.append(
+                    make_literal_value(func_param["value"], cast_as_timestamp=cast_as_timestamp)
+                )
 
         assert isinstance(input_sql_nodes[0], ExpressionNode)
         table_node = input_sql_nodes[0].table_node
