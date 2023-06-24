@@ -3,7 +3,7 @@ Feature Manager class
 """
 from __future__ import annotations
 
-from typing import Any, Optional, Set
+from typing import Any, List, Optional, Set
 
 from datetime import datetime, timedelta, timezone
 
@@ -28,6 +28,7 @@ from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import sql_to_string
+from featurebyte.query_graph.sql.online_serving import OnlineStorePrecomputeQuery
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.base import BaseSession
@@ -113,7 +114,7 @@ class FeatureManager(BaseModel):
         )
 
         # insert records into tile-feature mapping table
-        await self._update_tile_feature_mapping_table(feature_spec)
+        await self._update_tile_feature_mapping_table(feature_spec, unscheduled_result_names)
 
         # enable tile generation with scheduled jobs
         aggregation_id_to_tile_spec = {}
@@ -142,13 +143,14 @@ class FeatureManager(BaseModel):
                 await self._generate_historical_tiles(tile_spec=tile_spec)
 
         # populate feature store
-        for query in feature_spec.precompute_queries:
-            if query.result_name in unscheduled_result_names:
-                await self._populate_feature_store(
-                    tile_spec=aggregation_id_to_tile_spec[query.aggregation_id],
-                    schedule_time=schedule_time,
-                    aggregation_result_name=query.result_name,
-                )
+        for query in self._get_unscheduled_precompute_queries(
+            feature_spec, unscheduled_result_names
+        ):
+            await self._populate_feature_store(
+                tile_spec=aggregation_id_to_tile_spec[query.aggregation_id],
+                schedule_time=schedule_time,
+                aggregation_result_name=query.result_name,
+            )
 
     async def _get_unscheduled_aggregation_result_names(
         self, feature_spec: OnlineFeatureSpec
@@ -186,6 +188,16 @@ class FeatureManager(BaseModel):
         if df_scheduled_result_names is None:
             return set(result_names)
         return set(result_names) - set(df_scheduled_result_names["RESULT_ID"])
+
+    @staticmethod
+    def _get_unscheduled_precompute_queries(
+        feature_spec: OnlineFeatureSpec, unscheduled_result_names: Set[str]
+    ) -> List[OnlineStorePrecomputeQuery]:
+        out = []
+        for query in feature_spec.precompute_queries:
+            if query.result_name in unscheduled_result_names:
+                out.append(query)
+        return out
 
     async def _populate_feature_store(
         self, tile_spec: TileSpec, schedule_time: datetime, aggregation_result_name: str
@@ -255,7 +267,9 @@ class FeatureManager(BaseModel):
             last_tile_start_ts_str=end_ts_str,
         )
 
-    async def _update_tile_feature_mapping_table(self, feature_spec: OnlineFeatureSpec) -> None:
+    async def _update_tile_feature_mapping_table(
+        self, feature_spec: OnlineFeatureSpec, unscheduled_result_names: Set[str]
+    ) -> None:
         """
         Insert records into tile-feature mapping table
 
@@ -263,6 +277,9 @@ class FeatureManager(BaseModel):
         ----------
         feature_spec: OnlineFeatureSpec
             Instance of OnlineFeatureSpec
+        unscheduled_result_names: Set[str]
+            Set of unscheduled result names. These result names are not in the online store mapping
+            table yet and should be inserted.
         """
         for tile_spec in feature_spec.feature.tile_specs:
             upsert_sql = tm_upsert_tile_feature_mapping.render(
@@ -278,7 +295,9 @@ class FeatureManager(BaseModel):
             await self._session.execute_query(upsert_sql)
             logger.debug(f"Done insert tile_feature_mapping for {tile_spec.aggregation_id}")
 
-        for query in feature_spec.precompute_queries:
+        for query in self._get_unscheduled_precompute_queries(
+            feature_spec, unscheduled_result_names
+        ):
             upsert_sql = tm_upsert_online_store_mapping.render(
                 tile_id=query.tile_id,
                 aggregation_id=query.aggregation_id,
