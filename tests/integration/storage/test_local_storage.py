@@ -6,7 +6,7 @@ import tempfile
 import pytest
 
 from featurebyte.storage import LocalStorage
-from tests.unit.storage.base import BaseStorageTestSuite
+from tests.integration.storage.base import BaseStorageTestSuite
 
 
 class TestLocalStorageSuite(BaseStorageTestSuite):
@@ -14,7 +14,7 @@ class TestLocalStorageSuite(BaseStorageTestSuite):
     Test suite for LocalStorage class
     """
 
-    @pytest.fixture(name="storage")
+    @pytest.fixture(name="test_storage")
     def storage_fixture(self):
         """
         Storage object fixture
