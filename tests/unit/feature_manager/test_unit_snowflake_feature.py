@@ -48,6 +48,23 @@ def feature_spec_fixture(mock_snowflake_feature):
         yield feature_spec
 
 
+@pytest.fixture(name="feature_spec_with_scheduled_aggregations")
+def feature_spec_with_scheduled_aggregations_fixture(mock_snowflake_feature):
+    """
+    OnlineFeatureSpec object fixture
+    """
+    feature_spec = OnlineFeatureSpec(
+        feature=mock_snowflake_feature,
+        feature_sql="select * from temp",
+        feature_store_table_name="feature_store_table_1",
+    )
+    with mock.patch(
+        "featurebyte.feature_manager.manager.FeatureManager._get_unscheduled_aggregation_result_names",
+        AsyncMock(return_value=[]),
+    ):
+        yield feature_spec
+
+
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
 @mock.patch("featurebyte.tile.manager.TileManager.schedule_online_tiles")
 @mock.patch("featurebyte.tile.manager.TileManager.schedule_offline_tiles")
@@ -149,6 +166,56 @@ async def test_online_enable_duplicate_tile_task(
     mock_schedule_online_tiles.assert_not_called()
     mock_schedule_offline_tiles.assert_not_called()
     mock_generate_historical_tiles.assert_not_called()
+
+
+@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
+@mock.patch("featurebyte.tile.manager.TileManager.schedule_online_tiles")
+@mock.patch("featurebyte.tile.manager.TileManager.schedule_offline_tiles")
+@pytest.mark.asyncio
+async def test_online_enable_aggregation_results_already_scheduled(
+    mock_schedule_offline_tiles,
+    mock_schedule_online_tiles,
+    mock_execute_query,
+    mock_snowflake_feature,
+    feature_spec_with_scheduled_aggregations,
+    feature_manager,
+):
+    """
+    Test online_enable
+    """
+    _ = mock_schedule_offline_tiles
+    _ = mock_schedule_online_tiles
+
+    mock_execute_query.side_effect = [
+        None,
+        None,
+        pd.DataFrame.from_dict({"name": ["task_1"]}),
+        None,
+        None,
+        None,
+    ]
+    with mock.patch("featurebyte.tile.manager.TileManager.tile_job_exists") as mock_tile_job_exists:
+        with mock.patch(
+            "featurebyte.feature_manager.manager.FeatureManager._generate_historical_tiles"
+        ) as mock_generate_historical_tiles:
+            with mock.patch(
+                "featurebyte.feature_manager.manager.FeatureManager._populate_feature_store"
+            ) as _:
+                mock_tile_job_exists.return_value = True
+                await feature_manager.online_enable(feature_spec_with_scheduled_aggregations)
+
+    mock_schedule_online_tiles.assert_not_called()
+    mock_schedule_offline_tiles.assert_not_called()
+    mock_generate_historical_tiles.assert_not_called()
+
+    for execute_query_call in mock_execute_query.call_args_list:
+        args, _ = execute_query_call
+        query = args[0]
+        # Updating TILE_FEATURE_MAPPING is expected
+        assert "TILE_FEATURE_MAPPING" in query
+        # Updating ONLINE_STORE_MAPPING is not expected because the aggregation result is already
+        # scheduled
+        assert "ONLINE_STORE_MAPPING" not in query
 
 
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
