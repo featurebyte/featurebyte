@@ -61,46 +61,6 @@ def get_all_deps_for_key(
     return all_deps
 
 
-def build_no_dep(class_def: ClassDefinition) -> Any:
-    """
-    Build a class with no dependencies.
-
-    Parameters
-    ----------
-    class_def: ClassDefinition
-        class definition
-
-    Returns
-    -------
-    Any
-    """
-    return class_def.class_()
-
-
-def build_service(
-    class_def: ClassDefinition, user: Any, persistent: Persistent, catalog_id: ObjectId
-) -> Any:
-    """
-    Build a service with the given dependencies.
-
-    Parameters
-    ----------
-    class_def: ClassDefinition
-        class definition
-    user: Any
-        user object
-    persistent: Persistent
-        persistent object
-    catalog_id: ObjectId
-        catalog id
-
-    Returns
-    -------
-    Any
-    """
-    return class_def.class_(user=user, persistent=persistent, catalog_id=catalog_id)
-
-
 def build_service_with_deps(
     class_def: ClassDefinition,
     user: Any,
@@ -193,11 +153,7 @@ def build_deps(
         if dep.name in new_deps:
             continue
         # Build dependencies for this dep
-        if dep.dep_type == DepType.NO_DEPS:
-            new_deps[dep.name] = build_no_dep(dep)
-        elif dep.dep_type == DepType.BASIC_SERVICE:
-            new_deps[dep.name] = build_service(dep, user, persistent, catalog_id)
-        elif dep.dep_type == DepType.SERVICE_WITH_EXTRA_DEPS:
+        if dep.dep_type == DepType.SERVICE_WITH_EXTRA_DEPS:
             new_deps[dep.name] = build_service_with_deps(
                 dep, user, persistent, catalog_id, new_deps
             )
@@ -253,9 +209,6 @@ class LazyAppContainer:
         self.storage = storage
         self.catalog_id = catalog_id
         self.app_container_config = app_container_config
-
-        # Validate the container config
-        app_container_config.validate()
 
         # Used to cache instances if they've already been built
         # Pre-load with some default deps

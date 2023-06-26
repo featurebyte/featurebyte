@@ -79,12 +79,10 @@ def test_app_config_fixture():
     Test app config fixture
     """
     app_container_config = AppContainerConfig()
-    app_container_config.add_no_dep_objects("no_dep", NoDeps)
-    app_container_config.add_basic_service("test_service", TestService)
-    app_container_config.add_service_with_extra_deps(
-        "extra_deps", TestServiceWithOtherDeps, ["test_service"]
-    )
-    app_container_config.add_class_with_deps("test_controller", TestController, ["test_service"])
+    app_container_config.register_class("no_dep", NoDeps)
+    app_container_config.register_service("test_service", TestService)
+    app_container_config.register_service("extra_deps", TestServiceWithOtherDeps, ["test_service"])
+    app_container_config.register_class("test_controller", TestController, ["test_service"])
     return app_container_config
 
 
@@ -148,9 +146,7 @@ def test_construction__build_with_missing_deps(app_container_constructor_params)
     Test that an error is raised in an invalid dependency is passed in.
     """
     app_container_config = AppContainerConfig()
-    app_container_config.add_service_with_extra_deps(
-        "extra_deps", TestServiceWithOtherDeps, ["test_service"]
-    )
+    app_container_config.register_service("extra_deps", TestServiceWithOtherDeps, ["test_service"])
 
     # KeyError raised as no `test_service` dep found
     app_container = LazyAppContainer(
@@ -170,16 +166,15 @@ def test_construction__service_with_invalid_constructor(app_container_constructo
     is tighter for users.
     """
     app_container_config = AppContainerConfig()
-    app_container_config.add_basic_service("random", TestController)
+    app_container_config.register_class("random", TestController, ["test_service"])
 
     app_container = LazyAppContainer(
         **app_container_constructor_params,
         app_container_config=app_container_config,
     )
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(KeyError) as exc:
         _ = app_container.random
-
-    assert "unexpected keyword argument" in str(exc)
+    assert "test_service" in str(exc)
 
 
 def get_class_def(key: str, deps: List[str]) -> ClassDefinition:
@@ -190,7 +185,7 @@ def get_class_def(key: str, deps: List[str]) -> ClassDefinition:
         name=key,
         class_=TestService,
         dependencies=deps,
-        dep_type=DepType.BASIC_SERVICE,
+        dep_type=DepType.SERVICE_WITH_EXTRA_DEPS,
     )
 
 
