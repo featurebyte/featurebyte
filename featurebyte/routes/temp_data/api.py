@@ -17,7 +17,7 @@ async def get_data(request: Request, path: Path = Query()) -> StreamingResponse:
     """
     Retrieve temp data
     """
-    controller = request.state.app_container.tempdata_controller
+    controller = request.state.app_container.temp_data_controller
     result: StreamingResponse = await controller.get_data(
         path=path,
     )
