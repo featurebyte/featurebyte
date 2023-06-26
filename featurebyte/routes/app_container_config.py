@@ -34,7 +34,6 @@ def _get_class_name(class_name: str, name_override: Optional[str] = None) -> str
     """
     if name_override is not None:
         return name_override
-    print(str(class_name))
     return CAMEL_CASE_TO_SNAKE_CASE_PATTERN.sub("_", class_name).lower()
 
 
@@ -245,8 +244,6 @@ class AppContainerConfig:
         # If any dependency has been visited before, and is in the current recursive stack, the
         # dependency graph is cyclic.
         for neighbour_name in class_def_mapping[class_def.name].dependencies:
-            if neighbour_name not in class_def_mapping:
-                print(class_def)
             neighbour = class_def_mapping[neighbour_name]
             if not visited_nodes.get(neighbour.name, False):
                 is_cyclic, path = self._is_cyclic_dfs(

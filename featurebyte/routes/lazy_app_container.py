@@ -214,8 +214,10 @@ class LazyAppContainer:
         # Pre-load with some default deps
         self.instance_map: Dict[str, Any] = {
             "task_controller": TaskController(task_manager=task_manager),
-            "tempdata_controller": TempDataController(temp_storage=temp_storage),
-            "credential_provider": MongoBackedCredentialProvider(persistent=persistent),
+            "temp_data_controller": TempDataController(temp_storage=temp_storage),
+            "mongo_backed_credential_provider": MongoBackedCredentialProvider(
+                persistent=persistent
+            ),
             "task_manager": task_manager,
         }
 

@@ -84,102 +84,104 @@ from featurebyte.utils.credential import MongoBackedCredentialProvider
 
 app_container_config = AppContainerConfig()
 
-app_container_config.register_service(SessionValidatorService)
-app_container_config.register_class(ProductionReadyValidator)
-app_container_config.register_class(TableInfoService)
-app_container_config.register_service(SessionManagerService)
-app_container_config.register_service(ParentEntityLookupService)
-app_container_config.register_service(OnlineEnableService)
-app_container_config.register_service(EntityValidationService)
-app_container_config.register_service(OnlineServingService)
-app_container_config.register_service(FeatureListStatusService)
-app_container_config.register_service(DeployService)
-app_container_config.register_service(PreviewService)
-app_container_config.register_service(FeatureStoreWarehouseService)
-app_container_config.register_service(ContextService)
-app_container_config.register_service(EntityService)
-app_container_config.register_service(DimensionTableService)
-app_container_config.register_service(EventTableService)
-app_container_config.register_service(ItemTableService)
-app_container_config.register_service(SCDTableService, name_override="scd_table_service")
-app_container_config.register_service(FeatureService)
-app_container_config.register_service(FeatureListService)
-app_container_config.register_service(DeploymentService)
-app_container_config.register_service(OnlineStoreTableVersionService)
-app_container_config.register_service(ObservationTableService)
-app_container_config.register_service(HistoricalFeatureTableService)
-app_container_config.register_service(BatchRequestTableService)
+# Register services - please keep sorted by alphabetical order.
 app_container_config.register_service(BatchFeatureTableService)
-app_container_config.register_service(StaticSourceTableService)
-app_container_config.register_service(FeatureReadinessService)
-app_container_config.register_service(TableStatusService)
-app_container_config.register_service(FeatureJobSettingAnalysisService)
-app_container_config.register_service(FeatureListNamespaceService)
-app_container_config.register_service(FeatureNamespaceService)
-app_container_config.register_service(TableColumnsInfoService)
-app_container_config.register_service(DefaultVersionModeService)
-app_container_config.register_service(FeatureStoreService)
-app_container_config.register_service(SemanticService)
-app_container_config.register_service(TableService)
-app_container_config.register_service(VersionService)
-app_container_config.register_service(EntityRelationshipService)
-app_container_config.register_service(SemanticRelationshipService)
+app_container_config.register_service(BatchRequestTableService)
 app_container_config.register_service(CatalogService)
-app_container_config.register_service(TargetService)
-app_container_config.register_service(RelationshipInfoService)
-app_container_config.register_service(UserService)
-app_container_config.register_service(ViewConstructionService)
-app_container_config.register_service(PeriodicTaskService)
 app_container_config.register_service(CredentialService)
+app_container_config.register_service(ContextService)
+app_container_config.register_service(DefaultVersionModeService)
+app_container_config.register_service(DeployService)
+app_container_config.register_service(DeploymentService)
+app_container_config.register_service(DimensionTableService)
+app_container_config.register_service(EntityRelationshipService)
+app_container_config.register_service(EntityService)
+app_container_config.register_service(EntityValidationService)
+app_container_config.register_service(EventTableService)
+app_container_config.register_service(FeatureService)
+app_container_config.register_service(FeatureJobSettingAnalysisService)
+app_container_config.register_service(FeatureListService)
+app_container_config.register_service(FeatureListNamespaceService)
+app_container_config.register_service(FeatureListStatusService)
+app_container_config.register_service(FeatureNamespaceService)
+app_container_config.register_service(FeatureReadinessService)
+app_container_config.register_service(FeatureStoreService)
+app_container_config.register_service(FeatureStoreWarehouseService)
+app_container_config.register_service(HistoricalFeatureTableService)
+app_container_config.register_service(ItemTableService)
+app_container_config.register_service(ObservationTableService)
+app_container_config.register_service(OnlineEnableService)
+app_container_config.register_service(OnlineServingService)
+app_container_config.register_service(OnlineStoreTableVersionService)
+app_container_config.register_service(ParentEntityLookupService)
+app_container_config.register_service(PeriodicTaskService)
+app_container_config.register_service(PreviewService)
+app_container_config.register_service(RelationshipInfoService)
+app_container_config.register_service(SCDTableService, name_override="scd_table_service")
+app_container_config.register_service(SemanticService)
+app_container_config.register_service(SemanticRelationshipService)
+app_container_config.register_service(SessionManagerService)
+app_container_config.register_service(SessionValidatorService)
+app_container_config.register_service(StaticSourceTableService)
+app_container_config.register_service(TableService)
+app_container_config.register_service(TableColumnsInfoService)
+app_container_config.register_service(TableStatusService)
+app_container_config.register_service(TargetService)
+app_container_config.register_service(UserService)
+app_container_config.register_service(VersionService)
+app_container_config.register_service(ViewConstructionService)
+
+
+# Register classes - please keep sorted by alphabetical order.
+app_container_config.register_class(BatchFeatureTableController)
+app_container_config.register_class(BatchRequestTableController)
 app_container_config.register_class(
-    TargetController, dependency_override={"service": "target_service"}
+    CatalogController, dependency_override={"service": "catalog_service"}
 )
-app_container_config.register_class(RelationshipInfoController)
 app_container_config.register_class(
     ContextController, dependency_override={"service": "context_service"}
 )
+app_container_config.register_class(CredentialController)
+app_container_config.register_class(DeploymentController)
+app_container_config.register_class(DimensionTableController)
 app_container_config.register_class(EntityController)
 app_container_config.register_class(EventTableController)
-app_container_config.register_class(DimensionTableController)
+app_container_config.register_class(FeatureController)
+app_container_config.register_class(FeatureJobSettingAnalysisController)
+app_container_config.register_class(FeatureListController)
+app_container_config.register_class(FeatureListNamespaceController)
+app_container_config.register_class(FeatureNamespaceController)
+app_container_config.register_class(FeatureStoreController)
+app_container_config.register_class(HistoricalFeatureTableController)
 app_container_config.register_class(ItemTableController)
+app_container_config.register_class(
+    PeriodicTaskController, dependency_override={"service": "periodic_task_service"}
+)
+app_container_config.register_class(ObservationTableController)
+app_container_config.register_class(ProductionReadyValidator)
+app_container_config.register_class(RelationshipInfoController)
 app_container_config.register_class(
     SCDTableController,
     dependency_override={"service": "scd_table_service"},
     name_override="scd_table_controller",
 )
-app_container_config.register_class(FeatureController)
-app_container_config.register_class(FeatureListController)
-app_container_config.register_class(FeatureJobSettingAnalysisController)
-app_container_config.register_class(FeatureListNamespaceController)
-app_container_config.register_class(FeatureNamespaceController)
-app_container_config.register_class(FeatureStoreController)
 app_container_config.register_class(SemanticController)
+app_container_config.register_class(StaticSourceTableController)
 app_container_config.register_class(
     TableController, dependency_override={"service": "table_service"}
 )
+app_container_config.register_class(TableInfoService)
 app_container_config.register_class(
-    CatalogController, dependency_override={"service": "catalog_service"}
+    TargetController, dependency_override={"service": "target_service"}
 )
-app_container_config.register_class(
-    PeriodicTaskController, dependency_override={"service": "periodic_task_service"}
-)
-app_container_config.register_class(CredentialController)
-app_container_config.register_class(ObservationTableController)
-app_container_config.register_class(HistoricalFeatureTableController)
-app_container_config.register_class(BatchRequestTableController)
-app_container_config.register_class(BatchFeatureTableController)
-app_container_config.register_class(DeploymentController)
-app_container_config.register_class(StaticSourceTableController)
 
-# These have dependency overrides set as [] as they are manually initialized.
+
+# These have force_no_deps set as True, as they are manually initialized.
+app_container_config.register_class(MongoBackedCredentialProvider, force_no_deps=True)
 app_container_config.register_class(TaskController, force_no_deps=True)
-app_container_config.register_class(
-    TempDataController, force_no_deps=True, name_override="tempdata_controller"
-)
-app_container_config.register_class(
-    MongoBackedCredentialProvider, force_no_deps=True, name_override="credential_provider"
-)
 app_container_config.register_class(TaskManager, force_no_deps=True)
+app_container_config.register_class(TempDataController, force_no_deps=True)
+
 
 # Validate the config after all classes have been registered.
 # This should be the last line in this module.
