@@ -54,7 +54,7 @@ def _get_constructor_params_from_class(
     list[str]
         constructor params
     """
-    sig = inspect.signature(class_.__init__)
+    sig = inspect.signature(class_.__init__)  # type: ignore[misc]
     keys = list(sig.parameters.keys())
     keys_to_skip = 1 + skip_params
     params = []
