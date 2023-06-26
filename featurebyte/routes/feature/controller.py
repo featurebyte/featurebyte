@@ -168,7 +168,7 @@ class FeatureController(
 
     def __init__(
         self,
-        service: FeatureService,
+        feature_service: FeatureService,
         feature_namespace_service: FeatureNamespaceService,
         entity_service: EntityService,
         feature_list_service: FeatureListService,
@@ -183,7 +183,7 @@ class FeatureController(
         semantic_service: SemanticService,
     ):
         # pylint: disable=too-many-arguments
-        super().__init__(service)
+        super().__init__(feature_service)
         self.feature_namespace_service = feature_namespace_service
         self.entity_service = entity_service
         self.feature_list_service = feature_list_service

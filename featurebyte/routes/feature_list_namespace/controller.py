@@ -45,14 +45,14 @@ class FeatureListNamespaceController(
 
     def __init__(
         self,
-        service: FeatureListNamespaceService,
+        feature_list_namespace_service: FeatureListNamespaceService,
         entity_service: EntityService,
         feature_list_service: FeatureListService,
         default_version_mode_service: DefaultVersionModeService,
         feature_readiness_service: FeatureReadinessService,
         feature_list_status_service: FeatureListStatusService,
     ):
-        super().__init__(service)
+        super().__init__(feature_list_namespace_service)
         self.entity_service = entity_service
         self.feature_list_service = feature_list_service
         self.default_version_mode_service = default_version_mode_service

@@ -50,14 +50,14 @@ class DeploymentController(
 
     def __init__(
         self,
-        service: DeploymentService,
+        deployment_service: DeploymentService,
         catalog_service: CatalogService,
         context_service: ContextService,
         feature_list_service: FeatureListService,
         online_serving_service: OnlineServingService,
         task_controller: TaskController,
     ):
-        super().__init__(service)
+        super().__init__(deployment_service)
         self.catalog_service = catalog_service
         self.context_service = context_service
         self.feature_list_service = feature_list_service

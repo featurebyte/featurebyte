@@ -31,14 +31,14 @@ class EventTableController(
 
     def __init__(
         self,
-        service: TableDocumentService,
+        event_table_service: TableDocumentService,
         table_columns_info_service: TableColumnsInfoService,
         table_status_service: TableStatusService,
         semantic_service: SemanticService,
         table_info_service: TableInfoService,
     ):
         super().__init__(
-            service, table_columns_info_service, table_status_service, semantic_service
+            event_table_service, table_columns_info_service, table_status_service, semantic_service
         )
         self.table_info_service = table_info_service
 

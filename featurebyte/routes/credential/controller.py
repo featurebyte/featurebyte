@@ -29,8 +29,10 @@ class CredentialController(
 
     paginated_document_class = CredentialList
 
-    def __init__(self, service: CredentialService, feature_store_service: FeatureStoreService):
-        super().__init__(service)
+    def __init__(
+        self, credential_service: CredentialService, feature_store_service: FeatureStoreService
+    ):
+        super().__init__(credential_service)
         self.feature_store_service = feature_store_service
 
     async def create_credential(

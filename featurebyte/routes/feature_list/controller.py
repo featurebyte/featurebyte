@@ -65,7 +65,7 @@ class FeatureListController(
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        service: FeatureListService,
+        feature_list_service: FeatureListService,
         feature_list_namespace_service: FeatureListNamespaceService,
         feature_service: FeatureService,
         feature_readiness_service: FeatureReadinessService,
@@ -75,7 +75,7 @@ class FeatureListController(
         feature_store_warehouse_service: FeatureStoreWarehouseService,
         task_controller: TaskController,
     ):
-        super().__init__(service)
+        super().__init__(feature_list_service)
         self.feature_list_namespace_service = feature_list_namespace_service
         self.feature_service = feature_service
         self.feature_readiness_service = feature_readiness_service

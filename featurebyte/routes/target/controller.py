@@ -21,10 +21,10 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
 
     def __init__(
         self,
-        service: TargetService,
+        target_service: TargetService,
         entity_service: EntityService,
     ):
-        super().__init__(service)
+        super().__init__(target_service)
         self.entity_service = entity_service
 
     async def create_target(

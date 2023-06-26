@@ -46,7 +46,7 @@ class FeatureNamespaceController(
 
     def __init__(
         self,
-        service: FeatureNamespaceService,
+        feature_namespace_service: FeatureNamespaceService,
         entity_service: EntityService,
         feature_service: FeatureService,
         default_version_mode_service: DefaultVersionModeService,
@@ -54,7 +54,7 @@ class FeatureNamespaceController(
         table_service: TableService,
         catalog_service: CatalogService,
     ):
-        super().__init__(service)
+        super().__init__(feature_namespace_service)
         self.entity_service = entity_service
         self.feature_service = feature_service
         self.default_version_mode_service = default_version_mode_service

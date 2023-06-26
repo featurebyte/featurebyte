@@ -31,13 +31,13 @@ class BatchRequestTableController(
 
     def __init__(
         self,
-        service: BatchRequestTableService,
+        batch_request_table_service: BatchRequestTableService,
         preview_service: PreviewService,
         batch_feature_table_service: BatchFeatureTableService,
         task_controller: TaskController,
         feature_store_service: FeatureStoreService,
     ):
-        super().__init__(service=service, preview_service=preview_service)
+        super().__init__(service=batch_request_table_service, preview_service=preview_service)
         self.batch_feature_table_service = batch_feature_table_service
         self.task_controller = task_controller
         self.feature_store_service = feature_store_service

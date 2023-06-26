@@ -34,14 +34,14 @@ class OnlineServingService(BaseService):
         catalog_id: ObjectId,
         session_manager_service: SessionManagerService,
         entity_validation_service: EntityValidationService,
-        online_table_version_service: OnlineStoreTableVersionService,
+        online_store_table_version_service: OnlineStoreTableVersionService,
         feature_store_service: FeatureStoreService,
     ):
         super().__init__(user, persistent, catalog_id)
         self.feature_store_service = feature_store_service
         self.session_manager_service = session_manager_service
         self.entity_validation_service = entity_validation_service
-        self.online_store_table_version_service = online_table_version_service
+        self.online_store_table_version_service = online_store_table_version_service
 
     async def get_online_features_from_feature_list(
         self,

@@ -42,7 +42,7 @@ class HistoricalFeatureTableController(
 
     def __init__(
         self,
-        service: HistoricalFeatureTableService,
+        historical_feature_table_service: HistoricalFeatureTableService,
         preview_service: PreviewService,
         feature_store_service: FeatureStoreService,
         observation_table_service: ObservationTableService,
@@ -50,7 +50,7 @@ class HistoricalFeatureTableController(
         task_controller: TaskController,
         feature_list_service: FeatureListService,
     ):
-        super().__init__(service=service, preview_service=preview_service)
+        super().__init__(service=historical_feature_table_service, preview_service=preview_service)
         self.feature_store_service = feature_store_service
         self.observation_table_service = observation_table_service
         self.entity_validation_service = entity_validation_service
