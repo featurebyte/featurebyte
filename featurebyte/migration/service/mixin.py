@@ -192,7 +192,7 @@ class DataWarehouseMigrationMixin(FeatureStoreService, BaseMigrationServiceMixin
             user=user,
             persistent=self.persistent,
             catalog_id=self.catalog_id,
-            credential_provider=credential_provider,
+            mongo_backed_credential_provider=credential_provider,
             session_validator_service=session_validator_service,
         )
         session = await session_manager_service.get_feature_store_session(
