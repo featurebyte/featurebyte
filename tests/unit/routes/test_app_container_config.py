@@ -113,5 +113,8 @@ def test_get_class_name():
 
 
 def test_get_constructor_params_from_class():
+    """
+    Test _get_constructor_params_from_class
+    """
     params = _get_constructor_params_from_class(TestClassC)
     assert params == ["test_class_d"]
