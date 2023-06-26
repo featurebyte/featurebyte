@@ -36,7 +36,14 @@ jobs:
                       "type": "section",
                       "text": {
                           "type": "mrkdwn",
-                          "text": "Actor: ${{ github.actor }}\\nChanges: ${{ github.event.pull_request._links.html.href }}/files"
+                          "text": "Actor: ${{ github.actor }}"
+                      }
+                  },
+                  {
+                      "type": "section",
+                      "text": {
+                          "type": "mrkdwn",
+                          "text": "Changes: ${{ github.event.pull_request._links.html.href }}/files"
                       }
                   }
               ]
