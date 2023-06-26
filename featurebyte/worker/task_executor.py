@@ -126,7 +126,8 @@ class TaskExecutor:
             "# featurebyte-worker config file\n"
             "profile:\n"
             "  - name: worker\n"
-            f"    api_url: {featurebyte_server}\n\n",
+            f"    api_url: {featurebyte_server}\n\n"
+            "default_profile: worker\n\n",
             encoding="utf-8",
         )
 

@@ -114,6 +114,7 @@ def config_fixture(test_api_client):
                 "api_token": "token",
             }
         ],
+        "default_profile": "local",
         "logging": {
             "level": "DEBUG",
         },

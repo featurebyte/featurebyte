@@ -71,7 +71,10 @@ def test_get_client_no_persistence_settings():
     """
     with pytest.raises(InvalidSettingsError) as exc_info:
         Configurations("tests/fixtures/config/invalid_config.yaml").get_client()
-    assert str(exc_info.value) == "No profile setting specified"
+    assert (
+        str(exc_info.value)
+        == 'No valid profile specified. Update config file or specify valid profile name with "use_profile".'
+    )
 
 
 def test_get_client__success():
@@ -208,6 +211,9 @@ def test_client_redirection(mock_check_sdk_versions, mock_get_home_path):
             "Connection": "keep-alive",
             "Authorization": "Bearer API_TOKEN_VALUE1",
         }
+
+    # clean up environment variable
+    os.environ.pop("FEATUREBYTE_PROFILE")
 
 
 @pytest.mark.no_mock_websocket_client
