@@ -79,10 +79,10 @@ def test_app_config_fixture():
     Test app config fixture
     """
     app_container_config = AppContainerConfig()
-    app_container_config.register_class("no_dep", NoDeps)
-    app_container_config.register_service("test_service", TestService)
-    app_container_config.register_service("extra_deps", TestServiceWithOtherDeps, ["test_service"])
-    app_container_config.register_class("test_controller", TestController, ["test_service"])
+    app_container_config.register_class(NoDeps)
+    app_container_config.register_service(TestService)
+    app_container_config.register_service(TestServiceWithOtherDeps, ["test_service"])
+    app_container_config.register_class(TestController, ["test_service"])
     return app_container_config
 
 
@@ -146,7 +146,7 @@ def test_construction__build_with_missing_deps(app_container_constructor_params)
     Test that an error is raised in an invalid dependency is passed in.
     """
     app_container_config = AppContainerConfig()
-    app_container_config.register_service("extra_deps", TestServiceWithOtherDeps, ["test_service"])
+    app_container_config.register_service(TestServiceWithOtherDeps, ["test_service"])
 
     # KeyError raised as no `test_service` dep found
     app_container = LazyAppContainer(
@@ -166,7 +166,7 @@ def test_construction__service_with_invalid_constructor(app_container_constructo
     is tighter for users.
     """
     app_container_config = AppContainerConfig()
-    app_container_config.register_class("random", TestController, ["test_service"])
+    app_container_config.register_class(TestController, ["test_service"], name_override="random")
 
     app_container = LazyAppContainer(
         **app_container_constructor_params,

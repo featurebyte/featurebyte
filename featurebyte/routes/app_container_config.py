@@ -7,9 +7,33 @@ from __future__ import annotations
 
 from typing import Dict, List, Optional, Tuple
 
+import re
 from dataclasses import dataclass
 
 from featurebyte.enum import StrEnum
+
+CAMEL_CASE_TO_SNAKE_CASE_PATTERN = re.compile(r"(?<!^)(?=[A-Z])")
+
+
+def _get_class_name(class_: type, name_override: Optional[str] = None) -> str:
+    """
+    Helper method to get a class name
+
+    Parameters
+    ----------
+    class_: type
+        class
+    name_override: str
+        name override
+
+    Returns
+    -------
+    str
+        name
+    """
+    if name_override is not None:
+        return name_override
+    return CAMEL_CASE_TO_SNAKE_CASE_PATTERN.sub("_", class_.__name__).lower()
 
 
 class DepType(StrEnum):
@@ -65,7 +89,10 @@ class AppContainerConfig:
         return self.dependency_mapping
 
     def register_service(
-        self, name: str, class_: type, dependencies: Optional[List[str]] = None
+        self,
+        class_: type,
+        dependencies: Optional[List[str]] = None,
+        name_override: Optional[str] = None,
     ) -> None:
         """
         Register a service with extra dependencies if needed.
@@ -75,13 +102,14 @@ class AppContainerConfig:
 
         Parameters
         ----------
-        name: str
-            name of the object
         class_: type
             type we are registering
         dependencies: list[str]
             dependencies
+        name_override: str
+            name override
         """
+        name = _get_class_name(class_, name_override)
         if dependencies is None:
             dependencies = []
         self.service_with_extra_deps.append(
@@ -94,20 +122,24 @@ class AppContainerConfig:
         )
 
     def register_class(
-        self, name: str, class_: type, dependencies: Optional[List[str]] = None
+        self,
+        class_: type,
+        dependencies: Optional[List[str]] = None,
+        name_override: Optional[str] = None,
     ) -> None:
         """
         Register a class, with dependencies if needed.
 
         Parameters
         ----------
-        name: str
-            name of the object
         class_: type
             type we are registering
         dependencies: list[str]
             dependencies
+        name_override: str
+            name override
         """
+        name = _get_class_name(class_, name_override)
         if dependencies is None:
             dependencies = []
         self.classes_with_deps.append(
