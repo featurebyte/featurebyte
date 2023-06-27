@@ -32,7 +32,7 @@ class ItemTableController(
 
     def __init__(
         self,
-        service: TableDocumentService,
+        item_table_service: TableDocumentService,
         table_columns_info_service: TableColumnsInfoService,
         table_status_service: TableStatusService,
         semantic_service: SemanticService,
@@ -40,7 +40,7 @@ class ItemTableController(
         event_table_service: EventTableService,
     ):
         super().__init__(
-            service, table_columns_info_service, table_status_service, semantic_service
+            item_table_service, table_columns_info_service, table_status_service, semantic_service
         )
         self.table_info_service = table_info_service
         self.event_table_service = event_table_service

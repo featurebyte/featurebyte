@@ -23,10 +23,10 @@ class SemanticController(
 
     def __init__(
         self,
-        service: SemanticService,
+        semantic_service: SemanticService,
         semantic_relationship_service: SemanticRelationshipService,
     ):
-        super().__init__(service)
+        super().__init__(semantic_service)
         self.relationship_service = semantic_relationship_service
 
     async def create_semantic(

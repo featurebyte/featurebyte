@@ -7,9 +7,67 @@ from __future__ import annotations
 
 from typing import Dict, List, Optional, Tuple
 
+import inspect
+import re
 from dataclasses import dataclass
 
 from featurebyte.enum import StrEnum
+
+CAMEL_CASE_TO_SNAKE_CASE_PATTERN = re.compile(r"(?<!^)(?=[A-Z])")
+
+
+def _get_class_name(class_name: str, name_override: Optional[str] = None) -> str:
+    """
+    Helper method to get a class name
+
+    Parameters
+    ----------
+    class_name: type
+        class
+    name_override: str
+        name override
+
+    Returns
+    -------
+    str
+        name
+    """
+    if name_override is not None:
+        return name_override
+    return CAMEL_CASE_TO_SNAKE_CASE_PATTERN.sub("_", class_name).lower()
+
+
+def _get_constructor_params_from_class(
+    class_: type, dependency_override: Optional[dict[str, str]] = None, skip_params: int = 0
+) -> List[str]:
+    """
+    Helper method to get constructor params from class.
+
+    Parameters
+    ----------
+    class_: type
+        class
+
+    Returns
+    -------
+    list[str]
+        constructor params
+    """
+    sig = inspect.signature(class_.__init__)  # type: ignore[misc]
+    keys = list(sig.parameters.keys())
+    keys_to_skip = 1 + skip_params
+    params = []
+    dep_override = dependency_override or {}
+    for key in keys[keys_to_skip:]:
+        param_type = sig.parameters[key]
+        type_annotation = param_type.name
+        if isinstance(type_annotation, type):
+            type_annotation = type_annotation.__name__
+        class_name = _get_class_name(type_annotation)
+        if key in dep_override:
+            class_name = dep_override[key]
+        params.append(class_name)
+    return params
 
 
 class DepType(StrEnum):
@@ -65,7 +123,10 @@ class AppContainerConfig:
         return self.dependency_mapping
 
     def register_service(
-        self, name: str, class_: type, dependencies: Optional[List[str]] = None
+        self,
+        class_: type,
+        dependency_override: Optional[Dict[str, str]] = None,
+        name_override: Optional[str] = None,
     ) -> None:
         """
         Register a service with extra dependencies if needed.
@@ -75,46 +136,51 @@ class AppContainerConfig:
 
         Parameters
         ----------
-        name: str
-            name of the object
         class_: type
             type we are registering
-        dependencies: list[str]
+        dependency_override: list[str]
             dependencies
+        name_override: str
+            name override
         """
-        if dependencies is None:
-            dependencies = []
         self.service_with_extra_deps.append(
             ClassDefinition(
-                name=name,
+                name=_get_class_name(class_.__name__, name_override),
                 class_=class_,
-                dependencies=dependencies,
+                dependencies=_get_constructor_params_from_class(class_, dependency_override, 3),
                 dep_type=DepType.SERVICE_WITH_EXTRA_DEPS,
             )
         )
 
     def register_class(
-        self, name: str, class_: type, dependencies: Optional[List[str]] = None
+        self,
+        class_: type,
+        dependency_override: Optional[Dict[str, str]] = None,
+        name_override: Optional[str] = None,
+        force_no_deps: bool = False,
     ) -> None:
         """
         Register a class, with dependencies if needed.
 
         Parameters
         ----------
-        name: str
-            name of the object
         class_: type
             type we are registering
-        dependencies: list[str]
+        dependency_override: list[str]
             dependencies
+        name_override: str
+            name override
+        force_no_deps: bool
+            force no dependencies
         """
-        if dependencies is None:
-            dependencies = []
+        deps = _get_constructor_params_from_class(class_, dependency_override)
+        if force_no_deps:
+            deps = []
         self.classes_with_deps.append(
             ClassDefinition(
-                name=name,
+                name=_get_class_name(class_.__name__, name_override),
                 class_=class_,
-                dependencies=dependencies,
+                dependencies=deps,
                 dep_type=DepType.CLASS_WITH_DEPS,
             )
         )

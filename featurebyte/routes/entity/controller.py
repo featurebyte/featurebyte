@@ -23,11 +23,11 @@ class EntityController(BaseDocumentController[EntityModel, EntityService, Entity
 
     def __init__(
         self,
-        service: EntityService,
+        entity_service: EntityService,
         entity_relationship_service: EntityRelationshipService,
         catalog_service: CatalogService,
     ):
-        super().__init__(service)
+        super().__init__(entity_service)
         self.relationship_service = entity_relationship_service
         self.catalog_service = catalog_service
 

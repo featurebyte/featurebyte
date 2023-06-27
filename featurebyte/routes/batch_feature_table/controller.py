@@ -33,7 +33,7 @@ class BatchFeatureTableController(
 
     def __init__(
         self,
-        service: BatchFeatureTableService,
+        batch_feature_table_service: BatchFeatureTableService,
         preview_service: PreviewService,
         feature_store_service: FeatureStoreService,
         feature_list_service: FeatureListService,
@@ -42,7 +42,7 @@ class BatchFeatureTableController(
         entity_validation_service: EntityValidationService,
         task_controller: TaskController,
     ):
-        super().__init__(service=service, preview_service=preview_service)
+        super().__init__(service=batch_feature_table_service, preview_service=preview_service)
         self.feature_store_service = feature_store_service
         self.feature_list_service = feature_list_service
         self.batch_request_table_service = batch_request_table_service

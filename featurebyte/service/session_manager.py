@@ -25,13 +25,13 @@ class SessionManagerService:
         user: Any,
         persistent: Persistent,
         catalog_id: ObjectId,
-        credential_provider: MongoBackedCredentialProvider,
+        mongo_backed_credential_provider: MongoBackedCredentialProvider,
         session_validator_service: SessionValidatorService,
     ):
         self.user = user
         self.persistent = persistent
         self.catalog_id = catalog_id
-        self.credential_provider = credential_provider
+        self.credential_provider = mongo_backed_credential_provider
         self.session_validator_service = session_validator_service
 
     async def get_feature_store_session(

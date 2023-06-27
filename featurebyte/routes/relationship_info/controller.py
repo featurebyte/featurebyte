@@ -31,13 +31,13 @@ class RelationshipInfoController(
         self,
         relationship_info_service: RelationshipInfoService,
         entity_service: EntityService,
-        data_service: TableService,
+        table_service: TableService,
         user_service: UserService,
     ):
         super().__init__(relationship_info_service)
         self.relationship_info_service = relationship_info_service
         self.entity_service = entity_service
-        self.data_service = data_service
+        self.data_service = table_service
         self.user_service = user_service
 
     async def create_relationship_info(

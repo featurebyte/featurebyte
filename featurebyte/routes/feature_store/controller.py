@@ -43,14 +43,14 @@ class FeatureStoreController(
 
     def __init__(
         self,
-        service: FeatureStoreService,
+        feature_store_service: FeatureStoreService,
         preview_service: PreviewService,
         session_manager_service: SessionManagerService,
         session_validator_service: SessionValidatorService,
         feature_store_warehouse_service: FeatureStoreWarehouseService,
         credential_service: CredentialService,
     ):
-        super().__init__(service)
+        super().__init__(feature_store_service)
         self.preview_service = preview_service
         self.session_manager_service = session_manager_service
         self.session_validator_service = session_validator_service

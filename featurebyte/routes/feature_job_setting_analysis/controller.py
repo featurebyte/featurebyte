@@ -41,12 +41,12 @@ class FeatureJobSettingAnalysisController(
 
     def __init__(
         self,
-        service: FeatureJobSettingAnalysisService,
+        feature_job_setting_analysis_service: FeatureJobSettingAnalysisService,
         task_controller: TaskController,
         event_table_service: EventTableService,
         catalog_service: CatalogService,
     ):
-        super().__init__(service)
+        super().__init__(feature_job_setting_analysis_service)
         self.task_controller = task_controller
         self.event_table_service = event_table_service
         self.catalog_service = catalog_service

@@ -31,13 +31,13 @@ class StaticSourceTableController(
 
     def __init__(
         self,
-        service: StaticSourceTableService,
+        static_source_table_service: StaticSourceTableService,
         preview_service: PreviewService,
         table_service: TableService,
         task_controller: TaskController,
         feature_store_service: FeatureStoreService,
     ):
-        super().__init__(service=service, preview_service=preview_service)
+        super().__init__(service=static_source_table_service, preview_service=preview_service)
         self.table_service = table_service
         self.task_controller = task_controller
         self.feature_store_service = feature_store_service

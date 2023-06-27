@@ -31,13 +31,13 @@ class ObservationTableController(
 
     def __init__(
         self,
-        service: ObservationTableService,
+        observation_table_service: ObservationTableService,
         preview_service: PreviewService,
         historical_feature_table_service: HistoricalFeatureTableService,
         task_controller: TaskController,
         feature_store_service: FeatureStoreService,
     ):
-        super().__init__(service=service, preview_service=preview_service)
+        super().__init__(service=observation_table_service, preview_service=preview_service)
         self.historical_feature_table_service = historical_feature_table_service
         self.task_controller = task_controller
         self.feature_store_service = feature_store_service
