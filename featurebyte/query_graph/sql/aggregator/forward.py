@@ -122,7 +122,11 @@ class ForwardAggregator(NonTileBasedAggregator[ForwardAggregateSpec]):
                     alias="REQ",
                 )
             )
-            .join(point_in_time_expr, join_type="inner", on=record_validity_condition)
+            .join(
+                spec.source_expr.subquery(alias="TABLE"),
+                join_type="inner",
+                on=record_validity_condition,
+            )
         )
         # Create the forward aggregation expression
         forward_agg_expr = get_groupby_expr(
