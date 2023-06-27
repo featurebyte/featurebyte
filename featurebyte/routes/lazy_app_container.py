@@ -1,7 +1,7 @@
 """
 Lazy app container functions the same as the app_container, but only initializes dependencies when needed.
 """
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from bson import ObjectId
 
@@ -201,6 +201,7 @@ class LazyAppContainer:
         storage: Storage,
         catalog_id: ObjectId,
         app_container_config: AppContainerConfig,
+        instance_map: Optional[Dict[str, Any]] = None,
     ):
         self.user = user
         self.persistent = persistent
@@ -212,14 +213,18 @@ class LazyAppContainer:
 
         # Used to cache instances if they've already been built
         # Pre-load with some default deps
-        self.instance_map: Dict[str, Any] = {
-            "task_controller": TaskController(task_manager=task_manager),
-            "temp_data_controller": TempDataController(temp_storage=temp_storage),
-            "mongo_backed_credential_provider": MongoBackedCredentialProvider(
-                persistent=persistent
-            ),
-            "task_manager": task_manager,
-        }
+        injected_instance_map = instance_map or {}
+        injected_instance_map.update(
+            {
+                "task_controller": TaskController(task_manager=task_manager),
+                "temp_data_controller": TempDataController(temp_storage=temp_storage),
+                "mongo_backed_credential_provider": MongoBackedCredentialProvider(
+                    persistent=persistent
+                ),
+                "task_manager": task_manager,
+            }
+        )
+        self.instance_map: Dict[str, Any] = injected_instance_map
 
     def __getattr__(self, key: str) -> Any:
         # Return instance if it's been built before already
