@@ -86,7 +86,11 @@ def test_forward_aggregator(forward_spec):
               TABLE."col_float" AS "col_float",
               SUM(TABLE."value") AS "_fb_internal_forward_sum_value_cust_id_col_float_input_1_inner"
             FROM "REQUEST_TABLE_POINT_IN_TIME_serving_cust_id" AS REQ
-            INNER JOIN REQ."POINT_IN_TIME"
+            INNER JOIN (
+              SELECT
+                *
+              FROM tab
+            ) AS TABLE
               ON TABLE."timestamp_col" > REQ."POINT_IN_TIME"
               AND TABLE."timestamp_col" <= FLOOR(DATE_PART(EPOCH_SECOND, REQ."POINT_IN_TIME") + 604800.0)
             GROUP BY
