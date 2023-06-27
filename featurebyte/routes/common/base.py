@@ -38,6 +38,7 @@ from featurebyte.service.semantic import SemanticService
 from featurebyte.service.static_source_table import StaticSourceTableService
 from featurebyte.service.table import TableService
 from featurebyte.service.target import TargetService
+from featurebyte.service.target_namespace import TargetNamespaceService
 
 PaginatedDocument = TypeVar("PaginatedDocument", bound=PaginationMixin)
 DocumentServiceT = TypeVar(
@@ -67,6 +68,7 @@ DocumentServiceT = TypeVar(
     BatchFeatureTableService,
     DeploymentService,
     TargetService,
+    TargetNamespaceService,
 )
 
 
