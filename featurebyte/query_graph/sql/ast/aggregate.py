@@ -204,6 +204,5 @@ class Forward(Aggregate):
             context.query_node,
             aggregation_source=Aggregate.get_aggregation_source_from_source_node(source_node),
         )[0]
-        feature_name = cast(str, spec.parameters.name)
-        columns_map[feature_name] = quoted_identifier(spec.agg_result_name)
+        columns_map[spec.parameters.name] = quoted_identifier(spec.agg_result_name)
         return columns_map
