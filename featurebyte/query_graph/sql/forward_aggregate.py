@@ -9,8 +9,8 @@ import time
 
 import pandas as pd
 
-from featurebyte import SourceType, get_logger
-from featurebyte.enum import SpecialColumnName
+from featurebyte.enum import SourceType, SpecialColumnName
+from featurebyte.logging import get_logger
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.common import CteStatement, sql_to_string
