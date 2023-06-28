@@ -8,10 +8,9 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 import pytest_asyncio
-from bson import ObjectId, json_util
+from bson import json_util
 
 from featurebyte.app import get_celery
-from featurebyte.migration.migration_data_service import SchemaMetadataService
 from featurebyte.migration.model import MigrationMetadata, SchemaMetadataUpdate
 from featurebyte.migration.run import (
     _extract_migrate_method_marker,
@@ -22,7 +21,6 @@ from featurebyte.migration.run import (
     run_migration,
 )
 from featurebyte.migration.service.mixin import DataWarehouseMigrationMixin
-from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.schema.entity import EntityCreate
 from featurebyte.service.entity import EntityService
