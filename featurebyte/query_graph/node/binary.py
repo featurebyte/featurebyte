@@ -9,7 +9,6 @@ from pydantic import BaseModel, Field
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.base import (
-    BaseSeriesOutputNode,
     BaseSeriesOutputWithAScalarParamNode,
     BinaryArithmeticOpNode,
     BinaryLogicalOpNode,
@@ -147,7 +146,7 @@ class PowerNode(BaseSeriesOutputWithAScalarParamNode):
         return f"{left_operand}.pow({right_operand})"
 
 
-class IsInNode(BaseSeriesOutputNode):
+class IsInNode(BaseSeriesOutputWithAScalarParamNode):
     """IsInNode class"""
 
     class Parameters(BaseModel):
@@ -169,3 +168,6 @@ class IsInNode(BaseSeriesOutputNode):
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.BOOL
+
+    def generate_expression(self, left_operand: str, right_operand: str) -> str:
+        return f"{left_operand}.isin({right_operand})"
