@@ -17,7 +17,6 @@ from featurebyte.models.feature import (
     FeatureReadiness,
 )
 from featurebyte.persistent import Persistent
-from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.transform.sdk_code import SDKCodeExtractor
