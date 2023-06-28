@@ -34,6 +34,7 @@ class TargetCreate(FeatureByteBaseModel):
     horizon: Optional[str]
     blind_spot: Optional[str]
     entity_ids: Optional[List[PydanticObjectId]]
+    feature_namespace_id: Optional[PydanticObjectId] = Field(default_factory=ObjectId)
 
 
 class TargetList(PaginationMixin):

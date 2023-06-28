@@ -28,6 +28,7 @@ from featurebyte.schema.feature_namespace import (
 )
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
+from featurebyte.service.sanitizer import sanitize_query_graph_for_feature_definition
 from featurebyte.service.table import TableService
 from featurebyte.service.view_construction import ViewConstructionService
 
@@ -72,31 +73,6 @@ async def validate_feature_version_and_namespace_consistency(
             )
 
 
-def sanitize_query_graph_for_feature_definition(graph: QueryGraphModel) -> QueryGraphModel:
-    """
-    Sanitize the query graph for feature creation
-
-    Parameters
-    ----------
-    graph: QueryGraphModel
-        The query graph
-
-    Returns
-    -------
-    QueryGraphModel
-    """
-    # Since the generated feature definition contains all the settings in manual mode,
-    # we need to sanitize the graph to make sure that the graph is in manual mode.
-    # Otherwise, the generated feature definition & graph hash before and after
-    # feature creation could be different.
-    output = graph.dict()
-    for node in output["nodes"]:
-        if node["type"] == NodeType.GRAPH:
-            if "view_mode" in node["parameters"]["metadata"]:
-                node["parameters"]["metadata"]["view_mode"] = "manual"
-    return QueryGraphModel(**output)
-
-
 class FeatureService(BaseDocumentService[FeatureModel, FeatureServiceCreate, FeatureServiceUpdate]):
     """
     FeatureService class
@@ -111,10 +87,12 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureServiceCreate, Fea
         catalog_id: ObjectId,
         table_service: TableService,
         view_construction_service: ViewConstructionService,
+        feature_namespace_service: FeatureNamespaceService,
     ):
         super().__init__(user=user, persistent=persistent, catalog_id=catalog_id)
         self.table_service = table_service
         self.view_construction_service = view_construction_service
+        self.feature_namespace_service = feature_namespace_service
 
     async def _get_feature_version(self, name: str) -> VersionIdentifier:
         version_name = get_version()
@@ -231,17 +209,14 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureServiceCreate, Fea
             )
             assert insert_id == document.id
 
-            feature_namespace_service = FeatureNamespaceService(
-                user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
-            )
             try:
-                feature_namespace = await feature_namespace_service.get_document(
+                feature_namespace = await self.feature_namespace_service.get_document(
                     document_id=document.feature_namespace_id,
                 )
                 await validate_feature_version_and_namespace_consistency(
                     feature=document, feature_namespace=feature_namespace
                 )
-                await feature_namespace_service.update_document(
+                await self.feature_namespace_service.update_document(
                     document_id=document.feature_namespace_id,
                     data=FeatureNamespaceServiceUpdate(
                         feature_ids=self.include_object_id(
@@ -251,7 +226,7 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureServiceCreate, Fea
                     return_document=True,
                 )
             except DocumentNotFoundError:
-                await feature_namespace_service.create_document(
+                await self.feature_namespace_service.create_document(
                     data=FeatureNamespaceCreate(
                         _id=document.feature_namespace_id,
                         name=document.name,

@@ -10,11 +10,10 @@ from bson import ObjectId
 
 from featurebyte import FeatureStore
 from featurebyte.exception import DocumentInconsistencyError, DocumentNotFoundError
-from featurebyte.query_graph.enum import GraphNodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node.schema import SQLiteDetails
 from featurebyte.schema.feature import FeatureServiceCreate
-from featurebyte.service.feature import FeatureService, sanitize_query_graph_for_feature_definition
+from featurebyte.service.feature import FeatureService
 
 
 @pytest.fixture(name="feature_model_dict")
@@ -146,15 +145,3 @@ async def test_feature_document_contains_raw_graph(feature_service, feature, api
         raw_groupby_node = raw_graph.get_node_by_name("groupby_1")
         assert groupby_node.dict() == expected_groupby_node
         assert raw_groupby_node.dict() == expected_raw_groupby_node
-
-
-def test_sanitize_query_graph_for_feature_creation(float_feature, non_time_based_feature):
-    """Test sanitize query graph for feature creation"""
-    features = [float_feature, non_time_based_feature]
-    for feat in features:
-        # sanitize the graph & check post sanitization view mode
-        sanitized_graph = sanitize_query_graph_for_feature_definition(graph=feat.graph)
-        for node in sanitized_graph.iterate_sorted_graph_nodes(
-            graph_node_types=GraphNodeType.view_graph_node_types()
-        ):
-            assert node.parameters.metadata.view_mode == "manual"

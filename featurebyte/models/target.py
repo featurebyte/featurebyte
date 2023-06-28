@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import List, Optional
 
 import pymongo
+from bson import ObjectId
 from pydantic import Field, validator
 
 from featurebyte.common.validator import duration_string_validator
@@ -16,6 +17,7 @@ from featurebyte.models.base import (
     UniqueValuesConstraint,
 )
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.node import Node
 
 
 class TargetModel(FeatureByteCatalogBaseDocumentModel):
@@ -41,6 +43,8 @@ class TargetModel(FeatureByteCatalogBaseDocumentModel):
     horizon: Optional[str]
     blind_spot: Optional[str]
     entity_ids: Optional[List[PydanticObjectId]] = Field(allow_mutation=False)
+
+    target_namespace_id: PydanticObjectId = Field(allow_mutation=False, default_factory=ObjectId)
 
     # pydantic validators
     _duration_validator = validator("horizon", "blind_spot", pre=True, allow_reuse=True)(
@@ -71,3 +75,16 @@ class TargetModel(FeatureByteCatalogBaseDocumentModel):
                 ("name", pymongo.TEXT),
             ],
         ]
+
+    @property
+    def node(self) -> Node:
+        """
+        Retrieve node
+
+        Returns
+        -------
+        Node
+            Node object
+        """
+
+        return self.graph.get_node_by_name(self.node_name)
