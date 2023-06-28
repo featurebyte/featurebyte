@@ -186,7 +186,6 @@ class DataWarehouseMigrationMixin(BaseMigrationServiceMixin, ABC):
 
     @contextmanager
     def allow_use_raw_query_filter(self) -> Iterator[None]:
-        """Activate use of raw query filter"""
         try:
             logger.warning(RAW_QUERY_FILTER_WARNING)
             self._allow_to_use_raw_query_filter = True
