@@ -71,7 +71,6 @@ def get_forward_aggregate_sql(
         elapsed = time.time() - tic
         logger.debug(f"Constructing request table SQL took {elapsed:.2}s")
 
-    tic = time.time()
     preview_sql = sql_to_string(
         execution_plan.construct_combined_sql(
             request_table_name=request_table_name,
@@ -81,7 +80,5 @@ def get_forward_aggregate_sql(
         ),
         source_type=source_type,
     )
-    elapsed = time.time() - tic
-    logger.debug(f"Generating full SQL took {elapsed:.2}s")
 
     return preview_sql
