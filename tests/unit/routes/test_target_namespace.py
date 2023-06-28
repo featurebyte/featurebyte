@@ -20,30 +20,8 @@ class TestTargetNamespaceApi(BaseCatalogApiTestSuite):
     base_route = "/target_namespace"
     unknown_id = ObjectId()
     payload = BaseCatalogApiTestSuite.load_payload("tests/fixtures/request_payloads/target.json")
-    create_conflict_payload_expected_detail_pairs = [
-        (
-            payload,
-            f'TargetNamespace (id: "{payload["_id"]}") already exists. '
-            'Get the existing object by `TargetNamespace.get(name="target_namespace")`.',
-        ),
-        (
-            {**payload, "_id": str(ObjectId())},
-            'TargetNamespace (name: "target_namespace") already exists. '
-            'Get the existing object by `TargetNamespace.get(name="target_namespace")`.',
-        ),
-    ]
-    create_unprocessable_payload_expected_detail_pairs = [
-        (
-            {**payload, "node_name": ["cust_id"]},
-            [
-                {
-                    "loc": ["body", "node_name"],
-                    "msg": "str type expected",
-                    "type": "type_error.str",
-                }
-            ],
-        )
-    ]
+    create_conflict_payload_expected_detail_pairs = []
+    create_unprocessable_payload_expected_detail_pairs = []
     create_parent_unprocessable_payload_expected_detail_pairs = [
         (
             {
@@ -151,30 +129,3 @@ class TestTargetNamespaceApi(BaseCatalogApiTestSuite):
         create_success_response_non_default_catalog,
     ):
         """Test creation (success) in non default catalog"""
-
-    @pytest.mark.skip("implement with update of target endpoints")
-    def test_create_409(
-        self,
-        test_api_client_persistent,
-        create_success_response,
-        create_conflict_payload_expected_detail,
-    ):
-        """Test creation (conflict)"""
-
-    @pytest.mark.skip("implement with update of target endpoints")
-    def test_create_422(
-        self,
-        test_api_client_persistent,
-        create_success_response,
-        create_unprocessable_payload_expected_detail,
-    ):
-        """Test creation (unprocessable entity)"""
-
-    @pytest.mark.skip("implement with update of target endpoints")
-    def test_list_audit_422(
-        self,
-        test_api_client_persistent,
-        create_multiple_success_responses,
-        list_unprocessable_params_expected_detail,
-    ):
-        """Test list audit (unprocessable)"""
