@@ -16,6 +16,7 @@ from featurebyte.query_graph.sql.common import SQLType, quoted_identifier
 from featurebyte.query_graph.sql.specs import (
     AggregateAsAtSpec,
     AggregationSource,
+    ForwardAggregateSpec,
     ItemAggregationSpec,
     LookupSpec,
 )
@@ -183,4 +184,25 @@ class Item(Aggregate):
         )[0]
         feature_name = cast(str, spec.parameters.name)
         columns_map[feature_name] = quoted_identifier(spec.agg_result_name)
+        return columns_map
+
+
+@dataclass
+class Forward(Aggregate):
+    """
+    Forward SQLNode
+    """
+
+    query_node_type = NodeType.FORWARD_AGGREGATE
+
+    @staticmethod
+    def construct_columns_map(
+        context: SQLNodeContext, source_node: TableNode
+    ) -> dict[str, Expression]:
+        columns_map = {}
+        spec = ForwardAggregateSpec.from_query_graph_node(
+            context.query_node,
+            aggregation_source=Aggregate.get_aggregation_source_from_source_node(source_node),
+        )[0]
+        columns_map[spec.parameters.name] = quoted_identifier(spec.agg_result_name)
         return columns_map

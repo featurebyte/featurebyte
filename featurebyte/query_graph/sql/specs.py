@@ -22,6 +22,8 @@ from featurebyte.query_graph.node.generic import (
     AggregateAsAtNode,
     AggregateAsAtParameters,
     EventLookupParameters,
+    ForwardAggregateNode,
+    ForwardAggregateParameters,
     GroupByNode,
     ItemGroupbyNode,
     ItemGroupbyParameters,
@@ -53,6 +55,7 @@ class AggregationType(StrEnum):
     WINDOW = "window"
     ITEM = "item"
     AS_AT = "as_at"
+    FORWARD = "forward"
 
 
 @dataclass  # type: ignore[misc]
@@ -696,6 +699,51 @@ class LookupSpec(NonTileBasedAggregationSpec):
             )
             specs.append(spec)
         return specs
+
+
+@dataclass
+class ForwardAggregateSpec(NonTileBasedAggregationSpec):
+    """
+    ForwardAggregateSpec contains all information required to generate sql for a forward aggregate target.
+    """
+
+    parameters: ForwardAggregateParameters
+
+    @property
+    def agg_result_name(self) -> str:
+        return self.get_agg_result_name_from_groupby_parameters(self.parameters)
+
+    @property
+    def aggregation_type(self) -> AggregationType:
+        return AggregationType.FORWARD
+
+    def get_source_hash_parameters(self) -> dict[str, Any]:
+        params: dict[str, Any] = {"source_expr": self.source_expr.sql()}
+        parameters_dict = self.parameters.dict(exclude={"parent", "agg_func", "name"})
+        if parameters_dict.get("entity_ids") is not None:
+            parameters_dict["entity_ids"] = [
+                str(entity_id) for entity_id in parameters_dict["entity_ids"]
+            ]
+        params["parameters"] = parameters_dict
+        return params
+
+    @classmethod
+    def construct_specs(
+        cls: Type[NonTileBasedAggregationSpecT],
+        node: Node,
+        aggregation_source: AggregationSource,
+        serving_names_mapping: Optional[dict[str, str]],
+    ) -> list[ForwardAggregateSpec]:
+        assert isinstance(node, ForwardAggregateNode)
+        return [
+            ForwardAggregateSpec(
+                parameters=node.parameters,
+                aggregation_source=aggregation_source,
+                entity_ids=cast(List[ObjectId], node.parameters.entity_ids),
+                serving_names=node.parameters.serving_names,
+                serving_names_mapping=serving_names_mapping,
+            )
+        ]
 
 
 @dataclass

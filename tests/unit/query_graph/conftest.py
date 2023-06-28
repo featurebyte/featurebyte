@@ -357,6 +357,29 @@ def query_graph_with_groupby_fixture(query_graph_and_assign_node, groupby_node_p
     return graph
 
 
+@pytest.fixture(name="query_graph_with_forward_aggregate")
+def query_graph_with_forward_aggregate_fixture(query_graph_and_assign_node, event_table_details):
+    """Fixture of a query graph with a forward aggregate operation"""
+    graph, assign_node = query_graph_and_assign_node
+    graph.add_operation(
+        node_type=NodeType.FORWARD_AGGREGATE,
+        node_params={
+            "name": "biz_id_sum_7d",
+            "horizon": "7d",
+            "blind_spot": "1d",
+            "table_details": event_table_details,
+            "timestamp_col": "timestamp_col",
+            "keys": ["biz_id"],
+            "agg_func": "sum",
+            "serving_names": ["BUSINESS_ID"],
+            "parent": "a",
+        },
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[assign_node],
+    )
+    return graph
+
+
 @pytest.fixture(name="query_graph_with_groupby_no_entity_ids")
 def query_graph_with_groupby_fixture_no_entity_ids(
     query_graph_and_assign_node, groupby_node_params

@@ -469,25 +469,27 @@ class LagNode(BaseSeriesOutputNode):
         return [], ExpressionStr(expression)
 
 
+class ForwardAggregateParameters(BaseGroupbyParameters):
+    """
+    Forward aggregate parameters
+    """
+
+    name: str
+    horizon: Optional[str]
+    blind_spot: Optional[str]
+    # TableDetails are needed because we will be performing the aggregation query directly on the calling table.
+    table_details: TableDetails
+    timestamp_col: InColumnStr
+
+
 class ForwardAggregateNode(AggregationOpStructMixin, BaseNode):
     """
     ForwardAggregateNode class.
     """
 
-    class Parameters(BaseGroupbyParameters):
-        """
-        Forward aggregate parameters
-        """
-
-        name: str
-        horizon: Optional[str]
-        blind_spot: Optional[str]
-        # TableDetails are needed because we will be performing the aggregation query directly on the calling table.
-        table_details: TableDetails
-
     type: Literal[NodeType.FORWARD_AGGREGATE] = Field(NodeType.FORWARD_AGGREGATE, const=True)
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
-    parameters: Parameters
+    parameters: ForwardAggregateParameters
 
     @property
     def max_input_count(self) -> int:
