@@ -32,10 +32,10 @@ async def validate_target_version_and_namespace_consistency(
 
     Parameters
     ----------
-    target: FeatureModel
-        Feature object
-    target_namespace: FeatureNamespaceModel
-        FeatureNamespace object
+    target: TargetModel
+        Target object
+    target_namespace: TargetNamespaceModel
+        TargetNamespace object
 
     Raises
     ------
