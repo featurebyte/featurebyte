@@ -37,18 +37,13 @@ class TileColumnTypeExtractor:
         """
         Set up the object by loading existing Feature documents
         """
-        self.tile_column_name_to_type = await self._build_tile_column_name_to_type_mapping(
-            self.feature_service
-        )
+        self.tile_column_name_to_type = await self._build_tile_column_name_to_type_mapping()
 
-    @staticmethod
-    async def _build_tile_column_name_to_type_mapping(
-        feature_service: FeatureService,
-    ) -> dict[str, str]:
+    async def _build_tile_column_name_to_type_mapping(self) -> dict[str, str]:
         tile_column_name_to_type = {}
         # activate use of raw query filter to retrieve all documents regardless of catalog membership
-        with feature_service.allow_use_raw_query_filter():
-            feature_documents = feature_service.list_documents_iterator(
+        with self.feature_service.allow_use_raw_query_filter():
+            feature_documents = self.feature_service.list_documents_iterator(
                 query_filter={}, use_raw_query_filter=True
             )
 
