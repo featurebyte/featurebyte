@@ -3,7 +3,7 @@ MigrationServiceMixin class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Iterator, Optional, Protocol
+from typing import TYPE_CHECKING, Any, Iterator, Optional
 
 import copy
 from abc import ABC, abstractmethod
@@ -15,15 +15,11 @@ from celery import Celery
 from featurebyte.enum import InternalName
 from featurebyte.exception import CredentialsError
 from featurebyte.logging import get_logger
-from featurebyte.models.base import User
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.persistent import Document, QueryFilter
 from featurebyte.persistent.base import Persistent
 from featurebyte.service.base_document import RAW_QUERY_FILTER_WARNING, DocumentUpdateSchema
-from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
-from featurebyte.service.session_validator import SessionValidatorService
-from featurebyte.utils.credential import MongoBackedCredentialProvider
 
 if TYPE_CHECKING:
     from featurebyte.session.base import BaseSession
