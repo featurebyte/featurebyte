@@ -10,6 +10,7 @@ from enum import Enum
 from sqlglot import expressions
 from sqlglot.expressions import Expression, select
 
+from featurebyte.core.mixin import perf_logging
 from featurebyte.enum import SourceType
 
 REQUEST_TABLE_NAME = "REQUEST_TABLE"
@@ -136,6 +137,7 @@ def get_dialect_from_source_type(source_type: SourceType) -> str:
     return dialect
 
 
+@perf_logging
 def sql_to_string(sql_expr: Expression, source_type: SourceType) -> str:
     """Convert a SQL expression to text given the source type
 

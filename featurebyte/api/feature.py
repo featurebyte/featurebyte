@@ -6,7 +6,6 @@ from __future__ import annotations
 
 from typing import Any, ClassVar, Dict, List, Literal, Optional, Sequence, Tuple, Type, Union, cast
 
-import time
 from http import HTTPStatus
 
 import pandas as pd
@@ -33,6 +32,7 @@ from featurebyte.config import Configurations
 from featurebyte.core.accessor.count_dict import CdAccessorMixin
 from featurebyte.core.accessor.feature_datetime import FeatureDtAccessorMixin
 from featurebyte.core.accessor.feature_string import FeatureStrAccessorMixin
+from featurebyte.core.mixin import perf_logging
 from featurebyte.core.series import FrozenSeries, FrozenSeriesT, Series
 from featurebyte.enum import ConflictResolution
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
@@ -831,6 +831,7 @@ class Feature(
         feature_dict["node_name"] = mapped_node.name
         return FeatureModel(**feature_dict)
 
+    @perf_logging
     @enforce_observation_set_row_order
     @typechecked
     def preview(
@@ -891,8 +892,6 @@ class Feature(
         - [FeatureList.compute_historical_features](/reference/featurebyte.api.feature_list.FeatureList.compute_historical_features/):
           Get historical features from a feature list.
         """
-        tic = time.time()
-
         feature = self._get_pruned_feature_model()
         payload = FeaturePreview(
             feature_store_name=self.feature_store.name,
@@ -906,9 +905,6 @@ class Feature(
         if response.status_code != HTTPStatus.OK:
             raise RecordRetrievalException(response)
         result = response.json()
-
-        elapsed = time.time() - tic
-        logger.debug(f"Preview took {elapsed:.2f}s")
         return dataframe_from_json(result)  # pylint: disable=no-member
 
     @typechecked

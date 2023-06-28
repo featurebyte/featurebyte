@@ -7,7 +7,6 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional, OrderedDict, Sequence, Set, Tuple, Union, cast
 
 import collections
-import time
 from datetime import datetime
 from http import HTTPStatus
 
@@ -32,7 +31,7 @@ from featurebyte.common.env_util import get_alive_bar_additional_params
 from featurebyte.common.typing import Scalar
 from featurebyte.common.utils import dataframe_from_json, enforce_observation_set_row_order
 from featurebyte.config import Configurations
-from featurebyte.core.mixin import ParentMixin
+from featurebyte.core.mixin import ParentMixin, perf_logging
 from featurebyte.core.series import Series
 from featurebyte.enum import ConflictResolution
 from featurebyte.exception import RecordRetrievalException
@@ -270,6 +269,7 @@ class BaseFeatureGroup(AsyncMixin):
         """
         return FeatureListModel.derive_feature_clusters(cast(List[FeatureModel], self._features))
 
+    @perf_logging
     @enforce_observation_set_row_order
     @typechecked
     def preview(
@@ -336,8 +336,6 @@ class BaseFeatureGroup(AsyncMixin):
         - [FeatureList.compute_historical_features](/reference/featurebyte.api.feature_list.FeatureList.compute_historical_features/):
           Get historical features from a feature list.
         """
-        tic = time.time()
-
         payload = FeatureListPreview(
             feature_clusters=self._get_feature_clusters(),
             point_in_time_and_serving_name_list=observation_set.to_dict(orient="records"),
@@ -348,9 +346,6 @@ class BaseFeatureGroup(AsyncMixin):
         if response.status_code != HTTPStatus.OK:
             raise RecordRetrievalException(response)
         result = response.json()
-
-        elapsed = time.time() - tic
-        logger.debug(f"Preview took {elapsed:.2f}s")
         return dataframe_from_json(result)  # pylint: disable=no-member
 
     @property
