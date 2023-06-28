@@ -364,7 +364,7 @@ def query_graph_with_forward_aggregate_fixture(query_graph_and_assign_node, even
     graph.add_operation(
         node_type=NodeType.FORWARD_AGGREGATE,
         node_params={
-            "name": "target_node",
+            "name": "biz_id_sum_7d",
             "horizon": "7d",
             "blind_spot": "1d",
             "table_details": event_table_details,

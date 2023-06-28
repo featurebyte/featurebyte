@@ -91,8 +91,11 @@ def test_forward_aggregator(forward_spec):
                 *
               FROM tab
             ) AS TABLE
-              ON DATE_PART(EPOCH_SECOND, TABLE."timestamp_col") > REQ."POINT_IN_TIME"
-              AND DATE_PART(EPOCH_SECOND, TABLE."timestamp_col") <= FLOOR(DATE_PART(EPOCH_SECOND, REQ."POINT_IN_TIME") + 604800.0)
+              ON (
+                DATE_PART(EPOCH_SECOND, TABLE."timestamp_col") > REQ."POINT_IN_TIME"
+                AND DATE_PART(EPOCH_SECOND, TABLE."timestamp_col") <= FLOOR(DATE_PART(EPOCH_SECOND, REQ."POINT_IN_TIME") + 604800.0)
+              )
+              AND REQ."serving_cust_id" = TABLE."cust_id"
             GROUP BY
               REQ."POINT_IN_TIME",
               REQ."serving_cust_id",

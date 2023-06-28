@@ -119,6 +119,12 @@ class ForwardAggregator(NonTileBasedAggregator[ForwardAggregateSpec]):
             )
             for s in specs
         ]
+        serving_name = quoted_identifier(spec.serving_names[0]).sql()
+        join_table_key = quoted_identifier(spec.parameters.keys[0]).sql()
+        join_conditions = [
+            record_validity_condition,
+            f"REQ.{serving_name} = TABLE.{join_table_key}",
+        ]
         groupby_input_expr = (
             select()
             .from_(
@@ -130,7 +136,7 @@ class ForwardAggregator(NonTileBasedAggregator[ForwardAggregateSpec]):
             .join(
                 spec.source_expr.subquery(alias="TABLE"),
                 join_type="inner",
-                on=record_validity_condition,
+                on=expressions.and_(*join_conditions) if join_conditions else None,
             )
         )
         # Create the forward aggregation expression

@@ -25,8 +25,11 @@ WITH REQUEST_TABLE AS (
         ) AS "c"
       FROM "db"."public"."event_table"
     ) AS TABLE
-      ON DATE_PART(EPOCH_SECOND, TABLE."timestamp_col") > REQ."POINT_IN_TIME"
-      AND DATE_PART(EPOCH_SECOND, TABLE."timestamp_col") <= FLOOR(DATE_PART(EPOCH_SECOND, REQ."POINT_IN_TIME") + 604800.0)
+      ON (
+        DATE_PART(EPOCH_SECOND, TABLE."timestamp_col") > REQ."POINT_IN_TIME"
+        AND DATE_PART(EPOCH_SECOND, TABLE."timestamp_col") <= FLOOR(DATE_PART(EPOCH_SECOND, REQ."POINT_IN_TIME") + 604800.0)
+      )
+      AND REQ."BUSINESS_ID" = TABLE."biz_id"
     GROUP BY
       REQ."POINT_IN_TIME",
       REQ."BUSINESS_ID"
@@ -36,5 +39,5 @@ WITH REQUEST_TABLE AS (
 SELECT
   AGG."POINT_IN_TIME",
   AGG."CUSTOMER_ID",
-  "_fb_internal_forward_sum_a_biz_id_None_input_1" AS "target_node"
+  "_fb_internal_forward_sum_a_biz_id_None_input_1" AS "biz_id_sum_7d"
 FROM _FB_AGGREGATED AS AGG
