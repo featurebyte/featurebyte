@@ -70,13 +70,18 @@ class ForwardAggregator(NonTileBasedAggregator[ForwardAggregateSpec]):
 
         # Get valid records (timestamp column is within the point in time, and point in time + horizon)
         # TODO: update to range join
+        table_timestamp_col = get_qualified_column_identifier(
+            spec.parameters.timestamp_col, "TABLE"
+        )
+        # Convert to epoch seconds
+        table_timestamp_col = self.adapter.to_epoch_seconds(table_timestamp_col)
         record_validity_condition = expressions.and_(
             expressions.GT(
-                this=get_qualified_column_identifier(spec.parameters.timestamp_col, "TABLE"),
+                this=table_timestamp_col,
                 expression=point_in_time_expr,
             ),
             expressions.LTE(
-                this=get_qualified_column_identifier(spec.parameters.timestamp_col, "TABLE"),
+                this=table_timestamp_col,
                 expression=end_point_expr,
             ),
         )

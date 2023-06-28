@@ -38,6 +38,7 @@ from featurebyte.query_graph.sql.specs import (
     AggregationSpec,
     AggregationType,
     FeatureSpec,
+    ForwardAggregateSpec,
     ItemAggregationSpec,
     LookupSpec,
     NonTileBasedAggregationSpec,
@@ -472,6 +473,7 @@ class FeatureExecutionPlanner:
         item_groupby_nodes = list(self.graph.iterate_nodes(node, NodeType.ITEM_GROUPBY))
         lookup_nodes = list(self.graph.iterate_nodes(node, NodeType.LOOKUP))
         asat_nodes = list(self.graph.iterate_nodes(node, NodeType.AGGREGATE_AS_AT))
+        forward_aggregate_nodes = list(self.graph.iterate_nodes(node, NodeType.FORWARD_AGGREGATE))
 
         out: list[AggregationSpecType] = []
         if groupby_nodes:
@@ -493,6 +495,10 @@ class FeatureExecutionPlanner:
         if asat_nodes:
             for asat_node in asat_nodes:
                 out.extend(self.get_non_tiling_specs(AggregateAsAtSpec, asat_node))
+
+        if forward_aggregate_nodes:
+            for forward_aggregate_node in forward_aggregate_nodes:
+                out.extend(self.get_non_tiling_specs(ForwardAggregateSpec, forward_aggregate_node))
 
         return out
 

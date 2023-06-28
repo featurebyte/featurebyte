@@ -7,14 +7,14 @@ from featurebyte.query_graph.sql.forward_aggregate import get_forward_aggregate_
 from tests.util.helper import assert_equal_with_expected_fixture
 
 
-def test_get_forward_aggregate_sql(query_graph_with_groupby, update_fixtures):
+def test_get_forward_aggregate_sql(query_graph_with_forward_aggregate, update_fixtures):
     """Test generated target forward aggregate SQL is as expected"""
     point_in_time_and_serving_name = {
         "POINT_IN_TIME": "2022-04-20 10:00:00",
         "CUSTOMER_ID": "C1",
     }
-    graph = query_graph_with_groupby
-    node = graph.get_node_by_name("groupby_1")
+    graph = query_graph_with_forward_aggregate
+    node = graph.get_node_by_name("forward_aggregate_1")
     preview_sql = get_forward_aggregate_sql(
         request_table_name=REQUEST_TABLE_NAME,
         graph=graph,
