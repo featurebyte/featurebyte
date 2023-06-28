@@ -275,10 +275,11 @@ class RelationshipMixin(Generic[Document, ParentT]):
         return cast(Document, document)
 
 
-class DerivePrimaryEntityMixin:
+class DerivePrimaryEntityHelper:
     """Mixin class to derive primary entity from a list of entities"""
 
-    entity_service: EntityService
+    def __init__(self, entity_service: EntityService):
+        self.entity_service = entity_service
 
     async def get_entity_id_to_entity(
         self, doc_list: list[dict[str, Any]]

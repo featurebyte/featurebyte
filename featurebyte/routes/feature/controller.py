@@ -22,7 +22,7 @@ from featurebyte.models.base import PydanticObjectId, VersionIdentifier
 from featurebyte.models.feature import DefaultVersionMode, FeatureModel, FeatureReadiness
 from featurebyte.query_graph.enum import GraphNodeType
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
-from featurebyte.routes.common.base import BaseDocumentController, DerivePrimaryEntityMixin
+from featurebyte.routes.common.base import BaseDocumentController, DerivePrimaryEntityHelper
 from featurebyte.routes.feature_namespace.controller import FeatureNamespaceController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.feature import (
@@ -157,8 +157,7 @@ async def _get_list_object(
 
 # pylint: disable=too-many-instance-attributes
 class FeatureController(
-    BaseDocumentController[FeatureModelResponse, FeatureService, FeaturePaginatedList],
-    DerivePrimaryEntityMixin,
+    BaseDocumentController[FeatureModelResponse, FeatureService, FeaturePaginatedList]
 ):
     """
     Feature controller
@@ -181,6 +180,7 @@ class FeatureController(
         table_service: TableService,
         feature_namespace_controller: FeatureNamespaceController,
         semantic_service: SemanticService,
+        derive_primary_entity_helper: DerivePrimaryEntityHelper,
     ):
         # pylint: disable=too-many-arguments
         super().__init__(feature_service)
@@ -196,6 +196,7 @@ class FeatureController(
         self.table_service = table_service
         self.feature_namespace_controller = feature_namespace_controller
         self.semantic_service = semantic_service
+        self.derive_primary_entity_helper = derive_primary_entity_helper
 
     async def submit_batch_feature_create_task(self, data: BatchFeatureCreate) -> Optional[Task]:
         """
@@ -268,7 +269,9 @@ class FeatureController(
         output = FeatureModelResponse(
             **document.dict(by_alias=True),
             is_default=namespace.default_feature_id == document.id,
-            primary_entity_ids=await self.derive_primary_entity_ids(entity_ids=document.entity_ids),
+            primary_entity_ids=await self.derive_primary_entity_helper.derive_primary_entity_ids(
+                entity_ids=document.entity_ids
+            ),
         )
         return output
 
@@ -437,7 +440,9 @@ class FeatureController(
         )
 
         # prepare mappings to add additional attributes
-        entity_id_to_entity = await self.get_entity_id_to_entity(doc_list=document_data["data"])
+        entity_id_to_entity = await self.derive_primary_entity_helper.get_entity_id_to_entity(
+            doc_list=document_data["data"]
+        )
         namespace_ids = {document["feature_namespace_id"] for document in document_data["data"]}
         namespace_id_to_default_id = {}
         async for namespace in self.feature_namespace_service.list_documents_iterator(
@@ -449,7 +454,7 @@ class FeatureController(
         output = []
         for feature in document_data["data"]:
             default_feature_id = namespace_id_to_default_id.get(feature["feature_namespace_id"])
-            primary_entity_ids = await self.derive_primary_entity_ids(
+            primary_entity_ids = await self.derive_primary_entity_helper.derive_primary_entity_ids(
                 entity_ids=feature["entity_ids"], entity_id_to_entity=entity_id_to_entity
             )
             output.append(
