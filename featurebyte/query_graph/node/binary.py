@@ -2,9 +2,9 @@
 This module contains binary operation node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import List, Literal, Optional, Sequence, Union
+from typing import List, Literal, Sequence
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
@@ -149,13 +149,7 @@ class PowerNode(BaseSeriesOutputWithAScalarParamNode):
 class IsInNode(BaseSeriesOutputWithAScalarParamNode):
     """IsInNode class"""
 
-    class Parameters(BaseModel):
-        """Parameters"""
-
-        value: Optional[Sequence[Union[bool, int, float, str]]]
-
     type: Literal[NodeType.IS_IN] = Field(NodeType.IS_IN, const=True)
-    parameters: Parameters
 
     @property
     def max_input_count(self) -> int:
