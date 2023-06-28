@@ -3,6 +3,13 @@ Registrations module.
 
 This contains all the dependencies that we want to register in order to get our fast API app up and running.
 """
+from featurebyte.migration.migration_data_service import SchemaMetadataService
+from featurebyte.migration.service.data_warehouse import (
+    DataWarehouseMigrationServiceV6,
+    DataWarehouseMigrationServiceV8,
+    TileColumnTypeExtractor,
+)
+from featurebyte.migration.service.mixin import DataWarehouseMigrationMixin
 from featurebyte.routes.app_container_config import AppContainerConfig
 from featurebyte.routes.batch_feature_table.controller import BatchFeatureTableController
 from featurebyte.routes.batch_request_table.controller import BatchRequestTableController
@@ -93,6 +100,7 @@ from featurebyte.service.user_service import UserService
 from featurebyte.service.validator.production_ready_validator import ProductionReadyValidator
 from featurebyte.service.version import VersionService
 from featurebyte.service.view_construction import ViewConstructionService
+from featurebyte.service.working_schema import WorkingSchemaService
 from featurebyte.utils.credential import MongoBackedCredentialProvider
 
 app_container_config = AppContainerConfig()
@@ -103,6 +111,9 @@ app_container_config.register_service(BatchRequestTableService)
 app_container_config.register_service(CatalogService)
 app_container_config.register_service(CredentialService)
 app_container_config.register_service(ContextService)
+app_container_config.register_service(DataWarehouseMigrationMixin)
+app_container_config.register_service(DataWarehouseMigrationServiceV6)
+app_container_config.register_service(DataWarehouseMigrationServiceV8)
 app_container_config.register_service(DefaultVersionModeService)
 app_container_config.register_service(DeployService)
 app_container_config.register_service(DeploymentService)
@@ -133,6 +144,7 @@ app_container_config.register_service(PeriodicTaskService)
 app_container_config.register_service(PreviewService)
 app_container_config.register_service(RelationshipInfoService)
 app_container_config.register_service(SCDTableService, name_override="scd_table_service")
+app_container_config.register_service(SchemaMetadataService)
 app_container_config.register_service(SemanticService)
 app_container_config.register_service(SemanticRelationshipService)
 app_container_config.register_service(SessionManagerService)
@@ -150,6 +162,7 @@ app_container_config.register_service(UserDefinedFunctionService)
 app_container_config.register_service(UserService)
 app_container_config.register_service(VersionService)
 app_container_config.register_service(ViewConstructionService)
+app_container_config.register_service(WorkingSchemaService)
 
 
 # Register classes - please keep sorted by alphabetical order.
@@ -200,6 +213,7 @@ app_container_config.register_class(
 app_container_config.register_class(
     TargetNamespaceController, dependency_override={"service": "target_namespace_service"}
 )
+app_container_config.register_class(TileColumnTypeExtractor)
 app_container_config.register_class(TileTaskExecutor)
 app_container_config.register_class(
     UserDefinedFunctionController, dependency_override={"service": "user_defined_function_service"}

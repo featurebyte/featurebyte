@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Iterator, Optional, Protocol
 
+import copy
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 
@@ -18,7 +19,7 @@ from featurebyte.models.base import User
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.persistent import Document, QueryFilter
 from featurebyte.persistent.base import Persistent
-from featurebyte.service.base_document import DocumentUpdateSchema
+from featurebyte.service.base_document import RAW_QUERY_FILTER_WARNING, DocumentUpdateSchema
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.session_validator import SessionValidatorService
@@ -31,10 +32,11 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class BaseMigrationServiceMixin(Protocol):
+class BaseMigrationServiceMixin:
     """BaseMigrationServiceMixin class"""
 
-    persistent: Persistent
+    def __init__(self, persistent: Persistent):
+        self.persistent = persistent
 
     @property
     @abstractmethod
@@ -144,7 +146,7 @@ class MigrationServiceMixin(BaseMigrationServiceMixin, ABC):
         )
 
 
-class DataWarehouseMigrationMixin(FeatureStoreService, BaseMigrationServiceMixin, ABC):
+class DataWarehouseMigrationMixin(BaseMigrationServiceMixin, ABC):
     """DataWarehouseMigrationMixin class
 
     Provides common functionalities required for migrating data warehouse
@@ -152,6 +154,49 @@ class DataWarehouseMigrationMixin(FeatureStoreService, BaseMigrationServiceMixin
 
     get_credential: Any
     celery: Celery
+
+    def __init__(self, persistent: Persistent, session_manager_service: SessionManagerService):
+        super().__init__(persistent=persistent)
+        self.session_manager_service = session_manager_service
+        self._allow_to_use_raw_query_filter = False
+
+    @property
+    def collection_name(self) -> str:
+        return "feature_store"
+
+    def _construct_list_query_filter(
+        self,
+        query_filter: Optional[dict[str, Any]] = None,
+        use_raw_query_filter: bool = False,
+        **kwargs: Any,
+    ) -> QueryFilter:
+        _ = self
+        if not query_filter:
+            output = {}
+        else:
+            output = copy.deepcopy(query_filter)
+
+        if use_raw_query_filter:
+            if not self._allow_to_use_raw_query_filter:
+                raise NotImplementedError(RAW_QUERY_FILTER_WARNING)
+            return output
+        if kwargs.get("name"):
+            output["name"] = kwargs["name"]
+        if kwargs.get("version"):
+            output["version"] = kwargs["version"]
+        if kwargs.get("search"):
+            output["$text"] = {"$search": kwargs["search"]}
+        return output
+
+    @contextmanager
+    def allow_use_raw_query_filter(self) -> Iterator[None]:
+        """Activate use of raw query filter"""
+        try:
+            logger.warning(RAW_QUERY_FILTER_WARNING)
+            self._allow_to_use_raw_query_filter = True
+            yield
+        finally:
+            self._allow_to_use_raw_query_filter = False
 
     async def create_document(self, data: DocumentUpdateSchema) -> Document:  # type: ignore[override]
         # Currently any implementation of DataWarehouseMigrationMixin is required to only make
@@ -183,19 +228,7 @@ class DataWarehouseMigrationMixin(FeatureStoreService, BaseMigrationServiceMixin
         -------
         BaseSession
         """
-        credential_provider = MongoBackedCredentialProvider(persistent=self.persistent)
-        user = User(id=feature_store.user_id)
-        session_validator_service = SessionValidatorService(
-            user, self.persistent, self.catalog_id, credential_provider, self
-        )
-        session_manager_service = SessionManagerService(
-            user=user,
-            persistent=self.persistent,
-            catalog_id=self.catalog_id,
-            mongo_backed_credential_provider=credential_provider,
-            session_validator_service=session_validator_service,
-        )
-        session = await session_manager_service.get_feature_store_session(
+        session = await self.session_manager_service.get_feature_store_session(
             feature_store, get_credential=self.get_credential
         )
         return session

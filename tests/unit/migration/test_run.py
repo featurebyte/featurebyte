@@ -28,6 +28,14 @@ from featurebyte.schema.entity import EntityCreate
 from featurebyte.service.entity import EntityService
 
 
+@pytest.fixture(name="schema_metadata_service")
+def schema_metadata_service_fixture(app_container):
+    """
+    SchemaMetadataService fixture
+    """
+    return app_container.schema_metadata_service
+
+
 def test_retrieve_all_migration_methods():
     """Test retrieve_all_migration_methods output"""
     migrate_methods = retrieve_all_migration_methods()
@@ -53,11 +61,8 @@ def test_retrieve_all_migration_methods__duplicated_version(mock_extract_method)
 
 
 @pytest.mark.asyncio
-async def test_migrate_method_generator(user, persistent, get_credential):
+async def test_migrate_method_generator(user, persistent, get_credential, schema_metadata_service):
     """Test migrate method generator"""
-    schema_metadata_service = SchemaMetadataService(
-        user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
-    )
     schema_metadata = await schema_metadata_service.get_or_create_document(
         name=MigrationMetadata.SCHEMA_METADATA.value
     )
@@ -100,11 +105,10 @@ async def test_migrate_method_generator(user, persistent, get_credential):
 
 
 @pytest.mark.asyncio
-async def test_migrate_method_generator__exclude_warehouse(user, persistent, get_credential):
+async def test_migrate_method_generator__exclude_warehouse(
+    user, persistent, get_credential, schema_metadata_service
+):
     """Test migrate method generator with include_data_warehouse_migrations=False"""
-    schema_metadata_service = SchemaMetadataService(
-        user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
-    )
     schema_metadata = await schema_metadata_service.get_or_create_document(
         name=MigrationMetadata.SCHEMA_METADATA.value
     )
@@ -162,12 +166,11 @@ async def test_post_migration_sanity_check(app_container):
 
 
 @pytest.mark.asyncio
-async def test_run_migration(migration_check_persistent, user, get_credential):
+async def test_run_migration(
+    migration_check_persistent, user, get_credential, schema_metadata_service
+):
     """Test run migration function"""
     persistent = migration_check_persistent
-    schema_metadata_service = SchemaMetadataService(
-        user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
-    )
     schema_metadata = await schema_metadata_service.get_or_create_document(
         name=MigrationMetadata.SCHEMA_METADATA.value
     )
@@ -208,9 +211,6 @@ async def test_run_migration(migration_check_persistent, user, get_credential):
         assert max_audit_record_nums > 1, service
 
     # check version in schema_metadata after migration
-    schema_metadata_service = SchemaMetadataService(
-        user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
-    )
     schema_metadata = await schema_metadata_service.get_or_create_document(
         name=MigrationMetadata.SCHEMA_METADATA.value
     )
@@ -223,21 +223,21 @@ async def test_run_migration(migration_check_persistent, user, get_credential):
 async def test_data_warehouse_migration_get_session(
     mock_session_manager,
     migration_check_persistent,
-    user,
     test_dir,
+    user,
+    app_container,
 ):
     """Test data warehouse migration get_session method"""
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_store.json")
-    feature_store_user_id = ObjectId()
+    feature_store_user_id = user.id
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
         feature_store = FeatureStoreModel(**{**payload, "user_id": feature_store_user_id})
 
     get_credential_func = AsyncMock()
     warehouse_migration = DataWarehouseMigrationMixin(
-        user=user,
         persistent=migration_check_persistent,
-        catalog_id=DEFAULT_CATALOG_ID,
+        session_manager_service=app_container.session_manager_service,
     )
     warehouse_migration.set_credential_callback(get_credential=get_credential_func)
 

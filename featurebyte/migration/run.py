@@ -15,7 +15,10 @@ from featurebyte.logging import get_logger
 from featurebyte.migration.migration_data_service import SchemaMetadataService
 from featurebyte.migration.model import MigrationMetadata, SchemaMetadataModel, SchemaMetadataUpdate
 from featurebyte.migration.service import MigrationInfo
-from featurebyte.migration.service.mixin import DataWarehouseMigrationMixin
+from featurebyte.migration.service.mixin import (
+    BaseMigrationServiceMixin,
+    DataWarehouseMigrationMixin,
+)
 from featurebyte.models.base import (
     DEFAULT_CATALOG_ID,
     FeatureByteBaseDocumentModel,
@@ -24,9 +27,14 @@ from featurebyte.models.base import (
 )
 from featurebyte.persistent.base import Persistent
 from featurebyte.persistent.mongo import MongoDB
+from featurebyte.routes.app_container_config import _get_class_name
+from featurebyte.routes.lazy_app_container import LazyAppContainer
+from featurebyte.routes.registry import app_container_config
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.service.base_document import BaseDocumentService
+from featurebyte.service.task_manager import TaskManager
 from featurebyte.utils.credential import MongoBackedCredentialProvider
+from featurebyte.utils.storage import get_storage, get_temp_storage
 from featurebyte.worker import get_celery
 
 BaseDocumentServiceT = BaseDocumentService[
@@ -86,7 +94,7 @@ def retrieve_all_migration_methods(data_warehouse_migrations_only: bool = False)
     for mod in import_submodules(migration_service_dir).values():
         for attr_name in dir(mod):
             attr = getattr(mod, attr_name)
-            if inspect.isclass(attr) and issubclass(attr, BaseDocumentService):
+            if inspect.isclass(attr) and issubclass(attr, BaseMigrationServiceMixin):
                 if data_warehouse_migrations_only and not issubclass(
                     attr, DataWarehouseMigrationMixin
                 ):
@@ -140,15 +148,27 @@ async def migrate_method_generator(
     migrate_method
         Migration method
     """
+    app_container = LazyAppContainer(
+        user=user,
+        persistent=persistent,
+        catalog_id=DEFAULT_CATALOG_ID,
+        temp_storage=get_temp_storage(),
+        task_manager=TaskManager(
+            user=user,
+            persistent=persistent,
+            celery=get_celery(),
+            catalog_id=DEFAULT_CATALOG_ID,
+        ),
+        storage=get_storage(),
+        app_container_config=app_container_config,
+    )
     migrate_methods = retrieve_all_migration_methods()
     version_start = schema_metadata.version + 1
     for version in range(version_start, len(migrate_methods) + 1):
         migrate_method_data = migrate_methods[version]
         module = importlib.import_module(migrate_method_data["module"])
         migrate_service_class = getattr(module, migrate_method_data["class"])
-        migrate_service = migrate_service_class(
-            user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
-        )
+        migrate_service = app_container.get(_get_class_name(migrate_service_class.__name__))
         if isinstance(migrate_service, DataWarehouseMigrationMixin):
             if not include_data_warehouse_migrations:
                 continue
