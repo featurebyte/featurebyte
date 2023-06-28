@@ -9,7 +9,6 @@ import copy
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 
-from bson import ObjectId
 from celery import Celery
 
 from featurebyte.enum import InternalName
@@ -18,7 +17,7 @@ from featurebyte.logging import get_logger
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.persistent import Document, QueryFilter
 from featurebyte.persistent.base import Persistent
-from featurebyte.service.base_document import RAW_QUERY_FILTER_WARNING, DocumentUpdateSchema
+from featurebyte.service.base_document import RAW_QUERY_FILTER_WARNING
 from featurebyte.service.session_manager import SessionManagerService
 
 if TYPE_CHECKING:
@@ -192,23 +191,6 @@ class DataWarehouseMigrationMixin(BaseMigrationServiceMixin, ABC):
             yield
         finally:
             self._allow_to_use_raw_query_filter = False
-
-    async def create_document(self, data: DocumentUpdateSchema) -> Document:  # type: ignore[override]
-        # Currently any implementation of DataWarehouseMigrationMixin is required to only make
-        # modification to data warehouse and not to mongo due to the way they are tested.
-        raise NotImplementedError()
-
-    async def update_document(  # type: ignore[override]
-        self,
-        document_id: ObjectId,
-        data: DocumentUpdateSchema,
-        exclude_none: bool = True,
-        document: Optional[Document] = None,
-        return_document: bool = True,
-    ) -> Optional[Document]:
-        # Currently any implementation of DataWarehouseMigrationMixin is required to only make
-        # modification to data warehouse and not to mongo due to the way they are tested.
-        raise NotImplementedError()
 
     async def get_session(self, feature_store: FeatureStoreModel) -> BaseSession:
         """
