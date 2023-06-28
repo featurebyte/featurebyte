@@ -3,7 +3,7 @@ Target class
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
 from bson import ObjectId
 
@@ -110,18 +110,24 @@ class TargetService(BaseDocumentService[TargetModel, TargetCreate, TargetService
         )
 
         # prepare the graph to store
-        graph, node_name = await self._prepare_graph_to_store(
+        prepared_graph = await self._prepare_graph_to_store(
             target=document, sanitize_for_definition=sanitize_for_definition
         )
 
         # create a new feature document (so that the derived attributes like table_ids is generated properly)
-        return TargetModel(
-            **{**document.dict(by_alias=True), "graph": graph, "node_name": node_name}
-        )
+        params = document.dict(by_alias=True)
+        if prepared_graph:
+            params["graph"] = prepared_graph[0]
+            params["node_name"] = prepared_graph[1]
+        return TargetModel(**params)
 
     async def _prepare_graph_to_store(
         self, target: TargetModel, sanitize_for_definition: bool = False
-    ) -> tuple[QueryGraphModel, str]:
+    ) -> Optional[tuple[QueryGraphModel, str]]:
+        # Can skip the graph preparation if the target has no graph or node.
+        if not target.graph or not target.node:
+            return None
+
         # reconstruct view graph node to remove unused column cleaning operations
         graph, node_name_map = await self.view_construction_service.construct_graph(
             query_graph=target.graph,
@@ -153,12 +159,12 @@ class TargetService(BaseDocumentService[TargetModel, TargetCreate, TargetService
             await self._check_document_unique_constraints(document=document)
 
             # insert the document
+            params = document.dict(by_alias=True)
+            if data.graph:
+                params["raw_graph"] = data.graph.dict()
             insert_id = await session.insert_one(
                 collection_name=self.collection_name,
-                document={
-                    **document.dict(by_alias=True),
-                    "raw_graph": data.graph.dict(),
-                },
+                document=params,
                 user_id=self.user.id,
             )
             assert insert_id == document.id
@@ -178,6 +184,7 @@ class TargetService(BaseDocumentService[TargetModel, TargetCreate, TargetService
                     return_document=True,
                 )
             except DocumentNotFoundError:
+                entity_ids = document.entity_ids or []
                 await self.target_namespace_service.create_document(
                     data=TargetNamespaceCreate(
                         _id=document.target_namespace_id,
@@ -185,7 +192,7 @@ class TargetService(BaseDocumentService[TargetModel, TargetCreate, TargetService
                         target_ids=[insert_id],
                         default_target_id=insert_id,
                         default_version_mode=DefaultVersionMode.AUTO,
-                        entity_ids=sorted(document.entity_ids),
+                        entity_ids=sorted(entity_ids),
                     ),
                 )
         return await self.get_document(document_id=insert_id)

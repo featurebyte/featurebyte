@@ -14,6 +14,7 @@ from featurebyte.models.feature import FeatureModel
 from featurebyte.persistent import Persistent
 from featurebyte.service.base_service import BaseService
 from featurebyte.service.feature import FeatureService
+from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.online_enable import OnlineEnableService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.table import TableService
@@ -66,6 +67,9 @@ class WorkingSchemaService(BaseService):
             catalog_id=catalog_id,
             table_service=self.table_service,
             view_construction_service=self.view_construction_service,
+            feature_namespace_service=FeatureNamespaceService(
+                user=user, persistent=persistent, catalog_id=catalog_id
+            ),
         )
         self._task_manager = TaskManager(
             user=user, persistent=persistent, celery=celery, catalog_id=catalog_id

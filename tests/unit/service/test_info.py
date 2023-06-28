@@ -1,6 +1,7 @@
 """
 Test for InfoService
 """
+
 import pytest
 from bson import ObjectId
 
@@ -669,7 +670,6 @@ async def test_get_target_info(app_container, entity, target):
     """
     Test get_target_info
     """
-    _ = entity
     target_info = await app_container.target_controller.get_info(target.id, verbose=False)
 
     expected_info = TargetInfo(

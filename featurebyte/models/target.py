@@ -85,6 +85,12 @@ class TargetModel(FeatureByteCatalogBaseDocumentModel):
         -------
         Node
             Node object
-        """
 
+        Raises
+        ------
+        ValueError
+            If target does not have a graph or node_name
+        """
+        if not self.graph or not self.node_name:
+            raise ValueError("Target does not have a graph or node_name")
         return self.graph.get_node_by_name(self.node_name)
