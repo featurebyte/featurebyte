@@ -125,7 +125,7 @@ class TargetService(BaseDocumentService[TargetModel, TargetCreate, TargetService
         self, target: TargetModel, sanitize_for_definition: bool = False
     ) -> Optional[tuple[QueryGraphModel, str]]:
         # Can skip the graph preparation if the target has no graph or node.
-        if not target.graph or not target.node:
+        if not target.graph or not target.node_name:
             return None
 
         # reconstruct view graph node to remove unused column cleaning operations
