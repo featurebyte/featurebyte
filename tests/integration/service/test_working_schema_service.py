@@ -50,13 +50,11 @@ def deployed_feature_list_and_deployment_fixture(event_table):
 
 
 @pytest.fixture(name="migration_service")
-def migration_service_fixture(user, persistent, get_cred):
+def migration_service_fixture(app_container, get_cred):
     """
     Fixture for DataWarehouseMigrationServiceV8
     """
-    service = DataWarehouseMigrationServiceV8(
-        user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
-    )
+    service = app_container.data_warehouse_migration_service_v8
     service.set_credential_callback(get_cred)
     service.set_celery(get_celery())
     return service

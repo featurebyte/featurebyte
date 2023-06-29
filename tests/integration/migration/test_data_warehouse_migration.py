@@ -238,11 +238,8 @@ async def test_data_warehouse_migration_v6(
 
 
 @pytest.mark.asyncio
-async def test_tile_column_type_extractor_build_tile_column_name_to_type_mapping(
-    user,
-    persistent,
-):
+async def test_tile_column_type_extractor_build_tile_column_name_to_type_mapping(app_container):
     """Test build_tile_column_name_to_type_mapping"""
-    extractor = TileColumnTypeExtractor(user=user, persistent=persistent)
+    extractor = app_container.tile_column_type_extractor
     await extractor.setup()
     assert extractor.tile_column_name_to_type == {}
