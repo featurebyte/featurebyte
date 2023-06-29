@@ -7,6 +7,7 @@ from featurebyte.routes.app_container_config import AppContainerConfig
 from featurebyte.routes.batch_feature_table.controller import BatchFeatureTableController
 from featurebyte.routes.batch_request_table.controller import BatchRequestTableController
 from featurebyte.routes.catalog.controller import CatalogController
+from featurebyte.routes.common.base import DerivePrimaryEntityHelper
 from featurebyte.routes.context.controller import ContextController
 from featurebyte.routes.credential.controller import CredentialController
 from featurebyte.routes.deployment.controller import DeploymentController
@@ -146,6 +147,7 @@ app_container_config.register_class(
 )
 app_container_config.register_class(CredentialController)
 app_container_config.register_class(DeploymentController)
+app_container_config.register_class(DerivePrimaryEntityHelper)
 app_container_config.register_class(DimensionTableController)
 app_container_config.register_class(EntityController)
 app_container_config.register_class(EventTableController)

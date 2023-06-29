@@ -12,7 +12,7 @@ from featurebyte.models.feature import DefaultVersionMode
 from featurebyte.models.feature_list import FeatureListNamespaceModel
 from featurebyte.routes.common.base import (
     BaseDocumentController,
-    DerivePrimaryEntityMixin,
+    DerivePrimaryEntityHelper,
     PaginatedDocument,
 )
 from featurebyte.schema.feature_list_namespace import (
@@ -34,8 +34,7 @@ from featurebyte.service.mixin import Document
 class FeatureListNamespaceController(
     BaseDocumentController[
         FeatureListNamespaceModelResponse, FeatureListNamespaceService, FeatureListNamespaceList
-    ],
-    DerivePrimaryEntityMixin,
+    ]
 ):
     """
     FeatureList controller
@@ -51,6 +50,7 @@ class FeatureListNamespaceController(
         default_version_mode_service: DefaultVersionModeService,
         feature_readiness_service: FeatureReadinessService,
         feature_list_status_service: FeatureListStatusService,
+        derive_primary_entity_helper: DerivePrimaryEntityHelper,
     ):
         super().__init__(feature_list_namespace_service)
         self.entity_service = entity_service
@@ -58,6 +58,7 @@ class FeatureListNamespaceController(
         self.default_version_mode_service = default_version_mode_service
         self.feature_readiness_service = feature_readiness_service
         self.feature_list_status_service = feature_list_status_service
+        self.derive_primary_entity_helper = derive_primary_entity_helper
 
     async def get(
         self,
@@ -69,7 +70,9 @@ class FeatureListNamespaceController(
         )
         output = FeatureListNamespaceModelResponse(
             **document.dict(by_alias=True),
-            primary_entity_ids=await self.derive_primary_entity_ids(entity_ids=document.entity_ids),
+            primary_entity_ids=await self.derive_primary_entity_helper.derive_primary_entity_ids(
+                entity_ids=document.entity_ids
+            ),
         )
         return cast(Document, output)
 
@@ -90,10 +93,12 @@ class FeatureListNamespaceController(
         )
 
         # compute primary entity ids of each feature list namespace
-        entity_id_to_entity = await self.get_entity_id_to_entity(doc_list=document_data["data"])
+        entity_id_to_entity = await self.derive_primary_entity_helper.get_entity_id_to_entity(
+            doc_list=document_data["data"]
+        )
         output = []
         for feature_list_namespace in document_data["data"]:
-            primary_entity_ids = await self.derive_primary_entity_ids(
+            primary_entity_ids = await self.derive_primary_entity_helper.derive_primary_entity_ids(
                 entity_ids=feature_list_namespace["entity_ids"],
                 entity_id_to_entity=entity_id_to_entity,
             )

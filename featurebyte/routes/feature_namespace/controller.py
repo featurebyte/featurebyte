@@ -12,7 +12,7 @@ from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature import DefaultVersionMode, FeatureModel, FeatureReadiness
 from featurebyte.routes.common.base import (
     BaseDocumentController,
-    DerivePrimaryEntityMixin,
+    DerivePrimaryEntityHelper,
     PaginatedDocument,
 )
 from featurebyte.schema.feature_namespace import (
@@ -35,8 +35,7 @@ from featurebyte.service.table import TableService
 class FeatureNamespaceController(
     BaseDocumentController[
         FeatureNamespaceModelResponse, FeatureNamespaceService, FeatureNamespaceList
-    ],
-    DerivePrimaryEntityMixin,
+    ]
 ):
     """
     FeatureName controller
@@ -53,6 +52,7 @@ class FeatureNamespaceController(
         feature_readiness_service: FeatureReadinessService,
         table_service: TableService,
         catalog_service: CatalogService,
+        derive_primary_entity_helper: DerivePrimaryEntityHelper,
     ):
         super().__init__(feature_namespace_service)
         self.entity_service = entity_service
@@ -61,6 +61,7 @@ class FeatureNamespaceController(
         self.feature_readiness_service = feature_readiness_service
         self.table_service = table_service
         self.catalog_service = catalog_service
+        self.derive_primary_entity_helper = derive_primary_entity_helper
 
     async def get(
         self,
@@ -77,7 +78,9 @@ class FeatureNamespaceController(
         output = FeatureNamespaceModelResponse(
             **document.dict(by_alias=True),
             primary_table_ids=default_feature.primary_table_ids,
-            primary_entity_ids=await self.derive_primary_entity_ids(entity_ids=document.entity_ids),
+            primary_entity_ids=await self.derive_primary_entity_helper.derive_primary_entity_ids(
+                entity_ids=document.entity_ids
+            ),
         )
         return cast(Document, output)
 
@@ -101,7 +104,9 @@ class FeatureNamespaceController(
         default_feature_ids = set(
             document["default_feature_id"] for document in document_data["data"]
         )
-        entity_id_to_entity = await self.get_entity_id_to_entity(doc_list=document_data["data"])
+        entity_id_to_entity = await self.derive_primary_entity_helper.get_entity_id_to_entity(
+            doc_list=document_data["data"]
+        )
 
         feature_id_to_primary_table_ids = {}
         async for feature_dict in self.feature_service.list_documents_iterator(
@@ -113,7 +118,7 @@ class FeatureNamespaceController(
         # construct primary entity IDs and primary table IDs & add these attributes to feature namespace docs
         output = []
         for feature_namespace in document_data["data"]:
-            primary_entity_ids = await self.derive_primary_entity_ids(
+            primary_entity_ids = await self.derive_primary_entity_helper.derive_primary_entity_ids(
                 entity_ids=feature_namespace["entity_ids"], entity_id_to_entity=entity_id_to_entity
             )
             default_feature_id = feature_namespace["default_feature_id"]
