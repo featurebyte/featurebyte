@@ -12,7 +12,7 @@ from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature import DefaultVersionMode, FeatureModel, FeatureReadiness
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.transform.sdk_code import SDKCodeExtractor
-from featurebyte.schema.feature import FeatureServiceCreate, FeatureServiceUpdate
+from featurebyte.schema.feature import FeatureServiceCreate
 from featurebyte.schema.feature_namespace import (
     FeatureNamespaceCreate,
     FeatureNamespaceServiceUpdate,

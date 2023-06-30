@@ -11,7 +11,7 @@ from featurebyte.exception import DocumentNotFoundError
 from featurebyte.models.feature import DefaultVersionMode
 from featurebyte.models.target import TargetModel
 from featurebyte.persistent import Persistent
-from featurebyte.schema.target import TargetCreate, TargetServiceUpdate
+from featurebyte.schema.target import TargetCreate
 from featurebyte.schema.target_namespace import TargetNamespaceCreate, TargetNamespaceUpdate
 from featurebyte.service.base_namespace_service import BaseNamespaceService
 from featurebyte.service.namespace_handler import (
@@ -21,7 +21,7 @@ from featurebyte.service.namespace_handler import (
 from featurebyte.service.target_namespace import TargetNamespaceService
 
 
-class TargetService(BaseNamespaceService[TargetCreate, TargetServiceUpdate]):
+class TargetService(BaseNamespaceService[TargetModel, TargetCreate]):
     """
     TargetService class
     """
