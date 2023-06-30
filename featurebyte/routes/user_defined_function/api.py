@@ -36,7 +36,7 @@ async def create_user_defined_function(
     """
     controller = request.state.app_container.user_defined_function_controller
     user_defined_function: UserDefinedFunctionModel = await controller.create_user_defined_function(
-        data=data
+        data=data, get_credential=request.state.get_credential
     )
     return user_defined_function
 

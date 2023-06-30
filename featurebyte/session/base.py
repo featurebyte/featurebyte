@@ -35,6 +35,7 @@ from featurebyte.enum import (
 )
 from featurebyte.exception import QueryExecutionTimeOut
 from featurebyte.logging import get_logger
+from featurebyte.models.user_defined_function import UserDefinedFunctionModel
 from featurebyte.query_graph.sql.common import (
     get_fully_qualified_table_name,
     quoted_identifier,
@@ -195,6 +196,26 @@ class BaseSession(BaseModel):
         -------
         OrderedDict[str, DBVarType]
         """
+
+    async def check_user_defined_function(
+        self,
+        user_defined_function: UserDefinedFunctionModel,
+        timeout: float = DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS,
+    ) -> None:
+        """
+        Check if a user defined function exists in the feature store
+
+        Parameters
+        ----------
+        user_defined_function: UserDefinedFunctionModel
+            User defined function model
+        timeout: float
+            Timeout in seconds
+        """
+        await self.execute_query(
+            query=user_defined_function.generate_test_sql(source_type=self.source_type),
+            timeout=timeout,
+        )
 
     async def fetch_query_stream_impl(self, cursor: Any) -> AsyncGenerator[pa.RecordBatch, None]:
         """

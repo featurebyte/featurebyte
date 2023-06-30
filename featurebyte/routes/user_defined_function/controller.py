@@ -12,6 +12,8 @@ from featurebyte.schema.user_defined_function import (
     UserDefinedFunctionCreate,
     UserDefinedFunctionList,
 )
+from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.service.user_defined_function import UserDefinedFunctionService
 
 
@@ -26,9 +28,20 @@ class UserDefinedFunctionController(
 
     paginated_document_class = UserDefinedFunctionList
 
+    def __init__(
+        self,
+        user_defined_function_service: UserDefinedFunctionService,
+        feature_store_service: FeatureStoreService,
+        feature_store_warehouse_service: FeatureStoreWarehouseService,
+    ):
+        super().__init__(service=user_defined_function_service)
+        self.feature_store_service = feature_store_service
+        self.feature_store_warehouse_service = feature_store_warehouse_service
+
     async def create_user_defined_function(
         self,
         data: UserDefinedFunctionCreate,
+        get_credential: Any,
     ) -> UserDefinedFunctionModel:
         """
         Create UserDefinedFunction at persistent
@@ -37,13 +50,34 @@ class UserDefinedFunctionController(
         ----------
         data: UserDefinedFunctionCreate
             UserDefinedFunction creation payload
+        get_credential: Any
+            Function to get credential
 
         Returns
         -------
         UserDefinedFunctionModel
             Newly created user_defined_function object
         """
-        return await self.service.create_document(data)
+        # validate feature store id exists first
+        feature_store = await self.feature_store_service.get_document(
+            document_id=data.feature_store_id
+        )
+
+        # create user defined function
+        user_defined_function = await self.service.create_document(data)
+        try:
+            # check if user defined function exists in warehouse
+            await self.feature_store_warehouse_service.check_user_defined_function_exists(
+                user_defined_function=user_defined_function,
+                feature_store=feature_store,
+                get_credential=get_credential,
+            )
+        except Exception:
+            # if not exists, delete the user defined function
+            await self.service.delete_document(document_id=user_defined_function.id)
+            raise
+
+        return user_defined_function
 
     async def list_user_defined_functions(
         self,
