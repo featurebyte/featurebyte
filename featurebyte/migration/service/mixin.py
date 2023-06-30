@@ -66,7 +66,6 @@ class BaseMigrationServiceMixin:
         -------
         QueryFilter
         """
-        ...
 
     @abstractmethod
     async def migrate_record(self, document: Document, version: Optional[int]) -> None:
