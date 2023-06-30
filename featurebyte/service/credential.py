@@ -57,7 +57,7 @@ class CredentialService(
         use_raw_query_filter: bool = False,
         **kwargs: Any,
     ) -> QueryFilter:
-        output = super()._construct_list_query_filter(
+        output = super().construct_list_query_filter(
             query_filter=query_filter,
             use_raw_query_filter=use_raw_query_filter,
             **kwargs,

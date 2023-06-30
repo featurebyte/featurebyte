@@ -44,7 +44,7 @@ class BaseMigrationServiceMixin:
         """
 
     @abstractmethod
-    def _construct_list_query_filter(
+    def construct_list_query_filter(
         self,
         query_filter: Optional[dict[str, Any]] = None,
         use_raw_query_filter: bool = False,
@@ -91,7 +91,7 @@ class BaseMigrationServiceMixin:
         # migrate all records and audit records
         if query_filter is None:
             with self.allow_use_raw_query_filter():
-                query_filter = dict(self._construct_list_query_filter(use_raw_query_filter=True))
+                query_filter = dict(self.construct_list_query_filter(use_raw_query_filter=True))
 
         logger.info(f'Start migrating all records (collection: "{self.collection_name}")')
         to_iterate, page = True, 1
@@ -164,13 +164,13 @@ class DataWarehouseMigrationMixin(BaseMigrationServiceMixin, ABC):
     def collection_name(self) -> str:
         return self.feature_store_service.collection_name
 
-    def _construct_list_query_filter(
+    def construct_list_query_filter(
         self,
         query_filter: Optional[dict[str, Any]] = None,
         use_raw_query_filter: bool = False,
         **kwargs: Any,
     ) -> QueryFilter:
-        return self.feature_store_service._construct_list_query_filter(
+        return self.feature_store_service.construct_list_query_filter(
             query_filter=query_filter,
             use_raw_query_filter=use_raw_query_filter,
             **kwargs,

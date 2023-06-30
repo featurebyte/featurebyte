@@ -73,13 +73,13 @@ class BaseTableDocumentService(BaseDocumentService[Document, DocumentCreate, Doc
         query_filter["type"] = self.table_type
         return query_filter
 
-    def _construct_list_query_filter(
+    def construct_list_query_filter(
         self,
         query_filter: Optional[dict[str, Any]] = None,
         use_raw_query_filter: bool = False,
         **kwargs: Any,
     ) -> QueryFilter:
-        output = super()._construct_list_query_filter(
+        output = super().construct_list_query_filter(
             query_filter=query_filter, use_raw_query_filter=use_raw_query_filter, **kwargs
         )
         output["type"] = self.table_type

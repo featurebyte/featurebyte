@@ -236,6 +236,7 @@ async def test_data_warehouse_migration_get_session(
     warehouse_migration = DataWarehouseMigrationMixin(
         persistent=migration_check_persistent,
         session_manager_service=app_container.session_manager_service,
+        feature_store_service=app_container.feature_store_service,
     )
     warehouse_migration.set_credential_callback(get_credential=get_credential_func)
 
