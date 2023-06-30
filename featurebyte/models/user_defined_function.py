@@ -6,14 +6,25 @@ from __future__ import annotations
 from typing import Any, List, Optional
 
 from pydantic import Field, validator
+from sqlglot.expressions import select
 
-from featurebyte.enum import DBVarType
+from featurebyte.common.typing import Scalar
+from featurebyte.enum import DBVarType, SourceType
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
     PydanticObjectId,
     UniqueValuesConstraint,
 )
+from featurebyte.query_graph.model.graph import QueryGraphModel
+from featurebyte.query_graph.node.function import (
+    GenericFunctionNode,
+    GenericFunctionNodeParameters,
+    ValueFunctionParameterInput,
+)
+from featurebyte.query_graph.sql.ast.base import SQLNodeContext
+from featurebyte.query_graph.sql.ast.function import GenericFunctionNode as GenericFunctionSQLNode
+from featurebyte.query_graph.sql.common import SQLType
 
 
 class FunctionParameter(FeatureByteBaseModel):
@@ -36,8 +47,8 @@ class FunctionParameter(FeatureByteBaseModel):
 
     name: str
     dtype: DBVarType
-    default_value: Optional[Any]
-    test_value: Optional[Any]
+    default_value: Optional[Scalar]
+    test_value: Optional[Scalar]
 
     # attributes below are used for indicating whether the parameters have certain values
     has_default_value: bool
@@ -105,6 +116,50 @@ class UserDefinedFunctionModel(FeatureByteBaseDocumentModel):
         param_signature = ", ".join([param.signature for param in self.function_parameters])
         output_type = DBVarType(self.output_dtype).to_type_str()
         return f"{self.function_name}({param_signature}) -> {output_type}"
+
+    def generate_test_sql(self, source_type: SourceType) -> str:
+        """
+        Generate test SQL query for the function
+
+        Parameters
+        ----------
+        source_type: SourceType
+            Source type of the test SQL query
+
+        Returns
+        -------
+        str
+        """
+        function_parameters = []
+        value: Optional[Scalar]
+        for param in self.function_parameters:
+            if param.has_test_value:
+                value = param.test_value
+            else:
+                value = DBVarType(param.dtype).get_default_test_value()
+            function_parameters.append(ValueFunctionParameterInput(value=value, dtype=param.dtype))
+
+        node = GenericFunctionNode(
+            name="generic_function_1",
+            parameters=GenericFunctionNodeParameters(
+                function_name=self.function_name,
+                function_parameters=function_parameters,
+                output_dtype=self.output_dtype,
+                function_id=self.id,
+            ),
+        )
+        sql_node = GenericFunctionSQLNode.build(
+            context=SQLNodeContext(
+                graph=QueryGraphModel(),
+                query_node=node,
+                input_sql_nodes=[],
+                sql_type=SQLType.MATERIALIZE,
+                source_type=source_type,
+                to_filter_scd_by_current_flag=False,
+            )
+        )
+        sql_tree = select(sql_node.sql)
+        return sql_tree.sql()
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)

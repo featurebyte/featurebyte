@@ -4,14 +4,14 @@ Unit tests for the UserDefinedFunction model.
 import pytest
 from bson import ObjectId
 
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, SourceType
 from featurebyte.models.user_defined_function import UserDefinedFunctionModel
 
 
 @pytest.mark.parametrize(
-    "function_parameters,catalog_id,expected_signature",
+    "function_parameters,catalog_id,expected_signature,expected_test_sql",
     [
-        ([], None, "function_name() -> float"),
+        ([], None, "function_name() -> float", "SELECT FUNCTION_NAME()"),
         (
             [
                 {
@@ -33,10 +33,13 @@ from featurebyte.models.user_defined_function import UserDefinedFunctionModel
             ],
             ObjectId(),
             "function_name(param1: int, param2: float = 1.0) -> float",
+            "SELECT FUNCTION_NAME(1, 0.0)",
         ),
     ],
 )
-def test_user_defined_function_model(function_parameters, catalog_id, expected_signature):
+def test_user_defined_function_model(
+    function_parameters, catalog_id, expected_signature, expected_test_sql
+):
     """Test UserDefinedFunctionModel"""
     feature_store_id = ObjectId()
     user_defined_function = UserDefinedFunctionModel(
@@ -52,6 +55,9 @@ def test_user_defined_function_model(function_parameters, catalog_id, expected_s
     assert user_defined_function.output_dtype == DBVarType.FLOAT
     assert user_defined_function.signature == expected_signature
     assert user_defined_function.feature_store_id == feature_store_id
+
+    test_sql = user_defined_function.generate_test_sql(source_type=SourceType.SNOWFLAKE)
+    assert test_sql == expected_test_sql
 
 
 def test_user_defined_function_model__validator():
