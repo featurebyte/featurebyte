@@ -16,7 +16,6 @@ from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.sql.base import BaselSqlModel
-from featurebyte.tile.manager import TileManager
 
 
 @pytest_asyncio.fixture(name="tile_task_prep_spark")
@@ -115,22 +114,13 @@ async def mock_feature_fixture(feature_model_dict, feature_store):
     yield feature
 
 
-@pytest_asyncio.fixture(name="tile_manager")
-async def tile_manager_fixture(
-    session, tile_spec, feature, persistent, online_store_table_version_service
+@pytest_asyncio.fixture(name="tile_manager_service")
+async def tile_manager_service_fixture(
+    session,
+    app_container,
+    tile_spec,
 ):
-    task_manager = TaskManager(
-        user=User(id=feature.user_id),
-        persistent=persistent,
-        celery=get_celery(),
-        catalog_id=DEFAULT_CATALOG_ID,
-    )
-    yield TileManager(
-        session=session,
-        task_manager=task_manager,
-        online_store_table_version_service=online_store_table_version_service,
-    )
-
+    yield app_container.tile_manager_service
     await session.execute_query(f"DROP TABLE IF EXISTS {tile_spec.aggregation_id}_ENTITY_TRACKER")
 
 

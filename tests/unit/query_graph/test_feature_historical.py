@@ -6,10 +6,8 @@ from unittest.mock import AsyncMock, Mock, call, patch
 import pandas as pd
 import pytest
 from bson import ObjectId
-from freezegun import freeze_time
 from pandas.testing import assert_frame_equal
 
-from featurebyte import exception
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, sql_to_string
@@ -18,11 +16,9 @@ from featurebyte.query_graph.sql.feature_historical import (
     HistoricalFeatureQuerySet,
     convert_point_in_time_dtype_if_needed,
     get_feature_names,
-    get_historical_features,
     get_historical_features_expr,
     get_historical_features_query_set,
     get_internal_observation_set,
-    split_nodes,
     validate_historical_requests_point_in_time,
 )
 from featurebyte.session.base import BaseSession
@@ -67,131 +63,6 @@ def fixed_object_id_fixture():
         return_value=oid,
     ) as mocked:
         yield mocked
-
-
-@pytest.mark.asyncio
-async def test_get_historical_features__missing_point_in_time(
-    mock_snowflake_feature,
-    mocked_session,
-    output_table_details,
-):
-    """Test validation of missing point in time for historical features"""
-    observation_set = pd.DataFrame(
-        {
-            "cust_id": ["C1", "C2", "C3"],
-        }
-    )
-    with pytest.raises(exception.MissingPointInTimeColumnError) as exc_info:
-        await get_historical_features(
-            session=mocked_session,
-            graph=mock_snowflake_feature.graph,
-            nodes=[mock_snowflake_feature.node],
-            observation_set=observation_set,
-            source_type=SourceType.SNOWFLAKE,
-            output_table_details=output_table_details,
-        )
-    assert str(exc_info.value) == "POINT_IN_TIME column is required"
-
-
-@freeze_time("2022-05-01")
-@pytest.mark.parametrize("point_in_time_is_datetime_dtype", [True, False])
-@pytest.mark.asyncio
-async def test_get_historical_features__too_recent_point_in_time(
-    mock_snowflake_feature, mocked_session, point_in_time_is_datetime_dtype, output_table_details
-):
-    """Test validation of too recent point in time for historical features"""
-    point_in_time_vals = ["2022-04-15", "2022-04-30"]
-    if point_in_time_is_datetime_dtype:
-        point_in_time_vals = pd.to_datetime(point_in_time_vals)
-    observation_set = pd.DataFrame(
-        {
-            "POINT_IN_TIME": point_in_time_vals,
-            "cust_id": ["C1", "C2"],
-        }
-    )
-    with pytest.raises(exception.TooRecentPointInTimeError) as exc_info:
-        await get_historical_features(
-            session=mocked_session,
-            graph=mock_snowflake_feature.graph,
-            nodes=[mock_snowflake_feature.node],
-            observation_set=observation_set,
-            source_type=SourceType.SNOWFLAKE,
-            output_table_details=output_table_details,
-        )
-    assert str(exc_info.value) == (
-        "The latest point in time (2022-04-30 00:00:00) should not be more recent than 48 hours "
-        "from now"
-    )
-
-
-@pytest.mark.asyncio
-async def test_get_historical_features__point_in_time_dtype_conversion(
-    float_feature,
-    config,
-    mocked_session,
-    mocked_compute_tiles_on_demand,
-    output_table_details,
-):
-    """
-    Test that if point in time column is provided as string, it is converted to datetime before
-    being registered as a temp table in session
-    """
-    # Input POINT_IN_TIME is string
-    df_request = pd.DataFrame(
-        {
-            "POINT_IN_TIME": ["2022-01-01", "2022-02-01"],
-            "cust_id": ["C1", "C2"],
-        }
-    )
-    assert df_request.dtypes["POINT_IN_TIME"] == "object"
-
-    mocked_session.generate_session_unique_id.return_value = "1"
-    await get_historical_features(
-        session=mocked_session,
-        graph=float_feature.graph,
-        nodes=[float_feature.node],
-        observation_set=df_request,
-        source_type=SourceType.SNOWFLAKE,
-        output_table_details=output_table_details,
-    )
-
-    # Check POINT_IN_TIME is converted to datetime
-    mocked_session.register_table.assert_awaited_once()
-    args, _ = mocked_session.register_table.await_args_list[0]
-    df_observation_set_registered = args[1]
-    assert df_observation_set_registered.dtypes["POINT_IN_TIME"] == "datetime64[ns]"
-
-    mocked_compute_tiles_on_demand.assert_called_once()
-
-
-@pytest.mark.asyncio
-async def test_get_historical_features__skip_tile_cache_if_deployed(
-    float_feature,
-    config,
-    mocked_session,
-    mocked_compute_tiles_on_demand,
-    output_table_details,
-):
-    """
-    Test that for with is_feature_list_deployed=True on demand tile computation is skipped
-    """
-    df_request = pd.DataFrame(
-        {
-            "POINT_IN_TIME": ["2022-01-01", "2022-02-01"],
-            "cust_id": ["C1", "C2"],
-        }
-    )
-    mocked_session.generate_session_unique_id.return_value = "1"
-    await get_historical_features(
-        session=mocked_session,
-        graph=float_feature.graph,
-        nodes=[float_feature.node],
-        observation_set=df_request,
-        source_type=SourceType.SNOWFLAKE,
-        is_feature_list_deployed=True,
-        output_table_details=output_table_details,
-    )
-    mocked_compute_tiles_on_demand.assert_not_called()
 
 
 def test_get_historical_feature_sql(float_feature, update_fixtures):
@@ -368,45 +239,3 @@ async def test_historical_feature_query_set_execute(mocked_session):
         call(66, "Computing features"),
         call(100, "Computing features"),
     ]
-
-
-@pytest.mark.asyncio
-async def test_get_historical_features__tile_cache_multiple_batches(
-    query_graph_with_different_groupby_nodes,
-    output_table_details,
-    fixed_object_id,
-    mocked_session,
-    mocked_compute_tiles_on_demand,
-):
-    """
-    Test that nodes for tile cache are batched correctly
-    """
-    df_request = pd.DataFrame(
-        {
-            "POINT_IN_TIME": ["2022-01-01", "2022-02-01"],
-            "cust_id": ["C1", "C2"],
-        }
-    )
-    mocked_session.generate_session_unique_id.return_value = "1"
-    nodes, graph = query_graph_with_different_groupby_nodes
-
-    with patch("featurebyte.query_graph.sql.feature_historical.NUM_FEATURES_PER_QUERY", 1):
-        _ = await get_historical_features(
-            session=mocked_session,
-            graph=graph,
-            nodes=nodes,
-            observation_set=df_request,
-            source_type=SourceType.SNOWFLAKE,
-            output_table_details=output_table_details,
-        )
-
-    assert len(mocked_compute_tiles_on_demand.call_args_list) == 2
-
-    nodes = []
-    for call_args in mocked_compute_tiles_on_demand.call_args_list:
-        _, kwargs = call_args
-        current_nodes = kwargs["nodes"]
-        nodes.extend([node.name for node in current_nodes])
-
-    expected_nodes = ["groupby_2", "groupby_1"]
-    assert nodes == expected_nodes

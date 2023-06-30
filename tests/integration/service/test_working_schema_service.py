@@ -40,7 +40,7 @@ def deployed_feature_list_and_deployment_fixture(event_table):
 
     next_job_datetime = pd.Timestamp("2001-01-02 12:00:00").to_pydatetime()
     with patch(
-        "featurebyte.feature_manager.manager.get_next_job_datetime",
+        "featurebyte.service.feature_manager.get_next_job_datetime",
         return_value=next_job_datetime,
     ):
         deployment = features.deploy(make_production_ready=True)

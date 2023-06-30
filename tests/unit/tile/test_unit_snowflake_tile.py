@@ -1,13 +1,14 @@
 """
 Unit test for snowflake tile
 """
-from datetime import datetime
 from unittest import mock
+from unittest.mock import Mock
 
 import pytest
 
-from featurebyte.common import date_util
+from featurebyte import SourceType
 from featurebyte.models.tile import TileSpec, TileType
+from featurebyte.session.snowflake import SnowflakeSession
 
 
 def test_construct_snowflaketile_time_modulo_error():
@@ -67,48 +68,72 @@ def test_construct_snowflaketile_zero_time_modulo_frequency():
 
 
 @pytest.mark.asyncio
-@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-async def test_schedule_online_tiles(mock_execute_query, mock_snowflake_tile, tile_manager):
+async def test_schedule_online_tiles(
+    mock_snowflake_tile, tile_manager_service, mock_snowflake_session
+):
     """
     Test schedule_online_tiles method in TileSnowflake
     """
-    _ = mock_execute_query
     with mock.patch(
-        "featurebyte.tile.manager.TileManager._schedule_tiles_custom"
+        "featurebyte.service.tile_manager.TileManagerService._schedule_tiles_custom"
     ) as mock_schedule_tiles_custom:
-        await tile_manager.schedule_online_tiles(mock_snowflake_tile)
+        await tile_manager_service.schedule_online_tiles(
+            mock_snowflake_session, mock_snowflake_tile
+        )
         kwargs = mock_schedule_tiles_custom.call_args.kwargs
         assert kwargs["tile_spec"] == mock_snowflake_tile
         assert kwargs["tile_type"] == TileType.ONLINE
         assert kwargs["monitor_periods"] == 10
 
 
+@pytest.fixture(name="tile_manager_service")
+def tile_manager_service_fixture(app_container):
+    """
+    TileManagerService object fixture
+    """
+    return app_container.tile_manager_service
+
+
+@pytest.fixture(name="mock_snowflake_session")
+def mock_snowflake_session_fixture():
+    """
+    SnowflakeSession object fixture
+    """
+    return Mock(
+        name="mock_snowflake_session",
+        spec=SnowflakeSession,
+        source_type=SourceType.SNOWFLAKE,
+    )
+
+
 @pytest.mark.asyncio
-@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-async def test_schedule_offline_tiles(mock_execute_query, mock_snowflake_tile, tile_manager):
+async def test_schedule_offline_tiles(
+    mock_snowflake_session, mock_snowflake_tile, tile_manager_service
+):
     """
     Test schedule_offline_tiles method in TileSnowflake
     """
-    _ = mock_execute_query
-
     with mock.patch(
-        "featurebyte.tile.manager.TileManager._schedule_tiles_custom"
+        "featurebyte.service.tile_manager.TileManagerService._schedule_tiles_custom"
     ) as mock_schedule_tiles_custom:
-        await tile_manager.schedule_offline_tiles(tile_spec=mock_snowflake_tile)
+        await tile_manager_service.schedule_offline_tiles(
+            mock_snowflake_session, tile_spec=mock_snowflake_tile
+        )
         kwargs = mock_schedule_tiles_custom.call_args.kwargs
         assert kwargs["tile_spec"] == mock_snowflake_tile
         assert kwargs["tile_type"] == TileType.OFFLINE
         assert kwargs["offline_minutes"] == 1440
 
 
-@mock.patch("featurebyte.tile.manager.TileManager.generate_tiles")
-@mock.patch("featurebyte.tile.manager.TileManager.update_tile_entity_tracker")
+@mock.patch("featurebyte.service.tile_manager.TileManagerService.generate_tiles")
+@mock.patch("featurebyte.service.tile_manager.TileManagerService.update_tile_entity_tracker")
 @pytest.mark.asyncio
 async def test_generate_tiles_on_demand(
     mock_generate_tiles,
     mock_update_tile_entity_tracker,
     mock_snowflake_tile,
-    tile_manager,
+    tile_manager_service,
+    mock_snowflake_session,
 ):
     """
     Test generate_tiles_on_demand
@@ -116,7 +141,9 @@ async def test_generate_tiles_on_demand(
     mock_generate_tiles.size_effect = None
     mock_update_tile_entity_tracker.size_effect = None
 
-    await tile_manager.generate_tiles_on_demand([(mock_snowflake_tile, "temp_entity_table")])
+    await tile_manager_service.generate_tiles_on_demand(
+        mock_snowflake_session, [(mock_snowflake_tile, "temp_entity_table")]
+    )
 
     mock_generate_tiles.assert_called_once()
     mock_update_tile_entity_tracker.assert_called_once()

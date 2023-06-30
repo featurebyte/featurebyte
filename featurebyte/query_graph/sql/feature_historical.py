@@ -3,10 +3,9 @@ Historical features SQL generation
 """
 from __future__ import annotations
 
-from typing import Callable, List, Optional, Tuple, Union, cast
+from typing import Callable, List, Optional, Tuple, cast
 
 import datetime
-import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
@@ -16,7 +15,6 @@ from bson import ObjectId
 from pandas.api.types import is_datetime64_any_dtype
 from sqlglot import expressions
 
-from featurebyte.common.progress import get_ranged_progress_callback
 from featurebyte.enum import SourceType, SpecialColumnName
 from featurebyte.exception import MissingPointInTimeColumnError, TooRecentPointInTimeError
 from featurebyte.logging import get_logger
@@ -27,17 +25,14 @@ from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.common import (
-    REQUEST_TABLE_NAME,
     get_fully_qualified_table_name,
     get_qualified_column_identifier,
     quoted_identifier,
     sql_to_string,
 )
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
-from featurebyte.query_graph.sql.parent_serving import construct_request_table_with_parent_entities
 from featurebyte.query_graph.sql.specs import NonTileBasedAggregationSpec, TileBasedAggregationSpec
 from featurebyte.session.base import BaseSession
-from featurebyte.tile.tile_cache import TileCache
 
 HISTORICAL_REQUESTS_POINT_IN_TIME_RECENCY_HOUR = 48
 NUM_FEATURES_PER_QUERY = 50
@@ -584,72 +579,6 @@ def get_historical_features_query_set(  # pylint: disable=too-many-locals
     return HistoricalFeatureQuerySet(feature_queries=feature_queries, output_query=output_query)
 
 
-async def compute_tiles_on_demand(
-    session: BaseSession,
-    graph: QueryGraph,
-    nodes: list[Node],
-    request_id: str,
-    request_table_name: str,
-    request_table_columns: list[str],
-    serving_names_mapping: Optional[dict[str, str]],
-    parent_serving_preparation: Optional[ParentServingPreparation] = None,
-    progress_callback: Optional[Callable[[int, str], None]] = None,
-) -> None:
-    """
-    Compute tiles on demand
-
-    Parameters
-    ----------
-    session: BaseSession
-        Session to use to make queries
-    graph: QueryGraph
-        Query graph
-    nodes: list[Node]
-        List of query graph node
-    request_id: str
-        Request ID to be used as suffix of table names when creating temporary tables
-    request_table_name: str
-        Name of request table
-    request_table_columns: list[str]
-        List of column names in the observations set
-    serving_names_mapping : dict[str, str] | None
-        Optional serving names mapping if the training events data has different serving name
-        columns than those defined in Entities
-    parent_serving_preparation: Optional[ParentServingPreparation]
-        Preparation required for serving parent features
-    progress_callback: Optional[Callable[[int, str], None]]
-        Optional progress callback function
-    """
-    tile_cache = TileCache(session=session)
-
-    if parent_serving_preparation is None:
-        effective_request_table_name = request_table_name
-    else:
-        # Lookup parent entities and join them with the request table since tile computation
-        # requires these entity columns to be present in the request table.
-        parent_serving_result = construct_request_table_with_parent_entities(
-            request_table_name=request_table_name,
-            request_table_columns=request_table_columns,
-            join_steps=parent_serving_preparation.join_steps,
-            feature_store_details=parent_serving_preparation.feature_store_details,
-        )
-        request_table_query = sql_to_string(parent_serving_result.table_expr, session.source_type)
-        effective_request_table_name = parent_serving_result.new_request_table_name
-        await session.register_table_with_query(
-            effective_request_table_name,
-            request_table_query,
-        )
-
-    await tile_cache.compute_tiles_on_demand(
-        graph=graph,
-        nodes=nodes,
-        request_id=request_id,
-        request_table_name=effective_request_table_name,
-        serving_names_mapping=serving_names_mapping,
-        progress_callback=progress_callback,
-    )
-
-
 def get_feature_names(graph: QueryGraph, nodes: list[Node]) -> list[str]:
     """
     Get feature names given a list of ndoes
@@ -667,128 +596,3 @@ def get_feature_names(graph: QueryGraph, nodes: list[Node]) -> list[str]:
     """
     planner = FeatureExecutionPlanner(graph=graph, is_online_serving=False)
     return planner.generate_plan(nodes).feature_names
-
-
-async def get_historical_features(  # pylint: disable=too-many-locals
-    session: BaseSession,
-    graph: QueryGraph,
-    nodes: list[Node],
-    observation_set: Union[pd.DataFrame, ObservationTableModel],
-    source_type: SourceType,
-    output_table_details: TableDetails,
-    serving_names_mapping: dict[str, str] | None = None,
-    is_feature_list_deployed: bool = False,
-    parent_serving_preparation: Optional[ParentServingPreparation] = None,
-    progress_callback: Optional[Callable[[int, str], None]] = None,
-) -> None:
-    """Get historical features
-
-    Parameters
-    ----------
-    session: BaseSession
-        Session to use to make queries
-    graph : QueryGraph
-        Query graph
-    nodes : list[Node]
-        List of query graph node
-    observation_set : Union[pd.DataFrame, ObservationTableModel]
-        Observation set
-    source_type : SourceType
-        Source type information
-    serving_names_mapping : dict[str, str] | None
-        Optional serving names mapping if the observations set has different serving name columns
-        than those defined in Entities
-    is_feature_list_deployed : bool
-        Whether the feature list that triggered this historical request is deployed. If so, tile
-        tables would have already been back-filled and there is no need to check and calculate tiles
-        on demand.
-    parent_serving_preparation: Optional[ParentServingPreparation]
-        Preparation required for serving parent features
-    output_table_details: TableDetails
-        Output table details to write the results to
-    progress_callback: Optional[Callable[[int, str], None]]
-        Optional progress callback function
-    """
-    tic_ = time.time()
-
-    observation_set = get_internal_observation_set(observation_set)
-
-    # Validate request
-    validate_request_schema(observation_set)
-    validate_historical_requests_point_in_time(observation_set)
-
-    # use a unique request table name
-    request_id = session.generate_session_unique_id()
-    request_table_name = f"{REQUEST_TABLE_NAME}_{request_id}"
-    request_table_columns = observation_set.columns
-
-    # Execute feature SQL code
-    await observation_set.register_as_request_table(
-        session, request_table_name, add_row_index=len(nodes) > NUM_FEATURES_PER_QUERY
-    )
-
-    # Compute tiles on demand if required
-    if not is_feature_list_deployed:
-        tile_cache_progress_callback = (
-            get_ranged_progress_callback(
-                progress_callback,
-                0,
-                TILE_COMPUTE_PROGRESS_MAX_PERCENT,
-            )
-            if progress_callback
-            else None
-        )
-        tic = time.time()
-        # Process nodes in batches
-        tile_cache_node_groups = split_nodes(
-            graph, nodes, NUM_FEATURES_PER_QUERY, is_tile_cache=True
-        )
-        for i, _nodes in enumerate(tile_cache_node_groups):
-            logger.debug("Checking and computing tiles on demand for %d nodes", len(_nodes))
-            await compute_tiles_on_demand(
-                session=session,
-                graph=graph,
-                nodes=_nodes,
-                request_id=request_id,
-                request_table_name=request_table_name,
-                request_table_columns=request_table_columns,
-                serving_names_mapping=serving_names_mapping,
-                parent_serving_preparation=parent_serving_preparation,
-                progress_callback=get_ranged_progress_callback(
-                    tile_cache_progress_callback,
-                    100 * i / len(tile_cache_node_groups),
-                    100 * (i + 1) / len(tile_cache_node_groups),
-                )
-                if tile_cache_progress_callback
-                else None,
-            )
-
-        elapsed = time.time() - tic
-        logger.debug("Done checking and computing tiles on demand", extra={"duration": elapsed})
-
-    if progress_callback:
-        progress_callback(TILE_COMPUTE_PROGRESS_MAX_PERCENT, PROGRESS_MESSAGE_COMPUTING_FEATURES)
-
-    # Generate SQL code that computes the features
-    historical_feature_query_set = get_historical_features_query_set(
-        graph=graph,
-        nodes=nodes,
-        request_table_columns=request_table_columns,
-        serving_names_mapping=serving_names_mapping,
-        source_type=source_type,
-        output_table_details=output_table_details,
-        output_feature_names=get_feature_names(graph, nodes),
-        request_table_name=request_table_name,
-        parent_serving_preparation=parent_serving_preparation,
-    )
-    await historical_feature_query_set.execute(
-        session,
-        get_ranged_progress_callback(
-            progress_callback,
-            TILE_COMPUTE_PROGRESS_MAX_PERCENT,
-            100,
-        )
-        if progress_callback
-        else None,
-    )
-    logger.debug(f"compute_historical_features in total took {time.time() - tic_:.2f}s")

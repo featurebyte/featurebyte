@@ -16,7 +16,7 @@ from featurebyte.worker.task_executor import TaskExecutor
 
 
 @pytest_asyncio.fixture(name="scheduler_fixture")
-async def mock_scheduler_fixture(feature, tile_spec, persistent):
+async def mock_scheduler_fixture(feature, tile_spec, task_manager):
     """
     Fixture for TileScheduler information
     """
@@ -26,12 +26,6 @@ async def mock_scheduler_fixture(feature, tile_spec, persistent):
     tile_spec.feature_store_id = feature.tabular_source.feature_store_id
     job_id = f"{TileType.ONLINE}_{tile_spec.aggregation_id}"
 
-    task_manager = TaskManager(
-        user=User(id=feature.user_id),
-        persistent=persistent,
-        celery=get_celery(),
-        catalog_id=DEFAULT_CATALOG_ID,
-    )
     tile_scheduler = TileScheduler(task_manager=task_manager)
 
     yield tile_scheduler, tile_spec, job_id
@@ -42,14 +36,14 @@ async def mock_scheduler_fixture(feature, tile_spec, persistent):
 @pytest.mark.parametrize("source_type", ["spark", "snowflake", "databricks"], indirect=True)
 @pytest.mark.asyncio
 async def test_generate_tiles_with_scheduler__verify_scheduling_and_execution(
-    feature_store, session, tile_manager, scheduler_fixture
+    feature_store, session, tile_manager_service, scheduler_fixture
 ):
     """
     Test generate_tiles with scheduler
     """
     tile_scheduler, tile_spec, job_id = scheduler_fixture
 
-    await tile_manager.schedule_online_tiles(tile_spec=tile_spec)
+    await tile_manager_service.schedule_online_tiles(session, tile_spec=tile_spec)
 
     job_details = await tile_scheduler.get_job_details(job_id=job_id)
     assert job_details is not None
@@ -72,34 +66,34 @@ async def test_generate_tiles_with_scheduler__verify_scheduling_and_execution(
 @pytest.mark.parametrize("source_type", ["spark", "snowflake", "databricks"], indirect=True)
 @pytest.mark.asyncio
 async def test_generate_tiles_with_scheduler__avoid_duplicate_tile(
-    feature_store, tile_manager, scheduler_fixture
+    feature_store, session, tile_manager_service, scheduler_fixture
 ):
     """
     Test generate_tiles with scheduler - avoid duplicate tile job
     """
     tile_scheduler, tile_spec, job_id = scheduler_fixture
-    sql = await tile_manager.schedule_online_tiles(tile_spec=tile_spec)
+    sql = await tile_manager_service.schedule_online_tiles(session, tile_spec=tile_spec)
     assert sql is not None
 
-    sql = await tile_manager.schedule_online_tiles(tile_spec=tile_spec)
+    sql = await tile_manager_service.schedule_online_tiles(session, tile_spec=tile_spec)
     assert sql is None
 
 
 @pytest.mark.parametrize("source_type", ["spark", "snowflake", "databricks"], indirect=True)
 @pytest.mark.asyncio
 async def test_generate_tiles_with_scheduler__tile_job_exists(
-    feature_store, tile_manager, scheduler_fixture
+    feature_store, session, tile_manager_service, scheduler_fixture
 ):
     """
     Test generate_tiles with scheduler - test tile_job_exists
     """
     tile_scheduler, tile_spec, job_id = scheduler_fixture
 
-    exists = await tile_manager.tile_job_exists(tile_spec=tile_spec)
+    exists = await tile_manager_service.tile_job_exists(tile_spec=tile_spec)
     assert exists is False
 
-    sql = await tile_manager.schedule_online_tiles(tile_spec=tile_spec)
+    sql = await tile_manager_service.schedule_online_tiles(session=session, tile_spec=tile_spec)
     assert sql is not None
 
-    exists = await tile_manager.tile_job_exists(tile_spec=tile_spec)
+    exists = await tile_manager_service.tile_job_exists(tile_spec=tile_spec)
     assert exists is True

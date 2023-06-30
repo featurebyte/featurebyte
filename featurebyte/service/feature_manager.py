@@ -1,5 +1,5 @@
 """
-Feature Manager class
+FeatureManagerService class
 """
 from __future__ import annotations
 
@@ -8,13 +8,12 @@ from typing import Any, List, Optional, Set
 from datetime import datetime, timedelta, timezone
 
 import pandas as pd
-from pydantic import BaseModel, PrivateAttr
+from bson import ObjectId
 from sqlglot import expressions
 from sqlglot.expressions import select
 
 from featurebyte.common import date_util
 from featurebyte.common.date_util import get_next_job_datetime
-from featurebyte.common.tile_util import tile_manager_from_session
 from featurebyte.feature_manager.sql_template import (
     tm_delete_online_store_mapping,
     tm_delete_tile_feature_mapping,
@@ -25,60 +24,38 @@ from featurebyte.feature_manager.sql_template import (
 from featurebyte.logging import get_logger
 from featurebyte.models.online_store import OnlineFeatureSpec
 from featurebyte.models.tile import TileSpec, TileType
-from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
+from featurebyte.persistent import Persistent
+from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.online_serving import OnlineStorePrecomputeQuery
-from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
-from featurebyte.service.task_manager import TaskManager
+from featurebyte.service.base_service import BaseService
+from featurebyte.service.tile_manager import TileManagerService
 from featurebyte.session.base import BaseSession
-from featurebyte.tile.manager import TileManager
 from featurebyte.utils.snowflake.sql import escape_column_names
 
 logger = get_logger(__name__)
 
 
-class FeatureManager(BaseModel):
+class FeatureManagerService(BaseService):
     """
-    Snowflake Feature Manager class
+    FeatureManagerService is responsible for orchestrating the materialization of features and tiles
+    when a feature is online enabled or disabled.
     """
-
-    _session: BaseSession = PrivateAttr()
-    _tile_manager: TileManager = PrivateAttr()
-    _adapter: BaseAdapter = PrivateAttr()
 
     def __init__(
         self,
-        session: BaseSession,
-        online_store_table_version_service: OnlineStoreTableVersionService,
-        task_manager: Optional[TaskManager] = None,
-        **kw: Any,
-    ) -> None:
-        """
-        Custom constructor for TileSnowflake to instantiate a datasource session
-
-        Parameters
-        ----------
-        session: BaseSession
-            input session for datasource
-        online_store_table_version_service: OnlineStoreTableVersionService
-            Online store table version service
-        task_manager: Optional[TaskManager]
-            input task manager
-        kw: Any
-            constructor arguments
-        """
-        super().__init__(**kw)
-        self._session = session
-        self._adapter = get_sql_adapter(session.source_type)
-        self._tile_manager = tile_manager_from_session(
-            session=session,
-            task_manager=task_manager,
-            online_store_table_version_service=online_store_table_version_service,
-        )
+        user: Any,
+        persistent: Persistent,
+        catalog_id: ObjectId,
+        tile_manager_service: TileManagerService,
+    ):
+        super().__init__(user, persistent, catalog_id)
+        self.tile_manager_service = tile_manager_service
 
     async def online_enable(
         self,
+        session: BaseSession,
         feature_spec: OnlineFeatureSpec,
         schedule_time: Optional[datetime] = None,
         is_recreating_schema: bool = False,
@@ -88,6 +65,8 @@ class FeatureManager(BaseModel):
 
         Parameters
         ----------
+        session: BaseSession
+            Instance of BaseSession to interact with the data warehouse
         feature_spec: OnlineFeatureSpec
             Instance of OnlineFeatureSpec
         schedule_time: Optional[datetime]
@@ -106,7 +85,7 @@ class FeatureManager(BaseModel):
 
         # get aggregation result names that need to be populated
         unscheduled_result_names = await self._get_unscheduled_aggregation_result_names(
-            feature_spec
+            session, feature_spec
         )
         logger.debug(
             "Done retrieving unscheduled aggregation result names",
@@ -114,46 +93,54 @@ class FeatureManager(BaseModel):
         )
 
         # insert records into tile-feature mapping table
-        await self._update_tile_feature_mapping_table(feature_spec, unscheduled_result_names)
+        await self._update_tile_feature_mapping_table(
+            session, feature_spec, unscheduled_result_names
+        )
 
         # enable tile generation with scheduled jobs
         aggregation_id_to_tile_spec = {}
         for tile_spec in feature_spec.feature.tile_specs:
             aggregation_id_to_tile_spec[tile_spec.aggregation_id] = tile_spec
-            tile_job_exists = await self._tile_manager.tile_job_exists(tile_spec=tile_spec)
+            tile_job_exists = await self.tile_manager_service.tile_job_exists(tile_spec=tile_spec)
             if not tile_job_exists:
                 # enable online tiles scheduled job
                 tile_spec.user_id = feature_spec.feature.user_id
                 tile_spec.feature_store_id = feature_spec.feature.tabular_source.feature_store_id
                 tile_spec.catalog_id = feature_spec.feature.catalog_id
 
-                await self._tile_manager.schedule_online_tiles(tile_spec=tile_spec)
+                await self.tile_manager_service.schedule_online_tiles(
+                    session=session, tile_spec=tile_spec
+                )
                 logger.debug(f"Done schedule_online_tiles for {tile_spec.aggregation_id}")
 
                 # enable offline tiles scheduled job
-                await self._tile_manager.schedule_offline_tiles(tile_spec=tile_spec)
+                await self.tile_manager_service.schedule_offline_tiles(
+                    session=session, tile_spec=tile_spec
+                )
                 logger.debug(f"Done schedule_offline_tiles for {tile_spec.aggregation_id}")
 
                 # generate historical tiles
-                await self._generate_historical_tiles(tile_spec=tile_spec)
+                await self._generate_historical_tiles(session=session, tile_spec=tile_spec)
 
             elif is_recreating_schema:
                 # if this is called when recreating the schema, we cannot assume that the historical
                 # tiles are available even if there is an active tile jobs.
-                await self._generate_historical_tiles(tile_spec=tile_spec)
+                await self._generate_historical_tiles(session=session, tile_spec=tile_spec)
 
         # populate feature store
         for query in self._get_unscheduled_precompute_queries(
             feature_spec, unscheduled_result_names
         ):
             await self._populate_feature_store(
+                session=session,
                 tile_spec=aggregation_id_to_tile_spec[query.aggregation_id],
                 schedule_time=schedule_time,
                 aggregation_result_name=query.result_name,
             )
 
+    @staticmethod
     async def _get_unscheduled_aggregation_result_names(
-        self, feature_spec: OnlineFeatureSpec
+        session: BaseSession, feature_spec: OnlineFeatureSpec
     ) -> Set[str]:
         """
         Get the aggregation result names that are not yet scheduled
@@ -164,6 +151,8 @@ class FeatureManager(BaseModel):
 
         Parameters
         ----------
+        session: BaseSession
+            Instance of BaseSession to interact with the data warehouse
         feature_spec: OnlineFeatureSpec
             Instance of OnlineFeatureSpec
 
@@ -182,8 +171,8 @@ class FeatureManager(BaseModel):
                 ),
             )
         )
-        df_scheduled_result_names = await self._session.execute_query(
-            sql_to_string(query, self._session.source_type)
+        df_scheduled_result_names = await session.execute_query(
+            sql_to_string(query, session.source_type)
         )
         if df_scheduled_result_names is None:
             return set(result_names)
@@ -200,7 +189,11 @@ class FeatureManager(BaseModel):
         return out
 
     async def _populate_feature_store(
-        self, tile_spec: TileSpec, schedule_time: datetime, aggregation_result_name: str
+        self,
+        session: BaseSession,
+        tile_spec: TileSpec,
+        schedule_time: datetime,
+        aggregation_result_name: str,
     ) -> None:
         next_job_time = get_next_job_datetime(
             input_dt=schedule_time,
@@ -209,11 +202,11 @@ class FeatureManager(BaseModel):
         )
         job_schedule_ts = next_job_time - timedelta(minutes=tile_spec.frequency_minute)
         job_schedule_ts_str = job_schedule_ts.strftime("%Y-%m-%d %H:%M:%S")
-        await self._tile_manager.populate_feature_store(
-            tile_spec, job_schedule_ts_str, aggregation_result_name
+        await self.tile_manager_service.populate_feature_store(
+            session, tile_spec, job_schedule_ts_str, aggregation_result_name
         )
 
-    async def _generate_historical_tiles(self, tile_spec: TileSpec) -> None:
+    async def _generate_historical_tiles(self, session: BaseSession, tile_spec: TileSpec) -> None:
         # generate historical tile_values
         date_format = "%Y-%m-%dT%H:%M:%S.%fZ"
 
@@ -233,7 +226,7 @@ class FeatureManager(BaseModel):
         end_ts_str = end_ts.strftime(date_format)
 
         start_ts = datetime(1970, 1, 1, tzinfo=timezone.utc)
-        last_tile_start_ts_df = await self._session.execute_query(
+        last_tile_start_ts_df = await session.execute_query(
             f"SELECT LAST_TILE_START_DATE_OFFLINE FROM TILE_REGISTRY "
             f"WHERE TILE_ID = '{tile_spec.tile_id}' "
             f"AND AGGREGATION_ID = '{tile_spec.aggregation_id}' "
@@ -259,7 +252,8 @@ class FeatureManager(BaseModel):
         )
         start_ts_str = start_ts.strftime(date_format)
 
-        await self._tile_manager.generate_tiles(
+        await self.tile_manager_service.generate_tiles(
+            session=session,
             tile_spec=tile_spec,
             tile_type=TileType.OFFLINE,
             end_ts_str=end_ts_str,
@@ -268,13 +262,18 @@ class FeatureManager(BaseModel):
         )
 
     async def _update_tile_feature_mapping_table(
-        self, feature_spec: OnlineFeatureSpec, unscheduled_result_names: Set[str]
+        self,
+        session: BaseSession,
+        feature_spec: OnlineFeatureSpec,
+        unscheduled_result_names: Set[str],
     ) -> None:
         """
         Insert records into tile-feature mapping table
 
         Parameters
         ----------
+        session: BaseSession
+            Instance of BaseSession to interact with the data warehouse
         feature_spec: OnlineFeatureSpec
             Instance of OnlineFeatureSpec
         unscheduled_result_names: Set[str]
@@ -292,7 +291,7 @@ class FeatureManager(BaseModel):
                 feature_event_table_ids=",".join([str(i) for i in feature_spec.event_table_ids]),
                 is_deleted=False,
             )
-            await self._session.execute_query(upsert_sql)
+            await session.execute_query(upsert_sql)
             logger.debug(f"Done insert tile_feature_mapping for {tile_spec.aggregation_id}")
 
         for query in self._get_unscheduled_precompute_queries(
@@ -303,19 +302,21 @@ class FeatureManager(BaseModel):
                 aggregation_id=query.aggregation_id,
                 result_id=query.result_name,
                 result_type=query.result_type,
-                sql_query=self._adapter.escape_quote_char(query.sql),
+                sql_query=get_sql_adapter(session.source_type).escape_quote_char(query.sql),
                 online_store_table_name=query.table_name,
                 entity_column_names=",".join(escape_column_names(query.serving_names)),
             )
-            await self._session.execute_query(upsert_sql)
+            await session.execute_query(upsert_sql)
             logger.debug(f"Done insert tile_feature_mapping for {query.result_name}")
 
-    async def online_disable(self, feature_spec: OnlineFeatureSpec) -> None:
+    async def online_disable(self, session: BaseSession, feature_spec: OnlineFeatureSpec) -> None:
         """
         Schedule both online and offline tile jobs
 
         Parameters
         ----------
+        session: BaseSession
+            Instance of BaseSession to interact with the data warehouse
         feature_spec: OnlineFeatureSpec
             input feature instance
         """
@@ -326,25 +327,28 @@ class FeatureManager(BaseModel):
                 feature_name=feature_spec.feature.name,
                 feature_version=feature_spec.feature.version.to_str(),
             )
-            await self._session.execute_query(delete_sql)
+            await session.execute_query(delete_sql)
             logger.debug(f"Done delete tile_feature_mapping for {agg_id}")
             for query in feature_spec.precompute_queries:
                 delete_sql = tm_delete_online_store_mapping.render(result_id=query.result_name)
-                await self._session.execute_query(delete_sql)
+                await session.execute_query(delete_sql)
             logger.debug(f"Done delete online_store_mapping for {agg_id}")
 
         # disable tile scheduled jobs
         for tile_spec in feature_spec.feature.tile_specs:
-            await self._tile_manager.remove_tile_jobs(tile_spec)
+            await self.tile_manager_service.remove_tile_jobs(session, tile_spec)
 
+    @staticmethod
     async def retrieve_feature_tile_inconsistency_data(
-        self, query_start_ts: str, query_end_ts: str
+        session: BaseSession, query_start_ts: str, query_end_ts: str
     ) -> pd.DataFrame:
         """
         Retrieve the raw table of feature tile inconsistency monitoring
 
         Parameters
         ----------
+        session: BaseSession
+            Instance of BaseSession to interact with the data warehouse
         query_start_ts: str
             start monitoring timestamp of tile inconsistency
         query_end_ts: str
@@ -357,5 +361,5 @@ class FeatureManager(BaseModel):
         sql = tm_feature_tile_monitor.render(
             query_start_ts=query_start_ts, query_end_ts=query_end_ts
         )
-        result = await self._session.execute_query(sql)
+        result = await session.execute_query(sql)
         return result

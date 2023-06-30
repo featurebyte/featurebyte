@@ -12,7 +12,6 @@ from uuid import uuid4
 
 import pandas as pd
 import pytest
-import pytest_asyncio
 from bson.objectid import ObjectId
 from cachetools import TTLCache
 from fastapi.testclient import TestClient
@@ -35,7 +34,6 @@ from featurebyte.api.item_table import ItemTable
 from featurebyte.app import User, app, get_celery
 from featurebyte.common.model_util import get_version
 from featurebyte.enum import AggFunc, InternalName
-from featurebyte.feature_manager.manager import FeatureManager
 from featurebyte.feature_manager.model import ExtendedFeatureListModel
 from featurebyte.models.base import DEFAULT_CATALOG_ID, VersionIdentifier
 from featurebyte.models.credential import CredentialModel
@@ -53,7 +51,6 @@ from featurebyte.session.base import DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS
 from featurebyte.session.manager import SessionManager, session_cache
 from featurebyte.storage import LocalTempStorage
 from featurebyte.storage.local import LocalStorage
-from featurebyte.tile.manager import TileManager
 from featurebyte.worker.task.base import TASK_MAP
 from tests.unit.conftest_config import (
     config_file_fixture,
@@ -950,7 +947,7 @@ def historical_feature_table_fixture(
     feature_list = FeatureList([float_feature], name="feature_list_for_historical_feature_table")
     feature_list.save()
     with patch(
-        "featurebyte.query_graph.sql.feature_historical.compute_tiles_on_demand",
+        "featurebyte.service.historical_features.compute_tiles_on_demand",
     ):
         historical_feature_table = feature_list.compute_historical_feature_table(
             observation_table_from_source, "my_historical_feature_table"
@@ -1102,9 +1099,9 @@ def agg_per_category_feature_fixture(snowflake_event_view_with_entity):
             frequency="30m",
             time_modulo_frequency="5m",
         ),
-        feature_names=["sum_30m", "sum_2h", "sum_1d"],
+        feature_names=["sum_30m_by_category", "sum_2h_by_category", "sum_1d_by_category"],
     )
-    yield features["sum_1d"]
+    yield features["sum_1d_by_category"]
 
 
 @pytest.fixture(name="count_per_category_feature_group")
@@ -1199,16 +1196,6 @@ def mock_snowflake_tile():
     return tile_spec
 
 
-@pytest_asyncio.fixture
-@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-async def tile_manager(mock_execute_query, session_manager, snowflake_feature_store):
-    """
-    Tile Manager fixture
-    """
-    _ = mock_execute_query
-    return TileManager(session=await session_manager.get_session(snowflake_feature_store))
-
-
 @pytest.fixture
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
 def mock_snowflake_feature(
@@ -1240,24 +1227,6 @@ def online_store_table_version_service_fixture(app_container):
     OnlineStoreTableVersionService fixture
     """
     return app_container.online_store_table_version_service
-
-
-@pytest_asyncio.fixture
-@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-async def feature_manager(
-    mock_execute_query,
-    session_manager,
-    snowflake_feature_store,
-    online_store_table_version_service,
-):
-    """
-    Feature Manager fixture
-    """
-    _ = mock_execute_query
-    return FeatureManager(
-        session=await session_manager.get_session(snowflake_feature_store),
-        online_store_table_version_service=online_store_table_version_service,
-    )
 
 
 @pytest.fixture
@@ -1304,7 +1273,7 @@ def mock_snowflake_feature_list_model(
 def mocked_compute_tiles_on_demand():
     """Fixture for a mocked SnowflakeTileCache object"""
     with mock.patch(
-        "featurebyte.query_graph.sql.feature_historical.TileCache.compute_tiles_on_demand"
+        "featurebyte.service.historical_features.compute_tiles_on_demand"
     ) as mocked_compute_tiles_on_demand:
         yield mocked_compute_tiles_on_demand
 
