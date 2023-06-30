@@ -65,14 +65,14 @@ class NamespaceHandler:
         self.view_construction_service = view_construction_service
 
     async def prepare_graph_to_store(
-        self, graph: QueryGraph, node: Node, sanitize_for_definition: bool = False
+        self, graph: QueryGraphModel, node: Node, sanitize_for_definition: bool = False
     ) -> Tuple[QueryGraphModel, str]:
         """
         Prepare the graph to store by pruning the query graph
 
         Parameters
         ----------
-        graph: QueryGraph
+        graph: QueryGraphModel
             Query graph
         node: Node
             Target node
@@ -84,17 +84,17 @@ class NamespaceHandler:
         QueryGraphModel
         """
         # reconstruct view graph node to remove unused column cleaning operations
-        graph, node_name_map = await self.view_construction_service.construct_graph(
+        constructed_graph, node_name_map = await self.view_construction_service.construct_graph(
             query_graph=graph,
             target_node=node,
             table_cleaning_operations=[],
         )
-        node = graph.get_node_by_name(node_name_map[node.name])
+        node = constructed_graph.get_node_by_name(node_name_map[node.name])
 
         # prune the graph to remove unused nodes
-        pruned_graph, pruned_node_name_map = QueryGraph(**graph.dict(by_alias=True)).prune(
-            target_node=node
-        )
+        pruned_graph, pruned_node_name_map = QueryGraph(
+            **constructed_graph.dict(by_alias=True)
+        ).prune(target_node=node)
         if sanitize_for_definition:
             pruned_graph = sanitize_query_graph_for_feature_definition(graph=pruned_graph)
         return pruned_graph, pruned_node_name_map[node.name]

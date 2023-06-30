@@ -19,6 +19,7 @@ from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent.base import Persistent
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
+from featurebyte.service.namespace_handler import NamespaceHandler
 from featurebyte.service.table import TableService
 from featurebyte.service.view_construction import ViewConstructionService
 from featurebyte.service.working_schema import WorkingSchemaService
@@ -47,9 +48,11 @@ class TileColumnTypeExtractor:
             persistent,
             catalog_id=DEFAULT_CATALOG_ID,
             table_service=self.table_service,
-            view_construction_service=self.view_construction_service,
             feature_namespace_service=FeatureNamespaceService(
                 user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
+            ),
+            namespace_handler=NamespaceHandler(
+                view_construction_service=self.view_construction_service,
             ),
         )
         self.tile_column_name_to_type: Optional[dict[str, str]] = None
