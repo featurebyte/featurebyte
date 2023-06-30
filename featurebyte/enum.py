@@ -373,5 +373,12 @@ class MaterializedTableNamePrefix(StrEnum):
         return [c.value for c in cls]
 
 
+class FunctionParameterInputForm(StrEnum):
+    """Generic function's parameter input form type"""
+
+    VALUE = "value"  # value is used as function argument
+    COLUMN = "column"  # column is used as function argument
+
+
 # enum used for handle conflict when saving object to persistent storage
 ConflictResolution = Literal["raise", "retrieve"]
