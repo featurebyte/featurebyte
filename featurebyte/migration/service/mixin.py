@@ -50,6 +50,22 @@ class BaseMigrationServiceMixin:
         use_raw_query_filter: bool = False,
         **kwargs: Any,
     ) -> QueryFilter:
+        """
+        Construct query filter for listing records.
+
+        Parameters
+        ----------
+        query_filter: Optional[dict[str, Any]]
+            Query filter
+        use_raw_query_filter: bool
+            Whether to use raw query filter
+        **kwargs: Any
+            Additional keyword arguments
+
+        Returns
+        -------
+        QueryFilter
+        """
         ...
 
     @abstractmethod
