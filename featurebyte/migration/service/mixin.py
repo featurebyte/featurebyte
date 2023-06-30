@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Iterator, Optional
 
-import copy
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 
@@ -17,7 +16,7 @@ from featurebyte.logging import get_logger
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.persistent import Document, QueryFilter
 from featurebyte.persistent.base import Persistent
-from featurebyte.service.base_document import RAW_QUERY_FILTER_WARNING
+from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
 
 if TYPE_CHECKING:
@@ -150,14 +149,20 @@ class DataWarehouseMigrationMixin(BaseMigrationServiceMixin, ABC):
     get_credential: Any
     celery: Celery
 
-    def __init__(self, persistent: Persistent, session_manager_service: SessionManagerService):
+    def __init__(
+        self,
+        persistent: Persistent,
+        session_manager_service: SessionManagerService,
+        feature_store_service: FeatureStoreService,
+    ):
         super().__init__(persistent=persistent)
         self.session_manager_service = session_manager_service
+        self.feature_store_service = feature_store_service
         self._allow_to_use_raw_query_filter = False
 
     @property
     def collection_name(self) -> str:
-        return "feature_store"
+        return self.feature_store_service.collection_name
 
     def _construct_list_query_filter(
         self,
@@ -165,32 +170,15 @@ class DataWarehouseMigrationMixin(BaseMigrationServiceMixin, ABC):
         use_raw_query_filter: bool = False,
         **kwargs: Any,
     ) -> QueryFilter:
-        _ = self
-        if not query_filter:
-            output = {}
-        else:
-            output = copy.deepcopy(query_filter)
-
-        if use_raw_query_filter:
-            if not self._allow_to_use_raw_query_filter:
-                raise NotImplementedError(RAW_QUERY_FILTER_WARNING)
-            return output
-        if kwargs.get("name"):
-            output["name"] = kwargs["name"]
-        if kwargs.get("version"):
-            output["version"] = kwargs["version"]
-        if kwargs.get("search"):
-            output["$text"] = {"$search": kwargs["search"]}
-        return output
+        return self.feature_store_service._construct_list_query_filter(
+            query_filter=query_filter,
+            use_raw_query_filter=use_raw_query_filter,
+            **kwargs,
+        )
 
     @contextmanager
     def allow_use_raw_query_filter(self) -> Iterator[None]:
-        try:
-            logger.warning(RAW_QUERY_FILTER_WARNING)
-            self._allow_to_use_raw_query_filter = True
-            yield
-        finally:
-            self._allow_to_use_raw_query_filter = False
+        return self.feature_store_service.allow_use_raw_query_filter()
 
     async def get_session(self, feature_store: FeatureStoreModel) -> BaseSession:
         """

@@ -17,6 +17,7 @@ from featurebyte.migration.service.mixin import DataWarehouseMigrationMixin
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent import Persistent
 from featurebyte.service.feature import FeatureService
+from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.working_schema import WorkingSchemaService
 from featurebyte.session.base import BaseSession
@@ -119,9 +120,10 @@ class DataWarehouseMigrationServiceV6(DataWarehouseMigrationMixin):
         self,
         persistent: Persistent,
         session_manager_service: SessionManagerService,
+        feature_store_service: FeatureStoreService,
         tile_column_type_extractor: TileColumnTypeExtractor,
     ):
-        super().__init__(persistent, session_manager_service)
+        super().__init__(persistent, session_manager_service, feature_store_service)
         self.tile_column_type_extractor = tile_column_type_extractor
 
     async def _add_tile_value_types_column(self, migration_version: int) -> None:
@@ -228,9 +230,10 @@ class DataWarehouseMigrationServiceV8(DataWarehouseMigrationMixin):
         self,
         persistent: Persistent,
         session_manager_service: SessionManagerService,
+        feature_store_service: FeatureStoreService,
         working_schema_service: WorkingSchemaService,
     ):
-        super().__init__(persistent, session_manager_service)
+        super().__init__(persistent, session_manager_service, feature_store_service)
         self.working_schema_service = working_schema_service
 
     @migrate(version=3, description="Reset working schema from scratch")
