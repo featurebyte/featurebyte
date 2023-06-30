@@ -1,6 +1,7 @@
 """Unit tests for SDK code generation"""
 import pytest
 
+from featurebyte import FeatureJobSetting
 from featurebyte.core.timedelta import to_timedelta
 from featurebyte.enum import AggFunc
 from featurebyte.exception import RecordUpdateException
@@ -469,3 +470,56 @@ def test_conditional_assignment_assumption(saved_event_table):
     assert view.node_name != view_copy.node_name
     assert view_copy["col_text"].node.type == NodeType.PROJECT  # before conditional node
     assert view["col_text"].node.type == NodeType.PROJECT  # after assignment node
+
+
+def test_isin_column_sdk_code_generation(saved_event_table, update_fixtures):
+    """
+    Test SDK code generation for isin operation with Column
+    """
+    event_view = saved_event_table.get_view()
+    out = event_view["col_text"].isin(["a", "b", "c"])
+
+    check_sdk_code_generation(
+        out,
+        to_use_saved_data=True,
+        to_format=True,
+        fixture_path="tests/fixtures/sdk_code/isin_column.py",
+        update_fixtures=update_fixtures,
+        table_id=saved_event_table.id,
+    )
+
+
+def test_isin_feature_sdk_code_generation(
+    saved_event_table, cust_id_entity, transaction_entity, update_fixtures
+):
+    """
+    Test SDK code generation for isin operation with Feature
+    """
+    saved_event_table.cust_id.as_entity(cust_id_entity.name)
+    saved_event_table.col_int.as_entity(transaction_entity.name)
+
+    event_view = saved_event_table.get_view()
+    feat_event_count = event_view.groupby("cust_id", category="col_int").aggregate_over(
+        method="count",
+        windows=["24h"],
+        feature_names=["count_a_24h_per_col_int"],
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="1h",
+            frequency="1h",
+            time_modulo_frequency="30m",
+        ),
+    )["count_a_24h_per_col_int"]
+    lookup_feature = event_view["cust_id"].as_feature("cust_id_feature")
+
+    feat = lookup_feature.isin(feat_event_count)
+    feat.name = "lookup_feature_isin_count_per_category_feature"
+    feat.save()
+
+    check_sdk_code_generation(
+        feat,
+        to_use_saved_data=True,
+        to_format=True,
+        fixture_path="tests/fixtures/sdk_code/isin_feature.py",
+        update_fixtures=update_fixtures,
+        table_id=saved_event_table.id,
+    )

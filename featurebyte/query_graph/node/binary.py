@@ -2,14 +2,13 @@
 This module contains binary operation node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import List, Literal, Optional, Sequence, Union
+from typing import List, Literal, Sequence
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.base import (
-    BaseSeriesOutputNode,
     BaseSeriesOutputWithAScalarParamNode,
     BinaryArithmeticOpNode,
     BinaryLogicalOpNode,
@@ -147,16 +146,10 @@ class PowerNode(BaseSeriesOutputWithAScalarParamNode):
         return f"{left_operand}.pow({right_operand})"
 
 
-class IsInNode(BaseSeriesOutputNode):
+class IsInNode(BaseSeriesOutputWithAScalarParamNode):
     """IsInNode class"""
 
-    class Parameters(BaseModel):
-        """Parameters"""
-
-        value: Optional[Sequence[Union[bool, int, float, str]]]
-
     type: Literal[NodeType.IS_IN] = Field(NodeType.IS_IN, const=True)
-    parameters: Parameters
 
     @property
     def max_input_count(self) -> int:
@@ -169,3 +162,6 @@ class IsInNode(BaseSeriesOutputNode):
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.BOOL
+
+    def generate_expression(self, left_operand: str, right_operand: str) -> str:
+        return f"{left_operand}.isin({right_operand})"
