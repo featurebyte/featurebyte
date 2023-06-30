@@ -113,7 +113,6 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
             target_name=target_doc.name,
             entities=entity_brief_info_list,
             horizon=target_doc.horizon,
-            blind_spot=target_doc.blind_spot,
             has_recipe=bool(target_doc.graph),
             created_at=target_doc.created_at,
             updated_at=target_doc.updated_at,
