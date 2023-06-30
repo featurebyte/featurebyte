@@ -5,6 +5,7 @@ import os
 
 from bson import json_util
 
+from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import construct_node
@@ -421,3 +422,64 @@ def test_project_node_parameters_pruning(query_graph_and_assign_node):
     mapped_proj_node_name = node_name_map[proj_node.name]
     mapped_proj_node = pruned_graph.get_node_by_name(mapped_proj_node_name)
     assert mapped_proj_node.parameters.columns == ["ts", "cust_id", "a", "b"]
+
+
+def test_generic_function__pruning(query_graph_and_assign_node):
+    """Test pruning of query graph with generic function node"""
+    graph, assign_node = query_graph_and_assign_node
+    proj_a = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[assign_node],
+    )
+    proj_c = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["c"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[assign_node],
+    )
+
+    # generic function node with two input nodes
+    gfunc_1 = graph.add_operation(
+        node_type=NodeType.GENERIC_FUNCTION,
+        node_params={
+            "function_name": "my_func",
+            "function_parameters": [
+                {"column_name": "a", "dtype": "FLOAT", "input_form": "column"},
+                {"column_name": "c", "dtype": "FLOAT", "input_form": "column"},
+            ],
+            "output_dtype": DBVarType.FLOAT,
+        },
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[proj_a, proj_c],
+    )
+    pruned_graph, node_name_map = graph.prune(target_node=gfunc_1)
+    assert pruned_graph.edges_map == {
+        "add_1": ["assign_1"],
+        "assign_1": ["project_3", "project_4"],
+        "input_1": ["project_1", "project_2", "assign_1"],
+        "project_1": ["add_1"],
+        "project_2": ["add_1"],
+        "project_3": ["generic_function_1"],
+        "project_4": ["generic_function_1"],
+    }
+
+    # generic function node with single input node
+    gfunc_2 = graph.add_operation(
+        node_type=NodeType.GENERIC_FUNCTION,
+        node_params={
+            "function_name": "my_func",
+            "function_parameters": [
+                {"column_name": "a", "dtype": "FLOAT", "input_form": "column"},
+            ],
+            "output_dtype": DBVarType.FLOAT,
+        },
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[proj_a],
+    )
+    pruned_graph, node_name_map = graph.prune(target_node=gfunc_2)
+    assert pruned_graph.edges_map == {
+        "input_1": ["project_1"],
+        "project_1": ["generic_function_1"],
+    }

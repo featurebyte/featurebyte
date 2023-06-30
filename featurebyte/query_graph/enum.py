@@ -97,6 +97,9 @@ class NodeType(StrEnum):
     GRAPH = "graph"
     PROXY_INPUT = "proxy_input"
 
+    # generic function node
+    GENERIC_FUNCTION = "generic_function"
+
 
 class NodeOutputType(StrEnum):
     """
