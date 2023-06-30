@@ -59,15 +59,15 @@ async def test_update_document__inconsistency_error(feature_service, feature):
             data=FeatureServiceCreate(**data_dict),
         )
     expected_msg = (
-        'Feature (name: "random_name") object(s) within the same namespace must have the same "name" value '
-        '(namespace: "sum_30m", feature: "random_name").'
+        'FeatureModel (name: "random_name") object(s) within the same namespace must have the same "name" value '
+        '(namespace: "sum_30m", FeatureModel: "random_name").'
     )
     assert expected_msg in str(exc.value)
 
 
 @pytest.mark.asyncio
 async def test_get_document_by_name_and_version(
-    feature_service, table_service, view_construction_service, feature, feature_namespace_service
+    feature_service, table_service, view_construction_service, feature, app_container
 ):
     """Test feature service - get_document_by_name_and_version"""
     doc = await feature_service.get_document_by_name_and_version(
@@ -82,8 +82,8 @@ async def test_get_document_by_name_and_version(
             persistent=feature_service.persistent,
             catalog_id=ObjectId(),
             table_service=table_service,
-            view_construction_service=view_construction_service,
-            feature_namespace_service=feature_namespace_service,
+            feature_namespace_service=app_container.feature_namespace_service,
+            namespace_handler=app_container.namespace_handler,
         )
         await another_feat_service.get_document_by_name_and_version(
             name=feature.name, version=feature.version

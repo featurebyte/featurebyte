@@ -1,7 +1,7 @@
 """
 Base namespace service
 """
-from featurebyte.common.utils import get_version
+from featurebyte.common.model_util import get_version
 from featurebyte.models.base import VersionIdentifier
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.service.base_document import BaseDocumentService
