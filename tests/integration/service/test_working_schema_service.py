@@ -54,7 +54,7 @@ def migration_service_fixture(app_container, get_cred):
     """
     Fixture for DataWarehouseMigrationServiceV8
     """
-    service = app_container.data_warehouse_migration_service_v8
+    service = app_container.data_warehouse_migration_service_v_8
     service.set_credential_callback(get_cred)
     service.set_celery(get_celery())
     return service
