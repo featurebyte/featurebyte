@@ -173,7 +173,6 @@ class DataWarehouseMigrationMixin(BaseMigrationServiceMixin, ABC):
         super().__init__(persistent=persistent)
         self.session_manager_service = session_manager_service
         self.feature_store_service = feature_store_service
-        self._allow_to_use_raw_query_filter = False
 
     @property
     def collection_name(self) -> str:
@@ -193,7 +192,7 @@ class DataWarehouseMigrationMixin(BaseMigrationServiceMixin, ABC):
 
     @contextmanager
     def allow_use_raw_query_filter(self) -> Iterator[None]:
-        return self.feature_store_service.allow_use_raw_query_filter()
+        yield self.feature_store_service.allow_use_raw_query_filter()
 
     async def get_session(self, feature_store: FeatureStoreModel) -> BaseSession:
         """
