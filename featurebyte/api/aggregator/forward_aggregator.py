@@ -31,7 +31,6 @@ class ForwardAggregator(BaseAggregator):
         value_column: str,
         method: str,
         horizon: Optional[str] = None,
-        blind_spot: Optional[str] = None,
         target_name: Optional[str] = None,
     ) -> Target:
         """
@@ -45,8 +44,6 @@ class ForwardAggregator(BaseAggregator):
             Aggregation method
         horizon: str
             Horizon of the aggregation
-        blind_spot: str
-            Blind spot of the aggregation
         target_name: str
             Name of the target column
 
@@ -59,7 +56,6 @@ class ForwardAggregator(BaseAggregator):
             value_column=value_column,
             method=method,
             horizon=horizon,
-            blind_spot=blind_spot,
             target_name=target_name,
         )
         # Create new node parameters
@@ -67,7 +63,6 @@ class ForwardAggregator(BaseAggregator):
             value_column=value_column,
             method=method,
             horizon=horizon,
-            blind_spot=blind_spot,
             target_name=target_name,
             timestamp_col=self.view.timestamp_column,
         )
@@ -90,7 +85,6 @@ class ForwardAggregator(BaseAggregator):
             name=target_name,
             entity_ids=self.entity_ids,
             horizon=horizon,
-            blind_spot=blind_spot,
             graph=self.view.graph,
             node_name=target_node.name,
         )
@@ -100,7 +94,6 @@ class ForwardAggregator(BaseAggregator):
         value_column: str,
         method: str,
         horizon: Optional[str],
-        blind_spot: Optional[str],
         target_name: Optional[str],
         timestamp_col: Optional[str],
     ) -> dict[str, Any]:
@@ -115,8 +108,6 @@ class ForwardAggregator(BaseAggregator):
             Aggregation method
         horizon: str
             Horizon of the aggregation
-        blind_spot: str
-            Blind spot of the aggregation
         target_name: str
             Name of the target column
         timestamp_col: str
@@ -131,7 +122,6 @@ class ForwardAggregator(BaseAggregator):
             "parent": value_column,
             "agg_func": method,
             "horizon": horizon,
-            "blind_spot": blind_spot,
             "name": target_name,
             "serving_names": self.serving_names,
             "value_by": value_column,
@@ -145,7 +135,6 @@ class ForwardAggregator(BaseAggregator):
         value_column: str,
         method: Optional[str] = None,
         horizon: Optional[str] = None,
-        blind_spot: Optional[str] = None,
         target_name: Optional[str] = None,
     ) -> None:
         """
@@ -159,8 +148,6 @@ class ForwardAggregator(BaseAggregator):
             Aggregation method
         horizon: str
             Horizon of the aggregation
-        blind_spot: str
-            Blind spot of the aggregation
         target_name: str
             Name of the target column
 
@@ -176,6 +163,3 @@ class ForwardAggregator(BaseAggregator):
 
         if horizon:
             parse_duration_string(horizon)
-
-        if blind_spot:
-            parse_duration_string(blind_spot)

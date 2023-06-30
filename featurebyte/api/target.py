@@ -25,7 +25,6 @@ class Target(SavableApiObject):
 
     internal_entity_ids: Optional[List[PydanticObjectId]] = Field(alias="entity_ids")
     internal_horizon: Optional[StrictStr] = Field(alias="horizon")
-    internal_blind_spot: Optional[StrictStr] = Field(alias="blind_spot")
     internal_graph: Optional[QueryGraph] = Field(allow_mutation=False, alias="graph")
     internal_node_name: Optional[str] = Field(allow_mutation=False, alias="node_name")
 
@@ -68,20 +67,6 @@ class Target(SavableApiObject):
         except RecordRetrievalException:
             return self.internal_horizon
 
-    @property
-    def blind_spot(self) -> Optional[str]:
-        """
-        Returns the blind_spot of this target.
-
-        Returns
-        -------
-        Optional[str]
-        """
-        try:
-            return self.cached_model.blind_spot
-        except RecordRetrievalException:
-            return self.internal_blind_spot
-
     @classmethod
     @typechecked
     def create(
@@ -89,7 +74,6 @@ class Target(SavableApiObject):
         name: str,
         entities: Optional[List[str]] = None,
         horizon: Optional[str] = None,
-        blind_spot: Optional[str] = None,
     ) -> Target:
         """
         Create a new Target.
@@ -102,8 +86,6 @@ class Target(SavableApiObject):
             List of entity names, by default None
         horizon : Optional[str]
             Horizon of the Target, by default None
-        blind_spot : Optional[str]
-            Blind spot of the Target, by default None
 
         Returns
         -------
@@ -117,7 +99,6 @@ class Target(SavableApiObject):
             name=name,
             entity_ids=entity_ids,
             horizon=horizon,
-            blind_spot=blind_spot,
         )
         target.save()
         return target

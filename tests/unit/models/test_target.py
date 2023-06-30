@@ -18,20 +18,8 @@ def test_duration_validator():
         graph=graph,
         node_name="node name",
         horizon="7d",
-        blind_spot="1d",
         entity_ids=[],
     )
-
-    # Fails when blind_spot is invalid.
-    with pytest.raises(ValueError) as exc:
-        TargetModel(
-            graph=graph,
-            node_name="node name",
-            horizon="7d",
-            blind_spot="random",
-            entity_ids=[],
-        )
-    assert "blind_spot" in str(exc)
 
     # Fails when duration is invalid.
     with pytest.raises(ValueError) as exc:
@@ -39,7 +27,6 @@ def test_duration_validator():
             graph=graph,
             node_name="node name",
             horizon="random",
-            blind_spot="1d",
             entity_ids=[],
         )
     assert "horizon" in str(exc)
