@@ -192,7 +192,7 @@ class DataWarehouseMigrationMixin(BaseMigrationServiceMixin, ABC):
 
     @contextmanager
     def allow_use_raw_query_filter(self) -> Iterator[None]:
-        yield self.feature_store_service.allow_use_raw_query_filter()
+        self.feature_store_service.allow_use_raw_query_filter()
 
     async def get_session(self, feature_store: FeatureStoreModel) -> BaseSession:
         """
