@@ -21,7 +21,7 @@ from featurebyte.service.namespace_handler import (
 from featurebyte.service.target_namespace import TargetNamespaceService
 
 
-class TargetService(BaseNamespaceService[TargetModel, TargetCreate, TargetServiceUpdate]):
+class TargetService(BaseNamespaceService[TargetCreate, TargetServiceUpdate]):
     """
     TargetService class
     """

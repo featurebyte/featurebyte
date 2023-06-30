@@ -26,9 +26,7 @@ from featurebyte.service.namespace_handler import (
 from featurebyte.service.table import TableService
 
 
-class FeatureService(
-    BaseNamespaceService[FeatureModel, FeatureServiceCreate, FeatureServiceUpdate]
-):
+class FeatureService(BaseNamespaceService[FeatureServiceCreate, FeatureServiceUpdate]):
     """
     FeatureService class
     """
