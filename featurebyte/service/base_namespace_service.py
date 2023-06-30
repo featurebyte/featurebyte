@@ -16,6 +16,18 @@ class BaseNamespaceService(
     """
 
     async def get_document_version(self, name: str) -> VersionIdentifier:
+        """
+        Get the version of the document.
+
+        Parameters
+        ----------
+        name: str
+            Name of the document
+
+        Returns
+        -------
+        VersionIdentifier
+        """
         version_name = get_version()
         query_result = await self.list_documents(
             query_filter={"name": name, "version.name": version_name}
