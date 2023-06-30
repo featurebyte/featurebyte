@@ -7,15 +7,13 @@ from typing import Any
 
 from bson import ObjectId
 
-from featurebyte.common.utils import get_version
 from featurebyte.exception import DocumentNotFoundError
-from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature import DefaultVersionMode
 from featurebyte.models.target import TargetModel
 from featurebyte.persistent import Persistent
 from featurebyte.schema.target import TargetCreate, TargetServiceUpdate
 from featurebyte.schema.target_namespace import TargetNamespaceCreate, TargetNamespaceUpdate
-from featurebyte.service.base_document import BaseDocumentService
+from featurebyte.service.base_namespace_service import BaseNamespaceService
 from featurebyte.service.namespace_handler import (
     NamespaceHandler,
     validate_version_and_namespace_consistency,
@@ -23,7 +21,7 @@ from featurebyte.service.namespace_handler import (
 from featurebyte.service.target_namespace import TargetNamespaceService
 
 
-class TargetService(BaseDocumentService[TargetModel, TargetCreate, TargetServiceUpdate]):
+class TargetService(BaseNamespaceService[TargetModel, TargetCreate, TargetServiceUpdate]):
     """
     TargetService class
     """
@@ -62,7 +60,7 @@ class TargetService(BaseDocumentService[TargetModel, TargetCreate, TargetService
         document = TargetModel(
             **{
                 **data.dict(by_alias=True),
-                "version": await self._get_target_version(data.name),
+                "version": await self.get_document_version(data.name),
                 "user_id": self.user.id,
                 "catalog_id": self.catalog_id,
             }
@@ -79,14 +77,6 @@ class TargetService(BaseDocumentService[TargetModel, TargetCreate, TargetService
             params["graph"] = prepared_graph[0]
             params["node_name"] = prepared_graph[1]
         return TargetModel(**params)
-
-    async def _get_target_version(self, name: str) -> VersionIdentifier:
-        version_name = get_version()
-        query_result = await self.list_documents(
-            query_filter={"name": name, "version.name": version_name}
-        )
-        count = query_result["total"]
-        return VersionIdentifier(name=version_name, suffix=count or None)
 
     async def create_document(self, data: TargetCreate) -> TargetModel:
         document = await self.prepare_target_model(data=data, sanitize_for_definition=False)

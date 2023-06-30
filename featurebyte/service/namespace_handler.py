@@ -1,7 +1,7 @@
 """
 Namespace handler
 """
-from typing import List, Union
+from typing import List, Tuple, Union
 
 from featurebyte.exception import DocumentInconsistencyError
 from featurebyte.models.base import FeatureByteCatalogBaseDocumentModel
@@ -37,13 +37,13 @@ async def validate_version_and_namespace_consistency(
     for attr in attributes:
         version_attr = getattr(base_model, attr)
         namespace_attr = getattr(base_namespace_model, attr)
-        version_attr_str: Union[str, list[str]] = f'"{version_attr}"'
-        namespace_attr_str: Union[str, list[str]] = f'"{namespace_attr}"'
-        if isinstance(version_attr, list):
+        version_attr_str: Union[str, List[str]] = f'"{version_attr}"'
+        namespace_attr_str: Union[str, List[str]] = f'"{namespace_attr}"'
+        if isinstance(version_attr, List):
             version_attr = sorted(version_attr)
             version_attr_str = [str(val) for val in version_attr]
 
-        if isinstance(namespace_attr, list):
+        if isinstance(namespace_attr, List):
             namespace_attr = sorted(namespace_attr)
             namespace_attr_str = [str(val) for val in namespace_attr]
 
@@ -66,7 +66,23 @@ class NamespaceHandler:
 
     async def prepare_graph_to_store(
         self, graph: QueryGraph, node: Node, sanitize_for_definition: bool = False
-    ) -> tuple[QueryGraphModel, str]:
+    ) -> Tuple[QueryGraphModel, str]:
+        """
+        Prepare the graph to store by pruning the query graph
+
+        Parameters
+        ----------
+        graph: QueryGraph
+            Query graph
+        node: Node
+            Target node
+        sanitize_for_definition: bool
+            Whether to sanitize the query graph for generating feature definition
+
+        Returns
+        -------
+        QueryGraphModel
+        """
         # reconstruct view graph node to remove unused column cleaning operations
         graph, node_name_map = await self.view_construction_service.construct_graph(
             query_graph=graph,

@@ -7,7 +7,6 @@ from typing import Any, Dict
 
 from bson import ObjectId
 
-from featurebyte.common.model_util import get_version
 from featurebyte.exception import DocumentNotFoundError
 from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature import DefaultVersionMode, FeatureModel, FeatureReadiness
@@ -18,7 +17,7 @@ from featurebyte.schema.feature_namespace import (
     FeatureNamespaceCreate,
     FeatureNamespaceServiceUpdate,
 )
-from featurebyte.service.base_document import BaseDocumentService
+from featurebyte.service.base_namespace_service import BaseNamespaceService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.namespace_handler import (
     NamespaceHandler,
@@ -27,7 +26,9 @@ from featurebyte.service.namespace_handler import (
 from featurebyte.service.table import TableService
 
 
-class FeatureService(BaseDocumentService[FeatureModel, FeatureServiceCreate, FeatureServiceUpdate]):
+class FeatureService(
+    BaseNamespaceService[FeatureModel, FeatureServiceCreate, FeatureServiceUpdate]
+):
     """
     FeatureService class
     """
@@ -47,14 +48,6 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureServiceCreate, Fea
         self.table_service = table_service
         self.feature_namespace_service = feature_namespace_service
         self.namespace_handler = namespace_handler
-
-    async def _get_feature_version(self, name: str) -> VersionIdentifier:
-        version_name = get_version()
-        query_result = await self.list_documents(
-            query_filter={"name": name, "version.name": version_name}
-        )
-        count = query_result["total"]
-        return VersionIdentifier(name=version_name, suffix=count or None)
 
     async def prepare_feature_model(
         self, data: FeatureServiceCreate, sanitize_for_definition: bool
@@ -77,7 +70,7 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureServiceCreate, Fea
             **{
                 **data.dict(by_alias=True),
                 "readiness": FeatureReadiness.DRAFT,
-                "version": await self._get_feature_version(data.name),
+                "version": await self.get_document_version(data.name),
                 "user_id": self.user.id,
                 "catalog_id": self.catalog_id,
             }
