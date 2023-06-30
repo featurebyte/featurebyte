@@ -32,6 +32,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     VariableNameGenerator,
     VarNameExpressionInfo,
 )
+from featurebyte.query_graph.node.scalar import ValueParameterType
 
 
 class BaseFunctionParameterInput(BaseModel):
@@ -74,7 +75,7 @@ class BaseFunctionParameterInput(BaseModel):
 class ValueFunctionParameterInput(BaseFunctionParameterInput):
     """ValueFunctionParameterInput class"""
 
-    value: Optional[Any]
+    value: Optional[ValueParameterType]
     input_form: Literal[FunctionParameterInputForm.VALUE] = Field(
         FunctionParameterInputForm.VALUE, const=True
     )
