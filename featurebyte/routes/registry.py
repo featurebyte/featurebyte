@@ -35,6 +35,7 @@ from featurebyte.routes.target.controller import TargetController
 from featurebyte.routes.target_namespace.controller import TargetNamespaceController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.routes.temp_data.controller import TempDataController
+from featurebyte.routes.user_defined_function.controller import UserDefinedFunctionController
 from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.service.catalog import CatalogService
@@ -84,6 +85,7 @@ from featurebyte.service.target_namespace import TargetNamespaceService
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.service.tile_cache import TileCacheService
 from featurebyte.service.tile_manager import TileManagerService
+from featurebyte.service.user_defined_function import UserDefinedFunctionService
 from featurebyte.service.user_service import UserService
 from featurebyte.service.validator.production_ready_validator import ProductionReadyValidator
 from featurebyte.service.version import VersionService
@@ -141,6 +143,7 @@ app_container_config.register_service(TargetNamespaceService)
 app_container_config.register_service(TileCacheService)
 app_container_config.register_service(TileManagerService)
 app_container_config.register_service(UserService)
+app_container_config.register_service(UserDefinedFunctionService)
 app_container_config.register_service(VersionService)
 app_container_config.register_service(ViewConstructionService)
 
@@ -191,6 +194,9 @@ app_container_config.register_class(
 )
 app_container_config.register_class(
     TargetNamespaceController, dependency_override={"service": "target_namespace_service"}
+)
+app_container_config.register_class(
+    UserDefinedFunctionController, dependency_override={"service": "user_defined_function_service"}
 )
 
 

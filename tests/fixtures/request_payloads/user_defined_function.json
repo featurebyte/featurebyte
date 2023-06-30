@@ -1,0 +1,18 @@
+{
+    "_id": "64928868668f720c5bebbbd4",
+    "catalog_id": null,
+    "feature_store_id": "64940795ce99d34e742880ab",
+    "function_name": "cos",
+    "function_parameters": [
+        {
+            "default_value": null,
+            "dtype": "FLOAT",
+            "has_default_value": false,
+            "has_test_value": false,
+            "name": "x",
+            "test_value": null
+        }
+    ],
+    "name": "udf_test",
+    "output_dtype": "FLOAT"
+}
