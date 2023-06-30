@@ -30,7 +30,6 @@ def get_test_target_fixture():
             name="test_target",
             entities=entity_names,
             horizon="3d",
-            blind_spot="1d",
         )
 
     return get_target
@@ -58,7 +57,6 @@ def test_create_target_from_constructor(test_entity, get_test_target):
     actual_entity_names = [entity.name for entity in retrieved_target.entities]
     assert actual_entity_names == ["test_entity"]
     assert retrieved_target.horizon == target.horizon
-    assert retrieved_target.blind_spot == target.blind_spot
 
 
 def test_target_info(test_entity, get_test_target):

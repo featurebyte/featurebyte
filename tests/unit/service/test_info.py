@@ -679,7 +679,6 @@ async def test_get_target_info(app_container, entity, target):
             EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
         ],
         horizon=target.horizon,
-        blind_spot=target.blind_spot,
         has_recipe=bool(target.graph),
         created_at=target.created_at,
         updated_at=target.updated_at,
