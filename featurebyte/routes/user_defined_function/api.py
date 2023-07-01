@@ -19,6 +19,7 @@ from featurebyte.routes.common.schema import (
     SortByQuery,
     SortDirQuery,
 )
+from featurebyte.schema.common.base import DeleteResponse
 from featurebyte.schema.user_defined_function import (
     UserDefinedFunctionCreate,
     UserDefinedFunctionList,
@@ -68,6 +69,18 @@ async def update_user_defined_function(
         document_id=user_defined_function_id, data=data
     )
     return user_defined_function
+
+
+@router.delete("/{user_defined_function_id}", response_model=DeleteResponse)
+async def delete_user_defined_function(
+    request: Request, user_defined_function_id: PydanticObjectId
+) -> DeleteResponse:
+    """
+    Delete UserDefinedFunction
+    """
+    controller = request.state.app_container.user_defined_function_controller
+    await controller.delete_user_defined_function(document_id=user_defined_function_id)
+    return DeleteResponse()
 
 
 @router.get("", response_model=UserDefinedFunctionList)

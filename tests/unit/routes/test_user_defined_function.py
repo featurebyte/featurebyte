@@ -159,6 +159,47 @@ class TestUserDefinedFunctionApi(BaseApiTestSuite):
             == "User defined function used by saved feature(s): ['sum_30m']"
         )
 
+    def test_delete_200(self, test_api_client_persistent, create_success_response):
+        """Test delete user defined function (success)"""
+        test_api_client, _ = test_api_client_persistent
+
+        # test delete user defined function
+        response = test_api_client.delete(
+            url=f"{self.base_route}/{create_success_response.json()['_id']}"
+        )
+        assert response.status_code == HTTPStatus.OK
+
+        # check the user defined function is deleted
+        response = test_api_client.get(f"{self.base_route}/{create_success_response.json()['_id']}")
+        assert response.status_code == HTTPStatus.NOT_FOUND
+
+    def test_delete_404(self, test_api_client_persistent):
+        """Test delete user defined function (not found)"""
+        test_api_client, _ = test_api_client_persistent
+
+        random_id = ObjectId()
+        response = test_api_client.delete(url=f"{self.base_route}/{random_id}")
+        assert response.status_code == HTTPStatus.NOT_FOUND
+
+    @pytest.mark.asyncio
+    async def test_delete_422(self, test_api_client_persistent, create_success_response):
+        """Test delete user defined function (unprocessable entity)"""
+        test_api_client, persistent = test_api_client_persistent
+        response_dict = create_success_response.json()
+
+        # check delete function used by saved feature
+        await self._update_feature_user_defined_function_ids(
+            persistent=persistent,
+            function_id=response_dict["_id"],
+            user_id=response_dict["user_id"],
+        )
+        response = test_api_client.delete(url=f"{self.base_route}/{response_dict['_id']}")
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert (
+            response.json()["detail"]
+            == "User defined function used by saved feature(s): ['sum_30m']"
+        )
+
     def test_list_200__filter_by_feature_store_id(
         self, test_api_client_persistent, create_multiple_success_responses
     ):

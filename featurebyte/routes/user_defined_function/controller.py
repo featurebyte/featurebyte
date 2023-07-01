@@ -7,7 +7,7 @@ from typing import Any, Dict, Literal, cast
 
 from collections import OrderedDict
 
-from featurebyte.exception import DocumentCreationError, DocumentUpdateError
+from featurebyte.exception import DocumentCreationError, DocumentDeletionError, DocumentUpdateError
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.user_defined_function import UserDefinedFunctionModel
 from featurebyte.routes.common.base import BaseDocumentController
@@ -139,6 +139,30 @@ class UserDefinedFunctionController(
             data=UserDefinedFunctionServiceUpdate(function_parameters=function_parameters),
         )
         return cast(UserDefinedFunctionModel, updated_document)
+
+    async def delete_user_defined_function(self, document_id: PydanticObjectId) -> None:
+        """
+        Delete UserDefinedFunction from persistent
+
+        Parameters
+        ----------
+        document_id: PydanticObjectId
+            UserDefinedFunction id to be deleted
+        """
+        # check if user defined function exists
+        await self.service.get_document(document_id=document_id)
+
+        # check if function used in any saved feature
+        features = await self.feature_service.list_documents(
+            query_filter={"user_defined_function_ids": {"$in": [document_id]}},
+        )
+        if features["total"]:
+            feature_names = [doc["name"] for doc in features["data"]]
+            raise DocumentDeletionError(
+                f"User defined function used by saved feature(s): {feature_names}"
+            )
+
+        await self.service.delete_document(document_id=document_id)
 
     async def list_user_defined_functions(
         self,
