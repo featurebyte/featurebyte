@@ -24,7 +24,6 @@ def user_defined_function_service_with_different_catalog_fixture(app_container):
         user=app_container.user_defined_function_service.user,
         persistent=app_container.user_defined_function_service.persistent,
         catalog_id=ObjectId(),
-        feature_store_service=app_container.user_defined_function_service.feature_store_service,
     )
 
 
@@ -56,7 +55,6 @@ async def global_user_defined_function_doc_fixture(
 ):
     """Global user defined function doc fixture"""
     payload = user_defined_function_dict.copy()
-    payload["name"] = "global_method_name"
     payload["catalog_id"] = None
     doc = await user_defined_function_service.create_document(
         data=UserDefinedFunctionCreate(**payload)
@@ -103,11 +101,11 @@ async def test_user_defined_function_service__creation(
     # create a user defined function conflicting with the global user defined function
     with pytest.raises(DocumentConflictError) as exc:
         await user_defined_function_service.create_document(
-            data=UserDefinedFunctionCreate(**global_user_defined_function_doc.dict(by_alias=True))
+            data=UserDefinedFunctionCreate(
+                **global_user_defined_function_doc.dict(exclude={"_id": True})
+            )
         )
-    expected_error_message = (
-        'Global user defined function with name "global_method_name" already exists.'
-    )
+    expected_error_message = 'Global user defined function with name "method_name" already exists.'
     assert expected_error_message in str(exc.value)
 
     # create a user defined function with the same name in a different catalog
@@ -124,27 +122,50 @@ async def test_user_defined_function_service__retrieval(
     user_defined_function_service,
     user_defined_function_service_with_different_catalog,
     user_defined_function_doc,
+    user_defined_function_dict,
     global_user_defined_function_doc,
 ):
     """Test UserDefinedFunctionService (retrieve)"""
-    # check that the global user defined function can be retrieved
+    # check retrieving a global user defined function by ID
     retrieved_doc = await user_defined_function_service.get_document(
         document_id=global_user_defined_function_doc.id
     )
     assert retrieved_doc == global_user_defined_function_doc
 
-    retrieved_doc = await user_defined_function_service_with_different_catalog.get_document(
-        document_id=global_user_defined_function_doc.id
+    # create a user defined function with the same name in a different catalog
+    another_catalog_id = user_defined_function_service_with_different_catalog.catalog_id
+    user_defined_function_dict["catalog_id"] = str(another_catalog_id)
+    doc_with_same_name = await user_defined_function_service_with_different_catalog.create_document(
+        data=UserDefinedFunctionCreate(**user_defined_function_dict)
     )
-    assert retrieved_doc == global_user_defined_function_doc
+    assert doc_with_same_name.name == user_defined_function_doc.name
 
-    # check retrieving the non-global user defined function
-    retrieved_doc = await user_defined_function_service.get_document(
-        document_id=user_defined_function_doc.id
-    )
-    assert retrieved_doc == user_defined_function_doc
-
+    # attempt to retrieve a local user defined function by ID from a different catalog should fail
     with pytest.raises(DocumentNotFoundError):
         await user_defined_function_service_with_different_catalog.get_document(
             document_id=user_defined_function_doc.id
         )
+
+    with pytest.raises(DocumentNotFoundError):
+        await user_defined_function_service.get_document(document_id=doc_with_same_name.id)
+
+    # check retrieving a user defined function by name
+    retrieved_docs = await user_defined_function_service.list_documents(
+        query_filter={"name": global_user_defined_function_doc.name}
+    )
+    expected_catalog_ids = {
+        user_defined_function_doc.catalog_id,
+        global_user_defined_function_doc.catalog_id,
+    }
+    assert retrieved_docs["total"] == 2
+    assert set(doc["catalog_id"] for doc in retrieved_docs["data"]) == expected_catalog_ids
+
+    retrieved_docs = await user_defined_function_service_with_different_catalog.list_documents(
+        query_filter={"name": global_user_defined_function_doc.name}
+    )
+    expected_catalog_ids = {
+        doc_with_same_name.catalog_id,
+        global_user_defined_function_doc.catalog_id,
+    }
+    assert retrieved_docs["total"] == 2
+    assert set(doc["catalog_id"] for doc in retrieved_docs["data"]) == expected_catalog_ids

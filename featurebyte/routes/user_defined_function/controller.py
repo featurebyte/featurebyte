@@ -58,7 +58,7 @@ class UserDefinedFunctionController(
         UserDefinedFunctionModel
             Newly created user_defined_function object
         """
-        # validate feature store id exists first
+        # validate feature store id exists
         feature_store = await self.feature_store_service.get_document(
             document_id=data.feature_store_id
         )

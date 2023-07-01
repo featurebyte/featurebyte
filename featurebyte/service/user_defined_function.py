@@ -3,7 +3,7 @@ UserDefinedFunctionService class
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Dict, Optional
 
 from bson import ObjectId
 
@@ -31,25 +31,38 @@ class UserDefinedFunctionService(
     def _construct_get_query_filter(
         self, document_id: ObjectId, use_raw_query_filter: bool = False, **kwargs: Any
     ) -> QueryFilter:
-        query_filter = super()._construct_get_query_filter(
+        output = super()._construct_get_query_filter(
             document_id=document_id, use_raw_query_filter=use_raw_query_filter, **kwargs
         )
         # user defined function without catalog_id is a global function (used by all catalogs)
-        query_filter["catalog_id"] = {"$in": [None, self.catalog_id]}
-        return query_filter
+        output["catalog_id"] = {"$in": [None, self.catalog_id]}
+        return output
+
+    def _construct_list_query_filter(
+        self,
+        query_filter: Optional[Dict[str, Any]] = None,
+        use_raw_query_filter: bool = False,
+        **kwargs: Any,
+    ) -> QueryFilter:
+        output = super()._construct_list_query_filter(
+            query_filter=query_filter, use_raw_query_filter=use_raw_query_filter, **kwargs
+        )
+        # user defined function without catalog_id is a global function (used by all catalogs)
+        output["catalog_id"] = {"$in": [None, self.catalog_id]}
+        return output
 
     async def create_document(self, data: UserDefinedFunctionCreate) -> UserDefinedFunctionModel:
         # check if user defined function with same name already exists
         document_dict = await self.persistent.find_one(
             collection_name=self.collection_name,
-            query_filter={"name": data.name, "catalog_id": self.catalog_id},
+            query_filter={"name": data.name, "catalog_id": data.catalog_id},
             user_id=self.user.id,
         )
         if document_dict:
             if data.catalog_id:
                 raise DocumentConflictError(
                     f'User defined function with name "{data.name}" already exists in '
-                    f"catalog (catalog_id: {self.catalog_id})."
+                    f"catalog (catalog_id: {data.catalog_id})."
                 )
 
             raise DocumentConflictError(
