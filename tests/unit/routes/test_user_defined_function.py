@@ -8,7 +8,7 @@ from unittest.mock import Mock
 import pytest
 from bson import ObjectId
 
-from featurebyte import SourceType
+from featurebyte.enum import SourceType
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.session.base import BaseSession
 from tests.unit.routes.base import BaseApiTestSuite

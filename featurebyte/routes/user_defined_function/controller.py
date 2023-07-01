@@ -65,6 +65,11 @@ class UserDefinedFunctionController(
         -------
         UserDefinedFunctionModel
             Newly created user_defined_function object
+
+        Raises
+        ------
+        DocumentCreationError
+            If user defined function not exists in warehouse
         """
         # validate feature store id exists
         feature_store = await self.feature_store_service.get_document(
@@ -106,6 +111,11 @@ class UserDefinedFunctionController(
         -------
         UserDefinedFunctionModel
             Updated user_defined_function object
+
+        Raises
+        ------
+        DocumentUpdateError
+            If user defined function used in any saved feature
         """
         # check if user defined function exists
         document = await self.service.get_document(document_id=document_id)
@@ -148,6 +158,11 @@ class UserDefinedFunctionController(
         ----------
         document_id: PydanticObjectId
             UserDefinedFunction id to be deleted
+
+        Raises
+        ------
+        DocumentDeletionError
+            If user defined function used in any saved feature
         """
         # check if user defined function exists
         await self.service.get_document(document_id=document_id)
