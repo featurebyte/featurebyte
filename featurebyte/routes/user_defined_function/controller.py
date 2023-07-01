@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, Literal
 
+from featurebyte.exception import DocumentCreationError
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.user_defined_function import UserDefinedFunctionModel
 from featurebyte.routes.common.base import BaseDocumentController
@@ -72,10 +73,10 @@ class UserDefinedFunctionController(
                 feature_store=feature_store,
                 get_credential=get_credential,
             )
-        except Exception:
+        except Exception as exc:
             # if not exists, delete the user defined function
             await self.service.delete_document(document_id=user_defined_function.id)
-            raise
+            raise DocumentCreationError(f"User defined function not exists: {exc}") from exc
 
         return user_defined_function
 
