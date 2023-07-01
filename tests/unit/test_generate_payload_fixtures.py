@@ -227,7 +227,12 @@ def test_generate_user_defined_function(
 ):
     """
     Write request payload for user defined function route
+
+    Note: Run this after test_generate_payload_fixtures
     """
+    with open(f"{request_payload_dir}/feature_store.json", "r") as fhandle:
+        feature_store_payload = json.load(fhandle)
+
     user_defined_function = UserDefinedFunctionCreate(
         _id="64928868668f720c5bebbbd4",
         name="udf_test",
@@ -241,7 +246,7 @@ def test_generate_user_defined_function(
             )
         ],
         output_dtype=DBVarType.FLOAT,
-        feature_store_id=snowflake_feature_store.id,
+        feature_store_id=feature_store_payload["_id"],
     )
     if update_fixtures:
         filename = f"{request_payload_dir}/user_defined_function.json"

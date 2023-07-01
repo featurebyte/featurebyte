@@ -22,6 +22,7 @@ from featurebyte.routes.common.schema import (
 from featurebyte.schema.user_defined_function import (
     UserDefinedFunctionCreate,
     UserDefinedFunctionList,
+    UserDefinedFunctionUpdate,
 )
 
 router = APIRouter(prefix="/user_defined_function")
@@ -51,6 +52,20 @@ async def get_user_defined_function(
     controller = request.state.app_container.user_defined_function_controller
     user_defined_function: UserDefinedFunctionModel = await controller.get(
         document_id=user_defined_function_id
+    )
+    return user_defined_function
+
+
+@router.patch("/{user_defined_function_id}", response_model=UserDefinedFunctionModel)
+async def update_user_defined_function(
+    request: Request, user_defined_function_id: PydanticObjectId, data: UserDefinedFunctionUpdate
+) -> UserDefinedFunctionModel:
+    """
+    Update UserDefinedFunction
+    """
+    controller = request.state.app_container.user_defined_function_controller
+    user_defined_function: UserDefinedFunctionModel = await controller.update_user_defined_function(
+        document_id=user_defined_function_id, data=data
     )
     return user_defined_function
 

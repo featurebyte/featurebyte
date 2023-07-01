@@ -123,7 +123,7 @@ class GenericFunctionNodeParameters(BaseModel):
     function_name: str
     function_parameters: List[FunctionParameterInput]
     output_dtype: DBVarType
-    function_id: Optional[PydanticObjectId]
+    function_id: PydanticObjectId
 
 
 class GenericFunctionNode(BaseSeriesOutputNode):

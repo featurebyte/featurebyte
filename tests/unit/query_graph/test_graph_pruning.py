@@ -3,7 +3,7 @@ Test for graph pruning related logics
 """
 import os
 
-from bson import json_util
+from bson import ObjectId, json_util
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -450,6 +450,7 @@ def test_generic_function__pruning(query_graph_and_assign_node):
                 {"column_name": "c", "dtype": "FLOAT", "input_form": "column"},
             ],
             "output_dtype": DBVarType.FLOAT,
+            "function_id": ObjectId("5f7b9d5a9b3f4a7d9b3f4a7d"),
         },
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[proj_a, proj_c],
@@ -474,6 +475,7 @@ def test_generic_function__pruning(query_graph_and_assign_node):
                 {"column_name": "a", "dtype": "FLOAT", "input_form": "column"},
             ],
             "output_dtype": DBVarType.FLOAT,
+            "function_id": ObjectId("5f7b9d5a9b3f4a7d9b3f4a7d"),
         },
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[proj_a],

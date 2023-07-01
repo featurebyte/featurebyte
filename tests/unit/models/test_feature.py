@@ -84,6 +84,7 @@ def test_feature_model(feature_model_dict, api_object_to_id):
         "definition": None,
         "catalog_id": DEFAULT_CATALOG_ID,
         "primary_table_ids": [ObjectId(api_object_to_id["event_table"])],
+        "user_defined_function_ids": [],
     }
 
 

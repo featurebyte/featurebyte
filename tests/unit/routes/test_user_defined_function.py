@@ -29,10 +29,12 @@ class TestUserDefinedFunctionApi(BaseApiTestSuite):
         """Setup for creation route"""
         api_object_filename_pairs = [
             ("feature_store", "feature_store"),
+            ("entity", "entity"),
+            ("event_table", "event_table"),
+            ("feature", "feature_sum_30m"),
         ]
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
-            payload["_id"] = self.payload["feature_store_id"]
             response = api_client.post(
                 f"/{api_object}", headers={"active-catalog-id": str(catalog_id)}, json=payload
             )
@@ -67,6 +69,16 @@ class TestUserDefinedFunctionApi(BaseApiTestSuite):
             mocked_get_session.return_value = session
             yield mocked_get_session
 
+    @staticmethod
+    async def _update_feature_user_defined_function_ids(persistent, function_id, user_id):
+        # check update function used by saved feature
+        await persistent.update_many(
+            collection_name="feature",
+            query_filter={},
+            update={"$set": {"user_defined_function_ids": [ObjectId(function_id)]}},
+            user_id=user_id,
+        )
+
     def test_create__function_not_found(
         self, test_api_client_persistent, mock_get_session_to_throw_exception
     ):
@@ -81,6 +93,71 @@ class TestUserDefinedFunctionApi(BaseApiTestSuite):
         # check the user defined function is not created
         response = test_api_client.get(f"{self.base_route}/{self.payload['_id']}")
         assert response.status_code == HTTPStatus.NOT_FOUND
+
+    def test_update_200(self, test_api_client_persistent, create_success_response):
+        """Test update user defined function (success)"""
+        test_api_client, _ = test_api_client_persistent
+        response_dict = create_success_response.json()
+        doc_id = response_dict["_id"]
+        function_parameter = response_dict["function_parameters"][0]
+        assert function_parameter["dtype"] == "FLOAT"
+
+        # check update function parameter
+        function_parameter["dtype"] = "INT"
+        update_response = test_api_client.patch(
+            url=f"{self.base_route}/{doc_id}", json={"function_parameters": [function_parameter]}
+        )
+        assert update_response.status_code == HTTPStatus.OK
+        update_response_dict = update_response.json()
+        assert update_response_dict["function_parameters"][0]["dtype"] == "INT"
+
+    def test_update_404(self, test_api_client_persistent):
+        """Test update user defined function (not found)"""
+        test_api_client, _ = test_api_client_persistent
+
+        random_id = ObjectId()
+        update_response = test_api_client.patch(
+            url=f"{self.base_route}/{random_id}", json={"function_parameters": []}
+        )
+        assert update_response.status_code == HTTPStatus.NOT_FOUND
+
+    @pytest.mark.asyncio
+    async def test_update_422(self, test_api_client_persistent, create_success_response):
+        """Test update user defined function (unprocessable entity)"""
+        test_api_client, persistent = test_api_client_persistent
+        response_dict = create_success_response.json()
+        doc_id = response_dict["_id"]
+        function_parameter = response_dict["function_parameters"][0]
+        assert function_parameter["name"] == "x"
+
+        # check no changes found in function parameter
+        update_response = test_api_client.patch(
+            url=f"{self.base_route}/{doc_id}", json={"function_parameters": [function_parameter]}
+        )
+        assert update_response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert update_response.json()["detail"] == "No changes found in function parameters"
+
+        # check update non-exist function parameter
+        function_parameter["name"] = "y"
+        update_response = test_api_client.patch(
+            url=f"{self.base_route}/{doc_id}", json={"function_parameters": [function_parameter]}
+        )
+        assert update_response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert update_response.json()["detail"] == "Function parameter not exists: y"
+
+        # check update function used by saved feature
+        await self._update_feature_user_defined_function_ids(
+            persistent=persistent, function_id=doc_id, user_id=response_dict["user_id"]
+        )
+        function_parameter.update({"name": "x", "dtype": "INT"})
+        update_response = test_api_client.patch(
+            url=f"{self.base_route}/{doc_id}", json={"function_parameters": [function_parameter]}
+        )
+        assert update_response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert (
+            update_response.json()["detail"]
+            == "User defined function used by saved feature(s): ['sum_30m']"
+        )
 
     def test_list_200__filter_by_feature_store_id(
         self, test_api_client_persistent, create_multiple_success_responses
