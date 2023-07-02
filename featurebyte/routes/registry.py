@@ -58,6 +58,7 @@ from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 from featurebyte.service.item_table import ItemTableService
+from featurebyte.service.namespace_handler import NamespaceHandler
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.online_enable import OnlineEnableService
 from featurebyte.service.online_serving import OnlineServingService
@@ -162,6 +163,7 @@ app_container_config.register_class(ItemTableController)
 app_container_config.register_class(
     PeriodicTaskController, dependency_override={"service": "periodic_task_service"}
 )
+app_container_config.register_class(NamespaceHandler)
 app_container_config.register_class(ObservationTableController)
 app_container_config.register_class(ProductionReadyValidator)
 app_container_config.register_class(RelationshipInfoController)

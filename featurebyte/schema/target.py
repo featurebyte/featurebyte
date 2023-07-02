@@ -33,6 +33,7 @@ class TargetCreate(FeatureByteBaseModel):
     node_name: Optional[str]
     horizon: Optional[str]
     entity_ids: Optional[List[PydanticObjectId]]
+    target_namespace_id: Optional[PydanticObjectId] = Field(default_factory=ObjectId)
 
 
 class TargetList(PaginationMixin):
