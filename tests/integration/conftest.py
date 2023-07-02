@@ -963,14 +963,6 @@ def snowflake_feature_expected_tile_spec_dict_fixture():
     return expected_tile_spec
 
 
-# @pytest.fixture
-# def feature_manager(session):
-#     """
-#     Feature Manager fixture
-#     """
-#     return FeatureManager(session=session)
-
-
 @pytest_asyncio.fixture
 async def snowflake_feature_list(
     feature_model_dict, snowflake_session, config, snowflake_feature_store
