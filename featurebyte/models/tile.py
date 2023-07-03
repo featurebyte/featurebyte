@@ -49,10 +49,7 @@ class TileSpec(FeatureByteBaseModel):
     tile_id: str
     aggregation_id: str
     category_column_name: Optional[str]
-
     feature_store_id: Optional[ObjectId]
-    user_id: Optional[ObjectId]
-    catalog_id: Optional[ObjectId]
 
     class Config:
         """

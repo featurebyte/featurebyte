@@ -17,8 +17,6 @@ async def mock_scheduler_fixture(feature, tile_spec, tile_scheduler_service):
     Fixture for TileScheduler information
     """
     tile_spec.tile_sql = "SELECT * FROM TEMP_TABLE"
-    tile_spec.user_id = feature.user_id
-    tile_spec.catalog_id = feature.catalog_id
     tile_spec.feature_store_id = feature.tabular_source.feature_store_id
     job_id = f"{TileType.ONLINE}_{tile_spec.aggregation_id}"
 

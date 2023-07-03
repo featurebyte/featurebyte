@@ -336,8 +336,6 @@ class TileManagerService(BaseService):
         logger.info(f"Scheduling {tile_type} tile job for {tile_spec.aggregation_id}")
         job_id = f"{tile_type}_{tile_spec.aggregation_id}"
 
-        # TODO: why do we need catalog_id and feature_store_id in TileSpec?
-        assert tile_spec.catalog_id is not None
         assert tile_spec.feature_store_id is not None
         exist_job = await self.tile_scheduler_service.get_job_details(job_id=job_id)
         if not exist_job:
@@ -369,9 +367,7 @@ class TileManagerService(BaseService):
                 interval_seconds=interval_seconds,
                 time_modulo_frequency_second=tile_spec.time_modulo_frequency_second,
                 instance=tile_schedule_ins,
-                user_id=tile_spec.user_id,
                 feature_store_id=tile_spec.feature_store_id,
-                catalog_id=tile_spec.catalog_id,
             )
 
             return tile_schedule_ins.json()

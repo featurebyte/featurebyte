@@ -1191,6 +1191,7 @@ def mock_snowflake_tile():
         value_column_names=["col2"],
         value_column_types=["FLOAT"],
         entity_column_names=["col1"],
+        feature_store_id=ObjectId(),
     )
 
     return tile_spec

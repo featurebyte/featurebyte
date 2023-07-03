@@ -842,6 +842,7 @@ def create_generic_tile_spec():
         value_column_types=["FLOAT"],
         tile_id=tile_id,
         aggregation_id=aggregation_id,
+        feature_store_id=ObjectId(),
     )
 
 

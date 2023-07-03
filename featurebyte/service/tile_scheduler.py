@@ -33,9 +33,7 @@ class TileSchedulerService(BaseService):
         interval_seconds: int,
         time_modulo_frequency_second: int,
         instance: Any,
-        user_id: Optional[ObjectId],
         feature_store_id: ObjectId,
-        catalog_id: ObjectId,
     ) -> None:
         """
         Start job with Interval seconds
@@ -50,12 +48,8 @@ class TileSchedulerService(BaseService):
             time modulo frequency in seconds
         instance: Any
             instance of the class to be run
-        user_id: Optional[ObjectId]
-            input user id
         feature_store_id: ObjectId
             feature store id
-        catalog_id: ObjectId
-            catalog id
         """
 
         payload = TileTaskPayload(
@@ -63,9 +57,9 @@ class TileSchedulerService(BaseService):
             module_path=instance.__class__.__module__,
             class_name=instance.__class__.__name__,
             instance_str=instance.json(),
-            user_id=user_id if user_id else self.task_manager.user.id,
+            user_id=self.user.id,
             feature_store_id=feature_store_id,
-            catalog_id=catalog_id,
+            catalog_id=self.catalog_id,
         )
 
         await self.task_manager.schedule_interval_task(
