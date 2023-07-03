@@ -11,13 +11,21 @@ from featurebyte.service.tile.tile_task_executor import TileTaskExecutor
 from featurebyte.sql.common import construct_create_table_query
 
 
+@pytest.fixture(name="tile_task_executor")
+def tile_task_executor_fixture(online_store_table_version_service):
+    """
+    Fixture for tile task executor
+    """
+    return TileTaskExecutor(online_store_table_version_service=online_store_table_version_service)
+
+
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_schedule_generate_tile_online(
     session,
     tile_task_prep_spark,
     base_sql_model,
-    online_store_table_version_service,
+    tile_task_executor,
 ):
     """
     Test the stored procedure of generating tiles
@@ -40,9 +48,7 @@ async def test_schedule_generate_tile_online(
         f" AND {InternalName.TILE_START_DATE} < {InternalName.TILE_END_DATE_SQL_PLACEHOLDER}"
     )
 
-    tile_schedule_ins = TileGenerateSchedule(
-        session=session,
-        online_store_table_version_service=online_store_table_version_service,
+    tile_schedule_ins = TileScheduledJobParameters(
         tile_id=tile_id,
         tile_modulo_frequency_second=183,
         blind_spot_second=3,
@@ -57,7 +63,7 @@ async def test_schedule_generate_tile_online(
         aggregation_id=agg_id,
         job_schedule_ts=tile_end_ts,
     )
-    await tile_schedule_ins.execute()
+    await tile_task_executor.execute(session, tile_schedule_ins)
 
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM {tile_id}"
     result = await session.execute_query(sql)
@@ -83,14 +89,6 @@ async def test_schedule_generate_tile_online(
     assert result["CREATED_AT"].iloc[1] > result["CREATED_AT"].iloc[0]
     assert result["CREATED_AT"].iloc[2] > result["CREATED_AT"].iloc[1]
     assert result["CREATED_AT"].iloc[3] > result["CREATED_AT"].iloc[2]
-
-
-@pytest.fixture(name="tile_task_executor")
-def tile_task_executor_fixture(online_store_table_version_service):
-    """
-    Fixture for tile task executor
-    """
-    return TileTaskExecutor(online_store_table_version_service=online_store_table_version_service)
 
 
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)

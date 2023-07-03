@@ -81,9 +81,7 @@ async def test_schedule_online_tiles(
     with mock.patch(
         "featurebyte.service.tile_manager.TileManagerService._schedule_tiles_custom"
     ) as mock_schedule_tiles_custom:
-        await tile_manager_service.schedule_online_tiles(
-            mock_snowflake_session, mock_snowflake_tile
-        )
+        await tile_manager_service.schedule_online_tiles(mock_snowflake_tile)
         kwargs = mock_schedule_tiles_custom.call_args.kwargs
         assert kwargs["tile_spec"] == mock_snowflake_tile
         assert kwargs["tile_type"] == TileType.ONLINE
@@ -120,9 +118,7 @@ async def test_schedule_offline_tiles(
     with mock.patch(
         "featurebyte.service.tile_manager.TileManagerService._schedule_tiles_custom"
     ) as mock_schedule_tiles_custom:
-        await tile_manager_service.schedule_offline_tiles(
-            mock_snowflake_session, tile_spec=mock_snowflake_tile
-        )
+        await tile_manager_service.schedule_offline_tiles(tile_spec=mock_snowflake_tile)
         kwargs = mock_schedule_tiles_custom.call_args.kwargs
         assert kwargs["tile_spec"] == mock_snowflake_tile
         assert kwargs["tile_type"] == TileType.OFFLINE
