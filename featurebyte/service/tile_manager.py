@@ -13,7 +13,6 @@ import pandas as pd
 from bson import ObjectId
 
 from featurebyte.enum import InternalName
-from featurebyte.exception import TileScheduleNotSupportedError
 from featurebyte.logging import get_logger
 from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.persistent import Persistent
@@ -109,18 +108,10 @@ class TileManagerService(BaseService):
         tile_spec: TileSpec
             the input TileSpec
 
-        Raises
-        -------
-        TileScheduleNotSupportedError
-            if task manager is not initialized
-
         Returns
         -------
             whether the tile jobs already exist
         """
-        if not self.task_manager:
-            raise TileScheduleNotSupportedError("Task manager is not initialized")
-
         scheduler = TileScheduler(task_manager=self.task_manager)
 
         job_id = f"{TileType.ONLINE}_{tile_spec.aggregation_id}"
@@ -337,11 +328,6 @@ class TileManagerService(BaseService):
         monitor_periods: int
             online tile lookback period
 
-        Raises
-        -------
-        TileScheduleNotSupportedError
-            if catalog_id or feature_store_id is not provided or task manager is not initialized
-
         Returns
         -------
             generated sql to be executed or None if the tile job already exists
@@ -350,9 +336,9 @@ class TileManagerService(BaseService):
         logger.info(f"Scheduling {tile_type} tile job for {tile_spec.aggregation_id}")
         job_id = f"{tile_type}_{tile_spec.aggregation_id}"
 
-        if not tile_spec.catalog_id or not tile_spec.feature_store_id:
-            raise TileScheduleNotSupportedError("catalog_id and feature_store_id must be provided")
-
+        # TODO: why do we need catalog_id and feature_store_id in TileSpec?
+        assert tile_spec.catalog_id is not None
+        assert tile_spec.feature_store_id is not None
         scheduler = TileScheduler(task_manager=self.task_manager)
         exist_job = await scheduler.get_job_details(job_id=job_id)
         if not exist_job:
@@ -407,15 +393,7 @@ class TileManagerService(BaseService):
             Instance of BaseSession to interact with the data warehouse
         tile_spec: TileSpec
             the input TileSpec
-
-        Raises
-        -------
-        TileScheduleNotSupportedError
-            if task manager is not initialized
         """
-        if not self.task_manager:
-            raise TileScheduleNotSupportedError("Task manager is not initialized")
-
         scheduler = TileScheduler(task_manager=self.task_manager)
 
         exist_mapping = await session.execute_query(

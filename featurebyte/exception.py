@@ -322,12 +322,6 @@ class ChangeViewNoJoinColumnError(FeatureByteException):
     """
 
 
-class TileScheduleNotSupportedError(NotImplementedError):
-    """
-    Raise when the Tile Scheduling is not supported
-    """
-
-
 class NoFeatureJobSettingInSourceError(FeatureByteException):
     """
     Raise when the input table does not have any feature job setting.
