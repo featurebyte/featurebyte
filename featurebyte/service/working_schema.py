@@ -93,7 +93,6 @@ class WorkingSchemaService(BaseService):
             user=user,
             persistent=persistent,
             catalog_id=catalog_id,
-            task_manager=self.task_manager,
             online_store_table_version_service=self.online_store_table_version_service,
             tile_scheduler_service=self.tile_scheduler_service,
         )
