@@ -23,6 +23,7 @@ from featurebyte.query_graph.sql.feature_historical import get_historical_featur
 from featurebyte.query_graph.sql.feature_preview import get_feature_preview_sql
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.sql.materialisation import get_source_count_expr, get_source_expr
+from featurebyte.query_graph.sql.target_preview import get_target_preview_sql
 from featurebyte.schema.feature import FeaturePreview, FeatureSQL
 from featurebyte.schema.feature_list import (
     FeatureListGetHistoricalFeatures,
@@ -34,6 +35,7 @@ from featurebyte.schema.feature_store import (
     FeatureStoreSample,
     FeatureStoreShape,
 )
+from featurebyte.schema.target import TargetPreview
 from featurebyte.service.base_service import BaseService
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_list import FeatureListService
@@ -434,6 +436,70 @@ class PreviewService(BaseService):
         if updated:
             result = result.drop(SpecialColumnName.POINT_IN_TIME, axis="columns")
 
+        return dataframe_to_json(result)
+
+    async def preview_target(
+        self, target_preview: TargetPreview, get_credential: Any
+    ) -> dict[str, Any]:
+        """
+        Preview a Target
+
+        Parameters
+        ----------
+        target_preview: TargetPreview
+            TargetPreview object
+        get_credential: Any
+            Get credential handler function
+
+        Returns
+        -------
+        dict[str, Any]
+            Dataframe converted to json string
+        """
+        graph = target_preview.graph
+        target_node = graph.get_node_by_name(target_preview.node_name)
+        operation_struction = target_preview.graph.extract_operation_structure(target_node)
+
+        # We only need to ensure that the point in time column is provided,
+        # if the feature aggregation is time based.
+        (
+            point_in_time_and_serving_name_list,
+            updated,
+        ) = PreviewService._update_point_in_time_if_needed(
+            target_preview.point_in_time_and_serving_name_list, operation_struction.is_time_based
+        )
+
+        request_column_names = set(point_in_time_and_serving_name_list[0].keys())
+        feature_store, session = await self._get_feature_store_session(
+            graph=graph,
+            node_name=target_preview.node_name,
+            feature_store_name=target_preview.feature_store_name,
+            get_credential=get_credential,
+        )
+        parent_serving_preparation = (
+            await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
+                graph=graph,
+                nodes=[target_node],
+                request_column_names=request_column_names,
+                feature_store=feature_store,
+            )
+        )
+        preview_sql = get_target_preview_sql(
+            request_table_name=f"{REQUEST_TABLE_NAME}_{session.generate_session_unique_id()}",
+            graph=graph,
+            nodes=[target_node],
+            point_in_time_and_serving_name_list=point_in_time_and_serving_name_list,
+            source_type=feature_store.type,
+            parent_serving_preparation=parent_serving_preparation,
+        )
+        try:
+            result = await session.execute_query(preview_sql)
+        except Exception as exc:
+            print("hello")
+        if result is None:
+            return {}
+        if updated:
+            result = result.drop(SpecialColumnName.POINT_IN_TIME, axis="columns")
         return dataframe_to_json(result)
 
     async def feature_sql(self, feature_sql: FeatureSQL) -> str:

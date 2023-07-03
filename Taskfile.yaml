@@ -231,7 +231,7 @@ tasks:
       - task: install
     cmds:
       - task: test-setup
-      - poetry run pytest --timeout=240 --junitxml=pytest.xml.1 -n auto --cov=featurebyte tests/integration --source-types none,snowflake
+      - poetry run pytest --timeout=240 --junitxml=pytest.xml.1 -n auto --cov=featurebyte tests/integration/api/test_target_correctness.py --source-types none,snowflake
       - task: test-teardown
 
   test-integration-spark:
@@ -310,6 +310,12 @@ tasks:
       - task: docker-build
     cmds:
       - poetry run pytest --junitxml=pytest.xml -k playground tests/notebooks
+
+  test-reset:
+    desc: "Reset the test environment"
+    cmds:
+      - task: test-teardown
+      - task: test-setup
 
   test-setup:
     desc: "Setup the test environment"

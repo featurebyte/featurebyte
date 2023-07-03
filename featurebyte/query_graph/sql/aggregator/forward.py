@@ -35,8 +35,7 @@ class ForwardAggregator(NonTileBasedAggregator[ForwardAggregateSpec]):
         self.request_table_plan = RequestTablePlan(is_time_aware=True)
 
     def get_common_table_expressions(self, request_table_name: str) -> CteStatements:
-        _ = request_table_name
-        return []
+        return self.request_table_plan.construct_request_table_ctes(request_table_name)
 
     def additional_update(self, aggregation_spec: ForwardAggregateSpec) -> None:
         self.request_table_plan.add_aggregation_spec(aggregation_spec)
@@ -63,6 +62,10 @@ class ForwardAggregator(NonTileBasedAggregator[ForwardAggregateSpec]):
         horizon_in_seconds = 0
         if spec.parameters.horizon:
             horizon_in_seconds = pd.Timedelta(spec.parameters.horizon).total_seconds()
+        end_point_expr_current: Expression = cast(
+            Expression,
+            parse_one(f"FLOOR({point_in_time_epoch_expr.sql()})"),
+        )
         end_point_expr: Expression = cast(
             Expression,
             parse_one(f"FLOOR({point_in_time_epoch_expr.sql()} + {horizon_in_seconds})"),
@@ -71,14 +74,14 @@ class ForwardAggregator(NonTileBasedAggregator[ForwardAggregateSpec]):
         # Get valid records (timestamp column is within the point in time, and point in time + horizon)
         # TODO: update to range join
         table_timestamp_col = get_qualified_column_identifier(
-            spec.parameters.timestamp_col, "TABLE"
+            spec.parameters.timestamp_col, "SOURCE_TABLE"
         )
         # Convert to epoch seconds
         table_timestamp_col = self.adapter.to_epoch_seconds(table_timestamp_col)
         record_validity_condition = expressions.and_(
             expressions.GT(
                 this=table_timestamp_col,
-                expression=point_in_time_expr,
+                expression=end_point_expr_current,
             ),
             expressions.LTE(
                 this=table_timestamp_col,
@@ -101,7 +104,7 @@ class ForwardAggregator(NonTileBasedAggregator[ForwardAggregateSpec]):
         ]
         value_by = (
             GroupbyKey(
-                expr=get_qualified_column_identifier(spec.parameters.value_by, "TABLE"),
+                expr=get_qualified_column_identifier(spec.parameters.value_by, "SOURCE_TABLE"),
                 name=spec.parameters.value_by,
             )
             if spec.parameters.value_by
@@ -111,7 +114,7 @@ class ForwardAggregator(NonTileBasedAggregator[ForwardAggregateSpec]):
             GroupbyColumn(
                 agg_func=s.parameters.agg_func,
                 parent_expr=(
-                    get_qualified_column_identifier(s.parameters.parent, "TABLE")
+                    get_qualified_column_identifier(s.parameters.parent, "SOURCE_TABLE")
                     if s.parameters.parent
                     else None
                 ),
@@ -124,7 +127,7 @@ class ForwardAggregator(NonTileBasedAggregator[ForwardAggregateSpec]):
         for serving_name, key in zip(spec.serving_names, spec.parameters.keys):
             serving_name_sql = quoted_identifier(serving_name).sql()
             join_table_key_sql = quoted_identifier(key).sql()
-            join_keys.append(f"REQ.{serving_name_sql} = TABLE.{join_table_key_sql}")
+            join_keys.append(f"REQ.{serving_name_sql} = SOURCE_TABLE.{join_table_key_sql}")
         join_conditions = [
             record_validity_condition,
             *join_keys,
@@ -138,7 +141,7 @@ class ForwardAggregator(NonTileBasedAggregator[ForwardAggregateSpec]):
                 )
             )
             .join(
-                spec.source_expr.subquery(alias="TABLE"),
+                spec.source_expr.subquery(alias="SOURCE_TABLE"),
                 join_type="inner",
                 on=expressions.and_(*join_conditions) if join_conditions else None,
             )

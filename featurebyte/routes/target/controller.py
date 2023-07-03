@@ -3,12 +3,17 @@ Target controller
 """
 from typing import Any, Dict, Literal, Optional
 
-from bson import ObjectId
+from http import HTTPStatus
 
+from bson import ObjectId
+from fastapi import HTTPException
+
+from featurebyte.exception import MissingPointInTimeColumnError, RequiredEntityNotProvidedError
 from featurebyte.models.target import TargetModel
 from featurebyte.routes.common.base import BaseDocumentController
-from featurebyte.schema.target import TargetCreate, TargetInfo, TargetList
+from featurebyte.schema.target import TargetCreate, TargetInfo, TargetList, TargetPreview
 from featurebyte.service.entity import EntityService
+from featurebyte.service.preview import PreviewService
 from featurebyte.service.target import TargetService
 
 
@@ -23,9 +28,11 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
         self,
         target_service: TargetService,
         entity_service: EntityService,
+        preview_service: PreviewService,
     ):
         super().__init__(target_service)
         self.entity_service = entity_service
+        self.preview_service = preview_service
 
     async def create_target(
         self,
@@ -117,3 +124,33 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
             created_at=target_doc.created_at,
             updated_at=target_doc.updated_at,
         )
+
+    async def preview(self, target_preview: TargetPreview, get_credential: Any) -> dict[str, Any]:
+        """
+        Preview a Target
+
+        Parameters
+        ----------
+        target_preview: TargetPreview
+            Target preview payload
+        get_credential: Any
+            Get credential handler function
+
+        Returns
+        -------
+        dict[str, Any]
+            Dataframe converted to json string
+
+        Raises
+        ------
+        HTTPException
+            Invalid request payload
+        """
+        try:
+            return await self.preview_service.preview_target(
+                target_preview=target_preview, get_credential=get_credential
+            )
+        except (MissingPointInTimeColumnError, RequiredEntityNotProvidedError) as exc:
+            raise HTTPException(
+                status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]
+            ) from exc

@@ -8,6 +8,7 @@ from typing import List, Literal, Optional, Union
 from typeguard import typechecked
 
 from featurebyte import FeatureJobSetting
+from featurebyte.api.aggregator.forward_aggregator import ForwardAggregator
 from featurebyte.api.asat_aggregator import AsAtAggregator
 from featurebyte.api.change_view import ChangeView
 from featurebyte.api.entity import Entity
@@ -17,6 +18,7 @@ from featurebyte.api.feature_group import FeatureGroup
 from featurebyte.api.item_view import ItemView
 from featurebyte.api.scd_view import SCDView
 from featurebyte.api.simple_aggregator import SimpleAggregator
+from featurebyte.api.target import Target
 from featurebyte.api.window_aggregator import WindowAggregator
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.typing import OptionalScalar
@@ -417,4 +419,41 @@ class GroupBy:
             feature_name=feature_name,
             fill_value=fill_value,
             skip_fill_na=skip_fill_na,
+        )
+
+    def forward_aggregate(
+        self,
+        value_column: str,
+        method: str,
+        horizon: Optional[str] = None,
+        target_name: Optional[str] = None,
+    ) -> Target:
+        """
+        The forward_aggregate method of a GroupBy class instance returns a Forward Aggregated Target object. This object
+        aggregates data from the column specified by the value_column parameter using the aggregation method
+        provided by the method parameter, without taking into account the order or sequence of the data. The primary
+        entity of the Target is determined by the grouping key of the GroupBy instance.
+
+        Parameters
+        ----------
+        value_column: str
+            Column to be aggregated
+        method: str
+            Aggregation method.
+        horizon: Optional[str]
+            Optional horizon to apply to the point in time column in the target request.
+        target_name: Optional[str]
+            Output target name
+
+        Returns
+        -------
+        Target
+        """
+        return ForwardAggregator(
+            self.view_obj, self.category, self.entity_ids, self.keys, self.serving_names
+        ).forward_aggregate(
+            value_column=value_column,
+            method=method,
+            horizon=horizon,
+            target_name=target_name,
         )
