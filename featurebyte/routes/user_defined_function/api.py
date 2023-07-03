@@ -1,7 +1,7 @@
 """
 UserDefinedFunction API routes
 """
-from typing import Optional
+from typing import Optional, cast
 
 from http import HTTPStatus
 
@@ -18,8 +18,10 @@ from featurebyte.routes.common.schema import (
     SearchQuery,
     SortByQuery,
     SortDirQuery,
+    VerboseQuery,
 )
 from featurebyte.schema.common.base import DeleteResponse
+from featurebyte.schema.info import UserDefinedFunctionInfo
 from featurebyte.schema.user_defined_function import (
     UserDefinedFunctionCreate,
     UserDefinedFunctionList,
@@ -133,3 +135,15 @@ async def get_user_defined_function_audit_log(
         search=search,
     )
     return audit_doc_log
+
+
+@router.get("/{user_defined_function_id}/info", response_model=UserDefinedFunctionInfo)
+async def get_user_defined_function_info(
+    request: Request, user_defined_function_id: PydanticObjectId, verbose: bool = VerboseQuery
+) -> UserDefinedFunctionInfo:
+    """
+    Get UserDefinedFunction info
+    """
+    controller = request.state.app_container.user_defined_function_controller
+    info = await controller.get_info(document_id=user_defined_function_id, verbose=verbose)
+    return cast(UserDefinedFunctionInfo, info)

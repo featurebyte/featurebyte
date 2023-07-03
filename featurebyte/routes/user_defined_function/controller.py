@@ -3,13 +3,16 @@ UserDefinedFunction API route controller
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Literal, cast
+from typing import Any, Dict, List, Literal, cast
+
+from bson import ObjectId
 
 from featurebyte.exception import DocumentCreationError, DocumentDeletionError, DocumentUpdateError
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.user_defined_function import UserDefinedFunctionModel
 from featurebyte.routes.common.base import BaseDocumentController
+from featurebyte.schema.info import UserDefinedFunctionFeatureInfo, UserDefinedFunctionInfo
 from featurebyte.schema.user_defined_function import (
     UserDefinedFunctionCreate,
     UserDefinedFunctionList,
@@ -243,4 +246,47 @@ class UserDefinedFunctionController(
             sort_by=sort_by,
             sort_dir=sort_dir,
             **params,
+        )
+
+    async def get_info(self, document_id: ObjectId, verbose: bool) -> UserDefinedFunctionInfo:
+        """
+        Get UserDefinedFunction info
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+        verbose: bool
+            Verbose flag
+
+        Returns
+        -------
+        UserDefinedFunctionInfo
+        """
+        _ = verbose
+
+        document = await self.service.get_document(document_id=document_id)
+        feature_store = await self.feature_store_service.get_document(
+            document_id=document.feature_store_id
+        )
+        features_info: List[UserDefinedFunctionFeatureInfo] = []
+        features = await self.feature_service.list_documents(
+            query_filter={"user_defined_function_ids": {"$in": [document_id]}},
+        )
+        if features["total"]:
+            for doc in features["data"]:
+                features_info.append(
+                    UserDefinedFunctionFeatureInfo(id=doc["_id"], name=doc["name"])
+                )
+
+        return UserDefinedFunctionInfo(
+            name=document.name,
+            function_name=document.function_name,
+            function_parameters=document.function_parameters,
+            signature=document.signature,
+            output_dtype=document.output_dtype,
+            feature_store_name=feature_store.name,
+            used_by_features=features_info,
+            created_at=document.created_at,
+            updated_at=document.updated_at,
         )

@@ -251,3 +251,34 @@ class TestUserDefinedFunctionApi(BaseApiTestSuite):
         response = test_api_client.get(self.base_route, params={"feature_store_id": random_id})
         assert response.status_code == HTTPStatus.OK
         assert response.json()["total"] == 0
+
+    def test_get_info_200(self, test_api_client_persistent, create_success_response):
+        """Test get info route (200)"""
+        test_api_client, _ = test_api_client_persistent
+
+        # test get info
+        response = test_api_client.get(
+            url=f"{self.base_route}/{create_success_response.json()['_id']}/info"
+        )
+        assert response.status_code == HTTPStatus.OK
+        response_dict = response.json()
+        assert response_dict == {
+            "feature_store_name": "sf_featurestore",
+            "function_name": "cos",
+            "function_parameters": [
+                {
+                    "default_value": None,
+                    "dtype": "FLOAT",
+                    "has_default_value": False,
+                    "has_test_value": False,
+                    "name": "x",
+                    "test_value": None,
+                }
+            ],
+            "name": "udf_test",
+            "output_dtype": "FLOAT",
+            "signature": "cos(x: float) -> float",
+            "used_by_features": [],
+            "created_at": response_dict["created_at"],
+            "updated_at": None,
+        }
