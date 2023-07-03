@@ -20,6 +20,7 @@ from featurebyte.models.feature_list import (
 )
 from featurebyte.models.feature_store import TableStatus
 from featurebyte.models.request_input import RequestInputType
+from featurebyte.models.user_defined_function import FunctionParameter
 from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node.schema import DatabaseDetails, TableDetails
@@ -445,3 +446,25 @@ class StaticSourceTableInfo(BaseInfo):
     type: RequestInputType
     feature_store_name: str
     table_details: TableDetails
+
+
+class UserDefinedFunctionFeatureInfo(FeatureByteBaseModel):
+    """
+    UserDefinedFunction's feature info schema
+    """
+
+    id: PydanticObjectId
+    name: str
+
+
+class UserDefinedFunctionInfo(BaseInfo):
+    """
+    UserDefinedFunction info schema
+    """
+
+    function_name: str
+    function_parameters: List[FunctionParameter]
+    signature: str
+    output_dtype: DBVarType
+    feature_store_name: str
+    used_by_features: List[UserDefinedFunctionFeatureInfo]

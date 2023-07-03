@@ -9,6 +9,7 @@ import functools
 from enum import Enum
 
 from featurebyte.common.doc_util import FBAutoDoc
+from featurebyte.common.typing import Scalar
 
 
 @functools.total_ordering
@@ -173,6 +174,32 @@ class DBVarType(StrEnum):
             self.INT: "int",
         }
         return mapping.get(self)  # type: ignore
+
+    def get_default_test_value(self) -> Scalar:
+        """
+        Get default test value for this type. This is used to generate the test input value
+        for user-defined functions.
+
+        Returns
+        -------
+        Scalar
+
+        Raises
+        ------
+        ValueError
+            If the type is not supported
+        """
+        mapping = {
+            self.BOOL: False,
+            self.CHAR: "t",
+            self.VARCHAR: "test",
+            self.FLOAT: 1.0,
+            self.INT: 1,
+        }
+        value = mapping.get(self)  # type: ignore
+        if value is None:
+            raise ValueError(f"Unsupported type {self}")
+        return value  # type: ignore
 
 
 class AggFunc(StrEnum):

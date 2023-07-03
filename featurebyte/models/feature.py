@@ -214,6 +214,9 @@ class FeatureModel(FeatureByteCatalogBaseDocumentModel):
     deployed_feature_list_ids: List[PydanticObjectId] = Field(
         allow_mutation=False, default_factory=list
     )
+    user_defined_function_ids: List[PydanticObjectId] = Field(
+        allow_mutation=False, default_factory=list
+    )
 
     # pydantic validators
     _version_validator = validator("version", pre=True, allow_reuse=True)(version_validator)
@@ -235,6 +238,9 @@ class FeatureModel(FeatureByteCatalogBaseDocumentModel):
             values["primary_table_ids"] = graph.get_primary_table_ids(node_name=node_name)
             values["table_ids"] = graph.get_table_ids(node_name=node_name)
             values["entity_ids"] = graph.get_entity_ids(node_name=node_name)
+            values["user_defined_function_ids"] = graph.get_user_defined_function_ids(
+                node_name=node_name
+            )
 
             # extract dtype from the graph
             node = graph.get_node_by_name(node_name)
@@ -341,6 +347,7 @@ class FeatureModel(FeatureByteCatalogBaseDocumentModel):
             pymongo.operations.IndexModel("feature_namespace_id"),
             pymongo.operations.IndexModel("feature_list_ids"),
             pymongo.operations.IndexModel("deployed_feature_list_ids"),
+            pymongo.operations.IndexModel("user_defined_function_ids"),
             pymongo.operations.IndexModel(
                 [
                     ("name", pymongo.TEXT),

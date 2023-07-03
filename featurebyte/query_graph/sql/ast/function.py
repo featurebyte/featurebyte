@@ -43,7 +43,9 @@ class GenericFunctionNode(ExpressionNode):
                     make_literal_value(func_param["value"], cast_as_timestamp=cast_as_timestamp)
                 )
 
-        table_node = cast(ExpressionNode, input_sql_nodes[0]).table_node
+        table_node = None
+        if input_sql_nodes:
+            table_node = cast(ExpressionNode, input_sql_nodes[0]).table_node
         return GenericFunctionNode(
             context=context,
             table_node=table_node,

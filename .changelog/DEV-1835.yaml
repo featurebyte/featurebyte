@@ -8,7 +8,7 @@ component: generic-function
 issues: []
 
 # A brief description of the change.
-note: "add generic function node implementation for the supporting user defined functions"
+note: "add user-defined-function models & endpoints"
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.

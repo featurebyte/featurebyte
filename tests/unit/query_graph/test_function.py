@@ -2,6 +2,7 @@
 This module contains generic function related node classes
 """
 import pytest
+from bson import ObjectId
 
 from featurebyte.enum import AggFunc, DBVarType, TableDataType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -36,6 +37,7 @@ def test_generic_function__view_type(global_graph, input_node):
                 {"value": True, "dtype": "BOOL", "input_form": "value"},
             ],
             "output_dtype": DBVarType.FLOAT,
+            "function_id": ObjectId("5f9b3b3b9c6d2b1a3f9b3b3b"),
         },
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[proj_a],
@@ -90,6 +92,7 @@ def test_generic_function__feature_type(global_graph, query_graph_with_groupby_a
                 {"column_name": "a", "dtype": "FLOAT", "input_form": "column"},
             ],
             "output_dtype": DBVarType.FLOAT,
+            "function_id": ObjectId("5f9b3b3b9c6d2b1a3f9b3b3b"),
         },
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[feature_proj],
@@ -164,6 +167,7 @@ def test_generic_function__invalid_inputs(global_graph, query_graph_with_groupby
             {"column_name": "a", "dtype": "FLOAT", "input_form": "column"},
         ],
         "output_dtype": DBVarType.FLOAT,
+        "function_id": ObjectId("5f9a3b3b9b3f4a1b9f6b1b1b"),
     }
 
     # check generic function node with feature and view inputs (non-homogenous)

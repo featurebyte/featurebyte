@@ -18,6 +18,7 @@ from featurebyte.common.utils import dataframe_to_json
 from featurebyte.exception import DatabaseNotFoundError, SchemaNotFoundError, TableNotFoundError
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.feature_store import FeatureStoreModel
+from featurebyte.models.user_defined_function import UserDefinedFunctionModel
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.node.schema import ColumnSpec
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
@@ -135,6 +136,29 @@ class FeatureStoreWarehouseService(BaseService):
         tables = [table.lower() for table in tables]
         if table_name.lower() not in tables:
             raise TableNotFoundError(f"Table {table_name} not found.")
+
+    async def check_user_defined_function_exists(
+        self,
+        user_defined_function: UserDefinedFunctionModel,
+        feature_store: FeatureStoreModel,
+        get_credential: Any,
+    ) -> None:
+        """
+        Check whether user defined function in feature store
+
+        Parameters
+        ----------
+        user_defined_function: UserDefinedFunctionModel
+            User defined function model
+        feature_store: FeatureStoreModel
+            Feature store model
+        get_credential: Any
+            Get credential handler function
+        """
+        db_session = await self.session_manager_service.get_feature_store_session(
+            feature_store=feature_store, get_credential=get_credential
+        )
+        await db_session.check_user_defined_function(user_defined_function=user_defined_function)
 
     async def list_databases(
         self, feature_store: FeatureStoreModel, get_credential: Any
