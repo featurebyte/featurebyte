@@ -119,11 +119,15 @@ class ForwardAggregator(NonTileBasedAggregator[ForwardAggregateSpec]):
             )
             for s in specs
         ]
-        serving_name = quoted_identifier(spec.serving_names[0]).sql()
-        join_table_key = quoted_identifier(spec.parameters.keys[0]).sql()
+        join_keys = []
+        assert len(spec.serving_names) == len(spec.parameters.keys)
+        for serving_name, key in zip(spec.serving_names, spec.parameters.keys):
+            serving_name_sql = quoted_identifier(serving_name).sql()
+            join_table_key_sql = quoted_identifier(key).sql()
+            join_keys.append(f"REQ.{serving_name_sql} = TABLE.{join_table_key_sql}")
         join_conditions = [
             record_validity_condition,
-            f"REQ.{serving_name} = TABLE.{join_table_key}",
+            *join_keys,
         ]
         groupby_input_expr = (
             select()
