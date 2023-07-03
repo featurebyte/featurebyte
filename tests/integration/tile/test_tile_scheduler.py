@@ -6,17 +6,13 @@ from unittest import mock
 import pytest
 import pytest_asyncio
 
-from featurebyte.app import get_celery
-from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.models.periodic_task import Interval
 from featurebyte.models.tile import TileType
-from featurebyte.service.task_manager import TaskManager
-from featurebyte.tile.scheduler import TileScheduler
 from featurebyte.worker.task_executor import TaskExecutor
 
 
 @pytest_asyncio.fixture(name="scheduler_fixture")
-async def mock_scheduler_fixture(feature, tile_spec, task_manager):
+async def mock_scheduler_fixture(feature, tile_spec, tile_scheduler_service):
     """
     Fixture for TileScheduler information
     """
@@ -26,11 +22,9 @@ async def mock_scheduler_fixture(feature, tile_spec, task_manager):
     tile_spec.feature_store_id = feature.tabular_source.feature_store_id
     job_id = f"{TileType.ONLINE}_{tile_spec.aggregation_id}"
 
-    tile_scheduler = TileScheduler(task_manager=task_manager)
+    yield tile_scheduler_service, tile_spec, job_id
 
-    yield tile_scheduler, tile_spec, job_id
-
-    await tile_scheduler.stop_job(job_id=job_id)
+    await tile_scheduler_service.stop_job(job_id=job_id)
 
 
 @pytest.mark.parametrize("source_type", ["spark", "snowflake", "databricks"], indirect=True)
@@ -41,11 +35,11 @@ async def test_generate_tiles_with_scheduler__verify_scheduling_and_execution(
     """
     Test generate_tiles with scheduler
     """
-    tile_scheduler, tile_spec, job_id = scheduler_fixture
+    tile_scheduler_service, tile_spec, job_id = scheduler_fixture
 
     await tile_manager_service.schedule_online_tiles(session, tile_spec=tile_spec)
 
-    job_details = await tile_scheduler.get_job_details(job_id=job_id)
+    job_details = await tile_scheduler_service.get_job_details(job_id=job_id)
     assert job_details is not None
     assert job_details.name == job_id
     assert job_details.time_modulo_frequency_second == tile_spec.time_modulo_frequency_second

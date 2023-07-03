@@ -1459,3 +1459,11 @@ def feature_manager_service_fixture(app_container):
     Return a feature manager service used in tests.
     """
     return app_container.feature_manager_service
+
+
+@pytest.fixture(name="tile_scheduler_service")
+def tile_scheduler_service_fixture(app_container):
+    """
+    Fixture for TileSchedulerService
+    """
+    return app_container.tile_scheduler_service

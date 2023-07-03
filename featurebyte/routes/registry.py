@@ -85,6 +85,7 @@ from featurebyte.service.target_namespace import TargetNamespaceService
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.service.tile_cache import TileCacheService
 from featurebyte.service.tile_manager import TileManagerService
+from featurebyte.service.tile_scheduler import TileSchedulerService
 from featurebyte.service.user_defined_function import UserDefinedFunctionService
 from featurebyte.service.user_service import UserService
 from featurebyte.service.validator.production_ready_validator import ProductionReadyValidator
@@ -142,6 +143,7 @@ app_container_config.register_service(TargetService)
 app_container_config.register_service(TargetNamespaceService)
 app_container_config.register_service(TileCacheService)
 app_container_config.register_service(TileManagerService)
+app_container_config.register_service(TileSchedulerService)
 app_container_config.register_service(UserDefinedFunctionService)
 app_container_config.register_service(UserService)
 app_container_config.register_service(VersionService)
