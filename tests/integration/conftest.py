@@ -253,25 +253,6 @@ def persistent_fixture():
     client.drop_database(database_name)
 
 
-@pytest.fixture(name="app_container")
-def app_container_fixture(persistent, user):
-    """
-    Return an app container used in tests. This will allow us to easily retrieve instances of the right type.
-    """
-    task_manager = TaskManager(
-        user=user, persistent=persistent, celery=get_celery(), catalog_id=DEFAULT_CATALOG_ID
-    )
-    return LazyAppContainer(
-        user=user,
-        persistent=persistent,
-        temp_storage=LocalTempStorage(),
-        task_manager=task_manager,
-        storage=LocalTempStorage(),
-        catalog_id=DEFAULT_CATALOG_ID,
-        app_container_config=app_container_config,
-    )
-
-
 @pytest.fixture(name="mongo_database_name")
 def mongo_database_name():
     """
