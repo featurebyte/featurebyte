@@ -131,6 +131,11 @@ class TileCommonParameters(FeatureByteBaseModel):
     value_column_names: List[str]
     value_column_types: List[str]
 
+    class Config:
+        """Model configuration"""
+
+        extra = "forbid"
+
 
 class TileScheduledJobParameters(TileCommonParameters):
     """

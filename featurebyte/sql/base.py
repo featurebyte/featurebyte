@@ -17,11 +17,6 @@ class BaseSqlModel(BaseModel):
 
     _session: BaseSession = PrivateAttr()
 
-    class Config:
-        """Model configuration"""
-
-        extra = "forbid"
-
     def __init__(self, session: BaseSession, **kwargs: Any):
         """
         Initialize Tile Operation Instance

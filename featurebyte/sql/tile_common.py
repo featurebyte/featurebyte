@@ -1,34 +1,19 @@
 """
 Base Class for Tile Schedule Instance
 """
-from typing import Any, List
+from typing import Any
 
 from abc import ABC, abstractmethod
 
+from featurebyte.models.tile import TileCommonParameters
 from featurebyte.session.base import BaseSession
 from featurebyte.sql.base import BaseSqlModel
 
 
-class TileCommon(BaseSqlModel, ABC):
+class TileCommon(TileCommonParameters, BaseSqlModel, ABC):
     """
     Base class for Tile Operation Classes
     """
-
-    tile_id: str
-    aggregation_id: str
-    tile_modulo_frequency_second: int
-    blind_spot_second: int
-    frequency_minute: int
-
-    sql: str
-    entity_column_names: List[str]
-    value_column_names: List[str]
-    value_column_types: List[str]
-
-    class Config:
-        """Model configuration"""
-
-        extra = "forbid"
 
     def __init__(self, session: BaseSession, **kwargs: Any):
         """

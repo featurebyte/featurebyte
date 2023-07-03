@@ -34,7 +34,7 @@ class TileTaskExecutor:
     # pylint: disable=too-many-locals,too-many-statements
     async def execute(self, session: BaseSession, params: TileScheduledJobParameters) -> None:
         """
-        Execute tile generate schedule operation
+        Execute steps in the scheduled task
 
         Parameters
         ----------
