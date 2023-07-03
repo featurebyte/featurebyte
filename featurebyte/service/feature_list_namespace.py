@@ -17,7 +17,6 @@ from featurebyte.schema.info import (
     TableBriefInfoList,
 )
 from featurebyte.service.base_document import BaseDocumentService
-from featurebyte.service.catalog import CatalogService
 from featurebyte.service.entity import EntityService, get_primary_entity_from_entities
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.table import TableService

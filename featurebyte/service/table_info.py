@@ -8,7 +8,6 @@ from bson import ObjectId
 from featurebyte.models.feature_store import TableModel
 from featurebyte.routes.catalog.catalog_name_injector import CatalogNameInjector
 from featurebyte.schema.info import EntityBriefInfoList
-from featurebyte.service.catalog import CatalogService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.semantic import SemanticService
 
