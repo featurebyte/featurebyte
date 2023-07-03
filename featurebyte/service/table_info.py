@@ -6,8 +6,8 @@ from typing import Any, Dict
 from bson import ObjectId
 
 from featurebyte.models.feature_store import TableModel
+from featurebyte.routes.catalog.catalog_name_injector import CatalogNameInjector
 from featurebyte.schema.info import EntityBriefInfoList
-from featurebyte.service.catalog import CatalogService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.semantic import SemanticService
 
@@ -21,11 +21,11 @@ class TableInfoService:
         self,
         entity_service: EntityService,
         semantic_service: SemanticService,
-        catalog_service: CatalogService,
+        catalog_name_injector: CatalogNameInjector,
     ):
         self.entity_service = entity_service
         self.semantic_service = semantic_service
-        self.catalog_service = catalog_service
+        self.catalog_name_injector = catalog_name_injector
 
     async def get_table_info(self, data_document: TableModel, verbose: bool) -> Dict[str, Any]:
         """
@@ -66,10 +66,10 @@ class TableInfoService:
                 )
 
         # get catalog info
-        catalog = await self.catalog_service.get_document(data_document.catalog_id)
-        for entity in entities["data"]:
-            assert entity["catalog_id"] == catalog.id
-            entity["catalog_name"] = catalog.name
+        catalog_name, updated_docs = await self.catalog_name_injector.add_name(
+            data_document.catalog_id, [entities]
+        )
+        entities = updated_docs[0]
 
         return {
             "name": data_document.name,
@@ -82,5 +82,5 @@ class TableInfoService:
             "semantics": [semantic["name"] for semantic in semantics["data"]],
             "column_count": len(data_document.columns_info),
             "columns_info": columns_info,
-            "catalog_name": catalog.name,
+            "catalog_name": catalog_name,
         }

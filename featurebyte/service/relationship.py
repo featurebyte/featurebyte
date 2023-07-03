@@ -18,7 +18,6 @@ from featurebyte.schema.entity import EntityServiceUpdate
 from featurebyte.schema.semantic import SemanticServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.base_service import BaseService
-from featurebyte.service.catalog import CatalogService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.semantic import SemanticService
 
@@ -202,17 +201,11 @@ class EntityRelationshipService(RelationshipService):
     EntityRelationshipService is responsible to update relationship between different entities.
     """
 
-    def __init__(self, user: Any, persistent: Persistent, catalog_id: ObjectId):
+    def __init__(
+        self, user: Any, persistent: Persistent, catalog_id: ObjectId, entity_service: EntityService
+    ):
         super().__init__(user, persistent, catalog_id)
-        self.catalog_service = CatalogService(
-            user=user, persistent=persistent, catalog_id=catalog_id
-        )
-        self.entity_service = EntityService(
-            user=user,
-            persistent=persistent,
-            catalog_id=catalog_id,
-            catalog_service=self.catalog_service,
-        )
+        self.entity_service = entity_service
 
     @property
     def document_service(self) -> BaseDocumentServiceT:

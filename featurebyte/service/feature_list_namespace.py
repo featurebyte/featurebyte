@@ -9,6 +9,7 @@ from bson import ObjectId
 
 from featurebyte.models.feature_list import FeatureListNamespaceModel
 from featurebyte.persistent import Persistent
+from featurebyte.routes.catalog.catalog_name_injector import CatalogNameInjector
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 from featurebyte.schema.info import (
     EntityBriefInfoList,
@@ -16,7 +17,6 @@ from featurebyte.schema.info import (
     TableBriefInfoList,
 )
 from featurebyte.service.base_document import BaseDocumentService
-from featurebyte.service.catalog import CatalogService
 from featurebyte.service.entity import EntityService, get_primary_entity_from_entities
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.table import TableService
@@ -40,14 +40,14 @@ class FeatureListNamespaceService(
         catalog_id: ObjectId,
         entity_service: EntityService,
         table_service: TableService,
-        catalog_service: CatalogService,
         feature_namespace_service: FeatureNamespaceService,
+        catalog_name_injector: CatalogNameInjector,
     ):
         super().__init__(user, persistent, catalog_id)
         self.entity_service = entity_service
         self.table_service = table_service
-        self.catalog_service = catalog_service
         self.feature_namespace_service = feature_namespace_service
+        self.catalog_name_injector = catalog_name_injector
 
     async def get_feature_list_namespace_info(
         self, document_id: ObjectId, verbose: bool
@@ -78,13 +78,10 @@ class FeatureListNamespaceService(
         )
 
         # get catalog info
-        catalog = await self.catalog_service.get_document(namespace.catalog_id)
-        for entity in entities["data"]:
-            assert entity["catalog_id"] == catalog.id
-            entity["catalog_name"] = catalog.name
-        for table in tables["data"]:
-            assert table["catalog_id"] == catalog.id
-            table["catalog_name"] = catalog.name
+        catalog_name, updated_docs = await self.catalog_name_injector.add_name(
+            namespace.catalog_id, [entities, tables]
+        )
+        entities, tables = updated_docs
 
         # get default feature ids
         feat_namespace_to_default_id = {}
@@ -108,7 +105,7 @@ class FeatureListNamespaceService(
             version_count=len(namespace.feature_list_ids),
             feature_count=len(namespace.feature_namespace_ids),
             status=namespace.status,
-            catalog_name=catalog.name,
+            catalog_name=catalog_name,
             feature_namespace_ids=namespace.feature_namespace_ids,
             default_feature_ids=[
                 feat_namespace_to_default_id[feat_namespace_id]
