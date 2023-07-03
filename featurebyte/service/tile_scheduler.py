@@ -1,36 +1,31 @@
 """
-FeatureByte Tile Scheduler
+TileSchedulerService class
 """
 from typing import Any, Optional
 
 from bson import ObjectId
-from pydantic import BaseModel, PrivateAttr
 
 from featurebyte.models.periodic_task import Interval, PeriodicTask
+from featurebyte.persistent import Persistent
 from featurebyte.schema.worker.task.tile import TileTaskPayload
+from featurebyte.service.base_service import BaseService
 from featurebyte.service.task_manager import TaskManager
 
 
-class TileScheduler(BaseModel):
+class TileSchedulerService(BaseService):
     """
-    FeatureByte Scheduler using apscheduler
+    TileSchedulerService is responsible for scheduling tile tasks
     """
 
-    _task_manager: TaskManager = PrivateAttr()
-
-    def __init__(self, task_manager: TaskManager, **kw: Any) -> None:
-        """
-        Instantiate TileScheduler instance
-
-        Parameters
-        ----------
-        task_manager: TaskManager
-            Task Manager instance
-        kw: Any
-            constructor arguments
-        """
-        super().__init__(**kw)
-        self._task_manager = task_manager
+    def __init__(
+        self,
+        user: Any,
+        persistent: Persistent,
+        catalog_id: ObjectId,
+        task_manager: TaskManager,
+    ):
+        super().__init__(user, persistent, catalog_id)
+        self.task_manager = task_manager
 
     async def start_job_with_interval(
         self,
@@ -38,9 +33,7 @@ class TileScheduler(BaseModel):
         interval_seconds: int,
         time_modulo_frequency_second: int,
         instance: Any,
-        user_id: Optional[ObjectId],
         feature_store_id: ObjectId,
-        catalog_id: ObjectId,
     ) -> None:
         """
         Start job with Interval seconds
@@ -55,12 +48,8 @@ class TileScheduler(BaseModel):
             time modulo frequency in seconds
         instance: Any
             instance of the class to be run
-        user_id: Optional[ObjectId]
-            input user id
         feature_store_id: ObjectId
             feature store id
-        catalog_id: ObjectId
-            catalog id
         """
 
         payload = TileTaskPayload(
@@ -68,12 +57,12 @@ class TileScheduler(BaseModel):
             module_path=instance.__class__.__module__,
             class_name=instance.__class__.__name__,
             instance_str=instance.json(),
-            user_id=user_id if user_id else self._task_manager.user.id,
+            user_id=self.user.id,
             feature_store_id=feature_store_id,
-            catalog_id=catalog_id,
+            catalog_id=self.catalog_id,
         )
 
-        await self._task_manager.schedule_interval_task(
+        await self.task_manager.schedule_interval_task(
             name=job_id,
             payload=payload,
             interval=Interval(every=interval_seconds, period="seconds"),
@@ -89,7 +78,7 @@ class TileScheduler(BaseModel):
         job_id: str
             job id to be stopped
         """
-        await self._task_manager.delete_periodic_task_by_name(job_id)
+        await self.task_manager.delete_periodic_task_by_name(job_id)
 
     async def get_job_details(self, job_id: str) -> Optional[PeriodicTask]:
         """
@@ -104,4 +93,4 @@ class TileScheduler(BaseModel):
         ----------
             Job Instance
         """
-        return await self._task_manager.get_periodic_task_by_name(name=job_id)
+        return await self.task_manager.get_periodic_task_by_name(name=job_id)

@@ -17,7 +17,6 @@ from featurebyte.models.online_store import OnlineFeatureSpec
 from featurebyte.models.periodic_task import Interval
 from featurebyte.models.tile import TileType
 from featurebyte.query_graph.sql.online_serving import OnlineStorePrecomputeQuery
-from featurebyte.tile.scheduler import TileScheduler
 
 
 @pytest.fixture(name="feature_sql")
@@ -55,6 +54,7 @@ async def test_online_enabled__without_snowflake_scheduling(
     feature_store_table_name,
     persistent,
     task_manager,
+    tile_scheduler_service,
 ):
     with patch.object(ExtendedFeatureModel, "tile_specs", PropertyMock(return_value=[tile_spec])):
         mock_precompute_queries = [
@@ -78,10 +78,9 @@ async def test_online_enabled__without_snowflake_scheduling(
                 session, online_feature_spec, schedule_time=schedule_time
             )
 
-            tile_scheduler = TileScheduler(task_manager=task_manager)
             # check if the task is scheduled
             job_id = f"{TileType.ONLINE}_{tile_spec.aggregation_id}"
-            job_details = await tile_scheduler.get_job_details(job_id=job_id)
+            job_details = await tile_scheduler_service.get_job_details(job_id=job_id)
             assert job_details is not None
             assert job_details.name == job_id
             assert job_details.interval == Interval(

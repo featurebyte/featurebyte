@@ -5,6 +5,7 @@ from unittest import mock
 from unittest.mock import Mock
 
 import pytest
+from bson import ObjectId
 
 from featurebyte import SourceType
 from featurebyte.models.tile import TileSpec, TileType
@@ -24,6 +25,7 @@ def test_construct_snowflaketile_time_modulo_error():
             value_column_names=["col2"],
             value_column_types=["FLOAT"],
             entity_column_names=["col1"],
+            feature_store_id=ObjectId(),
         )
     assert "time_modulo_frequency_second must be less than 180" in str(excinfo.value)
 
@@ -43,6 +45,7 @@ def test_construct_snowflaketile_frequency_minute_error():
             value_column_names=["col2"],
             value_column_types=["FLOAT"],
             entity_column_names=["col1"],
+            feature_store_id=ObjectId(),
         )
     assert "frequency_minute should be a multiple of 60 if it is more than 60" in str(excinfo.value)
 
@@ -61,6 +64,7 @@ def test_construct_snowflaketile_zero_time_modulo_frequency():
         entity_column_names=["col1"],
         tile_id="some_tile_id",
         aggregation_id="some_agg_id",
+        feature_store_id=ObjectId(),
     )
     assert tile_spec.time_modulo_frequency_second == 0
     assert tile_spec.blind_spot_second == 3

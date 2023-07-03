@@ -22,6 +22,7 @@ from featurebyte.service.online_store_table_version import OnlineStoreTableVersi
 from featurebyte.service.table import TableService
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.service.tile_manager import TileManagerService
+from featurebyte.service.tile_scheduler import TileSchedulerService
 from featurebyte.service.view_construction import ViewConstructionService
 from featurebyte.session.base import BaseSession, MetadataSchemaInitializer
 
@@ -82,12 +83,18 @@ class WorkingSchemaService(BaseService):
         self.online_store_table_version_service = OnlineStoreTableVersionService(
             user=user, persistent=persistent, catalog_id=catalog_id
         )
-        self.tile_manager_service = TileManagerService(
+        self.tile_scheduler_service = TileSchedulerService(
             user=user,
             persistent=persistent,
             catalog_id=catalog_id,
             task_manager=self.task_manager,
+        )
+        self.tile_manager_service = TileManagerService(
+            user=user,
+            persistent=persistent,
+            catalog_id=catalog_id,
             online_store_table_version_service=self.online_store_table_version_service,
+            tile_scheduler_service=self.tile_scheduler_service,
         )
         self.feature_manager_service = FeatureManagerService(
             user=user,

@@ -13,19 +13,17 @@ import pandas as pd
 from bson import ObjectId
 
 from featurebyte.enum import InternalName
-from featurebyte.exception import TileScheduleNotSupportedError
 from featurebyte.logging import get_logger
 from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.persistent import Persistent
 from featurebyte.service.base_service import BaseService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
-from featurebyte.service.task_manager import TaskManager
+from featurebyte.service.tile_scheduler import TileSchedulerService
 from featurebyte.session.base import BaseSession
 from featurebyte.sql.tile_generate import TileGenerate
 from featurebyte.sql.tile_generate_entity_tracking import TileGenerateEntityTracking
 from featurebyte.sql.tile_generate_schedule import TileGenerateSchedule
 from featurebyte.sql.tile_schedule_online_store import TileScheduleOnlineStore
-from featurebyte.tile.scheduler import TileScheduler
 from featurebyte.tile.sql_template import tm_retrieve_tile_job_audit_logs
 
 logger = get_logger(__name__)
@@ -42,12 +40,12 @@ class TileManagerService(BaseService):
         user: Any,
         persistent: Persistent,
         catalog_id: ObjectId,
-        task_manager: TaskManager,
         online_store_table_version_service: OnlineStoreTableVersionService,
+        tile_scheduler_service: TileSchedulerService,
     ):
         super().__init__(user, persistent, catalog_id)
-        self.task_manager = task_manager
         self.online_store_table_version_service = online_store_table_version_service
+        self.tile_scheduler_service = tile_scheduler_service
 
     async def generate_tiles_on_demand(
         self,
@@ -109,22 +107,12 @@ class TileManagerService(BaseService):
         tile_spec: TileSpec
             the input TileSpec
 
-        Raises
-        -------
-        TileScheduleNotSupportedError
-            if task manager is not initialized
-
         Returns
         -------
             whether the tile jobs already exist
         """
-        if not self.task_manager:
-            raise TileScheduleNotSupportedError("Task manager is not initialized")
-
-        scheduler = TileScheduler(task_manager=self.task_manager)
-
         job_id = f"{TileType.ONLINE}_{tile_spec.aggregation_id}"
-        return await scheduler.get_job_details(job_id=job_id) is not None
+        return await self.tile_scheduler_service.get_job_details(job_id=job_id) is not None
 
     async def populate_feature_store(
         self,
@@ -337,11 +325,6 @@ class TileManagerService(BaseService):
         monitor_periods: int
             online tile lookback period
 
-        Raises
-        -------
-        TileScheduleNotSupportedError
-            if catalog_id or feature_store_id is not provided or task manager is not initialized
-
         Returns
         -------
             generated sql to be executed or None if the tile job already exists
@@ -350,11 +333,8 @@ class TileManagerService(BaseService):
         logger.info(f"Scheduling {tile_type} tile job for {tile_spec.aggregation_id}")
         job_id = f"{tile_type}_{tile_spec.aggregation_id}"
 
-        if not tile_spec.catalog_id or not tile_spec.feature_store_id:
-            raise TileScheduleNotSupportedError("catalog_id and feature_store_id must be provided")
-
-        scheduler = TileScheduler(task_manager=self.task_manager)
-        exist_job = await scheduler.get_job_details(job_id=job_id)
+        assert tile_spec.feature_store_id is not None
+        exist_job = await self.tile_scheduler_service.get_job_details(job_id=job_id)
         if not exist_job:
             logger.info(f"Creating new job {job_id}")
             tile_schedule_ins = TileGenerateSchedule(
@@ -379,14 +359,12 @@ class TileManagerService(BaseService):
                 if tile_type == TileType.ONLINE
                 else offline_minutes * 60
             )
-            await scheduler.start_job_with_interval(
+            await self.tile_scheduler_service.start_job_with_interval(
                 job_id=job_id,
                 interval_seconds=interval_seconds,
                 time_modulo_frequency_second=tile_spec.time_modulo_frequency_second,
                 instance=tile_schedule_ins,
-                user_id=tile_spec.user_id,
                 feature_store_id=tile_spec.feature_store_id,
-                catalog_id=tile_spec.catalog_id,
             )
 
             return tile_schedule_ins.json()
@@ -407,17 +385,7 @@ class TileManagerService(BaseService):
             Instance of BaseSession to interact with the data warehouse
         tile_spec: TileSpec
             the input TileSpec
-
-        Raises
-        -------
-        TileScheduleNotSupportedError
-            if task manager is not initialized
         """
-        if not self.task_manager:
-            raise TileScheduleNotSupportedError("Task manager is not initialized")
-
-        scheduler = TileScheduler(task_manager=self.task_manager)
-
         exist_mapping = await session.execute_query(
             f"SELECT * FROM TILE_FEATURE_MAPPING WHERE AGGREGATION_ID = '{tile_spec.aggregation_id}' and IS_DELETED = FALSE"
         )
@@ -425,7 +393,9 @@ class TileManagerService(BaseService):
         if exist_mapping is None or len(exist_mapping) == 0:
             logger.info("Stopping job with custom scheduler")
             for t_type in [TileType.ONLINE, TileType.OFFLINE]:
-                await scheduler.stop_job(job_id=f"{t_type}_{tile_spec.aggregation_id}")
+                await self.tile_scheduler_service.stop_job(
+                    job_id=f"{t_type}_{tile_spec.aggregation_id}"
+                )
 
     @staticmethod
     async def retrieve_tile_job_audit_logs(

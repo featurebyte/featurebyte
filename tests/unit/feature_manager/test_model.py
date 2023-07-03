@@ -5,7 +5,7 @@ from featurebyte.feature_manager.model import ExtendedFeatureModel, TileSpec
 from featurebyte.models.base import VersionIdentifier
 
 
-def test_extended_feature_model__float_feature(float_feature):
+def test_extended_feature_model__float_feature(float_feature, snowflake_feature_store):
     """Test ExtendedFeatureModel has correct tile_specs"""
     model = ExtendedFeatureModel(
         **float_feature.dict(exclude={"version": True}),
@@ -58,12 +58,15 @@ def test_extended_feature_model__float_feature(float_feature):
             value_column_types=["FLOAT"],
             tile_id="TILE_F1800_M300_B600_B5CAF33CCFEDA76C257EC2CB7F66C4AD22009B0F",
             aggregation_id=f"sum_{aggregation_id}",
+            feature_store_id=snowflake_feature_store.id,
         )
     ]
     assert model.tile_specs == expected_tile_specs
 
 
-def test_extended_feature_model__agg_per_category_feature(agg_per_category_feature):
+def test_extended_feature_model__agg_per_category_feature(
+    agg_per_category_feature, snowflake_feature_store
+):
     """Test ExtendedFeatureModel has correct tile_specs for category groupby feature"""
     model = ExtendedFeatureModel(
         **agg_per_category_feature.dict(exclude={"version": True}),
@@ -119,6 +122,7 @@ def test_extended_feature_model__agg_per_category_feature(agg_per_category_featu
             tile_id="TILE_F1800_M300_B600_560AD973F72FB4645D798EBD83E4B0450B2A5C7B",
             aggregation_id=f"sum_{aggregation_id}",
             category_column_name="col_int",
+            feature_store_id=snowflake_feature_store.id,
         )
     ]
     assert model.tile_specs == expected_tile_specs
