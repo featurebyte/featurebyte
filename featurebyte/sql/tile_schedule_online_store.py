@@ -18,13 +18,13 @@ from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.session.base import BaseSession
-from featurebyte.sql.base import BaselSqlModel
+from featurebyte.sql.base import BaseSqlModel
 from featurebyte.sql.common import construct_create_table_query, retry_sql
 
 logger = get_logger(__name__)
 
 
-class TileScheduleOnlineStore(BaselSqlModel):
+class TileScheduleOnlineStore(BaseSqlModel):
     """
     Tile Schedule Online Store script
     """

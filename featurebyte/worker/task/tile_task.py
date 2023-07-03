@@ -5,9 +5,6 @@ from __future__ import annotations
 
 from typing import Any, cast
 
-import importlib
-import json
-
 from featurebyte.logging import get_logger
 from featurebyte.schema.worker.task.tile import TileTaskPayload
 from featurebyte.service.feature_store import FeatureStoreService
@@ -32,14 +29,6 @@ class TileTask(BaseTask):
 
         payload = cast(TileTaskPayload, self.payload)
 
-        module = importlib.import_module(payload.module_path)
-        instance_class = getattr(module, payload.class_name)
-        instance_json = json.loads(payload.instance_str)
-
-        logger.debug(f"module: {payload.module_path}")
-        logger.debug(f"class_name: {payload.class_name}")
-        logger.debug(f"instance_str: {payload.instance_str}")
-
         # get feature store
         feature_store_service = FeatureStoreService(
             user=self.user,
@@ -60,12 +49,8 @@ class TileTask(BaseTask):
         )
         db_session = await session_manager.get_session(feature_store)
 
-        instance = instance_class(
-            session=db_session,
-            online_store_table_version_service=self.app_container.online_store_table_version_service,
-            **instance_json,
+        await self.app_container.tile_task_executor.execute(
+            session=db_session, params=payload.parameters
         )
-
-        await instance.execute()
 
         logger.debug("Tile task ended")

@@ -104,15 +104,11 @@ class FeatureManagerService(BaseService):
             tile_job_exists = await self.tile_manager_service.tile_job_exists(tile_spec=tile_spec)
             if not tile_job_exists:
                 # enable online tiles scheduled job
-                await self.tile_manager_service.schedule_online_tiles(
-                    session=session, tile_spec=tile_spec
-                )
+                await self.tile_manager_service.schedule_online_tiles(tile_spec=tile_spec)
                 logger.debug(f"Done schedule_online_tiles for {tile_spec.aggregation_id}")
 
                 # enable offline tiles scheduled job
-                await self.tile_manager_service.schedule_offline_tiles(
-                    session=session, tile_spec=tile_spec
-                )
+                await self.tile_manager_service.schedule_offline_tiles(tile_spec=tile_spec)
                 logger.debug(f"Done schedule_offline_tiles for {tile_spec.aggregation_id}")
 
                 # generate historical tiles

@@ -6,13 +6,13 @@ from typing import Any, List
 from featurebyte.enum import InternalName
 from featurebyte.logging import get_logger
 from featurebyte.session.base import BaseSession
-from featurebyte.sql.base import BaselSqlModel
+from featurebyte.sql.base import BaseSqlModel
 from featurebyte.sql.common import construct_create_table_query, retry_sql
 
 logger = get_logger(__name__)
 
 
-class TileGenerateEntityTracking(BaselSqlModel):
+class TileGenerateEntityTracking(BaseSqlModel):
     """
     Tile Generate entity tracking script
     """

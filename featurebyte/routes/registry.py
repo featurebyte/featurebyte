@@ -84,6 +84,7 @@ from featurebyte.service.table_status import TableStatusService
 from featurebyte.service.target import TargetService
 from featurebyte.service.target_namespace import TargetNamespaceService
 from featurebyte.service.task_manager import TaskManager
+from featurebyte.service.tile.tile_task_executor import TileTaskExecutor
 from featurebyte.service.tile_cache import TileCacheService
 from featurebyte.service.tile_manager import TileManagerService
 from featurebyte.service.tile_scheduler import TileSchedulerService
@@ -199,6 +200,7 @@ app_container_config.register_class(
 app_container_config.register_class(
     TargetNamespaceController, dependency_override={"service": "target_namespace_service"}
 )
+app_container_config.register_class(TileTaskExecutor)
 app_container_config.register_class(
     UserDefinedFunctionController, dependency_override={"service": "user_defined_function_service"}
 )

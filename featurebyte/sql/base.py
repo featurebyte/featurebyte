@@ -10,7 +10,7 @@ from featurebyte.session.base import BaseSession
 from featurebyte.session.snowflake import SnowflakeSession
 
 
-class BaselSqlModel(BaseModel):
+class BaseSqlModel(BaseModel):
     """
     Base class for Tile Operation Classes
     """

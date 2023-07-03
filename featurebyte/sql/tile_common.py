@@ -6,10 +6,10 @@ from typing import Any, List
 from abc import ABC, abstractmethod
 
 from featurebyte.session.base import BaseSession
-from featurebyte.sql.base import BaselSqlModel
+from featurebyte.sql.base import BaseSqlModel
 
 
-class TileCommon(BaselSqlModel, ABC):
+class TileCommon(BaseSqlModel, ABC):
     """
     Base class for Tile Operation Classes
     """

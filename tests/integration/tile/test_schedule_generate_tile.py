@@ -6,8 +6,9 @@ from datetime import datetime
 import pytest
 
 from featurebyte.enum import InternalName
+from featurebyte.models.tile import TileScheduledJobParameters
+from featurebyte.service.tile.tile_task_executor import TileTaskExecutor
 from featurebyte.sql.common import construct_create_table_query
-from featurebyte.sql.tile_generate_schedule import TileGenerateSchedule
 
 
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
@@ -84,11 +85,17 @@ async def test_schedule_generate_tile_online(
     assert result["CREATED_AT"].iloc[3] > result["CREATED_AT"].iloc[2]
 
 
+@pytest.fixture(name="tile_task_executor")
+def tile_task_executor_fixture(online_store_table_version_service):
+    """
+    Fixture for tile task executor
+    """
+    return TileTaskExecutor(online_store_table_version_service=online_store_table_version_service)
+
+
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_schedule_monitor_tile_online(
-    session, online_store_table_version_service, base_sql_model
-):
+async def test_schedule_monitor_tile_online(session, base_sql_model, tile_task_executor):
     """
     Test the stored procedure of monitoring tiles
     """
@@ -114,9 +121,7 @@ async def test_schedule_monitor_tile_online(
         f" AND {InternalName.TILE_START_DATE} < {InternalName.TILE_END_DATE_SQL_PLACEHOLDER}"
     )
 
-    tile_schedule_ins = TileGenerateSchedule(
-        session=session,
-        online_store_table_version_service=online_store_table_version_service,
+    tile_schedule_ins = TileScheduledJobParameters(
         tile_id=tile_id,
         tile_modulo_frequency_second=183,
         blind_spot_second=3,
@@ -131,7 +136,7 @@ async def test_schedule_monitor_tile_online(
         aggregation_id=agg_id,
         job_schedule_ts=tile_end_ts,
     )
-    await tile_schedule_ins.execute()
+    await tile_task_executor.execute(session, tile_schedule_ins)
 
     sql = f"""
             UPDATE {table_name} SET VALUE = VALUE + 1
@@ -143,9 +148,7 @@ async def test_schedule_monitor_tile_online(
     await session.execute_query(sql)
 
     tile_end_ts_2 = "2022-06-05T23:58:03Z"
-    tile_schedule_ins = TileGenerateSchedule(
-        session=session,
-        online_store_table_version_service=online_store_table_version_service,
+    tile_schedule_ins = TileScheduledJobParameters(
         tile_id=tile_id,
         tile_modulo_frequency_second=183,
         blind_spot_second=3,
@@ -160,7 +163,7 @@ async def test_schedule_monitor_tile_online(
         aggregation_id=agg_id,
         job_schedule_ts=tile_end_ts_2,
     )
-    await tile_schedule_ins.execute()
+    await tile_task_executor.execute(session, tile_schedule_ins)
 
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM {tile_id}_MONITOR"
     result = await session.execute_query(sql)
@@ -174,7 +177,7 @@ async def test_schedule_monitor_tile_online(
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_schedule_generate_tile__with_registry(
-    session, tile_task_prep_spark, base_sql_model, online_store_table_version_service
+    session, tile_task_prep_spark, base_sql_model, tile_task_executor
 ):
     """
     Test the stored procedure of generating tiles
@@ -197,9 +200,7 @@ async def test_schedule_generate_tile__with_registry(
         f" AND {InternalName.TILE_START_DATE} < {InternalName.TILE_END_DATE_SQL_PLACEHOLDER}"
     )
 
-    tile_schedule_ins = TileGenerateSchedule(
-        session=session,
-        online_store_table_version_service=online_store_table_version_service,
+    tile_schedule_ins = TileScheduledJobParameters(
         tile_id=tile_id,
         tile_modulo_frequency_second=183,
         blind_spot_second=3,
@@ -214,7 +215,7 @@ async def test_schedule_generate_tile__with_registry(
         aggregation_id=agg_id,
         job_schedule_ts=tile_end_ts,
     )
-    await tile_schedule_ins.execute()
+    await tile_task_executor.execute(session, tile_schedule_ins)
 
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM {tile_id}"
     result = await session.execute_query(sql)
@@ -232,7 +233,7 @@ async def test_schedule_generate_tile__with_registry(
     await session.execute_query(
         f"UPDATE TILE_REGISTRY SET LAST_TILE_START_DATE_ONLINE = '2022-06-05 23:33:00' WHERE TILE_ID = '{tile_id}'"
     )
-    await tile_schedule_ins.execute()
+    await tile_task_executor.execute(session, tile_schedule_ins)
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM {tile_id}"
     result = await session.execute_query(sql)
     assert result["TILE_COUNT"].iloc[0] == 5
@@ -249,7 +250,7 @@ async def test_schedule_generate_tile__with_registry(
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_schedule_generate_tile__no_default_job_ts(
-    session, tile_task_prep_spark, base_sql_model, online_store_table_version_service
+    session, tile_task_prep_spark, base_sql_model, tile_task_executor
 ):
     """
     Test the stored procedure of generating tiles
@@ -278,9 +279,7 @@ async def test_schedule_generate_tile__no_default_job_ts(
 
     # job scheduled time falls on exactly the same time as next job time
     used_job_schedule_ts = "2023-05-04 14:33:03"
-    tile_schedule_ins = TileGenerateSchedule(
-        session=session,
-        online_store_table_version_service=online_store_table_version_service,
+    tile_schedule_ins = TileScheduledJobParameters(
         tile_id=tile_id,
         tile_modulo_frequency_second=tile_modulo_frequency_second,
         blind_spot_second=blind_spot_second,
@@ -295,7 +294,7 @@ async def test_schedule_generate_tile__no_default_job_ts(
         aggregation_id=agg_id,
         job_schedule_ts=used_job_schedule_ts,
     )
-    await tile_schedule_ins.execute()
+    await tile_task_executor.execute(session, tile_schedule_ins)
     result = await session.execute_query(
         f"SELECT LAST_TILE_START_DATE_ONLINE FROM TILE_REGISTRY WHERE TILE_ID = '{tile_id}'"
     )
@@ -305,9 +304,7 @@ async def test_schedule_generate_tile__no_default_job_ts(
 
     # job scheduled time falls on in-between job times
     used_job_schedule_ts = "2023-05-04 14:33:30"
-    tile_schedule_ins = TileGenerateSchedule(
-        session=session,
-        online_store_table_version_service=online_store_table_version_service,
+    tile_schedule_ins = TileScheduledJobParameters(
         tile_id=tile_id,
         tile_modulo_frequency_second=tile_modulo_frequency_second,
         blind_spot_second=blind_spot_second,
@@ -322,7 +319,7 @@ async def test_schedule_generate_tile__no_default_job_ts(
         aggregation_id=agg_id,
         job_schedule_ts=used_job_schedule_ts,
     )
-    await tile_schedule_ins.execute()
+    await tile_task_executor.execute(session, tile_schedule_ins)
     result = await session.execute_query(
         f"SELECT LAST_TILE_START_DATE_ONLINE FROM TILE_REGISTRY WHERE TILE_ID = '{tile_id}'"
     )

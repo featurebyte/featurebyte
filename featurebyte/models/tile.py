@@ -113,3 +113,31 @@ class TileSpec(FeatureByteBaseModel):
             )
 
         return values
+
+
+class TileCommonParameters(FeatureByteBaseModel):
+    """
+    Model for common parameters used by various steps within a tile scheduled job
+    """
+
+    tile_id: str
+    aggregation_id: str
+    tile_modulo_frequency_second: int
+    blind_spot_second: int
+    frequency_minute: int
+
+    sql: str
+    entity_column_names: List[str]
+    value_column_names: List[str]
+    value_column_types: List[str]
+
+
+class TileScheduledJobParameters(TileCommonParameters):
+    """
+    Model for the parameters for a scheduled tile job
+    """
+
+    offline_period_minute: int
+    tile_type: str
+    monitor_periods: int
+    job_schedule_ts: Optional[str] = Field(default=None)

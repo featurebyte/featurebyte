@@ -14,7 +14,7 @@ from bson import ObjectId
 
 from featurebyte.enum import InternalName
 from featurebyte.logging import get_logger
-from featurebyte.models.tile import TileSpec, TileType
+from featurebyte.models.tile import TileScheduledJobParameters, TileSpec, TileType
 from featurebyte.persistent import Persistent
 from featurebyte.service.base_service import BaseService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
@@ -22,7 +22,6 @@ from featurebyte.service.tile_scheduler import TileSchedulerService
 from featurebyte.session.base import BaseSession
 from featurebyte.sql.tile_generate import TileGenerate
 from featurebyte.sql.tile_generate_entity_tracking import TileGenerateEntityTracking
-from featurebyte.sql.tile_generate_schedule import TileGenerateSchedule
 from featurebyte.sql.tile_schedule_online_store import TileScheduleOnlineStore
 from featurebyte.tile.sql_template import tm_retrieve_tile_job_audit_logs
 
@@ -240,7 +239,6 @@ class TileManagerService(BaseService):
 
     async def schedule_online_tiles(
         self,
-        session: BaseSession,
         tile_spec: TileSpec,
         monitor_periods: int = 10,
     ) -> Optional[str]:
@@ -249,8 +247,6 @@ class TileManagerService(BaseService):
 
         Parameters
         ----------
-        session: BaseSession
-            Instance of BaseSession to interact with the data warehouse
         tile_spec: TileSpec
             the input TileSpec
         monitor_periods: int
@@ -261,7 +257,6 @@ class TileManagerService(BaseService):
             generated sql to be executed or None if the tile job already exists
         """
         sql = await self._schedule_tiles_custom(
-            session=session,
             tile_spec=tile_spec,
             tile_type=TileType.ONLINE,
             monitor_periods=monitor_periods,
@@ -271,7 +266,6 @@ class TileManagerService(BaseService):
 
     async def schedule_offline_tiles(
         self,
-        session: BaseSession,
         tile_spec: TileSpec,
         offline_minutes: int = 1440,
     ) -> Optional[str]:
@@ -280,8 +274,6 @@ class TileManagerService(BaseService):
 
         Parameters
         ----------
-        session: BaseSession
-            Instance of BaseSession to interact with the data warehouse
         tile_spec: TileSpec
             the input TileSpec
         offline_minutes: int
@@ -293,7 +285,6 @@ class TileManagerService(BaseService):
         """
 
         sql = await self._schedule_tiles_custom(
-            session=session,
             tile_spec=tile_spec,
             tile_type=TileType.OFFLINE,
             offline_minutes=offline_minutes,
@@ -303,7 +294,6 @@ class TileManagerService(BaseService):
 
     async def _schedule_tiles_custom(
         self,
-        session: BaseSession,
         tile_spec: TileSpec,
         tile_type: TileType,
         offline_minutes: int = 1440,
@@ -314,8 +304,6 @@ class TileManagerService(BaseService):
 
         Parameters
         ----------
-        session: BaseSession
-            Instance of BaseSession to interact with the data warehouse
         tile_spec: TileSpec
             the input TileSpec
         tile_type: TileType
@@ -337,9 +325,7 @@ class TileManagerService(BaseService):
         exist_job = await self.tile_scheduler_service.get_job_details(job_id=job_id)
         if not exist_job:
             logger.info(f"Creating new job {job_id}")
-            tile_schedule_ins = TileGenerateSchedule(
-                session=session,
-                online_store_table_version_service=self.online_store_table_version_service,
+            parameters = TileScheduledJobParameters(
                 tile_id=tile_spec.tile_id,
                 tile_modulo_frequency_second=tile_spec.time_modulo_frequency_second,
                 blind_spot_second=tile_spec.blind_spot_second,
@@ -353,7 +339,6 @@ class TileManagerService(BaseService):
                 monitor_periods=monitor_periods,
                 aggregation_id=tile_spec.aggregation_id,
             )
-
             interval_seconds = (
                 tile_spec.frequency_minute * 60
                 if tile_type == TileType.ONLINE
@@ -363,11 +348,11 @@ class TileManagerService(BaseService):
                 job_id=job_id,
                 interval_seconds=interval_seconds,
                 time_modulo_frequency_second=tile_spec.time_modulo_frequency_second,
-                instance=tile_schedule_ins,
                 feature_store_id=tile_spec.feature_store_id,
+                parameters=parameters,
             )
 
-            return tile_schedule_ins.json()
+            return parameters.json()
 
         return None
 
