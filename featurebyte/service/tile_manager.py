@@ -1,5 +1,5 @@
 """
-Base Tile class
+TileManagerService class
 """
 from __future__ import annotations
 
@@ -10,12 +10,14 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
-from pydantic import BaseModel, PrivateAttr
+from bson import ObjectId
 
 from featurebyte.enum import InternalName
 from featurebyte.exception import TileScheduleNotSupportedError
 from featurebyte.logging import get_logger
 from featurebyte.models.tile import TileSpec, TileType
+from featurebyte.persistent import Persistent
+from featurebyte.service.base_service import BaseService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.base import BaseSession
@@ -29,43 +31,27 @@ from featurebyte.tile.sql_template import tm_retrieve_tile_job_audit_logs
 logger = get_logger(__name__)
 
 
-class TileManager(BaseModel):
+class TileManagerService(BaseService):
     """
-    Base Tile class
+    TileManagerService is responsible for materialization of tiles in the data warehouse and
+    scheduling of periodic tile jobs
     """
-
-    _session: BaseSession = PrivateAttr()
-    _task_manager: Optional[TaskManager] = PrivateAttr()
-    _online_store_table_version_service: Optional[OnlineStoreTableVersionService] = PrivateAttr()
 
     def __init__(
         self,
-        session: BaseSession,
-        task_manager: Optional[TaskManager] = None,
-        online_store_table_version_service: Optional[OnlineStoreTableVersionService] = None,
-        **kw: Any,
-    ) -> None:
-        """
-        Custom constructor for TileSnowflake to instantiate a datasource session
-
-        Parameters
-        ----------
-        session: BaseSession
-            input session for datasource
-        task_manager: Optional[TaskManager]
-            input task manager
-        online_store_table_version_service: Optional[OnlineStoreTableVersionService]
-            Online store table version service
-        kw: Any
-            constructor arguments
-        """
-        super().__init__(**kw)
-        self._session = session
-        self._task_manager = task_manager
-        self._online_store_table_version_service = online_store_table_version_service
+        user: Any,
+        persistent: Persistent,
+        catalog_id: ObjectId,
+        task_manager: TaskManager,
+        online_store_table_version_service: OnlineStoreTableVersionService,
+    ):
+        super().__init__(user, persistent, catalog_id)
+        self.task_manager = task_manager
+        self.online_store_table_version_service = online_store_table_version_service
 
     async def generate_tiles_on_demand(
         self,
+        session: BaseSession,
         tile_inputs: List[Tuple[TileSpec, str]],
         progress_callback: Optional[Callable[[int, str], None]] = None,
     ) -> None:
@@ -74,6 +60,8 @@ class TileManager(BaseModel):
 
         Parameters
         ----------
+        session: BaseSession
+            Instance of BaseSession to interact with the data warehouse
         tile_inputs: List[Tuple[TileSpec, str]]
             list of TileSpec, temp_entity_table to update the feature store
         progress_callback: Optional[Callable[[int, str], None]]
@@ -86,7 +74,11 @@ class TileManager(BaseModel):
         for index, (tile_spec, entity_table) in enumerate(tile_inputs):
             tic = time.time()
             await self.generate_tiles(
-                tile_spec=tile_spec, tile_type=TileType.OFFLINE, start_ts_str=None, end_ts_str=None
+                session=session,
+                tile_spec=tile_spec,
+                tile_type=TileType.OFFLINE,
+                start_ts_str=None,
+                end_ts_str=None,
             )
             logger.debug(
                 "Done generating tiles",
@@ -95,7 +87,7 @@ class TileManager(BaseModel):
 
             tic = time.time()
             await self.update_tile_entity_tracker(
-                tile_spec=tile_spec, temp_entity_table=entity_table
+                session=session, tile_spec=tile_spec, temp_entity_table=entity_table
             )
             logger.debug(
                 "Done update_tile_entity_tracker",
@@ -126,16 +118,17 @@ class TileManager(BaseModel):
         -------
             whether the tile jobs already exist
         """
-        if not self._task_manager:
+        if not self.task_manager:
             raise TileScheduleNotSupportedError("Task manager is not initialized")
 
-        scheduler = TileScheduler(task_manager=self._task_manager)
+        scheduler = TileScheduler(task_manager=self.task_manager)
 
         job_id = f"{TileType.ONLINE}_{tile_spec.aggregation_id}"
         return await scheduler.get_job_details(job_id=job_id) is not None
 
     async def populate_feature_store(
         self,
+        session: BaseSession,
         tile_spec: TileSpec,
         job_schedule_ts_str: str,
         aggregation_result_name: str,
@@ -145,6 +138,8 @@ class TileManager(BaseModel):
 
         Parameters
         ----------
+        session: BaseSession
+            Instance of BaseSession to interact with the data warehouse
         tile_spec: TileSpec
             the input TileSpec
         job_schedule_ts_str: str
@@ -152,18 +147,18 @@ class TileManager(BaseModel):
         aggregation_result_name: str
             aggregation result name to populate
         """
-        assert self._online_store_table_version_service is not None
         executor = TileScheduleOnlineStore(
-            session=self._session,
+            session=session,
             aggregation_id=tile_spec.aggregation_id,
             job_schedule_ts_str=job_schedule_ts_str,
-            online_store_table_version_service=self._online_store_table_version_service,
+            online_store_table_version_service=self.online_store_table_version_service,
             aggregation_result_name=aggregation_result_name,
         )
         await executor.execute()
 
     async def generate_tiles(
         self,
+        session: BaseSession,
         tile_spec: TileSpec,
         tile_type: TileType,
         start_ts_str: Optional[str],
@@ -175,6 +170,8 @@ class TileManager(BaseModel):
 
         Parameters
         ----------
+        session: BaseSession
+            Instance of BaseSession to interact with the data warehouse
         tile_spec: TileSpec
             the input TileSpec
         tile_type: TileType
@@ -199,7 +196,7 @@ class TileManager(BaseModel):
             tile_sql = tile_spec.tile_sql
 
         tile_generate_ins = TileGenerate(
-            session=self._session,
+            session=session,
             tile_id=tile_spec.tile_id,
             tile_modulo_frequency_second=tile_spec.time_modulo_frequency_second,
             blind_spot_second=tile_spec.blind_spot_second,
@@ -216,12 +213,16 @@ class TileManager(BaseModel):
 
         return tile_generate_ins.json()
 
-    async def update_tile_entity_tracker(self, tile_spec: TileSpec, temp_entity_table: str) -> str:
+    async def update_tile_entity_tracker(
+        self, session: BaseSession, tile_spec: TileSpec, temp_entity_table: str
+    ) -> str:
         """
         Update <tile_id>_entity_tracker table for last_tile_start_date
 
         Parameters
         ----------
+        session: BaseSession
+            Instance of BaseSession to interact with the data warehouse
         tile_spec: TileSpec
             the input TileSpec
         temp_entity_table: str
@@ -239,7 +240,7 @@ class TileManager(BaseModel):
             ]
 
         tile_entity_tracking_ins = TileGenerateEntityTracking(
-            session=self._session,
+            session=session,
             tile_id=tile_spec.aggregation_id,
             entity_column_names=entity_column_names,
             entity_table=temp_entity_table,
@@ -251,6 +252,7 @@ class TileManager(BaseModel):
 
     async def schedule_online_tiles(
         self,
+        session: BaseSession,
         tile_spec: TileSpec,
         monitor_periods: int = 10,
     ) -> Optional[str]:
@@ -259,6 +261,8 @@ class TileManager(BaseModel):
 
         Parameters
         ----------
+        session: BaseSession
+            Instance of BaseSession to interact with the data warehouse
         tile_spec: TileSpec
             the input TileSpec
         monitor_periods: int
@@ -269,6 +273,7 @@ class TileManager(BaseModel):
             generated sql to be executed or None if the tile job already exists
         """
         sql = await self._schedule_tiles_custom(
+            session=session,
             tile_spec=tile_spec,
             tile_type=TileType.ONLINE,
             monitor_periods=monitor_periods,
@@ -278,6 +283,7 @@ class TileManager(BaseModel):
 
     async def schedule_offline_tiles(
         self,
+        session: BaseSession,
         tile_spec: TileSpec,
         offline_minutes: int = 1440,
     ) -> Optional[str]:
@@ -286,6 +292,8 @@ class TileManager(BaseModel):
 
         Parameters
         ----------
+        session: BaseSession
+            Instance of BaseSession to interact with the data warehouse
         tile_spec: TileSpec
             the input TileSpec
         offline_minutes: int
@@ -297,6 +305,7 @@ class TileManager(BaseModel):
         """
 
         sql = await self._schedule_tiles_custom(
+            session=session,
             tile_spec=tile_spec,
             tile_type=TileType.OFFLINE,
             offline_minutes=offline_minutes,
@@ -306,6 +315,7 @@ class TileManager(BaseModel):
 
     async def _schedule_tiles_custom(
         self,
+        session: BaseSession,
         tile_spec: TileSpec,
         tile_type: TileType,
         offline_minutes: int = 1440,
@@ -316,6 +326,8 @@ class TileManager(BaseModel):
 
         Parameters
         ----------
+        session: BaseSession
+            Instance of BaseSession to interact with the data warehouse
         tile_spec: TileSpec
             the input TileSpec
         tile_type: TileType
@@ -341,18 +353,13 @@ class TileManager(BaseModel):
         if not tile_spec.catalog_id or not tile_spec.feature_store_id:
             raise TileScheduleNotSupportedError("catalog_id and feature_store_id must be provided")
 
-        if not self._task_manager:
-            raise TileScheduleNotSupportedError("Task manager is not initialized")
-
-        assert self._online_store_table_version_service is not None
-
-        scheduler = TileScheduler(task_manager=self._task_manager)
+        scheduler = TileScheduler(task_manager=self.task_manager)
         exist_job = await scheduler.get_job_details(job_id=job_id)
         if not exist_job:
             logger.info(f"Creating new job {job_id}")
             tile_schedule_ins = TileGenerateSchedule(
-                session=self._session,
-                online_store_table_version_service=self._online_store_table_version_service,
+                session=session,
+                online_store_table_version_service=self.online_store_table_version_service,
                 tile_id=tile_spec.tile_id,
                 tile_modulo_frequency_second=tile_spec.time_modulo_frequency_second,
                 blind_spot_second=tile_spec.blind_spot_second,
@@ -388,6 +395,7 @@ class TileManager(BaseModel):
 
     async def remove_tile_jobs(
         self,
+        session: BaseSession,
         tile_spec: TileSpec,
     ) -> None:
         """
@@ -395,6 +403,8 @@ class TileManager(BaseModel):
 
         Parameters
         ----------
+        session: BaseSession
+            Instance of BaseSession to interact with the data warehouse
         tile_spec: TileSpec
             the input TileSpec
 
@@ -403,12 +413,12 @@ class TileManager(BaseModel):
         TileScheduleNotSupportedError
             if task manager is not initialized
         """
-        if not self._task_manager:
+        if not self.task_manager:
             raise TileScheduleNotSupportedError("Task manager is not initialized")
 
-        scheduler = TileScheduler(task_manager=self._task_manager)
+        scheduler = TileScheduler(task_manager=self.task_manager)
 
-        exist_mapping = await self._session.execute_query(
+        exist_mapping = await session.execute_query(
             f"SELECT * FROM TILE_FEATURE_MAPPING WHERE AGGREGATION_ID = '{tile_spec.aggregation_id}' and IS_DELETED = FALSE"
         )
         # only disable tile jobs when there is no tile-feature mapping records for the particular tile
@@ -417,8 +427,9 @@ class TileManager(BaseModel):
             for t_type in [TileType.ONLINE, TileType.OFFLINE]:
                 await scheduler.stop_job(job_id=f"{t_type}_{tile_spec.aggregation_id}")
 
+    @staticmethod
     async def retrieve_tile_job_audit_logs(
-        self,
+        session: BaseSession,
         start_date: datetime,
         end_date: Optional[datetime] = None,
         tile_id: Optional[str] = None,
@@ -428,6 +439,8 @@ class TileManager(BaseModel):
 
         Parameters
         ----------
+        session: BaseSession
+            Instance of BaseSession to interact with the data warehouse
         start_date: datetime
             start date of retrieval
         end_date: Optional[datetime]
@@ -447,5 +460,5 @@ class TileManager(BaseModel):
         sql = tm_retrieve_tile_job_audit_logs.render(
             start_date_str=start_date_str, end_date_str=end_date_str, tile_id=tile_id
         )
-        result = await self._session.execute_query(sql)
+        result = await session.execute_query(sql)
         return result

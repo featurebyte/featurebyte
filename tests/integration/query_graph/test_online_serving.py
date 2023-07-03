@@ -116,7 +116,7 @@ async def test_online_serving_sql(
     # Deploy as at point_in_time (will trigger online and offline tile jobs using previous job time)
     feature_list.save()
     with patch(
-        "featurebyte.feature_manager.manager.get_next_job_datetime",
+        "featurebyte.service.feature_manager.get_next_job_datetime",
         return_value=next_job_datetime,
     ):
         deployment = feature_list.deploy(make_production_ready=True)

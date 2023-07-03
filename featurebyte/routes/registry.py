@@ -52,11 +52,13 @@ from featurebyte.service.feature_job_setting_analysis import FeatureJobSettingAn
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_list_status import FeatureListStatusService
+from featurebyte.service.feature_manager import FeatureManagerService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
+from featurebyte.service.historical_features import HistoricalFeaturesService
 from featurebyte.service.item_table import ItemTableService
 from featurebyte.service.namespace_handler import NamespaceHandler
 from featurebyte.service.observation_table import ObservationTableService
@@ -80,6 +82,8 @@ from featurebyte.service.table_status import TableStatusService
 from featurebyte.service.target import TargetService
 from featurebyte.service.target_namespace import TargetNamespaceService
 from featurebyte.service.task_manager import TaskManager
+from featurebyte.service.tile_cache import TileCacheService
+from featurebyte.service.tile_manager import TileManagerService
 from featurebyte.service.user_service import UserService
 from featurebyte.service.validator.production_ready_validator import ProductionReadyValidator
 from featurebyte.service.version import VersionService
@@ -107,11 +111,13 @@ app_container_config.register_service(FeatureJobSettingAnalysisService)
 app_container_config.register_service(FeatureListService)
 app_container_config.register_service(FeatureListNamespaceService)
 app_container_config.register_service(FeatureListStatusService)
+app_container_config.register_service(FeatureManagerService)
 app_container_config.register_service(FeatureNamespaceService)
 app_container_config.register_service(FeatureReadinessService)
 app_container_config.register_service(FeatureStoreService)
 app_container_config.register_service(FeatureStoreWarehouseService)
 app_container_config.register_service(HistoricalFeatureTableService)
+app_container_config.register_service(HistoricalFeaturesService)
 app_container_config.register_service(ItemTableService)
 app_container_config.register_service(ObservationTableService)
 app_container_config.register_service(OnlineEnableService)
@@ -132,6 +138,8 @@ app_container_config.register_service(TableColumnsInfoService)
 app_container_config.register_service(TableStatusService)
 app_container_config.register_service(TargetService)
 app_container_config.register_service(TargetNamespaceService)
+app_container_config.register_service(TileCacheService)
+app_container_config.register_service(TileManagerService)
 app_container_config.register_service(UserService)
 app_container_config.register_service(VersionService)
 app_container_config.register_service(ViewConstructionService)

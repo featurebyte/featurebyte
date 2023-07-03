@@ -10,12 +10,13 @@ from featurebyte.session.spark import SparkSession
 
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_generate_tiles(tile_spec, session, tile_manager):
+async def test_generate_tiles(tile_spec, session, tile_manager_service):
     """
     Test generate_tiles method in TileSnowflake
     """
 
-    await tile_manager.generate_tiles(
+    await tile_manager_service.generate_tiles(
+        session,
         tile_spec,
         TileType.ONLINE,
         "2022-06-05 23:33:00",
@@ -30,7 +31,7 @@ async def test_generate_tiles(tile_spec, session, tile_manager):
 
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_update_tile_entity_tracker(tile_spec, session, tile_manager, base_sql_model):
+async def test_update_tile_entity_tracker(tile_spec, session, tile_manager_service):
     """
     Test update_tile_entity_tracker method in TileSnowflake
     """
@@ -54,8 +55,8 @@ async def test_update_tile_entity_tracker(tile_spec, session, tile_manager, base
         f"INSERT INTO {temp_entity_table} VALUES ('P2', 'C2', '{last_tile_start_date_2}') "
     )
 
-    await tile_manager.update_tile_entity_tracker(
-        tile_spec=tile_spec, temp_entity_table=entity_table_query
+    await tile_manager_service.update_tile_entity_tracker(
+        session, tile_spec=tile_spec, temp_entity_table=entity_table_query
     )
 
     sql = f"SELECT * FROM {tile_spec.aggregation_id}_ENTITY_TRACKER ORDER BY PRODUCT_ACTION"
@@ -78,8 +79,8 @@ async def test_update_tile_entity_tracker(tile_spec, session, tile_manager, base
         f"INSERT INTO {temp_entity_table} VALUES ('P3', 'C3', '{last_tile_start_date_3}') "
     )
 
-    await tile_manager.update_tile_entity_tracker(
-        tile_spec=tile_spec, temp_entity_table=entity_table_query
+    await tile_manager_service.update_tile_entity_tracker(
+        session, tile_spec=tile_spec, temp_entity_table=entity_table_query
     )
 
     sql = f"SELECT * FROM {tile_spec.aggregation_id}_ENTITY_TRACKER ORDER BY PRODUCT_ACTION"
@@ -96,7 +97,7 @@ async def test_update_tile_entity_tracker(tile_spec, session, tile_manager, base
 
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_generate_tiles_on_demand(session, tile_spec, tile_manager):
+async def test_generate_tiles_on_demand(session, tile_spec, tile_manager_service):
     """
     Test generate_tiles_on_demand
     """
@@ -115,7 +116,7 @@ async def test_generate_tiles_on_demand(session, tile_spec, tile_manager):
         InternalName.TILE_START_DATE_SQL_PLACEHOLDER, "'2022-06-05 23:33:00'"
     ).replace(InternalName.TILE_END_DATE_SQL_PLACEHOLDER, "'2022-06-05 23:58:00'")
 
-    await tile_manager.generate_tiles_on_demand([(tile_spec, entity_table_query)])
+    await tile_manager_service.generate_tiles_on_demand(session, [(tile_spec, entity_table_query)])
 
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM {tile_spec.tile_id}"
     result = await session.execute_query(sql)

@@ -3,7 +3,7 @@ PreviewService class
 """
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator, Callable, Dict, Optional, Tuple, Union
+from typing import Any, AsyncGenerator, Dict, Optional, Tuple
 
 import os
 
@@ -12,23 +12,14 @@ from bson import ObjectId
 
 from featurebyte.common.utils import dataframe_to_json
 from featurebyte.enum import SpecialColumnName
-from featurebyte.exception import (
-    DocumentNotFoundError,
-    LimitExceededError,
-    MissingPointInTimeColumnError,
-)
+from featurebyte.exception import LimitExceededError, MissingPointInTimeColumnError
 from featurebyte.logging import get_logger
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
-from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, sql_to_string
-from featurebyte.query_graph.sql.feature_historical import (
-    get_historical_features,
-    get_historical_features_expr,
-)
+from featurebyte.query_graph.sql.feature_historical import get_historical_features_expr
 from featurebyte.query_graph.sql.feature_preview import get_feature_preview_sql
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.sql.materialisation import get_source_count_expr, get_source_expr
@@ -444,82 +435,6 @@ class PreviewService(BaseService):
             result = result.drop(SpecialColumnName.POINT_IN_TIME, axis="columns")
 
         return dataframe_to_json(result)
-
-    async def compute_historical_features(
-        self,
-        observation_set: Union[pd.DataFrame, ObservationTableModel],
-        featurelist_get_historical_features: FeatureListGetHistoricalFeatures,
-        get_credential: Any,
-        output_table_details: TableDetails,
-        progress_callback: Optional[Callable[[int, str], None]] = None,
-    ) -> None:
-        """
-        Get historical features for Feature List
-
-        Parameters
-        ----------
-        observation_set: pd.DataFrame
-            Observation set data
-        featurelist_get_historical_features: FeatureListGetHistoricalFeatures
-            FeatureListGetHistoricalFeatures object
-        get_credential: Any
-            Get credential handler function
-        output_table_details: TableDetails
-            Table details to write the results to
-        progress_callback: Optional[Callable[[int, str], None]]
-            Optional progress callback function
-        """
-        # multiple feature stores not supported
-        feature_clusters = featurelist_get_historical_features.feature_clusters
-        assert len(feature_clusters) == 1
-
-        feature_cluster = feature_clusters[0]
-        feature_store = await self.feature_store_service.get_document(
-            document_id=feature_cluster.feature_store_id
-        )
-
-        if isinstance(observation_set, pd.DataFrame):
-            request_column_names = set(observation_set.columns)
-        else:
-            request_column_names = {col.name for col in observation_set.columns_info}
-
-        parent_serving_preparation = (
-            await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
-                graph=feature_cluster.graph,
-                nodes=feature_cluster.nodes,
-                request_column_names=request_column_names,
-                feature_store=feature_store,
-                serving_names_mapping=featurelist_get_historical_features.serving_names_mapping,
-            )
-        )
-
-        db_session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store,
-            get_credential=get_credential,
-        )
-
-        feature_list_id = featurelist_get_historical_features.feature_list_id
-        try:
-            if feature_list_id is None:
-                is_feature_list_deployed = False
-            else:
-                feature_list = await self.feature_list_service.get_document(feature_list_id)
-                is_feature_list_deployed = feature_list.deployed
-        except DocumentNotFoundError:
-            is_feature_list_deployed = False
-
-        await get_historical_features(
-            session=db_session,
-            graph=feature_cluster.graph,
-            nodes=feature_cluster.nodes,
-            observation_set=observation_set,
-            serving_names_mapping=featurelist_get_historical_features.serving_names_mapping,
-            source_type=feature_store.type,
-            is_feature_list_deployed=is_feature_list_deployed,
-            parent_serving_preparation=parent_serving_preparation,
-            output_table_details=output_table_details,
-            progress_callback=progress_callback,
-        )
 
     async def feature_sql(self, feature_sql: FeatureSQL) -> str:
         """

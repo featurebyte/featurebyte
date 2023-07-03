@@ -6,9 +6,7 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from bson.objectid import ObjectId
-from pydantic import PrivateAttr
 
-from featurebyte.feature_manager.manager import FeatureManager
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.feature import FeatureModel, FeatureNamespaceModel
 from featurebyte.models.feature_list import FeatureListModel
@@ -20,11 +18,10 @@ from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
 from featurebyte.service.base_service import BaseService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
+from featurebyte.service.feature_manager import FeatureManagerService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_store import FeatureStoreService
-from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.session_manager import SessionManagerService
-from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.base import BaseSession
 
 
@@ -34,20 +31,17 @@ class OnlineEnableService(BaseService):
     of feature online enablement.
     """
 
-    _task_manager: TaskManager = PrivateAttr()
-
     def __init__(
         self,
         user: Any,
         persistent: Persistent,
         catalog_id: ObjectId,
         session_manager_service: SessionManagerService,
-        task_manager: TaskManager,
         feature_service: FeatureService,
         feature_store_service: FeatureStoreService,
         feature_namespace_service: FeatureNamespaceService,
         feature_list_service: FeatureListService,
-        online_store_table_version_service: OnlineStoreTableVersionService,
+        feature_manager_service: FeatureManagerService,
     ):
         # pylint: disable=too-many-arguments
         super().__init__(user, persistent, catalog_id)
@@ -56,8 +50,7 @@ class OnlineEnableService(BaseService):
         self.feature_store_service = feature_store_service
         self.feature_namespace_service = feature_namespace_service
         self.feature_list_service = feature_list_service
-        self.online_store_table_version_service = online_store_table_version_service
-        self._task_manager = task_manager
+        self.feature_manager_service = feature_manager_service
 
     @classmethod
     def _extract_online_enabled_feature_ids(
@@ -140,9 +133,8 @@ class OnlineEnableService(BaseService):
     @staticmethod
     async def update_data_warehouse_with_session(
         session: BaseSession,
+        feature_manager_service: FeatureManagerService,
         feature: FeatureModel,
-        online_store_table_version_service: OnlineStoreTableVersionService,
-        task_manager: Optional[TaskManager] = None,
         is_recreating_schema: bool = False,
     ) -> None:
         """
@@ -153,12 +145,10 @@ class OnlineEnableService(BaseService):
         ----------
         session: BaseSession
             Session object
+        feature_manager_service: FeatureManagerService
+            An instance of FeatureManagerService to handle materialization of features and tiles
         feature: FeatureModel
             Updated Feature object
-        online_store_table_version_service: OnlineStoreTableVersionService
-            Online store table version service
-        task_manager: Optional[TaskManager]
-            TaskManager object
         is_recreating_schema: bool
             Whether we are recreating the working schema from scratch. Only set as True when called
             by WorkingSchemaService.
@@ -169,18 +159,12 @@ class OnlineEnableService(BaseService):
         if not online_feature_spec.is_online_store_eligible:
             return
 
-        feature_manager = FeatureManager(
-            session=session,
-            task_manager=task_manager,
-            online_store_table_version_service=online_store_table_version_service,
-        )
-
         if feature.online_enabled:
-            await feature_manager.online_enable(
-                online_feature_spec, is_recreating_schema=is_recreating_schema
+            await feature_manager_service.online_enable(
+                session, online_feature_spec, is_recreating_schema=is_recreating_schema
             )
         else:
-            await feature_manager.online_disable(online_feature_spec)
+            await feature_manager_service.online_disable(session, online_feature_spec)
 
     async def update_data_warehouse(
         self, updated_feature: FeatureModel, online_enabled_before_update: bool, get_credential: Any
@@ -211,9 +195,8 @@ class OnlineEnableService(BaseService):
         )
         await self.update_data_warehouse_with_session(
             session=session,
+            feature_manager_service=self.feature_manager_service,
             feature=updated_feature,
-            online_store_table_version_service=self.online_store_table_version_service,
-            task_manager=self._task_manager,
         )
 
     async def update_feature(

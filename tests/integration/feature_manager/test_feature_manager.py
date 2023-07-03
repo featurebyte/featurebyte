@@ -11,16 +11,12 @@ import pytest
 import pytest_asyncio
 from pandas.testing import assert_frame_equal
 
-from featurebyte.app import get_celery
 from featurebyte.enum import InternalName
-from featurebyte.feature_manager.manager import FeatureManager
 from featurebyte.feature_manager.model import ExtendedFeatureModel
-from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.models.online_store import OnlineFeatureSpec
 from featurebyte.models.periodic_task import Interval
 from featurebyte.models.tile import TileType
 from featurebyte.query_graph.sql.online_serving import OnlineStorePrecomputeQuery
-from featurebyte.service.task_manager import TaskManager
 from featurebyte.tile.scheduler import TileScheduler
 
 
@@ -48,40 +44,17 @@ def feature_store_table_name_fixture():
     return feature_store_table_name
 
 
-@pytest.fixture(name="feature_manager_no_sf_scheduling")
-def snowflake_feature_manager_no_sf_scheduling_fixture(
-    extended_feature_model,
-    persistent,
-    session,
-    online_store_table_version_service,
-):
-    """
-    Feature store table name fixture
-    """
-    feature_manager = FeatureManager(
-        session=session, online_store_table_version_service=online_store_table_version_service
-    )
-    task_manager = TaskManager(
-        user=User(id=extended_feature_model.user_id),
-        persistent=persistent,
-        celery=get_celery(),
-        catalog_id=DEFAULT_CATALOG_ID,
-    )
-    feature_manager._tile_manager._task_manager = task_manager
-
-    return feature_manager
-
-
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_online_enabled__without_snowflake_scheduling(
     session,
     extended_feature_model,
     tile_spec,
-    feature_manager_no_sf_scheduling,
+    feature_manager_service,
     feature_sql,
     feature_store_table_name,
     persistent,
+    task_manager,
 ):
     with patch.object(ExtendedFeatureModel, "tile_specs", PropertyMock(return_value=[tile_spec])):
         mock_precompute_queries = [
@@ -101,13 +74,11 @@ async def test_online_enabled__without_snowflake_scheduling(
         schedule_time = datetime.utcnow()
 
         try:
-            await feature_manager_no_sf_scheduling.online_enable(
-                online_feature_spec, schedule_time=schedule_time
+            await feature_manager_service.online_enable(
+                session, online_feature_spec, schedule_time=schedule_time
             )
 
-            tile_scheduler = TileScheduler(
-                task_manager=feature_manager_no_sf_scheduling._tile_manager._task_manager
-            )
+            tile_scheduler = TileScheduler(task_manager=task_manager)
             # check if the task is scheduled
             job_id = f"{TileType.ONLINE}_{tile_spec.aggregation_id}"
             job_details = await tile_scheduler.get_job_details(job_id=job_id)
@@ -124,7 +95,7 @@ async def test_online_enabled__without_snowflake_scheduling(
             assert len(tasks) == 0
 
         finally:
-            await feature_manager_no_sf_scheduling.online_disable(online_feature_spec)
+            await feature_manager_service.online_disable(session, online_feature_spec)
             await session.execute_query(
                 f"DELETE FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{online_feature_spec.tile_ids[0]}'"
             )
@@ -140,7 +111,7 @@ async def test_online_enabled__without_snowflake_scheduling(
 async def online_enabled_feature_spec_fixture(
     session,
     extended_feature_model,
-    feature_manager_no_sf_scheduling,
+    feature_manager_service,
     feature_sql,
     feature_store_table_name,
     tile_spec,
@@ -168,13 +139,13 @@ async def online_enabled_feature_spec_fixture(
         )
         schedule_time = datetime.utcnow()
 
-        await feature_manager_no_sf_scheduling.online_enable(
-            online_feature_spec, schedule_time=schedule_time
+        await feature_manager_service.online_enable(
+            session, online_feature_spec, schedule_time=schedule_time
         )
 
         yield online_feature_spec, schedule_time
 
-        await feature_manager_no_sf_scheduling.online_disable(online_feature_spec)
+        await feature_manager_service.online_disable(session, online_feature_spec)
         await session.execute_query(
             f"DELETE FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{online_feature_spec.tile_ids[0]}'"
         )
@@ -268,7 +239,7 @@ async def test_online_enabled_feature_spec(
 async def test_online_disable(
     session,
     snowflake_feature_expected_tile_spec_dict,
-    feature_manager_no_sf_scheduling,
+    feature_manager_service,
     online_enabled_feature_spec,
 ):
     """
@@ -279,7 +250,7 @@ async def test_online_disable(
     online_feature_spec, _ = online_enabled_feature_spec
     tile_id = online_feature_spec.tile_ids[0]
 
-    await feature_manager_no_sf_scheduling.online_disable(online_feature_spec)
+    await feature_manager_service.online_disable(session, online_feature_spec)
 
     result = await session.execute_query(f"SHOW TASKS LIKE '%{tile_id}%'")
     assert len(result) == 0
@@ -305,7 +276,7 @@ async def test_online_disable__tile_in_use(
     session,
     snowflake_feature_expected_tile_spec_dict,
     online_enabled_feature_spec,
-    feature_manager_no_sf_scheduling,
+    feature_manager_service,
 ):
     """
     Test online_disable
@@ -318,9 +289,9 @@ async def test_online_disable__tile_in_use(
 
     online_feature_spec_2 = copy.deepcopy(online_feature_spec)
     online_feature_spec_2.feature.name = online_feature_spec_2.feature.name + "_2"
-    await feature_manager_no_sf_scheduling.online_enable(online_feature_spec_2)
+    await feature_manager_service.online_enable(session, online_feature_spec_2)
 
-    await feature_manager_no_sf_scheduling.online_disable(online_feature_spec)
+    await feature_manager_service.online_disable(session, online_feature_spec)
 
     sql = f"SELECT * FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{tile_id}' AND FEATURE_NAME = '{online_feature_spec.feature.name}'"
     result = await session.execute_query(sql)
@@ -360,7 +331,7 @@ async def test_online_disable__tile_in_use(
 async def test_online_disable__re_enable(
     session,
     snowflake_feature_expected_tile_spec_dict,
-    feature_manager_no_sf_scheduling,
+    feature_manager_service,
     online_enabled_feature_spec,
 ):
     """
@@ -372,14 +343,14 @@ async def test_online_disable__re_enable(
     tile_id = online_feature_spec.tile_ids[0]
     aggregation_id = online_feature_spec.aggregation_ids[0]
 
-    await feature_manager_no_sf_scheduling.online_disable(online_feature_spec)
+    await feature_manager_service.online_disable(session, online_feature_spec)
 
     sql = f"SELECT * FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{tile_id}' AND IS_DELETED = TRUE"
     result = await session.execute_query(sql)
     assert len(result) == 1
 
     # re-enable the feature jobs
-    await feature_manager_no_sf_scheduling.online_enable(online_feature_spec)
+    await feature_manager_service.online_enable(session, online_feature_spec)
 
     sql = f"SELECT * FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{tile_id}' AND IS_DELETED = FALSE"
     result = await session.execute_query(sql)
@@ -410,7 +381,7 @@ async def test_online_disable__re_enable(
 @pytest.mark.asyncio
 async def test_online_enable__re_deploy_from_latest_tile_start(
     session,
-    feature_manager_no_sf_scheduling,
+    feature_manager_service,
     online_enabled_feature_spec,
 ):
     """
@@ -428,10 +399,12 @@ async def test_online_enable__re_deploy_from_latest_tile_start(
     last_tile_start_ts = last_tile_start_ts_df.iloc[0]["LAST_TILE_START_DATE_OFFLINE"]
 
     # disable/un-deploy
-    await feature_manager_no_sf_scheduling.online_disable(online_feature_spec)
+    await feature_manager_service.online_disable(session, online_feature_spec)
 
     # re-deploy and verify that the tile start ts is the same as the last tile start ts
-    with patch("featurebyte.tile.manager.TileManager.generate_tiles") as mock_tile_manager:
-        await feature_manager_no_sf_scheduling.online_enable(online_feature_spec)
+    with patch(
+        "featurebyte.service.tile_manager.TileManagerService.generate_tiles"
+    ) as mock_tile_manager:
+        await feature_manager_service.online_enable(session, online_feature_spec)
         kwargs = mock_tile_manager.mock_calls[0][2]
         assert kwargs["start_ts_str"] == last_tile_start_ts.strftime("%Y-%m-%dT%H:%M:%S.%fZ")

@@ -14,12 +14,14 @@ from featurebyte.models.feature import FeatureModel
 from featurebyte.persistent import Persistent
 from featurebyte.service.base_service import BaseService
 from featurebyte.service.feature import FeatureService
+from featurebyte.service.feature_manager import FeatureManagerService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.namespace_handler import NamespaceHandler
 from featurebyte.service.online_enable import OnlineEnableService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.table import TableService
 from featurebyte.service.task_manager import TaskManager
+from featurebyte.service.tile_manager import TileManagerService
 from featurebyte.service.view_construction import ViewConstructionService
 from featurebyte.session.base import BaseSession, MetadataSchemaInitializer
 
@@ -74,11 +76,24 @@ class WorkingSchemaService(BaseService):
                 view_construction_service=self.view_construction_service
             ),
         )
-        self._task_manager = TaskManager(
+        self.task_manager = TaskManager(
             user=user, persistent=persistent, celery=celery, catalog_id=catalog_id
         )
-        self._online_store_table_version_service = OnlineStoreTableVersionService(
+        self.online_store_table_version_service = OnlineStoreTableVersionService(
             user=user, persistent=persistent, catalog_id=catalog_id
+        )
+        self.tile_manager_service = TileManagerService(
+            user=user,
+            persistent=persistent,
+            catalog_id=catalog_id,
+            task_manager=self.task_manager,
+            online_store_table_version_service=self.online_store_table_version_service,
+        )
+        self.feature_manager_service = FeatureManagerService(
+            user=user,
+            persistent=persistent,
+            catalog_id=catalog_id,
+            tile_manager_service=self.tile_manager_service,
         )
 
     async def recreate_working_schema(
@@ -132,8 +147,7 @@ class WorkingSchemaService(BaseService):
                 feature = FeatureModel(**feature_doc)
                 await OnlineEnableService.update_data_warehouse_with_session(
                     session=session,
+                    feature_manager_service=self.feature_manager_service,
                     feature=feature,
-                    task_manager=self._task_manager,
-                    online_store_table_version_service=self._online_store_table_version_service,
                     is_recreating_schema=True,
                 )

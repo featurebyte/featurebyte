@@ -32,6 +32,15 @@ def feature_for_tile_cache_tests_fixture(event_table, groupby_category):
     yield feature_group["SESSION_COUNT_48h"]
 
 
+@pytest.fixture(name="tile_cache")
+def tile_cache_fixture(session, app_container):
+    """
+    Fixture for TileCache
+    """
+    tile_manager_service = app_container.tile_manager_service
+    return TileCache(session=session, tile_manager_service=tile_manager_service)
+
+
 async def check_entity_table_sql_and_tile_compute_sql(
     session,
     request: OnDemandTileComputeRequest,
@@ -78,10 +87,9 @@ async def invoke_tile_manager_and_check_tracker_table(session, tile_cache, reque
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 @pytest.mark.parametrize("groupby_category", [None, "PRODUCT_ACTION"])
 @pytest.mark.asyncio
-async def test_tile_cache(session, feature_for_tile_cache_tests, groupby_category):
+async def test_tile_cache(session, tile_cache, feature_for_tile_cache_tests, groupby_category):
     """Test TileCache performs caching properly"""
     feature = feature_for_tile_cache_tests
-    tile_cache = TileCache(session)
     _ = groupby_category
 
     df_training_events = pd.DataFrame(

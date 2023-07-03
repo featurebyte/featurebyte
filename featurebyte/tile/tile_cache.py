@@ -11,7 +11,6 @@ from dataclasses import dataclass
 from sqlglot import expressions, parse_one
 from sqlglot.expressions import Expression, select
 
-from featurebyte.common.tile_util import tile_manager_from_session
 from featurebyte.enum import InternalName, SourceType, SpecialColumnName
 from featurebyte.logging import get_logger
 from featurebyte.models.tile import TileSpec
@@ -31,6 +30,7 @@ from featurebyte.query_graph.sql.tile_util import (
     get_earliest_tile_start_date_expr,
     get_previous_job_epoch_expr,
 )
+from featurebyte.service.tile_manager import TileManagerService
 from featurebyte.session.base import BaseSession
 
 logger = get_logger(__name__)
@@ -82,9 +82,9 @@ class TileCache:
         Session object to interact with database
     """
 
-    def __init__(self, session: BaseSession):
+    def __init__(self, session: BaseSession, tile_manager_service: TileManagerService):
         self.session = session
-        self.tile_manager = tile_manager_from_session(session=session, task_manager=None)
+        self.tile_manager_service = tile_manager_service
         self._materialized_temp_table_names: set[str] = set()
 
     @property
@@ -180,8 +180,8 @@ class TileCache:
         for request in required_requests:
             tile_input = request.to_tile_manager_input()
             tile_inputs.append(tile_input)
-        await self.tile_manager.generate_tiles_on_demand(
-            tile_inputs=tile_inputs, progress_callback=progress_callback
+        await self.tile_manager_service.generate_tiles_on_demand(
+            session=self.session, tile_inputs=tile_inputs, progress_callback=progress_callback
         )
 
     async def cleanup_temp_tables(self) -> None:

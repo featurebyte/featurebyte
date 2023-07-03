@@ -37,7 +37,6 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.app import app
 from featurebyte.enum import InternalName, SourceType, StorageType
-from featurebyte.feature_manager.manager import FeatureManager
 from featurebyte.feature_manager.model import ExtendedFeatureListModel
 from featurebyte.logging import get_logger
 from featurebyte.models.base import DEFAULT_CATALOG_ID, User
@@ -53,12 +52,16 @@ from featurebyte.models.task import Task as TaskModel
 from featurebyte.models.tile import TileSpec
 from featurebyte.persistent.mongo import MongoDB
 from featurebyte.query_graph.node.schema import SparkDetails, SQLiteDetails, TableDetails
+from featurebyte.routes.lazy_app_container import LazyAppContainer
+from featurebyte.routes.registry import app_container_config
 from featurebyte.schema.task import TaskStatus
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
+from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.base_spark import BaseSparkSchemaInitializer
 from featurebyte.session.manager import SessionManager
 from featurebyte.storage import LocalStorage, LocalTempStorage
+from featurebyte.worker import get_celery
 from featurebyte.worker.task.base import TASK_MAP
 
 # Static testing mongodb connection from docker/test/docker-compose.yml
@@ -960,14 +963,6 @@ def snowflake_feature_expected_tile_spec_dict_fixture():
     return expected_tile_spec
 
 
-@pytest.fixture
-def feature_manager(session):
-    """
-    Feature Manager fixture
-    """
-    return FeatureManager(session=session)
-
-
 @pytest_asyncio.fixture
 async def snowflake_feature_list(
     feature_model_dict, snowflake_session, config, snowflake_feature_store
@@ -1398,9 +1393,7 @@ def user():
     """
     Mock user
     """
-    user = Mock()
-    user.id = ObjectId()
-    return user
+    return User(id=None)
 
 
 @pytest.fixture()
@@ -1431,3 +1424,38 @@ def online_store_table_version_service_factory(mongo_database_name):
         )
 
     return factory
+
+
+@pytest.fixture(name="task_manager")
+def task_manager_fixture(persistent, user):
+    """
+    Return a task manager used in tests.
+    """
+    task_manager = TaskManager(
+        user=user, persistent=persistent, celery=get_celery(), catalog_id=DEFAULT_CATALOG_ID
+    )
+    return task_manager
+
+
+@pytest.fixture(name="app_container")
+def app_container_fixture(persistent, user, task_manager):
+    """
+    Return an app container used in tests. This will allow us to easily retrieve instances of the right type.
+    """
+    return LazyAppContainer(
+        user=user,
+        persistent=persistent,
+        temp_storage=LocalTempStorage(),
+        task_manager=task_manager,
+        storage=LocalTempStorage(),
+        catalog_id=DEFAULT_CATALOG_ID,
+        app_container_config=app_container_config,
+    )
+
+
+@pytest.fixture(name="feature_manager_service")
+def feature_manager_service_fixture(app_container):
+    """
+    Return a feature manager service used in tests.
+    """
+    return app_container.feature_manager_service

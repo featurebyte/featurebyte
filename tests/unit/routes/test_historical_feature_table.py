@@ -110,7 +110,7 @@ class TestHistoricalFeatureTableApi(BaseMaterializedTableTestSuite):
             return_value=(expressions.select("*").from_("my_table"), ["a", "b", "c"]),
         ):
             with patch(
-                "featurebyte.query_graph.sql.feature_historical.compute_tiles_on_demand",
+                "featurebyte.service.historical_features.compute_tiles_on_demand",
             ):
                 yield
 

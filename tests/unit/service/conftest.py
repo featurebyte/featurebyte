@@ -184,6 +184,18 @@ def preview_service_fixture(app_container):
     return app_container.preview_service
 
 
+@pytest.fixture(name="historical_features_service")
+def historical_features_service_fixture(app_container):
+    """HistoricalFeaturesService fixture"""
+    return app_container.historical_features_service
+
+
+@pytest.fixture(name="tile_cache_service")
+def tile_cache_service_fixture(app_container):
+    """TileCacheService fixture"""
+    return app_container.tile_cache_service
+
+
 @pytest.fixture(name="relationship_info_service")
 def relationship_info_service_fixture(app_container):
     """
@@ -203,11 +215,11 @@ def online_enable_service_data_warehouse_mocks_fixture():
         "featurebyte.service.online_enable.SessionManagerService.get_feature_store_session"
     ) as mock_get_feature_store_session:
         with patch(
-            "featurebyte.service.online_enable.FeatureManager", autospec=True
-        ) as feature_manager_cls:
+            "featurebyte.service.online_enable.FeatureManagerService.online_enable",
+        ) as online_enable:
             mock_get_feature_store_session.return_value = Mock(source_type=SourceType.SNOWFLAKE)
             mocks["get_feature_store_session"] = mock_get_feature_store_session
-            mocks["feature_manager"] = feature_manager_cls.return_value
+            mocks["feature_manager_online_enable"] = online_enable
             yield mocks
 
 

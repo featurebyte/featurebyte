@@ -13,8 +13,8 @@ from featurebyte.schema.worker.task.historical_feature_table import (
     HistoricalFeatureTableTaskPayload,
 )
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
+from featurebyte.service.historical_features import HistoricalFeaturesService
 from featurebyte.service.observation_table import ObservationTableService
-from featurebyte.service.preview import PreviewService
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin
 
@@ -66,8 +66,10 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask):
         async with self.drop_table_on_error(
             db_session=db_session, table_details=location.table_details
         ):
-            preview_service: PreviewService = app_container.preview_service
-            await preview_service.compute_historical_features(
+            historical_features_service: HistoricalFeaturesService = (
+                app_container.historical_features_service
+            )
+            await historical_features_service.compute_historical_features(
                 observation_set=observation_set,
                 featurelist_get_historical_features=payload.featurelist_get_historical_features,
                 get_credential=self.get_credential,
