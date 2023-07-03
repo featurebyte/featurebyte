@@ -51,7 +51,7 @@ class CredentialService(
         query_filter["user_id"] = self.user.id
         return query_filter
 
-    def _construct_list_query_filter(
+    def construct_list_query_filter(
         self,
         query_filter: Optional[Dict[str, Any]] = None,
         use_raw_query_filter: bool = False,
