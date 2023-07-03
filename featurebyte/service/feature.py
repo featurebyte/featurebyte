@@ -7,97 +7,26 @@ from typing import Any, Dict
 
 from bson import ObjectId
 
-from featurebyte.common.model_util import get_version
-from featurebyte.exception import DocumentInconsistencyError, DocumentNotFoundError
+from featurebyte.exception import DocumentNotFoundError
 from featurebyte.models.base import VersionIdentifier
-from featurebyte.models.feature import (
-    DefaultVersionMode,
-    FeatureModel,
-    FeatureNamespaceModel,
-    FeatureReadiness,
-)
+from featurebyte.models.feature import DefaultVersionMode, FeatureModel, FeatureReadiness
 from featurebyte.persistent import Persistent
-from featurebyte.query_graph.enum import NodeType
-from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.transform.sdk_code import SDKCodeExtractor
-from featurebyte.schema.feature import FeatureServiceCreate, FeatureServiceUpdate
+from featurebyte.schema.feature import FeatureServiceCreate
 from featurebyte.schema.feature_namespace import (
     FeatureNamespaceCreate,
     FeatureNamespaceServiceUpdate,
 )
-from featurebyte.service.base_document import BaseDocumentService
+from featurebyte.service.base_namespace_service import BaseNamespaceService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
+from featurebyte.service.namespace_handler import (
+    NamespaceHandler,
+    validate_version_and_namespace_consistency,
+)
 from featurebyte.service.table import TableService
-from featurebyte.service.view_construction import ViewConstructionService
 
 
-async def validate_feature_version_and_namespace_consistency(
-    feature: FeatureModel, feature_namespace: FeatureNamespaceModel
-) -> None:
-    """
-    Validate whether the feature list & feature list namespace are consistent
-
-    Parameters
-    ----------
-    feature: FeatureModel
-        Feature object
-    feature_namespace: FeatureNamespaceModel
-        FeatureNamespace object
-
-    Raises
-    ------
-    DocumentInconsistencyError
-        If the inconsistency between version & namespace found
-    """
-    attrs = ["name", "dtype", "entity_ids", "table_ids"]
-    for attr in attrs:
-        version_attr = getattr(feature, attr)
-        namespace_attr = getattr(feature_namespace, attr)
-        version_attr_str: str | list[str] = f'"{version_attr}"'
-        namespace_attr_str: str | list[str] = f'"{namespace_attr}"'
-        if isinstance(version_attr, list):
-            version_attr = sorted(version_attr)
-            version_attr_str = [str(val) for val in version_attr]
-
-        if isinstance(namespace_attr, list):
-            namespace_attr = sorted(namespace_attr)
-            namespace_attr_str = [str(val) for val in namespace_attr]
-
-        if version_attr != namespace_attr:
-            raise DocumentInconsistencyError(
-                f'Feature (name: "{feature.name}") object(s) within the same namespace '
-                f'must have the same "{attr}" value (namespace: {namespace_attr_str}, '
-                f"feature: {version_attr_str})."
-            )
-
-
-def sanitize_query_graph_for_feature_definition(graph: QueryGraphModel) -> QueryGraphModel:
-    """
-    Sanitize the query graph for feature creation
-
-    Parameters
-    ----------
-    graph: QueryGraphModel
-        The query graph
-
-    Returns
-    -------
-    QueryGraphModel
-    """
-    # Since the generated feature definition contains all the settings in manual mode,
-    # we need to sanitize the graph to make sure that the graph is in manual mode.
-    # Otherwise, the generated feature definition & graph hash before and after
-    # feature creation could be different.
-    output = graph.dict()
-    for node in output["nodes"]:
-        if node["type"] == NodeType.GRAPH:
-            if "view_mode" in node["parameters"]["metadata"]:
-                node["parameters"]["metadata"]["view_mode"] = "manual"
-    return QueryGraphModel(**output)
-
-
-class FeatureService(BaseDocumentService[FeatureModel, FeatureServiceCreate, FeatureServiceUpdate]):
+class FeatureService(BaseNamespaceService[FeatureModel, FeatureServiceCreate]):
     """
     FeatureService class
     """
@@ -110,38 +39,13 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureServiceCreate, Fea
         persistent: Persistent,
         catalog_id: ObjectId,
         table_service: TableService,
-        view_construction_service: ViewConstructionService,
+        feature_namespace_service: FeatureNamespaceService,
+        namespace_handler: NamespaceHandler,
     ):
         super().__init__(user=user, persistent=persistent, catalog_id=catalog_id)
         self.table_service = table_service
-        self.view_construction_service = view_construction_service
-
-    async def _get_feature_version(self, name: str) -> VersionIdentifier:
-        version_name = get_version()
-        query_result = await self.list_documents(
-            query_filter={"name": name, "version.name": version_name}
-        )
-        count = query_result["total"]
-        return VersionIdentifier(name=version_name, suffix=count or None)
-
-    async def _prepare_graph_to_store(
-        self, feature: FeatureModel, sanitize_for_definition: bool = False
-    ) -> tuple[QueryGraphModel, str]:
-        # reconstruct view graph node to remove unused column cleaning operations
-        graph, node_name_map = await self.view_construction_service.construct_graph(
-            query_graph=feature.graph,
-            target_node=feature.node,
-            table_cleaning_operations=[],
-        )
-        node = graph.get_node_by_name(node_name_map[feature.node_name])
-
-        # prune the graph to remove unused nodes
-        pruned_graph, pruned_node_name_map = QueryGraph(**graph.dict(by_alias=True)).prune(
-            target_node=node
-        )
-        if sanitize_for_definition:
-            pruned_graph = sanitize_query_graph_for_feature_definition(graph=pruned_graph)
-        return pruned_graph, pruned_node_name_map[node.name]
+        self.feature_namespace_service = feature_namespace_service
+        self.namespace_handler = namespace_handler
 
     async def prepare_feature_model(
         self, data: FeatureServiceCreate, sanitize_for_definition: bool
@@ -164,15 +68,17 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureServiceCreate, Fea
             **{
                 **data.dict(by_alias=True),
                 "readiness": FeatureReadiness.DRAFT,
-                "version": await self._get_feature_version(data.name),
+                "version": await self.get_document_version(data.name),
                 "user_id": self.user.id,
                 "catalog_id": self.catalog_id,
             }
         )
 
         # prepare the graph to store
-        graph, node_name = await self._prepare_graph_to_store(
-            feature=document, sanitize_for_definition=sanitize_for_definition
+        graph, node_name = await self.namespace_handler.prepare_graph_to_store(
+            graph=document.graph,
+            node=document.node,
+            sanitize_for_definition=sanitize_for_definition,
         )
 
         # create a new feature document (so that the derived attributes like table_ids is generated properly)
@@ -231,17 +137,16 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureServiceCreate, Fea
             )
             assert insert_id == document.id
 
-            feature_namespace_service = FeatureNamespaceService(
-                user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
-            )
             try:
-                feature_namespace = await feature_namespace_service.get_document(
+                feature_namespace = await self.feature_namespace_service.get_document(
                     document_id=document.feature_namespace_id,
                 )
-                await validate_feature_version_and_namespace_consistency(
-                    feature=document, feature_namespace=feature_namespace
+                await validate_version_and_namespace_consistency(
+                    base_model=document,
+                    base_namespace_model=feature_namespace,
+                    attributes=["name", "dtype", "entity_ids", "table_ids"],
                 )
-                await feature_namespace_service.update_document(
+                await self.feature_namespace_service.update_document(
                     document_id=document.feature_namespace_id,
                     data=FeatureNamespaceServiceUpdate(
                         feature_ids=self.include_object_id(
@@ -251,7 +156,7 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureServiceCreate, Fea
                     return_document=True,
                 )
             except DocumentNotFoundError:
-                await feature_namespace_service.create_document(
+                await self.feature_namespace_service.create_document(
                     data=FeatureNamespaceCreate(
                         _id=document.feature_namespace_id,
                         name=document.name,

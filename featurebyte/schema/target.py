@@ -32,8 +32,8 @@ class TargetCreate(FeatureByteBaseModel):
     graph: Optional[QueryGraph]
     node_name: Optional[str]
     horizon: Optional[str]
-    blind_spot: Optional[str]
     entity_ids: Optional[List[PydanticObjectId]]
+    target_namespace_id: Optional[PydanticObjectId] = Field(default_factory=ObjectId)
 
 
 class TargetList(PaginationMixin):
@@ -61,7 +61,6 @@ class TargetInfo(FeatureByteBaseModel):
     target_name: str
     entities: EntityBriefInfoList
     horizon: Optional[str]
-    blind_spot: Optional[str]
     has_recipe: bool
     created_at: datetime
     updated_at: Optional[datetime]

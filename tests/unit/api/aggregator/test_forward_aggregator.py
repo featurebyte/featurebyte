@@ -31,11 +31,10 @@ def test_forward_aggregate(forward_aggregator):
     """
     Test forward_aggregate.
     """
-    target = forward_aggregator.forward_aggregate("col_float", AggFunc.SUM, "7d", "1d", "target")
+    target = forward_aggregator.forward_aggregate("col_float", AggFunc.SUM, "7d", "target")
     # Assert Target is constructed with appropriate values
     assert target.name == "target"
     assert target.horizon == "7d"
-    assert target.blind_spot == "1d"
 
     # Assert forward aggregate node has been added into the graph
     view = forward_aggregator.view
@@ -53,7 +52,6 @@ def test_forward_aggregate(forward_aggregator):
         "parent": "col_float",
         "agg_func": AggFunc.SUM,
         "horizon": "7d",
-        "blind_spot": "1d",
         "serving_names": forward_aggregator.serving_names,
         "value_by": "col_float",
         "entity_ids": forward_aggregator.entity_ids,
@@ -81,7 +79,6 @@ def test_prepare_node_parameters(forward_aggregator):
         value_column="col_float",
         method=AggFunc.SUM,
         horizon="7d",
-        blind_spot="1d",
         target_name="target",
         timestamp_col="timestamp_col",
     )
@@ -90,7 +87,6 @@ def test_prepare_node_parameters(forward_aggregator):
         "parent": "col_float",
         "agg_func": "sum",
         "horizon": "7d",
-        "blind_spot": "1d",
         "name": "target",
         "serving_names": forward_aggregator.serving_names,
         "value_by": "col_float",
@@ -101,17 +97,16 @@ def test_prepare_node_parameters(forward_aggregator):
 
 
 @pytest.mark.parametrize(
-    "value_column, method, horizon, blind_spot, target_name, expected_error",
+    "value_column, method, horizon, target_name, expected_error",
     [
-        ("col_float", AggFunc.SUM, "7d", "1d", "target", None),
-        ("random", AggFunc.SUM, "7d", "random", "target", KeyError),
-        ("col_float", "random", "7d", "1d", "target", ValueError),
-        ("col_float", AggFunc.SUM, "random", "1d", "target", ValueError),
-        ("col_float", AggFunc.SUM, "7d", "random", "target", ValueError),
+        ("col_float", AggFunc.SUM, "7d", "target", None),
+        ("random", AggFunc.SUM, "7d", "target", KeyError),
+        ("col_float", "random", "7d", "target", ValueError),
+        ("col_float", AggFunc.SUM, "random", "target", ValueError),
     ],
 )
 def test_validate_parameters(
-    forward_aggregator, value_column, method, horizon, blind_spot, target_name, expected_error
+    forward_aggregator, value_column, method, horizon, target_name, expected_error
 ):
     """
     Test validate parameters
@@ -122,7 +117,6 @@ def test_validate_parameters(
                 value_column=value_column,
                 method=method,
                 horizon=horizon,
-                blind_spot=blind_spot,
                 target_name=target_name,
             )
     else:
@@ -130,6 +124,5 @@ def test_validate_parameters(
             value_column=value_column,
             method=method,
             horizon=horizon,
-            blind_spot=blind_spot,
             target_name=target_name,
         )

@@ -21,7 +21,6 @@ def forward_node_parameters_fixture(entity_id):
         name="target",
         timestamp_col="timestamp_col",
         horizon="7d",
-        blind_spot="1d",
         table_details=TableDetails(table_name="table"),
         keys=["cust_id"],
         parent="value",

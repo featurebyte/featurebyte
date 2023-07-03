@@ -1,6 +1,7 @@
 """
 Target namespace controller
 """
+
 from bson import ObjectId
 
 from featurebyte.models.target_namespace import TargetNamespaceModel

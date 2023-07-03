@@ -33,6 +33,7 @@ class TargetNamespaceUpdate(BaseDocumentServiceUpdateSchema):
     TargetNamespace update schema
     """
 
+    target_ids: Optional[List[PydanticObjectId]]
     default_version_mode: Optional[DefaultVersionMode]
     default_target_id: Optional[PydanticObjectId]
 
