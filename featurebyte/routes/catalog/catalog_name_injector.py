@@ -36,10 +36,12 @@ class CatalogNameInjector:
             catalog name, and update document groups
         """
         catalog = await self.catalog_service.get_document(catalog_id)
+        catalog_name = catalog.name
+        assert catalog_name is not None
         updated_group = []
         for document_group in documents:
             for document in document_group["data"]:
                 assert document["catalog_id"] == catalog.id
-                document["catalog_name"] = catalog.name
+                document["catalog_name"] = catalog_name
             updated_group.append(document_group)
-        return catalog.name, updated_group
+        return catalog_name, updated_group
