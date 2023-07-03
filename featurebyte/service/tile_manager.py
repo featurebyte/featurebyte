@@ -18,7 +18,6 @@ from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.persistent import Persistent
 from featurebyte.service.base_service import BaseService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
-from featurebyte.service.task_manager import TaskManager
 from featurebyte.service.tile_scheduler import TileSchedulerService
 from featurebyte.session.base import BaseSession
 from featurebyte.sql.tile_generate import TileGenerate
@@ -41,12 +40,10 @@ class TileManagerService(BaseService):
         user: Any,
         persistent: Persistent,
         catalog_id: ObjectId,
-        task_manager: TaskManager,
         online_store_table_version_service: OnlineStoreTableVersionService,
         tile_scheduler_service: TileSchedulerService,
     ):
         super().__init__(user, persistent, catalog_id)
-        self.task_manager = task_manager
         self.online_store_table_version_service = online_store_table_version_service
         self.tile_scheduler_service = tile_scheduler_service
 
