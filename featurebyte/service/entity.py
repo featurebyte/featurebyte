@@ -12,10 +12,10 @@ from bson import ObjectId
 from featurebyte.models.entity import EntityModel
 from featurebyte.models.relationship_analysis import derive_primary_entity
 from featurebyte.persistent import Persistent
+from featurebyte.routes.catalog.catalog_name_injector import CatalogNameInjector
 from featurebyte.schema.entity import EntityCreate, EntityServiceUpdate
 from featurebyte.schema.info import EntityBriefInfoList
 from featurebyte.service.base_document import BaseDocumentService
-from featurebyte.service.catalog import CatalogService
 
 
 def get_primary_entity_from_entities(entities: dict[str, Any]) -> dict[str, Any]:
@@ -55,10 +55,10 @@ class EntityService(BaseDocumentService[EntityModel, EntityCreate, EntityService
         user: Any,
         persistent: Persistent,
         catalog_id: ObjectId,
-        catalog_service: CatalogService,
+        catalog_name_injector: CatalogNameInjector,
     ):
         super().__init__(user, persistent, catalog_id)
-        self.catalog_service = catalog_service
+        self.catalog_name_injector = catalog_name_injector
 
     @staticmethod
     def _extract_additional_creation_kwargs(data: EntityCreate) -> dict[str, Any]:
@@ -137,8 +137,5 @@ class EntityService(BaseDocumentService[EntityModel, EntityCreate, EntityService
             return EntityBriefInfoList(data=[])
         # Get catalog ID
         catalog_id = entities["data"][0]["catalog_id"]
-        # get catalog info
-        catalog = await self.catalog_service.get_document(catalog_id)
-        for entity in entities["data"]:
-            entity["catalog_name"] = catalog.name
-        return EntityBriefInfoList.from_paginated_data(entities)
+        _, updated_docs = await self.catalog_name_injector.add_name(catalog_id, [entities])
+        return EntityBriefInfoList.from_paginated_data(updated_docs[0])

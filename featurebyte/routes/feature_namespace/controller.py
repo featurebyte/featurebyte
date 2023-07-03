@@ -10,6 +10,7 @@ from bson.objectid import ObjectId
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature import DefaultVersionMode, FeatureModel, FeatureReadiness
+from featurebyte.routes.catalog.catalog_name_injector import CatalogNameInjector
 from featurebyte.routes.common.base import (
     BaseDocumentController,
     DerivePrimaryEntityHelper,
@@ -22,7 +23,6 @@ from featurebyte.schema.feature_namespace import (
     FeatureNamespaceUpdate,
 )
 from featurebyte.schema.info import EntityBriefInfoList, FeatureNamespaceInfo, TableBriefInfoList
-from featurebyte.service.catalog import CatalogService
 from featurebyte.service.default_version_mode import DefaultVersionModeService
 from featurebyte.service.entity import EntityService, get_primary_entity_from_entities
 from featurebyte.service.feature import FeatureService
@@ -51,8 +51,8 @@ class FeatureNamespaceController(
         default_version_mode_service: DefaultVersionModeService,
         feature_readiness_service: FeatureReadinessService,
         table_service: TableService,
-        catalog_service: CatalogService,
         derive_primary_entity_helper: DerivePrimaryEntityHelper,
+        catalog_name_injector: CatalogNameInjector,
     ):
         super().__init__(feature_namespace_service)
         self.entity_service = entity_service
@@ -60,8 +60,8 @@ class FeatureNamespaceController(
         self.default_version_mode_service = default_version_mode_service
         self.feature_readiness_service = feature_readiness_service
         self.table_service = table_service
-        self.catalog_service = catalog_service
         self.derive_primary_entity_helper = derive_primary_entity_helper
+        self.catalog_name_injector = catalog_name_injector
 
     async def get(
         self,
@@ -234,14 +234,11 @@ class FeatureNamespaceController(
             page=1, page_size=0, query_filter={"_id": {"$in": namespace.table_ids}}
         )
 
-        # get catalog info
-        catalog = await self.catalog_service.get_document(namespace.catalog_id)
-        for entity in entities["data"]:
-            assert entity["catalog_id"] == catalog.id
-            entity["catalog_name"] = catalog.name
-        for table in tables["data"]:
-            assert table["catalog_id"] == catalog.id
-            table["catalog_name"] = catalog.name
+        # Add catalog name to entities and tables
+        catalog_name, updated_docs = await self.catalog_name_injector.add_name(
+            namespace.catalog_id, [entities, tables]
+        )
+        entities, tables = updated_docs
 
         # derive primary tables
         table_id_to_doc = {table["_id"]: table for table in tables["data"]}
@@ -261,5 +258,5 @@ class FeatureNamespaceController(
             default_feature_id=namespace.default_feature_id,
             dtype=namespace.dtype,
             version_count=len(namespace.feature_ids),
-            catalog_name=catalog.name,
+            catalog_name=catalog_name,
         )

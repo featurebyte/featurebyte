@@ -6,6 +6,7 @@ This contains all the dependencies that we want to register in order to get our 
 from featurebyte.routes.app_container_config import AppContainerConfig
 from featurebyte.routes.batch_feature_table.controller import BatchFeatureTableController
 from featurebyte.routes.batch_request_table.controller import BatchRequestTableController
+from featurebyte.routes.catalog.catalog_name_injector import CatalogNameInjector
 from featurebyte.routes.catalog.controller import CatalogController
 from featurebyte.routes.common.base import DerivePrimaryEntityHelper
 from featurebyte.routes.context.controller import ContextController
@@ -143,6 +144,7 @@ app_container_config.register_class(BatchRequestTableController)
 app_container_config.register_class(
     CatalogController, dependency_override={"service": "catalog_service"}
 )
+app_container_config.register_class(CatalogNameInjector)
 app_container_config.register_class(
     ContextController, dependency_override={"service": "context_service"}
 )
