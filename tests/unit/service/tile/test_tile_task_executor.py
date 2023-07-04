@@ -67,7 +67,7 @@ async def test_online_store_job_schedule_ts(
     """
     Test that the job_schedule_ts_str parameter passed to TileScheduleOnlineStore is correct
     """
-    # The scheduled task is run 1 minute past the intended schedule
+    # The scheduled task is run 1 second past the intended schedule
     tile_task_parameters.job_schedule_ts = "2023-01-15 10:00:11"
     await tile_task_executor.execute(session, tile_task_parameters)
 
