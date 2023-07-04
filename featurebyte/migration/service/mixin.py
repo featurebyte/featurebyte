@@ -3,20 +3,22 @@ MigrationServiceMixin class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Iterator, Optional
+from typing import TYPE_CHECKING, Any, AsyncIterator, Iterator, Optional, Type
 
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 
+from bson import ObjectId
 from celery import Celery
 
 from featurebyte.enum import InternalName
 from featurebyte.exception import CredentialsError
 from featurebyte.logging import get_logger
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.models.persistent import Document, QueryFilter
-from featurebyte.persistent.base import Persistent
+from featurebyte.models.persistent import QueryFilter
+from featurebyte.persistent.base import Document, Persistent
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.mixin import Document as MixinDocument
 from featurebyte.service.session_manager import SessionManagerService
 
 if TYPE_CHECKING:
@@ -41,6 +43,50 @@ class BaseMigrationServiceMixin:
         Returns
         -------
         Collection name
+        """
+
+    @property
+    @abstractmethod
+    def document_class(self) -> Type[Document]:
+        """
+        Document class
+
+        Returns
+        -------
+        Type[Document]
+        """
+
+    @abstractmethod
+    async def list_documents(self, page_size: int) -> dict[str, Any]:
+        """
+        List documents for doing post migration checks
+
+        Parameters
+        ----------
+        page_size: int
+            Page size
+
+        Returns
+        -------
+        dict[str, Any]
+        """
+
+    @abstractmethod
+    async def historical_document_generator(
+        self, document_id: ObjectId
+    ) -> AsyncIterator[Optional[Document]]:
+        """
+        Reconstruct documents of older history
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+
+        Yields
+        -------
+        AsyncIterator[Optional[Document]]
+            Async iterator of older historical records
         """
 
     @abstractmethod
@@ -126,35 +172,6 @@ class BaseMigrationServiceMixin:
         logger.info(f'Complete migration (collection: "{self.collection_name}")')
 
 
-class MigrationServiceMixin(BaseMigrationServiceMixin, ABC):
-    """MigrationServiceMixin class"""
-
-    @classmethod
-    def migrate_document_record(cls, record: dict[str, Any]) -> dict[str, Any]:
-        """
-        Migrate older document record to the current document record format
-
-        Parameters
-        ----------
-        record: dict[str, Any]
-            Older document record
-
-        Returns
-        -------
-        dict[str, Any]
-            Record in newer format
-        """
-        return cls.document_class(**record).dict(by_alias=True)  # type: ignore
-
-    async def migrate_record(self, document: Document, version: Optional[int]) -> None:
-        _ = version
-        await self.persistent.migrate_record(
-            collection_name=self.collection_name,
-            document=document,
-            migrate_func=self.migrate_document_record,
-        )
-
-
 class DataWarehouseMigrationMixin(BaseMigrationServiceMixin, ABC):
     """DataWarehouseMigrationMixin class
 
@@ -177,6 +194,18 @@ class DataWarehouseMigrationMixin(BaseMigrationServiceMixin, ABC):
     @property
     def collection_name(self) -> str:
         return self.feature_store_service.collection_name
+
+    @property
+    def document_class(self) -> Type[MixinDocument]:
+        return self.feature_store_service.document_class
+
+    async def list_documents(self, page_size: int) -> dict[str, Any]:
+        return await self.feature_store_service.list_documents(page_size=page_size)
+
+    async def historical_document_generator(
+        self, document_id: ObjectId
+    ) -> AsyncIterator[Optional[MixinDocument]]:
+        yield self.feature_store_service.historical_document_generator(document_id=document_id)
 
     def construct_list_query_filter(
         self,

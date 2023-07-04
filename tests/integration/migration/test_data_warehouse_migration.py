@@ -9,10 +9,7 @@ from bson import ObjectId
 
 from featurebyte import Feature, FeatureJobSetting, FeatureList
 from featurebyte.enum import InternalName
-from featurebyte.migration.service.data_warehouse import (
-    DataWarehouseMigrationServiceV6,
-    TileColumnTypeExtractor,
-)
+from featurebyte.migration.service.data_warehouse import DataWarehouseMigrationServiceV6
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 
 
