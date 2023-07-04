@@ -220,3 +220,40 @@ def test_create_complex_feature_with_user_defined_function(
     # delete the feature first then delete the UDF should succeed (for date_sub)
     date_sub_feat.delete()
     date_sub_udf.delete()
+
+
+def test_create_feature_with_complex_view_operation(
+    power_udf, cos_udf, snowflake_event_view_with_entity, feature_group_feature_job_setting
+):
+    """Test create a feature with complex view operation"""
+    view = snowflake_event_view_with_entity
+    view["float_square"] = UDF.power_func(view.col_float, 2)
+    view["cos_float_square"] = UDF.cos_func(x=view.float_square)
+    feat_group = view.groupby("cust_id").aggregate_over(
+        value_column="cos_float_square",
+        method="sum",
+        windows=["1d"],
+        feature_job_setting=feature_group_feature_job_setting,
+        feature_names=["sum_cos_float_square"],
+    )
+    feat = feat_group["sum_cos_float_square"]
+    feat.name = "sum_cos_float_square"
+    feat.save()
+
+    # check feature model has expected properties
+    assert sorted(feat.cached_model.user_defined_function_ids) == sorted([power_udf.id, cos_udf.id])
+
+    # attempt to delete the UDF should fail
+    expected_error = "User defined function used by saved feature(s): ['sum_cos_float_square']"
+    with pytest.raises(RecordDeletionException) as exc:
+        power_udf.delete()
+    assert expected_error in str(exc.value)
+
+    with pytest.raises(RecordDeletionException) as exc:
+        cos_udf.delete()
+    assert expected_error in str(exc.value)
+
+    # delete the feature first then delete the UDF should succeed
+    feat.delete()
+    power_udf.delete()
+    cos_udf.delete()
