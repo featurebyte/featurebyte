@@ -86,25 +86,25 @@ def test_forward_aggregator(forward_spec):
               REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
               REQ."serving_cust_id" AS "serving_cust_id",
               REQ."other_serving_key" AS "other_serving_key",
-              TABLE."col_float" AS "col_float",
-              SUM(TABLE."value") AS "_fb_internal_forward_sum_value_cust_id_other_key_col_float_input_1_inner"
+              SOURCE_TABLE."col_float" AS "col_float",
+              SUM(SOURCE_TABLE."value") AS "_fb_internal_forward_sum_value_cust_id_other_key_col_float_input_1_inner"
             FROM "REQUEST_TABLE_POINT_IN_TIME_serving_cust_id_other_serving_key" AS REQ
             INNER JOIN (
               SELECT
                 *
               FROM tab
-            ) AS TABLE
+            ) AS SOURCE_TABLE
               ON (
-                DATE_PART(EPOCH_SECOND, TABLE."timestamp_col") > REQ."POINT_IN_TIME"
-                AND DATE_PART(EPOCH_SECOND, TABLE."timestamp_col") <= FLOOR(DATE_PART(EPOCH_SECOND, REQ."POINT_IN_TIME") + 604800.0)
+                DATE_PART(EPOCH_SECOND, SOURCE_TABLE."timestamp_col") > FLOOR(DATE_PART(EPOCH_SECOND, REQ."POINT_IN_TIME"))
+                AND DATE_PART(EPOCH_SECOND, SOURCE_TABLE."timestamp_col") <= FLOOR(DATE_PART(EPOCH_SECOND, REQ."POINT_IN_TIME") + 604800.0)
               )
-              AND REQ."serving_cust_id" = TABLE."cust_id"
-              AND REQ."other_serving_key" = TABLE."other_key"
+              AND REQ."serving_cust_id" = SOURCE_TABLE."cust_id"
+              AND REQ."other_serving_key" = SOURCE_TABLE."other_key"
             GROUP BY
               REQ."POINT_IN_TIME",
               REQ."serving_cust_id",
               REQ."other_serving_key",
-              TABLE."col_float"
+              SOURCE_TABLE."col_float"
           ) AS INNER_
           GROUP BY
             INNER_."POINT_IN_TIME",

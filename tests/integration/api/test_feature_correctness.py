@@ -315,6 +315,7 @@ def test_aggregate_over(
     )
 
     df = transaction_data_upper_case.sort_values(event_timestamp_column_name)
+    df.to_csv("df.csv", index=False)
 
     common_args = (
         df,
