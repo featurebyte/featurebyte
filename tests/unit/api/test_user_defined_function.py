@@ -93,7 +93,7 @@ def test_create_user_defined_function__default_catalog():
         )
 
     expected_error = (
-        'Catalog "default" does not have a default feature store. '
+        "Current active catalog does not have a default feature store. "
         "Please activate a catalog with a default feature store first before creating a user-defined function."
     )
     assert expected_error in str(exc.value)

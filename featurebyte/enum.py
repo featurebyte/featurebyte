@@ -170,8 +170,6 @@ class DBVarType(StrEnum):
             self.VARCHAR: "str",
             self.FLOAT: "float",
             self.INT: "int",
-            self.TIMESTAMP: "pd.Timestamp",
-            self.TIMESTAMP_TZ: "pd.Timestamp",
         }
         return mapping.get(self)  # type: ignore
 

@@ -231,12 +231,12 @@ def test_user_defined_function_injector_create_and_add_function(user_defined_fun
 
     # check docstring
     expected_doc = """
-    This function uses the feature store SQL function `function_name`
-    to generate a new column or new feature. Note that the non-scalar input parameters
-    must be homogeneous, i.e., they must be either all view columns or all features. The output
-    type is determined by the input type. If all input parameters are view columns, then the output
-    type is a view column. If all input parameters are features, then the output type is a feature.
-    All view columns input parameters must have matching row alignment. Otherwise, an error is raised.
+    This function uses the feature store SQL function `function_name` to generate a new column
+    or new feature. Note that the non-scalar input parameters must be homogeneous, i.e., they must
+    be either all view columns or all features. The output type is determined by the input type.
+    If all input parameters are view columns, then the output type is a view column. If all input
+    parameters are features, then the output type is a feature. All view columns input parameters
+    must have matching row alignment. Otherwise, an error is raised.
 
     Parameters
     ----------

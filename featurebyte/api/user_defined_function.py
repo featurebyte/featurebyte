@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import Any, ClassVar, List, Literal, Optional
 
+from http import HTTPStatus
+
 from bson import ObjectId
 from pydantic import Field
 from typeguard import typechecked
@@ -15,13 +17,13 @@ from featurebyte.api.api_object_util import (
     ForeignKeyMapping,
     iterate_api_object_using_paginated_routes,
 )
-from featurebyte.api.catalog import Catalog
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.savable_api_object import DeletableApiObject, SavableApiObject
 from featurebyte.api.user_defined_function_injector import (
     FunctionAccessor,
     UserDefinedFunctionInjector,
 )
+from featurebyte.config import Configurations
 from featurebyte.enum import DBVarType
 from featurebyte.exception import DocumentCreationError, InvalidSettingsError
 from featurebyte.logging import get_logger
@@ -32,16 +34,18 @@ from featurebyte.schema.user_defined_function import UserDefinedFunctionCreate
 logger = get_logger(__name__)
 
 
-def _get_active_feature_store_id(catalog: Optional[Catalog] = None) -> Optional[ObjectId]:
+def _get_active_feature_store_id(catalog_id: Optional[ObjectId] = None) -> Optional[ObjectId]:
     # get the active feature store id
-    if catalog is None:
+    if catalog_id is None:
         catalog_id = get_active_catalog_id()
-        catalog = Catalog.get_by_id(catalog_id)
 
-    default_feature_store_ids = catalog.default_feature_store_ids  # pylint: disable=no-member
-    if default_feature_store_ids:
-        assert len(default_feature_store_ids) == 1, "Only one default feature store is allowed."
-        return default_feature_store_ids[0]
+    client = Configurations().get_client()
+    response = client.get(f"/catalog/{catalog_id}")
+    if response.status_code == HTTPStatus.OK:
+        default_feature_store_ids = response.json()["default_feature_store_ids"]
+        if default_feature_store_ids:
+            assert len(default_feature_store_ids) == 1, "Only one default feature store is allowed."
+            return default_feature_store_ids[0]
     return None
 
 
@@ -252,13 +256,12 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
             If the user-defined function cannot be created.
         """
         active_catalog_id = get_active_catalog_id()
-        catalog = Catalog.get_by_id(active_catalog_id)
-        active_feature_store_id = _get_active_feature_store_id(catalog=catalog)
+        active_feature_store_id = _get_active_feature_store_id(catalog_id=active_catalog_id)
         if not active_feature_store_id:
             raise DocumentCreationError(
-                f'Catalog "{catalog.name}" does not have a default feature store. '
-                f"Please activate a catalog with a default feature store first before "
-                f"creating a user-defined function."
+                "Current active catalog does not have a default feature store. "
+                "Please activate a catalog with a default feature store first before "
+                "creating a user-defined function."
             )
 
         user_defined_function = UserDefinedFunction(
