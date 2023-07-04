@@ -50,7 +50,7 @@ def local_cos_udf_fixture(catalog):
     )
     udf = UserDefinedFunction.create(
         name="cos_func",
-        function_name="cos",
+        function_name="cos_v2",
         function_parameters=[func_param],
         output_dtype="FLOAT",
         is_global=False,
@@ -152,6 +152,9 @@ def test_get__local_should_overwrite_global(cos_udf, local_cos_udf):
     """Test get user-defined function by name"""
     udf = UserDefinedFunction.get(cos_udf.name)
     assert udf.id == local_cos_udf.id
+
+    # check that the local UDF is used
+    assert "cos_v2" in UDF.cos_func.__doc__
 
 
 def test_list(cos_udf, power_udf, date_sub_udf):
