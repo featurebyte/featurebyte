@@ -45,7 +45,7 @@ def _get_active_feature_store_id(catalog_id: Optional[ObjectId] = None) -> Optio
         default_feature_store_ids = response.json()["default_feature_store_ids"]
         if default_feature_store_ids:
             assert len(default_feature_store_ids) == 1, "Only one default feature store is allowed."
-            return default_feature_store_ids[0]
+            return ObjectId(default_feature_store_ids[0])
     return None
 
 
