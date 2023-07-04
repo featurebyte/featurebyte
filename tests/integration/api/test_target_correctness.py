@@ -199,6 +199,7 @@ def test_forward_aggregate(
     # transaction_data_upper_case = _get_filtered_data(transaction_data_upper_case)
     event_timestamp_column_name = "ËVENT_TIMESTAMP"
     df = transaction_data_upper_case.sort_values(event_timestamp_column_name)
+    df.to_csv("df.csv")
 
     for target_parameter in target_parameters:
         if target_parameter.skip:
