@@ -232,6 +232,7 @@ class UserDefinedFunctionInjector:
         udf: UserDefinedFunctionModel,
     ) -> Node:
         node_params = GenericFunctionNodeParameters(
+            name=udf.name,
             function_name=udf.function_name,
             function_parameters=function_parameters,
             output_dtype=udf.output_dtype,

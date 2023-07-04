@@ -1,10 +1,9 @@
 """
-Unit tests for the UserDefinedFunctionRegistry class.
+Unit tests for the UserDefinedFunctionInjector class.
 """
 from typing import Union
 
 import inspect
-import pdb
 import textwrap
 
 import pandas as pd

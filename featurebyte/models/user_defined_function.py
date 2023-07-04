@@ -176,6 +176,7 @@ class UserDefinedFunctionModel(FeatureByteBaseDocumentModel):
         node = GenericFunctionNode(
             name="generic_function_1",
             parameters=GenericFunctionNodeParameters(
+                name=self.name,
                 function_name=self.function_name,
                 function_parameters=function_parameters,
                 output_dtype=self.output_dtype,

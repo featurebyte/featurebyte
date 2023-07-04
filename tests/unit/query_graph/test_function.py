@@ -28,7 +28,8 @@ def test_generic_function__view_type(global_graph, input_node):
     gfunc = global_graph.add_operation(
         node_type=NodeType.GENERIC_FUNCTION,
         node_params={
-            "function_name": "my_func",
+            "name": "my_func",
+            "function_name": "sql_func",
             "function_parameters": [
                 {"column_name": "a", "dtype": "FLOAT", "input_form": "column"},
                 {"value": 1, "dtype": "INT", "input_form": "value"},
@@ -86,7 +87,8 @@ def test_generic_function__feature_type(global_graph, query_graph_with_groupby_a
     gfunc = graph.add_operation(
         node_type=NodeType.GENERIC_FUNCTION,
         node_params={
-            "function_name": "my_func",
+            "name": "my_func",
+            "function_name": "sql_func",
             "function_parameters": [
                 {"value": 1, "dtype": "INT", "input_form": "value"},
                 {"column_name": "a", "dtype": "FLOAT", "input_form": "column"},
@@ -161,7 +163,8 @@ def test_generic_function__invalid_inputs(global_graph, query_graph_with_groupby
     """Test adding generic function node to query graph with non-homogenous inputs"""
     graph, feature_proj, _ = query_graph_with_groupby_and_feature_nodes
     gfunc_node_params = {
-        "function_name": "my_func",
+        "name": "my_func",
+        "function_name": "sql_func",
         "function_parameters": [
             {"value": 1, "dtype": "INT", "input_form": "value"},
             {"column_name": "a", "dtype": "FLOAT", "input_form": "column"},

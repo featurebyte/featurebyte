@@ -32,11 +32,12 @@ from featurebyte.schema.user_defined_function import UserDefinedFunctionCreate
 logger = get_logger(__name__)
 
 
-def _get_active_feature_store_id(catalog_id: Optional[ObjectId] = None) -> Optional[ObjectId]:
+def _get_active_feature_store_id(catalog: Optional[Catalog] = None) -> Optional[ObjectId]:
     # get the active feature store id
-    if catalog_id is None:
+    if catalog is None:
         catalog_id = get_active_catalog_id()
-    catalog = Catalog.get_by_id(catalog_id)
+        catalog = Catalog.get_by_id(catalog_id)
+
     default_feature_store_ids = catalog.default_feature_store_ids  # pylint: disable=no-member
     if default_feature_store_ids:
         assert len(default_feature_store_ids) == 1, "Only one default feature store is allowed."
@@ -47,15 +48,15 @@ def _get_active_feature_store_id(catalog_id: Optional[ObjectId] = None) -> Optio
 def _synchronize_user_defined_function(
     func_accessor: FunctionAccessor, route: str, feature_store_id: Optional[ObjectId]
 ) -> None:
-    if feature_store_id is None:
-        feature_store_id = _get_active_feature_store_id()
-        if feature_store_id is None:
-            # Cannot synchronize user-defined functions without specifying a feature store
-            return
-
     # synchronize all user-defined functions to the function accessor
     name_to_udf_dict: dict[str, UserDefinedFunctionModel] = {}
     try:
+        if feature_store_id is None:
+            feature_store_id = _get_active_feature_store_id()
+            if feature_store_id is None:
+                # Cannot synchronize user-defined functions without specifying a feature store
+                return
+
         for udf_dict in iterate_api_object_using_paginated_routes(
             route, params={"feature_store_id": feature_store_id}
         ):
@@ -114,11 +115,11 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
     ]
 
     # pydantic instance variable (internal use)
-    internal_output_dtype: DBVarType = Field(alias="output_dtype")
-    internal_function_name: str = Field(alias="function_name")
-    internal_function_parameters: List[FunctionParameter] = Field(alias="function_parameters")
     internal_catalog_id: Optional[PydanticObjectId] = Field(alias="catalog_id")
     internal_feature_store_id: PydanticObjectId = Field(alias="feature_store_id")
+    internal_function_name: str = Field(alias="function_name")
+    internal_function_parameters: List[FunctionParameter] = Field(alias="function_parameters")
+    internal_output_dtype: DBVarType = Field(alias="output_dtype")
 
     # function accessor containing all user-defined functions
     func: ClassVar[Any] = FunctionDescriptor(route=_route)
@@ -133,6 +134,17 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
         Optional[PydanticObjectId]
         """
         return self.cached_model.catalog_id
+
+    @property
+    def feature_store_id(self) -> PydanticObjectId:
+        """
+        Associated feature store id of the user-defined function.
+
+        Returns
+        -------
+        PydanticObjectId
+        """
+        return self.cached_model.feature_store_id
 
     @property
     def function_name(self) -> str:
@@ -166,6 +178,17 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
         DBVarType
         """
         return self.cached_model.output_dtype
+
+    @property
+    def signature(self) -> str:
+        """
+        The signature of the user-defined function.
+
+        Returns
+        -------
+        str
+        """
+        return self.cached_model.signature
 
     @property
     def is_global(self) -> bool:
@@ -229,9 +252,14 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
             If the user-defined function cannot be created.
         """
         active_catalog_id = get_active_catalog_id()
-        active_feature_store_id = _get_active_feature_store_id(catalog_id=active_catalog_id)
+        catalog = Catalog.get_by_id(active_catalog_id)
+        active_feature_store_id = _get_active_feature_store_id(catalog=catalog)
         if not active_feature_store_id:
-            raise DocumentCreationError("No default feature store is set.")
+            raise DocumentCreationError(
+                f'Catalog "{catalog.name}" does not have a default feature store. '
+                f"Please activate a catalog with a default feature store first before "
+                f"creating a user-defined function."
+            )
 
         user_defined_function = UserDefinedFunction(
             name=name,
