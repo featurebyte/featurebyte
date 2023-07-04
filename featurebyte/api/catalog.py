@@ -1272,6 +1272,6 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         --------
         Get a saved user defined function.
 
-        >>> user_defined_function = catalog.get_user_defined_function("user_defined_function_name")
+        >>> user_defined_function = catalog.get_user_defined_function("user_defined_function_name")  # doctest: +SKIP
         """
         return UserDefinedFunction.get(name=name)

@@ -13,7 +13,11 @@ from featurebyte.models.user_defined_function import FunctionParameter
 @pytest.fixture(name="catalog")
 def catalog_fixture(snowflake_feature_store):
     """Catalog fixture"""
-    return Catalog.create(name="test_catalog", feature_store_name=snowflake_feature_store.name)
+    try:
+        yield Catalog.create(name="test_catalog", feature_store_name=snowflake_feature_store.name)
+    finally:
+        # change back to default catalog to avoid side effects on other tests
+        Catalog.activate("default")
 
 
 @pytest.fixture(name="cos_udf")
