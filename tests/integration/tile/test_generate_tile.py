@@ -38,7 +38,7 @@ async def test_generate_tile(session, base_sql_model):
     tile_generate_ins = TileGenerate(
         session=session,
         tile_id=tile_id,
-        tile_modulo_frequency_second=183,
+        time_modulo_frequency_second=183,
         blind_spot_second=3,
         frequency_minute=5,
         sql=tile_sql,
@@ -82,7 +82,7 @@ async def test_generate_tile_no_data(session, base_sql_model):
     tile_generate_ins = TileGenerate(
         session=session,
         tile_id=tile_id,
-        tile_modulo_frequency_second=183,
+        time_modulo_frequency_second=183,
         blind_spot_second=3,
         frequency_minute=5,
         sql=tile_sql,
@@ -126,7 +126,7 @@ async def test_generate_tile_new_value_column(session, base_sql_model):
     tile_generate_ins = TileGenerate(
         session=session,
         tile_id=tile_id,
-        tile_modulo_frequency_second=183,
+        time_modulo_frequency_second=183,
         blind_spot_second=3,
         frequency_minute=5,
         sql=tile_sql,
@@ -155,7 +155,7 @@ async def test_generate_tile_new_value_column(session, base_sql_model):
     tile_generate_ins = TileGenerate(
         session=session,
         tile_id=tile_id,
-        tile_modulo_frequency_second=183,
+        time_modulo_frequency_second=183,
         blind_spot_second=3,
         frequency_minute=5,
         sql=tile_sql_2,

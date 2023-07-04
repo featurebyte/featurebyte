@@ -36,7 +36,7 @@ async def test_monitor_tile__missing_tile(session, base_sql_model):
     tile_generate_ins = TileGenerate(
         session=session,
         tile_id=tile_id,
-        tile_modulo_frequency_second=183,
+        time_modulo_frequency_second=183,
         blind_spot_second=3,
         frequency_minute=5,
         sql=tile_sql,
@@ -51,7 +51,7 @@ async def test_monitor_tile__missing_tile(session, base_sql_model):
     tile_monitor_ins = TileMonitor(
         session=session,
         tile_id=tile_id,
-        tile_modulo_frequency_second=183,
+        time_modulo_frequency_second=183,
         blind_spot_second=3,
         frequency_minute=5,
         sql=tile_sql,
@@ -105,7 +105,7 @@ async def test_monitor_tile__updated_tile(session, base_sql_model):
     tile_generate_ins = TileGenerate(
         session=session,
         tile_id=tile_id,
-        tile_modulo_frequency_second=183,
+        time_modulo_frequency_second=183,
         blind_spot_second=3,
         frequency_minute=5,
         sql=tile_sql,
@@ -123,7 +123,7 @@ async def test_monitor_tile__updated_tile(session, base_sql_model):
     tile_monitor_ins = TileMonitor(
         session=session,
         tile_id=tile_id,
-        tile_modulo_frequency_second=183,
+        time_modulo_frequency_second=183,
         blind_spot_second=3,
         frequency_minute=5,
         sql=tile_sql,
@@ -177,7 +177,7 @@ async def test_monitor_tile__updated_tile_new_column(session, base_sql_model):
     tile_generate_ins = TileGenerate(
         session=session,
         tile_id=tile_id,
-        tile_modulo_frequency_second=183,
+        time_modulo_frequency_second=183,
         blind_spot_second=3,
         frequency_minute=5,
         sql=tile_sql,
@@ -202,7 +202,7 @@ async def test_monitor_tile__updated_tile_new_column(session, base_sql_model):
     tile_monitor_ins = TileMonitor(
         session=session,
         tile_id=tile_id,
-        tile_modulo_frequency_second=183,
+        time_modulo_frequency_second=183,
         blind_spot_second=3,
         frequency_minute=5,
         sql=tile_sql,
@@ -253,7 +253,7 @@ async def test_monitor_tile__partial_columns(session, base_sql_model):
     tile_generate_ins = TileGenerate(
         session=session,
         tile_id=tile_id,
-        tile_modulo_frequency_second=183,
+        time_modulo_frequency_second=183,
         blind_spot_second=3,
         frequency_minute=5,
         sql=tile_sql,
@@ -268,7 +268,7 @@ async def test_monitor_tile__partial_columns(session, base_sql_model):
     tile_monitor_ins = TileMonitor(
         session=session,
         tile_id=tile_id,
-        tile_modulo_frequency_second=183,
+        time_modulo_frequency_second=183,
         blind_spot_second=3,
         frequency_minute=5,
         sql=tile_sql,
@@ -289,7 +289,7 @@ async def test_monitor_tile__partial_columns(session, base_sql_model):
     tile_monitor_ins = TileMonitor(
         session=session,
         tile_id=tile_id,
-        tile_modulo_frequency_second=183,
+        time_modulo_frequency_second=183,
         blind_spot_second=3,
         frequency_minute=5,
         sql=tile_sql,

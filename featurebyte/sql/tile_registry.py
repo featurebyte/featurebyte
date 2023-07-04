@@ -61,7 +61,7 @@ class TileRegistry(TileCommon):
                     '{self.value_column_names_str}',
                     '{self.value_column_types_str}',
                     {self.frequency_minute},
-                    {self.tile_modulo_frequency_second},
+                    {self.time_modulo_frequency_second},
                     {self.blind_spot_second},
                     TRUE,
                     current_timestamp(),

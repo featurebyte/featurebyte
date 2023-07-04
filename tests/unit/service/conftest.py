@@ -196,6 +196,14 @@ def tile_cache_service_fixture(app_container):
     return app_container.tile_cache_service
 
 
+@pytest.fixture(name="tile_task_executor")
+def tile_task_executor_fixture(app_container):
+    """
+    TileTaskExecutor fixture
+    """
+    return app_container.tile_task_executor
+
+
 @pytest.fixture(name="relationship_info_service")
 def relationship_info_service_fixture(app_container):
     """
