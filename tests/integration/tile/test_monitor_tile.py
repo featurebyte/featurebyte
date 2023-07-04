@@ -12,7 +12,7 @@ from featurebyte.sql.tile_monitor import TileMonitor
 
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_monitor_tile__missing_tile(session, base_sql_model):
+async def test_monitor_tile__missing_tile(session, base_sql_model, tile_registry_service):
     """
     Test monitoring with missing tiles
     """
@@ -45,6 +45,7 @@ async def test_monitor_tile__missing_tile(session, base_sql_model):
         value_column_types=value_col_types,
         tile_type="ONLINE",
         aggregation_id=agg_id,
+        tile_registry_service=tile_registry_service,
     )
     await tile_generate_ins.execute()
 
@@ -61,6 +62,7 @@ async def test_monitor_tile__missing_tile(session, base_sql_model):
         value_column_types=value_col_types,
         tile_type="ONLINE",
         aggregation_id=agg_id,
+        tile_registry_service=tile_registry_service,
     )
     await tile_monitor_ins.execute()
 
@@ -78,7 +80,7 @@ async def test_monitor_tile__missing_tile(session, base_sql_model):
 
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_monitor_tile__updated_tile(session, base_sql_model):
+async def test_monitor_tile__updated_tile(session, base_sql_model, tile_registry_service):
     """
     Test monitoring with outdated tiles in which the tile value has been incremented by 1
     """
@@ -114,6 +116,7 @@ async def test_monitor_tile__updated_tile(session, base_sql_model):
         value_column_types=value_col_types,
         tile_type="ONLINE",
         aggregation_id=agg_id,
+        tile_registry_service=tile_registry_service,
     )
     await tile_generate_ins.execute()
 
@@ -133,6 +136,7 @@ async def test_monitor_tile__updated_tile(session, base_sql_model):
         value_column_types=value_col_types,
         tile_type="ONLINE",
         aggregation_id=agg_id,
+        tile_registry_service=tile_registry_service,
     )
     await tile_monitor_ins.execute()
 
@@ -151,7 +155,9 @@ async def test_monitor_tile__updated_tile(session, base_sql_model):
 
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_monitor_tile__updated_tile_new_column(session, base_sql_model):
+async def test_monitor_tile__updated_tile_new_column(
+    session, base_sql_model, tile_registry_service
+):
     """
     Test monitoring with outdated tiles in which the tile value has been incremented by 1
     """
@@ -186,6 +192,7 @@ async def test_monitor_tile__updated_tile_new_column(session, base_sql_model):
         value_column_types=value_col_types,
         tile_type="ONLINE",
         aggregation_id=agg_id,
+        tile_registry_service=tile_registry_service,
     )
     await tile_generate_ins.execute()
 
@@ -212,6 +219,7 @@ async def test_monitor_tile__updated_tile_new_column(session, base_sql_model):
         value_column_types=value_col_types_2,
         tile_type="ONLINE",
         aggregation_id=agg_id,
+        tile_registry_service=tile_registry_service,
     )
     await tile_monitor_ins.execute()
 
@@ -229,7 +237,7 @@ async def test_monitor_tile__updated_tile_new_column(session, base_sql_model):
 
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_monitor_tile__partial_columns(session, base_sql_model):
+async def test_monitor_tile__partial_columns(session, base_sql_model, tile_registry_service):
     """
     Test monitoring with missing tiles
     """
@@ -262,6 +270,7 @@ async def test_monitor_tile__partial_columns(session, base_sql_model):
         value_column_types=value_col_types,
         tile_type="ONLINE",
         aggregation_id=agg_id,
+        tile_registry_service=tile_registry_service,
     )
     await tile_generate_ins.execute()
 
@@ -278,6 +287,7 @@ async def test_monitor_tile__partial_columns(session, base_sql_model):
         value_column_types=value_col_types,
         tile_type="ONLINE",
         aggregation_id=agg_id,
+        tile_registry_service=tile_registry_service,
     )
     await tile_monitor_ins.execute()
 
@@ -299,6 +309,7 @@ async def test_monitor_tile__partial_columns(session, base_sql_model):
         value_column_types=value_col_types,
         tile_type="ONLINE",
         aggregation_id=agg_id,
+        tile_registry_service=tile_registry_service,
     )
     await tile_monitor_ins.execute()
 

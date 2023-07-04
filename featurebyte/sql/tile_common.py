@@ -15,6 +15,13 @@ class TileCommon(TileCommonParameters, BaseSqlModel, ABC):
     Base class for Tile Operation Classes
     """
 
+    class Config(TileCommonParameters.Config):
+        """
+        Config class to allow services to be passed in as arguments
+        """
+
+        arbitrary_types_allowed = True
+
     def __init__(self, session: BaseSession, **kwargs: Any):
         """
         Initialize Tile Operation Instance

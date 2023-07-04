@@ -31,6 +31,7 @@ from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.online_serving import OnlineStorePrecomputeQuery
 from featurebyte.service.base_service import BaseService
 from featurebyte.service.tile_manager import TileManagerService
+from featurebyte.service.tile_registry_service import TileRegistryService
 from featurebyte.session.base import BaseSession
 from featurebyte.utils.snowflake.sql import escape_column_names
 
@@ -49,9 +50,11 @@ class FeatureManagerService(BaseService):
         persistent: Persistent,
         catalog_id: ObjectId,
         tile_manager_service: TileManagerService,
+        tile_registry_service: TileRegistryService,
     ):
         super().__init__(user, persistent, catalog_id)
         self.tile_manager_service = tile_manager_service
+        self.tile_registry_service = tile_registry_service
 
     async def online_enable(
         self,
@@ -218,16 +221,13 @@ class FeatureManagerService(BaseService):
         end_ts_str = end_ts.strftime(date_format)
 
         start_ts = datetime(1970, 1, 1, tzinfo=timezone.utc)
-        last_tile_start_ts_df = await session.execute_query(
-            f"SELECT LAST_TILE_START_DATE_OFFLINE FROM TILE_REGISTRY "
-            f"WHERE TILE_ID = '{tile_spec.tile_id}' "
-            f"AND AGGREGATION_ID = '{tile_spec.aggregation_id}' "
-            f"AND LAST_TILE_START_DATE_OFFLINE IS NOT NULL "
+
+        tile_model = await self.tile_registry_service.get_tile_model(
+            tile_spec.tile_id, tile_spec.aggregation_id
         )
-        if last_tile_start_ts_df is not None and len(last_tile_start_ts_df) > 0:
-            # generate tiles from last_tile_start_date to now
-            logger.debug(f"last_tile_start_ts_df: {last_tile_start_ts_df}")
-            start_ts = last_tile_start_ts_df.iloc[0]["LAST_TILE_START_DATE_OFFLINE"]
+        if tile_model is not None and tile_model.last_tile_start_date_offline is not None:
+            start_ts = tile_model.last_tile_start_date_offline
+
         logger.info(f"start_ts: {start_ts}")
 
         start_ind = date_util.timestamp_utc_to_tile_index(

@@ -3,6 +3,7 @@ Tile Monitor Job
 """
 from featurebyte.enum import InternalName
 from featurebyte.logging import get_logger
+from featurebyte.service.tile_registry_service import TileRegistryService
 from featurebyte.sql.common import construct_create_table_query, retry_sql
 from featurebyte.sql.tile_common import TileCommon
 from featurebyte.sql.tile_registry import TileRegistry
@@ -17,6 +18,7 @@ class TileMonitor(TileCommon):
 
     monitor_sql: str
     tile_type: str
+    tile_registry_service: TileRegistryService
 
     async def execute(self) -> None:
         """
@@ -44,6 +46,7 @@ class TileMonitor(TileCommon):
                 value_column_types=self.value_column_types,
                 tile_id=self.tile_id,
                 aggregation_id=self.aggregation_id,
+                tile_registry_service=self.tile_registry_service,
             ).execute()
 
             new_tile_sql = f"""
@@ -118,6 +121,7 @@ class TileMonitor(TileCommon):
                     value_column_types=self.value_column_types,
                     tile_id=self.tile_id,
                     aggregation_id=self.aggregation_id,
+                    tile_registry_service=self.tile_registry_service,
                 )
                 logger.info("Calling tile_registry.execute")
                 await tile_registry_ins.execute()

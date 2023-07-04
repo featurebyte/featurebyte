@@ -7,7 +7,7 @@ from featurebyte.query_graph.node.schema import TableDetails
 
 
 @pytest_asyncio.fixture
-async def extended_feature_model(feature_model_dict, session, feature_store):
+async def extended_feature_model(feature_model_dict, session, feature_store, tile_registry_service):
     """
     Fixture for a ExtendedFeatureModel object
     """
@@ -35,6 +35,5 @@ async def extended_feature_model(feature_model_dict, session, feature_store):
 
     yield feature
 
-    await session.execute_query("DELETE FROM TILE_REGISTRY")
-    await session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_ONLINE")
-    await session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_OFFLINE")
+    async for doc in tile_registry_service.list_documents_iterator({}):
+        await tile_registry_service.delete_document(doc["_id"])

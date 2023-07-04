@@ -18,6 +18,7 @@ from featurebyte.models.tile import TileScheduledJobParameters, TileSpec, TileTy
 from featurebyte.persistent import Persistent
 from featurebyte.service.base_service import BaseService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
+from featurebyte.service.tile_registry_service import TileRegistryService
 from featurebyte.service.tile_scheduler import TileSchedulerService
 from featurebyte.session.base import BaseSession
 from featurebyte.sql.tile_generate import TileGenerate
@@ -41,10 +42,12 @@ class TileManagerService(BaseService):
         catalog_id: ObjectId,
         online_store_table_version_service: OnlineStoreTableVersionService,
         tile_scheduler_service: TileSchedulerService,
+        tile_registry_service: TileRegistryService,
     ):
         super().__init__(user, persistent, catalog_id)
         self.online_store_table_version_service = online_store_table_version_service
         self.tile_scheduler_service = tile_scheduler_service
+        self.tile_registry_service = tile_registry_service
 
     async def generate_tiles_on_demand(
         self,
@@ -151,7 +154,7 @@ class TileManagerService(BaseService):
         start_ts_str: Optional[str],
         end_ts_str: Optional[str],
         last_tile_start_ts_str: Optional[str] = None,
-    ) -> str:
+    ) -> None:
         """
         Manually trigger tile generation
 
@@ -169,10 +172,6 @@ class TileManagerService(BaseService):
             end_timestamp of tile. ie. 2022-06-21 15:00:00
         last_tile_start_ts_str: str
             start date string of last tile used to update the tile_registry table
-
-        Returns
-        -------
-            job run details
         """
 
         if start_ts_str and end_ts_str:
@@ -195,10 +194,9 @@ class TileManagerService(BaseService):
             tile_type=tile_type,
             last_tile_start_str=last_tile_start_ts_str,
             aggregation_id=tile_spec.aggregation_id,
+            tile_registry_service=self.tile_registry_service,
         )
         await tile_generate_ins.execute()
-
-        return tile_generate_ins.json()
 
     async def update_tile_entity_tracker(
         self, session: BaseSession, tile_spec: TileSpec, temp_entity_table: str

@@ -6,8 +6,9 @@ from typing import Optional
 import dateutil.parser
 
 from featurebyte.common import date_util
-from featurebyte.enum import InternalName
 from featurebyte.logging import get_logger
+from featurebyte.models.tile import TileType
+from featurebyte.service.tile_registry_service import TileRegistryService
 from featurebyte.sql.common import construct_create_table_query, retry_sql
 from featurebyte.sql.tile_common import TileCommon
 from featurebyte.sql.tile_registry import TileRegistry
@@ -20,8 +21,9 @@ class TileGenerate(TileCommon):
     Tile Generate script
     """
 
-    tile_type: str
+    tile_type: TileType
     last_tile_start_str: Optional[str]
+    tile_registry_service: TileRegistryService
 
     async def execute(self) -> None:
         """
@@ -30,13 +32,10 @@ class TileGenerate(TileCommon):
         # pylint: disable=too-many-statements
         tile_table_exist_flag = await self.table_exists(self.tile_id)
 
-        # 2. Update TILE_REGISTRY & Add New Columns TILE Table
-        tile_sql = self.sql.replace("'", "''")
-
         # pylint: disable=duplicate-code
         await TileRegistry(
             session=self._session,
-            sql=tile_sql,
+            sql=self.sql,
             table_name=self.tile_id,
             table_exist=tile_table_exist_flag,
             time_modulo_frequency_second=self.time_modulo_frequency_second,
@@ -47,6 +46,7 @@ class TileGenerate(TileCommon):
             value_column_types=self.value_column_types,
             tile_id=self.tile_id,
             aggregation_id=self.aggregation_id,
+            tile_registry_service=self.tile_registry_service,
         ).execute()
 
         tile_sql = self._construct_tile_sql_with_index()
@@ -114,15 +114,13 @@ class TileGenerate(TileCommon):
                 extra={"last_tile_start_str": self.last_tile_start_str, "ind_value": ind_value},
             )
 
-            update_tile_last_ind_sql = f"""
-                UPDATE TILE_REGISTRY
-                    SET
-                        LAST_TILE_INDEX_{self.tile_type} = {ind_value},
-                        {InternalName.TILE_LAST_START_DATE}_{self.tile_type} = to_timestamp('{self.last_tile_start_str}')
-                WHERE TILE_ID = '{self.tile_id}'
-                AND AGGREGATION_ID = '{self.aggregation_id}'
-            """
-            await retry_sql(self._session, update_tile_last_ind_sql)
+            await self.tile_registry_service.update_last_tile_info(
+                tile_id=self.tile_id,
+                aggregation_id=self.aggregation_id,
+                tile_type=self.tile_type,
+                tile_index=ind_value,
+                tile_start_date=dateutil.parser.isoparse(self.last_tile_start_str),
+            )
 
     def _construct_tile_sql_with_index(self) -> str:
         if self.entity_column_names:

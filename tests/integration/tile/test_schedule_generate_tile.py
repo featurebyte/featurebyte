@@ -3,6 +3,7 @@ This module contains integration tests for scheduled tile generation
 """
 from datetime import datetime
 
+import dateutil.parser
 import pytest
 
 from featurebyte.enum import InternalName
@@ -175,7 +176,7 @@ async def test_schedule_monitor_tile_online(session, base_sql_model, tile_task_e
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_schedule_generate_tile__with_registry(
-    session, tile_task_prep_spark, base_sql_model, tile_task_executor
+    session, tile_task_prep_spark, base_sql_model, tile_task_executor, tile_registry_service
 ):
     """
     Test the stored procedure of generating tiles
@@ -219,36 +220,29 @@ async def test_schedule_generate_tile__with_registry(
     result = await session.execute_query(sql)
     assert result["TILE_COUNT"].iloc[0] == (tile_monitor + 1)
 
-    result = await session.execute_query(
-        f"SELECT LAST_TILE_START_DATE_ONLINE FROM TILE_REGISTRY WHERE TILE_ID = '{tile_id}'"
-    )
+    tile_model = await tile_registry_service.get_tile_model(tile_id, agg_id)
     assert (
-        result["LAST_TILE_START_DATE_ONLINE"].iloc[0].strftime("%Y-%m-%d %H:%M:%S")
+        tile_model.last_tile_start_date_online.strftime("%Y-%m-%d %H:%M:%S")
         == "2022-06-05 23:58:00"
     )
 
     # test for LAST_TILE_START_DATE_ONLINE earlier than tile_start_date
-    await session.execute_query(
-        f"UPDATE TILE_REGISTRY SET LAST_TILE_START_DATE_ONLINE = '2022-06-05 23:33:00' WHERE TILE_ID = '{tile_id}'"
+    await tile_registry_service.update_last_tile_info(
+        tile_id, agg_id, "ONLINE", 123, dateutil.parser.isoparse("2022-06-05 23:33:00")
     )
     await tile_task_executor.execute(session, tile_schedule_ins)
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM {tile_id}"
     result = await session.execute_query(sql)
     assert result["TILE_COUNT"].iloc[0] == 5
 
-    result = await session.execute_query(
-        f"SELECT LAST_TILE_START_DATE_ONLINE FROM TILE_REGISTRY WHERE TILE_ID = '{tile_id}'"
-    )
-    assert (
-        result["LAST_TILE_START_DATE_ONLINE"].iloc[0].strftime("%Y-%m-%d %H:%M:%S")
-        == "2022-06-05 23:58:00"
-    )
+    result = await tile_registry_service.get_tile_model(tile_id, agg_id)
+    assert result.last_tile_start_date_online.strftime("%Y-%m-%d %H:%M:%S") == "2022-06-05 23:58:00"
 
 
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_schedule_generate_tile__no_default_job_ts(
-    session, tile_task_prep_spark, base_sql_model, tile_task_executor
+    session, tile_task_prep_spark, base_sql_model, tile_task_executor, tile_registry_service
 ):
     """
     Test the stored procedure of generating tiles
@@ -293,12 +287,8 @@ async def test_schedule_generate_tile__no_default_job_ts(
         job_schedule_ts=used_job_schedule_ts,
     )
     await tile_task_executor.execute(session, tile_schedule_ins)
-    result = await session.execute_query(
-        f"SELECT LAST_TILE_START_DATE_ONLINE FROM TILE_REGISTRY WHERE TILE_ID = '{tile_id}'"
-    )
-    assert (
-        result["LAST_TILE_START_DATE_ONLINE"].iloc[0].strftime(date_format) == "2023-05-04 14:33:00"
-    )
+    tile_model = await tile_registry_service.get_tile_model(tile_id, agg_id)
+    assert tile_model.last_tile_start_date_online.strftime(date_format) == "2023-05-04 14:33:00"
 
     # job scheduled time falls on in-between job times
     used_job_schedule_ts = "2023-05-04 14:33:30"
@@ -318,9 +308,5 @@ async def test_schedule_generate_tile__no_default_job_ts(
         job_schedule_ts=used_job_schedule_ts,
     )
     await tile_task_executor.execute(session, tile_schedule_ins)
-    result = await session.execute_query(
-        f"SELECT LAST_TILE_START_DATE_ONLINE FROM TILE_REGISTRY WHERE TILE_ID = '{tile_id}'"
-    )
-    assert (
-        result["LAST_TILE_START_DATE_ONLINE"].iloc[0].strftime(date_format) == "2023-05-04 14:33:00"
-    )
+    tile_model = await tile_registry_service.get_tile_model(tile_id, agg_id)
+    assert tile_model.last_tile_start_date_online.strftime(date_format) == "2023-05-04 14:33:00"
