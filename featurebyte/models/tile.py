@@ -131,7 +131,7 @@ class TileCommonParameters(FeatureByteBaseModel):
     value_column_names: List[str]
     value_column_types: List[str]
 
-    class Config:
+    class Config(FeatureByteBaseModel.Config):
         """Model configuration"""
 
         extra = "forbid"

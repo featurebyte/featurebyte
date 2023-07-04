@@ -12,11 +12,11 @@ from featurebyte.sql.common import construct_create_table_query
 
 
 @pytest.fixture(name="tile_task_executor")
-def tile_task_executor_fixture(online_store_table_version_service):
+def tile_task_executor_fixture(app_container) -> TileTaskExecutor:
     """
     Fixture for tile task executor
     """
-    return TileTaskExecutor(online_store_table_version_service=online_store_table_version_service)
+    return app_container.tile_task_executor
 
 
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
