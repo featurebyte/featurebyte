@@ -10,6 +10,7 @@ from featurebyte.migration.service.data_warehouse import (
     TileColumnTypeExtractor,
 )
 from featurebyte.migration.service.mixin import DataWarehouseMigrationMixin
+from featurebyte.persistent import Persistent
 from featurebyte.routes.app_container_config import AppContainerConfig
 from featurebyte.routes.batch_feature_table.controller import BatchFeatureTableController
 from featurebyte.routes.batch_request_table.controller import BatchRequestTableController
@@ -112,8 +113,6 @@ app_container_config.register_service(CatalogService)
 app_container_config.register_service(CredentialService)
 app_container_config.register_service(ContextService)
 app_container_config.register_service(DataWarehouseMigrationMixin)
-app_container_config.register_service(DataWarehouseMigrationServiceV6)
-app_container_config.register_service(DataWarehouseMigrationServiceV8)
 app_container_config.register_service(DefaultVersionModeService)
 app_container_config.register_service(DeployService)
 app_container_config.register_service(DeploymentService)
@@ -176,6 +175,8 @@ app_container_config.register_class(
     ContextController, dependency_override={"service": "context_service"}
 )
 app_container_config.register_class(CredentialController)
+app_container_config.register_class(DataWarehouseMigrationServiceV6)
+app_container_config.register_class(DataWarehouseMigrationServiceV8)
 app_container_config.register_class(DeploymentController)
 app_container_config.register_class(DerivePrimaryEntityHelper)
 app_container_config.register_class(DimensionTableController)
@@ -225,6 +226,7 @@ app_container_config.register_class(MongoBackedCredentialProvider, force_no_deps
 app_container_config.register_class(TaskController, force_no_deps=True)
 app_container_config.register_class(TaskManager, force_no_deps=True)
 app_container_config.register_class(TempDataController, force_no_deps=True)
+app_container_config.register_class(Persistent, force_no_deps=True)
 
 
 # Validate the config after all classes have been registered.

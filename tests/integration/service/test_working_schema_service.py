@@ -1,4 +1,4 @@
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import pandas as pd
 import pytest
@@ -6,8 +6,6 @@ from bson import ObjectId
 
 from featurebyte import FeatureList
 from featurebyte.app import get_celery
-from featurebyte.migration.service.data_warehouse import DataWarehouseMigrationServiceV8
-from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.service.working_schema import drop_all_objects
 from tests.util.helper import (
     create_batch_request_table_from_dataframe,
