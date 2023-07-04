@@ -10,17 +10,12 @@ from featurebyte.session.base import BaseSession
 from featurebyte.session.snowflake import SnowflakeSession
 
 
-class BaselSqlModel(BaseModel):
+class BaseSqlModel(BaseModel):
     """
     Base class for Tile Operation Classes
     """
 
     _session: BaseSession = PrivateAttr()
-
-    class Config:
-        """Model configuration"""
-
-        extra = "forbid"
 
     def __init__(self, session: BaseSession, **kwargs: Any):
         """

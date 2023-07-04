@@ -6,6 +6,7 @@ from typing import Any, Optional
 from bson import ObjectId
 
 from featurebyte.models.periodic_task import Interval, PeriodicTask
+from featurebyte.models.tile import TileScheduledJobParameters
 from featurebyte.persistent import Persistent
 from featurebyte.schema.worker.task.tile import TileTaskPayload
 from featurebyte.service.base_service import BaseService
@@ -32,7 +33,7 @@ class TileSchedulerService(BaseService):
         job_id: str,
         interval_seconds: int,
         time_modulo_frequency_second: int,
-        instance: Any,
+        parameters: TileScheduledJobParameters,
         feature_store_id: ObjectId,
     ) -> None:
         """
@@ -46,20 +47,17 @@ class TileSchedulerService(BaseService):
             interval between runs
         time_modulo_frequency_second: int
             time modulo frequency in seconds
-        instance: Any
-            instance of the class to be run
+        parameters: TileScheduledJobParameters
+            Tile scheduled job parameters
         feature_store_id: ObjectId
             feature store id
         """
-
         payload = TileTaskPayload(
             name=job_id,
-            module_path=instance.__class__.__module__,
-            class_name=instance.__class__.__name__,
-            instance_str=instance.json(),
             user_id=self.user.id,
             feature_store_id=feature_store_id,
             catalog_id=self.catalog_id,
+            parameters=parameters,
         )
 
         await self.task_manager.schedule_interval_task(

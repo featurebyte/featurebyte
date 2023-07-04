@@ -15,7 +15,7 @@ from featurebyte.models.online_store_table_version import OnlineStoreTableVersio
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.service.task_manager import TaskManager
-from featurebyte.sql.base import BaselSqlModel
+from featurebyte.sql.base import BaseSqlModel
 
 
 @pytest_asyncio.fixture(name="tile_task_prep_spark")
@@ -126,4 +126,4 @@ async def tile_manager_service_fixture(
 
 @pytest_asyncio.fixture(name="base_sql_model")
 async def base_sql_model(session):
-    return BaselSqlModel(session)
+    return BaseSqlModel(session)

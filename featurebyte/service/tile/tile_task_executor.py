@@ -1,16 +1,16 @@
 """
 Tile Generate Schedule script
 """
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from datetime import datetime, timedelta
 
 import dateutil.parser
-from pydantic import Field, PrivateAttr
 
 from featurebyte.common import date_util
 from featurebyte.enum import InternalName
 from featurebyte.logging import get_logger
+from featurebyte.models.tile import TileScheduledJobParameters
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.session.base import BaseSession
 from featurebyte.sql.common import retry_sql
@@ -22,37 +22,26 @@ from featurebyte.sql.tile_schedule_online_store import TileScheduleOnlineStore
 logger = get_logger(__name__)
 
 
-class TileGenerateSchedule(TileCommon):
+class TileTaskExecutor:
     """
-    Tile Generate Schedule script
+    This implements the steps that are run in the scheduled task. This includes tiles calculation,
+    tiles consistency monitoring and online store table updates.
     """
 
-    offline_period_minute: int
-    tile_type: str
-    monitor_periods: int
-    job_schedule_ts: Optional[str] = Field(default=None)
+    def __init__(self, online_store_table_version_service: OnlineStoreTableVersionService):
+        self.online_store_table_version_service = online_store_table_version_service
 
-    _online_store_table_version_service: OnlineStoreTableVersionService = PrivateAttr()
-
-    def __init__(self, session: BaseSession, **kwargs: Any):
+    # pylint: disable=too-many-locals,too-many-statements
+    async def execute(self, session: BaseSession, params: TileScheduledJobParameters) -> None:
         """
-        Initialize TileGenerateSchedule
+        Execute steps in the scheduled task
 
         Parameters
         ----------
         session: BaseSession
-            input SparkSession
-        kwargs: Any
-            constructor arguments
-        """
-        online_store_table_version_service = kwargs.pop("online_store_table_version_service")
-        self._online_store_table_version_service = online_store_table_version_service
-        super().__init__(session=session, **kwargs)
-
-    # pylint: disable=too-many-locals,too-many-statements
-    async def execute(self) -> None:
-        """
-        Execute tile generate schedule operation
+            Session object to be used for executing queries in data warehouse
+        params: TileScheduledJobParameters
+            Parameters for the scheduled task
 
         Raises
         ------
@@ -60,13 +49,13 @@ class TileGenerateSchedule(TileCommon):
             Related exception from the triggered stored procedures if it fails
         """
         date_format = "%Y-%m-%d %H:%M:%S"
-        used_job_schedule_ts = self.job_schedule_ts or datetime.now().strftime(date_format)
+        used_job_schedule_ts = params.job_schedule_ts or datetime.now().strftime(date_format)
         candidate_last_tile_end_ts = dateutil.parser.isoparse(used_job_schedule_ts)
 
         # derive the correct job schedule ts based on input job schedule ts
         # the input job schedule ts might be between 2 intervals
         last_tile_end_ts = self._derive_correct_job_ts(
-            candidate_last_tile_end_ts, self.frequency_minute, self.tile_modulo_frequency_second
+            candidate_last_tile_end_ts, params.frequency_minute, params.tile_modulo_frequency_second
         )
         logger.debug(
             "Tile end ts details",
@@ -76,14 +65,14 @@ class TileGenerateSchedule(TileCommon):
             },
         )
 
-        last_tile_end_ts = last_tile_end_ts - timedelta(seconds=self.blind_spot_second)
-        tile_type = self.tile_type.upper()
-        lookback_period = self.frequency_minute * (self.monitor_periods + 1)
-        tile_id = self.tile_id.upper()
+        last_tile_end_ts = last_tile_end_ts - timedelta(seconds=params.blind_spot_second)
+        tile_type = params.tile_type.upper()
+        lookback_period = params.frequency_minute * (params.monitor_periods + 1)
+        tile_id = params.tile_id.upper()
 
         tile_end_ts = last_tile_end_ts
         if tile_type == "OFFLINE":
-            lookback_period = self.offline_period_minute
+            lookback_period = params.offline_period_minute
             tile_end_ts = tile_end_ts - timedelta(minutes=lookback_period)
 
         tile_start_ts = tile_end_ts - timedelta(minutes=lookback_period)
@@ -92,8 +81,8 @@ class TileGenerateSchedule(TileCommon):
 
         # use the last_tile_start_date from tile registry as tile_start_ts_str if it is earlier than tile_start_ts_str
         registry_df = await retry_sql(
-            self._session,
-            f"SELECT LAST_TILE_START_DATE_ONLINE FROM TILE_REGISTRY WHERE TILE_ID = '{self.tile_id}' AND LAST_TILE_START_DATE_ONLINE IS NOT NULL",
+            session,
+            f"SELECT LAST_TILE_START_DATE_ONLINE FROM TILE_REGISTRY WHERE TILE_ID = '{params.tile_id}' AND LAST_TILE_START_DATE_ONLINE IS NOT NULL",
         )
 
         if registry_df is not None and len(registry_df) > 0:
@@ -122,7 +111,7 @@ class TileGenerateSchedule(TileCommon):
             VALUES
         (
             '{tile_id}',
-            '{self.aggregation_id}',
+            '{params.aggregation_id}',
             '{tile_type}',
             '{session_id}',
             '<STATUS>',
@@ -133,19 +122,19 @@ class TileGenerateSchedule(TileCommon):
 
         insert_sql = audit_insert_sql.replace("<STATUS>", "STARTED").replace("<MESSAGE>", "")
         logger.debug(insert_sql)
-        await retry_sql(self._session, insert_sql)
+        await retry_sql(session, insert_sql)
 
-        monitor_end_ts = tile_end_ts - timedelta(minutes=self.frequency_minute)
+        monitor_end_ts = tile_end_ts - timedelta(minutes=params.frequency_minute)
         monitor_tile_end_ts_str = monitor_end_ts.strftime(date_format)
 
-        monitor_input_sql = self.sql.replace(
+        monitor_input_sql = params.sql.replace(
             f"{InternalName.TILE_START_DATE_SQL_PLACEHOLDER}", "'" + monitor_tile_start_ts_str + "'"
         ).replace(
             f"{InternalName.TILE_END_DATE_SQL_PLACEHOLDER}", "'" + monitor_tile_end_ts_str + "'"
         )
 
         tile_end_ts_str = tile_end_ts.strftime(date_format)
-        generate_input_sql = self.sql.replace(
+        generate_input_sql = params.sql.replace(
             f"{InternalName.TILE_START_DATE_SQL_PLACEHOLDER}", "'" + tile_start_ts_str + "'"
         ).replace(f"{InternalName.TILE_END_DATE_SQL_PLACEHOLDER}", "'" + tile_end_ts_str + "'")
 
@@ -160,40 +149,40 @@ class TileGenerateSchedule(TileCommon):
         )
 
         tile_monitor_ins = TileMonitor(
-            session=self._session,
+            session=session,
             tile_id=tile_id,
-            tile_modulo_frequency_second=self.tile_modulo_frequency_second,
-            blind_spot_second=self.blind_spot_second,
-            frequency_minute=self.frequency_minute,
+            tile_modulo_frequency_second=params.tile_modulo_frequency_second,
+            blind_spot_second=params.blind_spot_second,
+            frequency_minute=params.frequency_minute,
             sql=generate_input_sql,
             monitor_sql=monitor_input_sql,
-            entity_column_names=self.entity_column_names,
-            value_column_names=self.value_column_names,
-            value_column_types=self.value_column_types,
-            tile_type=self.tile_type,
-            aggregation_id=self.aggregation_id,
+            entity_column_names=params.entity_column_names,
+            value_column_names=params.value_column_names,
+            value_column_types=params.value_column_types,
+            tile_type=params.tile_type,
+            aggregation_id=params.aggregation_id,
         )
 
         tile_generate_ins = TileGenerate(
-            session=self._session,
+            session=session,
             tile_id=tile_id,
-            tile_modulo_frequency_second=self.tile_modulo_frequency_second,
-            blind_spot_second=self.blind_spot_second,
-            frequency_minute=self.frequency_minute,
+            tile_modulo_frequency_second=params.tile_modulo_frequency_second,
+            blind_spot_second=params.blind_spot_second,
+            frequency_minute=params.frequency_minute,
             sql=generate_input_sql,
-            entity_column_names=self.entity_column_names,
-            value_column_names=self.value_column_names,
-            value_column_types=self.value_column_types,
-            tile_type=self.tile_type,
+            entity_column_names=params.entity_column_names,
+            value_column_names=params.value_column_names,
+            value_column_types=params.value_column_types,
+            tile_type=params.tile_type,
             last_tile_start_str=tile_end_ts_str,
-            aggregation_id=self.aggregation_id,
+            aggregation_id=params.aggregation_id,
         )
 
         tile_online_store_ins = TileScheduleOnlineStore(
-            session=self._session,
-            aggregation_id=self.aggregation_id,
+            session=session,
+            aggregation_id=params.aggregation_id,
             job_schedule_ts_str=last_tile_end_ts.strftime(date_format),
-            online_store_table_version_service=self._online_store_table_version_service,
+            online_store_table_version_service=self.online_store_table_version_service,
         )
 
         step_specs: List[Dict[str, Any]] = [
@@ -237,12 +226,12 @@ class TileGenerateSchedule(TileCommon):
                     "<MESSAGE>", message
                 )
                 logger.error(f"fail_insert_sql exception: {exception}")
-                await retry_sql(self._session, ex_insert_sql)
+                await retry_sql(session, ex_insert_sql)
                 raise exception
 
             success_code = spec["status"]["success"]
             insert_sql = audit_insert_sql.replace("<STATUS>", success_code).replace("<MESSAGE>", "")
-            await retry_sql(self._session, insert_sql)
+            await retry_sql(session, insert_sql)
 
     def _derive_correct_job_ts(
         self, input_dt: datetime, frequency_minutes: int, time_modulo_frequency_seconds: int
