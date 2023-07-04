@@ -3,23 +3,26 @@ MigrationServiceMixin class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, AsyncIterator, Iterator, Optional, Type
+from typing import TYPE_CHECKING, Any, Optional
 
 from abc import ABC, abstractmethod
-from contextlib import contextmanager
 
-from bson import ObjectId
 from celery import Celery
 
 from featurebyte.enum import InternalName
 from featurebyte.exception import CredentialsError
 from featurebyte.logging import get_logger
+from featurebyte.models.base import FeatureByteBaseDocumentModel, FeatureByteBaseModel
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.models.persistent import QueryFilter
 from featurebyte.persistent.base import Document, Persistent
+from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
+from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.feature_store import FeatureStoreService
-from featurebyte.service.mixin import Document as MixinDocument
 from featurebyte.service.session_manager import SessionManagerService
+
+BaseDocumentServiceT = BaseDocumentService[
+    FeatureByteBaseDocumentModel, FeatureByteBaseModel, BaseDocumentServiceUpdateSchema
+]
 
 if TYPE_CHECKING:
     from featurebyte.session.base import BaseSession
@@ -36,81 +39,13 @@ class BaseMigrationServiceMixin:
 
     @property
     @abstractmethod
-    def collection_name(self) -> str:
+    def delegate_service(self) -> BaseDocumentServiceT:
         """
-        Collection name
+        Delegate service
 
         Returns
         -------
-        Collection name
-        """
-
-    @property
-    @abstractmethod
-    def document_class(self) -> Type[Document]:
-        """
-        Document class
-
-        Returns
-        -------
-        Type[Document]
-        """
-
-    @abstractmethod
-    async def list_documents(self, page_size: int) -> dict[str, Any]:
-        """
-        List documents for doing post migration checks
-
-        Parameters
-        ----------
-        page_size: int
-            Page size
-
-        Returns
-        -------
-        dict[str, Any]
-        """
-
-    @abstractmethod
-    async def historical_document_generator(
-        self, document_id: ObjectId
-    ) -> AsyncIterator[Optional[Document]]:
-        """
-        Reconstruct documents of older history
-
-        Parameters
-        ----------
-        document_id: ObjectId
-            Document ID
-
-        Yields
-        -------
-        AsyncIterator[Optional[Document]]
-            Async iterator of older historical records
-        """
-
-    @abstractmethod
-    def construct_list_query_filter(
-        self,
-        query_filter: Optional[dict[str, Any]] = None,
-        use_raw_query_filter: bool = False,
-        **kwargs: Any,
-    ) -> QueryFilter:
-        """
-        Construct query filter for listing records.
-
-        Parameters
-        ----------
-        query_filter: Optional[dict[str, Any]]
-            Query filter
-        use_raw_query_filter: bool
-            Whether to use raw query filter
-        **kwargs: Any
-            Additional keyword arguments
-
-        Returns
-        -------
-        QueryFilter
+        BaseDocumentServiceT
         """
 
     @abstractmethod
@@ -125,11 +60,6 @@ class BaseMigrationServiceMixin:
         version: Optional[int]
             Migration number
         """
-
-    @abstractmethod
-    @contextmanager
-    def allow_use_raw_query_filter(self) -> Iterator[None]:
-        """Activate use of raw query filter"""
 
     async def migrate_all_records(
         self,
@@ -151,14 +81,18 @@ class BaseMigrationServiceMixin:
         """
         # migrate all records and audit records
         if query_filter is None:
-            with self.allow_use_raw_query_filter():
-                query_filter = dict(self.construct_list_query_filter(use_raw_query_filter=True))
+            with self.delegate_service.allow_use_raw_query_filter():
+                query_filter = dict(
+                    self.delegate_service.construct_list_query_filter(use_raw_query_filter=True)
+                )
 
-        logger.info(f'Start migrating all records (collection: "{self.collection_name}")')
+        logger.info(
+            f'Start migrating all records (collection: "{self.delegate_service.collection_name}")'
+        )
         to_iterate, page = True, 1
         while to_iterate:
             docs, total = await self.persistent.find(
-                collection_name=self.collection_name,
+                collection_name=self.delegate_service.collection_name,
                 query_filter=query_filter,
                 page=page,
                 page_size=page_size,
@@ -169,7 +103,7 @@ class BaseMigrationServiceMixin:
             to_iterate = bool(total > (page * page_size))
             page += 1
 
-        logger.info(f'Complete migration (collection: "{self.collection_name}")')
+        logger.info(f'Complete migration (collection: "{self.delegate_service.collection_name}")')
 
 
 class DataWarehouseMigrationMixin(BaseMigrationServiceMixin, ABC):
@@ -192,37 +126,8 @@ class DataWarehouseMigrationMixin(BaseMigrationServiceMixin, ABC):
         self.feature_store_service = feature_store_service
 
     @property
-    def collection_name(self) -> str:
-        return self.feature_store_service.collection_name
-
-    @property
-    def document_class(self) -> Type[MixinDocument]:
-        return self.feature_store_service.document_class
-
-    async def list_documents(self, page_size: int) -> dict[str, Any]:
-        return await self.feature_store_service.list_documents(page_size=page_size)
-
-    async def historical_document_generator(
-        self, document_id: ObjectId
-    ) -> AsyncIterator[Optional[MixinDocument]]:
-        yield self.feature_store_service.historical_document_generator(document_id=document_id)
-
-    def construct_list_query_filter(
-        self,
-        query_filter: Optional[dict[str, Any]] = None,
-        use_raw_query_filter: bool = False,
-        **kwargs: Any,
-    ) -> QueryFilter:
-        return self.feature_store_service.construct_list_query_filter(
-            query_filter=query_filter,
-            use_raw_query_filter=use_raw_query_filter,
-            **kwargs,
-        )
-
-    @contextmanager
-    def allow_use_raw_query_filter(self) -> Iterator[None]:
-        self.feature_store_service.allow_use_raw_query_filter()
-        yield
+    def delegate_service(self) -> BaseDocumentServiceT:
+        return self.feature_store_service
 
     async def get_session(self, feature_store: FeatureStoreModel) -> BaseSession:
         """
