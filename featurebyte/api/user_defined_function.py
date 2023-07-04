@@ -217,6 +217,21 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
         )
 
     @classmethod
+    def _get(cls, name: str, other_params: Optional[dict[str, Any]] = None) -> UserDefinedFunction:
+        # Override the default _get method to handle the case where there are multiple UDFs
+        # with the same name (one global and one local). In this case, the local UDF should be returned.
+        def _record_selector(records: list[dict[str, Any]]) -> dict[str, Any]:
+            return sorted(records, key=lambda rec: rec["catalog_id"] is None)[0]
+
+        return cls(
+            **cls._get_object_dict_by_name(
+                name=name, other_params=other_params, select_func=_record_selector
+            ),
+            **cls._get_init_params(),
+            _validate_schema=True,
+        )
+
+    @classmethod
     @typechecked
     def create(
         cls,

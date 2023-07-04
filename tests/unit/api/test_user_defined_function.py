@@ -37,6 +37,27 @@ def cos_udf_fixture(catalog):
     yield udf
 
 
+@pytest.fixture(name="local_cos_udf")
+def local_cos_udf_fixture(catalog):
+    """Local cos UDF fixture"""
+    func_param = FunctionParameter(
+        name="x",
+        dtype="FLOAT",
+        default_value=None,
+        test_value=None,
+        has_default_value=False,
+        has_test_value=False,
+    )
+    udf = UserDefinedFunction.create(
+        name="cos_func",
+        function_name="cos",
+        function_parameters=[func_param],
+        output_dtype="FLOAT",
+        is_global=False,
+    )
+    yield udf
+
+
 @pytest.fixture(name="power_udf")
 def pow_udf_fixture(catalog):
     """Power UDF fixture"""
@@ -125,6 +146,12 @@ def test_create_user_defined_function(catalog, cos_udf):
 
     # check the UDF class does not have the function anymore
     assert cos_udf.name not in dir(UDF)
+
+
+def test_get__local_should_overwrite_global(cos_udf, local_cos_udf):
+    """Test get user-defined function by name"""
+    udf = UserDefinedFunction.get(cos_udf.name)
+    assert udf.id == local_cos_udf.id
 
 
 def test_list(cos_udf, power_udf, date_sub_udf):
