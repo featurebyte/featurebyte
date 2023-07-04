@@ -150,6 +150,34 @@ def test_create_user_defined_function(catalog, cos_udf):
 
 def test_get__local_should_overwrite_global(cos_udf, local_cos_udf):
     """Test get user-defined function by name"""
+    # CASE 1: both global & local UDFs exist
+    udf = UserDefinedFunction.get(cos_udf.name)
+    assert udf.id == local_cos_udf.id
+
+    # check that the local UDF is used
+    assert "cos_v2" in UDF.cos_func.__doc__
+
+    # CASE 2: only global UDF exists
+    # delete the local UDF
+    local_cos_udf.delete()
+    udf = UserDefinedFunction.get(cos_udf.name)
+    assert udf.id == cos_udf.id
+
+    # check that the global UDF is used
+    assert "cos" in UDF.cos_func.__doc__ and "cos_v2" not in UDF.cos_func.__doc__
+
+    # CASE 3: only local UDF exists
+    # delete the global UDF & save local UDF again
+    cos_udf.delete()
+    local_cos_udf.save()
+    udf = UserDefinedFunction.get(cos_udf.name)
+    assert udf.id == local_cos_udf.id
+
+    # check that the local UDF is used
+    assert "cos_v2" in UDF.cos_func.__doc__
+
+    # save the global UDF again, make sure the local UDF is still used
+    cos_udf.save()
     udf = UserDefinedFunction.get(cos_udf.name)
     assert udf.id == local_cos_udf.id
 
