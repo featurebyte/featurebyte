@@ -30,37 +30,17 @@ from featurebyte.query_graph.node.scalar import TimestampValue
 def function_parameters_fixture():
     """Fixture for function parameters"""
     return [
-        FunctionParameter(
-            name="x",
-            dtype=DBVarType.INT,
-            default_value=None,
-            test_value=None,
-            has_default_value=False,
-            has_test_value=False,
-        ),
-        FunctionParameter(
-            name="y",
-            dtype=DBVarType.FLOAT,
-            default_value=1.0,
-            test_value=0.0,
-            has_default_value=True,
-            has_test_value=True,
-        ),
+        FunctionParameter(name="x", dtype=DBVarType.INT),
+        FunctionParameter(name="y", dtype=DBVarType.FLOAT, default_value=1.0, test_value=0.0),
     ]
 
 
 @pytest.fixture(name="ts_function_parameters")
 def ts_function_parameters_fixture():
     """Timestamp function parameters fixture"""
-    common_kwargs = {
-        "default_value": None,
-        "test_value": None,
-        "has_default_value": False,
-        "has_test_value": False,
-    }
     return [
-        FunctionParameter(name="end_date", dtype=DBVarType.TIMESTAMP_TZ, **common_kwargs),
-        FunctionParameter(name="start_date", dtype=DBVarType.TIMESTAMP_TZ, **common_kwargs),
+        FunctionParameter(name="end_date", dtype=DBVarType.TIMESTAMP_TZ),
+        FunctionParameter(name="start_date", dtype=DBVarType.TIMESTAMP_TZ),
     ]
 
 

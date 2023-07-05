@@ -269,8 +269,6 @@ class TestUserDefinedFunctionApi(BaseApiTestSuite):
                 {
                     "default_value": None,
                     "dtype": "FLOAT",
-                    "has_default_value": False,
-                    "has_test_value": False,
                     "name": "x",
                     "test_value": None,
                 }

@@ -39,8 +39,6 @@ def user_defined_function_dict_fixture(feature_store):
                 "dtype": "INT",
                 "default_value": None,
                 "test_value": None,
-                "has_default_value": False,
-                "has_test_value": False,
             },
         ],
         "catalog_id": None,

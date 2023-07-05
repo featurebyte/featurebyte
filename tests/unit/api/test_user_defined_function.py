@@ -23,14 +23,7 @@ def catalog_fixture(snowflake_feature_store):
 @pytest.fixture(name="cos_udf")
 def cos_udf_fixture(catalog):
     """Cos UDF fixture"""
-    func_param = FunctionParameter(
-        name="x",
-        dtype="FLOAT",
-        default_value=None,
-        test_value=None,
-        has_default_value=False,
-        has_test_value=False,
-    )
+    func_param = FunctionParameter(name="x", dtype="FLOAT")
     udf = UserDefinedFunction.create(
         name="cos_func",
         sql_function_name="cos",
@@ -44,14 +37,7 @@ def cos_udf_fixture(catalog):
 @pytest.fixture(name="local_cos_udf")
 def local_cos_udf_fixture(catalog):
     """Local cos UDF fixture"""
-    func_param = FunctionParameter(
-        name="x",
-        dtype="FLOAT",
-        default_value=None,
-        test_value=None,
-        has_default_value=False,
-        has_test_value=False,
-    )
+    func_param = FunctionParameter(name="x", dtype="FLOAT")
     udf = UserDefinedFunction.create(
         name="cos_func",
         sql_function_name="cos_v2",
@@ -65,18 +51,12 @@ def local_cos_udf_fixture(catalog):
 @pytest.fixture(name="power_udf")
 def pow_udf_fixture(catalog):
     """Power UDF fixture"""
-    common_func_param_kwargs = {
-        "default_value": None,
-        "test_value": None,
-        "has_default_value": False,
-        "has_test_value": False,
-    }
     udf = UserDefinedFunction.create(
         name="power_func",
         sql_function_name="power",
         function_parameters=[
-            FunctionParameter(name="base", dtype="FLOAT", **common_func_param_kwargs),
-            FunctionParameter(name="exp", dtype="FLOAT", **common_func_param_kwargs),
+            FunctionParameter(name="base", dtype="FLOAT"),
+            FunctionParameter(name="exp", dtype="FLOAT"),
         ],
         output_dtype="FLOAT",
         is_global=True,
@@ -87,18 +67,12 @@ def pow_udf_fixture(catalog):
 @pytest.fixture(name="date_sub_udf")
 def date_sub_udf_fixture(catalog):
     """Date sub UDF fixture"""
-    common_func_param_kwargs = {
-        "default_value": None,
-        "test_value": None,
-        "has_default_value": False,
-        "has_test_value": False,
-    }
     udf = UserDefinedFunction.create(
         name="date_sub_func",
         sql_function_name="date_sub",
         function_parameters=[
-            FunctionParameter(name="start_date", dtype="TIMESTAMP_TZ", **common_func_param_kwargs),
-            FunctionParameter(name="num_days", dtype="INT", **common_func_param_kwargs),
+            FunctionParameter(name="start_date", dtype="TIMESTAMP_TZ"),
+            FunctionParameter(name="num_days", dtype="INT"),
         ],
         output_dtype="TIMESTAMP_TZ",
         is_global=False,
@@ -131,16 +105,7 @@ def test_create_user_defined_function(catalog, cos_udf):
     assert cos_udf.output_dtype == "FLOAT"
     assert cos_udf.catalog_id is None
     assert cos_udf.feature_store_id == catalog.default_feature_store_ids[0]
-    assert cos_udf.function_parameters == [
-        FunctionParameter(
-            name="x",
-            dtype="FLOAT",
-            default_value=None,
-            test_value=None,
-            has_default_value=False,
-            has_test_value=False,
-        )
-    ]
+    assert cos_udf.function_parameters == [FunctionParameter(name="x", dtype="FLOAT")]
 
     # check the UDF class has the function now
     assert cos_udf.name in dir(UDF)

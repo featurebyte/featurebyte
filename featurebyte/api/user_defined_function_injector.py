@@ -9,14 +9,17 @@ import inspect
 import textwrap
 from dataclasses import dataclass
 
-import pandas as pd
 from typeguard import check_type
 
 from featurebyte.api.feature import Feature
 from featurebyte.api.view import ViewColumn
 from featurebyte.enum import DBVarType
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.models.user_defined_function import FunctionParameter, UserDefinedFunctionModel
+from featurebyte.models.user_defined_function import (
+    FunctionParameter,
+    UserDefinedFunctionModel,
+    function_parameter_dtype_to_python_type,
+)
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
@@ -46,20 +49,14 @@ def get_param_type_annotations(dtype: DBVarType) -> object:
 
     Raises
     ------
-    ValueError
+    TypeError
         When dtype is not supported
     """
-    if dtype == DBVarType.BOOL:
-        return Union[bool, ViewColumn, Feature]
-    if dtype == DBVarType.VARCHAR:
-        return Union[str, ViewColumn, Feature]
-    if dtype == DBVarType.FLOAT:
-        return Union[float, ViewColumn, Feature]
-    if dtype == DBVarType.INT:
-        return Union[int, ViewColumn, Feature]
-    if dtype in DBVarType.supported_timestamp_types():
-        return Union[pd.Timestamp, ViewColumn, Feature]
-    raise ValueError(f"Unsupported dtype: {dtype}")
+    py_type = function_parameter_dtype_to_python_type.get(DBVarType(dtype))
+    if py_type is None:
+        supported_dtypes = list(function_parameter_dtype_to_python_type.keys())
+        raise TypeError(f"Unsupported dtype: {dtype}, supported dtypes: {supported_dtypes}")
+    return Union[py_type, ViewColumn, Feature]
 
 
 class FunctionAccessor:

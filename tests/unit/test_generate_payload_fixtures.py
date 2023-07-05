@@ -235,14 +235,7 @@ def test_generate_user_defined_function(update_fixtures, request_payload_dir):
         _id="64928868668f720c5bebbbd4",
         name="udf_test",
         sql_function_name="cos",
-        function_parameters=[
-            FunctionParameter(
-                name="x",
-                dtype=DBVarType.FLOAT,
-                has_default_value=False,
-                has_test_value=False,
-            )
-        ],
+        function_parameters=[FunctionParameter(name="x", dtype=DBVarType.FLOAT)],
         output_dtype=DBVarType.FLOAT,
         feature_store_id=feature_store_payload["_id"],
     )
