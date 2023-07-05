@@ -32,15 +32,13 @@ def user_defined_function_dict_fixture(feature_store):
     """User defined function dict fixture"""
     return {
         "name": "method_name",
-        "function_name": "sql_function_name",
+        "sql_function_name": "sql_function_name",
         "function_parameters": [
             {
                 "name": "param1",
                 "dtype": "INT",
                 "default_value": None,
                 "test_value": None,
-                "has_default_value": False,
-                "has_test_value": False,
             },
         ],
         "catalog_id": None,

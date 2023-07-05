@@ -128,7 +128,7 @@ class GenericFunctionNodeParameters(BaseModel):
     """GenericFunctionNodeParameters class"""
 
     name: str
-    function_name: str
+    sql_function_name: str
     function_parameters: List[FunctionParameterInput]
     output_dtype: DBVarType
     function_id: PydanticObjectId

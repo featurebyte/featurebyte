@@ -281,7 +281,7 @@ class UserDefinedFunctionController(
 
         return UserDefinedFunctionInfo(
             name=document.name,
-            function_name=document.function_name,
+            sql_function_name=document.sql_function_name,
             function_parameters=document.function_parameters,
             signature=document.signature,
             output_dtype=document.output_dtype,
