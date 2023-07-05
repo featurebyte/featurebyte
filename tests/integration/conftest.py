@@ -864,7 +864,7 @@ async def create_snowflake_tile_spec(session, tile_registry_service):
 
 
 @asynccontextmanager
-async def create_spark_tile_specs(session):
+async def create_spark_tile_specs(session, **kwargs):
     """
     Helper to create a snowflake tile_spec with spark specific clean up
     """
