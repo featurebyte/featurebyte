@@ -36,7 +36,7 @@ class TileMonitor(TileCommon):
                 sql=tile_sql,
                 table_name=self.tile_id,
                 table_exist=True,
-                tile_modulo_frequency_second=self.tile_modulo_frequency_second,
+                time_modulo_frequency_second=self.time_modulo_frequency_second,
                 blind_spot_second=self.blind_spot_second,
                 frequency_minute=self.frequency_minute,
                 entity_column_names=self.entity_column_names,
@@ -50,7 +50,7 @@ class TileMonitor(TileCommon):
                 select
                     F_INDEX_TO_TIMESTAMP(
                         INDEX,
-                        {self.tile_modulo_frequency_second},
+                        {self.time_modulo_frequency_second},
                         {self.blind_spot_second},
                         {self.frequency_minute}
                     ) as {InternalName.TILE_START_DATE},
@@ -110,7 +110,7 @@ class TileMonitor(TileCommon):
                     sql=tile_sql,
                     table_name=monitor_table_name,
                     table_exist=True,
-                    tile_modulo_frequency_second=self.tile_modulo_frequency_second,
+                    time_modulo_frequency_second=self.time_modulo_frequency_second,
                     blind_spot_second=self.blind_spot_second,
                     frequency_minute=self.frequency_minute,
                     entity_column_names=self.entity_column_names,

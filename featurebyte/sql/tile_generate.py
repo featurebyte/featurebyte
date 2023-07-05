@@ -39,7 +39,7 @@ class TileGenerate(TileCommon):
             sql=tile_sql,
             table_name=self.tile_id,
             table_exist=tile_table_exist_flag,
-            tile_modulo_frequency_second=self.tile_modulo_frequency_second,
+            time_modulo_frequency_second=self.time_modulo_frequency_second,
             blind_spot_second=self.blind_spot_second,
             frequency_minute=self.frequency_minute,
             entity_column_names=self.entity_column_names,
@@ -104,7 +104,7 @@ class TileGenerate(TileCommon):
         if self.last_tile_start_str:
             ind_value = date_util.timestamp_utc_to_tile_index(
                 dateutil.parser.isoparse(self.last_tile_start_str),
-                self.tile_modulo_frequency_second,
+                self.time_modulo_frequency_second,
                 self.blind_spot_second,
                 self.frequency_minute,
             )

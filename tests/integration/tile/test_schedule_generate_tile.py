@@ -12,11 +12,11 @@ from featurebyte.sql.common import construct_create_table_query
 
 
 @pytest.fixture(name="tile_task_executor")
-def tile_task_executor_fixture(online_store_table_version_service):
+def tile_task_executor_fixture(app_container) -> TileTaskExecutor:
     """
     Fixture for tile task executor
     """
-    return TileTaskExecutor(online_store_table_version_service=online_store_table_version_service)
+    return app_container.tile_task_executor
 
 
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
@@ -50,7 +50,7 @@ async def test_schedule_generate_tile_online(
 
     tile_schedule_ins = TileScheduledJobParameters(
         tile_id=tile_id,
-        tile_modulo_frequency_second=183,
+        time_modulo_frequency_second=183,
         blind_spot_second=3,
         frequency_minute=5,
         sql=tile_sql,
@@ -121,7 +121,7 @@ async def test_schedule_monitor_tile_online(session, base_sql_model, tile_task_e
 
     tile_schedule_ins = TileScheduledJobParameters(
         tile_id=tile_id,
-        tile_modulo_frequency_second=183,
+        time_modulo_frequency_second=183,
         blind_spot_second=3,
         frequency_minute=5,
         sql=tile_sql,
@@ -148,7 +148,7 @@ async def test_schedule_monitor_tile_online(session, base_sql_model, tile_task_e
     tile_end_ts_2 = "2022-06-05T23:58:03Z"
     tile_schedule_ins = TileScheduledJobParameters(
         tile_id=tile_id,
-        tile_modulo_frequency_second=183,
+        time_modulo_frequency_second=183,
         blind_spot_second=3,
         frequency_minute=5,
         sql=tile_sql,
@@ -200,7 +200,7 @@ async def test_schedule_generate_tile__with_registry(
 
     tile_schedule_ins = TileScheduledJobParameters(
         tile_id=tile_id,
-        tile_modulo_frequency_second=183,
+        time_modulo_frequency_second=183,
         blind_spot_second=3,
         frequency_minute=5,
         sql=tile_sql,
@@ -271,7 +271,7 @@ async def test_schedule_generate_tile__no_default_job_ts(
     )
 
     date_format = "%Y-%m-%d %H:%M:%S"
-    tile_modulo_frequency_second = 3
+    time_modulo_frequency_second = 3
     blind_spot_second = 3
     frequency_minute = 1
 
@@ -279,7 +279,7 @@ async def test_schedule_generate_tile__no_default_job_ts(
     used_job_schedule_ts = "2023-05-04 14:33:03"
     tile_schedule_ins = TileScheduledJobParameters(
         tile_id=tile_id,
-        tile_modulo_frequency_second=tile_modulo_frequency_second,
+        time_modulo_frequency_second=time_modulo_frequency_second,
         blind_spot_second=blind_spot_second,
         frequency_minute=frequency_minute,
         sql=tile_sql,
@@ -304,7 +304,7 @@ async def test_schedule_generate_tile__no_default_job_ts(
     used_job_schedule_ts = "2023-05-04 14:33:30"
     tile_schedule_ins = TileScheduledJobParameters(
         tile_id=tile_id,
-        tile_modulo_frequency_second=tile_modulo_frequency_second,
+        time_modulo_frequency_second=time_modulo_frequency_second,
         blind_spot_second=blind_spot_second,
         frequency_minute=frequency_minute,
         sql=tile_sql,

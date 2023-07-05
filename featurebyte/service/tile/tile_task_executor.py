@@ -54,23 +54,22 @@ class TileTaskExecutor:
 
         # derive the correct job schedule ts based on input job schedule ts
         # the input job schedule ts might be between 2 intervals
-        last_tile_end_ts = self._derive_correct_job_ts(
-            candidate_last_tile_end_ts, params.frequency_minute, params.tile_modulo_frequency_second
+        corrected_job_ts = self._derive_correct_job_ts(
+            candidate_last_tile_end_ts, params.frequency_minute, params.time_modulo_frequency_second
         )
         logger.debug(
             "Tile end ts details",
             extra={
-                "last_tile_end_ts": last_tile_end_ts,
+                "corrected_job_ts": corrected_job_ts,
                 "candidate_last_tile_end_ts": candidate_last_tile_end_ts,
             },
         )
 
-        last_tile_end_ts = last_tile_end_ts - timedelta(seconds=params.blind_spot_second)
+        tile_end_ts = corrected_job_ts - timedelta(seconds=params.blind_spot_second)
         tile_type = params.tile_type.upper()
         lookback_period = params.frequency_minute * (params.monitor_periods + 1)
         tile_id = params.tile_id.upper()
 
-        tile_end_ts = last_tile_end_ts
         if tile_type == "OFFLINE":
             lookback_period = params.offline_period_minute
             tile_end_ts = tile_end_ts - timedelta(minutes=lookback_period)
@@ -151,7 +150,7 @@ class TileTaskExecutor:
         tile_monitor_ins = TileMonitor(
             session=session,
             tile_id=tile_id,
-            tile_modulo_frequency_second=params.tile_modulo_frequency_second,
+            time_modulo_frequency_second=params.time_modulo_frequency_second,
             blind_spot_second=params.blind_spot_second,
             frequency_minute=params.frequency_minute,
             sql=generate_input_sql,
@@ -166,7 +165,7 @@ class TileTaskExecutor:
         tile_generate_ins = TileGenerate(
             session=session,
             tile_id=tile_id,
-            tile_modulo_frequency_second=params.tile_modulo_frequency_second,
+            time_modulo_frequency_second=params.time_modulo_frequency_second,
             blind_spot_second=params.blind_spot_second,
             frequency_minute=params.frequency_minute,
             sql=generate_input_sql,
@@ -181,7 +180,7 @@ class TileTaskExecutor:
         tile_online_store_ins = TileScheduleOnlineStore(
             session=session,
             aggregation_id=params.aggregation_id,
-            job_schedule_ts_str=last_tile_end_ts.strftime(date_format),
+            job_schedule_ts_str=corrected_job_ts.strftime(date_format),
             online_store_table_version_service=self.online_store_table_version_service,
         )
 

@@ -185,7 +185,7 @@ class TileManagerService(BaseService):
         tile_generate_ins = TileGenerate(
             session=session,
             tile_id=tile_spec.tile_id,
-            tile_modulo_frequency_second=tile_spec.time_modulo_frequency_second,
+            time_modulo_frequency_second=tile_spec.time_modulo_frequency_second,
             blind_spot_second=tile_spec.blind_spot_second,
             frequency_minute=tile_spec.frequency_minute,
             sql=tile_sql,
@@ -327,7 +327,7 @@ class TileManagerService(BaseService):
             logger.info(f"Creating new job {job_id}")
             parameters = TileScheduledJobParameters(
                 tile_id=tile_spec.tile_id,
-                tile_modulo_frequency_second=tile_spec.time_modulo_frequency_second,
+                time_modulo_frequency_second=tile_spec.time_modulo_frequency_second,
                 blind_spot_second=tile_spec.blind_spot_second,
                 frequency_minute=tile_spec.frequency_minute,
                 sql=tile_spec.tile_sql,
