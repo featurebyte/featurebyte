@@ -245,6 +245,7 @@ class ClassEnum(Enum):
     TO_TIMEDELTA = ("featurebyte", "to_timedelta")
     COLUMN_CLEANING_OPERATION = ("featurebyte", "ColumnCleaningOperation")
     REQUEST_COLUMN = ("featurebyte.api.request_column", "RequestColumn")
+    USER_DEFINED_FUNCTION = ("featurebyte", "UserDefinedFunction")
 
     def __call__(
         self, *args: Any, _method_name: Optional[str] = None, **kwargs: Any
@@ -366,6 +367,7 @@ class VariableNameGenerator(BaseModel):
 
     var_name_counter: DefaultDict[str, int] = Field(default_factory=lambda: defaultdict(int))
     node_name_to_var_name: Dict[str, VariableNameStr] = Field(default_factory=dict)
+    func_id_to_var_name: Dict[PydanticObjectId, VariableNameStr] = Field(default_factory=dict)
 
     def generate_variable_name(
         self,
@@ -407,7 +409,10 @@ class VariableNameGenerator(BaseModel):
         )
 
     def convert_to_variable_name(
-        self, variable_name_prefix: str, node_name: Optional[str]
+        self,
+        variable_name_prefix: str,
+        node_name: Optional[str],
+        function_id: Optional[PydanticObjectId] = None,
     ) -> VariableNameStr:
         """
         Convert an input variable name into a valid variable name (no name collision).
@@ -419,13 +424,25 @@ class VariableNameGenerator(BaseModel):
         node_name: Optional[str]
             If not None, the generated variable name will be associated with the node name. If the node name
             already exists, its associated variable name will be returned.
+        function_id: Optional[PydanticObjectId]
+            If not None, the generated variable name will be associated with the function ID. If the function ID
+            already exists, its associated variable name will be returned.
 
         Returns
         -------
         VariableNameStr
+
+        Raises
+        ------
+        ValueError
+            If both node_name and function_id are not None
         """
+        if node_name and function_id:
+            raise ValueError("node_name and function_id cannot be both not None")
         if node_name is not None and node_name in self.node_name_to_var_name:
             return self.node_name_to_var_name[node_name]
+        if function_id is not None and function_id in self.func_id_to_var_name:
+            return self.func_id_to_var_name[function_id]
 
         count = self.var_name_counter[variable_name_prefix]
         self.var_name_counter[variable_name_prefix] += 1
@@ -435,6 +452,8 @@ class VariableNameGenerator(BaseModel):
 
         if node_name is not None:
             self.node_name_to_var_name[node_name] = var_name
+        if function_id is not None:
+            self.func_id_to_var_name[function_id] = var_name
         return var_name
 
 
