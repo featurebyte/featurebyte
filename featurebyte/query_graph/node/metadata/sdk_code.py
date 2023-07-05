@@ -431,14 +431,8 @@ class VariableNameGenerator(BaseModel):
         Returns
         -------
         VariableNameStr
-
-        Raises
-        ------
-        ValueError
-            If both node_name and function_id are not None
         """
-        if node_name and function_id:
-            raise ValueError("node_name and function_id cannot be both not None")
+        assert not (node_name and function_id), "node_name and function_id cannot be both not None"
         if node_name is not None and node_name in self.node_name_to_var_name:
             return self.node_name_to_var_name[node_name]
         if function_id is not None and function_id in self.func_id_to_var_name:
