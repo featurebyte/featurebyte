@@ -3,7 +3,7 @@ This module contains generic function construction logic for user defined functi
 """
 from __future__ import annotations
 
-from typing import Any, List, Tuple, Type, Union
+from typing import Any, Callable, List, Tuple, Type, Union
 
 import inspect
 import textwrap
@@ -275,21 +275,22 @@ class UserDefinedFunctionInjector:
         return textwrap.dedent(docstring_template).strip()
 
     @classmethod
-    def create_and_add_function(
-        cls, func_accessor: FunctionAccessor, udf: UserDefinedFunctionModel
-    ) -> None:
+    def create(cls, udf: UserDefinedFunctionModel) -> Callable[..., Union[ViewColumn, Feature]]:
         """
-        Create a dynamic method based on the user defined function and add it to the function accessor.
+        Create a dynamic method based on the user defined function.
 
         Parameters
         ----------
-        func_accessor: FunctionAccessor
-            The function accessor instance which contains the dynamic method
         udf: UserDefinedFunctionModel
             The user defined function model which contains the function information
+
+        Returns
+        -------
+        Callable[..., Union[ViewColumn, Feature]]
+            A dynamic method containing the logic to generate a new column or new feature
         """
 
-        def _method_wrapper(*args: Any, **kwargs: Any) -> Union[ViewColumn, Feature]:
+        def _user_defined_function(*args: Any, **kwargs: Any) -> Union[ViewColumn, Feature]:
             param_processor = FunctionParameterProcessor(udf.function_parameters)
             extracted_params = param_processor.process(*args, **kwargs)
             node = cls._insert_generic_function_node(
@@ -305,9 +306,25 @@ class UserDefinedFunctionInjector:
                 dtype=udf.output_dtype,
             )
 
-        # assign the dynamic method to the function accessor
-        assert udf.name is not None
-        setattr(func_accessor, udf.name, _method_wrapper)
+        return _user_defined_function
+
+    @classmethod
+    def create_and_add_function(
+        cls, func_accessor: FunctionAccessor, udf: UserDefinedFunctionModel
+    ) -> None:
+        """
+        Create a dynamic method based on the user defined function and add it to the function accessor.
+
+        Parameters
+        ----------
+        func_accessor: FunctionAccessor
+            The function accessor instance which contains the dynamic method
+        udf: UserDefinedFunctionModel
+            The user defined function model which contains the function information
+        """
+        # create & assign the dynamic method to the function accessor
+        dynamic_method = cls.create(udf)
+        setattr(func_accessor, udf.name, dynamic_method)
         method = getattr(func_accessor, udf.name)
 
         # override name, signature, docstring, etc of the dynamic method

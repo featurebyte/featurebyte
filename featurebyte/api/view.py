@@ -53,7 +53,6 @@ from featurebyte.exception import (
     RepeatedColumnNamesError,
 )
 from featurebyte.logging import get_logger
-from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.batch_request_table import ViewBatchRequestInput
 from featurebyte.models.observation_table import ViewObservationInput
 from featurebyte.models.static_source_table import ViewStaticSourceInput
@@ -1326,7 +1325,6 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         node: Node,
         feature_name: str,
         feature_dtype: DBVarType,
-        entity_ids: List[PydanticObjectId],
     ) -> Feature:
         """
         Create a Feature object from a node that produces features, such as groupby, lookup, etc.
@@ -1339,8 +1337,6 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             Feature name
         feature_dtype: DBVarType
             Variable type of the Feature
-        entity_ids: List[PydanticObjectId]
-            Entity ids associated with the Feature
 
         Returns
         -------
@@ -1359,7 +1355,6 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             tabular_source=self.tabular_source,
             node_name=feature_node.name,
             dtype=feature_dtype,
-            entity_ids=entity_ids,
         )
         return feature
 
@@ -1505,7 +1500,6 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
                 node=lookup_node,
                 feature_name=feature_name,
                 feature_dtype=self.column_var_type_map[input_column_name],
-                entity_ids=[entity_id],
             )
             features.append(feature)
 

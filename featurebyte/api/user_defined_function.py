@@ -3,7 +3,7 @@ UserDefinedFunction API object
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Literal, Optional
+from typing import Any, ClassVar, List, Literal, Optional, Union, cast
 
 from http import HTTPStatus
 
@@ -17,12 +17,14 @@ from featurebyte.api.api_object_util import (
     ForeignKeyMapping,
     iterate_api_object_using_paginated_routes,
 )
+from featurebyte.api.feature import Feature
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.savable_api_object import DeletableApiObject, SavableApiObject
 from featurebyte.api.user_defined_function_injector import (
     FunctionAccessor,
     UserDefinedFunctionInjector,
 )
+from featurebyte.api.view import ViewColumn
 from featurebyte.config import Configurations
 from featurebyte.enum import DBVarType
 from featurebyte.exception import DocumentCreationError, InvalidSettingsError
@@ -100,7 +102,8 @@ class FunctionDescriptor:
 
 class UserDefinedFunction(DeletableApiObject, SavableApiObject):
     """
-    UserDefinedFunction class used to represent a UserDefinedFunction in FeatureByte.
+    A UserDefinedFunction object represents a user-defined function that can be used to transform view columns
+    or feature. This object is callable and can be used as a function to transform view columns or feature.
     """
 
     # class variables
@@ -296,6 +299,11 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
         deleted if it is not used by any saved feature.
         """
         super()._delete()
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Union[ViewColumn, Feature]:
+        udf = cast(UserDefinedFunctionModel, self.cached_model)
+        dynamic_func = UserDefinedFunctionInjector.create(udf=udf)
+        return dynamic_func(*args, **kwargs)
 
 
 class UserDefinedFunctionAccessorWrapper:

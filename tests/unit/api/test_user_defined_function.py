@@ -8,6 +8,7 @@ from featurebyte.api.catalog import Catalog
 from featurebyte.api.user_defined_function import UDF, UserDefinedFunction
 from featurebyte.exception import DocumentCreationError, RecordDeletionException
 from featurebyte.models.user_defined_function import FunctionParameter
+from tests.util.helper import check_sdk_code_generation
 
 
 @pytest.fixture(name="catalog")
@@ -249,8 +250,13 @@ def test_create_complex_feature_with_user_defined_function(
     date_sub_udf.delete()
 
 
-def test_create_feature_with_complex_view_operation(
-    power_udf, cos_udf, snowflake_event_view_with_entity, feature_group_feature_job_setting
+def test_create_feature_with_complex_operation(
+    power_udf,
+    cos_udf,
+    snowflake_event_view_with_entity,
+    feature_group_feature_job_setting,
+    snowflake_event_table_id,
+    update_fixtures,
 ):
     """Test create a feature with complex view operation"""
     view = snowflake_event_view_with_entity
@@ -263,9 +269,21 @@ def test_create_feature_with_complex_view_operation(
         feature_job_setting=feature_group_feature_job_setting,
         feature_names=["sum_cos_float_square"],
     )
-    feat = feat_group["sum_cos_float_square"]
+    feat = UDF.cos_func(feat_group["sum_cos_float_square"])
     feat.name = "sum_cos_float_square"
     feat.save()
+
+    # check feature definition
+    check_sdk_code_generation(
+        feat,
+        to_use_saved_data=True,
+        to_format=True,
+        fixture_path="tests/fixtures/sdk_code/feature_with_udf_used_in_view.py",
+        update_fixtures=update_fixtures,
+        event_table_id=snowflake_event_table_id,
+        power_function_id=power_udf.id,
+        cos_function_id=cos_udf.id,
+    )
 
     # check feature model has expected properties
     assert sorted(feat.cached_model.user_defined_function_ids) == sorted([power_udf.id, cos_udf.id])
@@ -284,3 +302,18 @@ def test_create_feature_with_complex_view_operation(
     feat.delete()
     power_udf.delete()
     cos_udf.delete()
+
+
+def test_create_feature_with_overriden_global_udf(cos_udf, local_cos_udf, float_feature):
+    """Create a feature with overriden global UDF"""
+    # check that local UDF (`cos_v2`) is used in UDF handler but not the global UDF (`cos`)
+    assert f"`{local_cos_udf.sql_function_name}`" in UDF.cos_func.__doc__
+    assert f"`{cos_udf.sql_function_name}`" not in UDF.cos_func.__doc__
+
+    # create a new feature with the global UDF
+    new_feat = cos_udf(float_feature)
+    new_feat.name = "cos_feat"
+    new_feat.save()
+
+    # check that the feature definition contains the global UDF
+    assert str(cos_udf.id) in new_feat.definition

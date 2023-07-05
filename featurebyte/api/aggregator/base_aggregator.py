@@ -121,7 +121,6 @@ class BaseAggregator(ABC):
             node=groupby_node,
             feature_name=feature_name,
             feature_dtype=var_type,
-            entity_ids=self.entity_ids,
         )
         if not skip_fill_na:
             self._fill_feature(feature, method, feature_name, fill_value)
