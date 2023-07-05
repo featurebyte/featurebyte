@@ -240,7 +240,7 @@ class UserDefinedFunctionModel(FeatureByteBaseDocumentModel):
             name="generic_function_1",
             parameters=GenericFunctionNodeParameters(
                 name=self.name,
-                function_name=self.sql_function_name,
+                sql_function_name=self.sql_function_name,
                 function_parameters=function_parameters,
                 output_dtype=self.output_dtype,
                 function_id=self.id,

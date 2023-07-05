@@ -230,7 +230,7 @@ class UserDefinedFunctionInjector:
     ) -> Node:
         node_params = GenericFunctionNodeParameters(
             name=udf.name,
-            function_name=udf.sql_function_name,
+            sql_function_name=udf.sql_function_name,
             function_parameters=function_parameters,
             output_dtype=udf.output_dtype,
             function_id=udf.id,
