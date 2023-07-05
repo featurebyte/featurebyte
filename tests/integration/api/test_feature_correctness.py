@@ -1,4 +1,3 @@
-import json
 import time
 from collections import defaultdict
 
@@ -10,34 +9,10 @@ from featurebyte.api.feature_list import FeatureList
 from featurebyte.common.model_util import validate_job_setting_parameters
 from featurebyte.logging import get_logger
 from featurebyte.query_graph.sql.tile_compute import epoch_seconds_to_timestamp, get_epoch_seconds
+from tests.integration.api.dataframe_helper import apply_agg_func_on_filtered_dataframe
 from tests.util.helper import fb_assert_frame_equal, get_lagged_series_pandas
 
 logger = get_logger(__name__)
-
-
-def apply_agg_func_on_filtered_dataframe(agg_func, category, df_filtered, variable_column_name):
-    """
-    Helper function to apply an aggregation function on a dataframe filtered to contain only the
-    data within the feature window for a specific entity
-    """
-    if category is None:
-        out = agg_func(df_filtered[variable_column_name])
-    else:
-        out = {}
-        category_vals = df_filtered[category].unique()
-        for category_val in category_vals:
-            if pd.isnull(category_val):
-                category_val = "__MISSING__"
-                category_mask = df_filtered[category].isnull()
-            else:
-                category_mask = df_filtered[category] == category_val
-            feature_value = agg_func(df_filtered[category_mask][variable_column_name])
-            out[category_val] = feature_value
-        if not out:
-            out = None
-        else:
-            out = json.dumps(pd.Series(out).to_dict())
-    return out
 
 
 def calculate_aggregate_over_ground_truth(

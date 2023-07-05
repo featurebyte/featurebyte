@@ -3,7 +3,7 @@ This module contains base aggregator related class
 """
 from __future__ import annotations
 
-from typing import List, Literal, Optional, Type
+from typing import List, Optional, Type
 
 from abc import ABC, abstractmethod
 
@@ -14,7 +14,7 @@ from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.exception import AggregationNotSupportedForViewError
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.agg_func import AggFuncType, construct_agg_func
+from featurebyte.query_graph.node.agg_func import AggFuncType
 
 
 class BaseAggregator(ABC):

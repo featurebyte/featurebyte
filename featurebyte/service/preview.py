@@ -20,9 +20,9 @@ from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, sql_to_string
 from featurebyte.query_graph.sql.feature_historical import get_historical_features_expr
-from featurebyte.query_graph.sql.feature_preview import get_feature_preview_sql
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.sql.materialisation import get_source_count_expr, get_source_expr
+from featurebyte.query_graph.sql.preview import get_feature_or_target_preview_sql
 from featurebyte.schema.feature import FeaturePreview, FeatureSQL
 from featurebyte.schema.feature_list import (
     FeatureListGetHistoricalFeatures,
@@ -347,7 +347,7 @@ class PreviewService(BaseService):
                 feature_store=feature_store,
             )
         )
-        preview_sql = get_feature_preview_sql(
+        preview_sql = get_feature_or_target_preview_sql(
             request_table_name=f"{REQUEST_TABLE_NAME}_{session.generate_session_unique_id()}",
             graph=graph,
             nodes=[feature_node],
@@ -416,7 +416,7 @@ class PreviewService(BaseService):
                 feature_store=feature_store,
                 get_credential=get_credential,
             )
-            preview_sql = get_feature_preview_sql(
+            preview_sql = get_feature_or_target_preview_sql(
                 request_table_name=f"{REQUEST_TABLE_NAME}_{db_session.generate_session_unique_id()}",
                 graph=feature_cluster.graph,
                 nodes=feature_cluster.nodes,
@@ -483,7 +483,7 @@ class PreviewService(BaseService):
                 feature_store=feature_store,
             )
         )
-        preview_sql = get_feature_preview_sql(
+        preview_sql = get_feature_or_target_preview_sql(
             request_table_name=f"{REQUEST_TABLE_NAME}_{session.generate_session_unique_id()}",
             graph=graph,
             nodes=[target_node],
@@ -522,7 +522,7 @@ class PreviewService(BaseService):
         source_type = graph.get_input_node(
             feature_sql.node_name
         ).parameters.feature_store_details.type
-        preview_sql = get_feature_preview_sql(
+        preview_sql = get_feature_or_target_preview_sql(
             request_table_name=REQUEST_TABLE_NAME,
             graph=graph,
             nodes=[feature_node],
@@ -550,7 +550,7 @@ class PreviewService(BaseService):
             source_type = feature_cluster.graph.get_input_node(
                 feature_cluster.node_names[0]
             ).parameters.feature_store_details.type
-            preview_sql = get_feature_preview_sql(
+            preview_sql = get_feature_or_target_preview_sql(
                 request_table_name=REQUEST_TABLE_NAME,
                 graph=feature_cluster.graph,
                 nodes=feature_cluster.nodes,

@@ -3,13 +3,14 @@ Target correctness tests.
 """
 from typing import Optional
 
-import json
 from collections import defaultdict
 from dataclasses import dataclass
+from datetime import datetime
 
 import pandas as pd
 import pytest
 
+from tests.integration.api.dataframe_helper import apply_agg_func_on_filtered_dataframe
 from tests.integration.api.test_feature_correctness import sum_func
 from tests.util.helper import fb_assert_frame_equal
 
@@ -78,33 +79,6 @@ def transform_and_sample_observation_set(observation_set: pd.DataFrame) -> pd.Da
     return sampled_points
 
 
-def apply_agg_func_on_filtered_dataframe(agg_func, category, df_filtered, variable_column_name):
-    """
-    Helper function to apply an aggregation function on a dataframe filtered to contain only the
-    data within the feature window for a specific entity
-
-    # TODO: copied from test_feature_correctness
-    """
-    # Handle no category
-    if category is None:
-        return agg_func(df_filtered[variable_column_name])
-
-    # Handle category
-    out = {}
-    category_vals = df_filtered[category].unique()
-    for category_val in category_vals:
-        if pd.isnull(category_val):
-            category_val = "__MISSING__"
-            category_mask = df_filtered[category].isnull()
-        else:
-            category_mask = df_filtered[category] == category_val
-        feature_value = agg_func(df_filtered[category_mask][variable_column_name])
-        out[category_val] = feature_value
-    if not out:
-        return None
-    return json.dumps(pd.Series(out).to_dict())
-
-
 def convert_duration_str_to_seconds(duration_str: str) -> Optional[float]:
     if duration_str is not None:
         return pd.Timedelta(duration_str).total_seconds()
@@ -115,10 +89,10 @@ def calculate_forward_aggregate_ground_truth(
     df: pd.DataFrame,
     point_in_time,
     utc_event_timestamps,
-    entity_column_name,
+    entity_column_name: str,
     entity_value,
     variable_column_name: str,
-    agg_func,
+    agg_func: callable,
     horizon: Optional[float],
     category=None,
 ):
@@ -155,7 +129,7 @@ def get_expected_target_values(
     df: pd.DataFrame,
     utc_event_timestamps,
     variable_column_name: str,
-    agg_func,
+    agg_func: callable,
     horizon: Optional[float],
     category=None,
 ) -> pd.DataFrame:
