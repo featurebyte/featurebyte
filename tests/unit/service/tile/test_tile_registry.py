@@ -5,6 +5,7 @@ from datetime import datetime
 
 import pytest
 import pytest_asyncio
+from bson import ObjectId
 
 from featurebyte.exception import DocumentNotFoundError
 from featurebyte.models.tile import TileType
@@ -29,6 +30,7 @@ def tile_model_fixture() -> TileModel:
         tile_type=TileType.ONLINE,
         tile_index=10000,
         tile_start_date=datetime(2021, 1, 1),
+        feature_store_id=ObjectId(),
     )
 
 

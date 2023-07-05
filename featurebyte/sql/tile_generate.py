@@ -46,6 +46,7 @@ class TileGenerate(TileCommon):
             value_column_types=self.value_column_types,
             tile_id=self.tile_id,
             aggregation_id=self.aggregation_id,
+            feature_store_id=self.feature_store_id,
             tile_registry_service=self.tile_registry_service,
         ).execute()
 

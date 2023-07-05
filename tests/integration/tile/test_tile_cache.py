@@ -33,12 +33,16 @@ def feature_for_tile_cache_tests_fixture(event_table, groupby_category):
 
 
 @pytest.fixture(name="tile_cache")
-def tile_cache_fixture(session, app_container):
+def tile_cache_fixture(session, feature_store, app_container):
     """
     Fixture for TileCache
     """
     tile_manager_service = app_container.tile_manager_service
-    return TileCache(session=session, tile_manager_service=tile_manager_service)
+    return TileCache(
+        session=session,
+        tile_manager_service=tile_manager_service,
+        feature_store_id=feature_store.id,
+    )
 
 
 async def check_entity_table_sql_and_tile_compute_sql(

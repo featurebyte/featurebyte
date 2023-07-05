@@ -37,6 +37,7 @@ class TileRegistry(TileCommon):
                 f"No registry record for tile_id {self.tile_id} and aggregation_id {self.aggregation_id}, creating new record"
             )
             tile_model = TileModel(
+                feature_store_id=self.feature_store_id,
                 tile_id=self.tile_id,
                 aggregation_id=self.aggregation_id,
                 tile_sql=self.sql,

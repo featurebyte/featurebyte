@@ -4,6 +4,7 @@ Unit tests for TileTaskExecutor
 from unittest.mock import Mock, patch
 
 import pytest
+from bson import ObjectId
 
 from featurebyte import SourceType
 from featurebyte.models.tile import TileScheduledJobParameters
@@ -40,6 +41,7 @@ def tile_task_parameters_fixture() -> TileScheduledJobParameters:
         offline_period_minute=1440,
         tile_type="online",
         monitor_periods=10,
+        feature_store_id=ObjectId(),
     )
 
 

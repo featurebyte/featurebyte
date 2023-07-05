@@ -153,6 +153,7 @@ class TileTaskExecutor:
 
         tile_monitor_ins = TileMonitor(
             session=session,
+            feature_store_id=params.feature_store_id,
             tile_id=tile_id,
             time_modulo_frequency_second=params.time_modulo_frequency_second,
             blind_spot_second=params.blind_spot_second,
@@ -169,6 +170,7 @@ class TileTaskExecutor:
 
         tile_generate_ins = TileGenerate(
             session=session,
+            feature_store_id=params.feature_store_id,
             tile_id=tile_id,
             time_modulo_frequency_second=params.time_modulo_frequency_second,
             blind_spot_second=params.blind_spot_second,

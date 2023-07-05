@@ -78,19 +78,19 @@ class WorkingSchemaService(BaseService):
                 view_construction_service=self.view_construction_service
             ),
         )
-        self.task_manager = TaskManager(
+        task_manager = TaskManager(
             user=user, persistent=persistent, celery=celery, catalog_id=catalog_id
         )
-        self.online_store_table_version_service = OnlineStoreTableVersionService(
+        online_store_table_version_service = OnlineStoreTableVersionService(
             user=user, persistent=persistent, catalog_id=catalog_id
         )
-        self.tile_scheduler_service = TileSchedulerService(
+        tile_scheduler_service = TileSchedulerService(
             user=user,
             persistent=persistent,
             catalog_id=catalog_id,
-            task_manager=self.task_manager,
+            task_manager=task_manager,
         )
-        tile_registry_service = TileRegistryService(
+        self.tile_registry_service = TileRegistryService(
             user=user,
             persistent=persistent,
             catalog_id=catalog_id,
@@ -99,16 +99,16 @@ class WorkingSchemaService(BaseService):
             user=user,
             persistent=persistent,
             catalog_id=catalog_id,
-            online_store_table_version_service=self.online_store_table_version_service,
-            tile_scheduler_service=self.tile_scheduler_service,
-            tile_registry_service=tile_registry_service,
+            online_store_table_version_service=online_store_table_version_service,
+            tile_scheduler_service=tile_scheduler_service,
+            tile_registry_service=self.tile_registry_service,
         )
         self.feature_manager_service = FeatureManagerService(
             user=user,
             persistent=persistent,
             catalog_id=catalog_id,
             tile_manager_service=self.tile_manager_service,
-            tile_registry_service=tile_registry_service,
+            tile_registry_service=self.tile_registry_service,
         )
 
     async def recreate_working_schema(
@@ -128,6 +128,13 @@ class WorkingSchemaService(BaseService):
         # Drop everything in the working schema. It would be easier to drop the schema directly and
         # then recreate, but the assumption is that the account might not have this privilege.
         await drop_all_objects(session)
+
+        # Clear the tile registry because the tile tables in the data warehouse are now wiped out.
+        await self.persistent.delete_many(
+            collection_name=self.tile_registry_service.collection_name,
+            query_filter={"feature_store_id": ObjectId(feature_store_id)},
+            user_id=self.user.id,
+        )
 
         # Initialize working schema. This covers registering tables, functions and procedures.
         initializer = session.initializer()

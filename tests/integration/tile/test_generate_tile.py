@@ -4,6 +4,7 @@ Tile Generate tests for Spark Session
 from datetime import datetime
 
 import pytest
+from bson import ObjectId
 
 from featurebyte.enum import InternalName
 from featurebyte.sql.tile_generate import TileGenerate
@@ -47,6 +48,7 @@ async def test_generate_tile(session, base_sql_model, tile_registry_service):
         value_column_types=value_col_types,
         tile_type="OFFLINE",
         aggregation_id=agg_id,
+        feature_store_id=ObjectId(),
         tile_registry_service=tile_registry_service,
     )
 
@@ -92,6 +94,7 @@ async def test_generate_tile_no_data(session, base_sql_model, tile_registry_serv
         value_column_types=value_col_types,
         tile_type="OFFLINE",
         aggregation_id=agg_id,
+        feature_store_id=ObjectId(),
         tile_registry_service=tile_registry_service,
     )
 
@@ -137,6 +140,7 @@ async def test_generate_tile_new_value_column(session, base_sql_model, tile_regi
         value_column_types=value_col_types,
         tile_type="OFFLINE",
         aggregation_id=agg_id,
+        feature_store_id=ObjectId(),
         tile_registry_service=tile_registry_service,
     )
 
@@ -167,6 +171,7 @@ async def test_generate_tile_new_value_column(session, base_sql_model, tile_regi
         value_column_types=value_col_types_2,
         tile_type="OFFLINE",
         aggregation_id=agg_id,
+        feature_store_id=ObjectId(),
         tile_registry_service=tile_registry_service,
     )
 

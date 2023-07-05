@@ -5,6 +5,7 @@ from datetime import datetime
 
 import dateutil.parser
 import pytest
+from bson import ObjectId
 
 from featurebyte.enum import InternalName
 from featurebyte.models.tile import TileScheduledJobParameters
@@ -63,6 +64,7 @@ async def test_schedule_generate_tile_online(
         monitor_periods=10,
         aggregation_id=agg_id,
         job_schedule_ts=tile_end_ts,
+        feature_store_id=ObjectId(),
     )
     await tile_task_executor.execute(session, tile_schedule_ins)
 
@@ -134,6 +136,7 @@ async def test_schedule_monitor_tile_online(session, base_sql_model, tile_task_e
         monitor_periods=10,
         aggregation_id=agg_id,
         job_schedule_ts=tile_end_ts,
+        feature_store_id=ObjectId(),
     )
     await tile_task_executor.execute(session, tile_schedule_ins)
 
@@ -161,6 +164,7 @@ async def test_schedule_monitor_tile_online(session, base_sql_model, tile_task_e
         monitor_periods=10,
         aggregation_id=agg_id,
         job_schedule_ts=tile_end_ts_2,
+        feature_store_id=ObjectId(),
     )
     await tile_task_executor.execute(session, tile_schedule_ins)
 
@@ -213,6 +217,7 @@ async def test_schedule_generate_tile__with_registry(
         monitor_periods=tile_monitor,
         aggregation_id=agg_id,
         job_schedule_ts=tile_end_ts,
+        feature_store_id=ObjectId(),
     )
     await tile_task_executor.execute(session, tile_schedule_ins)
 
@@ -285,6 +290,7 @@ async def test_schedule_generate_tile__no_default_job_ts(
         monitor_periods=tile_monitor,
         aggregation_id=agg_id,
         job_schedule_ts=used_job_schedule_ts,
+        feature_store_id=ObjectId(),
     )
     await tile_task_executor.execute(session, tile_schedule_ins)
     tile_model = await tile_registry_service.get_tile_model(tile_id, agg_id)
@@ -306,6 +312,7 @@ async def test_schedule_generate_tile__no_default_job_ts(
         monitor_periods=tile_monitor,
         aggregation_id=agg_id,
         job_schedule_ts=used_job_schedule_ts,
+        feature_store_id=ObjectId(),
     )
     await tile_task_executor.execute(session, tile_schedule_ins)
     tile_model = await tile_registry_service.get_tile_model(tile_id, agg_id)

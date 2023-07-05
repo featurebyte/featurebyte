@@ -7,7 +7,7 @@ from bson import ObjectId
 from pydantic import Field, root_validator, validator
 
 from featurebyte.enum import StrEnum
-from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 
 
 class TileType(StrEnum):
@@ -120,6 +120,7 @@ class TileCommonParameters(FeatureByteBaseModel):
     Model for common parameters used by various steps within a tile scheduled job
     """
 
+    feature_store_id: PydanticObjectId
     tile_id: str
     aggregation_id: str
     time_modulo_frequency_second: int

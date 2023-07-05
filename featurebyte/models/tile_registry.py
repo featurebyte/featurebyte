@@ -10,7 +10,11 @@ from datetime import datetime
 import pymongo
 from pydantic import StrictStr
 
-from featurebyte.models.base import FeatureByteCatalogBaseDocumentModel, UniqueValuesConstraint
+from featurebyte.models.base import (
+    FeatureByteCatalogBaseDocumentModel,
+    PydanticObjectId,
+    UniqueValuesConstraint,
+)
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 
 
@@ -19,6 +23,7 @@ class TileModel(FeatureByteCatalogBaseDocumentModel):
     TileModel document
     """
 
+    feature_store_id: PydanticObjectId
     tile_id: StrictStr
     aggregation_id: StrictStr
 
@@ -60,6 +65,7 @@ class TileModel(FeatureByteCatalogBaseDocumentModel):
         ]
 
         indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
+            pymongo.operations.IndexModel("feature_store_id"),
             pymongo.operations.IndexModel("tile_id"),
             pymongo.operations.IndexModel("aggregation_id"),
         ]
