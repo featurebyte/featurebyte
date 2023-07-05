@@ -157,8 +157,8 @@ class FunctionParameterProcessor:
             if isinstance(value, (ViewColumn, Feature)):
                 if value.dtype != param.dtype:
                     raise TypeError(
-                        f'Input ViewColumn or Feature "{value.name}" has dtype {value.dtype} '
-                        f"but expected {param.dtype}."
+                        f'Parameter "{param.name}" has dtype {param.dtype} but '
+                        f"input ViewColumn or Feature (name: {value.name}) has dtype {value.dtype}."
                     )
                 func_param = ColumnFunctionParameterInput(column_name=value.name, dtype=param.dtype)
                 series_inputs.append(value)

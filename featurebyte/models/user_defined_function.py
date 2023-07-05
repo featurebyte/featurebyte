@@ -74,6 +74,8 @@ class UserDefinedFunctionModel(FeatureByteBaseDocumentModel):
     """
     UserDefinedFunction model stores user defined function information
 
+    name: str
+        Name of the UDF to be used when calling through FeatureByte SDK
     function_name: str
         Name of the function used to call in the SQL query
     function_parameters: List[FunctionParameter]
@@ -82,6 +84,7 @@ class UserDefinedFunctionModel(FeatureByteBaseDocumentModel):
         Catalog id of the function (if any), if not provided, it can be used across all catalogs
     """
 
+    name: str
     function_name: str
     function_parameters: List[FunctionParameter]
     output_dtype: DBVarType
@@ -89,12 +92,12 @@ class UserDefinedFunctionModel(FeatureByteBaseDocumentModel):
     catalog_id: Optional[PydanticObjectId]
     feature_store_id: PydanticObjectId
 
-    @validator("function_name")
+    @validator("name", "function_name")
     @classmethod
     def _validate_function_name(cls, value: str) -> str:
-        # check that function name is a valid function name
+        # check that name or function name is a valid identifier
         if not value.isidentifier():
-            raise ValueError(f'Function name "{value}" is not valid')
+            raise ValueError(f'"{value}" is not a valid identifier')
         return value
 
     @validator("function_parameters")

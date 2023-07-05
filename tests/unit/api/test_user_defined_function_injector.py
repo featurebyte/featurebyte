@@ -117,9 +117,8 @@ def test_function_parameter_processor__extract_node_parameters__input_validation
     # check invalid view column type
     with pytest.raises(TypeError) as exc:
         function_parameter_processor._extract_node_parameters(1, snowflake_event_view.col_char)
-    assert 'Input ViewColumn or Feature "col_char" has dtype CHAR but expected FLOAT.' in str(
-        exc.value
-    )
+    expected_error = 'Parameter "y" has dtype FLOAT but input ViewColumn or Feature (name: col_char) has dtype CHAR.'
+    assert expected_error in str(exc.value)
 
     # check mis-matched series type
     with pytest.raises(TypeError) as exc:

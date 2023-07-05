@@ -95,5 +95,16 @@ def test_user_defined_function_model__validator():
             function_parameters=[func_param],
             output_dtype=DBVarType.FLOAT,
         )
-    expected_msg = 'Function name "invalid function name" is not valid'
+    expected_msg = '"invalid function name" is not a valid identifier'
+    assert expected_msg in str(exc.value)
+
+    with pytest.raises(ValueError) as exc:
+        UserDefinedFunctionModel(
+            name="invalid name",
+            function_name="function_name",
+            function_parameters=[func_param],
+            output_dtype=DBVarType.FLOAT,
+            feature_store_id=ObjectId(),
+        )
+    expected_msg = '"invalid name" is not a valid identifier'
     assert expected_msg in str(exc.value)

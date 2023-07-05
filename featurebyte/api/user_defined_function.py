@@ -110,7 +110,7 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
     _list_schema = UserDefinedFunctionModel
     _list_fields = [
         "signature",
-        "function_name",
+        "sql_function_name",
         "feature_store_name",
         "is_global",
     ]
@@ -151,7 +151,7 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
         return self.cached_model.feature_store_id
 
     @property
-    def function_name(self) -> str:
+    def sql_function_name(self) -> str:
         """
         The SQL function name of the user-defined function (which is used in SQL queries).
 
@@ -159,7 +159,7 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
         -------
         str
         """
-        return self.cached_model.function_name
+        return self.cached_model.function_name  # type: ignore
 
     @property
     def function_parameters(self) -> List[FunctionParameter]:
@@ -236,7 +236,7 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
     def create(
         cls,
         name: str,
-        function_name: str,
+        sql_function_name: str,
         function_parameters: List[FunctionParameter],
         output_dtype: Literal[tuple(DBVarType)],  # type: ignore[misc]
         is_global: bool = False,
@@ -249,7 +249,7 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
         name: str
             Name of the user-defined function. This will be used as the name of the dynamically created
             function.
-        function_name: str
+        sql_function_name: str
             The SQL function name of the user-defined function (which is used in SQL queries).
         function_parameters: List[FunctionParameter]
             The function parameters of the user-defined function.
@@ -281,7 +281,7 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
 
         user_defined_function = UserDefinedFunction(
             name=name,
-            function_name=function_name,
+            function_name=sql_function_name,
             function_parameters=function_parameters,
             output_dtype=output_dtype,
             catalog_id=None if is_global else active_catalog_id,

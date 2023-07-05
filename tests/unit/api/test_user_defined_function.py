@@ -33,7 +33,7 @@ def cos_udf_fixture(catalog):
     )
     udf = UserDefinedFunction.create(
         name="cos_func",
-        function_name="cos",
+        sql_function_name="cos",
         function_parameters=[func_param],
         output_dtype="FLOAT",
         is_global=True,
@@ -54,7 +54,7 @@ def local_cos_udf_fixture(catalog):
     )
     udf = UserDefinedFunction.create(
         name="cos_func",
-        function_name="cos_v2",
+        sql_function_name="cos_v2",
         function_parameters=[func_param],
         output_dtype="FLOAT",
         is_global=False,
@@ -73,7 +73,7 @@ def pow_udf_fixture(catalog):
     }
     udf = UserDefinedFunction.create(
         name="power_func",
-        function_name="power",
+        sql_function_name="power",
         function_parameters=[
             FunctionParameter(name="base", dtype="FLOAT", **common_func_param_kwargs),
             FunctionParameter(name="exp", dtype="FLOAT", **common_func_param_kwargs),
@@ -95,7 +95,7 @@ def date_sub_udf_fixture(catalog):
     }
     udf = UserDefinedFunction.create(
         name="date_sub_func",
-        function_name="date_sub",
+        sql_function_name="date_sub",
         function_parameters=[
             FunctionParameter(name="start_date", dtype="TIMESTAMP_TZ", **common_func_param_kwargs),
             FunctionParameter(name="num_days", dtype="INT", **common_func_param_kwargs),
@@ -111,7 +111,7 @@ def test_create_user_defined_function__default_catalog():
     with pytest.raises(DocumentCreationError) as exc:
         UserDefinedFunction.create(
             name="udf_func",
-            function_name="cos",
+            sql_function_name="cos",
             function_parameters=[],
             output_dtype="FLOAT",
             is_global=True,
@@ -127,7 +127,7 @@ def test_create_user_defined_function__default_catalog():
 def test_create_user_defined_function(catalog, cos_udf):
     """Test create_user_defined_function"""
     assert cos_udf.name == "cos_func"
-    assert cos_udf.function_name == "cos"
+    assert cos_udf.sql_function_name == "cos"
     assert cos_udf.output_dtype == "FLOAT"
     assert cos_udf.catalog_id is None
     assert cos_udf.feature_store_id == catalog.default_feature_store_ids[0]
@@ -198,10 +198,10 @@ def test_list(cos_udf, power_udf, date_sub_udf):
             {
                 "id": [date_sub_udf.id, power_udf.id, cos_udf.id],
                 "signature": [date_sub_udf.signature, power_udf.signature, cos_udf.signature],
-                "function_name": [
-                    date_sub_udf.function_name,
-                    power_udf.function_name,
-                    cos_udf.function_name,
+                "sql_function_name": [
+                    date_sub_udf.sql_function_name,
+                    power_udf.sql_function_name,
+                    cos_udf.sql_function_name,
                 ],
                 "feature_store_name": "sf_featurestore",
                 "is_global": [date_sub_udf.is_global, power_udf.is_global, cos_udf.is_global],
