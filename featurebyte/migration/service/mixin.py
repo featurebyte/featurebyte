@@ -14,7 +14,8 @@ from featurebyte.exception import CredentialsError
 from featurebyte.logging import get_logger
 from featurebyte.models.base import FeatureByteBaseDocumentModel, FeatureByteBaseModel
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.persistent.base import Document, Persistent
+from featurebyte.models.persistent import Document
+from featurebyte.persistent.base import Persistent
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.feature_store import FeatureStoreService
