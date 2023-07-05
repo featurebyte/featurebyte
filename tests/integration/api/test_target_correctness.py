@@ -10,7 +10,6 @@ from dataclasses import dataclass
 import pandas as pd
 import pytest
 
-from featurebyte.query_graph.sql.tile_compute import epoch_seconds_to_timestamp, get_epoch_seconds
 from tests.integration.api.test_feature_correctness import sum_func
 from tests.util.helper import fb_assert_frame_equal
 
@@ -36,10 +35,10 @@ def target_parameters_fixture(source_type):
     """
     parameters = [
         TargetParameter("ÀMOUNT", "avg", "2h", "avg_2h", lambda x: x.mean(), skip=False),
-        TargetParameter("ÀMOUNT", "avg", "24h", "avg_24h", lambda x: x.mean()),
-        TargetParameter("ÀMOUNT", "min", "24h", "min_24h", lambda x: x.min()),
-        TargetParameter("ÀMOUNT", "max", "24h", "max_24h", lambda x: x.max()),
-        TargetParameter("ÀMOUNT", "sum", "24h", "sum_24h", sum_func),
+        TargetParameter("ÀMOUNT", "avg", "24h", "avg_24h", lambda x: x.mean(), skip=False),
+        TargetParameter("ÀMOUNT", "min", "24h", "min_24h", lambda x: x.min(), skip=False),
+        TargetParameter("ÀMOUNT", "max", "24h", "max_24h", lambda x: x.max(), skip=False),
+        TargetParameter("ÀMOUNT", "sum", "24h", "sum_24h", sum_func, skip=False),
     ]
     spark_only_agg_types = ["max", "std", "latest"]
     if source_type == "spark":
@@ -122,12 +121,13 @@ def calculate_forward_aggregate_ground_truth(
     Reference implementation for forward_aggregate that is as simple as possible
     """
     # Find the window of datapoints that are relevant
-    window_start_epoch_seconds = get_epoch_seconds(point_in_time)
-    window_start = epoch_seconds_to_timestamp(window_start_epoch_seconds)
+    # convert point_in_time to utc
+    point_in_time = pd.Timestamp(point_in_time)
+    pit_utc = point_in_time.tz_convert("UTC").tz_localize(None)
+    window_start = pit_utc
 
     if horizon is not None:
-        window_end_epoch_seconds = window_start_epoch_seconds + horizon
-        window_end = epoch_seconds_to_timestamp(int(window_end_epoch_seconds))
+        window_end = window_start + pd.Timedelta(horizon, unit="s")
     else:
         window_end = None
 
@@ -186,20 +186,8 @@ def test_forward_aggregate(
     """
     event_view = event_table.get_view()
     entity_column_name = "ÜSER ID"
-
-    # Build dataframe for testing
-    # Apply a filter condition
-    # def _get_filtered_data(event_view_or_dataframe):
-    #     cond1 = event_view_or_dataframe["ÀMOUNT"] > 20
-    #     cond2 = event_view_or_dataframe["ÀMOUNT"].isnull()
-    #     mask = cond1 | cond2
-    #     return event_view_or_dataframe[mask]
-
-    # event_view = _get_filtered_data(event_view)
-    # transaction_data_upper_case = _get_filtered_data(transaction_data_upper_case)
     event_timestamp_column_name = "ËVENT_TIMESTAMP"
     df = transaction_data_upper_case.sort_values(event_timestamp_column_name)
-    df.to_csv("df.csv")
 
     for target_parameter in target_parameters:
         if target_parameter.skip:
@@ -222,7 +210,6 @@ def test_forward_aggregate(
 
         # Transform and sample to get a smaller sample dataframe just for preview
         expected_values = transform_and_sample_observation_set(expected_values)
-        expected_values.to_csv("expected_values.csv", index=False)
 
         # Build actual Target preview results
         target = event_view.groupby(entity_column_name).forward_aggregate(
@@ -232,6 +219,6 @@ def test_forward_aggregate(
             target_name=target_parameter.target_name,
         )
         results = target.preview(expected_values[["POINT_IN_TIME", "üser id"]])
-        results.to_csv("results.csv", index=False)
+
         # Compare actual preview, against sampled results
         fb_assert_frame_equal(results, expected_values)
