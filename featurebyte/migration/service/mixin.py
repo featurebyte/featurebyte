@@ -128,7 +128,7 @@ class DataWarehouseMigrationMixin(BaseMigrationServiceMixin, ABC):
 
     @property
     def delegate_service(self) -> BaseDocumentServiceT:
-        return self.feature_store_service
+        return self.feature_store_service  # type: ignore[return-value]
 
     async def get_session(self, feature_store: FeatureStoreModel) -> BaseSession:
         """
