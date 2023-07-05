@@ -10,6 +10,7 @@ import pytest
 import pytest_asyncio
 from bson import json_util
 
+from featurebyte import SourceType
 from featurebyte.app import get_celery
 from featurebyte.migration.model import MigrationMetadata, SchemaMetadataUpdate
 from featurebyte.migration.run import (
@@ -22,8 +23,9 @@ from featurebyte.migration.run import (
 )
 from featurebyte.migration.service.mixin import DataWarehouseMigrationMixin
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.schema.entity import EntityCreate
-from featurebyte.service.entity import EntityService
+from featurebyte.query_graph.node.schema import SnowflakeDetails
+from featurebyte.schema.feature_store import FeatureStoreCreate
+from featurebyte.service.feature_store import FeatureStoreService
 
 
 @pytest.fixture(name="schema_metadata_service")
@@ -138,21 +140,31 @@ async def migration_check_user_persistent_fixture(test_dir, persistent):
 @pytest.mark.asyncio
 async def test_post_migration_sanity_check(app_container):
     """Test post_migration_sanity_check"""
-    service = app_container.entity_service
+    service = app_container.feature_store_service
+    migration_service = app_container.data_warehouse_migration_service_v6
     docs = []
     for i in range(20):
         doc = await service.create_document(
-            data=EntityCreate(name=f"entity_{i}", serving_name=f"serving_name_{i}")
+            data=FeatureStoreCreate(
+                name=f"feature_store_{i}",
+                type=SourceType.SNOWFLAKE,
+                details=SnowflakeDetails(
+                    account=f"<account>_{i}",
+                    warehouse="snowflake",
+                    database="<database_name>",
+                    sf_schema="<schema_name>",
+                ),
+            ),
         )
         docs.append(doc)
 
     # run test_post_migration_sanity_check (should run without error as no migration is performed)
     with patch.object(
-        EntityService,
+        FeatureStoreService,
         "historical_document_generator",
-        wraps=service.historical_document_generator,
+        wraps=migration_service.delegate_service.historical_document_generator,
     ) as mock_call:
-        await post_migration_sanity_check(service)
+        await post_migration_sanity_check(migration_service)
 
     docs = sorted(docs, key=lambda d: d.id, reverse=True)
     step_size = len(docs) // 5
