@@ -645,7 +645,6 @@ def observation_set(transaction_data_upper_case):
         df.loc[spike_mask, "POINT_IN_TIME"] + spike_shift[spike_mask]
     )
     df = df.reset_index(drop=True)
-    df.to_csv("observation_set.csv", index=False)
     return df
 
 

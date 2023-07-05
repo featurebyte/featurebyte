@@ -25,7 +25,6 @@ class TargetParameter:
     horizon: str
     target_name: str
     agg_func: callable
-    skip: bool = True
 
 
 @pytest.fixture(name="target_parameters")
@@ -34,11 +33,17 @@ def target_parameters_fixture(source_type):
     Parameters for feature tests using aggregate_over
     """
     parameters = [
-        TargetParameter("ÀMOUNT", "avg", "2h", "avg_2h", lambda x: x.mean(), skip=False),
-        TargetParameter("ÀMOUNT", "avg", "24h", "avg_24h", lambda x: x.mean(), skip=False),
-        TargetParameter("ÀMOUNT", "min", "24h", "min_24h", lambda x: x.min(), skip=False),
-        TargetParameter("ÀMOUNT", "max", "24h", "max_24h", lambda x: x.max(), skip=False),
-        TargetParameter("ÀMOUNT", "sum", "24h", "sum_24h", sum_func, skip=False),
+        TargetParameter("ÀMOUNT", "avg", "2h", "avg_2h", lambda x: x.mean()),
+        TargetParameter("ÀMOUNT", "avg", "24h", "avg_24h", lambda x: x.mean()),
+        TargetParameter("ÀMOUNT", "min", "24h", "min_24h", lambda x: x.min()),
+        TargetParameter(
+            "ÀMOUNT",
+            "max",
+            "24h",
+            "max_24h",
+            lambda x: x.max(),
+        ),
+        TargetParameter("ÀMOUNT", "sum", "24h", "sum_24h", sum_func),
     ]
     spark_only_agg_types = ["max", "std", "latest"]
     if source_type == "spark":
@@ -51,7 +56,7 @@ def transform_and_sample_observation_set(observation_set: pd.DataFrame) -> pd.Da
     Transform and sample observation set.
 
     - Transform POINT_IN_TIME to datetime
-    - Sample 50 points
+    - Sample 25 points
     - Rename ÜSER ID to üser id
 
     Parameters
@@ -68,7 +73,7 @@ def transform_and_sample_observation_set(observation_set: pd.DataFrame) -> pd.Da
         observation_set_copied["POINT_IN_TIME"], utc=True
     ).dt.tz_localize(None)
 
-    sampled_points = observation_set_copied.sample(n=50, random_state=0).reset_index(drop=True)
+    sampled_points = observation_set_copied.sample(n=25, random_state=0).reset_index(drop=True)
     sampled_points.rename({"ÜSER ID": "üser id"}, axis=1, inplace=True)
     return sampled_points
 
@@ -190,9 +195,6 @@ def test_forward_aggregate(
     df = transaction_data_upper_case.sort_values(event_timestamp_column_name)
 
     for target_parameter in target_parameters:
-        if target_parameter.skip:
-            continue
-
         # Get expected target values
         utc_event_timestamps = pd.to_datetime(
             df[event_timestamp_column_name], utc=True

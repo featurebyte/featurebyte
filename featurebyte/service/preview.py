@@ -23,7 +23,6 @@ from featurebyte.query_graph.sql.feature_historical import get_historical_featur
 from featurebyte.query_graph.sql.feature_preview import get_feature_preview_sql
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.sql.materialisation import get_source_count_expr, get_source_expr
-from featurebyte.query_graph.sql.target_preview import get_target_preview_sql
 from featurebyte.schema.feature import FeaturePreview, FeatureSQL
 from featurebyte.schema.feature_list import (
     FeatureListGetHistoricalFeatures,
@@ -484,13 +483,14 @@ class PreviewService(BaseService):
                 feature_store=feature_store,
             )
         )
-        preview_sql = get_target_preview_sql(
+        preview_sql = get_feature_preview_sql(
             request_table_name=f"{REQUEST_TABLE_NAME}_{session.generate_session_unique_id()}",
             graph=graph,
             nodes=[target_node],
             point_in_time_and_serving_name_list=point_in_time_and_serving_name_list,
             source_type=feature_store.type,
             parent_serving_preparation=parent_serving_preparation,
+            skip_tile_generation=True,
         )
         try:
             result = await session.execute_query(preview_sql)

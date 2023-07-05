@@ -31,6 +31,7 @@ def get_feature_preview_sql(
     source_type: SourceType,
     point_in_time_and_serving_name_list: Optional[list[dict[str, Any]]] = None,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
+    skip_tile_generation: bool = False,
 ) -> str:
     """Get SQL code for previewing SQL
 
@@ -49,6 +50,8 @@ def get_feature_preview_sql(
         preview will be computed
     parent_serving_preparation: Optional[ParentServingPreparation]
         Preparation required for serving parent features
+    skip_tile_generation: bool
+        Whether to skip tile generation
 
     Returns
     -------
@@ -91,17 +94,18 @@ def get_feature_preview_sql(
         logger.debug(f"Constructing request table SQL took {elapsed:.2}s")
 
         # build required tiles
-        tic = time.time()
-        tile_compute_plan = OnDemandTileComputePlan(
-            request_table_name=request_table_name,
-            source_type=source_type,
-        )
-        for node in nodes:
-            tile_compute_plan.process_node(graph, node)
-        tile_compute_ctes = sorted(tile_compute_plan.construct_on_demand_tile_ctes())
-        cte_statements.extend(tile_compute_ctes)
-        elapsed = time.time() - tic
-        logger.debug(f"Constructing required tiles SQL took {elapsed:.2}s")
+        if not skip_tile_generation:
+            tic = time.time()
+            tile_compute_plan = OnDemandTileComputePlan(
+                request_table_name=request_table_name,
+                source_type=source_type,
+            )
+            for node in nodes:
+                tile_compute_plan.process_node(graph, node)
+            tile_compute_ctes = sorted(tile_compute_plan.construct_on_demand_tile_ctes())
+            cte_statements.extend(tile_compute_ctes)
+            elapsed = time.time() - tic
+            logger.debug(f"Constructing required tiles SQL took {elapsed:.2}s")
 
     tic = time.time()
     preview_sql = sql_to_string(
