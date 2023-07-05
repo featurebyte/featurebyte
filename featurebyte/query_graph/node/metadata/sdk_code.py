@@ -202,6 +202,7 @@ class ClassEnum(Enum):
 
     # non-featurebyte related
     OBJECT_ID = ("bson", "ObjectId")
+    PD_TIMESTAMP = ("pandas", "Timestamp")
 
     # feature store
     FEATURE_STORE = ("featurebyte", "FeatureStore")
@@ -276,11 +277,22 @@ def get_object_class_from_function_call(
     Returns
     -------
     ObjectClass
+
+    Raises
+    ------
+    ValueError
+        If module_path and class_name are not both None or both not None
     """
+    module_path = kwargs.pop("module_path", None)
+    class_name = kwargs.pop("class_name", None)
+    if (module_path and not class_name) or (class_name and not module_path):
+        raise ValueError("module_path and class_name should be both None or both not None")
     return ObjectClass(
         positional_args=args,
         keyword_args=kwargs,
         callable_name=callable_name,
+        module_path=module_path,
+        class_name=class_name,
     )
 
 

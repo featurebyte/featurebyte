@@ -2,13 +2,14 @@
 This module contains generic function related node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Any, Dict, List, Literal, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Literal, Optional, Sequence, Tuple, Union, cast
 from typing_extensions import Annotated
 
 from abc import abstractmethod  # pylint: disable=wrong-import-order
 
 from pydantic import BaseModel, Field
 
+from featurebyte.common.typing import Scalar
 from featurebyte.enum import DBVarType, FunctionParameterInputForm
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -22,17 +23,19 @@ from featurebyte.query_graph.node.metadata.operation import (
     PostAggregationColumn,
 )
 from featurebyte.query_graph.node.metadata.sdk_code import (
+    ClassEnum,
     CodeGenerationConfig,
     CodeGenerationContext,
-    ExpressionStr,
     InfoDict,
-    RightHandSide,
+    ObjectClass,
     StatementT,
-    ValueStr,
     VariableNameGenerator,
     VarNameExpressionInfo,
+    get_object_class_from_function_call,
 )
-from featurebyte.query_graph.node.scalar import ValueParameterType
+from featurebyte.query_graph.node.scalar import TimestampValue, ValueParameterType
+
+SDKFunctionArgument = Union[VarNameExpressionInfo, Scalar, ObjectClass]
 
 
 class BaseFunctionParameterInput(BaseModel):
@@ -54,7 +57,7 @@ class BaseFunctionParameterInput(BaseModel):
     @abstractmethod
     def get_sdk_function_argument(
         self, node_inputs: List[VarNameExpressionInfo], node_input_index: int
-    ) -> Tuple[RightHandSide, int]:
+    ) -> Tuple[SDKFunctionArgument, int]:
         """
         Get SDK function argument for the function parameter input.
 
@@ -67,7 +70,7 @@ class BaseFunctionParameterInput(BaseModel):
 
         Returns
         -------
-        Tuple[RightHandSide, int]
+        Tuple[SDKFunctionArgument, int]
             Tuple of SDK function argument and the updated node input index.
         """
 
@@ -85,9 +88,13 @@ class ValueFunctionParameterInput(BaseFunctionParameterInput):
 
     def get_sdk_function_argument(
         self, node_inputs: List[VarNameExpressionInfo], node_input_index: int
-    ) -> Tuple[RightHandSide, int]:
+    ) -> Tuple[SDKFunctionArgument, int]:
         # do not increment node_input_index as this is a value input, it should not increment the node_input_index
-        return ValueStr.create(self.value), node_input_index
+        if isinstance(self.value, TimestampValue):
+            return ClassEnum.PD_TIMESTAMP(self.value.iso_format_str), node_input_index
+        if isinstance(self.value, (list, tuple)):
+            raise NotImplementedError("List value is not supported yet")
+        return cast(Scalar, self.value), node_input_index
 
 
 class ColumnFunctionParameterInput(BaseFunctionParameterInput):
@@ -103,7 +110,7 @@ class ColumnFunctionParameterInput(BaseFunctionParameterInput):
 
     def get_sdk_function_argument(
         self, node_inputs: List[VarNameExpressionInfo], node_input_index: int
-    ) -> Tuple[RightHandSide, int]:
+    ) -> Tuple[SDKFunctionArgument, int]:
         # InfoDict is not expected here as it should be used only in (ConditionNode - AssignNode) structure
         value = node_inputs[node_input_index]
         assert not isinstance(value, InfoDict), "Unexpected InfoDict type"
@@ -120,6 +127,7 @@ FunctionParameterInput = Annotated[
 class GenericFunctionNodeParameters(BaseModel):
     """GenericFunctionNodeParameters class"""
 
+    name: str
     function_name: str
     function_parameters: List[FunctionParameterInput]
     output_dtype: DBVarType
@@ -167,7 +175,10 @@ class GenericFunctionNode(BaseSeriesOutputNode):
                 raise ValueError("Input category type is not homogeneous")
             if input_operation_structure.output_type != NodeOutputType.SERIES:
                 raise ValueError("Input type is not series")
-            if input_operation_structure.row_index_lineage != row_index_lineage:
+            if (
+                input_category == NodeOutputCategory.VIEW
+                and input_operation_structure.row_index_lineage != row_index_lineage
+            ):
                 raise ValueError("Input row index is not matched")
 
         # prepare node parameters
@@ -183,7 +194,7 @@ class GenericFunctionNode(BaseSeriesOutputNode):
                 DerivedDataColumn.create(
                     name=None,
                     columns=columns,
-                    transform=self.parameters.function_name,
+                    transform=self.parameters.name,
                     node_name=self.name,
                     dtype=self.parameters.output_dtype,
                 )
@@ -194,7 +205,7 @@ class GenericFunctionNode(BaseSeriesOutputNode):
                 PostAggregationColumn.create(
                     name=None,
                     columns=aggregations,
-                    transform=self.parameters.function_name,
+                    transform=self.parameters.name,
                     node_name=self.name,
                     dtype=self.parameters.output_dtype,
                 )
@@ -223,6 +234,16 @@ class GenericFunctionNode(BaseSeriesOutputNode):
             )
             function_parameters.append(func_param_val)
 
-        function_parameters = [str(arg) for arg in function_parameters]
-        expression = f"{self.parameters.function_name}({', '.join(function_parameters)})"
-        return [], ExpressionStr(expression)
+        out_var_name = var_name_generator.generate_variable_name(
+            node_output_category=operation_structure.output_category,
+            node_output_type=operation_structure.output_type,
+            node_name=self.name,
+        )
+        expression = get_object_class_from_function_call(
+            self.parameters.name,
+            *function_parameters,
+            module_path="featurebyte",
+            class_name="UDF",
+        )
+        statements: List[StatementT] = [(out_var_name, expression)]
+        return statements, out_var_name

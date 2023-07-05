@@ -3,7 +3,7 @@ ApiObject class
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar, Union
+from typing import Any, Callable, ClassVar, Dict, List, Optional, Type, TypeVar, Union
 
 import operator
 from http import HTTPStatus
@@ -177,7 +177,10 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
 
     @classmethod
     def _get_object_dict_by_name(
-        cls: Type[ApiObjectT], name: str, other_params: Optional[dict[str, Any]] = None
+        cls: Type[ApiObjectT],
+        name: str,
+        other_params: Optional[dict[str, Any]] = None,
+        select_func: Optional[Callable[[list[dict[str, Any]]], dict[str, Any]]] = None,
     ) -> dict[str, Any]:
         client = Configurations().get_client()
         other_params = other_params or {}
@@ -185,6 +188,8 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
         if response.status_code == HTTPStatus.OK:
             response_dict = response.json()
             if response_dict["data"]:
+                if select_func:
+                    return select_func(response_dict["data"])
                 return dict(response_dict["data"][0])
             class_name = cls.__name__
             raise RecordRetrievalException(

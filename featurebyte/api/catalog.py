@@ -33,6 +33,7 @@ from featurebyte.api.savable_api_object import SavableApiObject
 from featurebyte.api.static_source_table import StaticSourceTable
 from featurebyte.api.table import Table
 from featurebyte.api.target import Target
+from featurebyte.api.user_defined_function import UserDefinedFunction
 from featurebyte.api.view import View
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.exception import RecordRetrievalException
@@ -827,6 +828,29 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return Deployment.list(include_id=include_id)
 
     @update_and_reset_catalog
+    def list_user_defined_functions(self, include_id: Optional[bool] = True) -> pd.DataFrame:
+        """
+        List saved user defined functions.
+
+        Parameters
+        ----------
+        include_id: Optional[bool]
+            Whether to include id in the list.
+
+        Returns
+        -------
+        pd.DataFrame
+            Table of user defined functions.
+
+        Examples
+        --------
+        List saved user defined functions.
+
+        >>> user_defined_functions = catalog.list_user_defined_functions()
+        """
+        return UserDefinedFunction.list(include_id=include_id)
+
+    @update_and_reset_catalog
     def get_data_source(self) -> DataSource:
         """
         Gets the data source from the catalog to access source tables from the data warehouse.
@@ -1228,3 +1252,26 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         >>> static_source_table = catalog.get_static_source_table("static_source_table_name")  # doctest: +SKIP
         """
         return StaticSourceTable.get(name=name)
+
+    @update_and_reset_catalog
+    def get_user_defined_function(self, name: str) -> UserDefinedFunction:
+        """
+        Get user defined function by name.
+
+        Parameters
+        ----------
+        name: str
+            User defined function name.
+
+        Returns
+        -------
+        UserDefinedFunction
+            User defined function object.
+
+        Examples
+        --------
+        Get a saved user defined function.
+
+        >>> user_defined_function = catalog.get_user_defined_function("user_defined_function_name")  # doctest: +SKIP
+        """
+        return UserDefinedFunction.get(name=name)

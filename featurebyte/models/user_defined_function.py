@@ -3,7 +3,7 @@ This module contains UserDefinedFunction related models
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Union
 
 from pydantic import Field, validator
 from sqlglot.expressions import select
@@ -22,6 +22,7 @@ from featurebyte.query_graph.node.function import (
     GenericFunctionNodeParameters,
     ValueFunctionParameterInput,
 )
+from featurebyte.query_graph.node.scalar import TimestampValue
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext
 from featurebyte.query_graph.sql.ast.function import GenericFunctionNode as GenericFunctionSQLNode
 from featurebyte.query_graph.sql.common import SQLType
@@ -73,6 +74,8 @@ class UserDefinedFunctionModel(FeatureByteBaseDocumentModel):
     """
     UserDefinedFunction model stores user defined function information
 
+    name: str
+        Name of the UDF to be used when calling through FeatureByte SDK
     function_name: str
         Name of the function used to call in the SQL query
     function_parameters: List[FunctionParameter]
@@ -81,6 +84,7 @@ class UserDefinedFunctionModel(FeatureByteBaseDocumentModel):
         Catalog id of the function (if any), if not provided, it can be used across all catalogs
     """
 
+    name: str
     function_name: str
     function_parameters: List[FunctionParameter]
     output_dtype: DBVarType
@@ -88,12 +92,12 @@ class UserDefinedFunctionModel(FeatureByteBaseDocumentModel):
     catalog_id: Optional[PydanticObjectId]
     feature_store_id: PydanticObjectId
 
-    @validator("function_name")
+    @validator("name", "function_name")
     @classmethod
     def _validate_function_name(cls, value: str) -> str:
-        # check that function name is a valid function name
+        # check that name or function name is a valid identifier
         if not value.isidentifier():
-            raise ValueError(f'Function name "{value}" is not valid')
+            raise ValueError(f'"{value}" is not a valid identifier')
         return value
 
     @validator("function_parameters")
@@ -112,10 +116,43 @@ class UserDefinedFunctionModel(FeatureByteBaseDocumentModel):
         return value
 
     def _generate_signature(self) -> str:
-        # generate function signature
+        # generate sdk function signature
         param_signature = ", ".join([param.signature for param in self.function_parameters])
         output_type = DBVarType(self.output_dtype).to_type_str()
-        return f"{self.function_name}({param_signature}) -> {output_type}"
+        return f"{self.name}({param_signature}) -> {output_type}"
+
+    @staticmethod
+    def get_default_test_value(dtype: DBVarType) -> Union[Scalar, TimestampValue]:
+        """
+        Get default test value for this type. This is used to generate the test input value
+        for user-defined functions.
+
+        Parameters
+        ----------
+        dtype: DBVarType
+            Variable type
+
+        Returns
+        -------
+        Union[Scalar, TimestampValue]
+
+        Raises
+        ------
+        ValueError
+            If the type is not supported
+        """
+        mapping = {
+            DBVarType.BOOL: False,
+            DBVarType.VARCHAR: "test",
+            DBVarType.FLOAT: 1.0,
+            DBVarType.INT: 1,
+            DBVarType.TIMESTAMP: TimestampValue(iso_format_str="2021-01-01 00:00:00"),
+            DBVarType.TIMESTAMP_TZ: TimestampValue(iso_format_str="2021-01-01 00:00:00+00:00"),
+        }
+        value = mapping.get(dtype)
+        if value is None:
+            raise ValueError(f"Unsupported type {dtype}")
+        return value  # type: ignore
 
     def generate_test_sql(self, source_type: SourceType) -> str:
         """
@@ -131,17 +168,18 @@ class UserDefinedFunctionModel(FeatureByteBaseDocumentModel):
         str
         """
         function_parameters = []
-        value: Optional[Scalar]
+        value: Optional[Union[Scalar, TimestampValue]]
         for param in self.function_parameters:
             if param.has_test_value:
                 value = param.test_value
             else:
-                value = DBVarType(param.dtype).get_default_test_value()
+                value = self.get_default_test_value(param.dtype)
             function_parameters.append(ValueFunctionParameterInput(value=value, dtype=param.dtype))
 
         node = GenericFunctionNode(
             name="generic_function_1",
             parameters=GenericFunctionNodeParameters(
+                name=self.name,
                 function_name=self.function_name,
                 function_parameters=function_parameters,
                 output_dtype=self.output_dtype,

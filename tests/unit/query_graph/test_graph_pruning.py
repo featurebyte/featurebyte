@@ -444,7 +444,8 @@ def test_generic_function__pruning(query_graph_and_assign_node):
     gfunc_1 = graph.add_operation(
         node_type=NodeType.GENERIC_FUNCTION,
         node_params={
-            "function_name": "my_func",
+            "name": "my_func",
+            "function_name": "sql_func",
             "function_parameters": [
                 {"column_name": "a", "dtype": "FLOAT", "input_form": "column"},
                 {"column_name": "c", "dtype": "FLOAT", "input_form": "column"},
@@ -470,7 +471,8 @@ def test_generic_function__pruning(query_graph_and_assign_node):
     gfunc_2 = graph.add_operation(
         node_type=NodeType.GENERIC_FUNCTION,
         node_params={
-            "function_name": "my_func",
+            "name": "my_func",
+            "function_name": "sql_func",
             "function_parameters": [
                 {"column_name": "a", "dtype": "FLOAT", "input_form": "column"},
             ],

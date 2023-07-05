@@ -35,6 +35,7 @@ from featurebyte.api.scd_table import SCDTable
 from featurebyte.api.scd_view import SCDView
 from featurebyte.api.source_table import SourceTable
 from featurebyte.api.table import Table
+from featurebyte.api.user_defined_function import UDF, UserDefinedFunction
 from featurebyte.common.env_util import is_notebook
 from featurebyte.common.utils import get_version
 from featurebyte.config import Configurations, Profile
@@ -64,6 +65,7 @@ from featurebyte.models.credential import (
 from featurebyte.models.feature import DefaultVersionMode
 from featurebyte.models.feature_list import FeatureListStatus
 from featurebyte.models.feature_store import TableStatus
+from featurebyte.models.user_defined_function import FunctionParameter
 from featurebyte.query_graph.model.feature_job_setting import (
     FeatureJobSetting,
     TableFeatureJobSetting,
@@ -409,6 +411,7 @@ __all__ = [
     "SourceTable",
     "SnowflakeDetails",
     "SparkDetails",
+    "UserDefinedFunction",
     "to_timedelta",
     "Table",
     "TableFeatureJobSetting",
@@ -437,6 +440,7 @@ __all__ = [
     # others
     "ColumnCleaningOperation",
     "TableCleaningOperation",
+    "FunctionParameter",
     "PeriodicTask",
     # services
     "start",
@@ -444,6 +448,7 @@ __all__ = [
     "playground",
     # utility
     "list_unsaved_features",
+    "UDF",
 ]
 
 

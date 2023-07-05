@@ -277,7 +277,7 @@ class TestUserDefinedFunctionApi(BaseApiTestSuite):
             ],
             "name": "udf_test",
             "output_dtype": "FLOAT",
-            "signature": "cos(x: float) -> float",
+            "signature": "udf_test(x: float) -> float",
             "used_by_features": [],
             "created_at": response_dict["created_at"],
             "updated_at": None,
