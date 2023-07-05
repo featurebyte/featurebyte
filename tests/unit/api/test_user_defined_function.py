@@ -6,7 +6,11 @@ import pytest
 
 from featurebyte.api.catalog import Catalog
 from featurebyte.api.user_defined_function import UDF, UserDefinedFunction
-from featurebyte.exception import DocumentCreationError, RecordDeletionException
+from featurebyte.exception import (
+    DocumentCreationError,
+    RecordDeletionException,
+    RecordUpdateException,
+)
 from featurebyte.models.user_defined_function import FunctionParameter
 from tests.util.helper import check_sdk_code_generation
 
@@ -317,3 +321,31 @@ def test_create_feature_with_overriden_global_udf(cos_udf, local_cos_udf, float_
 
     # check that the feature definition contains the global UDF
     assert str(cos_udf.id) in new_feat.definition
+
+
+def test_update_user_defined_function(cos_udf, float_feature):
+    """Test update a user-defined function"""
+    cos_udf.update_sql_function_name("cos_v3")
+    assert cos_udf.sql_function_name == "cos_v3"
+
+    func_params = [FunctionParameter(name="value", dtype="FLOAT")]
+    cos_udf.update_function_parameters(func_params)
+    assert cos_udf.function_parameters == func_params
+
+    cos_udf.update_output_dtype("INT")
+    assert cos_udf.output_dtype == "INT"
+
+    # attempt to update the UDF with no changes should fail
+    with pytest.raises(RecordUpdateException) as exc:
+        cos_udf.update_output_dtype("INT")
+    assert "No changes detected in user defined function" in str(exc.value)
+
+    # attempt to update the UDF used by a saved feature should fail
+    new_feat = cos_udf(float_feature)
+    new_feat.name = "new_feat"
+    new_feat.save()
+
+    with pytest.raises(RecordUpdateException) as exc:
+        cos_udf.update_output_dtype("FLOAT")
+    expected_error = "User defined function used by saved feature(s): ['new_feat']"
+    assert expected_error in str(exc.value)

@@ -31,7 +31,10 @@ from featurebyte.exception import DocumentCreationError, InvalidSettingsError
 from featurebyte.logging import get_logger
 from featurebyte.models.base import PydanticObjectId, get_active_catalog_id
 from featurebyte.models.user_defined_function import FunctionParameter, UserDefinedFunctionModel
-from featurebyte.schema.user_defined_function import UserDefinedFunctionCreate
+from featurebyte.schema.user_defined_function import (
+    UserDefinedFunctionCreate,
+    UserDefinedFunctionUpdate,
+)
 
 logger = get_logger(__name__)
 
@@ -109,6 +112,7 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
     # class variables
     _route = "/user_defined_function"
     _create_schema_class = UserDefinedFunctionCreate
+    _update_schema_class = UserDefinedFunctionUpdate
     _get_schema = UserDefinedFunctionModel
     _list_schema = UserDefinedFunctionModel
     _list_fields = [
@@ -293,6 +297,46 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
         user_defined_function.save()
         return user_defined_function
 
+    @typechecked
+    def update_sql_function_name(self, sql_function_name: str) -> None:
+        """
+        Update the SQL function name of the user-defined function.
+
+        Parameters
+        ----------
+        sql_function_name: str
+            The SQL function name of the user-defined function (which is used in SQL queries).
+        """
+        self.update(
+            update_payload={"sql_function_name": sql_function_name}, allow_update_local=False
+        )
+
+    @typechecked
+    def update_function_parameters(self, function_parameters: List[FunctionParameter]) -> None:
+        """
+        Update the function parameters of the user-defined function.
+
+        Parameters
+        ----------
+        function_parameters: List[FunctionParameter]
+            The function parameters of the user-defined function.
+        """
+        self.update(
+            update_payload={"function_parameters": function_parameters}, allow_update_local=False
+        )
+
+    @typechecked
+    def update_output_dtype(self, output_dtype: Literal[tuple(DBVarType)]) -> None:  # type: ignore[misc]
+        """
+        Update the output data type of the user-defined function.
+
+        Parameters
+        ----------
+        output_dtype: Literal[tuple(DBVarType)]
+            The output data type of the user-defined function.
+        """
+        self.update(update_payload={"output_dtype": output_dtype}, allow_update_local=False)
+
     def delete(self) -> None:
         """
         Delete the user-defined function from the persistent data store. The user-defined function can only be
@@ -315,11 +359,11 @@ class UserDefinedFunctionAccessorWrapper:
     def __dir__(self) -> List[str]:
         # provide auto-completion for user-defined functions by dynamically constructing the function accessor
         # and returning the function accessor's dir list
-        return dir(UserDefinedFunction.func)
+        attrs = [attr for attr in dir(UserDefinedFunction.func) if not attr.startswith("__")]
+        return attrs
 
     def __getattr__(self, item: str) -> Any:
-        # provide auto-completion for user-defined functions by dynamically constructing the function accessor
-        # and returning the function accessor's attribute
+        # return the attribute of the dynamically constructed function accessor
         return getattr(UserDefinedFunction.func, item)
 
 

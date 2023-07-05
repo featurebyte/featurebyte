@@ -94,22 +94,32 @@ class TestUserDefinedFunctionApi(BaseApiTestSuite):
         response = test_api_client.get(f"{self.base_route}/{self.payload['_id']}")
         assert response.status_code == HTTPStatus.NOT_FOUND
 
-    def test_update_200(self, test_api_client_persistent, create_success_response):
+    @pytest.mark.parametrize(
+        "payload",
+        [
+            {"sql_function_name": "cos_v2"},
+            {
+                "function_parameters": [
+                    {"dtype": "INT", "name": "param1", "default_value": None, "test_value": None}
+                ]
+            },
+            {"output_dtype": "INT"},
+        ],
+    )
+    def test_update_200(self, test_api_client_persistent, create_success_response, payload):
         """Test update user defined function (success)"""
         test_api_client, _ = test_api_client_persistent
         response_dict = create_success_response.json()
         doc_id = response_dict["_id"]
-        function_parameter = response_dict["function_parameters"][0]
-        assert function_parameter["dtype"] == "FLOAT"
 
         # check update function parameter
-        function_parameter["dtype"] = "INT"
-        update_response = test_api_client.patch(
-            url=f"{self.base_route}/{doc_id}", json={"function_parameters": [function_parameter]}
-        )
+        update_response = test_api_client.patch(url=f"{self.base_route}/{doc_id}", json=payload)
         assert update_response.status_code == HTTPStatus.OK
         update_response_dict = update_response.json()
-        assert update_response_dict["function_parameters"][0]["dtype"] == "INT"
+        expected_response_dict = response_dict.copy()
+        expected_response_dict.update(payload)
+        expected_response_dict["updated_at"] = update_response_dict["updated_at"]
+        assert update_response_dict == expected_response_dict
 
     def test_update_404(self, test_api_client_persistent):
         """Test update user defined function (not found)"""
@@ -131,11 +141,16 @@ class TestUserDefinedFunctionApi(BaseApiTestSuite):
         assert function_parameter["name"] == "x"
 
         # check no changes found in function parameter
+        expected_error_message = "No changes detected in user defined function"
         update_response = test_api_client.patch(
             url=f"{self.base_route}/{doc_id}", json={"function_parameters": [function_parameter]}
         )
         assert update_response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-        assert update_response.json()["detail"] == "No changes found in function parameters"
+        assert update_response.json()["detail"] == expected_error_message
+
+        update_response = test_api_client.patch(url=f"{self.base_route}/{doc_id}", json={})
+        assert update_response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert update_response.json()["detail"] == expected_error_message
 
         # check update function used by saved feature
         await self._update_feature_user_defined_function_ids(

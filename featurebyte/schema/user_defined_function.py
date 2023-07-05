@@ -32,25 +32,19 @@ class UserDefinedFunctionCreate(FeatureByteBaseModel):
     )
 
 
-class UserDefinedFunctionUpdate(FeatureByteBaseModel):
+class UserDefinedFunctionUpdate(BaseDocumentServiceUpdateSchema):
     """
     UserDefinedFunction update schema
     """
 
-    function_parameters: List[FunctionParameter]
+    sql_function_name: Optional[StrictStr]
+    function_parameters: Optional[List[FunctionParameter]]
+    output_dtype: Optional[DBVarType]
 
     # pydanctic validator
     _validate_unique_function_parameter_name = validator("function_parameters", allow_reuse=True)(
         construct_unique_name_validator(field="name")
     )
-
-
-class UserDefinedFunctionServiceUpdate(BaseDocumentServiceUpdateSchema):
-    """
-    UserDefinedFunction service update schema
-    """
-
-    function_parameters: List[FunctionParameter]
 
 
 class UserDefinedFunctionList(PaginationMixin):
