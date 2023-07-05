@@ -187,7 +187,8 @@ jobs:
   test-integration-spark:
     needs:
     - build-jar
-    runs-on: ubuntu-latest-4-16
+    runs-on:
+      group: Public Runners
     timeout-minutes: 45
     strategy:
       matrix:
