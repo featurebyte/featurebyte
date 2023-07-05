@@ -1,6 +1,8 @@
 """
 Target controller
 """
+from __future__ import annotations
+
 from typing import Any, Dict, Literal, Optional
 
 from http import HTTPStatus
