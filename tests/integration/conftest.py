@@ -869,6 +869,7 @@ async def create_spark_tile_specs(session, **kwargs):
     Helper to create a snowflake tile_spec with spark specific clean up
     """
     _ = session
+    _ = kwargs
     yield create_generic_tile_spec()
 
 
