@@ -10,7 +10,7 @@ from bson import ObjectId
 from featurebyte.exception import DocumentCreationError, DocumentDeletionError, DocumentUpdateError
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.models.user_defined_function import FunctionParameter, UserDefinedFunctionModel
+from featurebyte.models.user_defined_function import UserDefinedFunctionModel
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.info import UserDefinedFunctionFeatureInfo, UserDefinedFunctionInfo
 from featurebyte.schema.user_defined_function import (
@@ -151,10 +151,7 @@ class UserDefinedFunctionController(
         document = await self.service.get_document(document_id=document_id)
 
         # check if no changes found in function parameters
-        function_parameters = [
-            FunctionParameter(**param.dict()) for param in data.function_parameters
-        ]
-        if function_parameters == document.function_parameters:
+        if data.function_parameters == document.function_parameters:
             raise DocumentUpdateError("No changes found in function parameters")
 
         # check if function used in any saved feature
@@ -169,7 +166,7 @@ class UserDefinedFunctionController(
         )
 
         # validate user defined function
-        document.function_parameters = function_parameters
+        document.function_parameters = data.function_parameters
         await self._validate_user_defined_function(
             user_defined_function=document,
             feature_store=feature_store,
@@ -181,7 +178,7 @@ class UserDefinedFunctionController(
         # update user defined function
         updated_document = await self.service.update_document(
             document_id=document_id,
-            data=UserDefinedFunctionServiceUpdate(function_parameters=function_parameters),
+            data=UserDefinedFunctionServiceUpdate(function_parameters=data.function_parameters),
         )
         output_document = cast(UserDefinedFunctionModel, updated_document)
         return output_document
