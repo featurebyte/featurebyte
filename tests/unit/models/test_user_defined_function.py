@@ -44,13 +44,13 @@ def test_user_defined_function_model(
     feature_store_id = ObjectId()
     user_defined_function = UserDefinedFunctionModel(
         name="function_name",
-        function_name="sql_func",
+        sql_function_name="sql_func",
         function_parameters=function_parameters,
         output_dtype=DBVarType.FLOAT,
         catalog_id=catalog_id,
         feature_store_id=feature_store_id,
     )
-    assert user_defined_function.function_name == "sql_func"
+    assert user_defined_function.sql_function_name == "sql_func"
     assert user_defined_function.function_parameters == function_parameters
     assert user_defined_function.catalog_id == catalog_id
     assert user_defined_function.output_dtype == DBVarType.FLOAT
@@ -91,7 +91,7 @@ def test_user_defined_function_model__validator():
 
     with pytest.raises(ValueError) as exc:
         UserDefinedFunctionModel(
-            function_name="invalid function name",
+            sql_function_name="invalid function name",
             function_parameters=[func_param],
             output_dtype=DBVarType.FLOAT,
         )
@@ -101,7 +101,7 @@ def test_user_defined_function_model__validator():
     with pytest.raises(ValueError) as exc:
         UserDefinedFunctionModel(
             name="invalid name",
-            function_name="function_name",
+            sql_function_name="function_name",
             function_parameters=[func_param],
             output_dtype=DBVarType.FLOAT,
             feature_store_id=ObjectId(),

@@ -20,7 +20,7 @@ class UserDefinedFunctionCreate(FeatureByteBaseModel):
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
-    function_name: StrictStr
+    sql_function_name: StrictStr
     function_parameters: List[FunctionParameter]
     output_dtype: DBVarType
     catalog_id: Optional[PydanticObjectId]

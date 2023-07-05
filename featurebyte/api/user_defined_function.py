@@ -121,7 +121,7 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
     # pydantic instance variable (internal use)
     internal_catalog_id: Optional[PydanticObjectId] = Field(alias="catalog_id")
     internal_feature_store_id: PydanticObjectId = Field(alias="feature_store_id")
-    internal_function_name: str = Field(alias="function_name")
+    internal_sql_function_name: str = Field(alias="sql_function_name")
     internal_function_parameters: List[FunctionParameter] = Field(alias="function_parameters")
     internal_output_dtype: DBVarType = Field(alias="output_dtype")
 
@@ -159,7 +159,7 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
         -------
         str
         """
-        return self.cached_model.function_name  # type: ignore
+        return self.cached_model.sql_function_name
 
     @property
     def function_parameters(self) -> List[FunctionParameter]:
@@ -281,7 +281,7 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
 
         user_defined_function = UserDefinedFunction(
             name=name,
-            function_name=sql_function_name,
+            sql_function_name=sql_function_name,
             function_parameters=function_parameters,
             output_dtype=output_dtype,
             catalog_id=None if is_global else active_catalog_id,

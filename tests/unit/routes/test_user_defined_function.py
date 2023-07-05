@@ -264,7 +264,7 @@ class TestUserDefinedFunctionApi(BaseApiTestSuite):
         response_dict = response.json()
         assert response_dict == {
             "feature_store_name": "sf_featurestore",
-            "function_name": "cos",
+            "sql_function_name": "cos",
             "function_parameters": [
                 {
                     "default_value": None,

@@ -462,7 +462,7 @@ class UserDefinedFunctionInfo(BaseInfo):
     UserDefinedFunction info schema
     """
 
-    function_name: str
+    sql_function_name: str
     function_parameters: List[FunctionParameter]
     signature: str
     output_dtype: DBVarType

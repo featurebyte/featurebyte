@@ -234,7 +234,7 @@ def test_generate_user_defined_function(update_fixtures, request_payload_dir):
     user_defined_function = UserDefinedFunctionCreate(
         _id="64928868668f720c5bebbbd4",
         name="udf_test",
-        function_name="cos",
+        sql_function_name="cos",
         function_parameters=[
             FunctionParameter(
                 name="x",
