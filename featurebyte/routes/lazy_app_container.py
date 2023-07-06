@@ -8,7 +8,6 @@ from celery import Celery
 
 from featurebyte.persistent import Persistent
 from featurebyte.routes.app_container_config import AppContainerConfig, ClassDefinition
-from featurebyte.service.task_manager import TaskManager
 from featurebyte.storage import Storage
 
 
