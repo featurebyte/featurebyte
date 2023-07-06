@@ -37,7 +37,6 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.app import app
 from featurebyte.enum import InternalName, SourceType, StorageType
-from featurebyte.feature_manager.model import ExtendedFeatureListModel
 from featurebyte.logging import get_logger
 from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.models.credential import (
@@ -46,12 +45,10 @@ from featurebyte.models.credential import (
     S3StorageCredential,
     UsernamePasswordCredential,
 )
-from featurebyte.models.feature import FeatureModel, FeatureReadiness
-from featurebyte.models.feature_list import FeatureListStatus
 from featurebyte.models.task import Task as TaskModel
 from featurebyte.models.tile import TileSpec
 from featurebyte.persistent.mongo import MongoDB
-from featurebyte.query_graph.node.schema import SparkDetails, SQLiteDetails, TableDetails
+from featurebyte.query_graph.node.schema import SparkDetails, SQLiteDetails
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
 from featurebyte.schema.task import TaskStatus
@@ -847,7 +844,7 @@ def create_generic_tile_spec():
 
 
 @asynccontextmanager
-async def create_snowflake_tile_spec(session):
+async def create_snowflake_tile_spec(session, tile_registry_service):
     """
     Helper to create a snowflake tile_spec with snowflake specific clean up
     """
@@ -858,30 +855,26 @@ async def create_snowflake_tile_spec(session):
         yield tile_spec
     finally:
         if tile_spec is not None:
-            await session.execute_query("DELETE FROM TILE_REGISTRY")
+            async for doc in tile_registry_service.list_documents_iterator({}):
+                await tile_registry_service.delete_document(doc["_id"])
             await session.execute_query(
                 f"DROP TABLE IF EXISTS {tile_spec.aggregation_id}_ENTITY_TRACKER"
             )
             await session.execute_query(f"DROP TABLE IF EXISTS {tile_spec.tile_id}")
-            await session.execute_query(
-                f"DROP TASK IF EXISTS SHELL_TASK_{tile_spec.aggregation_id}_ONLINE"
-            )
-            await session.execute_query(
-                f"DROP TASK IF EXISTS SHELL_TASK_{tile_spec.aggregation_id}_OFFLINE"
-            )
 
 
 @asynccontextmanager
-async def create_spark_tile_specs(session):
+async def create_spark_tile_specs(session, **kwargs):
     """
     Helper to create a snowflake tile_spec with spark specific clean up
     """
     _ = session
+    _ = kwargs
     yield create_generic_tile_spec()
 
 
 @pytest_asyncio.fixture(name="tile_spec")
-async def tile_spec_fixture(session):
+async def tile_spec_fixture(session, tile_registry_service):
     """
     Pytest Fixture for TileSnowflake instance
     """
@@ -895,7 +888,7 @@ async def tile_spec_fixture(session):
 
     assert creator is not None, f"tile_spec fixture does not support {session.source_type}"
 
-    async with creator(session) as created_tile_spec:
+    async with creator(session, tile_registry_service=tile_registry_service) as created_tile_spec:
         yield created_tile_spec
 
 
@@ -962,41 +955,6 @@ def snowflake_feature_expected_tile_spec_dict_fixture():
         "category_column_name": None,
     }
     return expected_tile_spec
-
-
-@pytest_asyncio.fixture
-async def snowflake_feature_list(
-    feature_model_dict, snowflake_session, config, snowflake_feature_store
-):
-    """
-    Pytest Fixture for FeatureSnowflake instance
-    """
-    _ = config
-    feature_model_dict.update(
-        {
-            "tabular_source": {
-                "feature_store_id": snowflake_feature_store.id,
-                "table_details": TableDetails(table_name="some_random_table"),
-            },
-            "version": "v1",
-            "readiness": FeatureReadiness.DRAFT,
-            "is_default": True,
-        }
-    )
-    feature = FeatureModel(**feature_model_dict)
-
-    feature_list = ExtendedFeatureListModel(
-        name="feature_list1",
-        feature_ids=[feature.id],
-        feature_signatures=[{"id": feature.id, "name": feature.name, "version": feature.version}],
-        readiness=FeatureReadiness.DRAFT,
-        status=FeatureListStatus.PUBLIC_DRAFT,
-        version="v1",
-    )
-
-    yield feature_list
-
-    await snowflake_session.execute_query("DELETE FROM TILE_REGISTRY")
 
 
 @pytest.fixture(name="user_entity", scope="session")
@@ -1468,3 +1426,11 @@ def tile_scheduler_service_fixture(app_container):
     Fixture for TileSchedulerService
     """
     return app_container.tile_scheduler_service
+
+
+@pytest.fixture(name="tile_registry_service")
+def tile_registry_service_fixture(app_container):
+    """
+    Fixture for TileRegistryService
+    """
+    return app_container.tile_registry_service

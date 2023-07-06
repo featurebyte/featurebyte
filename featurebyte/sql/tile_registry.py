@@ -2,6 +2,8 @@
 Tile Registry Job Script
 """
 from featurebyte.logging import get_logger
+from featurebyte.models.tile_registry import TileModel
+from featurebyte.service.tile_registry_service import TileRegistryService
 from featurebyte.sql.common import retry_sql
 from featurebyte.sql.tile_common import TileCommon
 
@@ -15,6 +17,7 @@ class TileRegistry(TileCommon):
 
     table_name: str
     table_exist: bool
+    tile_registry_service: TileRegistryService
 
     async def execute(self) -> None:
         """
@@ -25,53 +28,27 @@ class TileRegistry(TileCommon):
 
         input_value_columns_types = [value for value in self.value_column_types if value.strip()]
 
-        registry_df = await retry_sql(
-            self._session,
-            f"SELECT COUNT(*) as TILE_COUNT from tile_registry WHERE TILE_ID = '{self.tile_id}' AND AGGREGATION_ID = '{self.aggregation_id}' ",
+        tile_model = await self.tile_registry_service.get_tile_model(
+            self.tile_id, self.aggregation_id
         )
 
-        if registry_df is not None and registry_df["TILE_COUNT"].iloc[0] == 0:
+        if tile_model is None:
             logger.info(
                 f"No registry record for tile_id {self.tile_id} and aggregation_id {self.aggregation_id}, creating new record"
             )
-            escape_sql = self.sql.replace("'", "''")
-            insert_sql = f"""
-                insert into tile_registry(
-                    TILE_ID,
-                    AGGREGATION_ID,
-                    TILE_SQL,
-                    ENTITY_COLUMN_NAMES,
-                    VALUE_COLUMN_NAMES,
-                    VALUE_COLUMN_TYPES,
-                    FREQUENCY_MINUTE,
-                    TIME_MODULO_FREQUENCY_SECOND,
-                    BLIND_SPOT_SECOND,
-                    IS_ENABLED,
-                    CREATED_AT,
-                    LAST_TILE_START_DATE_ONLINE,
-                    LAST_TILE_INDEX_ONLINE,
-                    LAST_TILE_START_DATE_OFFLINE,
-                    LAST_TILE_INDEX_OFFLINE
-                )
-                VALUES (
-                    '{self.tile_id}',
-                    '{self.aggregation_id}',
-                    '{escape_sql}',
-                    '{self.entity_column_names_str}',
-                    '{self.value_column_names_str}',
-                    '{self.value_column_types_str}',
-                    {self.frequency_minute},
-                    {self.time_modulo_frequency_second},
-                    {self.blind_spot_second},
-                    TRUE,
-                    current_timestamp(),
-                    null,
-                    null,
-                    null,
-                    null
-                )
-            """
-            await retry_sql(self._session, insert_sql)
+            tile_model = TileModel(
+                feature_store_id=self.feature_store_id,
+                tile_id=self.tile_id,
+                aggregation_id=self.aggregation_id,
+                tile_sql=self.sql,
+                entity_column_names=self.entity_column_names,
+                value_column_names=self.value_column_names,
+                value_column_types=self.value_column_types,
+                frequency_minute=self.frequency_minute,
+                time_modulo_frequency_second=self.time_modulo_frequency_second,
+                blind_spot_second=self.blind_spot_second,
+            )
+            await self.tile_registry_service.create_document(tile_model)
 
         if self.table_exist:
             cols = await self.get_table_columns(self.table_name)

@@ -257,7 +257,6 @@ def test_databricks_schema_initializer__sql_objects(patched_databricks_session_c
             "filename": "T_TILE_MONITOR_SUMMARY.sql",
             "identifier": "TILE_MONITOR_SUMMARY",
         },
-        {"type": "table", "filename": "T_TILE_REGISTRY.sql", "identifier": "TILE_REGISTRY"},
     ]
 
     def _sorted_result(lst):

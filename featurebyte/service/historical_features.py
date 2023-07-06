@@ -10,10 +10,10 @@ import time
 import pandas as pd
 from bson import ObjectId
 
-from featurebyte import SourceType
 from featurebyte.common.progress import get_ranged_progress_callback
 from featurebyte.exception import DocumentNotFoundError
 from featurebyte.logging import get_logger
+from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.parent_serving import ParentServingPreparation
 from featurebyte.persistent import Persistent
@@ -45,7 +45,7 @@ from featurebyte.session.base import BaseSession
 logger = get_logger(__name__)
 
 
-async def compute_tiles_on_demand(
+async def compute_tiles_on_demand(  # pylint: disable=too-many-arguments
     session: BaseSession,
     tile_cache_service: TileCacheService,
     graph: QueryGraph,
@@ -53,6 +53,7 @@ async def compute_tiles_on_demand(
     request_id: str,
     request_table_name: str,
     request_table_columns: list[str],
+    feature_store_id: ObjectId,
     serving_names_mapping: Optional[dict[str, str]],
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
     progress_callback: Optional[Callable[[int, str], None]] = None,
@@ -74,6 +75,8 @@ async def compute_tiles_on_demand(
         Request ID to be used as suffix of table names when creating temporary tables
     request_table_name: str
         Name of request table
+    feature_store_id: ObjectId
+        Feature store id
     request_table_columns: list[str]
         List of column names in the observations set
     serving_names_mapping : dict[str, str] | None
@@ -108,6 +111,7 @@ async def compute_tiles_on_demand(
         nodes=nodes,
         request_id=request_id,
         request_table_name=effective_request_table_name,
+        feature_store_id=feature_store_id,
         serving_names_mapping=serving_names_mapping,
         progress_callback=progress_callback,
     )
@@ -119,7 +123,7 @@ async def get_historical_features(  # pylint: disable=too-many-locals, too-many-
     graph: QueryGraph,
     nodes: list[Node],
     observation_set: Union[pd.DataFrame, ObservationTableModel],
-    source_type: SourceType,
+    feature_store: FeatureStoreModel,
     output_table_details: TableDetails,
     serving_names_mapping: dict[str, str] | None = None,
     is_feature_list_deployed: bool = False,
@@ -140,8 +144,8 @@ async def get_historical_features(  # pylint: disable=too-many-locals, too-many-
         List of query graph node
     observation_set : Union[pd.DataFrame, ObservationTableModel]
         Observation set
-    source_type : SourceType
-        Source type information
+    feature_store: FeatureStoreModel
+        Feature store. We need the feature store id and source type information.
     serving_names_mapping : dict[str, str] | None
         Optional serving names mapping if the observations set has different serving name columns
         than those defined in Entities
@@ -200,6 +204,7 @@ async def get_historical_features(  # pylint: disable=too-many-locals, too-many-
                 request_id=request_id,
                 request_table_name=request_table_name,
                 request_table_columns=request_table_columns,
+                feature_store_id=feature_store.id,
                 serving_names_mapping=serving_names_mapping,
                 parent_serving_preparation=parent_serving_preparation,
                 progress_callback=get_ranged_progress_callback(
@@ -223,7 +228,7 @@ async def get_historical_features(  # pylint: disable=too-many-locals, too-many-
         nodes=nodes,
         request_table_columns=request_table_columns,
         serving_names_mapping=serving_names_mapping,
-        source_type=source_type,
+        source_type=feature_store.type,
         output_table_details=output_table_details,
         output_feature_names=get_feature_names(graph, nodes),
         request_table_name=request_table_name,
@@ -335,7 +340,7 @@ class HistoricalFeaturesService(BaseService):
             nodes=feature_cluster.nodes,
             observation_set=observation_set,
             serving_names_mapping=featurelist_get_historical_features.serving_names_mapping,
-            source_type=feature_store.type,
+            feature_store=feature_store,
             is_feature_list_deployed=is_feature_list_deployed,
             parent_serving_preparation=parent_serving_preparation,
             output_table_details=output_table_details,

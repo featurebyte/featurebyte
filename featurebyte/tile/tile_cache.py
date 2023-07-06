@@ -8,6 +8,7 @@ from typing import Callable, Optional, cast
 import time
 from dataclasses import dataclass
 
+from bson import ObjectId
 from sqlglot import expressions, parse_one
 from sqlglot.expressions import Expression, select
 
@@ -46,8 +47,13 @@ class OnDemandTileComputeRequest:
     tile_compute_sql: str
     tile_gen_info: TileGenSql
 
-    def to_tile_manager_input(self) -> tuple[TileSpec, str]:
+    def to_tile_manager_input(self, feature_store_id: ObjectId) -> tuple[TileSpec, str]:
         """Returns a tuple required by FeatureListManager to compute tiles on-demand
+
+        Parameters
+        ----------
+        feature_store_id: ObjectId
+            Feature store id
 
         Returns
         -------
@@ -69,6 +75,7 @@ class OnDemandTileComputeRequest:
             tile_id=self.tile_table_id,
             aggregation_id=self.aggregation_id,
             category_column_name=self.tile_gen_info.value_by_column,
+            feature_store_id=feature_store_id,
         )
         return tile_spec, self.tracker_sql
 
@@ -82,9 +89,15 @@ class TileCache:
         Session object to interact with database
     """
 
-    def __init__(self, session: BaseSession, tile_manager_service: TileManagerService):
+    def __init__(
+        self,
+        session: BaseSession,
+        tile_manager_service: TileManagerService,
+        feature_store_id: ObjectId,
+    ):
         self.session = session
         self.tile_manager_service = tile_manager_service
+        self.feature_store_id = feature_store_id
         self._materialized_temp_table_names: set[str] = set()
 
     @property
@@ -178,7 +191,7 @@ class TileCache:
         """
         tile_inputs = []
         for request in required_requests:
-            tile_input = request.to_tile_manager_input()
+            tile_input = request.to_tile_manager_input(feature_store_id=self.feature_store_id)
             tile_inputs.append(tile_input)
         await self.tile_manager_service.generate_tiles_on_demand(
             session=self.session, tile_inputs=tile_inputs, progress_callback=progress_callback

@@ -14,8 +14,7 @@ from featurebyte.service.base_service import BaseService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_manager import FeatureManagerService
 from featurebyte.service.online_enable import OnlineEnableService
-from featurebyte.service.tile_manager import TileManagerService
-from featurebyte.service.tile_scheduler import TileSchedulerService
+from featurebyte.service.tile_registry_service import TileRegistryService
 from featurebyte.session.base import BaseSession, MetadataSchemaInitializer
 
 logger = get_logger(__name__)
@@ -52,15 +51,13 @@ class WorkingSchemaService(BaseService):
         persistent: Persistent,
         catalog_id: ObjectId,
         feature_service: FeatureService,
-        tile_scheduler_service: TileSchedulerService,
-        tile_manager_service: TileManagerService,
         feature_manager_service: FeatureManagerService,
+        tile_registry_service: TileRegistryService,
     ):
         super().__init__(user, persistent, catalog_id)
-        self.tile_scheduler_service = tile_scheduler_service
-        self.tile_manager_service = tile_manager_service
-        self.feature_manager_service = feature_manager_service
         self.feature_service = feature_service
+        self.feature_manager_service = feature_manager_service
+        self.tile_registry_service = tile_registry_service
 
     async def recreate_working_schema(
         self, feature_store_id: ObjectId, session: BaseSession
@@ -79,6 +76,13 @@ class WorkingSchemaService(BaseService):
         # Drop everything in the working schema. It would be easier to drop the schema directly and
         # then recreate, but the assumption is that the account might not have this privilege.
         await drop_all_objects(session)
+
+        # Clear the tile registry because the tile tables in the data warehouse are now wiped out.
+        await self.persistent.delete_many(
+            collection_name=self.tile_registry_service.collection_name,
+            query_filter={"feature_store_id": ObjectId(feature_store_id)},
+            user_id=self.user.id,
+        )
 
         # Initialize working schema. This covers registering tables, functions and procedures.
         initializer = session.initializer()

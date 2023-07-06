@@ -1,13 +1,13 @@
 """
 Tile Generate online store Job Script
 """
-from typing import Any, Optional, Union
+from typing import Optional, Union
 
 import textwrap
 from datetime import datetime
 
 import pandas as pd
-from pydantic import Field, PrivateAttr
+from pydantic import Field
 from sqlglot import expressions
 from sqlglot.expressions import select
 
@@ -17,7 +17,6 @@ from featurebyte.models.online_store_table_version import OnlineStoreTableVersio
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
-from featurebyte.session.base import BaseSession
 from featurebyte.sql.base import BaseSqlModel
 from featurebyte.sql.common import construct_create_table_query, retry_sql
 
@@ -33,8 +32,14 @@ class TileScheduleOnlineStore(BaseSqlModel):
     job_schedule_ts_str: str
     retry_num: int = Field(default=10)
     aggregation_result_name: Optional[str] = Field(default=None)
+    online_store_table_version_service: OnlineStoreTableVersionService
 
-    _online_store_table_version_service: OnlineStoreTableVersionService = PrivateAttr()
+    class Config:
+        """
+        Config class to allow services to be passed in as arguments
+        """
+
+        arbitrary_types_allowed = True
 
     async def retry_sql(self, sql: str) -> Union[pd.DataFrame, None]:
         """
@@ -50,21 +55,6 @@ class TileScheduleOnlineStore(BaseSqlModel):
         pd.DataFrame | None
         """
         return await retry_sql(self._session, sql, retry_num=self.retry_num)
-
-    def __init__(self, session: BaseSession, **kwargs: Any):
-        """
-        Initialize Tile Schedule Online Store Instance
-
-        Parameters
-        ----------
-        session: BaseSession
-            input SparkSession
-        kwargs: Any
-            constructor arguments
-        """
-        online_store_table_version_service = kwargs.pop("online_store_table_version_service")
-        self._online_store_table_version_service = online_store_table_version_service
-        super().__init__(session=session, **kwargs)
 
     async def execute(self) -> None:
         """
@@ -110,7 +100,7 @@ class TileScheduleOnlineStore(BaseSqlModel):
             current_ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
             # get current version
-            current_version = await self._online_store_table_version_service.get_version(f_name)
+            current_version = await self.online_store_table_version_service.get_version(f_name)
             if current_version is None:
                 next_version = 0
             else:
@@ -170,9 +160,9 @@ class TileScheduleOnlineStore(BaseSqlModel):
                     aggregation_result_name=f_name,
                     version=next_version,
                 )
-                await self._online_store_table_version_service.create_document(version_model)
+                await self.online_store_table_version_service.create_document(version_model)
             else:
-                await self._online_store_table_version_service.update_version(f_name, next_version)
+                await self.online_store_table_version_service.update_version(f_name, next_version)
 
     async def _retrieve_online_store_mapping(self) -> Optional[pd.DataFrame]:
         query = select(

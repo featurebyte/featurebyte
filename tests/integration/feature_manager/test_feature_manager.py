@@ -382,6 +382,7 @@ async def test_online_enable__re_deploy_from_latest_tile_start(
     session,
     feature_manager_service,
     online_enabled_feature_spec,
+    tile_registry_service,
 ):
     """
     Test re-deploy tile generation from the latest tile start date
@@ -391,11 +392,11 @@ async def test_online_enable__re_deploy_from_latest_tile_start(
     online_feature_spec, _ = online_enabled_feature_spec
     tile_spec = online_feature_spec.feature.tile_specs[0]
 
-    last_tile_start_ts_df = await session.execute_query(
-        f"SELECT LAST_TILE_START_DATE_OFFLINE FROM TILE_REGISTRY WHERE TILE_ID = '{tile_spec.tile_id}'"
+    tile_model = await tile_registry_service.get_tile_model(
+        tile_spec.tile_id, tile_spec.aggregation_id
     )
-    assert last_tile_start_ts_df is not None and len(last_tile_start_ts_df) == 1
-    last_tile_start_ts = last_tile_start_ts_df.iloc[0]["LAST_TILE_START_DATE_OFFLINE"]
+    assert tile_model is not None
+    last_tile_start_ts = tile_model.last_tile_metadata_offline.start_date
 
     # disable/un-deploy
     await feature_manager_service.online_disable(session, online_feature_spec)
@@ -403,7 +404,7 @@ async def test_online_enable__re_deploy_from_latest_tile_start(
     # re-deploy and verify that the tile start ts is the same as the last tile start ts
     with patch(
         "featurebyte.service.tile_manager.TileManagerService.generate_tiles"
-    ) as mock_tile_manager:
+    ) as mock_generate_tiles:
         await feature_manager_service.online_enable(session, online_feature_spec)
-        kwargs = mock_tile_manager.mock_calls[0][2]
+        _, kwargs = mock_generate_tiles.call_args
         assert kwargs["start_ts_str"] == last_tile_start_ts.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
