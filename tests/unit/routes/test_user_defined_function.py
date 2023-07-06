@@ -95,18 +95,28 @@ class TestUserDefinedFunctionApi(BaseApiTestSuite):
         assert response.status_code == HTTPStatus.NOT_FOUND
 
     @pytest.mark.parametrize(
-        "payload",
+        "payload,expected_signature",
         [
-            {"sql_function_name": "cos_v2"},
-            {
-                "function_parameters": [
-                    {"dtype": "INT", "name": "param1", "default_value": None, "test_value": None}
-                ]
-            },
-            {"output_dtype": "INT"},
+            ({"sql_function_name": "cos_v2"}, "udf_test(x: float) -> float"),
+            (
+                {
+                    "function_parameters": [
+                        {
+                            "dtype": "INT",
+                            "name": "param1",
+                            "default_value": None,
+                            "test_value": None,
+                        }
+                    ]
+                },
+                "udf_test(param1: int) -> float",
+            ),
+            ({"output_dtype": "INT"}, "udf_test(x: float) -> int"),
         ],
     )
-    def test_update_200(self, test_api_client_persistent, create_success_response, payload):
+    def test_update_200(
+        self, test_api_client_persistent, create_success_response, payload, expected_signature
+    ):
         """Test update user defined function (success)"""
         test_api_client, _ = test_api_client_persistent
         response_dict = create_success_response.json()
@@ -119,6 +129,7 @@ class TestUserDefinedFunctionApi(BaseApiTestSuite):
         expected_response_dict = response_dict.copy()
         expected_response_dict.update(payload)
         expected_response_dict["updated_at"] = update_response_dict["updated_at"]
+        expected_response_dict["signature"] = expected_signature
         assert update_response_dict == expected_response_dict
 
     def test_update_404(self, test_api_client_persistent):
