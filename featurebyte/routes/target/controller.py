@@ -13,7 +13,8 @@ from fastapi import HTTPException
 from featurebyte.exception import MissingPointInTimeColumnError, RequiredEntityNotProvidedError
 from featurebyte.models.target import TargetModel
 from featurebyte.routes.common.base import BaseDocumentController
-from featurebyte.schema.target import TargetCreate, TargetInfo, TargetList, TargetPreview
+from featurebyte.schema.preview import FeatureOrTargetPreview
+from featurebyte.schema.target import TargetCreate, TargetInfo, TargetList
 from featurebyte.service.entity import EntityService
 from featurebyte.service.preview import PreviewService
 from featurebyte.service.target import TargetService
@@ -127,13 +128,15 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
             updated_at=target_doc.updated_at,
         )
 
-    async def preview(self, target_preview: TargetPreview, get_credential: Any) -> dict[str, Any]:
+    async def preview(
+        self, target_preview: FeatureOrTargetPreview, get_credential: Any
+    ) -> dict[str, Any]:
         """
         Preview a Target
 
         Parameters
         ----------
-        target_preview: TargetPreview
+        target_preview: FeatureOrTargetPreview
             Target preview payload
         get_credential: Any
             Get credential handler function
@@ -149,8 +152,8 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
             Invalid request payload
         """
         try:
-            return await self.preview_service.preview_target(
-                target_preview=target_preview, get_credential=get_credential
+            return await self.preview_service.preview_target_or_feature(
+                feature_or_target_preview=target_preview, get_credential=get_credential
             )
         except (MissingPointInTimeColumnError, RequiredEntityNotProvidedError) as exc:
             raise HTTPException(

@@ -25,7 +25,8 @@ from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.target import TargetModel
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node import Node
-from featurebyte.schema.target import TargetPreview, TargetUpdate
+from featurebyte.schema.preview import FeatureOrTargetPreview
+from featurebyte.schema.target import TargetUpdate
 
 
 class Target(Series, SavableApiObject):
@@ -168,7 +169,7 @@ class Target(Series, SavableApiObject):
         graph = target.graph
         node_name = target.node_name
         assert node_name is not None
-        payload = TargetPreview(
+        payload = FeatureOrTargetPreview(
             feature_store_name=self.feature_store.name,
             graph=graph,
             node_name=node_name,

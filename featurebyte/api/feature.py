@@ -53,10 +53,10 @@ from featurebyte.schema.feature import (
     BatchFeatureCreatePayload,
     BatchFeatureItem,
     FeatureModelResponse,
-    FeaturePreview,
     FeatureSQL,
     FeatureUpdate,
 )
+from featurebyte.schema.preview import FeatureOrTargetPreview
 
 logger = get_logger(__name__)
 
@@ -894,7 +894,7 @@ class Feature(
         tic = time.time()
 
         feature = self._get_pruned_feature_model()
-        payload = FeaturePreview(
+        payload = FeatureOrTargetPreview(
             feature_store_name=self.feature_store.name,
             graph=feature.graph,
             node_name=feature.node_name,

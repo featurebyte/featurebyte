@@ -21,13 +21,8 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
     VerboseQuery,
 )
-from featurebyte.schema.target import (
-    TargetCreate,
-    TargetInfo,
-    TargetList,
-    TargetPreview,
-    TargetUpdate,
-)
+from featurebyte.schema.preview import FeatureOrTargetPreview
+from featurebyte.schema.target import TargetCreate, TargetInfo, TargetList, TargetUpdate
 
 router = APIRouter(prefix="/target")
 
@@ -133,7 +128,7 @@ async def list_target_audit_logs(
 @router.post("/preview", response_model=Dict[str, Any])
 async def get_feature_preview(
     request: Request,
-    target_preview: TargetPreview,
+    target_preview: FeatureOrTargetPreview,
 ) -> Dict[str, Any]:
     """
     Retrieve Target preview

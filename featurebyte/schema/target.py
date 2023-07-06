@@ -3,7 +3,7 @@ Target API payload schema
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 from datetime import datetime
 
@@ -66,17 +66,6 @@ class TargetInfo(FeatureByteBaseModel):
     has_recipe: bool
     created_at: datetime
     updated_at: Optional[datetime]
-
-
-class TargetPreview(FeatureByteBaseModel):
-    """
-    Feature Preview schema
-    """
-
-    graph: QueryGraph
-    node_name: str
-    feature_store_name: StrictStr
-    point_in_time_and_serving_name_list: List[Dict[str, Any]] = Field(min_items=1, max_items=50)
 
 
 class TargetServiceUpdate(BaseDocumentServiceUpdateSchema):

@@ -29,11 +29,11 @@ from featurebyte.schema.feature import (
     FeatureModelResponse,
     FeatureNewVersionCreate,
     FeaturePaginatedList,
-    FeaturePreview,
     FeatureSQL,
     FeatureUpdate,
 )
 from featurebyte.schema.info import FeatureInfo
+from featurebyte.schema.preview import FeatureOrTargetPreview
 from featurebyte.schema.task import Task
 
 router = APIRouter(prefix="/feature")
@@ -172,7 +172,7 @@ async def get_feature_info(
 @router.post("/preview", response_model=Dict[str, Any])
 async def get_feature_preview(
     request: Request,
-    feature_preview: FeaturePreview,
+    feature_preview: FeatureOrTargetPreview,
 ) -> Dict[str, Any]:
     """
     Retrieve Feature preview

@@ -3,7 +3,7 @@ Feature API payload schema
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 from datetime import datetime
 
@@ -227,12 +227,3 @@ class FeatureSQL(FeatureByteBaseModel):
 
     graph: QueryGraph
     node_name: str
-
-
-class FeaturePreview(FeatureSQL):
-    """
-    Feature Preview schema
-    """
-
-    feature_store_name: StrictStr
-    point_in_time_and_serving_name_list: List[Dict[str, Any]] = Field(min_items=1, max_items=50)
