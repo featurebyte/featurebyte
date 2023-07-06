@@ -10,6 +10,7 @@ from featurebyte.migration.service.data_warehouse import (
     TileColumnTypeExtractor,
 )
 from featurebyte.migration.service.mixin import DataWarehouseMigrationMixin
+from featurebyte.models.base import User
 from featurebyte.persistent import Persistent
 from featurebyte.routes.app_container_config import AppContainerConfig
 from featurebyte.routes.batch_feature_table.controller import BatchFeatureTableController
@@ -103,6 +104,7 @@ from featurebyte.service.validator.production_ready_validator import ProductionR
 from featurebyte.service.version import VersionService
 from featurebyte.service.view_construction import ViewConstructionService
 from featurebyte.service.working_schema import WorkingSchemaService
+from featurebyte.storage import Storage
 from featurebyte.utils.credential import MongoBackedCredentialProvider
 
 app_container_config = AppContainerConfig()
@@ -195,6 +197,7 @@ app_container_config.register_class(ItemTableController)
 app_container_config.register_class(
     PeriodicTaskController, dependency_override={"service": "periodic_task_service"}
 )
+app_container_config.register_class(MongoBackedCredentialProvider)
 app_container_config.register_class(NamespaceHandler)
 app_container_config.register_class(ObservationTableController)
 app_container_config.register_class(ProductionReadyValidator)
@@ -216,6 +219,8 @@ app_container_config.register_class(
 app_container_config.register_class(
     TargetNamespaceController, dependency_override={"service": "target_namespace_service"}
 )
+app_container_config.register_class(TaskController)
+app_container_config.register_class(TempDataController)
 app_container_config.register_class(TileColumnTypeExtractor)
 app_container_config.register_class(TileTaskExecutor)
 app_container_config.register_class(
@@ -224,11 +229,10 @@ app_container_config.register_class(
 
 
 # These have force_no_deps set as True, as they are manually initialized.
-app_container_config.register_class(MongoBackedCredentialProvider, force_no_deps=True)
-app_container_config.register_class(TaskController, force_no_deps=True)
-app_container_config.register_class(TaskManager, force_no_deps=True)
-app_container_config.register_class(TempDataController, force_no_deps=True)
 app_container_config.register_class(Persistent, force_no_deps=True)
+app_container_config.register_class(Storage, force_no_deps=True, name_override="temp_storage")
+app_container_config.register_class(TaskManager, force_no_deps=True)
+app_container_config.register_class(User, force_no_deps=True)
 
 
 # Validate the config after all classes have been registered.

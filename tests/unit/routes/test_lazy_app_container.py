@@ -121,7 +121,7 @@ def test_construction__empty_app_config_has_two_instances(app_container_construc
         **app_container_constructor_params,
         app_container_config=app_container_config,
     )
-    assert len(app_container.instance_map) == 5
+    assert len(app_container.instance_map) == 4
 
 
 def test_construction__get_attr(app_container_constructor_params):
@@ -134,7 +134,7 @@ def test_construction__get_attr(app_container_constructor_params):
         app_container_config=app_container_config,
     )
     # This has been initialized
-    assert app_container.task_controller is not None
+    assert app_container.persistent is not None
 
     # random_item has not been initialized
     with pytest.raises(KeyError):

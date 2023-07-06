@@ -7,11 +7,9 @@ from bson import ObjectId
 
 from featurebyte.persistent import Persistent
 from featurebyte.routes.app_container_config import AppContainerConfig, ClassDefinition, DepType
-from featurebyte.routes.task.controller import TaskController
 from featurebyte.routes.temp_data.controller import TempDataController
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.storage import Storage
-from featurebyte.utils.credential import MongoBackedCredentialProvider
 
 
 def get_all_deps_for_key(
@@ -213,11 +211,8 @@ class LazyAppContainer:
         # Used to cache instances if they've already been built
         # Pre-load with some default deps
         self.instance_map: Dict[str, Any] = {
-            "task_controller": TaskController(task_manager=task_manager),
-            "temp_data_controller": TempDataController(temp_storage=temp_storage),
-            "mongo_backed_credential_provider": MongoBackedCredentialProvider(
-                persistent=persistent
-            ),
+            "user": user,
+            "temp_storage": temp_storage,
             "task_manager": task_manager,
             "persistent": persistent,
         }
