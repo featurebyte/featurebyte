@@ -232,7 +232,7 @@ async def test_schedule_generate_tile__with_registry(
     )
 
     # test for LAST_TILE_START_DATE_ONLINE earlier than tile_start_date
-    await tile_registry_service.update_last_tile_info(
+    await tile_registry_service.update_last_tile_metadata(
         tile_id, agg_id, "ONLINE", 123, dateutil.parser.isoparse("2022-06-05 23:33:00")
     )
     await tile_task_executor.execute(session, tile_schedule_ins)

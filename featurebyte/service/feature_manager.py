@@ -225,8 +225,8 @@ class FeatureManagerService(BaseService):
         tile_model = await self.tile_registry_service.get_tile_model(
             tile_spec.tile_id, tile_spec.aggregation_id
         )
-        if tile_model is not None and tile_model.last_tile_start_date_offline is not None:
-            start_ts = tile_model.last_tile_start_date_offline
+        if tile_model is not None and tile_model.last_tile_metadata_offline is not None:
+            start_ts = tile_model.last_tile_metadata_offline.start_date
 
         logger.info(f"start_ts: {start_ts}")
 

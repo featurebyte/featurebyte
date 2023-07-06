@@ -54,11 +54,11 @@ async def test_get_tile_model(tile_registry_service, saved_tile_model):
 
 @pytest.mark.parametrize("tile_type", [TileType.ONLINE, TileType.OFFLINE])
 @pytest.mark.asyncio
-async def test_update_last_tile_info(tile_registry_service, saved_tile_model, tile_type):
+async def test_update_last_tile_metadata(tile_registry_service, saved_tile_model, tile_type):
     """
-    Test TileRegistryService.update_last_tile_info
+    Test TileRegistryService.update_last_tile_metadata
     """
-    await tile_registry_service.update_last_tile_info(
+    await tile_registry_service.update_last_tile_metadata(
         tile_id=saved_tile_model.tile_id,
         aggregation_id=saved_tile_model.aggregation_id,
         tile_type=tile_type,
@@ -70,30 +70,28 @@ async def test_update_last_tile_info(tile_registry_service, saved_tile_model, ti
     )
 
     if tile_type == TileType.ONLINE:
-        assert retrieved_tile_model.last_tile_index_online == 10005
-        assert retrieved_tile_model.last_tile_start_date_online == datetime(2021, 1, 2)
-        assert retrieved_tile_model.last_tile_index_offline is None
-        assert retrieved_tile_model.last_tile_start_date_offline is None
+        assert retrieved_tile_model.last_tile_metadata_online.index == 10005
+        assert retrieved_tile_model.last_tile_metadata_online.start_date == datetime(2021, 1, 2)
+        assert retrieved_tile_model.last_tile_metadata_offline is None
     else:
-        assert retrieved_tile_model.last_tile_index_online is None
-        assert retrieved_tile_model.last_tile_start_date_online is None
-        assert retrieved_tile_model.last_tile_index_offline == 10005
-        assert retrieved_tile_model.last_tile_start_date_offline == datetime(2021, 1, 2)
+        assert retrieved_tile_model.last_tile_metadata_online is None
+        assert retrieved_tile_model.last_tile_metadata_offline.index == 10005
+        assert retrieved_tile_model.last_tile_metadata_offline.start_date == datetime(2021, 1, 2)
 
 
 @pytest.mark.asyncio
-async def test_update_last_tile_info__both_tile_type(tile_registry_service, saved_tile_model):
+async def test_update_last_tile_metadata__both_tile_type(tile_registry_service, saved_tile_model):
     """
-    Test multiple calls to TileRegistryService.update_last_tile_info
+    Test multiple calls to TileRegistryService.update_last_tile_metadata
     """
-    await tile_registry_service.update_last_tile_info(
+    await tile_registry_service.update_last_tile_metadata(
         tile_id=saved_tile_model.tile_id,
         aggregation_id=saved_tile_model.aggregation_id,
         tile_type=TileType.ONLINE,
         tile_index=10005,
         tile_start_date=datetime(2021, 1, 2),
     )
-    await tile_registry_service.update_last_tile_info(
+    await tile_registry_service.update_last_tile_metadata(
         tile_id=saved_tile_model.tile_id,
         aggregation_id=saved_tile_model.aggregation_id,
         tile_type=TileType.OFFLINE,
@@ -103,19 +101,19 @@ async def test_update_last_tile_info__both_tile_type(tile_registry_service, save
     retrieved_tile_model = await tile_registry_service.get_tile_model(
         saved_tile_model.tile_id, saved_tile_model.aggregation_id
     )
-    assert retrieved_tile_model.last_tile_index_online == 10005
-    assert retrieved_tile_model.last_tile_start_date_online == datetime(2021, 1, 2)
-    assert retrieved_tile_model.last_tile_index_offline == 10010
-    assert retrieved_tile_model.last_tile_start_date_offline == datetime(2021, 1, 5)
+    assert retrieved_tile_model.last_tile_metadata_online.index == 10005
+    assert retrieved_tile_model.last_tile_metadata_online.start_date == datetime(2021, 1, 2)
+    assert retrieved_tile_model.last_tile_metadata_offline.index == 10010
+    assert retrieved_tile_model.last_tile_metadata_offline.start_date == datetime(2021, 1, 5)
 
 
 @pytest.mark.asyncio
-async def test_update_last_tile_info__not_found(tile_registry_service, saved_tile_model):
+async def test_update_last_tile_metadata__not_found(tile_registry_service, saved_tile_model):
     """
-    Test TileRegistryService.update_last_tile_info
+    Test TileRegistryService.update_last_tile_metadata
     """
     with pytest.raises(DocumentNotFoundError) as exc_info:
-        await tile_registry_service.update_last_tile_info(
+        await tile_registry_service.update_last_tile_metadata(
             tile_id="non_existing_tile_id",
             aggregation_id=saved_tile_model.aggregation_id,
             tile_type=TileType.ONLINE,

@@ -115,7 +115,7 @@ class TileGenerate(TileCommon):
                 extra={"last_tile_start_str": self.last_tile_start_str, "ind_value": ind_value},
             )
 
-            await self.tile_registry_service.update_last_tile_info(
+            await self.tile_registry_service.update_last_tile_metadata(
                 tile_id=self.tile_id,
                 aggregation_id=self.aggregation_id,
                 tile_type=self.tile_type,

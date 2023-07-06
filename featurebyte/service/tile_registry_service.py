@@ -9,7 +9,7 @@ from datetime import datetime
 
 from featurebyte.exception import DocumentNotFoundError
 from featurebyte.models.tile import TileType
-from featurebyte.models.tile_registry import TileModel, TileUpdate
+from featurebyte.models.tile_registry import LastTileMetadata, TileModel, TileUpdate
 from featurebyte.service.base_document import BaseDocumentService
 
 
@@ -44,7 +44,7 @@ class TileRegistryService(BaseDocumentService[TileModel, TileModel, TileUpdate])
             return TileModel(**doc)
         return None
 
-    async def update_last_tile_info(
+    async def update_last_tile_metadata(
         self,
         tile_id: str,
         aggregation_id: str,
@@ -78,14 +78,9 @@ class TileRegistryService(BaseDocumentService[TileModel, TileModel, TileUpdate])
             raise DocumentNotFoundError(
                 f"TileRegistryService: TileModel with tile_id={tile_id} and aggregation_id={aggregation_id} not found"
             )
+        metadata_model = LastTileMetadata(index=tile_index, start_date=tile_start_date)
         if tile_type == TileType.ONLINE:
-            update_model = TileUpdate(
-                last_tile_index_online=tile_index,
-                last_tile_start_date_online=tile_start_date,
-            )
+            update_model = TileUpdate(last_tile_metadata_online=metadata_model)
         else:
-            update_model = TileUpdate(
-                last_tile_index_offline=tile_index,
-                last_tile_start_date_offline=tile_start_date,
-            )
+            update_model = TileUpdate(last_tile_metadata_offline=metadata_model)
         await self.update_document(document.id, update_model, document=document)

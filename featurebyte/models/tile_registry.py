@@ -8,7 +8,7 @@ from typing import List, Optional
 from datetime import datetime
 
 import pymongo
-from pydantic import StrictStr
+from pydantic import BaseModel, StrictStr
 
 from featurebyte.models.base import (
     FeatureByteCatalogBaseDocumentModel,
@@ -16,6 +16,15 @@ from featurebyte.models.base import (
     UniqueValuesConstraint,
 )
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
+
+
+class LastTileMetadata(BaseModel):
+    """
+    LastTileMetadata class
+    """
+
+    start_date: datetime
+    index: int
 
 
 class TileModel(FeatureByteCatalogBaseDocumentModel):
@@ -36,11 +45,8 @@ class TileModel(FeatureByteCatalogBaseDocumentModel):
     time_modulo_frequency_second: int
     blind_spot_second: int
 
-    last_tile_start_date_online: Optional[datetime]
-    last_tile_index_online: Optional[int]
-
-    last_tile_start_date_offline: Optional[datetime]
-    last_tile_index_offline: Optional[int]
+    last_tile_metadata_online: Optional[LastTileMetadata]
+    last_tile_metadata_offline: Optional[LastTileMetadata]
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
@@ -76,8 +82,5 @@ class TileUpdate(BaseDocumentServiceUpdateSchema):
     Schema for TileUpdate
     """
 
-    last_tile_start_date_online: Optional[datetime]
-    last_tile_index_online: Optional[int]
-
-    last_tile_start_date_offline: Optional[datetime]
-    last_tile_index_offline: Optional[int]
+    last_tile_metadata_online: Optional[LastTileMetadata]
+    last_tile_metadata_offline: Optional[LastTileMetadata]
