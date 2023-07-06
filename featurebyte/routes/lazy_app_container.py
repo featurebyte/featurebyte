@@ -150,12 +150,6 @@ class LazyAppContainer:
         catalog_id: ObjectId,
         app_container_config: AppContainerConfig,
     ):
-        self.user = user
-        self.persistent = persistent
-        self.temp_storage = temp_storage
-        self.task_manager = task_manager
-        self.storage = storage
-        self.catalog_id = catalog_id
         self.app_container_config = app_container_config
 
         # Used to cache instances if they've already been built
@@ -166,6 +160,7 @@ class LazyAppContainer:
             "task_manager": task_manager,
             "persistent": persistent,
             "catalog_id": catalog_id,
+            "storage": storage,
         }
 
     def _get_key(self, key: str) -> Any:

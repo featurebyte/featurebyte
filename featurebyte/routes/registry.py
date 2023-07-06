@@ -227,6 +227,7 @@ app_container_config.register_class(WorkingSchemaService)
 
 # These have force_no_deps set as True, as they are manually initialized.
 app_container_config.register_class(Persistent, force_no_deps=True)
+app_container_config.register_class(Storage, force_no_deps=True)
 app_container_config.register_class(Storage, force_no_deps=True, name_override="temp_storage")
 app_container_config.register_class(TaskManager, force_no_deps=True)
 app_container_config.register_class(User, force_no_deps=True)
@@ -238,6 +239,11 @@ class CatalogId:
     """
 
 
+# This looks a little funny right now, but every entry in the instance map must currently be found in the
+# app_container_config, as some validation checks depend on it. For this particular case, we inject the
+# catalog_id directly into the `instance_map` in the LazyAppContainer constructor. As such, we need an item in the
+# app_container_config that is called `catalog_id`. This class of CatalogId will get parsed into `catalog_id`, and
+# as such, works as a placeholder.
 app_container_config.register_class(CatalogId, force_no_deps=True)
 
 
