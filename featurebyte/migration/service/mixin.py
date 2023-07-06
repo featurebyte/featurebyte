@@ -12,7 +12,7 @@ from celery import Celery
 from featurebyte.enum import InternalName
 from featurebyte.exception import CredentialsError
 from featurebyte.logging import get_logger
-from featurebyte.models.base import FeatureByteBaseDocumentModel, FeatureByteBaseModel
+from featurebyte.models.base import FeatureByteBaseDocumentModel, FeatureByteBaseModel, User
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.persistent import Document
 from featurebyte.persistent.base import Persistent
@@ -143,6 +143,13 @@ class DataWarehouseMigrationMixin(BaseMigrationServiceMixin, ABC):
         -------
         BaseSession
         """
+        feature_store_user = User(id=feature_store.user_id)
+        # A hack to update the user ID in the session manager service and session validator service to use
+        # the feature store user ID instead of the arbitrary current user ID. This is required for these
+        # services as we need to be able to retrieve the correct credentials from the persistent layer.
+        # We can use an arbitrary user ID for other services as there's no dependency on user ID.
+        self.session_manager_service.user = feature_store_user
+        self.session_manager_service.session_validator_service.user = feature_store_user
         session = await self.session_manager_service.get_feature_store_session(
             feature_store, get_credential=self.get_credential
         )

@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 import pytest_asyncio
-from bson import json_util
+from bson import ObjectId, json_util
 
 from featurebyte import SourceType
 from featurebyte.app import get_celery
@@ -239,7 +239,8 @@ async def test_data_warehouse_migration_get_session(
 ):
     """Test data warehouse migration get_session method"""
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_store.json")
-    feature_store_user_id = user.id
+    # Explicitly set a different user ID to verify that that is the value that get_credential is being called with.
+    feature_store_user_id = ObjectId()
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
         feature_store = FeatureStoreModel(**{**payload, "user_id": feature_store_user_id})
