@@ -46,7 +46,7 @@ async def test_preview_feature__time_based_feature_without_point_in_time_errors(
         node_name=float_feature.node_name,
     )
     with pytest.raises(MissingPointInTimeColumnError) as exc:
-        await preview_service.preview_feature_or_target(feature_preview, AsyncMock())
+        await preview_service.preview_target_or_feature(feature_preview, AsyncMock())
     assert "Point in time column not provided" in str(exc)
 
 
@@ -68,7 +68,7 @@ async def test_preview_feature__non_time_based_feature_without_point_in_time_doe
         graph=non_time_based_feature.graph,
         node_name=non_time_based_feature.node_name,
     )
-    await preview_service.preview_feature_or_target(feature_preview, get_credential)
+    await preview_service.preview_target_or_feature(feature_preview, get_credential)
 
 
 @pytest.mark.usefixtures("mock_get_feature_store_session")
@@ -91,7 +91,7 @@ async def test_preview_feature__missing_entity(
         node_name=production_ready_feature.node_name,
     )
     with pytest.raises(RequiredEntityNotProvidedError) as exc:
-        await preview_service.preview_featuer_or_target(feature_preview, get_credential)
+        await preview_service.preview_target_or_feature(feature_preview, get_credential)
     expected = (
         'Required entities are not provided in the request: customer (serving name: "cust_id")'
     )

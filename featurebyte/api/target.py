@@ -24,7 +24,6 @@ from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.target import TargetModel
 from featurebyte.query_graph.model.common_table import TabularSource
-from featurebyte.query_graph.node import Node
 from featurebyte.schema.preview import FeatureOrTargetPreview
 from featurebyte.schema.target import TargetUpdate
 
@@ -100,23 +99,6 @@ class Target(Series, SavableApiObject):
             return self.cached_model.horizon
         except RecordRetrievalException:
             return self.internal_horizon
-
-    @property
-    def node(self) -> Node:
-        """
-        Representative of the current object in the graph
-
-        Returns
-        -------
-        Node
-        """
-        try:
-            node_to_return = self.cached_model.node
-        except RecordRetrievalException:
-            node_name = self.internal_node_name
-            assert node_name is not None
-            node_to_return = self.graph.get_node_by_name(node_name)
-        return node_to_return
 
     def _get_pruned_target_model(self) -> TargetModel:
         """
