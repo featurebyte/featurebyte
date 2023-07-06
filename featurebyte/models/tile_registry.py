@@ -8,7 +8,7 @@ from typing import List, Optional
 from datetime import datetime
 
 import pymongo
-from pydantic import BaseModel, StrictStr
+from pydantic import BaseModel, Field, StrictStr
 
 from featurebyte.models.base import (
     FeatureByteCatalogBaseDocumentModel,
@@ -41,9 +41,9 @@ class TileModel(FeatureByteCatalogBaseDocumentModel):
     value_column_names: List[StrictStr]
     value_column_types: List[StrictStr]
 
-    frequency_minute: int
-    time_modulo_frequency_second: int
-    blind_spot_second: int
+    frequency_minute: int = Field(gt=0)
+    time_modulo_frequency_second: int = Field(ge=0)
+    blind_spot_second: int = Field(ge=0)
 
     last_tile_metadata_online: Optional[LastTileMetadata]
     last_tile_metadata_offline: Optional[LastTileMetadata]

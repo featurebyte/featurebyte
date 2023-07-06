@@ -40,7 +40,7 @@ class TileSpec(FeatureByteBaseModel):
     """
 
     time_modulo_frequency_second: int = Field(ge=0)
-    blind_spot_second: int
+    blind_spot_second: int = Field(ge=0)
     frequency_minute: int = Field(gt=0)
     tile_sql: str
     entity_column_names: List[str]
