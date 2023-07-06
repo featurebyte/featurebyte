@@ -219,9 +219,22 @@ class LazyAppContainer:
                 persistent=persistent
             ),
             "task_manager": task_manager,
+            "persistent": persistent,
         }
 
-    def __getattr__(self, key: str) -> Any:
+    def _get_key(self, key: str) -> Any:
+        """
+        Helper method to get a key from the instance map.
+
+        Parameters
+        ----------
+        key: str
+            key to get from the instance map
+
+        Returns
+        -------
+        Any
+        """
         # Return instance if it's been built before already
         if key in self.instance_map:
             return self.instance_map[key]
@@ -240,3 +253,21 @@ class LazyAppContainer:
         )
         self.instance_map.update(new_deps)
         return self.instance_map[key]
+
+    def get(self, key: str) -> Any:
+        """
+        Get an instance from the container.
+
+        Parameters
+        ----------
+        key: str
+            key of the instance to get
+
+        Returns
+        -------
+        Any
+        """
+        return self._get_key(key)
+
+    def __getattr__(self, key: str) -> Any:
+        return self._get_key(key)

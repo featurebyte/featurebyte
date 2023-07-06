@@ -311,7 +311,7 @@ def test_get_filed_history__existing_field_removal(audit_docs, expected):
 def test_construct_list_query_filter(kwargs, expected):
     """Test construct_list_query_filter logic"""
     assert (
-        BaseDocumentService._construct_list_query_filter(
+        BaseDocumentService.construct_list_query_filter(
             Mock(is_catalog_specific=True, catalog_id="catalog_id"), **kwargs
         )
         == expected

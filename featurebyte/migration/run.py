@@ -15,24 +15,20 @@ from featurebyte.logging import get_logger
 from featurebyte.migration.migration_data_service import SchemaMetadataService
 from featurebyte.migration.model import MigrationMetadata, SchemaMetadataModel, SchemaMetadataUpdate
 from featurebyte.migration.service import MigrationInfo
-from featurebyte.migration.service.mixin import DataWarehouseMigrationMixin
-from featurebyte.models.base import (
-    DEFAULT_CATALOG_ID,
-    FeatureByteBaseDocumentModel,
-    FeatureByteBaseModel,
-    User,
+from featurebyte.migration.service.mixin import (
+    BaseMigrationServiceMixin,
+    DataWarehouseMigrationMixin,
 )
+from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.persistent.base import Persistent
 from featurebyte.persistent.mongo import MongoDB
-from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
-from featurebyte.service.base_document import BaseDocumentService
+from featurebyte.routes.app_container_config import _get_class_name
+from featurebyte.routes.lazy_app_container import LazyAppContainer
+from featurebyte.routes.registry import app_container_config
+from featurebyte.service.task_manager import TaskManager
 from featurebyte.utils.credential import MongoBackedCredentialProvider
+from featurebyte.utils.storage import get_storage, get_temp_storage
 from featurebyte.worker import get_celery
-
-BaseDocumentServiceT = BaseDocumentService[
-    FeatureByteBaseDocumentModel, FeatureByteBaseModel, BaseDocumentServiceUpdateSchema
-]
-
 
 logger = get_logger(__name__)
 
@@ -86,7 +82,7 @@ def retrieve_all_migration_methods(data_warehouse_migrations_only: bool = False)
     for mod in import_submodules(migration_service_dir).values():
         for attr_name in dir(mod):
             attr = getattr(mod, attr_name)
-            if inspect.isclass(attr) and issubclass(attr, BaseDocumentService):
+            if inspect.isclass(attr) and issubclass(attr, BaseMigrationServiceMixin):
                 if data_warehouse_migrations_only and not issubclass(
                     attr, DataWarehouseMigrationMixin
                 ):
@@ -114,7 +110,7 @@ async def migrate_method_generator(
     celery: Celery,
     schema_metadata: SchemaMetadataModel,
     include_data_warehouse_migrations: bool,
-) -> AsyncGenerator[tuple[BaseDocumentServiceT, Callable[..., Any]], None]:
+) -> AsyncGenerator[tuple[BaseMigrationServiceMixin, Callable[..., Any]], None]:
     """
     Migrate method generator
 
@@ -140,15 +136,27 @@ async def migrate_method_generator(
     migrate_method
         Migration method
     """
+    app_container = LazyAppContainer(
+        user=user,
+        persistent=persistent,
+        catalog_id=DEFAULT_CATALOG_ID,
+        temp_storage=get_temp_storage(),
+        task_manager=TaskManager(
+            user=user,
+            persistent=persistent,
+            celery=get_celery(),
+            catalog_id=DEFAULT_CATALOG_ID,
+        ),
+        storage=get_storage(),
+        app_container_config=app_container_config,
+    )
     migrate_methods = retrieve_all_migration_methods()
     version_start = schema_metadata.version + 1
     for version in range(version_start, len(migrate_methods) + 1):
         migrate_method_data = migrate_methods[version]
         module = importlib.import_module(migrate_method_data["module"])
         migrate_service_class = getattr(module, migrate_method_data["class"])
-        migrate_service = migrate_service_class(
-            user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
-        )
+        migrate_service = app_container.get(_get_class_name(migrate_service_class.__name__))
         if isinstance(migrate_service, DataWarehouseMigrationMixin):
             if not include_data_warehouse_migrations:
                 continue
@@ -158,25 +166,27 @@ async def migrate_method_generator(
         yield migrate_service, migrate_method
 
 
-async def post_migration_sanity_check(service: BaseDocumentServiceT) -> None:
+async def post_migration_sanity_check(service: BaseMigrationServiceMixin) -> None:
     """
     Post migration sanity check
 
     Parameters
     ----------
-    service: BaseDocumentServiceT
+    service: BaseMigrationServiceMixin
         Service used to perform the sanity check
     """
     # check document deserialization
-    docs = await service.list_documents(page_size=0)
+    docs = await service.delegate_service.list_documents(page_size=0)
     step_size = max(len(docs["data"]) // 5, 1)
     audit_record_count = 0
     for i, doc_dict in enumerate(docs["data"]):
-        document = service.document_class(**doc_dict)
+        document = service.delegate_service.document_class(**doc_dict)
 
         # check audit records
         if i % step_size == 0:
-            async for _ in service.historical_document_generator(document_id=document.id):
+            async for _ in service.delegate_service.historical_document_generator(
+                document_id=document.id
+            ):
                 audit_record_count += 1
 
     logger.info(

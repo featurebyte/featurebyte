@@ -10,8 +10,8 @@ import pytest
 import pytest_asyncio
 from bson import ObjectId, json_util
 
+from featurebyte import SourceType
 from featurebyte.app import get_celery
-from featurebyte.migration.migration_data_service import SchemaMetadataService
 from featurebyte.migration.model import MigrationMetadata, SchemaMetadataUpdate
 from featurebyte.migration.run import (
     _extract_migrate_method_marker,
@@ -22,10 +22,18 @@ from featurebyte.migration.run import (
     run_migration,
 )
 from featurebyte.migration.service.mixin import DataWarehouseMigrationMixin
-from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.schema.entity import EntityCreate
-from featurebyte.service.entity import EntityService
+from featurebyte.query_graph.node.schema import SnowflakeDetails
+from featurebyte.schema.feature_store import FeatureStoreCreate
+from featurebyte.service.feature_store import FeatureStoreService
+
+
+@pytest.fixture(name="schema_metadata_service")
+def schema_metadata_service_fixture(app_container):
+    """
+    SchemaMetadataService fixture
+    """
+    return app_container.schema_metadata_service
 
 
 def test_retrieve_all_migration_methods():
@@ -53,11 +61,8 @@ def test_retrieve_all_migration_methods__duplicated_version(mock_extract_method)
 
 
 @pytest.mark.asyncio
-async def test_migrate_method_generator(user, persistent, get_credential):
+async def test_migrate_method_generator(user, persistent, get_credential, schema_metadata_service):
     """Test migrate method generator"""
-    schema_metadata_service = SchemaMetadataService(
-        user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
-    )
     schema_metadata = await schema_metadata_service.get_or_create_document(
         name=MigrationMetadata.SCHEMA_METADATA.value
     )
@@ -100,11 +105,10 @@ async def test_migrate_method_generator(user, persistent, get_credential):
 
 
 @pytest.mark.asyncio
-async def test_migrate_method_generator__exclude_warehouse(user, persistent, get_credential):
+async def test_migrate_method_generator__exclude_warehouse(
+    user, persistent, get_credential, schema_metadata_service
+):
     """Test migrate method generator with include_data_warehouse_migrations=False"""
-    schema_metadata_service = SchemaMetadataService(
-        user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
-    )
     schema_metadata = await schema_metadata_service.get_or_create_document(
         name=MigrationMetadata.SCHEMA_METADATA.value
     )
@@ -136,21 +140,31 @@ async def migration_check_user_persistent_fixture(test_dir, persistent):
 @pytest.mark.asyncio
 async def test_post_migration_sanity_check(app_container):
     """Test post_migration_sanity_check"""
-    service = app_container.entity_service
+    service = app_container.feature_store_service
+    migration_service = app_container.data_warehouse_migration_service_v6
     docs = []
     for i in range(20):
         doc = await service.create_document(
-            data=EntityCreate(name=f"entity_{i}", serving_name=f"serving_name_{i}")
+            data=FeatureStoreCreate(
+                name=f"feature_store_{i}",
+                type=SourceType.SNOWFLAKE,
+                details=SnowflakeDetails(
+                    account=f"<account>_{i}",
+                    warehouse="snowflake",
+                    database="<database_name>",
+                    sf_schema="<schema_name>",
+                ),
+            ),
         )
         docs.append(doc)
 
     # run test_post_migration_sanity_check (should run without error as no migration is performed)
     with patch.object(
-        EntityService,
+        FeatureStoreService,
         "historical_document_generator",
-        wraps=service.historical_document_generator,
+        wraps=migration_service.delegate_service.historical_document_generator,
     ) as mock_call:
-        await post_migration_sanity_check(service)
+        await post_migration_sanity_check(migration_service)
 
     docs = sorted(docs, key=lambda d: d.id, reverse=True)
     step_size = len(docs) // 5
@@ -162,12 +176,11 @@ async def test_post_migration_sanity_check(app_container):
 
 
 @pytest.mark.asyncio
-async def test_run_migration(migration_check_persistent, user, get_credential):
+async def test_run_migration(
+    migration_check_persistent, user, get_credential, schema_metadata_service
+):
     """Test run migration function"""
     persistent = migration_check_persistent
-    schema_metadata_service = SchemaMetadataService(
-        user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
-    )
     schema_metadata = await schema_metadata_service.get_or_create_document(
         name=MigrationMetadata.SCHEMA_METADATA.value
     )
@@ -208,9 +221,6 @@ async def test_run_migration(migration_check_persistent, user, get_credential):
         assert max_audit_record_nums > 1, service
 
     # check version in schema_metadata after migration
-    schema_metadata_service = SchemaMetadataService(
-        user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
-    )
     schema_metadata = await schema_metadata_service.get_or_create_document(
         name=MigrationMetadata.SCHEMA_METADATA.value
     )
@@ -223,11 +233,13 @@ async def test_run_migration(migration_check_persistent, user, get_credential):
 async def test_data_warehouse_migration_get_session(
     mock_session_manager,
     migration_check_persistent,
-    user,
     test_dir,
+    user,
+    app_container,
 ):
     """Test data warehouse migration get_session method"""
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_store.json")
+    # Explicitly set a different user ID to verify that that is the value that get_credential is being called with.
     feature_store_user_id = ObjectId()
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
@@ -235,9 +247,9 @@ async def test_data_warehouse_migration_get_session(
 
     get_credential_func = AsyncMock()
     warehouse_migration = DataWarehouseMigrationMixin(
-        user=user,
         persistent=migration_check_persistent,
-        catalog_id=DEFAULT_CATALOG_ID,
+        session_manager_service=app_container.session_manager_service,
+        feature_store_service=app_container.feature_store_service,
     )
     warehouse_migration.set_credential_callback(get_credential=get_credential_func)
 

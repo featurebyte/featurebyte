@@ -38,13 +38,13 @@ class UserDefinedFunctionService(
         output["catalog_id"] = {"$in": [None, self.catalog_id]}
         return output
 
-    def _construct_list_query_filter(
+    def construct_list_query_filter(
         self,
         query_filter: Optional[Dict[str, Any]] = None,
         use_raw_query_filter: bool = False,
         **kwargs: Any,
     ) -> QueryFilter:
-        output = super()._construct_list_query_filter(
+        output = super().construct_list_query_filter(
             query_filter=query_filter, use_raw_query_filter=use_raw_query_filter, **kwargs
         )
         # user defined function without catalog_id is a global function (used by all catalogs)

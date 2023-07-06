@@ -14,14 +14,11 @@ from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.logging import get_logger
 from featurebyte.migration.service import migrate
 from featurebyte.migration.service.mixin import DataWarehouseMigrationMixin
-from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.persistent.base import Persistent
+from featurebyte.persistent import Persistent
 from featurebyte.service.feature import FeatureService
-from featurebyte.service.feature_namespace import FeatureNamespaceService
-from featurebyte.service.namespace_handler import NamespaceHandler
-from featurebyte.service.table import TableService
-from featurebyte.service.view_construction import ViewConstructionService
+from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.working_schema import WorkingSchemaService
 from featurebyte.session.base import BaseSession
 
@@ -33,46 +30,21 @@ class TileColumnTypeExtractor:
     Responsible for building a mapping from tile column names to tile types based on saved Features
     """
 
-    def __init__(self, user: Any, persistent: Persistent):
-        self.table_service = TableService(
-            user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
-        )
-        self.view_construction_service = ViewConstructionService(
-            user=user,
-            persistent=persistent,
-            catalog_id=DEFAULT_CATALOG_ID,
-            table_service=self.table_service,
-        )
-        self.feature_service = FeatureService(
-            user,
-            persistent,
-            catalog_id=DEFAULT_CATALOG_ID,
-            table_service=self.table_service,
-            feature_namespace_service=FeatureNamespaceService(
-                user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
-            ),
-            namespace_handler=NamespaceHandler(
-                view_construction_service=self.view_construction_service,
-            ),
-        )
+    def __init__(self, feature_service: FeatureService):
+        self.feature_service = feature_service
         self.tile_column_name_to_type: Optional[dict[str, str]] = None
 
     async def setup(self) -> None:
         """
         Set up the object by loading existing Feature documents
         """
-        self.tile_column_name_to_type = await self._build_tile_column_name_to_type_mapping(
-            self.feature_service
-        )
+        self.tile_column_name_to_type = await self._build_tile_column_name_to_type_mapping()
 
-    @staticmethod
-    async def _build_tile_column_name_to_type_mapping(
-        feature_service: FeatureService,
-    ) -> dict[str, str]:
+    async def _build_tile_column_name_to_type_mapping(self) -> dict[str, str]:
         tile_column_name_to_type = {}
         # activate use of raw query filter to retrieve all documents regardless of catalog membership
-        with feature_service.allow_use_raw_query_filter():
-            feature_documents = feature_service.list_documents_iterator(
+        with self.feature_service.allow_use_raw_query_filter():
+            feature_documents = self.feature_service.list_documents_iterator(
                 query_filter={}, use_raw_query_filter=True
             )
 
@@ -144,6 +116,16 @@ class DataWarehouseMigrationServiceV6(DataWarehouseMigrationMixin):
 
     extractor: TileColumnTypeExtractor
 
+    def __init__(
+        self,
+        persistent: Persistent,
+        session_manager_service: SessionManagerService,
+        feature_store_service: FeatureStoreService,
+        tile_column_type_extractor: TileColumnTypeExtractor,
+    ):
+        super().__init__(persistent, session_manager_service, feature_store_service)
+        self.tile_column_type_extractor = tile_column_type_extractor
+
     async def _add_tile_value_types_column(self, migration_version: int) -> None:
         """
         Add VALUE_COLUMN_TYPES column in TILE_REGISTRY table
@@ -157,9 +139,7 @@ class DataWarehouseMigrationServiceV6(DataWarehouseMigrationMixin):
         if "feature_store" not in collection_names:
             return
 
-        tile_column_type_extractor = TileColumnTypeExtractor(self.user, self.persistent)
-        await tile_column_type_extractor.setup()
-        self.extractor = tile_column_type_extractor
+        await self.tile_column_type_extractor.setup()
 
         # migrate all records and audit records
         await self.migrate_all_records(version=migration_version)
@@ -191,7 +171,7 @@ class DataWarehouseMigrationServiceV6(DataWarehouseMigrationMixin):
         if "VALUE_COLUMN_TYPES" in df_tile_registry:  # type: ignore[operator]
             return
 
-        df_tile_registry["VALUE_COLUMN_TYPES"] = self.extractor.get_tile_column_types_from_names(  # type: ignore[index]
+        df_tile_registry["VALUE_COLUMN_TYPES"] = self.tile_column_type_extractor.get_tile_column_types_from_names(  # type: ignore[index]
             df_tile_registry["VALUE_COLUMN_NAMES"]  # type: ignore[index]
         )
         await session.register_table(
@@ -246,6 +226,16 @@ class DataWarehouseMigrationServiceV8(DataWarehouseMigrationMixin):
     2. Fix jobs scheduling bug caused by tile_id collision
     """
 
+    def __init__(
+        self,
+        persistent: Persistent,
+        session_manager_service: SessionManagerService,
+        feature_store_service: FeatureStoreService,
+        working_schema_service: WorkingSchemaService,
+    ):
+        super().__init__(persistent, session_manager_service, feature_store_service)
+        self.working_schema_service = working_schema_service
+
     @migrate(version=3, description="Reset working schema from scratch")
     async def reset_working_schema(self, query_filter: Optional[dict[str, Any]] = None) -> None:
         """
@@ -262,12 +252,6 @@ class DataWarehouseMigrationServiceV8(DataWarehouseMigrationMixin):
     async def migrate_record_with_session(
         self, feature_store: FeatureStoreModel, session: BaseSession
     ) -> None:
-        working_schema_service = WorkingSchemaService(
-            user=self.user,
-            persistent=self.persistent,
-            celery=self.celery,
-            catalog_id=self.catalog_id,
-        )
-        await working_schema_service.recreate_working_schema(
+        await self.working_schema_service.recreate_working_schema(
             feature_store_id=feature_store.id, session=session
         )

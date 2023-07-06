@@ -3,26 +3,27 @@ MigrationServiceMixin class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Iterator, Optional, Protocol
+from typing import TYPE_CHECKING, Any, Optional
 
 from abc import ABC, abstractmethod
-from contextlib import contextmanager
 
-from bson import ObjectId
 from celery import Celery
 
 from featurebyte.enum import InternalName
 from featurebyte.exception import CredentialsError
 from featurebyte.logging import get_logger
-from featurebyte.models.base import User
+from featurebyte.models.base import FeatureByteBaseDocumentModel, FeatureByteBaseModel, User
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.models.persistent import Document, QueryFilter
+from featurebyte.models.persistent import Document
 from featurebyte.persistent.base import Persistent
-from featurebyte.service.base_document import DocumentUpdateSchema
+from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
+from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
-from featurebyte.service.session_validator import SessionValidatorService
-from featurebyte.utils.credential import MongoBackedCredentialProvider
+
+BaseDocumentServiceT = BaseDocumentService[
+    FeatureByteBaseDocumentModel, FeatureByteBaseModel, BaseDocumentServiceUpdateSchema
+]
 
 if TYPE_CHECKING:
     from featurebyte.session.base import BaseSession
@@ -31,30 +32,22 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class BaseMigrationServiceMixin(Protocol):
+class BaseMigrationServiceMixin:
     """BaseMigrationServiceMixin class"""
 
-    persistent: Persistent
+    def __init__(self, persistent: Persistent):
+        self.persistent = persistent
 
     @property
     @abstractmethod
-    def collection_name(self) -> str:
+    def delegate_service(self) -> BaseDocumentServiceT:
         """
-        Collection name
+        Delegate service
 
         Returns
         -------
-        Collection name
+        BaseDocumentServiceT
         """
-
-    @abstractmethod
-    def _construct_list_query_filter(
-        self,
-        query_filter: Optional[dict[str, Any]] = None,
-        use_raw_query_filter: bool = False,
-        **kwargs: Any,
-    ) -> QueryFilter:
-        ...
 
     @abstractmethod
     async def migrate_record(self, document: Document, version: Optional[int]) -> None:
@@ -68,11 +61,6 @@ class BaseMigrationServiceMixin(Protocol):
         version: Optional[int]
             Migration number
         """
-
-    @abstractmethod
-    @contextmanager
-    def allow_use_raw_query_filter(self) -> Iterator[None]:
-        """Activate use of raw query filter"""
 
     async def migrate_all_records(
         self,
@@ -94,14 +82,18 @@ class BaseMigrationServiceMixin(Protocol):
         """
         # migrate all records and audit records
         if query_filter is None:
-            with self.allow_use_raw_query_filter():
-                query_filter = dict(self._construct_list_query_filter(use_raw_query_filter=True))
+            with self.delegate_service.allow_use_raw_query_filter():
+                query_filter = dict(
+                    self.delegate_service.construct_list_query_filter(use_raw_query_filter=True)
+                )
 
-        logger.info(f'Start migrating all records (collection: "{self.collection_name}")')
+        logger.info(
+            f'Start migrating all records (collection: "{self.delegate_service.collection_name}")'
+        )
         to_iterate, page = True, 1
         while to_iterate:
             docs, total = await self.persistent.find(
-                collection_name=self.collection_name,
+                collection_name=self.delegate_service.collection_name,
                 query_filter=query_filter,
                 page=page,
                 page_size=page_size,
@@ -112,39 +104,10 @@ class BaseMigrationServiceMixin(Protocol):
             to_iterate = bool(total > (page * page_size))
             page += 1
 
-        logger.info(f'Complete migration (collection: "{self.collection_name}")')
+        logger.info(f'Complete migration (collection: "{self.delegate_service.collection_name}")')
 
 
-class MigrationServiceMixin(BaseMigrationServiceMixin, ABC):
-    """MigrationServiceMixin class"""
-
-    @classmethod
-    def migrate_document_record(cls, record: dict[str, Any]) -> dict[str, Any]:
-        """
-        Migrate older document record to the current document record format
-
-        Parameters
-        ----------
-        record: dict[str, Any]
-            Older document record
-
-        Returns
-        -------
-        dict[str, Any]
-            Record in newer format
-        """
-        return cls.document_class(**record).dict(by_alias=True)  # type: ignore
-
-    async def migrate_record(self, document: Document, version: Optional[int]) -> None:
-        _ = version
-        await self.persistent.migrate_record(
-            collection_name=self.collection_name,
-            document=document,
-            migrate_func=self.migrate_document_record,
-        )
-
-
-class DataWarehouseMigrationMixin(FeatureStoreService, BaseMigrationServiceMixin, ABC):
+class DataWarehouseMigrationMixin(BaseMigrationServiceMixin, ABC):
     """DataWarehouseMigrationMixin class
 
     Provides common functionalities required for migrating data warehouse
@@ -153,22 +116,19 @@ class DataWarehouseMigrationMixin(FeatureStoreService, BaseMigrationServiceMixin
     get_credential: Any
     celery: Celery
 
-    async def create_document(self, data: DocumentUpdateSchema) -> Document:  # type: ignore[override]
-        # Currently any implementation of DataWarehouseMigrationMixin is required to only make
-        # modification to data warehouse and not to mongo due to the way they are tested.
-        raise NotImplementedError()
-
-    async def update_document(  # type: ignore[override]
+    def __init__(
         self,
-        document_id: ObjectId,
-        data: DocumentUpdateSchema,
-        exclude_none: bool = True,
-        document: Optional[Document] = None,
-        return_document: bool = True,
-    ) -> Optional[Document]:
-        # Currently any implementation of DataWarehouseMigrationMixin is required to only make
-        # modification to data warehouse and not to mongo due to the way they are tested.
-        raise NotImplementedError()
+        persistent: Persistent,
+        session_manager_service: SessionManagerService,
+        feature_store_service: FeatureStoreService,
+    ):
+        super().__init__(persistent=persistent)
+        self.session_manager_service = session_manager_service
+        self.feature_store_service = feature_store_service
+
+    @property
+    def delegate_service(self) -> BaseDocumentServiceT:
+        return self.feature_store_service  # type: ignore[return-value]
 
     async def get_session(self, feature_store: FeatureStoreModel) -> BaseSession:
         """
@@ -183,20 +143,9 @@ class DataWarehouseMigrationMixin(FeatureStoreService, BaseMigrationServiceMixin
         -------
         BaseSession
         """
-        credential_provider = MongoBackedCredentialProvider(persistent=self.persistent)
-        user = User(id=feature_store.user_id)
-        session_validator_service = SessionValidatorService(
-            user, self.persistent, self.catalog_id, credential_provider, self
-        )
-        session_manager_service = SessionManagerService(
-            user=user,
-            persistent=self.persistent,
-            catalog_id=self.catalog_id,
-            mongo_backed_credential_provider=credential_provider,
-            session_validator_service=session_validator_service,
-        )
-        session = await session_manager_service.get_feature_store_session(
-            feature_store, get_credential=self.get_credential
+        feature_store_user = User(id=feature_store.user_id)
+        session = await self.session_manager_service.get_feature_store_session(
+            feature_store, get_credential=self.get_credential, user_override=feature_store_user
         )
         return session
 
