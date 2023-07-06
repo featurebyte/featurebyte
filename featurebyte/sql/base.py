@@ -1,7 +1,7 @@
 """
 Base Class for SQL related operations
 """
-from typing import Any, List
+from typing import Any
 
 from pydantic.fields import PrivateAttr
 from pydantic.main import BaseModel
