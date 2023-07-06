@@ -267,6 +267,8 @@ jobs:
         name: python-${{ matrix.python-version }}-.coverage.2
         path: .coverage.2
   test-integration-databricks:
+    # FIXME: Databricks tests are currently broken due to access issues (DEV-1886)
+    if: false
     needs:
     - build-jar
     runs-on: ubuntu-latest
@@ -421,10 +423,11 @@ jobs:
       uses: actions/download-artifact@v3
       with:
         name: python-${{ matrix.python-version }}-pytest.xml.2
-    - name: Download integration test results (databricks)
-      uses: actions/download-artifact@v3
-      with:
-        name: python-${{ matrix.python-version }}-pytest.xml.3
+# FIXME: Databricks tests are currently broken due to access issues (DEV-1886)
+#    - name: Download integration test results (databricks)
+#      uses: actions/download-artifact@v3
+#      with:
+#        name: python-${{ matrix.python-version }}-pytest.xml.3
     - name: Download unit coverage results
       uses: actions/download-artifact@v3
       with:
@@ -437,10 +440,11 @@ jobs:
       uses: actions/download-artifact@v3
       with:
         name: python-${{ matrix.python-version }}-.coverage.2
-    - name: Download integration coverage results (databricks)
-      uses: actions/download-artifact@v3
-      with:
-        name: python-${{ matrix.python-version }}-.coverage.3
+# FIXME: Databricks tests are currently broken due to access issues (DEV-1886)
+#    - name: Download integration coverage results (databricks)
+#      uses: actions/download-artifact@v3
+#      with:
+#        name: python-${{ matrix.python-version }}-.coverage.3
     - name: Merge test results
       run: task test-merge
     - name: Test Coverage Report
