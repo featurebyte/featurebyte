@@ -32,13 +32,10 @@ from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.groupby import GroupBy
 from featurebyte.api.item_table import ItemTable
 from featurebyte.app import User, app, get_celery
-from featurebyte.common.model_util import get_version
 from featurebyte.enum import AggFunc, InternalName
-from featurebyte.feature_manager.model import ExtendedFeatureListModel
-from featurebyte.models.base import DEFAULT_CATALOG_ID, VersionIdentifier
+from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.credential import CredentialModel
 from featurebyte.models.feature import FeatureReadiness
-from featurebyte.models.feature_list import FeatureListStatus
 from featurebyte.models.task import Task as TaskModel
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.graph import GlobalQueryGraph
@@ -1228,46 +1225,6 @@ def online_store_table_version_service_fixture(app_container):
     OnlineStoreTableVersionService fixture
     """
     return app_container.online_store_table_version_service
-
-
-@pytest.fixture
-@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-def mock_snowflake_feature_list_model(
-    mock_execute_query, snowflake_connector, snowflake_event_view_with_entity
-):
-    """Fixture for a FeatureListModel"""
-    mock_execute_query.size_effect = None
-    _ = snowflake_connector
-
-    feature_group = snowflake_event_view_with_entity.groupby(by_keys="cust_id").aggregate_over(
-        value_column="col_float",
-        method="sum",
-        windows=["30m"],
-        feature_names=["sum_30m"],
-        feature_job_setting=FeatureJobSetting(
-            blind_spot="10m",
-            frequency="30m",
-            time_modulo_frequency="5m",
-        ),
-    )
-    feature = feature_group["sum_30m"]
-
-    mock_feature_list = ExtendedFeatureListModel(
-        name="feature_list1",
-        feature_ids=[feature.id],
-        feature_signatures=[
-            {
-                "id": feature.id,
-                "name": feature.name,
-                "version": VersionIdentifier(name=get_version()),
-            }
-        ],
-        readiness=FeatureReadiness.DRAFT,
-        status=FeatureListStatus.PUBLIC_DRAFT,
-        version=VersionIdentifier(name="v1"),
-    )
-
-    return mock_feature_list
 
 
 @pytest.fixture(name="mocked_compute_tiles_on_demand")
