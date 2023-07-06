@@ -144,10 +144,6 @@ class DataWarehouseMigrationMixin(BaseMigrationServiceMixin, ABC):
         BaseSession
         """
         feature_store_user = User(id=feature_store.user_id)
-        # A hack to update the user ID in the session manager service and session validator service to use
-        # the feature store user ID instead of the arbitrary current user ID. This is required for these
-        # services as we need to be able to retrieve the correct credentials from the persistent layer.
-        # We can use an arbitrary user ID for other services as there's no dependency on user ID.
         session = await self.session_manager_service.get_feature_store_session(
             feature_store, get_credential=self.get_credential, user_override=feature_store_user
         )
