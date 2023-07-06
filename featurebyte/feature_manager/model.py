@@ -3,12 +3,7 @@ This modules contains feature manager specific models
 """
 from __future__ import annotations
 
-from typing import Optional
-
-from pydantic import StrictStr
-
 from featurebyte.enum import SourceType
-from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, VersionIdentifier
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
@@ -62,20 +57,3 @@ class ExtendedFeatureModel(FeatureModel):
             )
             out.append(tile_spec)
         return out
-
-
-class FeatureSignature(FeatureByteBaseModel):
-    """
-    FeatureSignature class used in FeatureList object
-
-    id: PydanticObjectId
-        Feature id of the object
-    name: str
-        Name of the feature
-    version: VersionIdentifier
-        Feature version
-    """
-
-    id: PydanticObjectId
-    name: Optional[StrictStr]
-    version: VersionIdentifier
