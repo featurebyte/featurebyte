@@ -95,11 +95,7 @@ class AppContainerConfig:
     """
 
     def __init__(self) -> None:
-        # These services have dependencies in addition to the normal user, and persistent dependencies.
-        self.service_with_extra_deps: List[ClassDefinition] = []
-        # Classes with deps can depend on any object defined above.
         self.classes_with_deps: List[ClassDefinition] = []
-
         self.dependency_mapping: Dict[str, ClassDefinition] = {}
 
     def get_class_def_mapping(self) -> Dict[str, ClassDefinition]:
@@ -111,7 +107,7 @@ class AppContainerConfig:
             return self.dependency_mapping
 
         # Populate
-        for dep in self._all_dependencies():
+        for dep in self.classes_with_deps:
             self.dependency_mapping[dep.name] = dep
         return self.dependency_mapping
 
@@ -156,12 +152,6 @@ class AppContainerConfig:
             )
         )
 
-    def _all_dependencies(self) -> List[ClassDefinition]:
-        output = []
-        output.extend(self.service_with_extra_deps)
-        output.extend(self.classes_with_deps)
-        return output
-
     def _validate_duplicate_names(self) -> None:
         """
         Validate that there's no duplicate names registered.
@@ -172,7 +162,7 @@ class AppContainerConfig:
             raised when a name has been defined already.
         """
         seen_names = set()
-        for definition in self._all_dependencies():
+        for definition in self.classes_with_deps:
             definition_name = definition.name
             if definition_name in seen_names:
                 raise ValueError(
@@ -248,7 +238,7 @@ class AppContainerConfig:
         # Recursive stack keeps track of nodes that are currently being visited in the recursive call.
         # This is to allow us to see if there's a back edge.
         recursive_stack: dict[str, bool] = {}
-        for node in self._all_dependencies():
+        for node in self.classes_with_deps:
             # Only need to recurse on nodes we have not been to before.
             if not visited_nodes.get(node.name, False):
                 is_cyclic, path = self._is_cyclic_dfs(

@@ -70,8 +70,7 @@ def test_all_dependencies():
     )
     config.register_class(TestClassB, name_override="service_with_deps")
 
-    all_deps = config._all_dependencies()
-    assert len(all_deps) == 4
+    assert len(config.classes_with_deps) == 4
 
 
 def test_validate__duplicate_name():
