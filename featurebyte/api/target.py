@@ -126,10 +126,7 @@ class Target(Series, SavableApiObject):
         -------
         FeatureModel
         """
-        pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
         target_dict = self.dict(by_alias=True)
-        target_dict["graph"] = pruned_graph.dict()
-        target_dict["node_name"] = mapped_node.name
         return TargetModel(**target_dict)
 
     @enforce_observation_set_row_order
