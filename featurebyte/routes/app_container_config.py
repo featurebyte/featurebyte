@@ -70,17 +70,6 @@ def _get_constructor_params_from_class(
     return params
 
 
-class DepType(StrEnum):
-    """
-    DepType enums.
-
-    Used to determine what type of dependency we have, so that we can build them correctly.
-    """
-
-    SERVICE_WITH_EXTRA_DEPS = "service_with_extra_deps"
-    CLASS_WITH_DEPS = "class_with_deps"
-
-
 @dataclass
 class ClassDefinition:
     """
@@ -93,7 +82,6 @@ class ClassDefinition:
     name: str
     class_: type
     dependencies: List[str]
-    dep_type: DepType
 
 
 class AppContainerConfig:
@@ -121,36 +109,6 @@ class AppContainerConfig:
         for dep in self._all_dependencies():
             self.dependency_mapping[dep.name] = dep
         return self.dependency_mapping
-
-    def register_service(
-        self,
-        class_: type,
-        dependency_override: Optional[Dict[str, str]] = None,
-        name_override: Optional[str] = None,
-    ) -> None:
-        """
-        Register a service with extra dependencies if needed.
-
-        This endpoint is only for featurebyte services, as they'll automatically have a user, persistent, and catalog
-        ID, injected into the service initialization.
-
-        Parameters
-        ----------
-        class_: type
-            type we are registering
-        dependency_override: list[str]
-            dependencies
-        name_override: str
-            name override
-        """
-        self.service_with_extra_deps.append(
-            ClassDefinition(
-                name=_get_class_name(class_.__name__, name_override),
-                class_=class_,
-                dependencies=_get_constructor_params_from_class(class_, dependency_override, 3),
-                dep_type=DepType.SERVICE_WITH_EXTRA_DEPS,
-            )
-        )
 
     def register_class(
         self,
@@ -181,7 +139,6 @@ class AppContainerConfig:
                 name=_get_class_name(class_.__name__, name_override),
                 class_=class_,
                 dependencies=deps,
-                dep_type=DepType.CLASS_WITH_DEPS,
             )
         )
 

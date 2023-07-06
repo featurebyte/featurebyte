@@ -7,7 +7,7 @@ import pytest
 from bson import ObjectId
 
 from featurebyte.models.base import DEFAULT_CATALOG_ID, User
-from featurebyte.routes.app_container_config import AppContainerConfig, ClassDefinition, DepType
+from featurebyte.routes.app_container_config import AppContainerConfig, ClassDefinition
 from featurebyte.routes.lazy_app_container import LazyAppContainer, get_all_deps_for_key
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.utils.storage import get_storage, get_temp_storage
@@ -80,8 +80,8 @@ def test_app_config_fixture():
     """
     app_container_config = AppContainerConfig()
     app_container_config.register_class(NoDeps)
-    app_container_config.register_service(TestService)
-    app_container_config.register_service(TestServiceWithOtherDeps, {"other_dep": "test_service"})
+    app_container_config.register_class(TestService)
+    app_container_config.register_class(TestServiceWithOtherDeps, {"other_dep": "test_service"})
     app_container_config.register_class(TestController)
     return app_container_config
 
@@ -146,7 +146,7 @@ def test_construction__build_with_missing_deps(app_container_constructor_params)
     Test that an error is raised in an invalid dependency is passed in.
     """
     app_container_config = AppContainerConfig()
-    app_container_config.register_service(TestServiceWithOtherDeps, {"other_dep": "test_service"})
+    app_container_config.register_class(TestServiceWithOtherDeps, {"other_dep": "test_service"})
 
     # KeyError raised as no `test_service` dep found
     app_container = LazyAppContainer(
@@ -185,7 +185,6 @@ def get_class_def(key: str, deps: List[str]) -> ClassDefinition:
         name=key,
         class_=TestService,
         dependencies=deps,
-        dep_type=DepType.SERVICE_WITH_EXTRA_DEPS,
     )
 
 

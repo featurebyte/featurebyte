@@ -64,11 +64,11 @@ def test_all_dependencies():
     config = AppContainerConfig()
     config.register_class(TestClassA)
     config.register_class(TestClassB)
-    config.register_service(
+    config.register_class(
         TestClassA,
         name_override="basic_service",
     )
-    config.register_service(TestClassB, name_override="service_with_deps")
+    config.register_class(TestClassB, name_override="service_with_deps")
 
     all_deps = config._all_dependencies()
     assert len(all_deps) == 4
