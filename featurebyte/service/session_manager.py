@@ -3,13 +3,11 @@ SessionManager service
 """
 from typing import Any, Optional
 
-from bson import ObjectId
 from pydantic import ValidationError
 
 from featurebyte.exception import CredentialsError
 from featurebyte.models.base import User
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.persistent import Persistent
 from featurebyte.service.session_validator import SessionValidatorService
 from featurebyte.session.base import BaseSession
 from featurebyte.session.manager import SessionManager
@@ -24,14 +22,10 @@ class SessionManagerService:
     def __init__(
         self,
         user: Any,
-        persistent: Persistent,
-        catalog_id: ObjectId,
         mongo_backed_credential_provider: MongoBackedCredentialProvider,
         session_validator_service: SessionValidatorService,
     ):
         self.user = user
-        self.persistent = persistent
-        self.catalog_id = catalog_id
         self.credential_provider = mongo_backed_credential_provider
         self.session_validator_service = session_validator_service
 
