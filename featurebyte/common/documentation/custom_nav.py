@@ -122,6 +122,7 @@ class BetaWave3Nav(Nav):
         CLEANING_OPERATION,
         WAREHOUSE,
         REQUEST_COLUMN,
+        USER_DEFINED_FUNCTION,
     ]
 
     _custom_order_mapping = {

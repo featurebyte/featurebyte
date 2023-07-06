@@ -288,8 +288,8 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
         >>> cos_udf = UserDefinedFunction.create(
         ...     name="cos",
         ...     sql_function_name="cos",
-        ...     function_parameters=[FunctionParameter(name="x", dtype=DBVarType.FLOAT)],
-        ...     output_dtype=DBVarType.FLOAT,
+        ...     function_parameters=[fb.FunctionParameter(name="x", dtype=fb.enum.DBVarType.FLOAT)],
+        ...     output_dtype=fb.enum.DBVarType.FLOAT,
         ...     is_global=False,
         ... )
 

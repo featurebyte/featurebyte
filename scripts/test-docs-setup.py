@@ -2,7 +2,8 @@
 Setup for running doctests.
 """
 import featurebyte as fb
-from featurebyte import FeatureList
+from featurebyte import FeatureList, FunctionParameter, UserDefinedFunction
+from featurebyte.enum import DBVarType
 
 
 def setup() -> None:
@@ -186,6 +187,15 @@ def setup() -> None:
     # FeatureList:
     FeatureList([invoice_count_60days], name="invoice_feature_list").save(
         conflict_resolution="retrieve"
+    )
+
+    # UserDefinedFunction: cos
+    UserDefinedFunction.create(
+        name="cos",
+        sql_function_name="cos",
+        function_parameters=[FunctionParameter(name="x", dtype=DBVarType.FLOAT)],
+        output_dtype=fb.enum.DBVarType.FLOAT,
+        is_global=True,
     )
 
 
