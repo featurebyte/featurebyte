@@ -630,6 +630,9 @@ def observation_table_dataframe_fixture(scd_dataframe):
 
 @pytest.fixture(scope="session")
 def observation_set(transaction_data_upper_case):
+    """
+    Fixture for observation set
+    """
     # Sample training time points from historical table
     df = transaction_data_upper_case
     cols = ["ËVENT_TIMESTAMP", "ÜSER ID"]
@@ -638,7 +641,7 @@ def observation_set(transaction_data_upper_case):
     df.rename({"ËVENT_TIMESTAMP": "POINT_IN_TIME"}, axis=1, inplace=True)
 
     # Add random spikes to point in time of some rows
-    rng = np.random.RandomState(0)
+    rng = np.random.RandomState(0)  # pylint: disable=no-member
     spike_mask = rng.randint(0, 2, len(df)).astype(bool)
     spike_shift = pd.to_timedelta(rng.randint(0, 3601, len(df)), unit="s")
     df.loc[spike_mask, "POINT_IN_TIME"] = (
