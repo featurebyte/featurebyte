@@ -111,6 +111,9 @@ def test_get_class_name():
     name = _get_class_name(TestClassC.__name__, name_override="hello")
     assert name == "hello"
 
+    name = _get_class_name("SCDTable")
+    assert name == "scd_table"
+
 
 def test_get_constructor_params_from_class():
     """

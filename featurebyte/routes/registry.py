@@ -181,9 +181,8 @@ app_container_config.register_class(RelationshipInfoService)
 app_container_config.register_class(
     SCDTableController,
     dependency_override={"service": "scd_table_service"},
-    name_override="scd_table_controller",
 )
-app_container_config.register_class(SCDTableService, name_override="scd_table_service")
+app_container_config.register_class(SCDTableService)
 app_container_config.register_class(SchemaMetadataService)
 app_container_config.register_class(SemanticController)
 app_container_config.register_class(SemanticService)

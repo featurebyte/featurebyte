@@ -11,14 +11,19 @@ import inspect
 import re
 from dataclasses import dataclass
 
-from featurebyte.enum import StrEnum
-
-CAMEL_CASE_TO_SNAKE_CASE_PATTERN = re.compile(r"(?<!^)(?=[A-Z])")
+CAMEL_CASE_TO_SNAKE_CASE_PATTERN = re.compile("((?!^)(?<!_)[A-Z][a-z]+|(?<=[a-z0-9])[A-Z])")
 
 
 def _get_class_name(class_name: str, name_override: Optional[str] = None) -> str:
     """
-    Helper method to get a class name
+    Helper method to get a class name.
+
+    This method will convert a camel case formatted name, to a snake case formatted name.
+
+    Examples:
+
+    - `TestClass` -> `test_class`
+    - 'SCDTable' -> 'scd_table'
 
     Parameters
     ----------
@@ -34,7 +39,7 @@ def _get_class_name(class_name: str, name_override: Optional[str] = None) -> str
     """
     if name_override is not None:
         return name_override
-    return CAMEL_CASE_TO_SNAKE_CASE_PATTERN.sub("_", class_name).lower()
+    return CAMEL_CASE_TO_SNAKE_CASE_PATTERN.sub(r"_\1", class_name).lower()
 
 
 def _get_constructor_params_from_class(
