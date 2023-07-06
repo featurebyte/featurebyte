@@ -45,7 +45,6 @@ from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
 from featurebyte.schema import APIServiceStatus
 from featurebyte.schema.task import TaskId
-from featurebyte.service.task_manager import TaskManager
 from featurebyte.utils.credential import MongoBackedCredentialProvider
 from featurebyte.utils.messaging import REDIS_URI
 from featurebyte.utils.persistent import get_persistent
@@ -90,12 +89,7 @@ def _get_api_deps() -> Callable[[Request, PydanticObjectId], None]:
             user=request.state.user,
             persistent=request.state.persistent,
             temp_storage=get_temp_storage(),
-            task_manager=TaskManager(
-                user=request.state.user,
-                persistent=request.state.persistent,
-                celery=get_celery(),
-                catalog_id=active_catalog_id,
-            ),
+            celery=get_celery(),
             storage=get_storage(),
             catalog_id=active_catalog_id,
             app_container_config=app_container_config,

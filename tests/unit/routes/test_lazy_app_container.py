@@ -9,7 +9,6 @@ from bson import ObjectId
 from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.routes.app_container_config import AppContainerConfig, ClassDefinition
 from featurebyte.routes.lazy_app_container import LazyAppContainer, get_all_deps_for_key
-from featurebyte.service.task_manager import TaskManager
 from featurebyte.utils.storage import get_storage, get_temp_storage
 from featurebyte.worker import get_celery
 
@@ -66,9 +65,7 @@ def app_container_constructor_params_fixture(persistent):
         "persistent": persistent,
         "temp_storage": get_temp_storage(),
         "storage": get_storage(),
-        "task_manager": TaskManager(
-            user=user, persistent=persistent, celery=get_celery(), catalog_id=DEFAULT_CATALOG_ID
-        ),
+        "celery": get_celery(),
         "catalog_id": DEFAULT_CATALOG_ID,
     }
 

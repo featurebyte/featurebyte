@@ -4,6 +4,7 @@ Lazy app container functions the same as the app_container, but only initializes
 from typing import Any, Dict, List
 
 from bson import ObjectId
+from celery import Celery
 
 from featurebyte.persistent import Persistent
 from featurebyte.routes.app_container_config import AppContainerConfig, ClassDefinition
@@ -145,7 +146,7 @@ class LazyAppContainer:
         user: Any,
         persistent: Persistent,
         temp_storage: Storage,
-        task_manager: TaskManager,
+        celery: Celery,
         storage: Storage,
         catalog_id: ObjectId,
         app_container_config: AppContainerConfig,
@@ -155,12 +156,12 @@ class LazyAppContainer:
         # Used to cache instances if they've already been built
         # Pre-load with some default deps
         self.instance_map: Dict[str, Any] = {
-            "user": user,
-            "temp_storage": temp_storage,
-            "task_manager": task_manager,
-            "persistent": persistent,
             "catalog_id": catalog_id,
+            "celery": celery,
+            "persistent": persistent,
             "storage": storage,
+            "temp_storage": temp_storage,
+            "user": user,
         }
 
     def _get_key(self, key: str) -> Any:

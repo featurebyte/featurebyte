@@ -3,6 +3,8 @@ Registrations module.
 
 This contains all the dependencies that we want to register in order to get our fast API app up and running.
 """
+from celery import Celery
+
 from featurebyte.migration.migration_data_service import SchemaMetadataService
 from featurebyte.migration.service.data_warehouse import (
     DataWarehouseMigrationServiceV6,
@@ -207,6 +209,7 @@ app_container_config.register_class(
 )
 app_container_config.register_class(TargetNamespaceService)
 app_container_config.register_class(TaskController)
+app_container_config.register_class(TaskManager)
 app_container_config.register_class(TempDataController)
 app_container_config.register_class(TileCacheService)
 app_container_config.register_class(TileColumnTypeExtractor)
@@ -225,10 +228,10 @@ app_container_config.register_class(WorkingSchemaService)
 
 
 # These have force_no_deps set as True, as they are manually initialized.
+app_container_config.register_class(Celery, force_no_deps=True)
 app_container_config.register_class(Persistent, force_no_deps=True)
 app_container_config.register_class(Storage, force_no_deps=True)
 app_container_config.register_class(Storage, force_no_deps=True, name_override="temp_storage")
-app_container_config.register_class(TaskManager, force_no_deps=True)
 app_container_config.register_class(User, force_no_deps=True)
 
 

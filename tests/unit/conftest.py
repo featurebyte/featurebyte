@@ -43,7 +43,6 @@ from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
 from featurebyte.schema.task import TaskStatus
 from featurebyte.schema.worker.task.base import BaseTaskPayload
-from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.base import DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS
 from featurebyte.session.manager import SessionManager, session_cache
 from featurebyte.storage import LocalTempStorage
@@ -1308,14 +1307,11 @@ def app_container_fixture(persistent, user):
     """
     Return an app container used in tests. This will allow us to easily retrieve instances of the right type.
     """
-    task_manager = TaskManager(
-        user=user, persistent=persistent, celery=get_celery(), catalog_id=DEFAULT_CATALOG_ID
-    )
     return LazyAppContainer(
         user=user,
         persistent=persistent,
         temp_storage=LocalTempStorage(),
-        task_manager=task_manager,
+        celery=get_celery(),
         storage=LocalTempStorage(),
         catalog_id=DEFAULT_CATALOG_ID,
         app_container_config=app_container_config,
