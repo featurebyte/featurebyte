@@ -8,6 +8,7 @@ from featurebyte.api.catalog import Catalog
 from featurebyte.api.user_defined_function import UDF, UserDefinedFunction
 from featurebyte.exception import (
     DocumentCreationError,
+    RecordCreationException,
     RecordDeletionException,
     RecordUpdateException,
 )
@@ -348,4 +349,17 @@ def test_update_user_defined_function(cos_udf, float_feature):
     with pytest.raises(RecordUpdateException) as exc:
         cos_udf.update_output_dtype("FLOAT")
     expected_error = "User defined function used by saved feature(s): ['new_feat']"
+    assert expected_error in str(exc.value)
+
+
+def test_create_feature_with_deleted_user_defined_function(cos_udf, float_feature):
+    """Test save a feature with deleted user-defined function should fail"""
+    new_feat = cos_udf(float_feature)
+    new_feat.name = "new_feat"
+    cos_udf.delete()
+
+    with pytest.raises(RecordCreationException) as exc:
+        new_feat.save()
+
+    expected_error = "Please save the UserDefinedFunction object first."
     assert expected_error in str(exc.value)
