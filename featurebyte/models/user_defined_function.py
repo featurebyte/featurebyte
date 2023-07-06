@@ -10,6 +10,7 @@ from pydantic import Field, validator
 from sqlglot.expressions import select
 from typeguard import check_type, typechecked
 
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.typing import Scalar, Timestamp
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.models.base import (
@@ -76,17 +77,34 @@ def get_default_test_value(dtype: DBVarType) -> Union[Scalar, Timestamp]:
 
 class FunctionParameter(FeatureByteBaseModel):
     """
-    FunctionParameter class
+    FunctionParameter is used to define the input parameters of a UserDefinedFunction.
 
+    Parameters
+    ----------
     name: str
-        Name of the generic function parameter (used for documentation purpose)
+        Name of the function input parameter (required)
     dtype: DBVarType
-        Data type of the parameter
+        Data type of the function input parameter (required)
     default_value: Optional[Union[Scalar, Timestamp]]
-        Default value of the parameter
+        Default value of the function input parameter (optional). Default value is used to make the function
+        input parameter optional.
     test_value: Optional[Union[Scalar, Timestamp]]
-        Test value of the parameter
+        Test value of the function input parameter (optional). Test value is used to check the execution of the
+        function during the creation & update of the UserDefinedFunction.
+
+    Examples
+    --------
+    Create a float function parameter:
+    >>> fb.FunctionParameter(name="param1", dtype=fb.enum.DBVarType.FLOAT)
+    FunctionParameter(name='param1', dtype='FLOAT', default_value=None, test_value=None)
+
+    Create an integer function parameter with default value 1:
+    >>> fb.FunctionParameter(name="param1", dtype=fb.enum.DBVarType.INT, default_value=1)
+    FunctionParameter(name='param1', dtype='INT', default_value=1, test_value=None)
     """
+
+    # documentation metadata
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.FunctionParameter")
 
     name: str
     dtype: DBVarType
