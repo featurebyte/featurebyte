@@ -77,4 +77,5 @@ class TestTargetApi(BaseCatalogApiTestSuite):
             payload = self.payload.copy()
             payload["_id"] = str(ObjectId())
             payload["name"] = f'{self.payload["name"]}_{i}'
+            payload["target_namespace_id"] = str(ObjectId())
             yield payload
