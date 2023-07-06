@@ -215,6 +215,7 @@ class LazyAppContainer:
             "temp_storage": temp_storage,
             "task_manager": task_manager,
             "persistent": persistent,
+            "catalog_id": catalog_id,
         }
 
     def _get_key(self, key: str) -> Any:
