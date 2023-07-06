@@ -4,8 +4,7 @@
         "Instead, update the test tests/unit/test_generate_payload_fixtures.py#test_save_payload_fixtures.",
         "Run `pytest --update-fixtures` to update it."
     ],
-    "_id": "64869b9d88102df3e39785ae",
-    "blind_spot": "1d",
+    "_id": "64a62f6af2f4ef0030d27aad",
     "entity_ids": [
         "63f94ed6ea1f050131379214"
     ],
@@ -936,7 +935,16 @@
             }
         ]
     },
+    "horizon": null,
     "name": "target",
     "node_name": "project_1",
-    "window": "7d"
+    "tabular_source": {
+        "feature_store_id": "64a62f68f2f4ef0030d27a71",
+        "table_details": {
+            "database_name": "sf_database",
+            "schema_name": "sf_schema",
+            "table_name": "sf_table"
+        }
+    },
+    "target_namespace_id": "64a62f6af2f4ef0030d27aae"
 }
