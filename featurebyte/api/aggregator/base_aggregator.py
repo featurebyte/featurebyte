@@ -121,7 +121,7 @@ class BaseAggregator(ABC):
             If aggregation method does not support input variable type
         """
         # value_column is None for count-like aggregation method
-        input_var_type = self.view.column_var_type_map.get(value_column, DBVarType.FLOAT)  # type: ignore
+        input_var_type = self.view.column_var_type_map.get(value_column, DBVarType.FLOAT)
         if not agg_method.is_var_type_supported(input_var_type):
             raise ValueError(
                 f'Aggregation method "{method}" does not support "{input_var_type}" input variable'

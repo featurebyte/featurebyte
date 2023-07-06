@@ -20,10 +20,9 @@ from featurebyte.config import Configurations
 from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType
 from featurebyte.exception import RecordRetrievalException
-from featurebyte.models import FeatureStoreModel
 from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.target import TargetModel
-from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node import Node
 from featurebyte.schema.target import TargetPreview, TargetUpdate
@@ -36,7 +35,6 @@ class Target(Series, SavableApiObject):
 
     internal_entity_ids: Optional[List[PydanticObjectId]] = Field(alias="entity_ids")
     internal_horizon: Optional[StrictStr] = Field(alias="horizon")
-    internal_graph: Optional[QueryGraph] = Field(allow_mutation=False, alias="graph")
     internal_node_name: Optional[str] = Field(allow_mutation=False, alias="node_name")
     internal_dtype: DBVarType = Field(allow_mutation=False, alias="dtype")
     internal_tabular_source: TabularSource = Field(allow_mutation=False, alias="tabular_source")
@@ -103,20 +101,6 @@ class Target(Series, SavableApiObject):
             return self.internal_horizon
 
     @property
-    def graph(self) -> Optional[QueryGraph]:
-        """
-        Returns the horizon of this target.
-
-        Returns
-        -------
-        Optional[str]
-        """
-        try:
-            return self.cached_model.graph
-        except RecordRetrievalException:
-            return self.internal_graph
-
-    @property
     def node(self) -> Node:
         """
         Representative of the current object in the graph
@@ -129,6 +113,7 @@ class Target(Series, SavableApiObject):
             node_to_return = self.cached_model.node
         except RecordRetrievalException:
             node_name = self.internal_node_name
+            assert node_name is not None
             node_to_return = self.graph.get_node_by_name(node_name)
         return node_to_return
 
@@ -182,7 +167,6 @@ class Target(Series, SavableApiObject):
         target = self._get_pruned_target_model()
         graph = target.graph
         node_name = target.node_name
-        assert graph is not None
         assert node_name is not None
         payload = TargetPreview(
             feature_store_name=self.feature_store.name,

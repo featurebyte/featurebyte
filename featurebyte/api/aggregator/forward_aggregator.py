@@ -3,7 +3,7 @@ Forward aggregator module
 """
 from __future__ import annotations
 
-from typing import Any, List, Literal, Optional, Type, cast
+from typing import Any, List, Optional, Type, cast
 
 from featurebyte import AggFunc, ChangeView, EventView, ItemView
 from featurebyte.api.aggregator.base_aggregator import BaseAggregator
@@ -30,7 +30,7 @@ class ForwardAggregator(BaseAggregator):
     def forward_aggregate(
         self,
         value_column: str,
-        method: Optional[Literal[tuple(AggFunc)]] = None,  # type: ignore[misc]
+        method: str,
         horizon: Optional[str] = None,
         target_name: Optional[str] = None,
     ) -> Target:
@@ -41,7 +41,7 @@ class ForwardAggregator(BaseAggregator):
         ----------
         value_column: str
             Column to be aggregated
-        method: Optional[Literal[tuple(AggFunc)]]
+        method: str
             Aggregation method
         horizon: str
             Horizon of the aggregation
@@ -60,6 +60,7 @@ class ForwardAggregator(BaseAggregator):
             target_name=target_name,
         )
         # Create new node parameters
+        assert value_column is not None
         node_params = self._prepare_node_parameters(
             value_column=value_column,
             method=method,
