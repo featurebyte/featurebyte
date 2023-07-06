@@ -54,6 +54,7 @@ class ForwardAggregator(NonTileBasedAggregator[ForwardAggregateSpec]):
         -------
         LeftJoinableSubquery
         """
+        # pylint: disable=too-many-locals
         spec = specs[0]
 
         # End point expression

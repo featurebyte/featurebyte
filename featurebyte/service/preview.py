@@ -492,10 +492,7 @@ class PreviewService(BaseService):
             parent_serving_preparation=parent_serving_preparation,
             skip_tile_generation=True,
         )
-        try:
-            result = await session.execute_query(preview_sql)
-        except Exception as exc:
-            print("hello")
+        result = await session.execute_query(preview_sql)
         if result is None:
             return {}
         if updated:

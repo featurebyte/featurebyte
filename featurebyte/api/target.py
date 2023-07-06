@@ -3,24 +3,28 @@ Target API object
 """
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from http import HTTPStatus
 
 import pandas as pd
-from pydantic import Field, StrictStr
+from pydantic import Field, StrictStr, root_validator
 from typeguard import typechecked
 
 from featurebyte.api.api_object_util import ForeignKeyMapping
 from featurebyte.api.entity import Entity
+from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.savable_api_object import SavableApiObject
 from featurebyte.common.utils import dataframe_from_json, enforce_observation_set_row_order
 from featurebyte.config import Configurations
 from featurebyte.core.series import Series
+from featurebyte.enum import DBVarType
 from featurebyte.exception import RecordRetrievalException
+from featurebyte.models import FeatureStoreModel
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.target import TargetModel
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node import Node
 from featurebyte.schema.target import TargetPreview, TargetUpdate
 
@@ -34,6 +38,15 @@ class Target(Series, SavableApiObject):
     internal_horizon: Optional[StrictStr] = Field(alias="horizon")
     internal_graph: Optional[QueryGraph] = Field(allow_mutation=False, alias="graph")
     internal_node_name: Optional[str] = Field(allow_mutation=False, alias="node_name")
+    internal_dtype: DBVarType = Field(allow_mutation=False, alias="dtype")
+    internal_tabular_source: TabularSource = Field(allow_mutation=False, alias="tabular_source")
+
+    # pydantic instance variable (public)
+    feature_store: FeatureStoreModel = Field(
+        exclude=True,
+        allow_mutation=False,
+        description="Provides information about the feature store that the feature is connected to.",
+    )
 
     _route = "/target"
     _update_schema_class = TargetUpdate
@@ -44,6 +57,21 @@ class Target(Series, SavableApiObject):
     _list_foreign_keys = [
         ForeignKeyMapping("entity_ids", Entity, "entities"),
     ]
+
+    @root_validator(pre=True)
+    @classmethod
+    def _set_feature_store(cls, values: dict[str, Any]) -> dict[str, Any]:
+        if "feature_store" not in values:
+            tabular_source = values.get("tabular_source")
+            if isinstance(tabular_source, dict):
+                feature_store_id = TabularSource(**tabular_source).feature_store_id
+                values["feature_store"] = FeatureStore.get_by_id(id=feature_store_id)
+        return values
+
+    def _get_init_params_from_object(self) -> dict[str, Any]:
+        return {
+            "feature_store": self.feature_store,
+        }
 
     @property
     def entities(self) -> List[Entity]:
@@ -103,42 +131,6 @@ class Target(Series, SavableApiObject):
             node_name = self.internal_node_name
             node_to_return = self.graph.get_node_by_name(node_name)
         return node_to_return
-
-    @classmethod
-    @typechecked
-    def create(
-        cls,
-        name: str,
-        entities: Optional[List[str]] = None,
-        horizon: Optional[str] = None,
-    ) -> Target:
-        """
-        Create a new Target.
-
-        Parameters
-        ----------
-        name : str
-            Name of the Target
-        entities : Optional[List[str]]
-            List of entity names, by default None
-        horizon : Optional[str]
-            Horizon of the Target, by default None
-
-        Returns
-        -------
-        Target
-            The newly created Target
-        """
-        entity_ids = None
-        if entities:
-            entity_ids = [Entity.get(entity_name).id for entity_name in entities]
-        target = Target(
-            name=name,
-            entity_ids=entity_ids,
-            horizon=horizon,
-        )
-        target.save()
-        return target
 
     def _get_pruned_target_model(self) -> TargetModel:
         """

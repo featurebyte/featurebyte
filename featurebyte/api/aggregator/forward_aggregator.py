@@ -3,7 +3,7 @@ Forward aggregator module
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional, Type, cast
+from typing import Any, List, Literal, Optional, Type, cast
 
 from featurebyte import AggFunc, ChangeView, EventView, ItemView
 from featurebyte.api.aggregator.base_aggregator import BaseAggregator
