@@ -173,3 +173,34 @@ def test_generate_test_sql(dtype, expected_sql):
         feature_store_id=ObjectId(),
     )
     assert udf.generate_test_sql(source_type=SourceType.SNOWFLAKE) == expected_sql
+
+
+@pytest.mark.parametrize(
+    "param_dtype,output_dtype,expected_signature",
+    [
+        (DBVarType.BOOL, DBVarType.BOOL, "function_name(x: bool) -> bool"),
+        (DBVarType.VARCHAR, DBVarType.VARCHAR, "function_name(x: str) -> str"),
+        (DBVarType.FLOAT, DBVarType.FLOAT, "function_name(x: float) -> float"),
+        (DBVarType.INT, DBVarType.INT, "function_name(x: int) -> int"),
+        (DBVarType.TIMESTAMP, DBVarType.TIMESTAMP, "function_name(x: Timestamp) -> Timestamp"),
+        (DBVarType.TIMESTAMP_TZ, DBVarType.TIMESTAMP, "function_name(x: Timestamp) -> Timestamp"),
+        # special output dtypes
+        (DBVarType.FLOAT, DBVarType.OBJECT, "function_name(x: float) -> object"),
+        (DBVarType.FLOAT, DBVarType.DATE, "function_name(x: float) -> date"),
+        (DBVarType.FLOAT, DBVarType.STRUCT, "function_name(x: float) -> struct"),
+        (DBVarType.FLOAT, DBVarType.TIMEDELTA, "function_name(x: float) -> timedelta"),
+        (DBVarType.FLOAT, DBVarType.ARRAY, "function_name(x: float) -> array"),
+        (DBVarType.FLOAT, DBVarType.VOID, "function_name(x: float) -> void"),
+        (DBVarType.FLOAT, DBVarType.MAP, "function_name(x: float) -> map"),
+    ],
+)
+def test_generate_signature(param_dtype, output_dtype, expected_signature):
+    """Test generate_signature method"""
+    udf = UserDefinedFunctionModel(
+        name="function_name",
+        sql_function_name="sql_func",
+        function_parameters=[FunctionParameter(name="x", dtype=param_dtype)],
+        output_dtype=output_dtype,
+        feature_store_id=ObjectId(),
+    )
+    assert udf.signature == expected_signature

@@ -74,6 +74,28 @@ def get_default_test_value(dtype: DBVarType) -> Union[Scalar, Timestamp]:
     return value
 
 
+def get_signature_type_str(dtype: DBVarType) -> str:
+    """
+    Get the type string for the function signature
+
+    Parameters
+    ----------
+    dtype: DBVarType
+        Data type
+
+    Returns
+    -------
+    str
+    """
+    if dtype in DBVarType.supported_timestamp_types():
+        return "Timestamp"
+
+    output = DBVarType(dtype).to_type_str()
+    if output:
+        return output
+    return dtype.lower()
+
+
 class FunctionParameter(FeatureByteBaseModel):
     """
     FunctionParameter class
@@ -124,7 +146,7 @@ class FunctionParameter(FeatureByteBaseModel):
         -------
         str
         """
-        param_type = DBVarType(self.dtype).to_type_str()
+        param_type = get_signature_type_str(self.dtype)
         if self.has_default_value:
             return f"{self.name}: {param_type} = {self.default_value}"
         return f"{self.name}: {param_type}"
@@ -202,10 +224,17 @@ class UserDefinedFunctionModel(FeatureByteBaseDocumentModel):
             func_names.add(func_param.name)
         return value
 
-    def _generate_signature(self) -> str:
+    def generate_signature(self) -> str:
+        """
+        Generate function signature for the function
+
+        Returns
+        -------
+        str
+        """
         # generate sdk function signature
         param_signature = ", ".join([param.signature for param in self.function_parameters])
-        output_type = DBVarType(self.output_dtype).to_type_str()
+        output_type = get_signature_type_str(self.output_dtype)
         return f"{self.name}({param_signature}) -> {output_type}"
 
     def generate_test_sql(self, source_type: SourceType) -> str:
@@ -262,7 +291,7 @@ class UserDefinedFunctionModel(FeatureByteBaseDocumentModel):
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         if not self.signature:
-            self.signature = self._generate_signature()
+            self.signature = self.generate_signature()
 
     class Settings(FeatureByteBaseDocumentModel.Settings):
         """

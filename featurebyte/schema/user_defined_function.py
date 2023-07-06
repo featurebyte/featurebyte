@@ -32,7 +32,7 @@ class UserDefinedFunctionCreate(FeatureByteBaseModel):
     )
 
 
-class UserDefinedFunctionUpdate(BaseDocumentServiceUpdateSchema):
+class UserDefinedFunctionUpdate(FeatureByteBaseModel):
     """
     UserDefinedFunction update schema
     """
@@ -45,6 +45,14 @@ class UserDefinedFunctionUpdate(BaseDocumentServiceUpdateSchema):
     _validate_unique_function_parameter_name = validator("function_parameters", allow_reuse=True)(
         construct_unique_name_validator(field="name")
     )
+
+
+class UserDefinedFunctionServiceUpdate(UserDefinedFunctionUpdate, BaseDocumentServiceUpdateSchema):
+    """
+    UserDefinedFunction service update schema
+    """
+
+    signature: StrictStr
 
 
 class UserDefinedFunctionList(PaginationMixin):

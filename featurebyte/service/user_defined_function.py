@@ -12,14 +12,14 @@ from featurebyte.models.persistent import QueryFilter
 from featurebyte.models.user_defined_function import UserDefinedFunctionModel
 from featurebyte.schema.user_defined_function import (
     UserDefinedFunctionCreate,
-    UserDefinedFunctionUpdate,
+    UserDefinedFunctionServiceUpdate,
 )
 from featurebyte.service.base_document import BaseDocumentService
 
 
 class UserDefinedFunctionService(
     BaseDocumentService[
-        UserDefinedFunctionModel, UserDefinedFunctionCreate, UserDefinedFunctionUpdate
+        UserDefinedFunctionModel, UserDefinedFunctionCreate, UserDefinedFunctionServiceUpdate
     ]
 ):
     """

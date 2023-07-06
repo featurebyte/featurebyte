@@ -16,6 +16,7 @@ from featurebyte.schema.info import UserDefinedFunctionFeatureInfo, UserDefinedF
 from featurebyte.schema.user_defined_function import (
     UserDefinedFunctionCreate,
     UserDefinedFunctionList,
+    UserDefinedFunctionServiceUpdate,
     UserDefinedFunctionUpdate,
 )
 from featurebyte.service.feature import FeatureService
@@ -177,7 +178,13 @@ class UserDefinedFunctionController(
         )
 
         # update user defined function
-        output_document = await self.service.update_document(document_id=document_id, data=data)
+        output_document = await self.service.update_document(
+            document_id=document_id,
+            data=UserDefinedFunctionServiceUpdate(
+                **data.dict(by_alias=True, exclude_none=True),
+                signature=updated_document.generate_signature(),
+            ),
+        )
         return cast(UserDefinedFunctionModel, output_document)
 
     async def delete_user_defined_function(self, document_id: PydanticObjectId) -> None:
