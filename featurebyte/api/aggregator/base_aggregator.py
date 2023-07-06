@@ -121,7 +121,7 @@ class BaseAggregator(ABC):
             If aggregation method does not support input variable type
         """
         # value_column is None for count-like aggregation method
-        input_var_type = self.view.column_var_type_map.get(value_column, DBVarType.FLOAT)  # type: ignore[arg-type]
+        input_var_type = self.view.column_var_type_map.get(value_column, DBVarType.FLOAT)
         if not agg_method.is_var_type_supported(input_var_type):
             raise ValueError(
                 f'Aggregation method "{method}" does not support "{input_var_type}" input variable'
@@ -141,7 +141,7 @@ class BaseAggregator(ABC):
         skip_fill_na: bool,
     ) -> Feature:
         # value_column is None for count-like aggregation method
-        var_type = self.get_output_var_type(agg_method, method, value_column)
+        var_type = self.get_output_var_type(agg_method, method, value_column)  # type: ignore[arg-type]
 
         feature = self.view._project_feature_from_node(  # pylint: disable=protected-access
             node=groupby_node,
