@@ -445,7 +445,7 @@ def test_generic_function__pruning(query_graph_and_assign_node):
         node_type=NodeType.GENERIC_FUNCTION,
         node_params={
             "name": "my_func",
-            "function_name": "sql_func",
+            "sql_function_name": "sql_func",
             "function_parameters": [
                 {"column_name": "a", "dtype": "FLOAT", "input_form": "column"},
                 {"column_name": "c", "dtype": "FLOAT", "input_form": "column"},
@@ -472,7 +472,7 @@ def test_generic_function__pruning(query_graph_and_assign_node):
         node_type=NodeType.GENERIC_FUNCTION,
         node_params={
             "name": "my_func",
-            "function_name": "sql_func",
+            "sql_function_name": "sql_func",
             "function_parameters": [
                 {"column_name": "a", "dtype": "FLOAT", "input_form": "column"},
             ],

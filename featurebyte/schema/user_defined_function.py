@@ -20,7 +20,7 @@ class UserDefinedFunctionCreate(FeatureByteBaseModel):
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
-    function_name: StrictStr
+    sql_function_name: StrictStr
     function_parameters: List[FunctionParameter]
     output_dtype: DBVarType
     catalog_id: Optional[PydanticObjectId]
@@ -37,7 +37,9 @@ class UserDefinedFunctionUpdate(FeatureByteBaseModel):
     UserDefinedFunction update schema
     """
 
-    function_parameters: List[FunctionParameter]
+    sql_function_name: Optional[StrictStr]
+    function_parameters: Optional[List[FunctionParameter]]
+    output_dtype: Optional[DBVarType]
 
     # pydanctic validator
     _validate_unique_function_parameter_name = validator("function_parameters", allow_reuse=True)(
@@ -45,12 +47,12 @@ class UserDefinedFunctionUpdate(FeatureByteBaseModel):
     )
 
 
-class UserDefinedFunctionServiceUpdate(BaseDocumentServiceUpdateSchema):
+class UserDefinedFunctionServiceUpdate(UserDefinedFunctionUpdate, BaseDocumentServiceUpdateSchema):
     """
     UserDefinedFunction service update schema
     """
 
-    function_parameters: List[FunctionParameter]
+    signature: StrictStr
 
 
 class UserDefinedFunctionList(PaginationMixin):

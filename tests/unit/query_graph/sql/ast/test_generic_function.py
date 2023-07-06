@@ -14,7 +14,7 @@ def test_generic_function(input_node):
         make_context(
             node_type="generic_function",
             parameters={
-                "function_name": "my_func",
+                "sql_function_name": "my_func",
                 "function_parameters": [
                     {"column_name": "a", "dtype": "FLOAT", "input_form": "column"},
                     {"value": 1, "dtype": "INT", "input_form": "value"},

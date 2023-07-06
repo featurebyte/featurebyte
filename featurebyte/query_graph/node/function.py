@@ -26,6 +26,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     ClassEnum,
     CodeGenerationConfig,
     CodeGenerationContext,
+    CommentStr,
     InfoDict,
     ObjectClass,
     StatementT,
@@ -128,7 +129,7 @@ class GenericFunctionNodeParameters(BaseModel):
     """GenericFunctionNodeParameters class"""
 
     name: str
-    function_name: str
+    sql_function_name: str
     function_parameters: List[FunctionParameterInput]
     output_dtype: DBVarType
     function_id: PydanticObjectId
@@ -234,16 +235,31 @@ class GenericFunctionNode(BaseSeriesOutputNode):
             )
             function_parameters.append(func_param_val)
 
+        # if function_id in var_name_generator.func_id_to_var_name,
+        # it means there is a udf variable name is corresponding to the function_id.
+        statements: List[StatementT] = []
+        to_retrieve_udf = self.parameters.function_id not in var_name_generator.func_id_to_var_name
+        udf_var_name = var_name_generator.convert_to_variable_name(
+            variable_name_prefix=f"udf_{self.parameters.name}",
+            node_name=None,
+            function_id=self.parameters.function_id,
+        )
+        if to_retrieve_udf:
+            # to retrieve udf if the udf variable name is not in the scope
+            comment = CommentStr(
+                f"udf_name: {self.parameters.name}, sql_function_name: {self.parameters.sql_function_name}"
+            )
+            statements.append(comment)
+            function_id = ClassEnum.OBJECT_ID(self.parameters.function_id)
+            udf = ClassEnum.USER_DEFINED_FUNCTION(function_id, _method_name="get_by_id")
+            statements.append((udf_var_name, udf))
+
+        # construct output of current node
         out_var_name = var_name_generator.generate_variable_name(
             node_output_category=operation_structure.output_category,
             node_output_type=operation_structure.output_type,
             node_name=self.name,
         )
-        expression = get_object_class_from_function_call(
-            self.parameters.name,
-            *function_parameters,
-            module_path="featurebyte",
-            class_name="UDF",
-        )
-        statements: List[StatementT] = [(out_var_name, expression)]
+        expression = get_object_class_from_function_call(udf_var_name, *function_parameters)
+        statements.append((out_var_name, expression))
         return statements, out_var_name

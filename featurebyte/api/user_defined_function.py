@@ -3,7 +3,7 @@ UserDefinedFunction API object
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Literal, Optional
+from typing import Any, ClassVar, List, Literal, Optional, Union, cast
 
 from http import HTTPStatus
 
@@ -17,19 +17,24 @@ from featurebyte.api.api_object_util import (
     ForeignKeyMapping,
     iterate_api_object_using_paginated_routes,
 )
+from featurebyte.api.feature import Feature
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.savable_api_object import DeletableApiObject, SavableApiObject
 from featurebyte.api.user_defined_function_injector import (
     FunctionAccessor,
     UserDefinedFunctionInjector,
 )
+from featurebyte.api.view import ViewColumn
 from featurebyte.config import Configurations
 from featurebyte.enum import DBVarType
 from featurebyte.exception import DocumentCreationError, InvalidSettingsError
 from featurebyte.logging import get_logger
 from featurebyte.models.base import PydanticObjectId, get_active_catalog_id
 from featurebyte.models.user_defined_function import FunctionParameter, UserDefinedFunctionModel
-from featurebyte.schema.user_defined_function import UserDefinedFunctionCreate
+from featurebyte.schema.user_defined_function import (
+    UserDefinedFunctionCreate,
+    UserDefinedFunctionUpdate,
+)
 
 logger = get_logger(__name__)
 
@@ -100,12 +105,14 @@ class FunctionDescriptor:
 
 class UserDefinedFunction(DeletableApiObject, SavableApiObject):
     """
-    UserDefinedFunction class used to represent a UserDefinedFunction in FeatureByte.
+    A UserDefinedFunction object represents a user-defined function that can be used to transform view columns
+    or feature. This object is callable and can be used as a function to transform view columns or feature.
     """
 
     # class variables
     _route = "/user_defined_function"
     _create_schema_class = UserDefinedFunctionCreate
+    _update_schema_class = UserDefinedFunctionUpdate
     _get_schema = UserDefinedFunctionModel
     _list_schema = UserDefinedFunctionModel
     _list_fields = [
@@ -121,7 +128,7 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
     # pydantic instance variable (internal use)
     internal_catalog_id: Optional[PydanticObjectId] = Field(alias="catalog_id")
     internal_feature_store_id: PydanticObjectId = Field(alias="feature_store_id")
-    internal_function_name: str = Field(alias="function_name")
+    internal_sql_function_name: str = Field(alias="sql_function_name")
     internal_function_parameters: List[FunctionParameter] = Field(alias="function_parameters")
     internal_output_dtype: DBVarType = Field(alias="output_dtype")
 
@@ -159,7 +166,7 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
         -------
         str
         """
-        return self.cached_model.function_name  # type: ignore
+        return self.cached_model.sql_function_name
 
     @property
     def function_parameters(self) -> List[FunctionParameter]:
@@ -281,7 +288,7 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
 
         user_defined_function = UserDefinedFunction(
             name=name,
-            function_name=sql_function_name,
+            sql_function_name=sql_function_name,
             function_parameters=function_parameters,
             output_dtype=output_dtype,
             catalog_id=None if is_global else active_catalog_id,
@@ -290,12 +297,57 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
         user_defined_function.save()
         return user_defined_function
 
+    @typechecked
+    def update_sql_function_name(self, sql_function_name: str) -> None:
+        """
+        Update the SQL function name of the user-defined function.
+
+        Parameters
+        ----------
+        sql_function_name: str
+            The SQL function name of the user-defined function (which is used in SQL queries).
+        """
+        self.update(
+            update_payload={"sql_function_name": sql_function_name}, allow_update_local=False
+        )
+
+    @typechecked
+    def update_function_parameters(self, function_parameters: List[FunctionParameter]) -> None:
+        """
+        Update the function parameters of the user-defined function.
+
+        Parameters
+        ----------
+        function_parameters: List[FunctionParameter]
+            The function parameters of the user-defined function.
+        """
+        self.update(
+            update_payload={"function_parameters": function_parameters}, allow_update_local=False
+        )
+
+    @typechecked
+    def update_output_dtype(self, output_dtype: Literal[tuple(DBVarType)]) -> None:  # type: ignore[misc]
+        """
+        Update the output data type of the user-defined function.
+
+        Parameters
+        ----------
+        output_dtype: Literal[tuple(DBVarType)]
+            The output data type of the user-defined function.
+        """
+        self.update(update_payload={"output_dtype": output_dtype}, allow_update_local=False)
+
     def delete(self) -> None:
         """
         Delete the user-defined function from the persistent data store. The user-defined function can only be
         deleted if it is not used by any saved feature.
         """
         super()._delete()
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Union[ViewColumn, Feature]:
+        udf = cast(UserDefinedFunctionModel, self.cached_model)
+        dynamic_func = UserDefinedFunctionInjector.create(udf=udf)
+        return dynamic_func(*args, **kwargs)
 
 
 class UserDefinedFunctionAccessorWrapper:
@@ -307,11 +359,11 @@ class UserDefinedFunctionAccessorWrapper:
     def __dir__(self) -> List[str]:
         # provide auto-completion for user-defined functions by dynamically constructing the function accessor
         # and returning the function accessor's dir list
-        return dir(UserDefinedFunction.func)
+        attrs = [attr for attr in dir(UserDefinedFunction.func) if not attr.startswith("__")]
+        return attrs
 
     def __getattr__(self, item: str) -> Any:
-        # provide auto-completion for user-defined functions by dynamically constructing the function accessor
-        # and returning the function accessor's attribute
+        # return the attribute of the dynamically constructed function accessor
         return getattr(UserDefinedFunction.func, item)
 
 

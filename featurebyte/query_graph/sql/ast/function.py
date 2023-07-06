@@ -49,6 +49,6 @@ class GenericFunctionNode(ExpressionNode):
         return GenericFunctionNode(
             context=context,
             table_node=table_node,
-            function_name=context.parameters["function_name"],
+            function_name=context.parameters["sql_function_name"],
             function_parameters=parameters,
         )

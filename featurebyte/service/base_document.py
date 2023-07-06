@@ -315,7 +315,7 @@ class BaseDocumentService(
             raise DocumentNotFoundError(exception_detail)
         return int(num_of_records_deleted)
 
-    def _construct_list_query_filter(
+    def construct_list_query_filter(
         self,
         query_filter: Optional[Dict[str, Any]] = None,
         use_raw_query_filter: bool = False,
@@ -401,7 +401,7 @@ class BaseDocumentService(
         QueryNotSupportedError
             If the persistent query is not supported
         """
-        query_filter = self._construct_list_query_filter(
+        query_filter = self.construct_list_query_filter(
             use_raw_query_filter=use_raw_query_filter, **kwargs
         )
         try:

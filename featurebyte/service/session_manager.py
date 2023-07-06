@@ -1,12 +1,13 @@
 """
 SessionManager service
 """
-from typing import Any
+from typing import Any, Optional
 
 from bson import ObjectId
 from pydantic import ValidationError
 
 from featurebyte.exception import CredentialsError
+from featurebyte.models.base import User
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent import Persistent
 from featurebyte.service.session_validator import SessionValidatorService
@@ -35,7 +36,10 @@ class SessionManagerService:
         self.session_validator_service = session_validator_service
 
     async def get_feature_store_session(
-        self, feature_store: FeatureStoreModel, get_credential: Any
+        self,
+        feature_store: FeatureStoreModel,
+        get_credential: Any,
+        user_override: Optional[User] = None,
     ) -> BaseSession:
         """
         Get session for feature store
@@ -46,6 +50,8 @@ class SessionManagerService:
             ExtendedFeatureStoreModel object
         get_credential: Any
             Get credential handler function
+        user_override: Optional[User]
+            User object to override
 
         Returns
         -------
@@ -57,14 +63,17 @@ class SessionManagerService:
         CredentialsError
             When the credentials used to access the feature store is missing or invalid
         """
+        user_to_use = self.user
+        if user_override is not None:
+            user_to_use = user_override
         try:
             if get_credential is not None:
                 credential = await get_credential(
-                    user_id=self.user.id, feature_store_name=feature_store.name
+                    user_id=user_to_use.id, feature_store_name=feature_store.name
                 )
             else:
                 credential = await self.credential_provider.get_credential(
-                    user_id=self.user.id, feature_store_name=feature_store.name
+                    user_id=user_to_use.id, feature_store_name=feature_store.name
                 )
             credentials = {feature_store.name: credential}
             session_manager = SessionManager(credentials=credentials)

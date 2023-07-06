@@ -16,6 +16,8 @@ logger = get_logger(__name__)
 if __name__ == "__main__":
     logger.info("Running database migration")
     credential_provider = MongoBackedCredentialProvider(persistent=get_persistent())
+    # Note that the user ID here is an arbitrary one. For collections that have user specific data, special handling
+    # will be required.
     asyncio.run(
         run_migration(user=User(), persistent=get_persistent(), get_credential=credential_provider.get_credential, celery=get_celery())
     )

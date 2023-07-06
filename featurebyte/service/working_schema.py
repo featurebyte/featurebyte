@@ -6,8 +6,6 @@ from __future__ import annotations
 from typing import Any
 
 from bson import ObjectId
-from celery import Celery
-from pydantic import PrivateAttr
 
 from featurebyte.logging import get_logger
 from featurebyte.models.feature import FeatureModel
@@ -15,16 +13,8 @@ from featurebyte.persistent import Persistent
 from featurebyte.service.base_service import BaseService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_manager import FeatureManagerService
-from featurebyte.service.feature_namespace import FeatureNamespaceService
-from featurebyte.service.namespace_handler import NamespaceHandler
 from featurebyte.service.online_enable import OnlineEnableService
-from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
-from featurebyte.service.table import TableService
-from featurebyte.service.task_manager import TaskManager
-from featurebyte.service.tile_manager import TileManagerService
 from featurebyte.service.tile_registry_service import TileRegistryService
-from featurebyte.service.tile_scheduler import TileSchedulerService
-from featurebyte.service.view_construction import ViewConstructionService
 from featurebyte.session.base import BaseSession, MetadataSchemaInitializer
 
 logger = get_logger(__name__)
@@ -55,61 +45,19 @@ class WorkingSchemaService(BaseService):
     WorkingSchemaService is responsible for managing the working schema in the data warehouse
     """
 
-    _task_manager: TaskManager = PrivateAttr()
-
-    def __init__(self, user: Any, persistent: Persistent, celery: Celery, catalog_id: ObjectId):
+    def __init__(
+        self,
+        user: Any,
+        persistent: Persistent,
+        catalog_id: ObjectId,
+        feature_service: FeatureService,
+        feature_manager_service: FeatureManagerService,
+        tile_registry_service: TileRegistryService,
+    ):
         super().__init__(user, persistent, catalog_id)
-        self.table_service = TableService(user=user, persistent=persistent, catalog_id=catalog_id)
-        self.view_construction_service = ViewConstructionService(
-            user=user,
-            persistent=persistent,
-            catalog_id=catalog_id,
-            table_service=self.table_service,
-        )
-        self.feature_service = FeatureService(
-            user=user,
-            persistent=persistent,
-            catalog_id=catalog_id,
-            table_service=self.table_service,
-            feature_namespace_service=FeatureNamespaceService(
-                user=user, persistent=persistent, catalog_id=catalog_id
-            ),
-            namespace_handler=NamespaceHandler(
-                view_construction_service=self.view_construction_service
-            ),
-        )
-        task_manager = TaskManager(
-            user=user, persistent=persistent, celery=celery, catalog_id=catalog_id
-        )
-        online_store_table_version_service = OnlineStoreTableVersionService(
-            user=user, persistent=persistent, catalog_id=catalog_id
-        )
-        tile_scheduler_service = TileSchedulerService(
-            user=user,
-            persistent=persistent,
-            catalog_id=catalog_id,
-            task_manager=task_manager,
-        )
-        self.tile_registry_service = TileRegistryService(
-            user=user,
-            persistent=persistent,
-            catalog_id=catalog_id,
-        )
-        self.tile_manager_service = TileManagerService(
-            user=user,
-            persistent=persistent,
-            catalog_id=catalog_id,
-            online_store_table_version_service=online_store_table_version_service,
-            tile_scheduler_service=tile_scheduler_service,
-            tile_registry_service=self.tile_registry_service,
-        )
-        self.feature_manager_service = FeatureManagerService(
-            user=user,
-            persistent=persistent,
-            catalog_id=catalog_id,
-            tile_manager_service=self.tile_manager_service,
-            tile_registry_service=self.tile_registry_service,
-        )
+        self.feature_service = feature_service
+        self.feature_manager_service = feature_manager_service
+        self.tile_registry_service = tile_registry_service
 
     async def recreate_working_schema(
         self, feature_store_id: ObjectId, session: BaseSession
