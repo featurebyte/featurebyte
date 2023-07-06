@@ -50,6 +50,7 @@ from featurebyte.common.documentation.constants import (
     TABLE_COLUMN,
     TRANSFORM,
     TYPE,
+    USER_DEFINED_FUNCTION,
     UTILITY_CLASSES,
     UTILITY_METHODS,
     VIEW,
@@ -641,6 +642,7 @@ def _get_catalog_layout() -> List[DocLayoutItem]:
         DocLayoutItem([CATALOG, GET, "Catalog.get_batch_feature_table_by_id"]),
         DocLayoutItem([CATALOG, GET, "Catalog.get_deployment"]),
         DocLayoutItem([CATALOG, GET, "Catalog.get_deployment_by_id"]),
+        DocLayoutItem([CATALOG, GET, "Catalog.get_user_defined_function_by_id"]),
         DocLayoutItem([CATALOG, LIST, "Catalog.list_deployments"]),
         DocLayoutItem([CATALOG, LIST, "Catalog.list_relationships"]),
         DocLayoutItem([CATALOG, LIST, "Catalog.list_feature_lists"]),
@@ -651,6 +653,7 @@ def _get_catalog_layout() -> List[DocLayoutItem]:
         DocLayoutItem([CATALOG, LIST, "Catalog.list_historical_feature_tables"]),
         DocLayoutItem([CATALOG, LIST, "Catalog.list_batch_request_tables"]),
         DocLayoutItem([CATALOG, LIST, "Catalog.list_batch_feature_tables"]),
+        DocLayoutItem([CATALOG, LIST, "Catalog.list_user_defined_functions"]),
         DocLayoutItem([CATALOG, INFO, "Catalog.created_at"]),
         DocLayoutItem([CATALOG, INFO, "Catalog.info"]),
         DocLayoutItem([CATALOG, INFO, "Catalog.name"]),
@@ -732,6 +735,7 @@ def _get_utility_classes_layout() -> List[DocLayoutItem]:
         DocLayoutItem([UTILITY_CLASSES, CREDENTIAL, "S3StorageCredential"]),
         DocLayoutItem([UTILITY_CLASSES, CREDENTIAL, "UsernamePasswordCredential"]),
         DocLayoutItem([UTILITY_CLASSES, REQUEST_COLUMN, "RequestColumn.point_in_time"]),
+        DocLayoutItem([UTILITY_CLASSES, USER_DEFINED_FUNCTION, "FunctionParameter"]),
     ]
 
 
@@ -927,6 +931,37 @@ def _get_historical_feature_table_layout() -> List[DocLayoutItem]:
     ]
 
 
+def _get_user_defined_function_layout() -> List[DocLayoutItem]:
+    """
+    The layout for the UserDefinedFunction module.
+
+    Returns
+    -------
+    List[DocLayoutItem]
+        The layout for the UserDefinedFunction module.
+    """
+    return [
+        DocLayoutItem([USER_DEFINED_FUNCTION]),
+        DocLayoutItem([USER_DEFINED_FUNCTION, CLASS_METHODS, "UserDefinedFunction.create"]),
+        DocLayoutItem([USER_DEFINED_FUNCTION, INFO, "UserDefinedFunction.created_at"]),
+        DocLayoutItem([USER_DEFINED_FUNCTION, INFO, "UserDefinedFunction.info"]),
+        DocLayoutItem([USER_DEFINED_FUNCTION, INFO, "UserDefinedFunction.name"]),
+        DocLayoutItem([USER_DEFINED_FUNCTION, INFO, "UserDefinedFunction.sql_function_name"]),
+        DocLayoutItem([USER_DEFINED_FUNCTION, INFO, "UserDefinedFunction.function_parameters"]),
+        DocLayoutItem([USER_DEFINED_FUNCTION, INFO, "UserDefinedFunction.output_dtype"]),
+        DocLayoutItem([USER_DEFINED_FUNCTION, INFO, "UserDefinedFunction.signature"]),
+        DocLayoutItem([USER_DEFINED_FUNCTION, INFO, "UserDefinedFunction.is_global"]),
+        DocLayoutItem(
+            [USER_DEFINED_FUNCTION, MANAGE, "UserDefinedFunction.update_sql_function_name"]
+        ),
+        DocLayoutItem(
+            [USER_DEFINED_FUNCTION, MANAGE, "UserDefinedFunction.update_function_parameters"]
+        ),
+        DocLayoutItem([USER_DEFINED_FUNCTION, MANAGE, "UserDefinedFunction.update_output_dtype"]),
+        DocLayoutItem([USER_DEFINED_FUNCTION, MANAGE, "UserDefinedFunction.delete"]),
+    ]
+
+
 def get_overall_layout() -> List[DocLayoutItem]:
     """
     The overall layout for the documentation.
@@ -958,4 +993,5 @@ def get_overall_layout() -> List[DocLayoutItem]:
         *_get_batch_request_table_layout(),
         *_get_observation_table_layout(),
         *_get_historical_feature_table_layout(),
+        *_get_user_defined_function_layout(),
     ]

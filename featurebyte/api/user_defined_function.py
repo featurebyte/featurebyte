@@ -3,7 +3,7 @@ UserDefinedFunction API object
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Literal, Optional, Union, cast
+from typing import Any, ClassVar, Dict, List, Literal, Optional, Union, cast
 
 from http import HTTPStatus
 
@@ -25,6 +25,7 @@ from featurebyte.api.user_defined_function_injector import (
     UserDefinedFunctionInjector,
 )
 from featurebyte.api.view import ViewColumn
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.config import Configurations
 from featurebyte.enum import DBVarType
 from featurebyte.exception import DocumentCreationError, InvalidSettingsError
@@ -108,6 +109,9 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
     A UserDefinedFunction object represents a user-defined function that can be used to transform view columns
     or feature. This object is callable and can be used as a function to transform view columns or feature.
     """
+
+    # documentation metadata
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.UserDefinedFunction")
 
     # class variables
     _route = "/user_defined_function"
@@ -193,7 +197,9 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
     @property
     def signature(self) -> str:
         """
-        The signature of the user-defined function.
+        The signature of the user-defined function. Note that the function signature is not strictly a
+        python function signature as the optional parameters can be at any position in the parameter list.
+        For python function signature, the optional parameters must be at the end of the parameter list.
 
         Returns
         -------
@@ -231,9 +237,7 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
             return sorted(records, key=lambda rec: rec["catalog_id"] is None)[0]
 
         return cls(
-            **cls._get_object_dict_by_name(
-                name=name, other_params=other_params, select_func=_record_selector
-            ),
+            **cls._get_object_dict_by_name(name=name, select_func=_record_selector),
             **cls._get_init_params(),
             _validate_schema=True,
         )
@@ -276,6 +280,49 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
         ------
         DocumentCreationError
             If the user-defined function cannot be created.
+
+        Examples
+        --------
+        Create a local (catalog-specific) user-defined function that computes the cosine of a number:
+
+        >>> cos_udf = UserDefinedFunction.create(
+        ...     name="cos",
+        ...     sql_function_name="cos",
+        ...     function_parameters=[fb.FunctionParameter(name="x", dtype=fb.enum.DBVarType.FLOAT)],
+        ...     output_dtype=fb.enum.DBVarType.FLOAT,
+        ...     is_global=False,
+        ... )
+
+        Use the user-defined function to transform a column in a view:
+
+        >>> view = catalog.get_view("GROCERYINVOICE")
+        >>> view["cos(Amount)"] = cos_udf(view["Amount"])
+        >>> view[["Amount", "cos(Amount)"]].preview(3)
+                             GroceryInvoiceGuid           Timestamp  Amount  cos(Amount)
+        0  4fccfb1d-02b3-4047-87ab-4e5f910ccdd1 2022-01-03 12:28:58   10.68    -0.310362
+        1  9cf3c416-7b38-401e-adf6-1bd26650d1d6 2022-01-03 16:32:15   38.04     0.942458
+        2  0a5b99b2-9ff1-452a-a06e-669e8ed4a9fa 2022-01-07 16:20:04    1.99    -0.407033
+
+        Use the same user-defined function to transform a feature:
+
+        >>> feature = catalog.get_feature("InvoiceCount_60days")
+        >>> cos_feat = cos_udf(feature)
+        >>> cos_feat.name = "cos(InvoiceCount_60days)"
+        >>> fb.FeatureGroup([feature, cos_feat]).preview(
+        ...     observation_set=pd.DataFrame({
+        ...         "POINT_IN_TIME": ["2022-06-01 00:00:00"],
+        ...         "GROCERYCUSTOMERGUID": ["a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3" ]
+        ...     })
+        ... )
+          POINT_IN_TIME                   GROCERYCUSTOMERGUID  InvoiceCount_60days  cos(InvoiceCount_60days)
+        0    2022-06-01  a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3                 10.0                 -0.839072
+
+
+        The user-defined function can also be accessed via the `UDF` handle (the name of the `UserDefinedFunction`
+        object is used to access the corresponding function):
+
+        >>> feature = catalog.get_feature("InvoiceCount_60days")
+        >>> another_cos_feat = fb.UDF.cos(feature)
         """
         active_catalog_id = get_active_catalog_id()
         active_feature_store_id = _get_active_feature_store_id(catalog_id=active_catalog_id)
@@ -306,6 +353,13 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
         ----------
         sql_function_name: str
             The SQL function name of the user-defined function (which is used in SQL queries).
+
+        Examples
+        --------
+        >>> cos_udf = catalog.get_user_defined_function("cos")
+        >>> cos_udf.update_sql_function_name("sin")
+        >>> cos_udf.sql_function_name
+        'sin'
         """
         self.update(
             update_payload={"sql_function_name": sql_function_name}, allow_update_local=False
@@ -320,6 +374,13 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
         ----------
         function_parameters: List[FunctionParameter]
             The function parameters of the user-defined function.
+
+        Examples
+        --------
+        >>> cos_udf = catalog.get_user_defined_function("cos")
+        >>> cos_udf.update_function_parameters([FunctionParameter(name="value", dtype=DBVarType.FLOAT)])
+        >>> cos_udf.function_parameters
+        [FunctionParameter(name='value', dtype='FLOAT', default_value=None, test_value=None)]
         """
         self.update(
             update_payload={"function_parameters": function_parameters}, allow_update_local=False
@@ -334,6 +395,13 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
         ----------
         output_dtype: Literal[tuple(DBVarType)]
             The output data type of the user-defined function.
+
+        Examples
+        --------
+        >>> cos_udf = catalog.get_user_defined_function("cos")
+        >>> cos_udf.update_output_dtype(DBVarType.INT)
+        >>> cos_udf.output_dtype
+        'INT'
         """
         self.update(update_payload={"output_dtype": output_dtype}, allow_update_local=False)
 
@@ -341,8 +409,48 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
         """
         Delete the user-defined function from the persistent data store. The user-defined function can only be
         deleted if it is not used by any saved feature.
+
+        Examples
+        --------
+        Delete a user-defined function:
+        >>> udf = catalog.get_user_defined_function("cos")
+        >>> udf.delete()
         """
         super()._delete()
+
+    def info(self, verbose: bool = False) -> Dict[str, Any]:
+        """
+        Returns a dictionary containing the user-defined function's metadata. The dictionary contains the following
+        keys:
+
+        - `name`: The name of the user-defined function.
+        - `created_at`: The timestamp indicating when the UserDefinedFunction object was created.
+        - `updated_at`: The timestamp indicating when the UserDefinedFunction object was last updated.
+        - `sql_function_name`: The SQL function name of the user-defined function (which is used in SQL queries).
+        - `function_parameters`: The function parameters of the user-defined function.
+        - `output_dtype`: The output data type of the user-defined function.
+        - `signature`: The signature of the user-defined function.
+        - `feature_store_id`: The feature store name that the user-defined function belongs to.
+        - `used_by_features`: The list of features that use the user-defined function.
+
+        This method is only available for UserDefinedFunction objects that are saved in the persistent data store.
+
+        Parameters
+        ----------
+        verbose: bool
+            Control verbose level of the summary.
+
+        Returns
+        -------
+        Dict[str, Any]
+            Key-value mapping of properties of the user-defined function.
+
+        Examples
+        --------
+        >>> cos_udf = catalog.get_user_defined_function("cos")
+        >>> cos_udf.info()  # doctest: +SKIP
+        """
+        return super().info(verbose)
 
     def __call__(self, *args: Any, **kwargs: Any) -> Union[ViewColumn, Feature]:
         udf = cast(UserDefinedFunctionModel, self.cached_model)

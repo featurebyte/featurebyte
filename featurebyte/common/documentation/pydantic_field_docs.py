@@ -124,4 +124,5 @@ pydantic_field_doc_overrides = {
         FEATURE_STORE: "Provides information about the feature store that the view column is connected to.",
         NAME: _get_name_docstring_override("ViewColumn"),
     },
+    "UserDefinedFunction": _get_doc_overrides("UserDefinedFunction"),
 }

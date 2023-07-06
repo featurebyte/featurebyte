@@ -50,6 +50,7 @@ from featurebyte.common.documentation.constants import (
     TABLE_COLUMN,
     TRANSFORM,
     TYPE,
+    USER_DEFINED_FUNCTION,
     UTILITY_CLASSES,
     UTILITY_METHODS,
     VIEW,
@@ -85,6 +86,7 @@ class BetaWave3Nav(Nav):
         DEPLOYMENT,
         BATCH_REQUEST_TABLE,
         BATCH_FEATURE_TABLE,
+        USER_DEFINED_FUNCTION,
         UTILITY_CLASSES,
         UTILITY_METHODS,
     ]
@@ -120,6 +122,7 @@ class BetaWave3Nav(Nav):
         CLEANING_OPERATION,
         WAREHOUSE,
         REQUEST_COLUMN,
+        USER_DEFINED_FUNCTION,
     ]
 
     _custom_order_mapping = {
