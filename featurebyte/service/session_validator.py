@@ -3,13 +3,10 @@ SessionValidator service
 """
 from typing import Any, Optional
 
-from bson import ObjectId
-
 from featurebyte.enum import SourceType, StrEnum
 from featurebyte.exception import FeatureStoreSchemaCollisionError, NoFeatureStorePresentError
 from featurebyte.logging import get_logger
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.persistent import Persistent
 from featurebyte.query_graph.node.schema import DatabaseDetails
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.session.base import BaseSession
@@ -37,14 +34,10 @@ class SessionValidatorService:
     def __init__(
         self,
         user: Any,
-        persistent: Persistent,
-        catalog_id: ObjectId,
         mongo_backed_credential_provider: MongoBackedCredentialProvider,
         feature_store_service: FeatureStoreService,
     ):
         self.user = user
-        self.persistent = persistent
-        self.catalog_id = catalog_id
         self.credential_provider = mongo_backed_credential_provider
         self.feature_store_service = feature_store_service
 
