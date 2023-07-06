@@ -129,12 +129,21 @@ class AppContainerConfig:
         ----------
         class_: type
             type we are registering
-        dependency_override: list[str]
-            dependencies
+        dependency_override: Optional[Dict[str, str]]
+            We will normally look up dependencies by the name of the variable specified in the constructor of the
+            class that we're registering. You can provide an override if you want to explicitly specify a class
+            that we should inject instead. This is common when trying to initialize a class that inherits a constructor
+            from a parent class, and the name in the constructor is something generic. For example, within our repo,
+            simple controllers will typically inherit a constructor that has a parameter called "service". This will
+            typically be the service that corresponds to the controller. However, since service is just a generic name,
+            we can provide an override from `service` -> `controllers_service` to tell the dependency injector to
+            look for `controllers_service` instead when trying to initialize this controller.
         name_override: str
-            name override
+            name override. The default name of this dependency is the class name, converted to snake case. If you
+            want to override the name, provide a name here.
         force_no_deps: bool
-            force no dependencies
+            force no dependencies. This should only be used for instances that are directly injected into the
+            instance_map, and are not constructed dynamically.
         """
         deps = _get_constructor_params_from_class(class_, dependency_override)
         if force_no_deps:
