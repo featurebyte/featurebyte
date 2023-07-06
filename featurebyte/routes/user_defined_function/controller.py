@@ -16,7 +16,6 @@ from featurebyte.schema.info import UserDefinedFunctionFeatureInfo, UserDefinedF
 from featurebyte.schema.user_defined_function import (
     UserDefinedFunctionCreate,
     UserDefinedFunctionList,
-    UserDefinedFunctionServiceUpdate,
     UserDefinedFunctionUpdate,
 )
 from featurebyte.service.feature import FeatureService
@@ -151,8 +150,11 @@ class UserDefinedFunctionController(
         document = await self.service.get_document(document_id=document_id)
 
         # check if no changes found in function parameters
-        if data.function_parameters == document.function_parameters:
-            raise DocumentUpdateError("No changes found in function parameters")
+        updated_document = UserDefinedFunctionModel(
+            **{**document.dict(by_alias=True), **data.dict(by_alias=True, exclude_none=True)}
+        )
+        if updated_document == document:
+            raise DocumentUpdateError("No changes detected in user defined function")
 
         # check if function used in any saved feature
         await self._check_user_defined_function_used_by_feature(
@@ -166,9 +168,8 @@ class UserDefinedFunctionController(
         )
 
         # validate user defined function
-        document.function_parameters = data.function_parameters
         await self._validate_user_defined_function(
-            user_defined_function=document,
+            user_defined_function=updated_document,
             feature_store=feature_store,
             get_credential=get_credential,
             exception_class=DocumentUpdateError,
@@ -176,12 +177,8 @@ class UserDefinedFunctionController(
         )
 
         # update user defined function
-        updated_document = await self.service.update_document(
-            document_id=document_id,
-            data=UserDefinedFunctionServiceUpdate(function_parameters=data.function_parameters),
-        )
-        output_document = cast(UserDefinedFunctionModel, updated_document)
-        return output_document
+        output_document = await self.service.update_document(document_id=document_id, data=data)
+        return cast(UserDefinedFunctionModel, output_document)
 
     async def delete_user_defined_function(self, document_id: PydanticObjectId) -> None:
         """
