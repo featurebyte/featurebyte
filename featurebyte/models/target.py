@@ -3,12 +3,17 @@ This module contains Target related models
 """
 from __future__ import annotations
 
+from typing import Optional
+
 import pymongo
 from bson import ObjectId
 from pydantic import Field
 
+from featurebyte.common.model_util import parse_duration_string
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature import BaseFeatureModel
+from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.node.generic import ForwardAggregateNode
 
 
 class TargetModel(BaseFeatureModel):
@@ -47,6 +52,28 @@ class TargetModel(BaseFeatureModel):
 
     # ID related fields associated with this target
     target_namespace_id: PydanticObjectId = Field(allow_mutation=False, default_factory=ObjectId)
+
+    def derive_horizon(self) -> Optional[str]:
+        """
+        Derive horizon from the graph, if there are multiple horizons, return the largest one.
+
+        Returns
+        -------
+        Optional[str]
+        """
+        horizon_to_durations = {}
+        target_node = self.graph.get_node_by_name(self.node_name)
+        for node in self.graph.iterate_nodes(
+            target_node=target_node, node_type=NodeType.FORWARD_AGGREGATE
+        ):
+            assert isinstance(node, ForwardAggregateNode)
+            if node.parameters.horizon:
+                duration = parse_duration_string(node.parameters.horizon)
+                horizon_to_durations[node.parameters.horizon] = duration
+
+        if not horizon_to_durations:
+            return None
+        return max(horizon_to_durations, key=horizon_to_durations.get)  # type: ignore
 
     class Settings(BaseFeatureModel.Settings):
         """

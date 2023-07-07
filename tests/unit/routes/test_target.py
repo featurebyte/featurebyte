@@ -19,17 +19,16 @@ class TestTargetApi(BaseCatalogApiTestSuite):
     unknown_id = ObjectId()
     payload = BaseCatalogApiTestSuite.load_payload("tests/fixtures/request_payloads/target.json")
     create_conflict_payload_expected_detail_pairs = [
-        # FIXME: This test case is not working
-        # (
-        #     payload,
-        #     f'Target (id: "{payload["_id"]}") already exists. '
-        #     'Get the existing object by `Target.get(name="target")`.',
-        # ),
-        # (
-        #     {**payload, "_id": str(ObjectId())},
-        #     'Target (name: "target") already exists. '
-        #     'Get the existing object by `Target.get(name="target")`.',
-        # ),
+        (
+            payload,
+            f'Target (id: "{payload["_id"]}") already exists. '
+            f'Get the existing object by `Target.get_by_id(id="{payload["_id"]}")`.',
+        ),
+        (
+            {**payload, "_id": str(ObjectId())},
+            'TargetNamespace (name: "float_target") already exists. '
+            'Please rename object (name: "float_target") to something else.',
+        ),
     ]
     create_unprocessable_payload_expected_detail_pairs = [
         (
@@ -78,5 +77,28 @@ class TestTargetApi(BaseCatalogApiTestSuite):
             payload = self.payload.copy()
             payload["_id"] = str(ObjectId())
             payload["name"] = f'{self.payload["name"]}_{i}'
-            payload["target_namespace_id"] = str(ObjectId())
             yield payload
+
+    def test_create_201(self, test_api_client_persistent, create_success_response, user_id):
+        super().test_create_201(test_api_client_persistent, create_success_response, user_id)
+
+        # check target namespace
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        namespace_id = create_response_dict["target_namespace_id"]
+        response = test_api_client.get(f"/target_namespace/{namespace_id}")
+        response_dict = response.json()
+        assert response_dict == {
+            "_id": namespace_id,
+            "name": "float_target",
+            "dtype": "FLOAT",
+            "target_ids": [create_response_dict["_id"]],
+            "horizon": "1d",
+            "default_target_id": create_response_dict["_id"],
+            "default_version_mode": "AUTO",
+            "entity_ids": response_dict["entity_ids"],
+            "catalog_id": str(DEFAULT_CATALOG_ID),
+            "created_at": response_dict["created_at"],
+            "updated_at": None,
+            "user_id": str(user_id),
+        }

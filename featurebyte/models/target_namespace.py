@@ -1,7 +1,7 @@
 """
 Target namespace module
 """
-from typing import List
+from typing import List, Optional
 
 import pymongo
 from pydantic import Field, validator
@@ -35,7 +35,7 @@ class TargetNamespaceModel(BaseFeatureNamespaceModel):
         Table IDs used by the target
     """
 
-    horizon: str
+    horizon: Optional[str]
 
     # list of IDs attached to this feature namespace or target namespace
     target_ids: List[PydanticObjectId] = Field(allow_mutation=False)

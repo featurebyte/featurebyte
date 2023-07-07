@@ -3,7 +3,7 @@ FeatureService class
 """
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any
 
 from bson import ObjectId
 
@@ -12,7 +12,6 @@ from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_namespace import DefaultVersionMode, FeatureReadiness
 from featurebyte.persistent import Persistent
-from featurebyte.query_graph.transform.sdk_code import SDKCodeExtractor
 from featurebyte.schema.feature import FeatureServiceCreate
 from featurebyte.schema.feature_namespace import (
     FeatureNamespaceCreate,
@@ -87,36 +86,6 @@ class FeatureService(BaseNamespaceService[FeatureModel, FeatureServiceCreate]):
             **{**document.dict(by_alias=True), "graph": graph, "node_name": node_name}
         )
 
-    async def prepare_feature_definition(self, document: FeatureModel) -> str:
-        """
-        Prepare the feature definition for the given feature document
-
-        Parameters
-        ----------
-        document: FeatureModel
-            Feature document
-
-        Returns
-        -------
-        str
-        """
-        # check whether table has been saved at persistent storage
-        table_id_to_info: Dict[ObjectId, Dict[str, Any]] = {}
-        for table_id in document.table_ids:
-            table = await self.table_service.get_document(document_id=table_id)
-            table_id_to_info[table_id] = table.dict()
-
-        # create feature definition
-        graph, node_name = document.graph, document.node_name
-        sdk_code_gen_state = SDKCodeExtractor(graph=graph).extract(
-            node=graph.get_node_by_name(node_name),
-            to_use_saved_data=True,
-            table_id_to_info=table_id_to_info,
-            output_id=document.id,
-        )
-        definition = sdk_code_gen_state.code_generator.generate(to_format=True)
-        return definition
-
     async def create_document(self, data: FeatureServiceCreate) -> FeatureModel:
         document = await self.prepare_feature_model(data=data, sanitize_for_definition=False)
         async with self.persistent.start_transaction() as session:
@@ -124,7 +93,7 @@ class FeatureService(BaseNamespaceService[FeatureModel, FeatureServiceCreate]):
             await self._check_document_unique_constraints(document=document)
 
             # prepare feature definition
-            definition = await self.prepare_feature_definition(document=document)
+            definition = await self.namespace_handler.prepare_definition(document=document)
 
             # insert the document
             insert_id = await session.insert_one(

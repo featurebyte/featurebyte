@@ -29,17 +29,25 @@ class TargetNamespaceCreate(FeatureByteBaseModel):
     default_target_id: PydanticObjectId
     default_version_mode: DefaultVersionMode = Field(default=DefaultVersionMode.AUTO)
     entity_ids: List[PydanticObjectId]
-    horizon: str
+    horizon: Optional[str]
 
 
 class TargetNamespaceUpdate(BaseDocumentServiceUpdateSchema):
     """
-    TargetNamespace update schema
+    TargetNamespace update schema - exposed to client
+    """
+
+    default_version_mode: Optional[DefaultVersionMode]
+    default_target_id: Optional[PydanticObjectId]
+    horizon: Optional[str]
+
+
+class TargetNamespaceServiceUpdate(TargetNamespaceUpdate):
+    """
+    TargetNamespaceService update schema - used by server side only, not exposed to client
     """
 
     target_ids: Optional[List[PydanticObjectId]]
-    default_version_mode: Optional[DefaultVersionMode]
-    default_target_id: Optional[PydanticObjectId]
 
 
 class TargetNamespaceList(PaginationMixin):

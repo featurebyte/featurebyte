@@ -5,7 +5,7 @@ import json
 
 import pytest
 
-from featurebyte import AggFunc, DefaultVersionMode, FeatureJobSetting, FeatureList
+from featurebyte import AggFunc, FeatureJobSetting, FeatureList
 from featurebyte.enum import DBVarType
 from featurebyte.models.credential import UsernamePasswordCredential
 from featurebyte.models.relationship import RelationshipType
@@ -23,8 +23,6 @@ from featurebyte.schema.historical_feature_table import HistoricalFeatureTableCr
 from featurebyte.schema.observation_table import ObservationTableCreate
 from featurebyte.schema.relationship_info import RelationshipInfoCreate
 from featurebyte.schema.static_source_table import StaticSourceTableCreate
-from featurebyte.schema.target import TargetCreate
-from featurebyte.schema.target_namespace import TargetNamespaceCreate
 from featurebyte.schema.user_defined_function import UserDefinedFunctionCreate
 from tests.util.helper import iet_entropy
 
@@ -44,6 +42,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
     snowflake_dimension_table,
     snowflake_scd_table,
     snowflake_event_view_with_entity,
+    float_target,
     feature_group,
     non_time_based_feature,
     cust_id_entity,
@@ -153,21 +152,6 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
             password="pass",
         ),
     )
-    target = TargetCreate(
-        name="target",
-        graph=feature_sum_30m.graph,
-        node_name=feature_sum_30m.node_name,
-        tabular_source=snowflake_event_table.tabular_source,
-    )
-    target_namespace = TargetNamespaceCreate(
-        name="target_namespace",
-        dtype=feature_sum_30m.dtype,
-        target_ids=[target.id],
-        default_target_id=target.id,
-        default_version_mode=DefaultVersionMode.AUTO,
-        entity_ids=feature_sum_30m.entity_ids,
-        horizon="1d",  # TODO: Fix this
-    )
 
     if update_fixtures:
         generated_comment = [
@@ -190,6 +174,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
             (feature_iet, "feature_iet"),
             (feature_list, "feature_list_single"),
             (feature_list_multiple, "feature_list_multi"),
+            (float_target, "target"),
         ]
         output_filenames = []
         for api_object, name in api_object_name_pairs:
@@ -212,8 +197,6 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
             (static_source_table, "static_source_table"),
             (catalog, "catalog"),
             (credential, "credential"),
-            (target, "target"),
-            (target_namespace, "target_namespace"),
         ]
         for schema, name in schema_payload_name_pairs:
             filename = f"{request_payload_dir}/{name}.json"
