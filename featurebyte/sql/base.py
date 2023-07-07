@@ -36,6 +36,10 @@ class BaseSqlModel(BaseModel):
     def adapter(self) -> BaseAdapter:
         """
         Get SQL adapter based on session type
+
+        Returns
+        -------
+        BaseAdapter
         """
         return get_sql_adapter(self._session.source_type)
 
