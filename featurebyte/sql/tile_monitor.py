@@ -92,8 +92,8 @@ class TileMonitor(TileCommon):
                 expression=make_literal_value(self.blind_spot_second),
             )
             expected_created_at_expr = self.adapter.dateadd_microsecond(
-                get_qualified_column_identifier(InternalName.TILE_START_DATE, "a"),
-                expressions.Mul(this=offset_expr, expression=make_literal_value(1e6)),
+                quantity_expr=expressions.Mul(this=offset_expr, expression=make_literal_value(1e6)),
+                timestamp_expr=get_qualified_column_identifier(InternalName.TILE_START_DATE, "a"),
             )
             compare_sql = f"""
                 select * from
