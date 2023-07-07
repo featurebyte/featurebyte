@@ -14,18 +14,14 @@ from featurebyte.api.feature_util import (
     filter_feature_list,
 )
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.feature_namespace import (
-    DefaultVersionMode,
-    FeatureReadiness,
-    FrozenFeatureNamespaceModel,
-)
+from featurebyte.models.feature_namespace import DefaultVersionMode, FeatureReadiness
 from featurebyte.schema.feature_namespace import (
     FeatureNamespaceModelResponse,
     FeatureNamespaceUpdate,
 )
 
 
-class FeatureNamespace(FrozenFeatureNamespaceModel, ApiObject):
+class FeatureNamespace(ApiObject):
     """
     FeatureNamespace represents a Feature set, in which all the features in the set have the same name. The different
     elements typically refer to different versions of a Feature.

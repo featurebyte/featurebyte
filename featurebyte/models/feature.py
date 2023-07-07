@@ -151,6 +151,38 @@ class BaseFeatureTargetModel(FeatureByteCatalogBaseDocumentModel):
         operation_structure = self.graph.extract_operation_structure(self.node)
         return operation_structure.to_group_operation_structure()
 
+    class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
+        """
+        MongoDB settings
+        """
+
+        unique_constraints = [
+            UniqueValuesConstraint(
+                fields=("_id",),
+                conflict_fields_signature={"id": ["_id"]},
+                resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
+            ),
+            UniqueValuesConstraint(
+                fields=("name", "version"),
+                conflict_fields_signature={"name": ["name"], "version": ["version"]},
+                resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
+            ),
+        ]
+        indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
+            pymongo.operations.IndexModel("dtype"),
+            pymongo.operations.IndexModel("version"),
+            pymongo.operations.IndexModel("entity_ids"),
+            pymongo.operations.IndexModel("table_ids"),
+            pymongo.operations.IndexModel("primary_table_ids"),
+            pymongo.operations.IndexModel("user_defined_function_ids"),
+            pymongo.operations.IndexModel(
+                [
+                    ("name", pymongo.TEXT),
+                    ("version", pymongo.TEXT),
+                ],
+            ),
+        ]
+
 
 class FeatureModel(BaseFeatureTargetModel):
     """
@@ -210,34 +242,10 @@ class FeatureModel(BaseFeatureTargetModel):
         """
 
         collection_name: str = "feature"
-        unique_constraints = [
-            UniqueValuesConstraint(
-                fields=("_id",),
-                conflict_fields_signature={"id": ["_id"]},
-                resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
-            ),
-            UniqueValuesConstraint(
-                fields=("name", "version"),
-                conflict_fields_signature={"name": ["name"], "version": ["version"]},
-                resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
-            ),
-        ]
-        indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
-            pymongo.operations.IndexModel("dtype"),
-            pymongo.operations.IndexModel("version"),
+        indexes = BaseFeatureTargetModel.Settings.indexes + [
             pymongo.operations.IndexModel("readiness"),
             pymongo.operations.IndexModel("online_enabled"),
-            pymongo.operations.IndexModel("entity_ids"),
-            pymongo.operations.IndexModel("table_ids"),
-            pymongo.operations.IndexModel("primary_table_ids"),
             pymongo.operations.IndexModel("feature_namespace_id"),
             pymongo.operations.IndexModel("feature_list_ids"),
             pymongo.operations.IndexModel("deployed_feature_list_ids"),
-            pymongo.operations.IndexModel("user_defined_function_ids"),
-            pymongo.operations.IndexModel(
-                [
-                    ("name", pymongo.TEXT),
-                    ("version", pymongo.TEXT),
-                ],
-            ),
         ]

@@ -39,14 +39,20 @@ class DefaultVersionMode(StrEnum):
     MANUAL = "MANUAL", "Manually select the version to use."
 
 
-class FrozenFeatureNamespaceModel(FeatureByteCatalogBaseDocumentModel):
+class BaseFeatureTargetNamespaceModel(FeatureByteCatalogBaseDocumentModel):
     """
-    FrozenFeatureNamespaceModel store all the attributes that are fixed after object construction.
+    BaseFeatureTargetModel is the base class for FeatureNamespaceModel & TargetNamespaceModel.
+    It contains all the attributes that are shared between FeatureNamespaceModel & TargetNamespaceModel.
     """
 
     dtype: DBVarType = Field(
         allow_mutation=False, description="database variable type for the feature"
     )
+    default_version_mode: DefaultVersionMode = Field(
+        default=DefaultVersionMode.AUTO, allow_mutation=False
+    )
+
+    # list of IDs attached to this feature namespace or target namespace
     entity_ids: List[PydanticObjectId] = Field(allow_mutation=False)
     table_ids: List[PydanticObjectId] = Field(allow_mutation=False)
 
@@ -60,7 +66,6 @@ class FrozenFeatureNamespaceModel(FeatureByteCatalogBaseDocumentModel):
         MongoDB settings
         """
 
-        collection_name: str = "feature_namespace"
         unique_constraints: List[UniqueValuesConstraint] = [
             UniqueValuesConstraint(
                 fields=("_id",),
@@ -73,15 +78,19 @@ class FrozenFeatureNamespaceModel(FeatureByteCatalogBaseDocumentModel):
                 resolution_signature=UniqueConstraintResolutionSignature.RENAME,
             ),
         ]
-
         indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
             pymongo.operations.IndexModel("dtype"),
             pymongo.operations.IndexModel("entity_ids"),
             pymongo.operations.IndexModel("table_ids"),
+            pymongo.operations.IndexModel(
+                [
+                    ("name", pymongo.TEXT),
+                ],
+            ),
         ]
 
 
-class FeatureNamespaceModel(FrozenFeatureNamespaceModel):
+class FeatureNamespaceModel(BaseFeatureTargetNamespaceModel):
     """
     Feature set with the same feature name
 
@@ -115,28 +124,21 @@ class FeatureNamespaceModel(FrozenFeatureNamespaceModel):
     )
     readiness: FeatureReadiness = Field(allow_mutation=False)
     default_feature_id: PydanticObjectId = Field(allow_mutation=False)
-    default_version_mode: DefaultVersionMode = Field(
-        default=DefaultVersionMode.AUTO, allow_mutation=False
-    )
 
     # pydantic validators
     _sort_feature_ids_validator = validator("feature_ids", allow_reuse=True)(
         construct_sort_validator()
     )
 
-    class Settings(FrozenFeatureNamespaceModel.Settings):
+    class Settings(BaseFeatureTargetNamespaceModel.Settings):
         """
         MongoDB settings
         """
 
-        indexes = FrozenFeatureNamespaceModel.Settings.indexes + [
+        collection_name: str = "feature_namespace"
+        indexes = BaseFeatureTargetNamespaceModel.Settings.indexes + [
             pymongo.operations.IndexModel("feature_ids"),
             pymongo.operations.IndexModel("online_enabled_feature_ids"),
             pymongo.operations.IndexModel("readiness"),
             pymongo.operations.IndexModel("default_feature_id"),
-            pymongo.operations.IndexModel(
-                [
-                    ("name", pymongo.TEXT),
-                ],
-            ),
         ]

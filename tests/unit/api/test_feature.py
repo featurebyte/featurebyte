@@ -300,7 +300,7 @@ def test_list(saved_feature):
             {
                 "id": [saved_feature.id],
                 "name": [saved_feature_namespace.name],
-                "dtype": [saved_feature_namespace.dtype],
+                "dtype": [saved_feature.dtype],
                 "readiness": [saved_feature_namespace.readiness],
                 "online_enabled": [saved_feature.online_enabled],
                 "tables": [["sf_event_table"]],

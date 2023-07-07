@@ -3,93 +3,57 @@ This module contains Target related models
 """
 from __future__ import annotations
 
-from typing import List, Optional
-
 import pymongo
 from bson import ObjectId
-from pydantic import Field, validator
+from pydantic import Field
 
-from featurebyte.common.validator import duration_string_validator
-from featurebyte.models.base import (
-    FeatureByteCatalogBaseDocumentModel,
-    PydanticObjectId,
-    UniqueConstraintResolutionSignature,
-    UniqueValuesConstraint,
-)
-from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.node import Node
+from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.feature import BaseFeatureTargetModel
 
 
-class TargetModel(FeatureByteCatalogBaseDocumentModel):
+class TargetModel(BaseFeatureTargetModel):
     """
-    Model for Target
+    Model for Target asset
 
     id: PydanticObjectId
         Target id of the object
     name: str
-        Name of the Target
-    created_at: datetime
-        Datetime when the Target object was first saved or published
-    updated_at: datetime
-        Datetime when the Target object was last updated
+        Target name
+    dtype: DBVarType
+        Variable type of the target
+    graph: QueryGraph
+        Graph contains steps of transformation to generate the target
+    node_name: str
+        Node name of the graph which represent the target
+    tabular_source: TabularSource
+        Tabular source used to construct this target
+    version: VersionIdentifier
+        Target version
+    definition: str
+        Target definition
+    entity_ids: List[PydanticObjectId]
+        Entity IDs used by the target
+    table_ids: List[PydanticObjectId]
+        Table IDs used by the target
+    primary_table_ids: Optional[List[PydanticObjectId]]
+        Primary table IDs of the target (auto-derive from graph)
+    target_namespace_id: PydanticObjectId
+        Target namespace id of the object
+    created_at: Optional[datetime]
+        Datetime when the Target was first saved
+    updated_at: Optional[datetime]
+        When the Target get updated
     """
 
-    # Recipe
-    graph: Optional[QueryGraph] = Field(allow_mutation=False)
-    node_name: Optional[str] = Field(allow_mutation=False)
-
-    # These fields will either be inferred from the recipe, or manually provided by the user only if they're creating
-    # a target without a recipe.
-    horizon: Optional[str]
-    entity_ids: Optional[List[PydanticObjectId]] = Field(allow_mutation=False)
-
+    # list of IDs attached to this target
     target_namespace_id: PydanticObjectId = Field(allow_mutation=False, default_factory=ObjectId)
 
-    # pydantic validators
-    _duration_validator = validator("horizon", pre=True, allow_reuse=True)(
-        duration_string_validator
-    )
-
-    class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
+    class Settings(BaseFeatureTargetModel.Settings):
         """
         MongoDB settings
         """
 
         collection_name: str = "target"
-        unique_constraints: List[UniqueValuesConstraint] = [
-            UniqueValuesConstraint(
-                fields=("_id",),
-                conflict_fields_signature={"id": ["_id"]},
-                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
-            ),
-            UniqueValuesConstraint(
-                fields=("name", "user_id"),
-                conflict_fields_signature={"name": ["name"]},
-                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
-            ),
+        indexes = BaseFeatureTargetModel.Settings.indexes + [
+            pymongo.operations.IndexModel("feature_namespace_id"),
         ]
-
-        indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
-            [
-                ("name", pymongo.TEXT),
-            ],
-        ]
-
-    @property
-    def node(self) -> Node:
-        """
-        Retrieve node
-
-        Returns
-        -------
-        Node
-            Node object
-
-        Raises
-        ------
-        ValueError
-            If target does not have a graph or node_name
-        """
-        if not self.graph or not self.node_name:
-            raise ValueError("Target does not have a graph or node_name")
-        return self.graph.get_node_by_name(self.node_name)
