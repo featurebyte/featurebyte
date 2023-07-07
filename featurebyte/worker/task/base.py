@@ -12,7 +12,6 @@ from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
 from featurebyte.schema.worker.progress import ProgressModel
 from featurebyte.schema.worker.task.base import BaseTaskPayload
-from featurebyte.service.task_manager import TaskManager
 
 TASK_MAP: Dict[Enum, type[BaseTask]] = {}
 
@@ -85,12 +84,7 @@ class BaseTask:  # pylint: disable=too-many-instance-attributes
                 user=self.user,
                 persistent=self.get_persistent(),
                 temp_storage=self.get_temp_storage(),
-                task_manager=TaskManager(
-                    user=self.user,
-                    persistent=self.get_persistent(),
-                    celery=self.get_celery(),
-                    catalog_id=self.payload.catalog_id,
-                ),
+                celery=self.get_celery(),
                 storage=self.get_storage(),
                 catalog_id=self.payload.catalog_id,
                 app_container_config=app_container_config,

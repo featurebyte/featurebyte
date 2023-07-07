@@ -25,7 +25,6 @@ from featurebyte.persistent.mongo import MongoDB
 from featurebyte.routes.app_container_config import _get_class_name
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
-from featurebyte.service.task_manager import TaskManager
 from featurebyte.utils.credential import MongoBackedCredentialProvider
 from featurebyte.utils.storage import get_storage, get_temp_storage
 from featurebyte.worker import get_celery
@@ -141,12 +140,7 @@ async def migrate_method_generator(
         persistent=persistent,
         catalog_id=DEFAULT_CATALOG_ID,
         temp_storage=get_temp_storage(),
-        task_manager=TaskManager(
-            user=user,
-            persistent=persistent,
-            celery=get_celery(),
-            catalog_id=DEFAULT_CATALOG_ID,
-        ),
+        celery=get_celery(),
         storage=get_storage(),
         app_container_config=app_container_config,
     )

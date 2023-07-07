@@ -7,9 +7,8 @@ import pytest
 from bson import ObjectId
 
 from featurebyte.models.base import DEFAULT_CATALOG_ID, User
-from featurebyte.routes.app_container_config import AppContainerConfig, ClassDefinition, DepType
+from featurebyte.routes.app_container_config import AppContainerConfig, ClassDefinition
 from featurebyte.routes.lazy_app_container import LazyAppContainer, get_all_deps_for_key
-from featurebyte.service.task_manager import TaskManager
 from featurebyte.utils.storage import get_storage, get_temp_storage
 from featurebyte.worker import get_celery
 
@@ -66,9 +65,7 @@ def app_container_constructor_params_fixture(persistent):
         "persistent": persistent,
         "temp_storage": get_temp_storage(),
         "storage": get_storage(),
-        "task_manager": TaskManager(
-            user=user, persistent=persistent, celery=get_celery(), catalog_id=DEFAULT_CATALOG_ID
-        ),
+        "celery": get_celery(),
         "catalog_id": DEFAULT_CATALOG_ID,
     }
 
@@ -80,8 +77,8 @@ def test_app_config_fixture():
     """
     app_container_config = AppContainerConfig()
     app_container_config.register_class(NoDeps)
-    app_container_config.register_service(TestService)
-    app_container_config.register_service(TestServiceWithOtherDeps, {"other_dep": "test_service"})
+    app_container_config.register_class(TestService)
+    app_container_config.register_class(TestServiceWithOtherDeps, {"other_dep": "test_service"})
     app_container_config.register_class(TestController)
     return app_container_config
 
@@ -112,18 +109,6 @@ def test_lazy_initialization(test_app_config, app_container_constructor_params):
     assert "test_controller" in instance_map
 
 
-def test_construction__empty_app_config_has_two_instances(app_container_constructor_params):
-    """
-    Test construction
-    """
-    app_container_config = AppContainerConfig()
-    app_container = LazyAppContainer(
-        **app_container_constructor_params,
-        app_container_config=app_container_config,
-    )
-    assert len(app_container.instance_map) == 5
-
-
 def test_construction__get_attr(app_container_constructor_params):
     """
     Test __get_attr__ works
@@ -134,7 +119,7 @@ def test_construction__get_attr(app_container_constructor_params):
         app_container_config=app_container_config,
     )
     # This has been initialized
-    assert app_container.task_controller is not None
+    assert app_container.persistent is not None
 
     # random_item has not been initialized
     with pytest.raises(KeyError):
@@ -146,7 +131,7 @@ def test_construction__build_with_missing_deps(app_container_constructor_params)
     Test that an error is raised in an invalid dependency is passed in.
     """
     app_container_config = AppContainerConfig()
-    app_container_config.register_service(TestServiceWithOtherDeps, {"other_dep": "test_service"})
+    app_container_config.register_class(TestServiceWithOtherDeps, {"other_dep": "test_service"})
 
     # KeyError raised as no `test_service` dep found
     app_container = LazyAppContainer(
@@ -185,7 +170,6 @@ def get_class_def(key: str, deps: List[str]) -> ClassDefinition:
         name=key,
         class_=TestService,
         dependencies=deps,
-        dep_type=DepType.SERVICE_WITH_EXTRA_DEPS,
     )
 
 

@@ -4,14 +4,11 @@ Lazy app container functions the same as the app_container, but only initializes
 from typing import Any, Dict, List
 
 from bson import ObjectId
+from celery import Celery
 
 from featurebyte.persistent import Persistent
-from featurebyte.routes.app_container_config import AppContainerConfig, ClassDefinition, DepType
-from featurebyte.routes.task.controller import TaskController
-from featurebyte.routes.temp_data.controller import TempDataController
-from featurebyte.service.task_manager import TaskManager
+from featurebyte.routes.app_container_config import AppContainerConfig, ClassDefinition
 from featurebyte.storage import Storage
-from featurebyte.utils.credential import MongoBackedCredentialProvider
 
 
 def get_all_deps_for_key(
@@ -61,41 +58,6 @@ def get_all_deps_for_key(
     return all_deps
 
 
-def build_service_with_deps(
-    class_def: ClassDefinition,
-    user: Any,
-    persistent: Persistent,
-    catalog_id: ObjectId,
-    instance_map: Dict[str, Any],
-) -> Any:
-    """
-    Build a service with the given dependencies.
-
-    Parameters
-    ----------
-    class_def: ClassDefinition
-        class definition
-    user: Any
-        user object
-    persistent: Persistent
-        persistent object
-    catalog_id: ObjectId
-        catalog id
-    instance_map: Dict[str, Any]
-        mapping of key to instance
-
-    Returns
-    -------
-    Any
-    """
-    extra_depends = class_def.dependencies
-    # Seed depend_instances with the normal user and persistent objects
-    depend_instances = [user, persistent, catalog_id]
-    for s_name in extra_depends:
-        depend_instances.append(instance_map[s_name])
-    return class_def.class_(*depend_instances)
-
-
 def build_class_with_deps(class_definition: ClassDefinition, instance_map: Dict[str, Any]) -> Any:
     """
     Build a class with the given dependencies.
@@ -121,9 +83,6 @@ def build_class_with_deps(class_definition: ClassDefinition, instance_map: Dict[
 def build_deps(
     deps: List[ClassDefinition],
     existing_deps: Dict[str, Any],
-    user: Any,
-    persistent: Persistent,
-    catalog_id: ObjectId,
 ) -> Dict[str, Any]:
     """
     Build dependencies for a given list of class definitions.
@@ -134,12 +93,6 @@ def build_deps(
         list of class definitions
     existing_deps: Dict[str, Any]
         mapping of key to instance
-    user: Any
-        user object
-    persistent: Persistent
-        persistent object
-    catalog_id: ObjectId
-        catalog id
 
     Returns
     -------
@@ -153,12 +106,7 @@ def build_deps(
         if dep.name in new_deps:
             continue
         # Build dependencies for this dep
-        if dep.dep_type == DepType.SERVICE_WITH_EXTRA_DEPS:
-            new_deps[dep.name] = build_service_with_deps(
-                dep, user, persistent, catalog_id, new_deps
-            )
-        elif dep.dep_type == DepType.CLASS_WITH_DEPS:
-            new_deps[dep.name] = build_class_with_deps(dep, new_deps)
+        new_deps[dep.name] = build_class_with_deps(dep, new_deps)
     return new_deps
 
 
@@ -197,29 +145,22 @@ class LazyAppContainer:
         user: Any,
         persistent: Persistent,
         temp_storage: Storage,
-        task_manager: TaskManager,
+        celery: Celery,
         storage: Storage,
         catalog_id: ObjectId,
         app_container_config: AppContainerConfig,
     ):
-        self.user = user
-        self.persistent = persistent
-        self.temp_storage = temp_storage
-        self.task_manager = task_manager
-        self.storage = storage
-        self.catalog_id = catalog_id
         self.app_container_config = app_container_config
 
         # Used to cache instances if they've already been built
         # Pre-load with some default deps
         self.instance_map: Dict[str, Any] = {
-            "task_controller": TaskController(task_manager=task_manager),
-            "temp_data_controller": TempDataController(temp_storage=temp_storage),
-            "mongo_backed_credential_provider": MongoBackedCredentialProvider(
-                persistent=persistent
-            ),
-            "task_manager": task_manager,
+            "catalog_id": catalog_id,
+            "celery": celery,
             "persistent": persistent,
+            "storage": storage,
+            "temp_storage": temp_storage,
+            "user": user,
         }
 
     def _get_key(self, key: str) -> Any:
@@ -248,9 +189,7 @@ class LazyAppContainer:
         ordered_deps = convert_dep_list_str_to_class_def(
             filtered_deps, self.app_container_config.get_class_def_mapping()
         )
-        new_deps = build_deps(
-            ordered_deps, self.instance_map, self.user, self.persistent, self.catalog_id
-        )
+        new_deps = build_deps(ordered_deps, self.instance_map)
         self.instance_map.update(new_deps)
         return self.instance_map[key]
 

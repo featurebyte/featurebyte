@@ -64,14 +64,13 @@ def test_all_dependencies():
     config = AppContainerConfig()
     config.register_class(TestClassA)
     config.register_class(TestClassB)
-    config.register_service(
+    config.register_class(
         TestClassA,
         name_override="basic_service",
     )
-    config.register_service(TestClassB, name_override="service_with_deps")
+    config.register_class(TestClassB, name_override="service_with_deps")
 
-    all_deps = config._all_dependencies()
-    assert len(all_deps) == 4
+    assert len(config.classes_with_deps) == 4
 
 
 def test_validate__duplicate_name():
@@ -110,6 +109,9 @@ def test_get_class_name():
 
     name = _get_class_name(TestClassC.__name__, name_override="hello")
     assert name == "hello"
+
+    name = _get_class_name("SCDTable")
+    assert name == "scd_table"
 
 
 def test_get_constructor_params_from_class():
