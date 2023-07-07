@@ -144,6 +144,7 @@ async def test_get_historical_features__missing_point_in_time(
     mocked_session,
     output_table_details,
     tile_cache_service,
+    snowflake_feature_store,
 ):
     """Test validation of missing point in time for historical features"""
     observation_set = pd.DataFrame(
@@ -158,7 +159,7 @@ async def test_get_historical_features__missing_point_in_time(
             graph=mock_snowflake_feature.graph,
             nodes=[mock_snowflake_feature.node],
             observation_set=observation_set,
-            source_type=SourceType.SNOWFLAKE,
+            feature_store=snowflake_feature_store,
             output_table_details=output_table_details,
         )
     assert str(exc_info.value) == "POINT_IN_TIME column is required"
@@ -173,6 +174,7 @@ async def test_get_historical_features__too_recent_point_in_time(
     point_in_time_is_datetime_dtype,
     output_table_details,
     tile_cache_service,
+    snowflake_feature_store,
 ):
     """Test validation of too recent point in time for historical features"""
     point_in_time_vals = ["2022-04-15", "2022-04-30"]
@@ -191,7 +193,7 @@ async def test_get_historical_features__too_recent_point_in_time(
             graph=mock_snowflake_feature.graph,
             nodes=[mock_snowflake_feature.node],
             observation_set=observation_set,
-            source_type=SourceType.SNOWFLAKE,
+            feature_store=snowflake_feature_store,
             output_table_details=output_table_details,
         )
     assert str(exc_info.value) == (
@@ -207,6 +209,7 @@ async def test_get_historical_features__point_in_time_dtype_conversion(
     mocked_compute_tiles_on_demand,
     output_table_details,
     tile_cache_service,
+    snowflake_feature_store,
 ):
     """
     Test that if point in time column is provided as string, it is converted to datetime before
@@ -228,7 +231,7 @@ async def test_get_historical_features__point_in_time_dtype_conversion(
         graph=float_feature.graph,
         nodes=[float_feature.node],
         observation_set=df_request,
-        source_type=SourceType.SNOWFLAKE,
+        feature_store=snowflake_feature_store,
         output_table_details=output_table_details,
     )
 
@@ -248,6 +251,7 @@ async def test_get_historical_features__skip_tile_cache_if_deployed(
     mocked_compute_tiles_on_demand,
     output_table_details,
     tile_cache_service,
+    snowflake_feature_store,
 ):
     """
     Test that for with is_feature_list_deployed=True on demand tile computation is skipped
@@ -265,7 +269,7 @@ async def test_get_historical_features__skip_tile_cache_if_deployed(
         graph=float_feature.graph,
         nodes=[float_feature.node],
         observation_set=df_request,
-        source_type=SourceType.SNOWFLAKE,
+        feature_store=snowflake_feature_store,
         is_feature_list_deployed=True,
         output_table_details=output_table_details,
     )
@@ -280,6 +284,7 @@ async def test_get_historical_features__tile_cache_multiple_batches(
     output_table_details,
     mocked_session,
     mocked_compute_tiles_on_demand,
+    snowflake_feature_store,
 ):
     """
     Test that nodes for tile cache are batched correctly
@@ -303,7 +308,7 @@ async def test_get_historical_features__tile_cache_multiple_batches(
             graph=graph,
             nodes=nodes,
             observation_set=df_request,
-            source_type=SourceType.SNOWFLAKE,
+            feature_store=snowflake_feature_store,
             output_table_details=output_table_details,
         )
 

@@ -3,19 +3,6 @@ Feature SQL template
 """
 from jinja2 import Template
 
-tm_last_tile_index = Template(
-    """
-    SELECT
-        t_reg.TILE_ID,
-        t_reg.LAST_TILE_INDEX_ONLINE,
-        t_reg.LAST_TILE_INDEX_OFFLINE
-    FROM TILE_REGISTRY t_reg, TILE_FEATURE_MAPPING t_mapping
-    WHERE t_reg.TILE_ID = t_mapping.TILE_ID
-    AND t_mapping.FEATURE_NAME = '{{feature.name}}'
-    AND t_mapping.FEATURE_VERSION = '{{feature.version.to_str()}}'
-"""
-)
-
 tm_feature_tile_monitor = Template(
     """
     SELECT

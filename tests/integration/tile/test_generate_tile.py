@@ -4,6 +4,7 @@ Tile Generate tests for Spark Session
 from datetime import datetime
 
 import pytest
+from bson import ObjectId
 
 from featurebyte.enum import InternalName
 from featurebyte.sql.tile_generate import TileGenerate
@@ -12,7 +13,7 @@ from tests.integration.tile.hepler import format_timestamp_expr
 
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_generate_tile(session, base_sql_model):
+async def test_generate_tile(session, base_sql_model, tile_registry_service):
     """
     Test normal generation of tiles
     """
@@ -47,6 +48,8 @@ async def test_generate_tile(session, base_sql_model):
         value_column_types=value_col_types,
         tile_type="OFFLINE",
         aggregation_id=agg_id,
+        feature_store_id=ObjectId(),
+        tile_registry_service=tile_registry_service,
     )
 
     await tile_generate_ins.execute()
@@ -58,7 +61,7 @@ async def test_generate_tile(session, base_sql_model):
 
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_generate_tile_no_data(session, base_sql_model):
+async def test_generate_tile_no_data(session, base_sql_model, tile_registry_service):
     """
     Test generation of tile with no tile table
     """
@@ -91,6 +94,8 @@ async def test_generate_tile_no_data(session, base_sql_model):
         value_column_types=value_col_types,
         tile_type="OFFLINE",
         aggregation_id=agg_id,
+        feature_store_id=ObjectId(),
+        tile_registry_service=tile_registry_service,
     )
 
     await tile_generate_ins.execute()
@@ -102,7 +107,7 @@ async def test_generate_tile_no_data(session, base_sql_model):
 
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_generate_tile_new_value_column(session, base_sql_model):
+async def test_generate_tile_new_value_column(session, base_sql_model, tile_registry_service):
     """
     Test normal generation of tiles
     """
@@ -135,6 +140,8 @@ async def test_generate_tile_new_value_column(session, base_sql_model):
         value_column_types=value_col_types,
         tile_type="OFFLINE",
         aggregation_id=agg_id,
+        feature_store_id=ObjectId(),
+        tile_registry_service=tile_registry_service,
     )
 
     await tile_generate_ins.execute()
@@ -164,6 +171,8 @@ async def test_generate_tile_new_value_column(session, base_sql_model):
         value_column_types=value_col_types_2,
         tile_type="OFFLINE",
         aggregation_id=agg_id,
+        feature_store_id=ObjectId(),
+        tile_registry_service=tile_registry_service,
     )
 
     await tile_generate_ins.execute()

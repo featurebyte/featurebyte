@@ -204,6 +204,14 @@ def tile_task_executor_fixture(app_container):
     return app_container.tile_task_executor
 
 
+@pytest.fixture(name="tile_registry_service")
+def tile_registry_service_fixture(app_container):
+    """
+    TileRegistryService fixture
+    """
+    return app_container.tile_registry_service
+
+
 @pytest.fixture(name="relationship_info_service")
 def relationship_info_service_fixture(app_container):
     """

@@ -174,7 +174,6 @@ EXPECTED_FUNCTIONS = [
 
 EXPECTED_TABLES = [
     "METADATA_SCHEMA",
-    "TILE_REGISTRY",
     "TILE_MONITOR_SUMMARY",
     "TILE_FEATURE_MAPPING",
     "ONLINE_STORE_MAPPING",
@@ -327,7 +326,6 @@ def test_schema_initializer__sql_objects(
             "identifier": "F_TIMEZONE_OFFSET_TO_SECOND",
             "type": "function",
         },
-        {"filename": "T_TILE_REGISTRY.sql", "identifier": "TILE_REGISTRY", "type": "table"},
         {
             "filename": "T_TILE_MONITOR_SUMMARY.sql",
             "identifier": "TILE_MONITOR_SUMMARY",

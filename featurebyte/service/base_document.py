@@ -46,6 +46,25 @@ RAW_QUERY_FILTER_WARNING = (
 logger = get_logger(__name__)
 
 
+def as_object_id(object_id: Any) -> ObjectId:
+    """
+    Convert object_id to ObjectId type if necessary
+
+    Parameters
+    ----------
+    object_id: Any
+        The ObjectId like object to convert. Must not be None.
+
+    Returns
+    -------
+    ObjectId
+    """
+    if isinstance(object_id, ObjectId):
+        return object_id
+    assert object_id is not None
+    return ObjectId(object_id)
+
+
 class BaseDocumentService(
     Generic[Document, DocumentCreateSchema, DocumentUpdateSchema], OpsServiceMixin
 ):
@@ -195,7 +214,7 @@ class BaseDocumentService(
             Using raw query filter without activating override
         """
         _ = self, kwargs
-        kwargs = {"_id": ObjectId(document_id)}
+        kwargs = {"_id": ObjectId(as_object_id(document_id))}
         if use_raw_query_filter:
             if not self._allow_to_use_raw_query_filter:
                 raise NotImplementedError(RAW_QUERY_FILTER_WARNING)

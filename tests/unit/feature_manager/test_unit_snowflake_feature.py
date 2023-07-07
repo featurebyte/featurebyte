@@ -119,8 +119,7 @@ async def test_online_enable(
     # 1. merge into TILE_FEATURE_MAPPING
     # 2. merge into ONLINE_STORE_MAPPING
     # 3. call SP_TILES_SCHEDULE_ONLINE_STORE
-    # 4. check TILE_REGISTRY for LAST_TILE_START_DATE
-    assert mock_snowflake_session.execute_query.call_count == 4
+    assert mock_snowflake_session.execute_query.call_count == 3
 
     upsert_sql = tm_upsert_tile_feature_mapping.render(
         tile_id=feature_spec.tile_ids[0],

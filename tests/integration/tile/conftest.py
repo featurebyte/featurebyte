@@ -6,15 +6,12 @@ from datetime import datetime
 import pytest_asyncio
 from bson import ObjectId
 
-from featurebyte.app import get_celery
 from featurebyte.enum import InternalName
 from featurebyte.feature_manager.model import ExtendedFeatureModel
-from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.models.online_store_table_version import OnlineStoreTableVersion
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
-from featurebyte.service.task_manager import TaskManager
 from featurebyte.sql.base import BaseSqlModel
 
 

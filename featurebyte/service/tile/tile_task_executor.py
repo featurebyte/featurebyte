@@ -12,6 +12,7 @@ from featurebyte.enum import InternalName
 from featurebyte.logging import get_logger
 from featurebyte.models.tile import TileScheduledJobParameters
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
+from featurebyte.service.tile_registry_service import TileRegistryService
 from featurebyte.session.base import BaseSession
 from featurebyte.sql.common import retry_sql
 from featurebyte.sql.tile_common import TileCommon
@@ -28,8 +29,13 @@ class TileTaskExecutor:
     tiles consistency monitoring and online store table updates.
     """
 
-    def __init__(self, online_store_table_version_service: OnlineStoreTableVersionService):
+    def __init__(
+        self,
+        online_store_table_version_service: OnlineStoreTableVersionService,
+        tile_registry_service: TileRegistryService,
+    ):
         self.online_store_table_version_service = online_store_table_version_service
+        self.tile_registry_service = tile_registry_service
 
     # pylint: disable=too-many-locals,too-many-statements
     async def execute(self, session: BaseSession, params: TileScheduledJobParameters) -> None:
@@ -79,13 +85,11 @@ class TileTaskExecutor:
         monitor_tile_start_ts_str = tile_start_ts_str
 
         # use the last_tile_start_date from tile registry as tile_start_ts_str if it is earlier than tile_start_ts_str
-        registry_df = await retry_sql(
-            session,
-            f"SELECT LAST_TILE_START_DATE_ONLINE FROM TILE_REGISTRY WHERE TILE_ID = '{params.tile_id}' AND LAST_TILE_START_DATE_ONLINE IS NOT NULL",
+        tile_model = await self.tile_registry_service.get_tile_model(
+            params.tile_id, params.aggregation_id
         )
-
-        if registry_df is not None and len(registry_df) > 0:
-            registry_last_tile_start_ts = registry_df["LAST_TILE_START_DATE_ONLINE"].iloc[0]
+        if tile_model is not None and tile_model.last_tile_metadata_online is not None:
+            registry_last_tile_start_ts = tile_model.last_tile_metadata_online.start_date
             logger.info(f"Last tile start date from registry - {registry_last_tile_start_ts}")
 
             if registry_last_tile_start_ts.strftime(date_format) < tile_start_ts.strftime(
@@ -149,6 +153,7 @@ class TileTaskExecutor:
 
         tile_monitor_ins = TileMonitor(
             session=session,
+            feature_store_id=params.feature_store_id,
             tile_id=tile_id,
             time_modulo_frequency_second=params.time_modulo_frequency_second,
             blind_spot_second=params.blind_spot_second,
@@ -160,10 +165,12 @@ class TileTaskExecutor:
             value_column_types=params.value_column_types,
             tile_type=params.tile_type,
             aggregation_id=params.aggregation_id,
+            tile_registry_service=self.tile_registry_service,
         )
 
         tile_generate_ins = TileGenerate(
             session=session,
+            feature_store_id=params.feature_store_id,
             tile_id=tile_id,
             time_modulo_frequency_second=params.time_modulo_frequency_second,
             blind_spot_second=params.blind_spot_second,
@@ -175,6 +182,7 @@ class TileTaskExecutor:
             tile_type=params.tile_type,
             last_tile_start_str=tile_end_ts_str,
             aggregation_id=params.aggregation_id,
+            tile_registry_service=self.tile_registry_service,
         )
 
         tile_online_store_ins = TileScheduleOnlineStore(

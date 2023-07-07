@@ -41,6 +41,7 @@ class TileCacheService(BaseService):
         nodes: list[Node],
         request_id: str,
         request_table_name: str,
+        feature_store_id: ObjectId,
         serving_names_mapping: dict[str, str] | None = None,
         progress_callback: Optional[Callable[[int, str], None]] = None,
     ) -> None:
@@ -59,12 +60,18 @@ class TileCacheService(BaseService):
             Request ID
         request_table_name: str
             Request table name to use
+        feature_store_id: ObjectId
+            Feature store id
         serving_names_mapping : dict[str, str] | None
             Optional mapping from original serving name to new serving name
         progress_callback: Optional[Callable[[int, str], None]]
             Optional progress callback function
         """
-        tile_cache = TileCache(session=session, tile_manager_service=self.tile_manager_service)
+        tile_cache = TileCache(
+            session=session,
+            tile_manager_service=self.tile_manager_service,
+            feature_store_id=feature_store_id,
+        )
         await tile_cache.compute_tiles_on_demand(
             graph=graph,
             nodes=nodes,
