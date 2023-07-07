@@ -84,7 +84,6 @@ class ForwardAggregator(BaseAggregator):
         return Target(
             name=target_name,
             entity_ids=self.entity_ids,
-            horizon=horizon,
             graph=self.view.graph,
             node_name=target_node.name,
         )

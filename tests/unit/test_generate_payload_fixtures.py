@@ -157,14 +157,16 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         name="target",
         graph=feature_sum_30m.graph,
         node_name=feature_sum_30m.node_name,
-        window="7d",
-        entity_ids=[cust_id_entity.id],
+        tabular_source=feature_sum_30m.tabular_source,
     )
     target_namespace = TargetNamespaceCreate(
         name="target_namespace",
+        dtype=feature_sum_30m.dtype,
         target_ids=[target.id],
         default_target_id=target.id,
         default_version_mode=DefaultVersionMode.AUTO,
+        entity_ids=feature_sum_30m.entity_ids,
+        horizon="1d",  # TODO: Fix this
     )
 
     if update_fixtures:

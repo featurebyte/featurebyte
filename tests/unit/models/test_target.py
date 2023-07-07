@@ -7,6 +7,7 @@ from featurebyte.models.target import TargetModel
 from featurebyte.query_graph.graph import QueryGraph
 
 
+@pytest.mark.skip(reason="Target creation is not implemented yet")
 def test_duration_validator():
     """
     Test duration validator

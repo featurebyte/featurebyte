@@ -55,5 +55,5 @@ class TargetModel(BaseFeatureTargetModel):
 
         collection_name: str = "target"
         indexes = BaseFeatureTargetModel.Settings.indexes + [
-            pymongo.operations.IndexModel("feature_namespace_id"),
+            pymongo.operations.IndexModel("target_namespace_id"),
         ]

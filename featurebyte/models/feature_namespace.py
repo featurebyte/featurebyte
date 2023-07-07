@@ -51,15 +51,7 @@ class BaseFeatureTargetNamespaceModel(FeatureByteCatalogBaseDocumentModel):
     default_version_mode: DefaultVersionMode = Field(
         default=DefaultVersionMode.AUTO, allow_mutation=False
     )
-
-    # list of IDs attached to this feature namespace or target namespace
     entity_ids: List[PydanticObjectId] = Field(allow_mutation=False)
-    table_ids: List[PydanticObjectId] = Field(allow_mutation=False)
-
-    # pydantic validators
-    _sort_ids_validator = validator("entity_ids", "table_ids", allow_reuse=True)(
-        construct_sort_validator()
-    )
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
@@ -80,13 +72,12 @@ class BaseFeatureTargetNamespaceModel(FeatureByteCatalogBaseDocumentModel):
         ]
         indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
             pymongo.operations.IndexModel("dtype"),
-            pymongo.operations.IndexModel("entity_ids"),
-            pymongo.operations.IndexModel("table_ids"),
             pymongo.operations.IndexModel(
                 [
                     ("name", pymongo.TEXT),
                 ],
             ),
+            pymongo.operations.IndexModel("entity_ids"),
         ]
 
 
@@ -118,17 +109,20 @@ class FeatureNamespaceModel(BaseFeatureTargetNamespaceModel):
         Table IDs used by the feature
     """
 
+    readiness: FeatureReadiness = Field(allow_mutation=False)
+
+    # list of IDs attached to this feature namespace or target namespace
     feature_ids: List[PydanticObjectId] = Field(allow_mutation=False)
+    default_feature_id: PydanticObjectId = Field(allow_mutation=False)
     online_enabled_feature_ids: List[PydanticObjectId] = Field(
         allow_mutation=False, default_factory=list
     )
-    readiness: FeatureReadiness = Field(allow_mutation=False)
-    default_feature_id: PydanticObjectId = Field(allow_mutation=False)
+    table_ids: List[PydanticObjectId] = Field(allow_mutation=False)
 
     # pydantic validators
-    _sort_feature_ids_validator = validator("feature_ids", allow_reuse=True)(
-        construct_sort_validator()
-    )
+    _sort_feature_ids_validator = validator(
+        "feature_ids", "entity_ids", "table_ids", allow_reuse=True
+    )(construct_sort_validator())
 
     class Settings(BaseFeatureTargetNamespaceModel.Settings):
         """
@@ -137,8 +131,9 @@ class FeatureNamespaceModel(BaseFeatureTargetNamespaceModel):
 
         collection_name: str = "feature_namespace"
         indexes = BaseFeatureTargetNamespaceModel.Settings.indexes + [
-            pymongo.operations.IndexModel("feature_ids"),
-            pymongo.operations.IndexModel("online_enabled_feature_ids"),
             pymongo.operations.IndexModel("readiness"),
+            pymongo.operations.IndexModel("feature_ids"),
             pymongo.operations.IndexModel("default_feature_id"),
+            pymongo.operations.IndexModel("online_enabled_feature_ids"),
+            pymongo.operations.IndexModel("table_ids"),
         ]

@@ -6,7 +6,6 @@ from __future__ import annotations
 from typing import List, Optional
 
 from pydantic import Field, StrictStr
-from typeguard import typechecked
 
 from featurebyte.api.api_object_util import ForeignKeyMapping
 from featurebyte.api.entity import Entity
@@ -52,53 +51,3 @@ class Target(SavableApiObject):
         except RecordRetrievalException:
             entity_ids = self.internal_entity_ids
         return [Entity.get_by_id(entity_id) for entity_id in entity_ids]
-
-    @property
-    def horizon(self) -> Optional[str]:
-        """
-        Returns the horizon of this target.
-
-        Returns
-        -------
-        Optional[str]
-        """
-        try:
-            return self.cached_model.horizon
-        except RecordRetrievalException:
-            return self.internal_horizon
-
-    @classmethod
-    @typechecked
-    def create(
-        cls,
-        name: str,
-        entities: Optional[List[str]] = None,
-        horizon: Optional[str] = None,
-    ) -> Target:
-        """
-        Create a new Target.
-
-        Parameters
-        ----------
-        name : str
-            Name of the Target
-        entities : Optional[List[str]]
-            List of entity names, by default None
-        horizon : Optional[str]
-            Horizon of the Target, by default None
-
-        Returns
-        -------
-        Target
-            The newly created Target
-        """
-        entity_ids = None
-        if entities:
-            entity_ids = [Entity.get(entity_name).id for entity_name in entities]
-        target = Target(
-            name=name,
-            entity_ids=entity_ids,
-            horizon=horizon,
-        )
-        target.save()
-        return target

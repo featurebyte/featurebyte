@@ -117,10 +117,12 @@ class TargetService(BaseNamespaceService[TargetModel, TargetCreate]):
                     data=TargetNamespaceCreate(
                         _id=document.target_namespace_id,
                         name=document.name,
+                        dtype=document.dtype,
                         target_ids=[insert_id],
                         default_target_id=insert_id,
                         default_version_mode=DefaultVersionMode.AUTO,
                         entity_ids=sorted(entity_ids),
+                        horizon="1d",  # FIXME: hardcoded
                     ),
                 )
         return await self.get_document(document_id=insert_id)

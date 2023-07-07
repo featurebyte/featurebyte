@@ -938,5 +938,12 @@
     },
     "name": "target",
     "node_name": "project_1",
-    "window": "7d"
+    "tabular_source": {
+        "feature_store_id": "646f6c190ed28a5271fb02a1",
+        "table_details": {
+            "database_name": "sf_database",
+            "schema_name": "sf_schema",
+            "table_name": "sf_table"
+        }
+    }
 }

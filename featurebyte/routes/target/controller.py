@@ -10,6 +10,7 @@ from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.target import TargetCreate, TargetInfo, TargetList
 from featurebyte.service.entity import EntityService
 from featurebyte.service.target import TargetService
+from featurebyte.service.target_namespace import TargetNamespaceService
 
 
 class TargetController(BaseDocumentController[TargetModel, TargetService, TargetList]):
@@ -22,9 +23,11 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
     def __init__(
         self,
         target_service: TargetService,
+        target_namespace_service: TargetNamespaceService,
         entity_service: EntityService,
     ):
         super().__init__(target_service)
+        self.target_namespace_service = target_namespace_service
         self.entity_service = entity_service
 
     async def create_target(
@@ -104,6 +107,9 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
         """
         _ = verbose
         target_doc = await self.service.get_document(document_id=document_id)
+        namespace = await self.target_namespace_service.get_document(
+            document_id=target_doc.target_namespace_id
+        )
         entity_ids = target_doc.entity_ids or []
         entity_brief_info_list = await self.entity_service.get_entity_brief_info_list(
             set(entity_ids)
@@ -112,7 +118,7 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
             id=document_id,
             target_name=target_doc.name,
             entities=entity_brief_info_list,
-            horizon=target_doc.horizon,
+            horizon=namespace.horizon,
             has_recipe=bool(target_doc.graph),
             created_at=target_doc.created_at,
             updated_at=target_doc.updated_at,

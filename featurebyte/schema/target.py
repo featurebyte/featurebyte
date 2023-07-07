@@ -18,6 +18,7 @@ from featurebyte.models.base import (
 )
 from featurebyte.models.target import TargetModel
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 from featurebyte.schema.info import EntityBriefInfoList
 
@@ -29,11 +30,9 @@ class TargetCreate(FeatureByteBaseModel):
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
-    graph: Optional[QueryGraph]
-    node_name: Optional[str]
-    horizon: Optional[str]
-    entity_ids: Optional[List[PydanticObjectId]]
-    target_namespace_id: Optional[PydanticObjectId] = Field(default_factory=ObjectId)
+    graph: QueryGraph
+    node_name: str
+    tabular_source: TabularSource
 
 
 class TargetList(PaginationMixin):

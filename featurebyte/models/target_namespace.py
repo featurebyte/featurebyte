@@ -35,12 +35,14 @@ class TargetNamespaceModel(BaseFeatureTargetNamespaceModel):
         Table IDs used by the target
     """
 
-    target_ids: List[PydanticObjectId] = Field(allow_mutation=False)
-    default_target_id: PydanticObjectId = Field(allow_mutation=False)
     horizon: str
 
+    # list of IDs attached to this feature namespace or target namespace
+    target_ids: List[PydanticObjectId] = Field(allow_mutation=False)
+    default_target_id: PydanticObjectId = Field(allow_mutation=False)
+
     # pydantic validators
-    _sort_feature_ids_validator = validator("target_ids", allow_reuse=True)(
+    _sort_feature_ids_validator = validator("target_ids", "entity_ids", allow_reuse=True)(
         construct_sort_validator()
     )
     _duration_validator = validator("horizon", pre=True, allow_reuse=True)(
