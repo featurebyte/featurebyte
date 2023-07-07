@@ -51,7 +51,14 @@ class TileRegistry(TileCommon):
             await self.tile_registry_service.create_document(tile_model)
 
         if self.table_exist:
-            cols = await self.get_table_columns(self.table_name)
+            cols = [
+                c.upper()
+                for c in (
+                    await self._session.list_table_schema(
+                        self.table_name, self._session.database_name, self._session.schema_name
+                    )
+                ).keys()
+            ]
             tile_add_sql = f"ALTER TABLE {self.table_name} ADD COLUMN\n"
             add_statements = []
             for i, input_column in enumerate(input_value_columns):
