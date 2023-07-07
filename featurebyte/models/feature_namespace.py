@@ -41,7 +41,7 @@ class DefaultVersionMode(StrEnum):
 
 class BaseFeatureNamespaceModel(FeatureByteCatalogBaseDocumentModel):
     """
-    BaseFeatureModel is the base class for FeatureNamespaceModel & TargetNamespaceModel.
+    BaseFeatureNamespaceModel is the base class for FeatureNamespaceModel & TargetNamespaceModel.
     It contains all the attributes that are shared between FeatureNamespaceModel & TargetNamespaceModel.
     """
 
