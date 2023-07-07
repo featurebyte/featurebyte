@@ -435,6 +435,7 @@ __all__ = [
     "ValueBeyondEndpointImputation",
     "StringValueImputation",
     # feature & feature list version specific classes
+    "DefaultVersionMode",
     "FeatureVersionInfo",
     # others
     "ColumnCleaningOperation",
