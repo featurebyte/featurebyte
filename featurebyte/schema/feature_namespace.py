@@ -53,7 +53,7 @@ class FeatureNamespaceList(PaginationMixin):
 
 class FeatureNamespaceUpdate(BaseDocumentServiceUpdateSchema, FeatureByteBaseModel):
     """
-    FeatureNamespace update schema
+    FeatureNamespace update schema - exposed to client
     """
 
     default_version_mode: Optional[DefaultVersionMode]
@@ -62,7 +62,7 @@ class FeatureNamespaceUpdate(BaseDocumentServiceUpdateSchema, FeatureByteBaseMod
 
 class FeatureNamespaceServiceUpdate(FeatureNamespaceUpdate):
     """
-    FeatureNamespace service update schema
+    FeatureNamespace service update schema - used by server side only, not exposed to client
     """
 
     feature_ids: Optional[List[PydanticObjectId]]

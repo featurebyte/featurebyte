@@ -34,7 +34,7 @@ class TargetNamespaceCreate(FeatureByteBaseModel):
 
 class TargetNamespaceUpdate(BaseDocumentServiceUpdateSchema):
     """
-    TargetNamespace update schema
+    TargetNamespace update schema - exposed to client
     """
 
     default_version_mode: Optional[DefaultVersionMode]
@@ -44,7 +44,7 @@ class TargetNamespaceUpdate(BaseDocumentServiceUpdateSchema):
 
 class TargetNamespaceServiceUpdate(TargetNamespaceUpdate):
     """
-    TargetNamespaceService update schema
+    TargetNamespaceService update schema - used by server side only, not exposed to client
     """
 
     target_ids: Optional[List[PydanticObjectId]]
