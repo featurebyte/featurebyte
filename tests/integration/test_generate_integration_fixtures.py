@@ -63,4 +63,4 @@ def test_save_payload_fixtures(update_fixtures, csv_to_df):
     if update_fixtures:
         directory = "tests/fixtures/dataframe"
         for csv, df in csv_to_df.items():
-            df.to_csv(f"{directory}/{csv}")
+            df.to_csv(f"{directory}/{csv}", index=False)
