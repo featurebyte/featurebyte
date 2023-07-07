@@ -6,6 +6,7 @@ from typing import Any
 from pydantic.fields import PrivateAttr
 from pydantic.main import BaseModel
 
+from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
 from featurebyte.session.base import BaseSession
 from featurebyte.session.snowflake import SnowflakeSession
 
@@ -30,6 +31,17 @@ class BaseSqlModel(BaseModel):
         """
         super().__init__(**kwargs)
         self._session = session
+
+    @property
+    def adapter(self) -> BaseAdapter:
+        """
+        Get SQL adapter based on session type
+
+        Returns
+        -------
+        BaseAdapter
+        """
+        return get_sql_adapter(self._session.source_type)
 
     def quote_column(self, col_val: str) -> str:
         """

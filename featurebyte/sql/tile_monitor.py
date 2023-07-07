@@ -1,8 +1,12 @@
 """
 Tile Monitor Job
 """
+from sqlglot import expressions
+
 from featurebyte.enum import InternalName
 from featurebyte.logging import get_logger
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
+from featurebyte.query_graph.sql.common import get_qualified_column_identifier, sql_to_string
 from featurebyte.service.tile_registry_service import TileRegistryService
 from featurebyte.sql.common import construct_create_table_query, retry_sql
 from featurebyte.sql.tile_common import TileCommon
@@ -80,17 +84,24 @@ class TileMonitor(TileCommon):
                 ]
             )
 
+            offset_expr = expressions.Add(
+                this=expressions.Mul(
+                    this=make_literal_value(self.frequency_minute),
+                    expression=make_literal_value(60),
+                ),
+                expression=make_literal_value(self.blind_spot_second),
+            )
+            expected_created_at_expr = self.adapter.dateadd_microsecond(
+                quantity_expr=expressions.Mul(this=offset_expr, expression=make_literal_value(1e6)),
+                timestamp_expr=get_qualified_column_identifier(InternalName.TILE_START_DATE, "a"),
+            )
             compare_sql = f"""
                 select * from
                     (select
                         a.*,
                         {value_select_cols_str},
                         cast('{self.tile_type}' as string) as TILE_TYPE,
-                        DATEADD(
-                            SECOND,
-                            ({self.blind_spot_second}+{self.frequency_minute}*60),
-                            a.{InternalName.TILE_START_DATE}
-                        ) as EXPECTED_CREATED_AT,
+                        {sql_to_string(expected_created_at_expr, source_type=self._session.source_type)} as EXPECTED_CREATED_AT,
                         current_timestamp() as CREATED_AT
                     from
                         ({new_tile_sql}) a left outer join {self.tile_id} b

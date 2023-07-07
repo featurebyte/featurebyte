@@ -183,7 +183,7 @@ class TileScheduleOnlineStore(BaseSqlModel):
         else:
             # Retrieve all entries for the aggregation_id (e.g. a_sum_24h, a_sum_7d, a_sum_30d, etc)
             query = query.where(
-                expressions.ILike(
+                expressions.EQ(
                     this="AGGREGATION_ID", expression=make_literal_value(self.aggregation_id)
                 )
             )
