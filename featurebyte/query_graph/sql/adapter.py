@@ -859,25 +859,22 @@ class DatabricksAdapter(BaseAdapter):
     def dateadd_microsecond(
         cls, quantity_expr: Expression, timestamp_expr: Expression
     ) -> Expression:
-        # In theory, simply DATEADD(microsecond, quantity_expr, timestamp_expr) should work.
-        # However, in Databricks the quantity_expr has INT type and hence is prone to overflow
-        # especially when the working unit is microsecond - overflow occurs when the quantity is
-        # more than just 35 minutes (2147483647 microseconds is about 35.7 minutes)!
-        #
-        # To overcome that issue, this performs DATEADD in two operations - the first using minute
-        # as the unit, and the second using microsecond as the unit for the remainder.
-        num_microsecond_per_minute = make_literal_value(1e6 * 60)
-        minute_quantity = expressions.Div(this=quantity_expr, expression=num_microsecond_per_minute)
-        microsecond_quantity = expressions.Mod(
-            this=quantity_expr, expression=num_microsecond_per_minute
+        # DATEADD with a customisable unit is not supported in older versions of Spark (< 3.3). To
+        # workaround that, convert to double (epoch seconds with sub-seconds preserved) to perform
+        # the addition and then convert back to timestamp.
+        timestamp_seconds = expressions.Cast(
+            this=timestamp_expr, to=expressions.DataType.build("DOUBLE")
         )
-        output_expr = expressions.Anonymous(
-            this="DATEADD", expressions=["minute", minute_quantity, timestamp_expr]
+        seconds_quantity = expressions.Div(this=quantity_expr, expression=make_literal_value(1e6))
+        timestamp_seconds_added = expressions.Add(
+            this=timestamp_seconds, expression=seconds_quantity
         )
-        output_expr = expressions.Anonymous(
-            this="DATEADD", expressions=["microsecond", microsecond_quantity, output_expr]
+        return expressions.Anonymous(
+            this="TO_TIMESTAMP",
+            expressions=[
+                expressions.Anonymous(this="FROM_UNIXTIME", expressions=[timestamp_seconds_added])
+            ],
         )
-        return output_expr
 
     @classmethod
     def get_physical_type_from_dtype(cls, dtype: DBVarType) -> str:
