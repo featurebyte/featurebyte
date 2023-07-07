@@ -6,6 +6,7 @@ from typing import List, Optional
 from bson import ObjectId
 from pydantic import Field, StrictStr
 
+from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.feature_namespace import DefaultVersionMode
 from featurebyte.models.target_namespace import TargetNamespaceModel
@@ -23,9 +24,12 @@ class TargetNamespaceCreate(FeatureByteBaseModel):
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
+    dtype: DBVarType
     target_ids: List[PydanticObjectId] = Field(default_factory=list)
     default_target_id: PydanticObjectId
     default_version_mode: DefaultVersionMode = Field(default=DefaultVersionMode.AUTO)
+    entity_ids: List[PydanticObjectId]
+    horizon: str
 
 
 class TargetNamespaceUpdate(BaseDocumentServiceUpdateSchema):

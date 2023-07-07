@@ -6,50 +6,56 @@ from typing import List
 import pymongo
 from pydantic import Field, validator
 
-from featurebyte.common.validator import construct_sort_validator
-from featurebyte.models.base import (
-    FeatureByteCatalogBaseDocumentModel,
-    PydanticObjectId,
-    UniqueConstraintResolutionSignature,
-    UniqueValuesConstraint,
-)
-from featurebyte.models.feature_namespace import DefaultVersionMode
+from featurebyte.common.validator import construct_sort_validator, duration_string_validator
+from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.feature_namespace import BaseFeatureNamespaceModel
 
 
-class TargetNamespaceModel(FeatureByteCatalogBaseDocumentModel):
+class TargetNamespaceModel(BaseFeatureNamespaceModel):
     """
-    Target namespace model
+    Target set with the same target name
+
+    id: PydanticObjectId
+        Target namespace id
+    name: str
+        Target name
+    dtype: DBVarType
+        Variable type of the target
+    target_ids: List[PydanticObjectId]
+        List of target version id
+    created_at: datetime
+        Datetime when the TargetNamespace was first saved or published
+    default_target_id: PydanticObjectId
+        Default target version id
+    default_version_mode: DefaultVersionMode
+        Default target version mode
+    entity_ids: List[PydanticObjectId]
+        Entity IDs used by the target
+    table_ids: List[PydanticObjectId]
+        Table IDs used by the target
     """
 
+    horizon: str
+
+    # list of IDs attached to this feature namespace or target namespace
     target_ids: List[PydanticObjectId] = Field(allow_mutation=False)
     default_target_id: PydanticObjectId = Field(allow_mutation=False)
-    default_version_mode: DefaultVersionMode = Field(
-        default=DefaultVersionMode.AUTO, allow_mutation=False
-    )
 
     # pydantic validators
-    _sort_feature_ids_validator = validator("target_ids", allow_reuse=True)(
+    _sort_feature_ids_validator = validator("target_ids", "entity_ids", allow_reuse=True)(
         construct_sort_validator()
     )
+    _duration_validator = validator("horizon", pre=True, allow_reuse=True)(
+        duration_string_validator
+    )
 
-    class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
+    class Settings(BaseFeatureNamespaceModel.Settings):
         """
         MongoDB settings
         """
 
         collection_name: str = "target_namespace"
-        unique_constraints: List[UniqueValuesConstraint] = [
-            UniqueValuesConstraint(
-                fields=("_id",),
-                conflict_fields_signature={"id": ["_id"]},
-                resolution_signature=None,
-            ),
-            UniqueValuesConstraint(
-                fields=("name",),
-                conflict_fields_signature={"name": ["name"]},
-                resolution_signature=UniqueConstraintResolutionSignature.RENAME,
-            ),
-        ]
-        indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
+        indexes = BaseFeatureNamespaceModel.Settings.indexes + [
+            pymongo.operations.IndexModel("target_ids"),
             pymongo.operations.IndexModel("default_target_id"),
         ]

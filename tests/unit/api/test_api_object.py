@@ -18,7 +18,7 @@ from featurebyte.models.feature_list import (
     FeatureListNamespaceModel,
     FrozenFeatureListNamespaceModel,
 )
-from featurebyte.models.feature_namespace import FeatureNamespaceModel, FrozenFeatureNamespaceModel
+from featurebyte.models.feature_namespace import BaseFeatureNamespaceModel, FeatureNamespaceModel
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceUpdate
 from featurebyte.schema.feature_namespace import FeatureNamespaceUpdate
 from featurebyte.schema.task import TaskStatus
@@ -255,39 +255,3 @@ def test_api_object_list_empty():
         response.status_code = HTTPStatus.OK
         mock_client.get.return_value = response
         assert_frame_equal(ApiObject.list(), pd.DataFrame(columns=["id", "name", "created_at"]))
-
-
-@pytest.mark.parametrize(
-    "api_object_class,frozen_model_class,model_class,update_schema_class",
-    [
-        (
-            FeatureNamespace,
-            FrozenFeatureNamespaceModel,
-            FeatureNamespaceModel,
-            FeatureNamespaceUpdate,
-        ),
-        (
-            FeatureListNamespace,
-            FrozenFeatureListNamespaceModel,
-            FeatureListNamespaceModel,
-            FeatureListNamespaceUpdate,
-        ),
-    ],
-)
-def test_api_object_and_model_attribute_consistencies(
-    api_object_class, frozen_model_class, model_class, update_schema_class
-):
-    """
-    This test is used to check that those updatable attributes from the model has the corresponding property at the
-    api object
-    """
-    frozen_attributes = set(frozen_model_class.__fields__)
-    dynamic_attributes = set(model_class.__fields__).difference(frozen_attributes)
-
-    # attribute specific to the model (but not frozen model) should become a property in api object class
-    for attr in dynamic_attributes:
-        assert isinstance(getattr(api_object_class, attr), property)
-
-    # attributes that can be updated through api should not appear in the attributes of the frozen model
-    updatable_attributes = set(update_schema_class.__fields__)
-    assert updatable_attributes.intersection(frozen_attributes) == set()

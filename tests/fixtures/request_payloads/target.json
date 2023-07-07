@@ -935,16 +935,14 @@
             }
         ]
     },
-    "horizon": null,
     "name": "target",
     "node_name": "project_1",
     "tabular_source": {
-        "feature_store_id": "64a62f68f2f4ef0030d27a71",
+        "feature_store_id": "646f6c190ed28a5271fb02a1",
         "table_details": {
             "database_name": "sf_database",
             "schema_name": "sf_schema",
             "table_name": "sf_table"
         }
-    },
-    "target_namespace_id": "64a62f6af2f4ef0030d27aae"
+    }
 }

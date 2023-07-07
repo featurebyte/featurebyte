@@ -30,11 +30,8 @@ class TargetCreate(FeatureByteBaseModel):
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
-    graph: Optional[QueryGraph]
-    node_name: Optional[str]
-    horizon: Optional[str]
-    entity_ids: Optional[List[PydanticObjectId]]
-    target_namespace_id: Optional[PydanticObjectId] = Field(default_factory=ObjectId)
+    graph: QueryGraph
+    node_name: str
     tabular_source: TabularSource
 
 

@@ -26,9 +26,9 @@ from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
 
 
-class BaseFeatureTargetModel(FeatureByteCatalogBaseDocumentModel):
+class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
     """
-    BaseFeatureTargetModel is the base class for FeatureModel & TargetModel.
+    BaseFeatureModel is the base class for FeatureModel & TargetModel.
     It contains all the attributes that are shared between FeatureModel & TargetModel.
     """
 
@@ -151,8 +151,40 @@ class BaseFeatureTargetModel(FeatureByteCatalogBaseDocumentModel):
         operation_structure = self.graph.extract_operation_structure(self.node)
         return operation_structure.to_group_operation_structure()
 
+    class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
+        """
+        MongoDB settings
+        """
 
-class FeatureModel(BaseFeatureTargetModel):
+        unique_constraints = [
+            UniqueValuesConstraint(
+                fields=("_id",),
+                conflict_fields_signature={"id": ["_id"]},
+                resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
+            ),
+            UniqueValuesConstraint(
+                fields=("name", "version"),
+                conflict_fields_signature={"name": ["name"], "version": ["version"]},
+                resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
+            ),
+        ]
+        indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
+            pymongo.operations.IndexModel("dtype"),
+            pymongo.operations.IndexModel("version"),
+            pymongo.operations.IndexModel("entity_ids"),
+            pymongo.operations.IndexModel("table_ids"),
+            pymongo.operations.IndexModel("primary_table_ids"),
+            pymongo.operations.IndexModel("user_defined_function_ids"),
+            pymongo.operations.IndexModel(
+                [
+                    ("name", pymongo.TEXT),
+                    ("version", pymongo.TEXT),
+                ],
+            ),
+        ]
+
+
+class FeatureModel(BaseFeatureModel):
     """
     Model for Feature asset
 
@@ -197,47 +229,23 @@ class FeatureModel(BaseFeatureTargetModel):
     readiness: FeatureReadiness = Field(allow_mutation=False, default=FeatureReadiness.DRAFT)
     online_enabled: bool = Field(allow_mutation=False, default=False)
 
-    # list of IDs attached to this feature
+    # ID related fields associated with this feature
     feature_namespace_id: PydanticObjectId = Field(allow_mutation=False, default_factory=ObjectId)
     feature_list_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
     deployed_feature_list_ids: List[PydanticObjectId] = Field(
         allow_mutation=False, default_factory=list
     )
 
-    class Settings(BaseFeatureTargetModel.Settings):
+    class Settings(BaseFeatureModel.Settings):
         """
         MongoDB settings
         """
 
         collection_name: str = "feature"
-        unique_constraints = [
-            UniqueValuesConstraint(
-                fields=("_id",),
-                conflict_fields_signature={"id": ["_id"]},
-                resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
-            ),
-            UniqueValuesConstraint(
-                fields=("name", "version"),
-                conflict_fields_signature={"name": ["name"], "version": ["version"]},
-                resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
-            ),
-        ]
-        indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
-            pymongo.operations.IndexModel("dtype"),
-            pymongo.operations.IndexModel("version"),
+        indexes = BaseFeatureModel.Settings.indexes + [
             pymongo.operations.IndexModel("readiness"),
             pymongo.operations.IndexModel("online_enabled"),
-            pymongo.operations.IndexModel("entity_ids"),
-            pymongo.operations.IndexModel("table_ids"),
-            pymongo.operations.IndexModel("primary_table_ids"),
             pymongo.operations.IndexModel("feature_namespace_id"),
             pymongo.operations.IndexModel("feature_list_ids"),
             pymongo.operations.IndexModel("deployed_feature_list_ids"),
-            pymongo.operations.IndexModel("user_defined_function_ids"),
-            pymongo.operations.IndexModel(
-                [
-                    ("name", pymongo.TEXT),
-                    ("version", pymongo.TEXT),
-                ],
-            ),
         ]

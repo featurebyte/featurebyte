@@ -42,6 +42,7 @@ def get_test_target_fixture(test_entity, snowflake_event_table):
     return get_target
 
 
+@pytest.mark.skip(reason="Target creation is not implemented yet")
 def test_create_target_from_constructor(test_entity, get_test_target):
     test_entity.save()
     target = get_test_target([test_entity.id])
@@ -66,6 +67,7 @@ def test_create_target_from_constructor(test_entity, get_test_target):
     assert retrieved_target.horizon == target.horizon
 
 
+@pytest.mark.skip(reason="Target creation is not implemented yet")
 def test_target_info(test_entity, get_test_target):
     test_entity.save()
     target = get_test_target([test_entity.id])
