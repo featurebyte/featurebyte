@@ -3,16 +3,18 @@ Target class
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
 from bson import ObjectId
 
-from featurebyte.exception import DocumentNotFoundError
+from featurebyte.common.model_util import parse_duration_string
+from featurebyte.exception import DocumentCreationError, DocumentNotFoundError
 from featurebyte.models.feature_namespace import DefaultVersionMode
 from featurebyte.models.target import TargetModel
+from featurebyte.models.target_namespace import TargetNamespaceModel
 from featurebyte.persistent import Persistent
 from featurebyte.schema.target import TargetCreate
-from featurebyte.schema.target_namespace import TargetNamespaceCreate, TargetNamespaceUpdate
+from featurebyte.schema.target_namespace import TargetNamespaceCreate, TargetNamespaceServiceUpdate
 from featurebyte.service.base_namespace_service import BaseNamespaceService
 from featurebyte.service.namespace_handler import (
     NamespaceHandler,
@@ -66,17 +68,51 @@ class TargetService(BaseNamespaceService[TargetModel, TargetCreate]):
             }
         )
 
-        # create a new feature document (so that the derived attributes like table_ids is generated properly)
-        params = document.dict(by_alias=True)
-        if document.graph and document.node_name:
-            prepared_graph = await self.namespace_handler.prepare_graph_to_store(
-                graph=document.graph,
-                node=document.node,
-                sanitize_for_definition=sanitize_for_definition,
-            )
-            params["graph"] = prepared_graph[0]
-            params["node_name"] = prepared_graph[1]
-        return TargetModel(**params)
+        # prepare the graph to store
+        graph, node_name = await self.namespace_handler.prepare_graph_to_store(
+            graph=document.graph,
+            node=document.node,
+            sanitize_for_definition=sanitize_for_definition,
+        )
+
+        # create a new target document (so that the derived attributes like table_ids is generated properly)
+        return TargetModel(
+            **{**document.dict(by_alias=True), "graph": graph, "node_name": node_name}
+        )
+
+    @staticmethod
+    def derive_horizon(document: TargetModel, namespace: TargetNamespaceModel) -> Optional[str]:
+        """
+        Derive the horizon from the target and namespace
+
+        Parameters
+        ----------
+        document: TargetModel
+            Target document
+        namespace: TargetNamespaceModel
+            Target namespace document
+
+        Returns
+        -------
+        Optional[str]
+
+        Raises
+        ------
+        DocumentCreationError
+            If the target horizon is greater than the namespace horizon
+        """
+        document_horizon = document.derive_horizon()
+        if namespace.horizon is None:
+            return document_horizon
+
+        namespace_duration = parse_duration_string(namespace.horizon)
+        if document_horizon:
+            document_duration = parse_duration_string(document_horizon)
+            if document_duration > namespace_duration:
+                raise DocumentCreationError(
+                    f"Target horizon {document_horizon} is greater than namespace horizon {namespace.horizon}"
+                )
+        return namespace.horizon
 
     async def create_document(self, data: TargetCreate) -> TargetModel:
         document = await self.prepare_target_model(data=data, sanitize_for_definition=False)
@@ -84,13 +120,17 @@ class TargetService(BaseNamespaceService[TargetModel, TargetCreate]):
             # check any conflict with existing documents
             await self._check_document_unique_constraints(document=document)
 
+            # prepare target definition
+            definition = await self.namespace_handler.prepare_definition(document=document)
+
             # insert the document
-            params = document.dict(by_alias=True)
-            if data.graph:
-                params["raw_graph"] = data.graph.dict()
             insert_id = await session.insert_one(
                 collection_name=self.collection_name,
-                document=params,
+                document={
+                    **document.dict(by_alias=True),
+                    "definition": definition,
+                    "raw_graph": data.graph.dict(),
+                },
                 user_id=self.user.id,
             )
             assert insert_id == document.id
@@ -106,8 +146,9 @@ class TargetService(BaseNamespaceService[TargetModel, TargetCreate]):
                 )
                 await self.target_namespace_service.update_document(
                     document_id=document.target_namespace_id,
-                    data=TargetNamespaceUpdate(
-                        target_ids=self.include_object_id(target_namespace.target_ids, document.id)
+                    data=TargetNamespaceServiceUpdate(
+                        target_ids=self.include_object_id(target_namespace.target_ids, document.id),
+                        horizon=self.derive_horizon(document=document, namespace=target_namespace),
                     ),
                     return_document=True,
                 )
@@ -122,7 +163,7 @@ class TargetService(BaseNamespaceService[TargetModel, TargetCreate]):
                         default_target_id=insert_id,
                         default_version_mode=DefaultVersionMode.AUTO,
                         entity_ids=sorted(entity_ids),
-                        horizon="1d",  # FIXME: hardcoded
+                        horizon=document.derive_horizon(),
                     ),
                 )
         return await self.get_document(document_id=insert_id)

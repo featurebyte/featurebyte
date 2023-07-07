@@ -219,7 +219,9 @@ class BatchFeatureCreateTask(BaseTask):
             data=feature_create,
             sanitize_for_definition=True,
         )
-        definition = await feature_service.prepare_feature_definition(document=document)
+        definition = await self.app_container.namespace_handler.prepare_definition(
+            document=document
+        )
 
         # execute the code to save the feature
         await execute_sdk_code(catalog_id=catalog_id, code=definition)

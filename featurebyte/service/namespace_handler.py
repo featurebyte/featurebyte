@@ -1,14 +1,20 @@
 """
 Namespace handler
 """
-from typing import List, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union
+
+from bson import ObjectId
 
 from featurebyte.exception import DocumentInconsistencyError
 from featurebyte.models.base import FeatureByteCatalogBaseDocumentModel
+from featurebyte.models.feature import FeatureModel
+from featurebyte.models.target import TargetModel
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.transform.sdk_code import SDKCodeExtractor
 from featurebyte.service.sanitizer import sanitize_query_graph_for_feature_definition
+from featurebyte.service.table import TableService
 from featurebyte.service.view_construction import ViewConstructionService
 
 
@@ -61,7 +67,10 @@ class NamespaceHandler:
     Namespace handler class
     """
 
-    def __init__(self, view_construction_service: ViewConstructionService):
+    def __init__(
+        self, table_service: TableService, view_construction_service: ViewConstructionService
+    ):
+        self.table_service = table_service
         self.view_construction_service = view_construction_service
 
     async def prepare_graph_to_store(
@@ -98,3 +107,33 @@ class NamespaceHandler:
         if sanitize_for_definition:
             pruned_graph = sanitize_query_graph_for_feature_definition(graph=pruned_graph)
         return pruned_graph, pruned_node_name_map[node.name]
+
+    async def prepare_definition(self, document: Union[FeatureModel, TargetModel]) -> str:
+        """
+        Prepare the definition for the given document
+
+        Parameters
+        ----------
+        document: Union[FeatureModel, TargetModel]
+            FeatureModel or TargetModel document
+
+        Returns
+        -------
+        str
+        """
+        # check whether table has been saved at persistent storage
+        table_id_to_info: Dict[ObjectId, Dict[str, Any]] = {}
+        for table_id in document.table_ids:
+            table = await self.table_service.get_document(document_id=table_id)
+            table_id_to_info[table_id] = table.dict()
+
+        # create feature definition
+        graph, node_name = document.graph, document.node_name
+        sdk_code_gen_state = SDKCodeExtractor(graph=graph).extract(
+            node=graph.get_node_by_name(node_name),
+            to_use_saved_data=True,
+            table_id_to_info=table_id_to_info,
+            output_id=document.id,
+        )
+        definition = sdk_code_gen_state.code_generator.generate(to_format=True)
+        return definition

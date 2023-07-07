@@ -1003,6 +1003,20 @@ def feature_group_fixture(
     yield feature_group
 
 
+@pytest.fixture(name="float_target")
+def float_target_fixture(grouped_event_view):
+    """
+    Float target fixture
+    """
+    target = grouped_event_view.forward_aggregate(
+        method="sum",
+        value_column="col_float",
+        horizon="1d",
+        target_name="float_target",
+    )
+    return target
+
+
 @pytest.fixture(name="production_ready_feature")
 def production_ready_feature_fixture(feature_group):
     """Fixture for a production ready feature"""
