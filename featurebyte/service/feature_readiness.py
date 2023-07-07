@@ -8,16 +8,16 @@ from typing import Any, Optional, Sequence
 from bson.objectid import ObjectId
 
 from featurebyte.exception import DocumentUpdateError
-from featurebyte.models.feature import (
-    DefaultVersionMode,
-    FeatureModel,
-    FeatureNamespaceModel,
-    FeatureReadiness,
-)
+from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import (
     FeatureListModel,
     FeatureListNamespaceModel,
     FeatureReadinessTransition,
+)
+from featurebyte.models.feature_namespace import (
+    DefaultVersionMode,
+    FeatureNamespaceModel,
+    FeatureReadiness,
 )
 from featurebyte.persistent import Persistent
 from featurebyte.schema.feature import FeatureServiceUpdate

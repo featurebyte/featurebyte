@@ -9,7 +9,8 @@ import pytest
 from bson.objectid import ObjectId
 
 from featurebyte.models.base import DEFAULT_CATALOG_ID
-from featurebyte.models.feature import FeatureModel, FeatureNamespaceModel, FeatureReadiness
+from featurebyte.models.feature import FeatureModel
+from featurebyte.models.feature_namespace import FeatureNamespaceModel, FeatureReadiness
 from featurebyte.query_graph.node.metadata.operation import AggregationColumn, SourceDataColumn
 
 

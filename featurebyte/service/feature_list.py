@@ -11,12 +11,13 @@ from featurebyte.common.model_util import get_version
 from featurebyte.exception import DocumentError, DocumentInconsistencyError, DocumentNotFoundError
 from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.entity import EntityModel
-from featurebyte.models.feature import DefaultVersionMode, FeatureModel
+from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import (
     EntityRelationshipInfo,
     FeatureListModel,
     FeatureListNamespaceModel,
 )
+from featurebyte.models.feature_namespace import DefaultVersionMode
 from featurebyte.persistent import Persistent
 from featurebyte.schema.feature_list import FeatureListServiceCreate, FeatureListServiceUpdate
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate

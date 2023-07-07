@@ -62,8 +62,8 @@ from featurebyte.models.credential import (
     S3StorageCredential,
     UsernamePasswordCredential,
 )
-from featurebyte.models.feature import DefaultVersionMode
 from featurebyte.models.feature_list import FeatureListStatus
+from featurebyte.models.feature_namespace import DefaultVersionMode
 from featurebyte.models.feature_store import TableStatus
 from featurebyte.models.user_defined_function import FunctionParameter
 from featurebyte.query_graph.model.feature_job_setting import (
@@ -435,7 +435,6 @@ __all__ = [
     "ValueBeyondEndpointImputation",
     "StringValueImputation",
     # feature & feature list version specific classes
-    "DefaultVersionMode",
     "FeatureVersionInfo",
     # others
     "ColumnCleaningOperation",

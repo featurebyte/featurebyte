@@ -11,7 +11,6 @@ from pprint import pformat
 from bson.objectid import ObjectId
 from fastapi.exceptions import HTTPException
 
-from featurebyte import FeatureJobSetting, TableCleaningOperation, TableFeatureJobSetting
 from featurebyte.exception import (
     DocumentDeletionError,
     MissingPointInTimeColumnError,
@@ -19,8 +18,14 @@ from featurebyte.exception import (
 )
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.base import PydanticObjectId, VersionIdentifier
-from featurebyte.models.feature import DefaultVersionMode, FeatureModel, FeatureReadiness
+from featurebyte.models.feature import FeatureModel
+from featurebyte.models.feature_namespace import DefaultVersionMode, FeatureReadiness
 from featurebyte.query_graph.enum import GraphNodeType
+from featurebyte.query_graph.model.feature_job_setting import (
+    FeatureJobSetting,
+    TableFeatureJobSetting,
+)
+from featurebyte.query_graph.node.cleaning_operation import TableCleaningOperation
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
 from featurebyte.routes.common.base import BaseDocumentController, DerivePrimaryEntityHelper
 from featurebyte.routes.feature_namespace.controller import FeatureNamespaceController

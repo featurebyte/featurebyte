@@ -24,8 +24,8 @@ from featurebyte.exception import (
     RecordUpdateException,
 )
 from featurebyte.models.base import DEFAULT_CATALOG_ID
-from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
 from featurebyte.models.feature_list import FeatureListStatus
+from featurebyte.models.feature_namespace import DefaultVersionMode, FeatureReadiness
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 

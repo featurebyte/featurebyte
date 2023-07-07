@@ -46,8 +46,9 @@ from featurebyte.models.credential import (
     S3StorageCredential,
     UsernamePasswordCredential,
 )
-from featurebyte.models.feature import FeatureModel, FeatureReadiness
+from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureListStatus
+from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.models.task import Task as TaskModel
 from featurebyte.models.tile import TileSpec
 from featurebyte.persistent.mongo import MongoDB

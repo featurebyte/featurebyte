@@ -2,7 +2,7 @@ import pytest_asyncio
 from bson import ObjectId
 
 from featurebyte.feature_manager.model import ExtendedFeatureModel
-from featurebyte.models.feature import FeatureReadiness
+from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.query_graph.node.schema import TableDetails
 
 

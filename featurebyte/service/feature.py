@@ -9,7 +9,8 @@ from bson import ObjectId
 
 from featurebyte.exception import DocumentNotFoundError
 from featurebyte.models.base import VersionIdentifier
-from featurebyte.models.feature import DefaultVersionMode, FeatureModel, FeatureReadiness
+from featurebyte.models.feature import FeatureModel
+from featurebyte.models.feature_namespace import DefaultVersionMode, FeatureReadiness
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.transform.sdk_code import SDKCodeExtractor
 from featurebyte.schema.feature import FeatureServiceCreate

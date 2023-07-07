@@ -3,11 +3,10 @@ Test feature & feature list version related logic
 """
 import pytest
 
-from featurebyte import DefaultVersionMode
-from featurebyte.api.event_view import EventView
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.common.model_util import get_version
 from featurebyte.exception import RecordUpdateException
+from featurebyte.models.feature_namespace import DefaultVersionMode
 from featurebyte.query_graph.model.feature_job_setting import (
     FeatureJobSetting,
     TableFeatureJobSetting,

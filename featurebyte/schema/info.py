@@ -12,12 +12,12 @@ from pydantic import Field, StrictStr, root_validator
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, VersionIdentifier
 from featurebyte.models.credential import DatabaseCredentialType, StorageCredentialType
-from featurebyte.models.feature import DefaultVersionMode
 from featurebyte.models.feature_list import (
     FeatureListStatus,
     FeatureReadinessDistribution,
     FeatureTypeFeatureCount,
 )
+from featurebyte.models.feature_namespace import DefaultVersionMode
 from featurebyte.models.feature_store import TableStatus
 from featurebyte.models.request_input import RequestInputType
 from featurebyte.models.user_defined_function import FunctionParameter

@@ -5,7 +5,8 @@ from typing import Any, Dict, List, cast
 
 from featurebyte import ColumnCleaningOperation, FeatureJobSetting
 from featurebyte.exception import DocumentUpdateError, NoChangesInFeatureVersionError
-from featurebyte.models.feature import FeatureModel, FeatureReadiness
+from featurebyte.models.feature import FeatureModel
+from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.models.feature_store import TableStatus
 from featurebyte.query_graph.enum import GraphNodeType, NodeType
 from featurebyte.query_graph.graph import QueryGraph

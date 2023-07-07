@@ -7,8 +7,8 @@ from typing import Any, Optional
 
 from bson.objectid import ObjectId
 
-from featurebyte.models.feature import DefaultVersionMode, FeatureNamespaceModel
 from featurebyte.models.feature_list import FeatureListNamespaceModel
+from featurebyte.models.feature_namespace import DefaultVersionMode, FeatureNamespaceModel
 from featurebyte.persistent import Persistent
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate

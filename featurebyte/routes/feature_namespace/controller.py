@@ -9,7 +9,8 @@ from bson.objectid import ObjectId
 
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.base import VersionIdentifier
-from featurebyte.models.feature import DefaultVersionMode, FeatureModel, FeatureReadiness
+from featurebyte.models.feature import FeatureModel
+from featurebyte.models.feature_namespace import DefaultVersionMode, FeatureReadiness
 from featurebyte.routes.catalog.catalog_name_injector import CatalogNameInjector
 from featurebyte.routes.common.base import (
     BaseDocumentController,

@@ -6,8 +6,8 @@ from typing import List, Optional
 from bson import ObjectId
 from pydantic import Field, StrictStr
 
-from featurebyte import DefaultVersionMode
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.models.feature_namespace import DefaultVersionMode
 from featurebyte.models.target_namespace import TargetNamespaceModel
 from featurebyte.schema.common.base import (
     BaseDocumentServiceUpdateSchema,

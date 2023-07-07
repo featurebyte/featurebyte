@@ -11,19 +11,14 @@ from bson import ObjectId
 from pandas.testing import assert_frame_equal
 
 from featurebyte.api.api_object import ApiObject
-from featurebyte.api.feature import Feature, FeatureNamespace
+from featurebyte.api.feature import FeatureNamespace
 from featurebyte.api.feature_list import FeatureListNamespace
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
-from featurebyte.models.feature import (
-    FeatureModel,
-    FeatureNamespaceModel,
-    FrozenFeatureNamespaceModel,
-)
 from featurebyte.models.feature_list import (
     FeatureListNamespaceModel,
     FrozenFeatureListNamespaceModel,
 )
-from featurebyte.schema.feature import FeatureUpdate
+from featurebyte.models.feature_namespace import FeatureNamespaceModel, FrozenFeatureNamespaceModel
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceUpdate
 from featurebyte.schema.feature_namespace import FeatureNamespaceUpdate
 from featurebyte.schema.task import TaskStatus

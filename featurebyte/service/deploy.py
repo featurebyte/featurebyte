@@ -10,12 +10,13 @@ from bson.objectid import ObjectId
 from featurebyte.exception import DocumentCreationError, DocumentError, DocumentUpdateError
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.deployment import DeploymentModel
-from featurebyte.models.feature import FeatureModel, FeatureReadiness
+from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import (
     FeatureListModel,
     FeatureListNamespaceModel,
     FeatureListStatus,
 )
+from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.persistent import Persistent
 from featurebyte.schema.deployment import DeploymentUpdate
 from featurebyte.schema.feature import FeatureServiceUpdate

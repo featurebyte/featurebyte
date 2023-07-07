@@ -10,7 +10,11 @@ from pydantic import Field, StrictStr
 
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
-from featurebyte.models.feature import DefaultVersionMode, FeatureNamespaceModel, FeatureReadiness
+from featurebyte.models.feature_namespace import (
+    DefaultVersionMode,
+    FeatureNamespaceModel,
+    FeatureReadiness,
+)
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 
 

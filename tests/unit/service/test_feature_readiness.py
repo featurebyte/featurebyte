@@ -5,7 +5,7 @@ Tests for FeatureReadinessService
 import pytest
 
 from featurebyte.exception import DocumentUpdateError
-from featurebyte.models.feature import FeatureReadiness
+from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
 

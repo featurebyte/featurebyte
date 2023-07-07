@@ -10,7 +10,7 @@ from featurebyte.api.item_view import ItemView
 from featurebyte.core.series import Series
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.exception import RecordCreationException, RepeatedColumnNamesError
-from featurebyte.models.feature import FeatureReadiness
+from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.feature_job_setting import (
     FeatureJobSetting,

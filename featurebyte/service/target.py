@@ -8,7 +8,7 @@ from typing import Any
 from bson import ObjectId
 
 from featurebyte.exception import DocumentNotFoundError
-from featurebyte.models.feature import DefaultVersionMode
+from featurebyte.models.feature_namespace import DefaultVersionMode
 from featurebyte.models.target import TargetModel
 from featurebyte.persistent import Persistent
 from featurebyte.schema.target import TargetCreate

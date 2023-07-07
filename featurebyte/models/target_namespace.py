@@ -6,7 +6,6 @@ from typing import List
 import pymongo
 from pydantic import Field, validator
 
-from featurebyte import DefaultVersionMode
 from featurebyte.common.validator import construct_sort_validator
 from featurebyte.models.base import (
     FeatureByteCatalogBaseDocumentModel,
@@ -14,6 +13,7 @@ from featurebyte.models.base import (
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
 )
+from featurebyte.models.feature_namespace import DefaultVersionMode
 
 
 class TargetNamespaceModel(FeatureByteCatalogBaseDocumentModel):

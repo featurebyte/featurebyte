@@ -24,7 +24,8 @@ from featurebyte.models.base import (
     UniqueValuesConstraint,
     VersionIdentifier,
 )
-from featurebyte.models.feature import DefaultVersionMode, FeatureModel, FeatureReadiness
+from featurebyte.models.feature import FeatureModel
+from featurebyte.models.feature_namespace import DefaultVersionMode, FeatureReadiness
 from featurebyte.models.relationship import RelationshipType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
