@@ -58,6 +58,7 @@ class TestTargetNamespaceApi(BaseCatalogApiTestSuite):
             target_payload = target_payload.copy()
             target_payload["_id"] = str(ObjectId())
             target_payload["name"] = f'{target_payload["name"]}_{i}'
+            target_payload["target_namespace_id"] = str(ObjectId())
             yield target_payload
 
     @pytest_asyncio.fixture

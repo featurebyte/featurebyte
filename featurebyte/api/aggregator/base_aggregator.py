@@ -96,6 +96,40 @@ class BaseAggregator(ABC):
                 " try setting fill_value to None or skip_fill_na to False"
             )
 
+    def get_output_var_type(
+        self, agg_method: AggFuncType, method: str, value_column: str
+    ) -> DBVarType:
+        """
+        Get output variable type for aggregation method.
+
+        Parameters
+        ----------
+        agg_method: AggFuncType
+            Aggregation method
+        method: str
+            Aggregation method name
+        value_column: str
+            Value column name
+
+        Returns
+        -------
+        DBVarType
+
+        Raises
+        ------
+        ValueError
+            If aggregation method does not support input variable type
+        """
+        # value_column is None for count-like aggregation method
+        input_var_type = self.view.column_var_type_map.get(value_column, DBVarType.FLOAT)
+        if not agg_method.is_var_type_supported(input_var_type):
+            raise ValueError(
+                f'Aggregation method "{method}" does not support "{input_var_type}" input variable'
+            )
+        return agg_method.derive_output_var_type(
+            input_var_type=input_var_type, category=self.category
+        )
+
     def _project_feature_from_groupby_node(
         self,
         agg_method: AggFuncType,
@@ -107,15 +141,7 @@ class BaseAggregator(ABC):
         skip_fill_na: bool,
     ) -> Feature:
         # value_column is None for count-like aggregation method
-        input_var_type = self.view.column_var_type_map.get(value_column, DBVarType.FLOAT)  # type: ignore
-        if not agg_method.is_var_type_supported(input_var_type):
-            raise ValueError(
-                f'Aggregation method "{method}" does not support "{input_var_type}" input variable'
-            )
-
-        var_type = agg_method.derive_output_var_type(
-            input_var_type=input_var_type, category=self.category
-        )
+        var_type = self.get_output_var_type(agg_method, method, value_column)  # type: ignore[arg-type]
 
         feature = self.view._project_feature_from_node(  # pylint: disable=protected-access
             node=groupby_node,

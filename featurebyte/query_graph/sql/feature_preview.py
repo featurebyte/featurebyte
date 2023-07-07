@@ -1,5 +1,5 @@
 """
-Feature preview SQL generation
+Feature or Target preview SQL generation
 """
 # pylint: disable=too-many-locals
 from __future__ import annotations
@@ -24,7 +24,7 @@ from featurebyte.query_graph.sql.tile_compute import OnDemandTileComputePlan
 logger = get_logger(__name__)
 
 
-def get_feature_preview_sql(
+def get_feature_or_target_preview_sql(
     request_table_name: str,
     graph: QueryGraphModel,
     nodes: list[Node],
@@ -32,7 +32,8 @@ def get_feature_preview_sql(
     point_in_time_and_serving_name_list: Optional[list[dict[str, Any]]] = None,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
 ) -> str:
-    """Get SQL code for previewing SQL
+    """
+    Get SQL code for previewing SQL for features or targets.
 
     Parameters
     ----------

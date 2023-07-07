@@ -5,7 +5,7 @@ import pytest
 
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
-from featurebyte.query_graph.sql.feature_preview import get_feature_preview_sql
+from featurebyte.query_graph.sql.feature_preview import get_feature_or_target_preview_sql
 from tests.util.helper import assert_equal_with_expected_fixture
 
 
@@ -17,7 +17,7 @@ def test_get_feature_preview_sql(query_graph_with_groupby, update_fixtures):
     }
     graph = query_graph_with_groupby
     node = graph.get_node_by_name("groupby_1")
-    preview_sql = get_feature_preview_sql(
+    preview_sql = get_feature_or_target_preview_sql(
         request_table_name=REQUEST_TABLE_NAME,
         graph=graph,
         nodes=[node],
@@ -40,7 +40,7 @@ def test_get_feature_preview_sql__category_groupby(
     }
     graph = query_graph_with_category_groupby
     node = graph.get_node_by_name("groupby_1")
-    preview_sql = get_feature_preview_sql(
+    preview_sql = get_feature_or_target_preview_sql(
         request_table_name=REQUEST_TABLE_NAME,
         graph=graph,
         nodes=[node],
@@ -63,7 +63,7 @@ def test_get_feature_preview_sql__multiple_nodes(
         "CUSTOMER_ID": "C1",
     }
     groupby_nodes, graph = query_graph_with_similar_groupby_nodes
-    preview_sql = get_feature_preview_sql(
+    preview_sql = get_feature_or_target_preview_sql(
         request_table_name=REQUEST_TABLE_NAME,
         graph=graph,
         nodes=groupby_nodes,
@@ -84,7 +84,7 @@ def test_get_feature_preview_sql__complex_feature(complex_feature_query_graph, u
         "CUSTOMER_ID": "C1",
     }
     node, graph = complex_feature_query_graph
-    preview_sql = get_feature_preview_sql(
+    preview_sql = get_feature_or_target_preview_sql(
         request_table_name=REQUEST_TABLE_NAME,
         graph=graph,
         nodes=[node],
@@ -107,7 +107,7 @@ def test_get_feature_preview_sql__databricks(query_graph_with_groupby, update_fi
     }
     graph = query_graph_with_groupby
     node = graph.get_node_by_name("groupby_1")
-    preview_sql = get_feature_preview_sql(
+    preview_sql = get_feature_or_target_preview_sql(
         request_table_name=REQUEST_TABLE_NAME,
         graph=graph,
         nodes=[node],
@@ -132,7 +132,7 @@ def test_get_feature_preview_sql__item_groupby(
         "CUSTOMER_ID": "C1",
     }
     graph, groupby_node, item_groupby_feature_node = mixed_point_in_time_and_item_aggregations
-    preview_sql = get_feature_preview_sql(
+    preview_sql = get_feature_or_target_preview_sql(
         request_table_name=REQUEST_TABLE_NAME,
         graph=graph,
         nodes=[groupby_node, item_groupby_feature_node],
@@ -159,7 +159,7 @@ def test_get_feature_preview_sql__double_aggregation(
         "CUSTOMER_ID": "C1",
     }
     graph, node = order_size_agg_by_cust_id_graph
-    preview_sql = get_feature_preview_sql(
+    preview_sql = get_feature_or_target_preview_sql(
         request_table_name=REQUEST_TABLE_NAME,
         graph=graph,
         nodes=[node],
@@ -187,7 +187,7 @@ def test_get_feature_preview_sql__lookup_features(
     }
     graph = global_graph
     node = lookup_feature_node
-    preview_sql = get_feature_preview_sql(
+    preview_sql = get_feature_or_target_preview_sql(
         request_table_name=REQUEST_TABLE_NAME,
         graph=graph,
         nodes=[node],
@@ -213,7 +213,7 @@ def test_get_feature_preview_sql__event_lookup_features(
         "POINT_IN_TIME": "2022-04-20 10:00:00",
         "ORDER_ID": 1000,
     }
-    preview_sql = get_feature_preview_sql(
+    preview_sql = get_feature_or_target_preview_sql(
         request_table_name=REQUEST_TABLE_NAME,
         graph=global_graph,
         nodes=[event_lookup_node],
@@ -241,7 +241,7 @@ def test_get_feature_preview_sql__scd_lookup_features(
     }
     graph = global_graph
     node = scd_lookup_feature_node
-    preview_sql = get_feature_preview_sql(
+    preview_sql = get_feature_or_target_preview_sql(
         request_table_name=REQUEST_TABLE_NAME,
         graph=graph,
         nodes=[node],
@@ -269,7 +269,7 @@ def test_get_feature_preview_sql__scd_lookup_features_with_offset(
     }
     graph = global_graph
     node = scd_offset_lookup_feature_node
-    preview_sql = get_feature_preview_sql(
+    preview_sql = get_feature_or_target_preview_sql(
         request_table_name=REQUEST_TABLE_NAME,
         graph=graph,
         nodes=[node],
@@ -295,7 +295,7 @@ def test_get_feature_preview_sql__latest_aggregation(
         "POINT_IN_TIME": "2022-04-20 10:00:00",
         "CUSTOMER_ID": "C1",
     }
-    preview_sql = get_feature_preview_sql(
+    preview_sql = get_feature_or_target_preview_sql(
         request_table_name=REQUEST_TABLE_NAME,
         graph=global_graph,
         nodes=[latest_value_aggregation_feature_node],
@@ -321,7 +321,7 @@ def test_get_feature_preview_sql__latest_aggregation_no_window(
         "POINT_IN_TIME": "2022-04-20 10:00:00",
         "CUSTOMER_ID": "C1",
     }
-    preview_sql = get_feature_preview_sql(
+    preview_sql = get_feature_or_target_preview_sql(
         request_table_name=REQUEST_TABLE_NAME,
         graph=global_graph,
         nodes=[latest_value_without_window_feature_node],
@@ -347,7 +347,7 @@ def test_get_feature_preview_sql__aggregate_asat(
         "POINT_IN_TIME": "2022-04-20 10:00:00",
         "CUSTOMER_ID": "C1",
     }
-    preview_sql = get_feature_preview_sql(
+    preview_sql = get_feature_or_target_preview_sql(
         request_table_name=REQUEST_TABLE_NAME,
         graph=global_graph,
         nodes=[aggregate_asat_feature_node],
@@ -375,7 +375,7 @@ def test_get_feature_preview_sql__all_types(
         "CUSTOMER_ID": "C1",
     }
     graph = global_graph
-    preview_sql = get_feature_preview_sql(
+    preview_sql = get_feature_or_target_preview_sql(
         request_table_name=REQUEST_TABLE_NAME,
         graph=graph,
         nodes=feature_nodes_all_types,
@@ -398,7 +398,7 @@ def test_get_feature_preview_sql__with_missing_value_imputation(
         "CUSTOMER_ID": "C1",
     }
     graph, node = query_graph_with_cleaning_ops_and_groupby
-    preview_sql = get_feature_preview_sql(
+    preview_sql = get_feature_or_target_preview_sql(
         request_table_name=REQUEST_TABLE_NAME,
         graph=graph,
         nodes=[node],
@@ -424,7 +424,7 @@ def test_get_feature_preview_sql__with_parent_serving_preparation(
     }
     graph, node = query_graph_with_cleaning_ops_and_groupby
 
-    preview_sql = get_feature_preview_sql(
+    preview_sql = get_feature_or_target_preview_sql(
         request_table_name=REQUEST_TABLE_NAME,
         graph=graph,
         nodes=[node],
@@ -449,7 +449,7 @@ def test_get_feature_preview_sql__on_demand_features(
         "POINT_IN_TIME": "2022-04-20 10:00:00",
         "CUSTOMER_ID": "C1",
     }
-    preview_sql = get_feature_preview_sql(
+    preview_sql = get_feature_or_target_preview_sql(
         request_table_name=REQUEST_TABLE_NAME,
         graph=global_graph,
         nodes=[time_since_last_event_feature_node],

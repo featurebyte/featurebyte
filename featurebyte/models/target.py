@@ -10,6 +10,7 @@ from bson import ObjectId
 from pydantic import Field, validator
 
 from featurebyte.common.validator import duration_string_validator
+from featurebyte.enum import DBVarType
 from featurebyte.models.base import (
     FeatureByteCatalogBaseDocumentModel,
     PydanticObjectId,
@@ -17,6 +18,7 @@ from featurebyte.models.base import (
     UniqueValuesConstraint,
 )
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node import Node
 
 
@@ -44,6 +46,8 @@ class TargetModel(FeatureByteCatalogBaseDocumentModel):
     entity_ids: Optional[List[PydanticObjectId]] = Field(allow_mutation=False)
 
     target_namespace_id: PydanticObjectId = Field(allow_mutation=False, default_factory=ObjectId)
+    dtype: DBVarType = Field(allow_mutation=False, default=DBVarType.UNKNOWN)
+    tabular_source: TabularSource = Field(allow_mutation=False)
 
     # pydantic validators
     _duration_validator = validator("horizon", pre=True, allow_reuse=True)(
