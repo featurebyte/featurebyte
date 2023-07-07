@@ -216,6 +216,18 @@ tasks:
     cmds:
       - poetry run pytest --timeout=240 --update-fixtures tests/unit/test_generate_payload_fixtures.py
 
+  generate-integration-test-fixtures:
+    desc: Generate integration test fixtures
+    deps:
+      - task: install
+    sources:
+      - poetry.lock
+      - pyproject.toml
+      - featurebyte/**/*
+      - tests/integration/test_generate_integration_fixtures.py
+    cmds:
+      - poetry run pytest --timeout=240 --update-fixtures tests/integration/test_generate_integration_fixtures.py
+
   test-integration:
     desc: Runs integration tests
     deps:
