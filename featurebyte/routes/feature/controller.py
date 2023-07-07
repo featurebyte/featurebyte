@@ -37,12 +37,12 @@ from featurebyte.schema.feature import (
     FeatureModelResponse,
     FeatureNewVersionCreate,
     FeaturePaginatedList,
-    FeaturePreview,
     FeatureServiceCreate,
     FeatureSQL,
     FeatureUpdate,
 )
 from featurebyte.schema.info import FeatureInfo
+from featurebyte.schema.preview import FeatureOrTargetPreview
 from featurebyte.schema.semantic import SemanticList
 from featurebyte.schema.table import TableList
 from featurebyte.schema.task import Task
@@ -473,14 +473,16 @@ class FeatureController(
         document_data["data"] = output
         return self.paginated_document_class(**document_data)
 
-    async def preview(self, feature_preview: FeaturePreview, get_credential: Any) -> dict[str, Any]:
+    async def preview(
+        self, feature_preview: FeatureOrTargetPreview, get_credential: Any
+    ) -> dict[str, Any]:
         """
         Preview a Feature
 
         Parameters
         ----------
-        feature_preview: FeaturePreview
-            FeaturePreview object
+        feature_preview: FeatureOrTargetPreview
+            FeatureOrTargetPreview object
         get_credential: Any
             Get credential handler function
 
@@ -495,8 +497,8 @@ class FeatureController(
             Invalid request payload
         """
         try:
-            return await self.preview_service.preview_feature(
-                feature_preview=feature_preview, get_credential=get_credential
+            return await self.preview_service.preview_target_or_feature(
+                feature_or_target_preview=feature_preview, get_credential=get_credential
             )
         except (MissingPointInTimeColumnError, RequiredEntityNotProvidedError) as exc:
             raise HTTPException(

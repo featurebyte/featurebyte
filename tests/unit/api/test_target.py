@@ -9,6 +9,8 @@ from pandas.testing import assert_frame_equal
 
 from featurebyte.api.entity import Entity
 from featurebyte.api.target import Target
+from featurebyte.enum import AggFunc, DBVarType
+from featurebyte.models.base import PydanticObjectId
 
 
 @pytest.fixture(name="test_entity")
@@ -20,17 +22,22 @@ def get_test_entity_fixture():
 
 
 @pytest.fixture(name="get_test_target")
-def get_test_target_fixture():
+def get_test_target_fixture(test_entity, snowflake_event_table):
     """
     Create a target for testing
     """
 
-    def get_target(entity_names: List[str]):
-        return Target.create(
-            name="test_target",
-            entities=entity_names,
+    def get_target(entity_ids: List[PydanticObjectId]):
+        snowflake_event_table.col_int.as_entity(test_entity.name)
+        snowflake_event_view = snowflake_event_table.get_view()
+        target = snowflake_event_view.groupby("col_int").forward_aggregate(
+            method=AggFunc.AVG,
+            value_column="col_float",
             horizon="3d",
+            target_name="test_target",
         )
+        target.save()
+        return target
 
     return get_target
 
@@ -38,7 +45,7 @@ def get_test_target_fixture():
 @pytest.mark.skip(reason="Target creation is not implemented yet")
 def test_create_target_from_constructor(test_entity, get_test_target):
     test_entity.save()
-    target = get_test_target(["test_entity"])
+    target = get_test_target([test_entity.id])
 
     # List target
     target_list = Target.list()
@@ -63,7 +70,7 @@ def test_create_target_from_constructor(test_entity, get_test_target):
 @pytest.mark.skip(reason="Target creation is not implemented yet")
 def test_target_info(test_entity, get_test_target):
     test_entity.save()
-    target = get_test_target([test_entity.name])
+    target = get_test_target([test_entity.id])
 
     retrieved_target = Target.get(target.name)
     target_info = retrieved_target.info()

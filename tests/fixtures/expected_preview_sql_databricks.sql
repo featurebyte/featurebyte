@@ -28,21 +28,15 @@ WITH REQUEST_TABLE AS (
                   UNIX_TIMESTAMP(MAX(POINT_IN_TIME)) - 1800
                 ) / 3600) * 3600 + 1800 - 900
               ) AS `__FB_ENTITY_TABLE_END_DATE`,
-              DATEADD(
-                microsecond,
-                (
-                  48 * 3600 * CAST(1000000 AS LONG) / CAST(1 AS LONG)
-                ) * -1 % 60000000.0,
-                DATEADD(
-                  minute,
-                  (
-                    48 * 3600 * CAST(1000000 AS LONG) / CAST(1 AS LONG)
-                  ) * -1 / 60000000.0,
-                  TO_TIMESTAMP(
+              TO_TIMESTAMP(
+                FROM_UNIXTIME(
+                  CAST(TO_TIMESTAMP(
                     FLOOR((
                       UNIX_TIMESTAMP(MIN(POINT_IN_TIME)) - 1800
                     ) / 3600) * 3600 + 1800 - 900
-                  )
+                  ) AS DOUBLE) + (
+                    48 * 3600 * CAST(1000000 AS LONG) / CAST(1 AS LONG)
+                  ) * -1 / 1000000.0
                 )
               ) AS `__FB_ENTITY_TABLE_START_DATE`
             FROM `REQUEST_TABLE`

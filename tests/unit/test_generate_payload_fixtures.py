@@ -157,7 +157,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         name="target",
         graph=feature_sum_30m.graph,
         node_name=feature_sum_30m.node_name,
-        tabular_source=feature_sum_30m.tabular_source,
+        tabular_source=snowflake_event_table.tabular_source,
     )
     target_namespace = TargetNamespaceCreate(
         name="target_namespace",

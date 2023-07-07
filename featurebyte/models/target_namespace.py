@@ -8,10 +8,10 @@ from pydantic import Field, validator
 
 from featurebyte.common.validator import construct_sort_validator, duration_string_validator
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.feature_namespace import BaseFeatureTargetNamespaceModel
+from featurebyte.models.feature_namespace import BaseFeatureNamespaceModel
 
 
-class TargetNamespaceModel(BaseFeatureTargetNamespaceModel):
+class TargetNamespaceModel(BaseFeatureNamespaceModel):
     """
     Target set with the same target name
 
@@ -49,13 +49,13 @@ class TargetNamespaceModel(BaseFeatureTargetNamespaceModel):
         duration_string_validator
     )
 
-    class Settings(BaseFeatureTargetNamespaceModel.Settings):
+    class Settings(BaseFeatureNamespaceModel.Settings):
         """
         MongoDB settings
         """
 
         collection_name: str = "target_namespace"
-        indexes = BaseFeatureTargetNamespaceModel.Settings.indexes + [
+        indexes = BaseFeatureNamespaceModel.Settings.indexes + [
             pymongo.operations.IndexModel("target_ids"),
             pymongo.operations.IndexModel("default_target_id"),
         ]

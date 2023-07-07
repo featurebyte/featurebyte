@@ -20,10 +20,10 @@ from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, sql_to_string
 from featurebyte.query_graph.sql.feature_historical import get_historical_features_expr
-from featurebyte.query_graph.sql.feature_preview import get_feature_preview_sql
+from featurebyte.query_graph.sql.feature_preview import get_feature_or_target_preview_sql
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.sql.materialisation import get_source_count_expr, get_source_expr
-from featurebyte.schema.feature import FeaturePreview, FeatureSQL
+from featurebyte.schema.feature import FeatureSQL
 from featurebyte.schema.feature_list import (
     FeatureListGetHistoricalFeatures,
     FeatureListPreview,
@@ -34,6 +34,7 @@ from featurebyte.schema.feature_store import (
     FeatureStoreSample,
     FeatureStoreShape,
 )
+from featurebyte.schema.preview import FeatureOrTargetPreview
 from featurebyte.service.base_service import BaseService
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_list import FeatureListService
@@ -300,16 +301,16 @@ class PreviewService(BaseService):
 
         return point_in_time_and_serving_name_list, updated
 
-    async def preview_feature(
-        self, feature_preview: FeaturePreview, get_credential: Any
+    async def preview_target_or_feature(
+        self, feature_or_target_preview: FeatureOrTargetPreview, get_credential: Any
     ) -> dict[str, Any]:
         """
-        Preview a Feature
+        Preview a Feature or Target
 
         Parameters
         ----------
-        feature_preview: FeaturePreview
-            FeaturePreview object
+        feature_or_target_preview: FeatureOrTargetPreview
+            TargetPreview object
         get_credential: Any
             Get credential handler function
 
@@ -318,9 +319,11 @@ class PreviewService(BaseService):
         dict[str, Any]
             Dataframe converted to json string
         """
-        graph = feature_preview.graph
-        feature_node = graph.get_node_by_name(feature_preview.node_name)
-        operation_struction = feature_preview.graph.extract_operation_structure(feature_node)
+        graph = feature_or_target_preview.graph
+        feature_node = graph.get_node_by_name(feature_or_target_preview.node_name)
+        operation_struction = feature_or_target_preview.graph.extract_operation_structure(
+            feature_node
+        )
 
         # We only need to ensure that the point in time column is provided,
         # if the feature aggregation is time based.
@@ -328,14 +331,15 @@ class PreviewService(BaseService):
             point_in_time_and_serving_name_list,
             updated,
         ) = PreviewService._update_point_in_time_if_needed(
-            feature_preview.point_in_time_and_serving_name_list, operation_struction.is_time_based
+            feature_or_target_preview.point_in_time_and_serving_name_list,
+            operation_struction.is_time_based,
         )
 
         request_column_names = set(point_in_time_and_serving_name_list[0].keys())
         feature_store, session = await self._get_feature_store_session(
             graph=graph,
-            node_name=feature_preview.node_name,
-            feature_store_name=feature_preview.feature_store_name,
+            node_name=feature_or_target_preview.node_name,
+            feature_store_name=feature_or_target_preview.feature_store_name,
             get_credential=get_credential,
         )
         parent_serving_preparation = (
@@ -346,7 +350,7 @@ class PreviewService(BaseService):
                 feature_store=feature_store,
             )
         )
-        preview_sql = get_feature_preview_sql(
+        preview_sql = get_feature_or_target_preview_sql(
             request_table_name=f"{REQUEST_TABLE_NAME}_{session.generate_session_unique_id()}",
             graph=graph,
             nodes=[feature_node],
@@ -415,7 +419,7 @@ class PreviewService(BaseService):
                 feature_store=feature_store,
                 get_credential=get_credential,
             )
-            preview_sql = get_feature_preview_sql(
+            preview_sql = get_feature_or_target_preview_sql(
                 request_table_name=f"{REQUEST_TABLE_NAME}_{db_session.generate_session_unique_id()}",
                 graph=feature_cluster.graph,
                 nodes=feature_cluster.nodes,
@@ -456,7 +460,7 @@ class PreviewService(BaseService):
         source_type = graph.get_input_node(
             feature_sql.node_name
         ).parameters.feature_store_details.type
-        preview_sql = get_feature_preview_sql(
+        preview_sql = get_feature_or_target_preview_sql(
             request_table_name=REQUEST_TABLE_NAME,
             graph=graph,
             nodes=[feature_node],
@@ -484,7 +488,7 @@ class PreviewService(BaseService):
             source_type = feature_cluster.graph.get_input_node(
                 feature_cluster.node_names[0]
             ).parameters.feature_store_details.type
-            preview_sql = get_feature_preview_sql(
+            preview_sql = get_feature_or_target_preview_sql(
                 request_table_name=REQUEST_TABLE_NAME,
                 graph=feature_cluster.graph,
                 nodes=feature_cluster.nodes,

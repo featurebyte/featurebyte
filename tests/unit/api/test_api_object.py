@@ -18,10 +18,7 @@ from featurebyte.models.feature_list import (
     FeatureListNamespaceModel,
     FrozenFeatureListNamespaceModel,
 )
-from featurebyte.models.feature_namespace import (
-    BaseFeatureTargetNamespaceModel,
-    FeatureNamespaceModel,
-)
+from featurebyte.models.feature_namespace import BaseFeatureNamespaceModel, FeatureNamespaceModel
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceUpdate
 from featurebyte.schema.feature_namespace import FeatureNamespaceUpdate
 from featurebyte.schema.task import TaskStatus

@@ -8,10 +8,10 @@ from bson import ObjectId
 from pydantic import Field
 
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.feature import BaseFeatureTargetModel
+from featurebyte.models.feature import BaseFeatureModel
 
 
-class TargetModel(BaseFeatureTargetModel):
+class TargetModel(BaseFeatureModel):
     """
     Model for Target asset
 
@@ -45,15 +45,15 @@ class TargetModel(BaseFeatureTargetModel):
         When the Target get updated
     """
 
-    # list of IDs attached to this target
+    # ID related fields associated with this target
     target_namespace_id: PydanticObjectId = Field(allow_mutation=False, default_factory=ObjectId)
 
-    class Settings(BaseFeatureTargetModel.Settings):
+    class Settings(BaseFeatureModel.Settings):
         """
         MongoDB settings
         """
 
         collection_name: str = "target"
-        indexes = BaseFeatureTargetModel.Settings.indexes + [
+        indexes = BaseFeatureModel.Settings.indexes + [
             pymongo.operations.IndexModel("target_namespace_id"),
         ]

@@ -3,7 +3,7 @@ Target API routes
 """
 from __future__ import annotations
 
-from typing import Optional, cast
+from typing import Any, Dict, Optional, cast
 
 from http import HTTPStatus
 
@@ -21,6 +21,7 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
     VerboseQuery,
 )
+from featurebyte.schema.preview import FeatureOrTargetPreview
 from featurebyte.schema.target import TargetCreate, TargetInfo, TargetList, TargetUpdate
 
 router = APIRouter(prefix="/target")
@@ -122,3 +123,20 @@ async def list_target_audit_logs(
         search=search,
     )
     return audit_doc_list
+
+
+@router.post("/preview", response_model=Dict[str, Any])
+async def get_feature_preview(
+    request: Request,
+    target_preview: FeatureOrTargetPreview,
+) -> Dict[str, Any]:
+    """
+    Retrieve Target preview
+    """
+    controller = request.state.app_container.target_controller
+    return cast(
+        Dict[str, Any],
+        await controller.preview(
+            target_preview=target_preview, get_credential=request.state.get_credential
+        ),
+    )

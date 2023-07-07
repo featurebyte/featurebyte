@@ -38,7 +38,7 @@ def test_forward_aggregate(forward_aggregator):
 
     # Assert forward aggregate node has been added into the graph
     view = forward_aggregator.view
-    target_node = target.internal_graph.get_node_by_name(target.internal_node_name)
+    target_node = target.graph.get_node_by_name(target.internal_node_name)
     forward_aggregate_nodes = [
         node for node in view.graph.iterate_nodes(target_node, NodeType.FORWARD_AGGREGATE)
     ]
@@ -53,7 +53,7 @@ def test_forward_aggregate(forward_aggregator):
         "agg_func": AggFunc.SUM,
         "horizon": "7d",
         "serving_names": forward_aggregator.serving_names,
-        "value_by": "col_float",
+        "value_by": None,
         "entity_ids": forward_aggregator.entity_ids,
         "table_details": forward_aggregator.view.tabular_source.table_details.dict(),
         "timestamp_col": "event_timestamp",
@@ -67,7 +67,7 @@ def test_forward_aggregate(forward_aggregator):
     }
 
     # Get operation structure to verify output category
-    operation_structure = target.internal_graph.extract_operation_structure(target_node)
+    operation_structure = target.graph.extract_operation_structure(target_node)
     assert operation_structure.output_category == "target"
 
 
@@ -89,7 +89,7 @@ def test_prepare_node_parameters(forward_aggregator):
         "horizon": "7d",
         "name": "target",
         "serving_names": forward_aggregator.serving_names,
-        "value_by": "col_float",
+        "value_by": None,
         "entity_ids": forward_aggregator.entity_ids,
         "table_details": forward_aggregator.view.tabular_source.table_details,
         "timestamp_col": "timestamp_col",

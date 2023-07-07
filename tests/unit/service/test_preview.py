@@ -10,8 +10,8 @@ from featurebyte import FeatureStore
 from featurebyte.exception import MissingPointInTimeColumnError, RequiredEntityNotProvidedError
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_list import FeatureCluster
-from featurebyte.schema.feature import FeaturePreview
 from featurebyte.schema.feature_list import FeatureListPreview
+from featurebyte.schema.preview import FeatureOrTargetPreview
 
 
 @pytest.fixture(name="empty_graph")
@@ -39,14 +39,14 @@ async def test_preview_feature__time_based_feature_without_point_in_time_errors(
     """
     Test preview feature
     """
-    feature_preview = FeaturePreview(
+    feature_preview = FeatureOrTargetPreview(
         feature_store_name="feature_store_name",
         point_in_time_and_serving_name_list=[{}],
         graph=float_feature.graph,
         node_name=float_feature.node_name,
     )
     with pytest.raises(MissingPointInTimeColumnError) as exc:
-        await preview_service.preview_feature(feature_preview, AsyncMock())
+        await preview_service.preview_target_or_feature(feature_preview, AsyncMock())
     assert "Point in time column not provided" in str(exc)
 
 
@@ -58,7 +58,7 @@ async def test_preview_feature__non_time_based_feature_without_point_in_time_doe
     Test preview feature
     """
     _ = transaction_entity
-    feature_preview = FeaturePreview(
+    feature_preview = FeatureOrTargetPreview(
         feature_store_name="sf_featurestore",
         point_in_time_and_serving_name_list=[
             {
@@ -68,7 +68,7 @@ async def test_preview_feature__non_time_based_feature_without_point_in_time_doe
         graph=non_time_based_feature.graph,
         node_name=non_time_based_feature.node_name,
     )
-    await preview_service.preview_feature(feature_preview, get_credential)
+    await preview_service.preview_target_or_feature(feature_preview, get_credential)
 
 
 @pytest.mark.usefixtures("mock_get_feature_store_session")
@@ -79,7 +79,7 @@ async def test_preview_feature__missing_entity(
     """
     Test preview feature but without providing the required entity
     """
-    feature_preview = FeaturePreview(
+    feature_preview = FeatureOrTargetPreview(
         feature_store_name="sf_featurestore",
         point_in_time_and_serving_name_list=[
             {
@@ -91,7 +91,7 @@ async def test_preview_feature__missing_entity(
         node_name=production_ready_feature.node_name,
     )
     with pytest.raises(RequiredEntityNotProvidedError) as exc:
-        await preview_service.preview_feature(feature_preview, get_credential)
+        await preview_service.preview_target_or_feature(feature_preview, get_credential)
     expected = (
         'Required entities are not provided in the request: customer (serving name: "cust_id")'
     )

@@ -3,14 +3,15 @@ Forward aggregator module
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional, Type
+from typing import Any, List, Optional, Type, cast
 
-from featurebyte import ChangeView, EventView, ItemView
+from featurebyte import AggFunc, ChangeView, EventView, ItemView
 from featurebyte.api.aggregator.base_aggregator import BaseAggregator
 from featurebyte.api.target import Target
 from featurebyte.api.view import View
 from featurebyte.common.model_util import parse_duration_string
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.node.agg_func import construct_agg_func
 
 
 class ForwardAggregator(BaseAggregator):
@@ -59,6 +60,7 @@ class ForwardAggregator(BaseAggregator):
             target_name=target_name,
         )
         # Create new node parameters
+        assert value_column is not None
         node_params = self._prepare_node_parameters(
             value_column=value_column,
             method=method,
@@ -81,11 +83,16 @@ class ForwardAggregator(BaseAggregator):
             input_nodes=[forward_aggregate_node],
         )
         # Build and return Target
+        agg_method = construct_agg_func(agg_func=cast(AggFunc, method))
+        output_var_type = self.get_output_var_type(agg_method, method, value_column)
         return Target(
             name=target_name,
             entity_ids=self.entity_ids,
             graph=self.view.graph,
             node_name=target_node.name,
+            tabular_source=self.view.tabular_source,
+            feature_store=self.view.feature_store,
+            dtype=output_var_type,
         )
 
     def _prepare_node_parameters(
@@ -123,7 +130,7 @@ class ForwardAggregator(BaseAggregator):
             "horizon": horizon,
             "name": target_name,
             "serving_names": self.serving_names,
-            "value_by": value_column,
+            "value_by": self.category,
             "entity_ids": self.entity_ids,
             "table_details": self.view.tabular_source.table_details,
             "timestamp_col": timestamp_col,

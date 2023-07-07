@@ -39,9 +39,9 @@ class DefaultVersionMode(StrEnum):
     MANUAL = "MANUAL", "Manually select the version to use."
 
 
-class BaseFeatureTargetNamespaceModel(FeatureByteCatalogBaseDocumentModel):
+class BaseFeatureNamespaceModel(FeatureByteCatalogBaseDocumentModel):
     """
-    BaseFeatureTargetModel is the base class for FeatureNamespaceModel & TargetNamespaceModel.
+    BaseFeatureModel is the base class for FeatureNamespaceModel & TargetNamespaceModel.
     It contains all the attributes that are shared between FeatureNamespaceModel & TargetNamespaceModel.
     """
 
@@ -81,7 +81,7 @@ class BaseFeatureTargetNamespaceModel(FeatureByteCatalogBaseDocumentModel):
         ]
 
 
-class FeatureNamespaceModel(BaseFeatureTargetNamespaceModel):
+class FeatureNamespaceModel(BaseFeatureNamespaceModel):
     """
     Feature set with the same feature name
 
@@ -124,13 +124,13 @@ class FeatureNamespaceModel(BaseFeatureTargetNamespaceModel):
         "feature_ids", "entity_ids", "table_ids", allow_reuse=True
     )(construct_sort_validator())
 
-    class Settings(BaseFeatureTargetNamespaceModel.Settings):
+    class Settings(BaseFeatureNamespaceModel.Settings):
         """
         MongoDB settings
         """
 
         collection_name: str = "feature_namespace"
-        indexes = BaseFeatureTargetNamespaceModel.Settings.indexes + [
+        indexes = BaseFeatureNamespaceModel.Settings.indexes + [
             pymongo.operations.IndexModel("readiness"),
             pymongo.operations.IndexModel("feature_ids"),
             pymongo.operations.IndexModel("default_feature_id"),
