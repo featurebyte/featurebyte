@@ -554,6 +554,24 @@ class BaseAdapter:  # pylint: disable=too-many-public-methods
         """
         return quoted_identifier(serving_name)
 
+    @classmethod
+    @abstractmethod
+    def get_percentile_expr(cls, input_expr: Expression, quantile: float) -> Expression:
+        """
+        Get the percentile expression
+
+        Parameters
+        ----------
+        input_expr: Expression
+            Column expression to use for percentile expression
+        quantile: float
+            Quantile to use for percentile expression
+
+        Returns
+        -------
+        Expression
+        """
+
 
 class SnowflakeAdapter(BaseAdapter):
     """
@@ -798,6 +816,16 @@ class SnowflakeAdapter(BaseAdapter):
         )
         return not will_not_be_quoted
 
+    @classmethod
+    def get_percentile_expr(cls, input_expr: Expression, quantile: float) -> Expression:
+        order_expr = expressions.Order(expressions=[expressions.Ordered(this=input_expr)])
+        return expressions.WithinGroup(
+            this=expressions.Anonymous(
+                this="percentile_cont", expressions=[make_literal_value(quantile)]
+            ),
+            expression=order_expr,
+        )
+
 
 class DatabricksAdapter(BaseAdapter):
     """
@@ -963,6 +991,12 @@ class DatabricksAdapter(BaseAdapter):
     @classmethod
     def any_value(cls, expr: Expression) -> Expression:
         return expressions.Anonymous(this="first", expressions=[expr])
+
+    @classmethod
+    def get_percentile_expr(cls, input_expr: Expression, quantile: float) -> Expression:
+        return expressions.Anonymous(
+            this="percentile", expressions=[input_expr, make_literal_value(quantile)]
+        )
 
 
 class SparkAdapter(DatabricksAdapter):

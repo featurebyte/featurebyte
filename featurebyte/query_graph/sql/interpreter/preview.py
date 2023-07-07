@@ -252,9 +252,8 @@ class PreviewMixin(BaseGraphInterpreter):
         expr = expressions.alias_(make_literal_value(None), column_name, quoted=True)
         return cast(expressions.Expression, expr)
 
-    @staticmethod
     def _percentile_expr(
-        expression: expressions.Expression, quantile: float
+        self, expression: expressions.Expression, quantile: float
     ) -> expressions.Expression:
         """
         Create expression for percentile of column
@@ -270,13 +269,7 @@ class PreviewMixin(BaseGraphInterpreter):
         -------
         expressions.Expression
         """
-        order_expr = expressions.Order(expressions=[expressions.Ordered(this=expression)])
-        return expressions.WithinGroup(
-            this=expressions.Anonymous(
-                this="percentile_cont", expressions=[parse_one(f"{quantile}")]
-            ),
-            expression=order_expr,
-        )
+        return self.adapter.get_percentile_expr(expression, quantile)
 
     @staticmethod
     def _tz_offset_expr(timestamp_tz_expr: expressions.Expression) -> expressions.Expression:
