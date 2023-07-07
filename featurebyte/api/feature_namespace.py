@@ -14,7 +14,7 @@ from featurebyte.api.feature_util import (
     filter_feature_list,
 )
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.feature import (
+from featurebyte.models.feature_namespace import (
     DefaultVersionMode,
     FeatureReadiness,
     FrozenFeatureNamespaceModel,

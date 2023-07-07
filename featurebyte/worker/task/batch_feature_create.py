@@ -17,7 +17,8 @@ from featurebyte.enum import ConflictResolution
 from featurebyte.exception import DocumentInconsistencyError
 from featurebyte.logging import get_logger
 from featurebyte.models.base import PydanticObjectId, activate_catalog
-from featurebyte.models.feature import FeatureModel, FeatureNamespaceModel
+from featurebyte.models.feature import FeatureModel
+from featurebyte.models.feature_namespace import FeatureNamespaceModel
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.schema.feature import BatchFeatureItem, FeatureServiceCreate
 from featurebyte.schema.worker.task.base import BaseTaskPayload

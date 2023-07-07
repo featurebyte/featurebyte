@@ -8,7 +8,7 @@ from bson import ObjectId
 
 from featurebyte.enum import InternalName
 from featurebyte.feature_manager.model import ExtendedFeatureModel
-from featurebyte.models.feature import FeatureReadiness
+from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.models.online_store_table_version import OnlineStoreTableVersion
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter import get_sql_adapter

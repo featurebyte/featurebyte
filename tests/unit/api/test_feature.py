@@ -13,6 +13,7 @@ from freezegun import freeze_time
 from pandas.testing import assert_frame_equal
 
 from featurebyte import (
+    DefaultVersionMode,
     MissingValueImputation,
     activate_and_get_catalog,
     get_version,
@@ -32,7 +33,7 @@ from featurebyte.exception import (
     RecordRetrievalException,
     RecordUpdateException,
 )
-from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
+from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.models.feature_store import TableStatus
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.feature_job_setting import (

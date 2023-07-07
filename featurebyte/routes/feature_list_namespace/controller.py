@@ -8,8 +8,8 @@ from typing import Any, Literal, cast
 from bson.objectid import ObjectId
 
 from featurebyte.exception import DocumentUpdateError
-from featurebyte.models.feature import DefaultVersionMode
 from featurebyte.models.feature_list import FeatureListNamespaceModel
+from featurebyte.models.feature_namespace import DefaultVersionMode
 from featurebyte.routes.common.base import (
     BaseDocumentController,
     DerivePrimaryEntityHelper,

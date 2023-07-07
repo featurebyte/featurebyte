@@ -35,7 +35,7 @@ from featurebyte.app import User, app, get_celery
 from featurebyte.enum import AggFunc, InternalName
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.credential import CredentialModel
-from featurebyte.models.feature import FeatureReadiness
+from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.models.task import Task as TaskModel
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.graph import GlobalQueryGraph

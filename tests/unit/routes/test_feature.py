@@ -88,7 +88,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
             {**payload, "node_name": "groupby_1"},
             (
                 "1 validation error for FeatureModel\n__root__\n  "
-                "Feature graph must have exactly one aggregation output (type=value_error)"
+                "Feature or target graph must have exactly one aggregation output (type=value_error)"
             ),
         ),
     ]
