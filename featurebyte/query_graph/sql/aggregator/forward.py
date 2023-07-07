@@ -3,11 +3,11 @@ Target aggregator module
 """
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import Any
 
 import pandas as pd
 from sqlglot import expressions
-from sqlglot.expressions import Expression, Select, select
+from sqlglot.expressions import Select, select
 
 from featurebyte.enum import SpecialColumnName
 from featurebyte.query_graph.sql.aggregator.base import (
@@ -64,7 +64,6 @@ class ForwardAggregator(NonTileBasedAggregator[ForwardAggregateSpec]):
         horizon_in_seconds = 0
         if spec.parameters.horizon:
             horizon_in_seconds = pd.Timedelta(spec.parameters.horizon).total_seconds()
-        end_point_expr_current: Expression = cast(Expression, point_in_time_epoch_expr)
         end_point_expr = expressions.Add(
             this=point_in_time_epoch_expr, expression=make_literal_value(horizon_in_seconds)
         )
@@ -79,7 +78,7 @@ class ForwardAggregator(NonTileBasedAggregator[ForwardAggregateSpec]):
         record_validity_condition = expressions.and_(
             expressions.GT(
                 this=table_timestamp_col,
-                expression=end_point_expr_current,
+                expression=point_in_time_epoch_expr,
             ),
             expressions.LTE(
                 this=table_timestamp_col,
