@@ -11,6 +11,7 @@ from featurebyte.enum import SourceType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.ast.base import TableNode
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import SQLType, construct_cte_sql, sql_to_string
@@ -31,6 +32,7 @@ class BaseGraphInterpreter:
     def __init__(self, query_graph: QueryGraphModel, source_type: SourceType):
         self.query_graph = query_graph
         self.source_type = source_type
+        self.adapter = get_sql_adapter(source_type)
 
     def flatten_graph(self, node_name: str) -> Tuple[QueryGraphModel, Node]:
         """

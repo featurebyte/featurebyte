@@ -2,10 +2,12 @@
 This module contains utility functions used in tests
 """
 import json
+import os
 import re
 import sys
 import textwrap
 from contextlib import contextmanager
+from pathlib import Path
 from unittest.mock import Mock
 
 import numpy as np
@@ -42,6 +44,7 @@ def assert_equal_with_expected_fixture(actual, fixture_filename, update_fixture=
     To update all fixtures automatically, pass --update-fixtures option when invoking pytest.
     """
     if update_fixture:
+        Path(os.path.dirname(fixture_filename)).mkdir(parents=True, exist_ok=True)
         with open(fixture_filename, "w", encoding="utf-8") as f_handle:
             f_handle.write(actual)
             f_handle.write("\n")
