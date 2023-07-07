@@ -20,9 +20,9 @@ from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, sql_to_string
 from featurebyte.query_graph.sql.feature_historical import get_historical_features_expr
+from featurebyte.query_graph.sql.feature_preview import get_feature_or_target_preview_sql
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.sql.materialisation import get_source_count_expr, get_source_expr
-from featurebyte.query_graph.sql.preview import get_feature_or_target_preview_sql
 from featurebyte.schema.feature import FeatureSQL
 from featurebyte.schema.feature_list import (
     FeatureListGetHistoricalFeatures,

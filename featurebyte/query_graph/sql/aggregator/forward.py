@@ -65,11 +65,11 @@ class ForwardAggregator(NonTileBasedAggregator[ForwardAggregateSpec]):
             horizon_in_seconds = pd.Timedelta(spec.parameters.horizon).total_seconds()
         end_point_expr_current: Expression = cast(
             Expression,
-            parse_one(f"FLOOR({point_in_time_epoch_expr.sql()})"),
+            parse_one(f"{point_in_time_epoch_expr.sql()}"),
         )
         end_point_expr: Expression = cast(
             Expression,
-            parse_one(f"FLOOR({point_in_time_epoch_expr.sql()} + {horizon_in_seconds})"),
+            parse_one(f"{point_in_time_epoch_expr.sql()} + {horizon_in_seconds}"),
         )
 
         # Get valid records (timestamp column is within the point in time, and point in time + horizon)

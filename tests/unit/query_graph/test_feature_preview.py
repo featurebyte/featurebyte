@@ -5,7 +5,7 @@ import pytest
 
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
-from featurebyte.query_graph.sql.preview import get_feature_or_target_preview_sql
+from featurebyte.query_graph.sql.feature_preview import get_feature_or_target_preview_sql
 from tests.util.helper import assert_equal_with_expected_fixture
 
 

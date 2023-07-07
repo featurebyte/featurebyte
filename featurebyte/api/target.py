@@ -43,7 +43,7 @@ class Target(Series, SavableApiObject):
     feature_store: FeatureStoreModel = Field(
         exclude=True,
         allow_mutation=False,
-        description="Provides information about the feature store that the feature is connected to.",
+        description="Provides information about the feature store that the target is connected to.",
     )
 
     _route = "/target"
@@ -108,7 +108,10 @@ class Target(Series, SavableApiObject):
         -------
         FeatureModel
         """
+        pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
         target_dict = self.dict(by_alias=True)
+        target_dict["graph"] = pruned_graph.dict()
+        target_dict["node_name"] = mapped_node.name
         return TargetModel(**target_dict)
 
     @enforce_observation_set_row_order

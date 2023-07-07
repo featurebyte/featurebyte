@@ -5,7 +5,6 @@ from typing import Optional
 
 from collections import defaultdict
 from dataclasses import dataclass
-from datetime import datetime
 
 import pandas as pd
 import pytest
