@@ -454,7 +454,7 @@ def transaction_dataframe():
 
 
 @pytest.fixture(name="transaction_data_upper_case", scope="session")
-def transaction_dataframe_upper_case(transaction_data):
+def transaction_dataframe_upper_case():
     """
     Convert transaction table column names to upper case
     """
@@ -464,7 +464,7 @@ def transaction_dataframe_upper_case(transaction_data):
 
 
 @pytest.fixture(name="items_dataframe", scope="session")
-def items_dataframe_fixture(transaction_data_upper_case):
+def items_dataframe_fixture():
     """
     DataFrame fixture with item based table corresponding to the transaction table
     """
@@ -480,7 +480,7 @@ def item_ids_fixture(items_dataframe):
 
 
 @pytest.fixture(name="dimension_dataframe", scope="session")
-def dimension_dataframe_fixture(item_ids):
+def dimension_dataframe_fixture():
     """
     DataFrame fixture with dimension table corresponding to items.
     """
