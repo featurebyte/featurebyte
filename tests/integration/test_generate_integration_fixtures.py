@@ -164,6 +164,29 @@ def transaction_dataframe():
     yield data
 
 
+@pytest.fixture(scope="session")
+def observation_set(transaction_data_upper_case):
+    """
+    Fixture for observation set
+    """
+    # Sample training time points from historical table
+    df = transaction_data_upper_case
+    cols = ["ËVENT_TIMESTAMP", "ÜSER ID"]
+    df = df[cols].drop_duplicates(cols)
+    df = df.sample(1000, replace=False, random_state=0).reset_index(drop=True)
+    df.rename({"ËVENT_TIMESTAMP": "POINT_IN_TIME"}, axis=1, inplace=True)
+
+    # Add random spikes to point in time of some rows
+    rng = np.random.RandomState(0)  # pylint: disable=no-member
+    spike_mask = rng.randint(0, 2, len(df)).astype(bool)
+    spike_shift = pd.to_timedelta(rng.randint(0, 3601, len(df)), unit="s")
+    df.loc[spike_mask, "POINT_IN_TIME"] = (
+        df.loc[spike_mask, "POINT_IN_TIME"] + spike_shift[spike_mask]
+    )
+    df = df.reset_index(drop=True)
+    return df
+
+
 @pytest.fixture(name="csv_to_df", scope="session")
 def csv_to_df_fixture(
     scd_dataframe,
@@ -171,6 +194,7 @@ def csv_to_df_fixture(
     items_dataframe,
     transaction_data_upper_case,
     transaction_data,
+    observation_set,
 ):
     """
     Fixture that is a dictionary of CSV file names to the dataframe that is written to it.
@@ -181,6 +205,7 @@ def csv_to_df_fixture(
         "items.csv": items_dataframe,
         "transaction_data_upper_case.csv": transaction_data_upper_case,
         "transaction.csv": transaction_data,
+        "observation_set.csv": observation_set,
     }
 
 
