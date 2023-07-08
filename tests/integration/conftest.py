@@ -13,7 +13,6 @@ import sqlite3
 import tempfile
 import textwrap
 import traceback
-from collections import defaultdict
 from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
@@ -21,7 +20,6 @@ from unittest import mock
 from unittest.mock import Mock, patch
 from uuid import uuid4
 
-import numpy as np
 import pandas as pd
 import pymongo
 import pytest
@@ -452,59 +450,7 @@ def transaction_dataframe():
     """
     Simulated transaction Dataframe
     """
-    # pylint: disable=no-member
-    row_number = 24 * 366
-    rng = np.random.RandomState(1234)
-    product_actions = ["detail", "àdd", "purchase", "rëmove", None]
-    timestamps = pd.date_range("2001-01-01", freq="1h", periods=24 * 366).to_series()
-
-    # add more points to the first one month
-    first_one_month_point_num = 24 * 31
-    target_point_num = 4000
-    event_timestamps = np.concatenate(
-        [
-            rng.choice(timestamps.head(first_one_month_point_num), target_point_num),
-            rng.choice(
-                timestamps.tail(row_number - first_one_month_point_num),
-                row_number - target_point_num,
-            ),
-        ]
-    )
-
-    # make timestamps unique (avoid ties when getting lags, for convenience of writing tests)
-    event_timestamps += rng.rand(event_timestamps.shape[0]) * pd.Timedelta("1ms")
-
-    data = pd.DataFrame(
-        {
-            "ëvent_timestamp": event_timestamps,
-            "created_at": pd.date_range("2001-01-01", freq="1min", periods=row_number),
-            "cust_id": rng.randint(1, 1000, row_number),
-            "üser id": rng.randint(1, 10, row_number),
-            "product_action": rng.choice(product_actions, row_number),
-            "session_id": rng.randint(100, 1000, row_number),
-        }
-    )
-    amount = (rng.rand(row_number) * 100).round(2)
-    amount[::5] = np.nan
-    data["àmount"] = amount
-    data["created_at"] += rng.randint(1, 100, row_number).cumsum() * pd.Timedelta(seconds=1)
-    data["created_at"] = data["created_at"].astype(int)
-    data["session_id"] = data["session_id"].sample(frac=1.0, random_state=0).reset_index(drop=True)
-
-    # add some second-level variation to the event timestamp
-    data["ëvent_timestamp"] += rng.randint(0, 3600, len(timestamps)) * pd.Timedelta(seconds=1)
-    # exclude any nanosecond components since it is not supported
-    data["ëvent_timestamp"] = data["ëvent_timestamp"].dt.floor("us")
-    # add timezone offset
-    offsets = rng.choice(range(-18, 18, 1), size=data["ëvent_timestamp"].shape[0])
-    data["ëvent_timestamp"] = data["ëvent_timestamp"] + pd.Series(offsets) * pd.Timedelta(hours=1)
-    formatted_offsets = [f"{i:+03d}:00" for i in offsets]
-    data["ëvent_timestamp"] = pd.to_datetime(
-        data["ëvent_timestamp"].astype(str) + formatted_offsets
-    )
-    data["tz_offset"] = formatted_offsets
-    data["transaction_id"] = [f"T{i}" for i in range(data.shape[0])]
-    yield data
+    yield pd.read_csv("tests/fixtures/dataframe/transaction.csv", parse_dates=["ëvent_timestamp"])
 
 
 @pytest.fixture(name="transaction_data_upper_case", scope="session")
@@ -512,17 +458,9 @@ def transaction_dataframe_upper_case(transaction_data):
     """
     Convert transaction table column names to upper case
     """
-    data = transaction_data.copy()
-    data.columns = data.columns.str.upper()
-
-    # Temporary workaround of setting up test fixture for Databricks feature store due to
-    # unavailability of the DBFS API. This file has to be manually uploaded via Databricks UI.
-    GENERATE_CSV_OUTPUT = False
-    if GENERATE_CSV_OUTPUT:
-        suffix = str(datetime.today().date())
-        data.to_csv(f"transactions_data_upper_case_{suffix}.csv", index=False)
-
-    yield data
+    yield pd.read_csv(
+        "tests/fixtures/dataframe/transaction_data_upper_case.csv", parse_dates=["ËVENT_TIMESTAMP"]
+    )
 
 
 @pytest.fixture(name="items_dataframe", scope="session")
@@ -530,24 +468,7 @@ def items_dataframe_fixture(transaction_data_upper_case):
     """
     DataFrame fixture with item based table corresponding to the transaction table
     """
-    rng = np.random.RandomState(0)  # pylint: disable=no-member
-    data = defaultdict(list)
-    item_types = [f"type_{i}" for i in range(100)]
-
-    def generate_items_for_transaction(transaction_row):
-        order_id = transaction_row["TRANSACTION_ID"]
-        num_items = rng.randint(1, 10)
-        selected_item_types = rng.choice(item_types, num_items, replace=False)
-        data["order_id"].extend([order_id] * num_items)
-        data["item_type"].extend(selected_item_types)
-
-    for _, row in transaction_data_upper_case.iterrows():
-        generate_items_for_transaction(row)
-
-    df_items = pd.DataFrame(data)
-    item_ids = pd.Series([f"item_{i}" for i in range(df_items.shape[0])])
-    df_items.insert(1, "item_id", item_ids)
-    return df_items
+    yield pd.read_csv("tests/fixtures/dataframe/items.csv")
 
 
 @pytest.fixture(name="item_ids", scope="session")
@@ -563,19 +484,7 @@ def dimension_dataframe_fixture(item_ids):
     """
     DataFrame fixture with dimension table corresponding to items.
     """
-    num_of_rows = len(item_ids)
-    item_names = [f"name_{i}" for i in range(num_of_rows)]
-    item_types = [f"type_{i}" for i in range(num_of_rows)]
-
-    data = pd.DataFrame(
-        {
-            "created_at": pd.date_range("2001-01-01", freq="1min", periods=num_of_rows),
-            "item_id": item_ids,
-            "item_name": item_names,
-            "item_type": item_types,
-        }
-    )
-    yield data
+    yield pd.read_csv("tests/fixtures/dataframe/dimension_data.csv", parse_dates=["created_at"])
 
 
 @pytest.fixture(name="scd_dataframe", scope="session")
