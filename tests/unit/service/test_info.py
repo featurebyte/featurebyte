@@ -685,8 +685,8 @@ async def test_get_target_info(app_container, entity, target):
         updated_at=target.updated_at,
         input_data=InputData(
             main_data=TableMetadata(
-                name="",
-                data_type="",
+                name="sf_event_table",
+                data_type="event_table",
             )
         ),
     )

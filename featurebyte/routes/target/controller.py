@@ -130,15 +130,14 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
         )
 
         # Get input table metadata
-        table_docs = await self.table_service.list_documents(
-            query_filter={"name": target_doc.tabular_source.table_details.table_name}
-        )
-        all_docs = await self.table_service.list_documents()
-        assert table_docs["data"] is not None
+        assert (
+            len(target_doc.table_ids) == 1
+        ), "Target should have only one table for now, until forward joins are supported."
+        table_doc = await self.table_service.get_document(document_id=target_doc.table_ids[0])
         input_data = InputData(
             main_data=TableMetadata(
-                name=target_doc.tabular_source.table_details.table_name,
-                data_type=table_docs["data"][0]["type"],
+                name=table_doc.name,
+                data_type=str(table_doc.type),
             ),
         )
         return TargetInfo(
