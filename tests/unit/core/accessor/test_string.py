@@ -143,9 +143,9 @@ def test_pad_expression(
     "accessor_func, exp_expression",
     [
         (lambda s: s.str.contains("abc"), "CONTAINS(\"PRODUCT_ACTION\", 'abc')"),
-        (lambda s: s.str.contains("abc", case=True), "CONTAINS(\"PRODUCT_ACTION\", 'abc')"),
+        (lambda s: s.str.contains("aBc", case=True), "CONTAINS(\"PRODUCT_ACTION\", 'aBc')"),
         (
-            lambda s: s.str.contains("abc", case=False),
+            lambda s: s.str.contains("aBc", case=False),
             "CONTAINS(LOWER(\"PRODUCT_ACTION\"), 'abc')",
         ),
     ],
