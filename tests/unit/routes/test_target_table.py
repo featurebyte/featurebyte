@@ -63,9 +63,7 @@ class TestTargetTableApi(BaseMaterializedTableTestSuite):
             ("context", "context"),
             ("observation_table", "observation_table"),
             ("event_table", "event_table"),
-            ("feature", "feature_sum_30m"),
-            ("feature_list", "feature_list_single"),
-            ("deployment", "deployment"),
+            ("target", "target"),
         ]
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
@@ -74,8 +72,6 @@ class TestTargetTableApi(BaseMaterializedTableTestSuite):
                 headers={"active-catalog-id": str(catalog_id)},
                 json=payload,
             )
-            if api_object == "feature":
-                self.make_feature_production_ready(api_client, response.json()["_id"], catalog_id)
 
             if api_object == "observation_table":
                 response = self.wait_for_results(api_client, response)
@@ -98,21 +94,6 @@ class TestTargetTableApi(BaseMaterializedTableTestSuite):
         Patch ObservationTableService so validate_materialized_table_and_get_metadata always passes
         """
         _ = patched_observation_table_service
-
-    @pytest.fixture(autouse=True)
-    def always_patched_get_target(self):
-        """
-        Patch parts of compute_targets that have coverage elsewhere and not relevant to unit
-        testing the routes
-        """
-        with patch(
-            "featurebyte.query_graph.sql.feature_historical.get_targets_expr",
-            return_value=(expressions.select("*").from_("my_table"), ["a", "b", "c"]),
-        ):
-            with patch(
-                "featurebyte.service.targets.compute_tiles_on_demand",
-            ):
-                yield
 
     def test_create_422__failed_entity_validation_check(self, test_api_client_persistent):
         """Test that 422 is returned when payload fails validation check"""
