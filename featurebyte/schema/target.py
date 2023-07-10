@@ -3,7 +3,7 @@ Target API payload schema
 """
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from datetime import datetime
 
@@ -82,6 +82,7 @@ class TargetInfo(FeatureByteBaseModel):
     created_at: datetime
     updated_at: Optional[datetime]
     input_data: InputData
+    metadata: Any
 
 
 class TargetServiceUpdate(BaseDocumentServiceUpdateSchema):

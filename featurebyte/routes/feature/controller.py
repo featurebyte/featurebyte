@@ -3,7 +3,7 @@ Feature API route controller
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Literal, Optional, Type, TypeVar, Union
+from typing import Any, Dict, Literal, Optional, Union
 
 from http import HTTPStatus
 from pprint import pformat
@@ -17,7 +17,7 @@ from featurebyte.exception import (
     RequiredEntityNotProvidedError,
 )
 from featurebyte.feature_manager.model import ExtendedFeatureModel
-from featurebyte.models.base import PydanticObjectId, VersionIdentifier
+from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_namespace import DefaultVersionMode, FeatureReadiness
 from featurebyte.query_graph.enum import GraphNodeType
@@ -26,8 +26,8 @@ from featurebyte.query_graph.model.feature_job_setting import (
     TableFeatureJobSetting,
 )
 from featurebyte.query_graph.node.cleaning_operation import TableCleaningOperation
-from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
 from featurebyte.routes.common.base import BaseDocumentController, DerivePrimaryEntityHelper
+from featurebyte.routes.common.feature_metadata_extractor import FeatureMetadataExtractor
 from featurebyte.routes.feature_namespace.controller import FeatureNamespaceController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.feature import (
@@ -43,11 +43,8 @@ from featurebyte.schema.feature import (
 )
 from featurebyte.schema.info import FeatureInfo
 from featurebyte.schema.preview import FeatureOrTargetPreview
-from featurebyte.schema.semantic import SemanticList
-from featurebyte.schema.table import TableList
 from featurebyte.schema.task import Task
 from featurebyte.schema.worker.task.batch_feature_create import BatchFeatureCreateTaskPayload
-from featurebyte.service.base_document import BaseDocumentService, DocumentUpdateSchema
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature import FeatureService
@@ -55,13 +52,9 @@ from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
-from featurebyte.service.mixin import Document, DocumentCreateSchema
 from featurebyte.service.preview import PreviewService
-from featurebyte.service.semantic import SemanticService
 from featurebyte.service.table import TableService
 from featurebyte.service.version import VersionService
-
-ObjectT = TypeVar("ObjectT")
 
 
 def _extract_feature_table_cleaning_operations(
@@ -133,33 +126,6 @@ def _extract_table_feature_job_settings(
     return table_feature_job_settings
 
 
-async def _get_list_object(
-    service: BaseDocumentService[Document, DocumentCreateSchema, DocumentUpdateSchema],
-    document_ids: list[PydanticObjectId],
-    list_object_class: Type[ObjectT],
-) -> ObjectT:
-    """
-    Retrieve object through list route & deserialize the records
-
-    Parameters
-    ----------
-    service: BaseDocumentService
-        Service
-    document_ids: list[ObjectId]
-        List of document IDs
-    list_object_class: Type[ObjectT]
-        List object class
-
-    Returns
-    -------
-    ObjectT
-    """
-    res = await service.list_documents_as_dict(
-        page=1, page_size=0, query_filter={"_id": {"$in": document_ids}}
-    )
-    return list_object_class(**{**res, "page_size": 1})
-
-
 # pylint: disable=too-many-instance-attributes
 class FeatureController(
     BaseDocumentController[FeatureModelResponse, FeatureService, FeaturePaginatedList]
@@ -184,8 +150,8 @@ class FeatureController(
         catalog_service: CatalogService,
         table_service: TableService,
         feature_namespace_controller: FeatureNamespaceController,
-        semantic_service: SemanticService,
         derive_primary_entity_helper: DerivePrimaryEntityHelper,
+        feature_metadata_extractor: FeatureMetadataExtractor,
     ):
         # pylint: disable=too-many-arguments
         super().__init__(feature_service)
@@ -200,8 +166,8 @@ class FeatureController(
         self.catalog_service = catalog_service
         self.table_service = table_service
         self.feature_namespace_controller = feature_namespace_controller
-        self.semantic_service = semantic_service
         self.derive_primary_entity_helper = derive_primary_entity_helper
+        self.feature_metadata_extractor = feature_metadata_extractor
 
     async def submit_batch_feature_create_task(self, data: BatchFeatureCreate) -> Optional[Task]:
         """
@@ -505,74 +471,6 @@ class FeatureController(
                 status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]
             ) from exc
 
-    async def _extract_feature_metadata(self, op_struct: GroupOperationStructure) -> dict[str, Any]:
-        # retrieve related tables & semantics
-        table_list = await _get_list_object(self.table_service, op_struct.table_ids, TableList)
-        semantic_list = await _get_list_object(
-            self.semantic_service, table_list.semantic_ids, SemanticList
-        )
-
-        # prepare column mapping
-        column_map: dict[tuple[Optional[ObjectId], str], Any] = {}
-        semantic_map = {semantic.id: semantic.name for semantic in semantic_list.data}
-        for table in table_list.data:
-            for column in table.columns_info:
-                column_map[(table.id, column.name)] = {
-                    "table_name": table.name,
-                    "semantic": semantic_map.get(column.semantic_id),  # type: ignore
-                }
-
-        # construct feature metadata
-        source_columns = {}
-        reference_map: dict[Any, str] = {}
-        for idx, src_col in enumerate(op_struct.source_columns):
-            column_metadata = column_map[(src_col.table_id, src_col.name)]
-            reference_map[src_col] = f"Input{idx}"
-            source_columns[reference_map[src_col]] = {
-                "data": column_metadata["table_name"],
-                "column_name": src_col.name,
-                "semantic": column_metadata["semantic"],
-            }
-
-        derived_columns = {}
-        for idx, drv_col in enumerate(op_struct.derived_columns):
-            columns = [reference_map[col] for col in drv_col.columns]
-            reference_map[drv_col] = f"X{idx}"
-            derived_columns[reference_map[drv_col]] = {
-                "name": drv_col.name,
-                "inputs": columns,
-                "transforms": drv_col.transforms,
-            }
-
-        aggregation_columns = {}
-        for idx, agg_col in enumerate(op_struct.aggregations):
-            reference_map[agg_col] = f"F{idx}"
-            aggregation_columns[reference_map[agg_col]] = {
-                "name": agg_col.name,
-                "column": reference_map.get(
-                    agg_col.column, None
-                ),  # for count aggregation, column is None
-                "function": agg_col.method,
-                "keys": agg_col.keys,
-                "window": agg_col.window,
-                "category": agg_col.category,
-                "filter": agg_col.filter,
-            }
-
-        post_aggregation = None
-        if op_struct.post_aggregation:
-            post_aggregation = {
-                "name": op_struct.post_aggregation.name,
-                "inputs": [reference_map[col] for col in op_struct.post_aggregation.columns],
-                "transforms": op_struct.post_aggregation.transforms,
-            }
-        return {
-            "input_columns": source_columns,
-            "derived_columns": derived_columns,
-            "aggregations": aggregation_columns,
-            "post_aggregation": post_aggregation,
-        }
-
     async def get_info(
         self,
         document_id: ObjectId,
@@ -623,7 +521,7 @@ class FeatureController(
             )
 
         op_struct = feature.extract_operation_structure()
-        metadata = await self._extract_feature_metadata(op_struct=op_struct)
+        metadata = await self.feature_metadata_extractor.extract(op_struct=op_struct)
         return FeatureInfo(
             **namespace_info.dict(),
             version={"this": feature.version.to_str(), "default": default_feature.version.to_str()},

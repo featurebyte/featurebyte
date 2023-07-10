@@ -673,6 +673,30 @@ async def test_get_target_info(app_container, entity, target):
     _ = entity
     target_info = await app_container.target_controller.get_info(target.id, verbose=False)
 
+    expected_metadata = {
+        "input_columns": {
+            "Input0": {"data": "sf_event_table", "column_name": "col_float", "semantic": None},
+            "Input1": {
+                "data": "sf_event_table",
+                "column_name": "event_timestamp",
+                "semantic": "event_timestamp",
+            },
+        },
+        "derived_columns": {},
+        "aggregations": {
+            "F0": {
+                "name": "float_target",
+                "column": "Input0",
+                "function": "sum",
+                "keys": ["cust_id"],
+                "window": "1d",
+                "category": None,
+                "filter": False,
+            }
+        },
+        "post_aggregation": None,
+    }
+
     expected_info = TargetInfo(
         id=target.id,
         target_name=target.name,
@@ -689,6 +713,7 @@ async def test_get_target_info(app_container, entity, target):
                 data_type="event_table",
             )
         ),
+        metadata=expected_metadata,
     )
     assert target_info == expected_info
 
