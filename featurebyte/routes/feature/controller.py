@@ -151,7 +151,7 @@ class FeatureController(
         table_service: TableService,
         feature_namespace_controller: FeatureNamespaceController,
         derive_primary_entity_helper: DerivePrimaryEntityHelper,
-        feature_metadata_extractor: FeatureOrTargetMetadataExtractor,
+        feature_or_target_metadata_extractor: FeatureOrTargetMetadataExtractor,
     ):
         # pylint: disable=too-many-arguments
         super().__init__(feature_service)
@@ -167,7 +167,7 @@ class FeatureController(
         self.table_service = table_service
         self.feature_namespace_controller = feature_namespace_controller
         self.derive_primary_entity_helper = derive_primary_entity_helper
-        self.feature_metadata_extractor = feature_metadata_extractor
+        self.feature_metadata_extractor = feature_or_target_metadata_extractor
 
     async def submit_batch_feature_create_task(self, data: BatchFeatureCreate) -> Optional[Task]:
         """
