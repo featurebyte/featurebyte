@@ -406,6 +406,16 @@ class HistoricalFeatureTableInfo(BaseInfo):
     table_details: TableDetails
 
 
+class TargetTableInfo(BaseInfo):
+    """
+    Schema for target table info
+    """
+
+    observation_table_name: Optional[str]
+    target_name: str
+    table_details: TableDetails
+
+
 class DeploymentInfo(BaseInfo):
     """
     Schema for deployment info

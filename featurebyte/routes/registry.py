@@ -45,6 +45,7 @@ from featurebyte.routes.static_source_table.controller import StaticSourceTableC
 from featurebyte.routes.table.controller import TableController
 from featurebyte.routes.target.controller import TargetController
 from featurebyte.routes.target_namespace.controller import TargetNamespaceController
+from featurebyte.routes.target_table.controller import TargetTableController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.routes.temp_data.controller import TempDataController
 from featurebyte.routes.user_defined_function.controller import UserDefinedFunctionController
@@ -94,6 +95,7 @@ from featurebyte.service.table_info import TableInfoService
 from featurebyte.service.table_status import TableStatusService
 from featurebyte.service.target import TargetService
 from featurebyte.service.target_namespace import TargetNamespaceService
+from featurebyte.service.target_table import TargetTableService
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.service.tile.tile_task_executor import TileTaskExecutor
 from featurebyte.service.tile_cache import TileCacheService
@@ -208,6 +210,8 @@ app_container_config.register_class(
     TargetNamespaceController, dependency_override={"service": "target_namespace_service"}
 )
 app_container_config.register_class(TargetNamespaceService)
+app_container_config.register_class(TargetTableController)
+app_container_config.register_class(TargetTableService)
 app_container_config.register_class(TaskController)
 app_container_config.register_class(TaskManager)
 app_container_config.register_class(TempDataController)
