@@ -11,6 +11,7 @@ from featurebyte.models.batch_request_table import BatchRequestTableModel
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.static_source_table import StaticSourceTableModel
+from featurebyte.models.target_table import TargetTableModel
 from featurebyte.routes.common.base import BaseDocumentController, PaginatedDocument
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.task import Task
@@ -20,6 +21,7 @@ from featurebyte.service.historical_feature_table import HistoricalFeatureTableS
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.preview import PreviewService
 from featurebyte.service.static_source_table import StaticSourceTableService
+from featurebyte.service.target_table import TargetTableService
 
 MaterializedTableDocumentT = TypeVar(
     "MaterializedTableDocumentT",
@@ -28,6 +30,7 @@ MaterializedTableDocumentT = TypeVar(
     BatchRequestTableModel,
     BatchFeatureTableModel,
     StaticSourceTableModel,
+    TargetTableModel,
 )
 MaterializedTableDocumentServiceT = TypeVar(
     "MaterializedTableDocumentServiceT",
@@ -36,6 +39,7 @@ MaterializedTableDocumentServiceT = TypeVar(
     BatchRequestTableService,
     BatchFeatureTableService,
     StaticSourceTableService,
+    TargetTableService,
 )
 
 

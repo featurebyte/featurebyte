@@ -27,5 +27,6 @@
 /table
 /target
 /target_namespace
+/target_table
 /task
 /user_defined_function

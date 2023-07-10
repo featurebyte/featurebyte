@@ -23,6 +23,7 @@ from featurebyte.schema.historical_feature_table import HistoricalFeatureTableCr
 from featurebyte.schema.observation_table import ObservationTableCreate
 from featurebyte.schema.relationship_info import RelationshipInfoCreate
 from featurebyte.schema.static_source_table import StaticSourceTableCreate
+from featurebyte.schema.target_table import TargetTableCreate
 from featurebyte.schema.user_defined_function import UserDefinedFunctionCreate
 from tests.util.helper import iet_entropy
 
@@ -119,6 +120,14 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
             feature_list_id=feature_list.id,
         ),
     )
+    target_table = TargetTableCreate(
+        name="target_table",
+        feature_store_id=snowflake_feature_store.id,
+        observation_table_id=observation_table.id,
+        target_id=float_target.id,
+        graph=feature_list._get_feature_clusters()[0].graph,
+        node_names=feature_list._get_feature_clusters()[0].node_names,
+    )
     batch_request_table = BatchRequestTableCreate(
         name="batch_request_table",
         feature_store_id=snowflake_feature_store.id,
@@ -192,6 +201,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
             (relationship_info, "relationship_info"),
             (observation_table, "observation_table"),
             (historical_feature_table, "historical_feature_table"),
+            (target_table, "target_table"),
             (batch_request_table, "batch_request_table"),
             (batch_feature_table, "batch_feature_table"),
             (static_source_table, "static_source_table"),
