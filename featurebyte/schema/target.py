@@ -51,6 +51,24 @@ class TargetUpdate(FeatureByteBaseModel):
     name: StrictStr
 
 
+class TableMetadata(FeatureByteBaseModel):
+    """
+    Table metadata
+    """
+
+    name: StrictStr
+    data_type: StrictStr
+
+
+class InputData(FeatureByteBaseModel):
+    """
+    Input data
+    """
+
+    main_data: TableMetadata
+    other_data: Optional[List[TableMetadata]] = None
+
+
 class TargetInfo(FeatureByteBaseModel):
     """
     Target info
@@ -63,6 +81,7 @@ class TargetInfo(FeatureByteBaseModel):
     has_recipe: bool
     created_at: datetime
     updated_at: Optional[datetime]
+    input_data: InputData
 
 
 class TargetServiceUpdate(BaseDocumentServiceUpdateSchema):

@@ -14,10 +14,11 @@ from featurebyte.exception import MissingPointInTimeColumnError, RequiredEntityN
 from featurebyte.models.target import TargetModel
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.preview import FeatureOrTargetPreview
-from featurebyte.schema.target import TargetCreate, TargetInfo, TargetList
+from featurebyte.schema.target import InputData, TableMetadata, TargetCreate, TargetInfo, TargetList
 from featurebyte.service.entity import EntityService
 from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
 from featurebyte.service.preview import PreviewService
+from featurebyte.service.table import TableService
 from featurebyte.service.target import TargetService
 from featurebyte.service.target_namespace import TargetNamespaceService
 
@@ -35,11 +36,13 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
         target_namespace_service: TargetNamespaceService,
         entity_service: EntityService,
         preview_service: PreviewService,
+        table_service: TableService,
     ):
         super().__init__(target_service)
         self.target_namespace_service = target_namespace_service
         self.entity_service = entity_service
         self.preview_service = preview_service
+        self.table_service = table_service
 
     async def create_target(
         self,
@@ -125,6 +128,19 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
         entity_brief_info_list = await self.entity_service.get_entity_brief_info_list(
             set(entity_ids)
         )
+
+        # Get input table metadata
+        table_docs = await self.table_service.list_documents(
+            query_filter={"name": target_doc.tabular_source.table_details.table_name}
+        )
+        all_docs = await self.table_service.list_documents()
+        assert table_docs["data"] is not None
+        input_data = InputData(
+            main_data=TableMetadata(
+                name=target_doc.tabular_source.table_details.table_name,
+                data_type=table_docs["data"][0]["type"],
+            ),
+        )
         return TargetInfo(
             id=document_id,
             target_name=target_doc.name,
@@ -133,6 +149,7 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
             has_recipe=bool(target_doc.graph),
             created_at=target_doc.created_at,
             updated_at=target_doc.updated_at,
+            input_data=input_data,
         )
 
     async def preview(
