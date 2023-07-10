@@ -5,7 +5,7 @@
         "Run `pytest --update-fixtures` to update it."
     ],
     "_id": "64ab959914e12c405c1b23a2",
-    "feature_store_id": "64ab959714e12c405c1b236a",
+    "feature_store_id": "646f6c190ed28a5271fb02a1",
     "graph": {
         "edges": [
             {
@@ -188,5 +188,5 @@
     ],
     "observation_table_id": "646f6c1c0ed28a5271fb02d7",
     "serving_names_mapping": null,
-    "target_id": "64ab959814e12c405c1b238c"
+    "target_id": "64a80107d667dd0c2b13d8cd"
 }

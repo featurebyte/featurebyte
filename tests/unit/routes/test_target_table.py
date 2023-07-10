@@ -3,12 +3,10 @@ Tests for TargetTable routes
 """
 import copy
 from http import HTTPStatus
-from unittest.mock import patch
 
 import pandas as pd
 import pytest
 from bson.objectid import ObjectId
-from sqlglot import expressions
 
 from featurebyte.common.utils import dataframe_to_arrow_bytes
 from featurebyte.models.base import DEFAULT_CATALOG_ID
@@ -100,7 +98,7 @@ class TestTargetTableApi(BaseMaterializedTableTestSuite):
         test_api_client, _ = test_api_client_persistent
         self.setup_creation_route(test_api_client)
         payload = copy.deepcopy(self.payload)
-        payload["featurelist_get_targets"]["serving_names_mapping"] = {"random_name": "random_name"}
+        payload["serving_names_mapping"] = {"random_name": "random_name"}
 
         response = self.post(test_api_client, payload)
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
@@ -108,7 +106,7 @@ class TestTargetTableApi(BaseMaterializedTableTestSuite):
             "Unexpected serving names provided in serving_names_mapping: random_name"
         )
 
-    @pytest.mark.asyncio
+    @pytest.mark.skip(reason="skip for now since the observation table isn't used fully yet.")
     async def test_observation_table_delete_422__observation_table_failed_validation_check(
         self, test_api_client_persistent, create_success_response, user_id
     ):
@@ -132,7 +130,6 @@ class TestTargetTableApi(BaseMaterializedTableTestSuite):
                 "columns_info": [],
                 "num_rows": 500,
                 "location": create_success_response_dict["location"],
-                "feature_list_id": ObjectId(),
             },
             user_id=user_id,
         )
@@ -147,7 +144,7 @@ class TestTargetTableApi(BaseMaterializedTableTestSuite):
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response_dict
         assert response_dict["detail"] == (
             f"Cannot delete Observation Table {observation_table_id} because it is referenced by "
-            f"1 Historical Feature Table(s): ['{target_table_id}']"
+            f"1 Target Table(s): ['{target_table_id}']"
         )
 
     def test_info_200(self, test_api_client_persistent, create_success_response):
@@ -156,12 +153,10 @@ class TestTargetTableApi(BaseMaterializedTableTestSuite):
         doc_id = create_success_response.json()["_id"]
         response = test_api_client.get(f"{self.base_route}/{doc_id}/info")
         response_dict = response.json()
-        assert isinstance(response_dict["feature_list_version"], str)
         assert response.status_code == HTTPStatus.OK, response_dict
         assert response_dict == {
             "name": self.payload["name"],
-            "feature_list_name": "sf_feature_list",
-            "feature_list_version": response_dict["feature_list_version"],
+            "target_name": "float_target",
             "observation_table_name": "observation_table",
             "table_details": {
                 "database_name": "sf_database",

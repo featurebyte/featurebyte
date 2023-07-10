@@ -77,6 +77,13 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask):
         )
         return cast(MaterializedTableModel, document)
 
+    async def _delete_target_table(self) -> MaterializedTableModel:
+        document = await self.app_container.target_table_service.get_document(
+            document_id=self.task_payload.document_id
+        )
+        await self.app_container.target_table_service.delete_document(document_id=document.id)
+        return cast(MaterializedTableModel, document)
+
     async def _delete_static_source_table(self) -> MaterializedTableModel:
         document = await check_delete_static_source_table(
             static_source_table_service=self.app_container.static_source_table_service,
@@ -99,6 +106,7 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask):
             MaterializedTableCollectionName.OBSERVATION: self._delete_observation_table,
             MaterializedTableCollectionName.HISTORICAL_FEATURE: self._delete_historical_feature_table,
             MaterializedTableCollectionName.STATIC_SOURCE: self._delete_static_source_table,
+            MaterializedTableCollectionName.TARGET: self._delete_target_table,
         }
 
         # delete document stored at mongo
