@@ -49,7 +49,7 @@ async def check_delete_observation_table(
     document = await observation_table_service.get_document(document_id=document_id)
     reference_ids = [
         str(doc["_id"])
-        async for doc in historical_feature_table_service.list_documents_iterator(
+        async for doc in historical_feature_table_service.list_documents_as_dict_iterator(
             query_filter={"observation_table_id": document.id}
         )
     ]
@@ -95,7 +95,7 @@ async def check_delete_batch_request_table(
     document = await batch_request_table_service.get_document(document_id=document_id)
     reference_ids = [
         str(doc["_id"])
-        async for doc in batch_feature_table_service.list_documents_iterator(
+        async for doc in batch_feature_table_service.list_documents_as_dict_iterator(
             query_filter={"batch_request_table_id": document.id}
         )
     ]
@@ -141,7 +141,7 @@ async def check_delete_static_source_table(
     document = await static_source_table_service.get_document(document_id=document_id)
     reference_ids = [
         str(doc["_id"])
-        async for doc in table_service.list_documents_iterator(
+        async for doc in table_service.list_documents_as_dict_iterator(
             query_filter={"tabular_source": document.location.dict()}
         )
     ]

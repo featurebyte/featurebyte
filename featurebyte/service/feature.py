@@ -165,7 +165,9 @@ class FeatureService(BaseNamespaceService[FeatureModel, FeatureServiceCreate]):
         """
         document_dict = None
         query_filter = {"name": name, "version": version.dict()}
-        async for doc_dict in self.list_documents_iterator(query_filter=query_filter, page_size=1):
+        async for doc_dict in self.list_documents_as_dict_iterator(
+            query_filter=query_filter, page_size=1
+        ):
             document_dict = doc_dict
 
         if document_dict is None:

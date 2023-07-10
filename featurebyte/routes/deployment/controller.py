@@ -212,7 +212,7 @@ class DeploymentController(
         feature_list_ids = set()
         feature_ids = set()
         with self.service.allow_use_raw_query_filter():
-            deployment_data = await self.service.list_documents(
+            deployment_data = await self.service.list_documents_as_dict(
                 page=1,
                 page_size=0,
                 query_filter={"enabled": True},
@@ -224,7 +224,7 @@ class DeploymentController(
             feature_list_ids.add(deployment_model.feature_list_id)
 
         with self.feature_list_service.allow_use_raw_query_filter():
-            async for doc in self.feature_list_service.list_documents_iterator(
+            async for doc in self.feature_list_service.list_documents_as_dict_iterator(
                 query_filter={"_id": {"$in": list(feature_list_ids)}},
                 use_raw_query_filter=True,
             ):
@@ -265,7 +265,7 @@ class DeploymentController(
         AllDeploymentList
         """
         with self.service.allow_use_raw_query_filter():
-            deployment_data = await self.service.list_documents(
+            deployment_data = await self.service.list_documents_as_dict(
                 page=page,
                 page_size=page_size,
                 sort_by=sort_by,
@@ -276,7 +276,7 @@ class DeploymentController(
 
         feature_list_ids = {doc["feature_list_id"] for doc in deployment_data["data"]}
         with self.feature_list_service.allow_use_raw_query_filter():
-            feature_list_documents = await self.feature_list_service.list_documents(
+            feature_list_documents = await self.feature_list_service.list_documents_as_dict(
                 page_size=0,
                 query_filter={"_id": {"$in": list(feature_list_ids)}},
                 use_raw_query_filter=True,
@@ -286,7 +286,7 @@ class DeploymentController(
             }
 
         catalog_ids = {doc["catalog_id"] for doc in deployment_data["data"]}
-        catalog_documents = await self.catalog_service.list_documents(
+        catalog_documents = await self.catalog_service.list_documents_as_dict(
             page_size=0, query_filter={"_id": {"$in": list(catalog_ids)}}
         )
         deployment_id_to_catalog_name = {

@@ -279,7 +279,7 @@ class FeatureListController(
             params["query_filter"] = query_filter
 
         # list documents from persistent
-        document_data = await self.service.list_documents(
+        document_data = await self.service.list_documents_as_dict(
             page=page,
             page_size=page_size,
             sort_by=sort_by,
@@ -292,7 +292,7 @@ class FeatureListController(
             document["feature_list_namespace_id"] for document in document_data["data"]
         }
         namespace_id_to_default_id = {}
-        async for namespace in self.feature_list_namespace_service.list_documents_iterator(
+        async for namespace in self.feature_list_namespace_service.list_documents_as_dict_iterator(
             query_filter={"_id": {"$in": list(namespace_ids)}}
         ):
             namespace_id_to_default_id[namespace["_id"]] = namespace["default_feature_list_id"]
@@ -445,7 +445,7 @@ class FeatureListController(
         assert len(feature_list.feature_clusters) == 1
 
         features = []
-        async for doc in self.feature_service.list_documents_iterator(
+        async for doc in self.feature_service.list_documents_as_dict_iterator(
             query_filter={"_id": {"$in": feature_list.feature_ids}}
         ):
             features.append(ExtendedFeatureModel(**doc))

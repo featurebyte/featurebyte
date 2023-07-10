@@ -292,7 +292,7 @@ class TaskManager:
             catalog_id=self.catalog_id,
         )
 
-        result = await periodic_task_service.list_documents(
+        result = await periodic_task_service.list_documents_as_dict(
             page=1,
             page_size=0,
             query_filter={"name": name},
@@ -334,7 +334,7 @@ class TaskManager:
             persistent=self.persistent,
             catalog_id=self.catalog_id,
         )
-        result = await periodic_task_service.list_documents(
+        result = await periodic_task_service.list_documents_as_dict(
             page=1,
             page_size=0,
             query_filter={"name": name},

@@ -147,7 +147,7 @@ async def test_feature_list_status__deployed_feature_namespace_transit_to_public
     _ = mock_update_data_warehouse
     assert feature_list_namespace_deployed.status == FeatureListStatus.DEPLOYED
     feature_list_id = feature_list_namespace_deployed.feature_list_ids[0]
-    async for deployment in app_container.deployment_service.list_documents_iterator(
+    async for deployment in app_container.deployment_service.list_documents_as_dict_iterator(
         query_filter={"feature_list_id": feature_list_id, "enabled": True}
     ):
         await deploy_service.update_deployment(

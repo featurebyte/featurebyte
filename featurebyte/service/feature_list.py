@@ -183,14 +183,14 @@ class FeatureListService(
             entity_ids.update(feature.entity_ids)
 
         ancestor_entity_ids = set(entity_ids)
-        async for entity_doc in self.entity_service.list_documents_iterator(
+        async for entity_doc in self.entity_service.list_documents_as_dict_iterator(
             query_filter={"_id": {"$in": list(entity_ids)}}
         ):
             entity = EntityModel(**entity_doc)
             ancestor_entity_ids.update(entity.ancestor_ids)
 
         descendant_entity_ids = set(entity_ids)
-        async for entity_doc in self.entity_service.list_documents_iterator(
+        async for entity_doc in self.entity_service.list_documents_as_dict_iterator(
             query_filter={"ancestor_ids": {"$in": list(entity_ids)}}
         ):
             entity = EntityModel(**entity_doc)
@@ -198,7 +198,7 @@ class FeatureListService(
 
         relationships_info = [
             EntityRelationshipInfo(**relationship_info)
-            async for relationship_info in self.relationship_info_service.list_documents_iterator(
+            async for relationship_info in self.relationship_info_service.list_documents_as_dict_iterator(
                 query_filter={
                     "$or": [
                         {"entity_id": {"$in": list(descendant_entity_ids)}},
@@ -229,7 +229,7 @@ class FeatureListService(
 
     async def _get_feature_list_version(self, name: str) -> VersionIdentifier:
         version_name = get_version()
-        query_result = await self.list_documents(
+        query_result = await self.list_documents_as_dict(
             query_filter={"name": name, "version.name": version_name}
         )
         count = query_result["total"]
@@ -371,7 +371,7 @@ class FeatureListService(
                 document_id=feature_list.feature_list_namespace_id
             )
             versions_info = FeatureListBriefInfoList.from_paginated_data(
-                await self.list_documents(
+                await self.list_documents_as_dict(
                     page=1,
                     page_size=0,
                     query_filter={"_id": {"$in": namespace.feature_list_ids}},

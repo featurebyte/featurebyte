@@ -103,7 +103,7 @@ class BatchFeatureCreateTask(BaseTask):
             Saved feature ids
         """
         saved_feature_ids = set()
-        async for doc in self.app_container.feature_service.list_documents_iterator(
+        async for doc in self.app_container.feature_service.list_documents_as_dict_iterator(
             query_filter={"_id": {"$in": feature_ids}}
         ):
             saved_feature_ids.add(doc["_id"])
@@ -131,7 +131,7 @@ class BatchFeatureCreateTask(BaseTask):
         """
         conflict_to_resolution_feature_id_map = {}
         if conflict_resolution == "retrieve":
-            async for doc in self.app_container.feature_namespace_service.list_documents_iterator(
+            async for doc in self.app_container.feature_namespace_service.list_documents_as_dict_iterator(
                 query_filter={"name": {"$in": feature_names}}
             ):
                 feat_namespace = FeatureNamespaceModel(**doc)

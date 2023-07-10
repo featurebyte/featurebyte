@@ -20,10 +20,10 @@ async def test_data_document_services__retrieval(
     assert retrieved_item_table == item_table
 
     # check retrieval
-    event_table_docs = await event_table_service.list_documents(page_size=0)
+    event_table_docs = await event_table_service.list_documents_as_dict(page_size=0)
     event_table_ids = {doc["_id"] for doc in event_table_docs["data"]}
 
-    item_table_docs = await item_table_service.list_documents(page_size=0)
+    item_table_docs = await item_table_service.list_documents_as_dict(page_size=0)
     item_table_ids = {doc["_id"] for doc in item_table_docs["data"]}
 
     assert event_table.id in event_table_ids

@@ -52,7 +52,7 @@ class CatalogService(BaseDocumentService[CatalogModel, CatalogCreate, CatalogSer
             **kwargs,
         )
 
-    async def list_documents(
+    async def list_documents_as_dict(
         self,
         page: int = 1,
         page_size: int = 10,
@@ -62,7 +62,7 @@ class CatalogService(BaseDocumentService[CatalogModel, CatalogCreate, CatalogSer
         **kwargs: Any,
     ) -> dict[str, Any]:
         await self._ensure_default_catalog_available()
-        return await super().list_documents(
+        return await super().list_documents_as_dict(
             page=page,
             page_size=page_size,
             sort_by=sort_by,

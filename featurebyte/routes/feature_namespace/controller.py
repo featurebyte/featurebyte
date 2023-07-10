@@ -93,7 +93,7 @@ class FeatureNamespaceController(
         sort_dir: Literal["asc", "desc"] = "desc",
         **kwargs: Any,
     ) -> PaginatedDocument:
-        document_data = await self.service.list_documents(
+        document_data = await self.service.list_documents_as_dict(
             page=page,
             page_size=page_size,
             sort_by=sort_by,
@@ -110,7 +110,7 @@ class FeatureNamespaceController(
         )
 
         feature_id_to_primary_table_ids = {}
-        async for feature_dict in self.feature_service.list_documents_iterator(
+        async for feature_dict in self.feature_service.list_documents_as_dict_iterator(
             query_filter={"_id": {"$in": list(default_feature_ids)}}
         ):
             feature = FeatureModel(**feature_dict)
@@ -180,7 +180,7 @@ class FeatureNamespaceController(
             )
             max_readiness = FeatureReadiness(new_default_feature.readiness)
             version: Optional[str] = None
-            async for feature_dict in self.feature_service.list_documents_iterator(
+            async for feature_dict in self.feature_service.list_documents_as_dict_iterator(
                 query_filter={"_id": {"$in": feature_namespace.feature_ids}}
             ):
                 max_readiness = max(max_readiness, FeatureReadiness(feature_dict["readiness"]))
@@ -226,12 +226,12 @@ class FeatureNamespaceController(
         """
         _ = verbose
         namespace = await self.service.get_document(document_id=document_id)
-        entities = await self.entity_service.list_documents(
+        entities = await self.entity_service.list_documents_as_dict(
             page=1, page_size=0, query_filter={"_id": {"$in": namespace.entity_ids}}
         )
         primary_entity = get_primary_entity_from_entities(entities=entities)
 
-        tables = await self.table_service.list_documents(
+        tables = await self.table_service.list_documents_as_dict(
             page=1, page_size=0, query_filter={"_id": {"$in": namespace.table_ids}}
         )
 

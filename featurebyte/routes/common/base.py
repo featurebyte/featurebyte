@@ -143,7 +143,7 @@ class BaseDocumentController(Generic[Document, DocumentServiceT, PaginatedDocume
         PaginationDocument
             List of documents fulfilled the filtering condition
         """
-        document_data = await self.service.list_documents(
+        document_data = await self.service.list_documents_as_dict(
             page=page,
             page_size=page_size,
             sort_by=sort_by,
@@ -304,7 +304,7 @@ class DerivePrimaryEntityHelper:
             entity_ids.update(doc["entity_ids"])
 
         entity_id_to_entity = {}
-        async for entity_dict in self.entity_service.list_documents_iterator(
+        async for entity_dict in self.entity_service.list_documents_as_dict_iterator(
             query_filter={"_id": {"$in": list(entity_ids)}}
         ):
             entity_id_to_entity[entity_dict["_id"]] = entity_dict
@@ -332,7 +332,7 @@ class DerivePrimaryEntityHelper:
         if entity_id_to_entity is None:
             entity_id_to_entity = {
                 entity_dict["_id"]: entity_dict
-                async for entity_dict in self.entity_service.list_documents_iterator(
+                async for entity_dict in self.entity_service.list_documents_as_dict_iterator(
                     query_filter={"_id": {"$in": entity_ids}},
                 )
             }

@@ -38,7 +38,7 @@ class RelationshipInfoService(
         DocumentNotFoundError
             If relationship not found
         """
-        result = await self.list_documents(
+        result = await self.list_documents_as_dict(
             query_filter={
                 "entity_id": primary_entity_id,
                 "related_entity_id": related_entity_id,

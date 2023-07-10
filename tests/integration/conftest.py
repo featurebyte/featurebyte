@@ -878,7 +878,7 @@ async def create_snowflake_tile_spec(session, tile_registry_service):
         yield tile_spec
     finally:
         if tile_spec is not None:
-            async for doc in tile_registry_service.list_documents_iterator({}):
+            async for doc in tile_registry_service.list_documents_as_dict_iterator({}):
                 await tile_registry_service.delete_document(doc["_id"])
             await session.execute_query(
                 f"DROP TABLE IF EXISTS {tile_spec.aggregation_id}_ENTITY_TRACKER"

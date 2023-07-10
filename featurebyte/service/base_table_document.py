@@ -75,7 +75,7 @@ class BaseTableDocumentService(BaseDocumentService[Document, DocumentCreate, Doc
 
     def construct_list_query_filter(
         self,
-        query_filter: Optional[dict[str, Any]] = None,
+        query_filter: Optional[QueryFilter] = None,
         use_raw_query_filter: bool = False,
         **kwargs: Any,
     ) -> QueryFilter:

@@ -73,7 +73,7 @@ class FeatureReadinessService(BaseService):
         """
         assert len(feature_list_ids) > 0, "feature_list_ids should not be empty"
         default_feature_list: Optional[FeatureListModel] = None
-        async for feature_list_doc in self.feature_list_service.list_documents_iterator(
+        async for feature_list_doc in self.feature_list_service.list_documents_as_dict_iterator(
             query_filter={"_id": {"$in": feature_list_ids}}
         ):
             feature_list = FeatureListModel(**feature_list_doc)
@@ -204,7 +204,7 @@ class FeatureReadinessService(BaseService):
         """
         assert len(feature_ids) > 0, "feature_ids should not be empty"
         default_feature: Optional[FeatureModel] = None
-        async for feature_doc in self.feature_service.list_documents_iterator(
+        async for feature_doc in self.feature_service.list_documents_as_dict_iterator(
             query_filter={"_id": {"$in": feature_ids}}
         ):
             feature = FeatureModel(**feature_doc)

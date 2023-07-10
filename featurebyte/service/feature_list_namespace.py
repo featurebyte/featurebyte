@@ -68,12 +68,12 @@ class FeatureListNamespaceService(
         """
         _ = verbose
         namespace = await self.get_document(document_id=document_id)
-        entities = await self.entity_service.list_documents(
+        entities = await self.entity_service.list_documents_as_dict(
             page=1, page_size=0, query_filter={"_id": {"$in": namespace.entity_ids}}
         )
         primary_entity = get_primary_entity_from_entities(entities)
 
-        tables = await self.table_service.list_documents(
+        tables = await self.table_service.list_documents_as_dict(
             page=1, page_size=0, query_filter={"_id": {"$in": namespace.table_ids}}
         )
 
@@ -85,7 +85,7 @@ class FeatureListNamespaceService(
 
         # get default feature ids
         feat_namespace_to_default_id = {}
-        async for feat_namespace in self.feature_namespace_service.list_documents_iterator(
+        async for feat_namespace in self.feature_namespace_service.list_documents_as_dict_iterator(
             query_filter={"_id": {"$in": namespace.feature_namespace_ids}}
         ):
             feat_namespace_to_default_id[feat_namespace["_id"]] = feat_namespace[

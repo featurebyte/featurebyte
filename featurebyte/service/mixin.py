@@ -113,7 +113,7 @@ class GetOrCreateMixin(Generic[Document, DocumentCreateSchema]):
         """
 
     @abstractmethod
-    async def list_documents(
+    async def list_documents_as_dict(
         self,
         page: int = 1,
         page_size: int = 10,
@@ -156,7 +156,7 @@ class GetOrCreateMixin(Generic[Document, DocumentCreateSchema]):
         -------
         SemanticModel
         """
-        documents = await self.list_documents(query_filter={"name": name})
+        documents = await self.list_documents_as_dict(query_filter={"name": name})
         if documents["data"]:
             return self.document_class(**documents["data"][0])
         return await self.create_document(data=self.document_create_class(name=name))

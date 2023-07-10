@@ -101,7 +101,7 @@ class VersionService(BaseService):
             table_id_to_table: dict[ObjectId, ProxyTableModel] = {
                 # pylint: disable=abstract-class-instantiated
                 doc["_id"]: ProxyTableModel(**doc)  # type: ignore
-                async for doc in self.table_service.list_documents_iterator(
+                async for doc in self.table_service.list_documents_as_dict_iterator(
                     query_filter={"_id": {"$in": feature.table_ids}}
                 )
             }
@@ -364,7 +364,7 @@ class VersionService(BaseService):
         feature_list_namespace = await self.feature_list_namespace_service.get_document(
             document_id=feature_list.feature_list_namespace_id,
         )
-        feature_namespaces = await self.feature_namespace_service.list_documents(
+        feature_namespaces = await self.feature_namespace_service.list_documents_as_dict(
             query_filter={"_id": {"$in": feature_list_namespace.feature_namespace_ids}},
             page_size=0,
         )

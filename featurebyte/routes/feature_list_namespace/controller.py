@@ -84,7 +84,7 @@ class FeatureListNamespaceController(
         sort_dir: Literal["asc", "desc"] = "desc",
         **kwargs: Any,
     ) -> PaginatedDocument:
-        document_data = await self.service.list_documents(
+        document_data = await self.service.list_documents_as_dict(
             page=page,
             page_size=page_size,
             sort_by=sort_by,

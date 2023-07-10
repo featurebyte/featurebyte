@@ -132,7 +132,7 @@ class ProductionReadyValidator:
             "name": promoted_feature.name,
             "readiness": FeatureReadiness.PRODUCTION_READY.value,
         }
-        async for feature_doc in self.feature_service.list_documents_iterator(
+        async for feature_doc in self.feature_service.list_documents_as_dict_iterator(
             query_filter=query_filter
         ):
             if feature_doc["_id"] != promoted_feature.id:
@@ -161,7 +161,7 @@ class ProductionReadyValidator:
             "_id": {"$in": promoted_feature.table_ids},
             "status": TableStatus.DEPRECATED.value,
         }
-        async for table_doc in self.table_service.list_documents_iterator(
+        async for table_doc in self.table_service.list_documents_as_dict_iterator(
             query_filter=query_filter
         ):
             table_name = table_doc["name"]

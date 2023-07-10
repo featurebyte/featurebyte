@@ -74,7 +74,7 @@ class UserDefinedFunctionController(
         exception_class: type[DocumentUpdateError] | type[DocumentDeletionError],
     ) -> None:
         # check if function used in any saved feature
-        features = await self.feature_service.list_documents(
+        features = await self.feature_service.list_documents_as_dict(
             query_filter={"user_defined_function_ids": {"$in": [document_id]}},
         )
         if features["total"]:
@@ -274,7 +274,7 @@ class UserDefinedFunctionController(
             document_id=document.feature_store_id
         )
         features_info: List[UserDefinedFunctionFeatureInfo] = []
-        features = await self.feature_service.list_documents(
+        features = await self.feature_service.list_documents_as_dict(
             query_filter={"user_defined_function_ids": {"$in": [document_id]}},
         )
         if features["total"]:
