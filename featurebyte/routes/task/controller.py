@@ -10,6 +10,7 @@ from http import HTTPStatus
 from fastapi import HTTPException
 
 from featurebyte.schema.task import Task, TaskList
+from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
 from featurebyte.service.task_manager import TaskManager
 
 
@@ -50,7 +51,7 @@ class TaskController:
     async def list_tasks(
         self,
         page: int = 1,
-        page_size: int = 10,
+        page_size: int = DEFAULT_PAGE_SIZE,
         sort_dir: Literal["asc", "desc"] = "desc",
     ) -> TaskList:
         """

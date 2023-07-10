@@ -33,7 +33,13 @@ from featurebyte.models.persistent import (
 )
 from featurebyte.persistent.base import Persistent
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, BaseInfo
-from featurebyte.service.mixin import Document, DocumentCreateSchema, OpsServiceMixin, SortDir
+from featurebyte.service.mixin import (
+    DEFAULT_PAGE_SIZE,
+    Document,
+    DocumentCreateSchema,
+    OpsServiceMixin,
+    SortDir,
+)
 
 DocumentUpdateSchema = TypeVar("DocumentUpdateSchema", bound=BaseDocumentServiceUpdateSchema)
 InfoDocument = TypeVar("InfoDocument", bound=BaseInfo)
@@ -44,8 +50,6 @@ RAW_QUERY_FILTER_WARNING = (
 
 
 logger = get_logger(__name__)
-
-DEFAULT_PAGE_SIZE = 100
 
 
 def as_object_id(object_id: Any) -> ObjectId:

@@ -3,7 +3,7 @@ Migration service for data warehouse working schema
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Optional
 
 import textwrap
 
@@ -15,6 +15,7 @@ from featurebyte.logging import get_logger
 from featurebyte.migration.service import migrate
 from featurebyte.migration.service.mixin import DataWarehouseMigrationMixin
 from featurebyte.models.feature_store import FeatureStoreModel
+from featurebyte.models.persistent import QueryFilter
 from featurebyte.persistent import Persistent
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_store import FeatureStoreService
@@ -237,13 +238,13 @@ class DataWarehouseMigrationServiceV8(DataWarehouseMigrationMixin):
         self.working_schema_service = working_schema_service
 
     @migrate(version=3, description="Reset working schema from scratch")
-    async def reset_working_schema(self, query_filter: Optional[dict[str, Any]] = None) -> None:
+    async def reset_working_schema(self, query_filter: Optional[QueryFilter] = None) -> None:
         """
         Reset working schema from scratch
 
         Parameters
         ----------
-        query_filter: Optional[dict[str, Any]]
+        query_filter: Optional[QueryFilter]
             Query filter used to filter the documents used for migration. Used only in test when
             intending to migrate a specific document.
         """

@@ -28,7 +28,7 @@ from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_list_status import FeatureListStatusService
 from featurebyte.service.feature_readiness import FeatureReadinessService
-from featurebyte.service.mixin import Document
+from featurebyte.service.mixin import DEFAULT_PAGE_SIZE, Document
 
 
 class FeatureListNamespaceController(
@@ -79,7 +79,7 @@ class FeatureListNamespaceController(
     async def list(
         self,
         page: int = 1,
-        page_size: int = 10,
+        page_size: int = DEFAULT_PAGE_SIZE,
         sort_by: str | None = "created_at",
         sort_dir: Literal["asc", "desc"] = "desc",
         **kwargs: Any,

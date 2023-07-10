@@ -29,7 +29,7 @@ from featurebyte.service.entity import EntityService, get_primary_entity_from_en
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_readiness import FeatureReadinessService
-from featurebyte.service.mixin import Document
+from featurebyte.service.mixin import DEFAULT_PAGE_SIZE, Document
 from featurebyte.service.table import TableService
 
 
@@ -88,7 +88,7 @@ class FeatureNamespaceController(
     async def list(
         self,
         page: int = 1,
-        page_size: int = 10,
+        page_size: int = DEFAULT_PAGE_SIZE,
         sort_by: str | None = "created_at",
         sort_dir: Literal["asc", "desc"] = "desc",
         **kwargs: Any,

@@ -12,7 +12,7 @@ from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.catalog import CatalogModel
 from featurebyte.schema.catalog import CatalogCreate, CatalogServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService
-from featurebyte.service.mixin import SortDir
+from featurebyte.service.mixin import DEFAULT_PAGE_SIZE, SortDir
 
 
 class CatalogService(BaseDocumentService[CatalogModel, CatalogCreate, CatalogServiceUpdate]):
@@ -55,7 +55,7 @@ class CatalogService(BaseDocumentService[CatalogModel, CatalogCreate, CatalogSer
     async def list_documents_as_dict(
         self,
         page: int = 1,
-        page_size: int = 10,
+        page_size: int = DEFAULT_PAGE_SIZE,
         sort_by: str | None = "created_at",
         sort_dir: SortDir = "desc",
         use_raw_query_filter: bool = False,

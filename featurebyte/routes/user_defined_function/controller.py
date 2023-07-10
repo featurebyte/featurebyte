@@ -22,6 +22,7 @@ from featurebyte.schema.user_defined_function import (
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
+from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
 from featurebyte.service.user_defined_function import UserDefinedFunctionService
 
 
@@ -209,7 +210,7 @@ class UserDefinedFunctionController(
     async def list_user_defined_functions(
         self,
         page: int = 1,
-        page_size: int = 10,
+        page_size: int = DEFAULT_PAGE_SIZE,
         sort_by: str | None = "created_at",
         sort_dir: Literal["asc", "desc"] = "desc",
         search: str | None = None,

@@ -14,11 +14,12 @@ from featurebyte.exception import CredentialsError
 from featurebyte.logging import get_logger
 from featurebyte.models.base import FeatureByteBaseDocumentModel, FeatureByteBaseModel, User
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.models.persistent import Document
+from featurebyte.models.persistent import Document, QueryFilter
 from featurebyte.persistent.base import Persistent
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
 from featurebyte.service.session_manager import SessionManagerService
 
 BaseDocumentServiceT = BaseDocumentService[
@@ -64,8 +65,8 @@ class BaseMigrationServiceMixin:
 
     async def migrate_all_records(
         self,
-        query_filter: Optional[dict[str, Any]] = None,
-        page_size: int = 10,
+        query_filter: Optional[QueryFilter] = None,
+        page_size: int = DEFAULT_PAGE_SIZE,
         version: Optional[int] = None,
     ) -> None:
         """
@@ -73,7 +74,7 @@ class BaseMigrationServiceMixin:
 
         Parameters
         ----------
-        query_filter: Optional[dict[str, Any]]
+        query_filter: Optional[QueryFilter]
             Query filter used to filter the documents used for migration
         page_size: int
             Page size

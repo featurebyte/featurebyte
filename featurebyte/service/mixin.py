@@ -19,6 +19,7 @@ GeneralT = TypeVar("GeneralT")
 Document = TypeVar("Document", bound=FeatureByteBaseDocumentModel)
 DocumentCreateSchema = TypeVar("DocumentCreateSchema", bound=FeatureByteBaseModel)
 SortDir = Literal["asc", "desc"]
+DEFAULT_PAGE_SIZE = 100
 
 
 class OpsServiceMixin:
@@ -116,7 +117,7 @@ class GetOrCreateMixin(Generic[Document, DocumentCreateSchema]):
     async def list_documents_as_dict(
         self,
         page: int = 1,
-        page_size: int = 10,
+        page_size: int = DEFAULT_PAGE_SIZE,
         sort_by: str | None = "created_at",
         sort_dir: SortDir = "desc",
         **kwargs: Any,

@@ -28,7 +28,7 @@ from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 from featurebyte.service.item_table import ItemTableService
-from featurebyte.service.mixin import Document
+from featurebyte.service.mixin import DEFAULT_PAGE_SIZE, Document
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.periodic_task import PeriodicTaskService
 from featurebyte.service.relationship import ParentT, RelationshipService
@@ -117,7 +117,7 @@ class BaseDocumentController(Generic[Document, DocumentServiceT, PaginatedDocume
     async def list(
         self,
         page: int = 1,
-        page_size: int = 10,
+        page_size: int = DEFAULT_PAGE_SIZE,
         sort_by: str | None = "created_at",
         sort_dir: Literal["asc", "desc"] = "desc",
         **kwargs: Any,
@@ -157,7 +157,7 @@ class BaseDocumentController(Generic[Document, DocumentServiceT, PaginatedDocume
         document_id: ObjectId,
         query_filter: Optional[QueryFilter] = None,
         page: int = 1,
-        page_size: int = 10,
+        page_size: int = DEFAULT_PAGE_SIZE,
         sort_by: str | None = "created_at",
         sort_dir: Literal["asc", "desc"] = "desc",
         **kwargs: Any,
