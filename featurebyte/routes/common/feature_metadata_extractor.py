@@ -40,7 +40,7 @@ async def _get_list_object(
     -------
     ObjectT
     """
-    res = await service.list_documents(
+    res = await service.list_documents_as_dict(
         page=1, page_size=0, query_filter={"_id": {"$in": document_ids}}
     )
     return list_object_class(**{**res, "page_size": 1})
