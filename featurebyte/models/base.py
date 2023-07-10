@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar, Union
 
 import json
+import re
 from datetime import datetime
 
 from bson.errors import InvalidId
@@ -20,6 +21,7 @@ Model = TypeVar("Model", bound="FeatureByteBaseModel")
 
 DEFAULT_CATALOG_ID = ObjectId("63eda344d0313fb925f7883a")
 ACTIVE_CATALOG_ID: ObjectId = DEFAULT_CATALOG_ID
+CAMEL_CASE_TO_SNAKE_CASE_PATTERN = re.compile("((?!^)(?<!_)[A-Z][a-z]+|(?<=[a-z0-9])[A-Z])")
 
 
 def get_active_catalog_id() -> ObjectId:
@@ -216,6 +218,26 @@ class UniqueValuesConstraint(FeatureByteBaseModel):
     extra_query_params: Optional[Dict[str, Any]] = Field(default=None)
 
 
+class ReferenceInfo(FeatureByteBaseModel):
+    """
+    Reference information for a document
+    """
+
+    asset_name: str
+    document_id: PydanticObjectId
+
+    @property
+    def collection_name(self) -> str:
+        """
+        Collection name of the reference document
+
+        Returns
+        -------
+        str
+        """
+        return CAMEL_CASE_TO_SNAKE_CASE_PATTERN.sub(r"_\1", self.asset_name).lower()
+
+
 class FeatureByteBaseDocumentModel(FeatureByteBaseModel):
     """
     FeatureByte specific BaseDocumentModel
@@ -230,6 +252,8 @@ class FeatureByteBaseDocumentModel(FeatureByteBaseModel):
         Record creation datetime when the document get stored at the persistent
     updated_at: Optional[datetime]
         Record update datetime when the document get updated at the persistent
+    block_modifications_by: List[ReferenceInfo]
+        List of reference information that blocks modifications to the document
     """
 
     id: PydanticObjectId = Field(
@@ -244,6 +268,11 @@ class FeatureByteBaseDocumentModel(FeatureByteBaseModel):
     )
     updated_at: Optional[datetime] = Field(
         default=None, allow_mutation=False, description="Record last updated time"
+    )
+    block_modification_by: List[ReferenceInfo] = Field(
+        default_factory=list,
+        allow_mutation=False,
+        description="List of reference information that blocks modifications to the document",
     )
 
     @validator("id", pre=True)

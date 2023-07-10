@@ -15,6 +15,7 @@ from bson.objectid import ObjectId
 from featurebyte.common.dict_util import get_field_path_value
 from featurebyte.exception import (
     DocumentConflictError,
+    DocumentModificationBlockedError,
     DocumentNotFoundError,
     QueryNotSupportedError,
 )
@@ -22,6 +23,7 @@ from featurebyte.logging import get_logger
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteCatalogBaseDocumentModel,
+    ReferenceInfo,
     UniqueConstraintResolutionSignature,
     VersionIdentifier,
 )
@@ -300,12 +302,17 @@ class BaseDocumentService(
         -------
         int
             number of records deleted
-
-        Raises
-        ------
-        DocumentNotFoundError
-            If the requested document not found
         """
+        document = await self.get_document(
+            document_id=document_id,
+            exception_detail=exception_detail,
+            use_raw_query_filter=use_raw_query_filter,
+            **kwargs,
+        )
+
+        # check if document is modifiable
+        self._check_document_modifiable(document=document)
+
         query_filter = self._construct_get_query_filter(
             document_id=document_id, use_raw_query_filter=use_raw_query_filter, **kwargs
         )
@@ -314,11 +321,6 @@ class BaseDocumentService(
             query_filter=query_filter,
             user_id=self.user.id,
         )
-        if not num_of_records_deleted:
-            exception_detail = exception_detail or (
-                f'{self.class_name} (id: "{document_id}") not found. Please save the {self.class_name} object first.'
-            )
-            raise DocumentNotFoundError(exception_detail)
         return int(num_of_records_deleted)
 
     def construct_list_query_filter(
@@ -803,6 +805,17 @@ class BaseDocumentService(
                 resolution_signature=resolution_signature,
             )
 
+    @staticmethod
+    def _check_document_modifiable(document: Document) -> None:
+        if document.block_modification_by:
+            block_modification_by = [
+                f"{item.asset_name}(id: {item.document_id})"
+                for item in document.block_modification_by
+            ]
+            raise DocumentModificationBlockedError(
+                f"Document {document.id} is blocked from modification by {block_modification_by}"
+            )
+
     async def update_document(
         self,
         document_id: ObjectId,
@@ -833,6 +846,9 @@ class BaseDocumentService(
         """
         if document is None:
             document = await self.get_document(document_id=document_id)
+
+        # check if document is modifiable
+        self._check_document_modifiable(document=document)
 
         # perform validation first before actual update
         update_dict = data.dict(exclude_none=exclude_none)
@@ -907,3 +923,47 @@ class BaseDocumentService(
                 yield self.document_class(**audit_doc)
             else:
                 yield None
+
+    async def add_block_modification_by(
+        self, query_filter: QueryFilter, reference_info: ReferenceInfo
+    ) -> None:
+        """
+        Add block modification by to records matching query filter
+
+        Parameters
+        ----------
+        query_filter: QueryFilter
+            Query filter to find records to be blocked
+        reference_info: ReferenceInfo
+            Reference info of the blocking document
+        """
+        await self.persistent.update_many(
+            collection_name=self.collection_name,
+            query_filter=query_filter,
+            update={
+                "$addToSet": {"block_modification_by": reference_info.dict(by_alias=True)},
+            },
+            user_id=self.user.id,
+        )
+
+    async def remove_block_modification_by(
+        self, query_filter: QueryFilter, reference_info: ReferenceInfo
+    ) -> None:
+        """
+        Remove block modification by from records matching query filter
+
+        Parameters
+        ----------
+        query_filter: QueryFilter
+            Query filter to find records to be unblocked
+        reference_info: ReferenceInfo
+            Reference info of the blocking document
+        """
+        await self.persistent.update_many(
+            collection_name=self.collection_name,
+            query_filter=query_filter,
+            update={
+                "$pull": {"block_modification_by": reference_info.dict(by_alias=True)},
+            },
+            user_id=self.user.id,
+        )

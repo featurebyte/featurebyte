@@ -438,6 +438,7 @@ def test_catalog_update_name(catalog):
         [
             ("UPDATE", 'update: "grocery"', "name", "grocery", "Grocery"),
             ("UPDATE", 'update: "grocery"', "updated_at", None, catalog.updated_at.isoformat()),
+            ("INSERT", 'insert: "grocery"', "block_modification_by", np.nan, []),
             ("INSERT", 'insert: "grocery"', "created_at", np.nan, catalog.created_at.isoformat()),
             ("INSERT", 'insert: "grocery"', "default_feature_store_ids", np.nan, []),
             ("INSERT", 'insert: "grocery"', "name", np.nan, "grocery"),

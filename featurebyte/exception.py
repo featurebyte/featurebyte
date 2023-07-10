@@ -240,6 +240,12 @@ class DocumentInconsistencyError(DocumentError):
     """
 
 
+class DocumentModificationBlockedError(DocumentError):
+    """
+    Raise when the document modification is blocked
+    """
+
+
 class GraphInconsistencyError(DocumentError):
     """
     Raise when the graph consistency issue is detected

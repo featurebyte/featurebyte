@@ -148,6 +148,7 @@ def test_create_event_table(snowflake_database_table, event_table_dict):
     event_table_dict["_id"] = event_table.id
     event_table_dict["created_at"] = event_table.created_at
     event_table_dict["updated_at"] = event_table.updated_at
+    event_table_dict["block_modification_by"] = []
     event_table_dict["columns_info"][0]["semantic_id"] = event_table.columns_info[0].semantic_id
     event_table_dict["columns_info"][6]["semantic_id"] = event_table.columns_info[6].semantic_id
     assert output == event_table_dict
@@ -832,6 +833,7 @@ def test_default_feature_job_setting_history(saved_event_table):
         "catalog_id",
         "event_timestamp_timezone_offset",
         "event_timestamp_timezone_offset_column",
+        "block_modification_by",
     }
 
 

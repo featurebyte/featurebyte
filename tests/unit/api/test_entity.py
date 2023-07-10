@@ -147,6 +147,7 @@ def test_entity_update_name(entity):
             ("UPDATE", 'update: "customer"', "name", "customer", "Customer"),
             ("UPDATE", 'update: "customer"', "updated_at", None, entity.updated_at.isoformat()),
             ("INSERT", 'insert: "customer"', "ancestor_ids", np.nan, []),
+            ("INSERT", 'insert: "customer"', "block_modification_by", np.nan, []),
             ("INSERT", 'insert: "customer"', "catalog_id", np.nan, str(DEFAULT_CATALOG_ID)),
             ("INSERT", 'insert: "customer"', "created_at", np.nan, entity.created_at.isoformat()),
             ("INSERT", 'insert: "customer"', "name", np.nan, "customer"),

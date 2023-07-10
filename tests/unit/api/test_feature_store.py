@@ -202,6 +202,7 @@ def test_get(saved_snowflake_feature_store):
     audit_history = loaded_feature_store.audit()
     expected_audit_history = pd.DataFrame(
         [
+            ("block_modification_by", []),
             ("created_at", loaded_feature_store.created_at.isoformat()),
             ("details.account", "sf_account"),
             ("details.database", "sf_database"),

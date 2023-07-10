@@ -10,6 +10,7 @@ from pydantic import StrictStr, ValidationError
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
+    ReferenceInfo,
     VersionIdentifier,
 )
 
@@ -79,3 +80,17 @@ def test_version_identifier(version_str, version_identifier_dict):
     version_identifier = VersionIdentifier(**version_identifier_dict)
     assert VersionIdentifier.from_str(version_str) == version_identifier
     assert version_identifier.to_str() == version_str
+
+
+@pytest.mark.parametrize(
+    "asset_name,expected_collection_name",
+    [
+        ("SCDTable", "scd_table"),
+        ("FeatureList", "feature_list"),
+        ("ApprovalRequest", "approval_request"),
+    ],
+)
+def test_reference_info(asset_name, expected_collection_name):
+    """Test reference info collection name property"""
+    ref_info = ReferenceInfo(asset_name=asset_name, document_id=ObjectId())
+    assert ref_info.collection_name == expected_collection_name

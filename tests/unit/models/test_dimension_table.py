@@ -85,6 +85,7 @@ def get_base_expected_dimension_table_model(dimension_table_model, dimension_col
         },
         "dimension_id_column": "dimension_id",
         "catalog_id": DEFAULT_CATALOG_ID,
+        "block_modification_by": [],
     }
 
 
