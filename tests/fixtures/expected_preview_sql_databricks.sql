@@ -28,17 +28,13 @@ WITH REQUEST_TABLE AS (
                   UNIX_TIMESTAMP(MAX(POINT_IN_TIME)) - 1800
                 ) / 3600) * 3600 + 1800 - 900
               ) AS `__FB_ENTITY_TABLE_END_DATE`,
-              TO_TIMESTAMP(
-                FROM_UNIXTIME(
-                  CAST(TO_TIMESTAMP(
-                    FLOOR((
-                      UNIX_TIMESTAMP(MIN(POINT_IN_TIME)) - 1800
-                    ) / 3600) * 3600 + 1800 - 900
-                  ) AS DOUBLE) + (
-                    48 * 3600 * CAST(1000000 AS LONG) / CAST(1 AS LONG)
-                  ) * -1 / 1000000.0
-                )
-              ) AS `__FB_ENTITY_TABLE_START_DATE`
+              CAST(CAST(TO_TIMESTAMP(
+                FLOOR((
+                  UNIX_TIMESTAMP(MIN(POINT_IN_TIME)) - 1800
+                ) / 3600) * 3600 + 1800 - 900
+              ) AS DOUBLE) + (
+                48 * 3600 * CAST(1000000 AS LONG) / CAST(1 AS LONG)
+              ) * -1 / 1000000.0 AS TIMESTAMP) AS `__FB_ENTITY_TABLE_START_DATE`
             FROM `REQUEST_TABLE`
             GROUP BY
               `CUSTOMER_ID`

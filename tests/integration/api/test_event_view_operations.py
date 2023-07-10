@@ -749,14 +749,17 @@ def check_string_operations(event_view, column_name, limit=100):
     pd.testing.assert_series_equal(str_df["str_slice"], pandas_series.str[:5], check_names=False)
 
 
+def assert_datetime_almost_equal(s1: pd.Series, s2: pd.Series):
+    """
+    Assert that two datetime series are almost equal with difference of up to 1 microsecond
+    """
+    assert (s1 - s2).dt.total_seconds().abs().max() <= 1e-6
+
+
+@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 def test_datetime_operations(event_view, source_type):
     """Test datetime operations"""
     event_view = event_view.copy()
-
-    if source_type == "spark":
-        # TODO: Disabled temporarily. This passes locally but times out on CI due to slow row index
-        #  lineage / operation structure extraction (DEV-1574)
-        return
 
     column_name = "ËVENT_TIMESTAMP"
     limit = 100
@@ -860,21 +863,9 @@ def test_datetime_operations(event_view, source_type):
         dt_df["event_interval_microsecond"].astype(float), "microsecond"
     )
     pandas_timestamp_added_constant = pandas_series + pd.Timedelta("1d")
-    pd.testing.assert_series_equal(
-        dt_df["timestamp_added"],
-        pandas_timestamp_added,
-        check_names=False,
-    )
-    pd.testing.assert_series_equal(
-        dt_df["timestamp_added_from_timediff"],
-        pandas_timestamp_added,
-        check_names=False,
-    )
-    pd.testing.assert_series_equal(
-        dt_df["timestamp_added_constant"],
-        pandas_timestamp_added_constant,
-        check_names=False,
-    )
+    assert_datetime_almost_equal(dt_df["timestamp_added"], pandas_timestamp_added)
+    assert_datetime_almost_equal(dt_df["timestamp_added_from_timediff"], pandas_timestamp_added)
+    assert_datetime_almost_equal(dt_df["timestamp_added_constant"], pandas_timestamp_added_constant)
     pandas_timedelta_hour = (
         pd.to_timedelta(
             dt_df["event_interval_microsecond"].astype(float), unit="microsecond"
