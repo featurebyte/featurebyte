@@ -8,10 +8,9 @@ from __future__ import annotations
 from typing import Dict, List, Optional, Tuple
 
 import inspect
-import re
 from dataclasses import dataclass
 
-CAMEL_CASE_TO_SNAKE_CASE_PATTERN = re.compile("((?!^)(?<!_)[A-Z][a-z]+|(?<=[a-z0-9])[A-Z])")
+from featurebyte.models.base import CAMEL_CASE_TO_SNAKE_CASE_PATTERN
 
 
 def _get_class_name(class_name: str, name_override: Optional[str] = None) -> str:

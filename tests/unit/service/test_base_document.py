@@ -8,11 +8,18 @@ from unittest.mock import AsyncMock, Mock
 
 import numpy as np
 import pytest
+import pytest_asyncio
+from bson import ObjectId
 
-from featurebyte.exception import DocumentConflictError, DocumentNotFoundError
+from featurebyte.exception import (
+    DocumentConflictError,
+    DocumentModificationBlockedError,
+    DocumentNotFoundError,
+)
 from featurebyte.models.base import (
     DEFAULT_CATALOG_ID,
     FeatureByteBaseDocumentModel,
+    ReferenceInfo,
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
 )
@@ -350,5 +357,137 @@ async def test_delete_document(document_service):
     await document_service.delete_document(document_id=document.id)
 
     # try to delete document - expect an error
+    with pytest.raises(DocumentNotFoundError):
+        await document_service.get_document(document_id=document.id)
+
+
+@pytest_asyncio.fixture(name="document_with_block_modification")
+async def document_with_block_modification_fixture(document_service):
+    """Create a document with block_modification_by"""
+    # create document
+    document = await document_service.create_document(data=Document())
+
+    # add block_by_modification
+    reference_info = ReferenceInfo(asset_name="Asset", document_id=ObjectId())
+    await document_service.add_block_modification_by(
+        query_filter={"_id": document.id},
+        reference_info=reference_info,
+    )
+
+    # retrieve document & check
+    document = await document_service.get_document(document_id=document.id)
+    assert document.block_modification_by == [reference_info]
+    return document
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("remove_block_modification_attribute", [True, False])
+async def test_add_block_modification_by(
+    document_service, remove_block_modification_attribute, document_with_block_modification
+):
+    """Test update block by modification"""
+    document = document_with_block_modification
+    ref_info = document.block_modification_by[0]
+    if remove_block_modification_attribute:
+        # remove block_by_modification from document (check backward compatibility)
+        await document_service.persistent.update_one(
+            collection_name=document.collection_name(),
+            query_filter={"_id": document.id},
+            update={"$unset": {"block_modification_by": ""}},
+            user_id=ObjectId(),
+        )
+        # check persistent document
+        record = await document_service.persistent.find_one(
+            collection_name=document.collection_name(), query_filter={"_id": document.id}
+        )
+        assert "block_modification_by" not in record
+
+    # add the same reference info again
+    await document_service.add_block_modification_by(
+        query_filter={"_id": document.id}, reference_info=ref_info
+    )
+
+    # make sure it's not duplicated
+    document = await document_service.get_document(document_id=document.id)
+    assert document.block_modification_by == [ref_info]
+
+
+@pytest.mark.asyncio
+async def test_remove_block_modification_by(document_service, document_with_block_modification):
+    """Test remove block by modification"""
+    document = document_with_block_modification
+    ref_info = document.block_modification_by[0]
+
+    # remove block by modification
+    await document_service.remove_block_modification_by(
+        query_filter={"_id": document.id}, reference_info=ref_info
+    )
+
+    # make sure it's removed
+    document = await document_service.get_document(document_id=document.id)
+    assert document.block_modification_by == []
+
+
+@pytest.mark.asyncio
+async def test_document_not_modifiable_if_block_modification_by_not_empty(
+    document_service, document_with_block_modification
+):
+    """Test document not modifiable if block_modification_by not empty"""
+    document = document_with_block_modification
+    ref_info = document.block_modification_by[0]
+
+    # try to update document - expect an error
+    expected_error = f"Document {document.id} is blocked from modification by ['Asset(id: {ref_info.document_id})']"
+    with pytest.raises(DocumentModificationBlockedError) as exc:
+        await document_service.update_document(
+            document_id=document.id, data=Document(name="new_name")
+        )
+    assert expected_error in str(exc.value)
+
+    # try to delete document - expect an error
+    with pytest.raises(DocumentModificationBlockedError) as exc:
+        await document_service.delete_document(document_id=document.id)
+    assert expected_error in str(exc.value)
+
+    # add another block by modification
+    another_ref_info = ReferenceInfo(asset_name="Asset", document_id=ObjectId())
+    await document_service.add_block_modification_by(
+        query_filter={"_id": document.id}, reference_info=another_ref_info
+    )
+    document = await document_service.get_document(document_id=document.id)
+    assert document.block_modification_by == [ref_info, another_ref_info]
+
+    # remove block by modification
+    await document_service.remove_block_modification_by(
+        query_filter={"_id": document.id}, reference_info=ref_info
+    )
+
+    # try to update document - expect an error
+    expected_error = f"Document {document.id} is blocked from modification by ['Asset(id: {another_ref_info.document_id})']"
+    with pytest.raises(DocumentModificationBlockedError) as exc:
+        await document_service.update_document(
+            document_id=document.id, data=Document(name="new_name")
+        )
+    assert expected_error in str(exc.value)
+
+    # try to delete document - expect an error
+    with pytest.raises(DocumentModificationBlockedError) as exc:
+        await document_service.delete_document(document_id=document.id)
+
+    # remove block by modification
+    await document_service.remove_block_modification_by(
+        query_filter={"_id": document.id}, reference_info=another_ref_info
+    )
+    document = await document_service.get_document(document_id=document.id)
+    assert document.block_modification_by == []
+
+    # try to update document - expect no error
+    document = await document_service.update_document(
+        document_id=document.id, data=Document(name="new_name")
+    )
+    assert document.name == "new_name"
+
+    # try to delete document - expect no error
+    await document_service.delete_document(document_id=document.id)
     with pytest.raises(DocumentNotFoundError):
         await document_service.get_document(document_id=document.id)
