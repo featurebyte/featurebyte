@@ -897,11 +897,10 @@ class DatabricksAdapter(BaseAdapter):
         timestamp_seconds_added = expressions.Add(
             this=timestamp_seconds, expression=seconds_quantity
         )
-        return expressions.Anonymous(
-            this="TO_TIMESTAMP",
-            expressions=[
-                expressions.Anonymous(this="FROM_UNIXTIME", expressions=[timestamp_seconds_added])
-            ],
+        # Note: FROM_UNIXTIME doesn't work as it discards sub-seconds components even if sub-seconds
+        # are included in the specified date format.
+        return expressions.Cast(
+            this=timestamp_seconds_added, to=expressions.DataType.build("TIMESTAMP")
         )
 
     @classmethod
