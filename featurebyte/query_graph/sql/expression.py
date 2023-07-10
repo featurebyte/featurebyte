@@ -64,12 +64,6 @@ class RPad(Func):
     arg_types = {"this": True, "length": True, "pad": True}
 
 
-class Contains(Func):
-    """Contains function"""
-
-    arg_types = {"this": True, "pattern": True}
-
-
 class Concat(Func):
     """Concat function"""
 

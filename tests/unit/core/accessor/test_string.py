@@ -146,7 +146,7 @@ def test_pad_expression(
         (lambda s: s.str.contains("abc", case=True), "CONTAINS(\"PRODUCT_ACTION\", 'abc')"),
         (
             lambda s: s.str.contains("abc", case=False),
-            "CONTAINS(LOWER(\"PRODUCT_ACTION\"), LOWER('abc'))",
+            "CONTAINS(LOWER(\"PRODUCT_ACTION\"), 'abc')",
         ),
     ],
 )

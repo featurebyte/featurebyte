@@ -710,6 +710,8 @@ def check_string_operations(event_view, column_name, limit=100):
     event_view["str_replace"] = varchar_series.str.replace("a", "i")
     event_view["str_pad"] = varchar_series.str.pad(10, side="both", fillchar="-")
     event_view["str_contains"] = varchar_series.str.contains("ai")
+    event_view["str_new"] = varchar_series.str.replace("ai", "a%i")
+    event_view["str_contains_special_char"] = event_view["str_new"].str.contains("a%i")
     event_view["str_slice"] = varchar_series.str[:5]
 
     str_columns = [col for col in event_view.columns if col.startswith("str_")]
@@ -744,6 +746,12 @@ def check_string_operations(event_view, column_name, limit=100):
     pd.testing.assert_series_equal(
         str_df["str_contains"],
         pandas_series.str.contains("ai"),
+        check_names=False,
+    )
+    new_series = pandas_series.str.replace("ai", "a%i")
+    pd.testing.assert_series_equal(
+        str_df["str_contains_special_char"],
+        new_series.str.contains("a%i"),
         check_names=False,
     )
     pd.testing.assert_series_equal(str_df["str_slice"], pandas_series.str[:5], check_names=False)
