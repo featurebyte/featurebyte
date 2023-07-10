@@ -3,19 +3,26 @@ Target API object
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from http import HTTPStatus
 
 import pandas as pd
+from bson import ObjectId
 from pydantic import Field, StrictStr, root_validator
 from typeguard import typechecked
 
 from featurebyte.api.api_object_util import ForeignKeyMapping
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature_store import FeatureStore
+from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.savable_api_object import SavableApiObject
-from featurebyte.common.utils import dataframe_from_json, enforce_observation_set_row_order
+from featurebyte.api.target_table import TargetTable
+from featurebyte.common.utils import (
+    dataframe_from_json,
+    dataframe_to_arrow_bytes,
+    enforce_observation_set_row_order,
+)
 from featurebyte.config import Configurations
 from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType
@@ -26,6 +33,7 @@ from featurebyte.models.target import TargetModel
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.schema.preview import FeatureOrTargetPreview
 from featurebyte.schema.target import TargetUpdate
+from featurebyte.schema.target_table import TargetTableCreate
 
 
 class Target(Series, SavableApiObject):
@@ -123,13 +131,13 @@ class Target(Series, SavableApiObject):
         """
         Materializes a Target object using a small observation set of up to 50 rows.
 
-        The small observation set should combine historical points-in-time and key values of the primary entity from
+        The small observation set should combine points-in-time and key values of the primary entity from
         the target. Associated serving entities can also be utilized.
 
         Parameters
         ----------
         observation_set : pd.DataFrame
-            Observation set DataFrame which combines historical points-in-time and values of the target primary entity
+            Observation set DataFrame which combines points-in-time and values of the target primary entity
             or its descendant (serving entities). The column containing the point-in-time values should be named
             `POINT_IN_TIME`, while the columns representing entity values should be named using accepted serving
             names for the entity.
@@ -165,3 +173,95 @@ class Target(Series, SavableApiObject):
         result = response.json()
 
         return dataframe_from_json(result)  # pylint: disable=no-member
+
+    @enforce_observation_set_row_order
+    @typechecked
+    def compute_target(
+        self,
+        observation_set: pd.DataFrame,
+        serving_names_mapping: Optional[Dict[str, str]] = None,
+    ) -> pd.DataFrame:
+        """
+        Returns a DataFrame with target values for analysis, model training, or evaluation. The target
+        request data consists of an observation set that combines points-in-time and key values of the
+        primary entity from the target.
+
+        Associated serving entities can also be utilized.
+
+        Parameters
+        ----------
+        observation_set : pd.DataFrame
+            Observation set DataFrame or ObservationTable object, which combines points-in-time and values
+            of the target primary entity or its descendant (serving entities). The column containing the point-in-time
+            values should be named `POINT_IN_TIME`, while the columns representing entity values should be named using
+            accepted serving names for the entity.
+        serving_names_mapping : Optional[Dict[str, str]]
+            Optional serving names mapping if the training events table has different serving name columns than those
+            defined in Entities, mapping from original serving name to new name.
+
+        Returns
+        -------
+        pd.DataFrame
+            Materialized target.
+
+            **Note**: `POINT_IN_TIME` values will be converted to UTC time.
+        """
+        temp_target_table_name = f"__TEMPORARY_TARGET_TABLE_{ObjectId()}"
+        temp_target_table = self.compute_target_table(
+            observation_table=observation_set,
+            target_table_name=temp_target_table_name,
+            serving_names_mapping=serving_names_mapping,
+        )
+        try:
+            return temp_target_table.to_pandas()
+        finally:
+            temp_target_table.delete()
+
+    @typechecked
+    def compute_target_table(
+        self,
+        observation_table: Union[ObservationTable, pd.DataFrame],
+        target_table_name: str,
+        serving_names_mapping: Optional[Dict[str, str]] = None,
+    ) -> TargetTable:
+        """
+        Materialize feature list using an observation table asynchronously. The targets
+        will be materialized into a target table.
+
+        Parameters
+        ----------
+        observation_table: Union[ObservationTable, pd.DataFrame]
+            Observation set with `POINT_IN_TIME` and serving names columns. This can be either an
+            ObservationTable of a pandas DataFrame.
+        target_table_name: str
+            Name of the target table to be created
+        serving_names_mapping : Optional[Dict[str, str]]
+            Optional serving names mapping if the training events table has different serving name
+
+        Returns
+        -------
+        TargetTable
+        """
+        target_table_create_params = TargetTableCreate(
+            name=target_table_name,
+            observation_table_id=(
+                observation_table.id if isinstance(observation_table, ObservationTable) else None
+            ),
+            feature_store_id=self.feature_store.id,
+            serving_names_mapping=serving_names_mapping,
+            target_id=self.id,
+            graph=self.graph,
+            node_names=[self.node.name],
+        )
+        if isinstance(observation_table, ObservationTable):
+            files = None
+        else:
+            assert isinstance(observation_table, pd.DataFrame)
+            files = {"observation_set": dataframe_to_arrow_bytes(observation_table)}
+        target_table_doc = self.post_async_task(
+            route="/target_table",
+            payload={"payload": target_table_create_params.json()},
+            is_payload_json=False,
+            files=files,
+        )
+        return TargetTable.get_by_id(target_table_doc["_id"])

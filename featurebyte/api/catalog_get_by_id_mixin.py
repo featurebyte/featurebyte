@@ -23,6 +23,7 @@ from featurebyte.api.periodic_task import PeriodicTask
 from featurebyte.api.relationship import Relationship
 from featurebyte.api.static_source_table import StaticSourceTable
 from featurebyte.api.table import Table
+from featurebyte.api.target_table import TargetTable
 from featurebyte.api.user_defined_function import UserDefinedFunction
 from featurebyte.api.view import View
 
@@ -458,3 +459,28 @@ class CatalogGetByIdMixin:
         >>> user_defined_function = catalog.get_user_defined_function_by_id(ObjectId())  # doctest: +SKIP
         """
         return UserDefinedFunction.get_by_id(id=id)
+
+    @update_and_reset_catalog
+    def get_target_table_by_id(
+        self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
+    ) -> TargetTable:
+        """
+        Get target table by id.
+
+        Parameters
+        ----------
+        id: ObjectId
+            Target table id.
+
+        Returns
+        -------
+        TargetTable
+            Target table object.
+
+        Examples
+        --------
+        Get a saved target table.
+
+        >>> target_table = catalog.get_target_table_by_id(ObjectId())  # doctest: +SKIP
+        """
+        return TargetTable.get_by_id(id=id)

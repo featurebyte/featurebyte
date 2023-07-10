@@ -33,6 +33,7 @@ from featurebyte.api.savable_api_object import SavableApiObject
 from featurebyte.api.static_source_table import StaticSourceTable
 from featurebyte.api.table import Table
 from featurebyte.api.target import Target
+from featurebyte.api.target_table import TargetTable
 from featurebyte.api.user_defined_function import UserDefinedFunction
 from featurebyte.api.view import View
 from featurebyte.common.doc_util import FBAutoDoc
@@ -851,6 +852,29 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return UserDefinedFunction.list(include_id=include_id)
 
     @update_and_reset_catalog
+    def list_target_tables(self, include_id: Optional[bool] = True) -> pd.DataFrame:
+        """
+        List saved target tables.
+
+        Parameters
+        ----------
+        include_id: Optional[bool]
+            Whether to include id in the list.
+
+        Returns
+        -------
+        pd.DataFrame
+            Table of target tables.
+
+        Examples
+        --------
+        List saved target tables.
+
+        >>> target_tables = catalog.list_target_tables()
+        """
+        return TargetTable.list(include_id=include_id)
+
+    @update_and_reset_catalog
     def get_data_source(self) -> DataSource:
         """
         Gets the data source from the catalog to access source tables from the data warehouse.
@@ -1275,3 +1299,26 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         >>> user_defined_function = catalog.get_user_defined_function("user_defined_function_name")  # doctest: +SKIP
         """
         return UserDefinedFunction.get(name=name)
+
+    @update_and_reset_catalog
+    def get_target_table(self, name: str) -> TargetTable:
+        """
+        Get target table by name.
+
+        Parameters
+        ----------
+        name: str
+            Target table name.
+
+        Returns
+        -------
+        TargetTable
+            Target table object.
+
+        Examples
+        --------
+        Get a saved target table.
+
+        >>> target_table = catalog.get_target_table("target_table_name")  # doctest: +SKIP
+        """
+        return TargetTable.get(name=name)
