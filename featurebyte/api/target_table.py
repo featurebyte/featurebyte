@@ -19,7 +19,7 @@ from featurebyte.models.target_table import TargetTableModel
 from featurebyte.schema.target_table import TargetTableListRecord
 
 
-class TargetTable(TargetTableModel, ApiObject, MaterializedTableMixin):
+class TargetTable(ApiObject, MaterializedTableMixin):
     """
     TargetTable class
     """
