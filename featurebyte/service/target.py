@@ -10,12 +10,12 @@ import time
 import pandas as pd
 from bson import ObjectId
 
-from featurebyte import get_logger
 from featurebyte.common.model_util import parse_duration_string
 from featurebyte.common.progress import get_ranged_progress_callback
 from featurebyte.exception import DocumentCreationError, DocumentNotFoundError
-from featurebyte.models import FeatureStoreModel
+from featurebyte.logging import get_logger
 from featurebyte.models.feature_namespace import DefaultVersionMode
+from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.parent_serving import ParentServingPreparation
 from featurebyte.models.target import TargetModel

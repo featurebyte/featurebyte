@@ -23,14 +23,16 @@ class ObservationSetHelper:
         self.temp_storage = temp_storage
 
     async def get_observation_set(
-        self, observation_table_id: PydanticObjectId, observation_set_storage_path: Optional[str]
+        self,
+        observation_table_id: Optional[PydanticObjectId],
+        observation_set_storage_path: Optional[str],
     ) -> Union[pd.DataFrame, ObservationTableModel]:
         """
         Get an ObservationTableModel or in-memory Dataframe.
 
         Parameters
         ----------
-        observation_table_id: PydanticObjectId
+        observation_table_id: Optional[PydanticObjectId]
             ObservationTable ID
         observation_set_storage_path: Optional[str]
             Observation set storage path
