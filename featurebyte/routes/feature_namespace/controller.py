@@ -9,7 +9,6 @@ from bson.objectid import ObjectId
 
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.base import VersionIdentifier
-from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_namespace import DefaultVersionMode, FeatureReadiness
 from featurebyte.routes.catalog.catalog_name_injector import CatalogNameInjector
 from featurebyte.routes.common.base import (
@@ -110,10 +109,9 @@ class FeatureNamespaceController(
         )
 
         feature_id_to_primary_table_ids = {}
-        async for feature_dict in self.feature_service.list_documents_as_dict_iterator(
+        async for feature in self.feature_service.list_documents_iterator(
             query_filter={"_id": {"$in": list(default_feature_ids)}}
         ):
-            feature = FeatureModel(**feature_dict)
             feature_id_to_primary_table_ids[feature.id] = feature.primary_table_ids
 
         # construct primary entity IDs and primary table IDs & add these attributes to feature namespace docs
