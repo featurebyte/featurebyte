@@ -1,3 +1,6 @@
+"""
+Target table task payload
+"""
 from typing import Optional
 
 from featurebyte.enum import WorkerCommand

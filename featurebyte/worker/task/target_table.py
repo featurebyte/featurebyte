@@ -5,13 +5,9 @@ from __future__ import annotations
 
 from typing import Any, cast
 
-from pathlib import Path
-
 from featurebyte.logging import get_logger
 from featurebyte.models.target_table import TargetTableModel
 from featurebyte.schema.worker.task.target_table import TargetTableTaskPayload
-from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
-from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.target_table import TargetTableService
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin
