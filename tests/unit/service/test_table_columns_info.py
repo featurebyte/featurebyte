@@ -470,7 +470,7 @@ async def test_update_entity_relationship__relationship_infos_added(  # pylint: 
     )
 
     # Verify that relationships have correct updated by user IDs
-    result = await relationship_info_service.list_documents()
+    result = await relationship_info_service.list_documents_as_dict()
     data = result["data"]
     for relationship_info in data:
         assert relationship_info["updated_by"] == user.id

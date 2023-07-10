@@ -16,6 +16,7 @@ from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.preview import FeatureOrTargetPreview
 from featurebyte.schema.target import TargetCreate, TargetInfo, TargetList
 from featurebyte.service.entity import EntityService
+from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
 from featurebyte.service.preview import PreviewService
 from featurebyte.service.target import TargetService
 from featurebyte.service.target_namespace import TargetNamespaceService
@@ -62,7 +63,7 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
     async def list_target(
         self,
         page: int = 1,
-        page_size: int = 10,
+        page_size: int = DEFAULT_PAGE_SIZE,
         sort_by: Optional[str] = "created_at",
         sort_dir: Literal["asc", "desc"] = "desc",
         search: Optional[str] = None,

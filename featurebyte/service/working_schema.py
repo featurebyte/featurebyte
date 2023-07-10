@@ -8,7 +8,6 @@ from typing import Any
 from bson import ObjectId
 
 from featurebyte.logging import get_logger
-from featurebyte.models.feature import FeatureModel
 from featurebyte.persistent import Persistent
 from featurebyte.service.base_service import BaseService
 from featurebyte.service.feature import FeatureService
@@ -104,17 +103,17 @@ class WorkingSchemaService(BaseService):
     ) -> None:
         # activate use of raw query filter to retrieve all documents regardless of catalog membership
         with self.feature_service.allow_use_raw_query_filter():
-            online_enabled_feature_docs = self.feature_service.list_documents_iterator(
-                query_filter={
-                    "tabular_source.feature_store_id": feature_store_id,
-                    "online_enabled": True,
-                },
+            query_filter = {
+                "tabular_source.feature_store_id": feature_store_id,
+                "online_enabled": True,
+            }
+            online_enabled_features = self.feature_service.list_documents_iterator(
+                query_filter=query_filter,
                 use_raw_query_filter=True,
             )
 
-            async for feature_doc in online_enabled_feature_docs:
-                logger.info(f'Rescheduling jobs for online enabled feature: {feature_doc["name"]}')
-                feature = FeatureModel(**feature_doc)
+            async for feature in online_enabled_features:
+                logger.info(f"Rescheduling jobs for online enabled feature: {feature.name}")
                 await OnlineEnableService.update_data_warehouse_with_session(
                     session=session,
                     feature_manager_service=self.feature_manager_service,

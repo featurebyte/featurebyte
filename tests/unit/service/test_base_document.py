@@ -325,7 +325,9 @@ async def test_list_documents_iterator(document_service):
     for _ in range(total):
         await document_service.create_document(data=Document())
 
-    list_results = await document_service.list_documents(page_size=0, page=1, query_filter={})
+    list_results = await document_service.list_documents_as_dict(
+        page_size=0, page=1, query_filter={}
+    )
     expected_doc_ids = set(doc["_id"] for doc in list_results["data"])
     assert list_results["total"] == total
 
@@ -333,11 +335,15 @@ async def test_list_documents_iterator(document_service):
     for page_size in [1, 10, 15, 20]:
         doc_ids = [
             doc["_id"]
-            async for doc in document_service.list_documents_iterator(
+            async for doc in document_service.list_documents_as_dict_iterator(
                 query_filter={}, page_size=page_size
             )
         ]
         assert set(doc_ids) == expected_doc_ids
+
+    # check list_documents_iterator output type
+    async for doc in document_service.list_documents_iterator(query_filter={}, page_size=1):
+        assert isinstance(doc, Document)
 
 
 @pytest.mark.asyncio

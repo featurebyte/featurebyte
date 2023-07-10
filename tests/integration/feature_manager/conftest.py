@@ -35,5 +35,5 @@ async def extended_feature_model(feature_model_dict, session, feature_store, til
 
     yield feature
 
-    async for doc in tile_registry_service.list_documents_iterator({}):
+    async for doc in tile_registry_service.list_documents_as_dict_iterator({}):
         await tile_registry_service.delete_document(doc["_id"])

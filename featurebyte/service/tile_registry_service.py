@@ -40,8 +40,8 @@ class TileRegistryService(BaseDocumentService[TileModel, TileModel, TileUpdate])
             TileModel if the entry exists
         """
         query_filter = {"tile_id": tile_id, "aggregation_id": aggregation_id}
-        async for doc in self.list_documents_iterator(query_filter):
-            return TileModel(**doc)
+        async for tile in self.list_documents_iterator(query_filter):
+            return tile
         return None
 
     async def update_last_tile_metadata(

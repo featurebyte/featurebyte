@@ -28,7 +28,7 @@ from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 from featurebyte.service.item_table import ItemTableService
-from featurebyte.service.mixin import Document
+from featurebyte.service.mixin import DEFAULT_PAGE_SIZE, Document
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.periodic_task import PeriodicTaskService
 from featurebyte.service.relationship import ParentT, RelationshipService
@@ -119,7 +119,7 @@ class BaseDocumentController(Generic[Document, DocumentServiceT, PaginatedDocume
     async def list(
         self,
         page: int = 1,
-        page_size: int = 10,
+        page_size: int = DEFAULT_PAGE_SIZE,
         sort_by: str | None = "created_at",
         sort_dir: Literal["asc", "desc"] = "desc",
         **kwargs: Any,
@@ -145,7 +145,7 @@ class BaseDocumentController(Generic[Document, DocumentServiceT, PaginatedDocume
         PaginationDocument
             List of documents fulfilled the filtering condition
         """
-        document_data = await self.service.list_documents(
+        document_data = await self.service.list_documents_as_dict(
             page=page,
             page_size=page_size,
             sort_by=sort_by,
@@ -159,7 +159,7 @@ class BaseDocumentController(Generic[Document, DocumentServiceT, PaginatedDocume
         document_id: ObjectId,
         query_filter: Optional[QueryFilter] = None,
         page: int = 1,
-        page_size: int = 10,
+        page_size: int = DEFAULT_PAGE_SIZE,
         sort_by: str | None = "created_at",
         sort_dir: Literal["asc", "desc"] = "desc",
         **kwargs: Any,
@@ -287,7 +287,7 @@ class DerivePrimaryEntityHelper:
 
     async def get_entity_id_to_entity(
         self, doc_list: list[dict[str, Any]]
-    ) -> dict[ObjectId, dict[str, Any]]:
+    ) -> dict[ObjectId, EntityModel]:
         """
         Construct entity ID to entity dictionary mapping
 
@@ -298,24 +298,24 @@ class DerivePrimaryEntityHelper:
 
         Returns
         -------
-        dict[ObjectId, dict[str, Any]]
-            Dictionary mapping entity ID to entity dictionary
+        dict[ObjectId, EntityModel]
+            Dictionary mapping entity ID to entity model
         """
         entity_ids = set()
         for doc in doc_list:
             entity_ids.update(doc["entity_ids"])
 
-        entity_id_to_entity = {}
-        async for entity_dict in self.entity_service.list_documents_iterator(
+        entity_id_to_entity: dict[ObjectId, EntityModel] = {}
+        async for entity in self.entity_service.list_documents_iterator(
             query_filter={"_id": {"$in": list(entity_ids)}}
         ):
-            entity_id_to_entity[entity_dict["_id"]] = entity_dict
+            entity_id_to_entity[entity.id] = entity
         return entity_id_to_entity
 
     async def derive_primary_entity_ids(
         self,
         entity_ids: Sequence[ObjectId],
-        entity_id_to_entity: Optional[dict[ObjectId, dict[str, Any]]] = None,
+        entity_id_to_entity: Optional[dict[ObjectId, EntityModel]] = None,
     ) -> list[ObjectId]:
         """
         Derive primary entity IDs from a list of entity IDs
@@ -324,7 +324,7 @@ class DerivePrimaryEntityHelper:
         ----------
         entity_ids: Sequence[ObjectId]
             List of entity IDs
-        entity_id_to_entity: Optional[dict[ObjectId, dict[str, Any]]]
+        entity_id_to_entity: Optional[dict[ObjectId, EntityModel]]
             Dictionary mapping entity ID to entity dictionary
 
         Returns
@@ -333,11 +333,11 @@ class DerivePrimaryEntityHelper:
         """
         if entity_id_to_entity is None:
             entity_id_to_entity = {
-                entity_dict["_id"]: entity_dict
-                async for entity_dict in self.entity_service.list_documents_iterator(
+                entity.id: entity
+                async for entity in self.entity_service.list_documents_iterator(
                     query_filter={"_id": {"$in": entity_ids}},
                 )
             }
 
-        entities = [EntityModel(**entity_id_to_entity[entity_id]) for entity_id in entity_ids]
+        entities = [entity_id_to_entity[entity_id] for entity_id in entity_ids]
         return [entity.id for entity in derive_primary_entity(entities=entities)]

@@ -3,7 +3,7 @@ CredentialService
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from bson.objectid import ObjectId
 from cryptography.fernet import InvalidToken
@@ -53,7 +53,7 @@ class CredentialService(
 
     def construct_list_query_filter(
         self,
-        query_filter: Optional[Dict[str, Any]] = None,
+        query_filter: Optional[QueryFilter] = None,
         use_raw_query_filter: bool = False,
         **kwargs: Any,
     ) -> QueryFilter:

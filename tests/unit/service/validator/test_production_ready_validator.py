@@ -32,7 +32,7 @@ def source_version_creator_fixture(version_service, feature_service):
     """
 
     async def get_source_version(feature_name):
-        docs = await feature_service.list_documents(
+        docs = await feature_service.list_documents_as_dict(
             query_filter={
                 "name": feature_name,
             }
@@ -233,7 +233,7 @@ async def test_get_feature_job_setting_diffs__settings_differ(
     source_node, source_feature_version_graph = await source_version_creator(feature.name)
 
     # check if the settings match
-    feature_docs = await feature_service.list_documents(query_filter={"name": feature.name})
+    feature_docs = await feature_service.list_documents_as_dict(query_filter={"name": feature.name})
     feature_data = feature_docs["data"]
     assert len(feature_data) == 1
     feature_document = feature_data[0]

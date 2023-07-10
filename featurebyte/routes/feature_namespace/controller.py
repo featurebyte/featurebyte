@@ -9,7 +9,6 @@ from bson.objectid import ObjectId
 
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.base import VersionIdentifier
-from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_namespace import DefaultVersionMode, FeatureReadiness
 from featurebyte.routes.catalog.catalog_name_injector import CatalogNameInjector
 from featurebyte.routes.common.base import (
@@ -29,7 +28,7 @@ from featurebyte.service.entity import EntityService, get_primary_entity_from_en
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_readiness import FeatureReadinessService
-from featurebyte.service.mixin import Document
+from featurebyte.service.mixin import DEFAULT_PAGE_SIZE, Document
 from featurebyte.service.table import TableService
 
 
@@ -88,12 +87,12 @@ class FeatureNamespaceController(
     async def list(
         self,
         page: int = 1,
-        page_size: int = 10,
+        page_size: int = DEFAULT_PAGE_SIZE,
         sort_by: str | None = "created_at",
         sort_dir: Literal["asc", "desc"] = "desc",
         **kwargs: Any,
     ) -> PaginatedDocument:
-        document_data = await self.service.list_documents(
+        document_data = await self.service.list_documents_as_dict(
             page=page,
             page_size=page_size,
             sort_by=sort_by,
@@ -110,10 +109,9 @@ class FeatureNamespaceController(
         )
 
         feature_id_to_primary_table_ids = {}
-        async for feature_dict in self.feature_service.list_documents_iterator(
+        async for feature in self.feature_service.list_documents_iterator(
             query_filter={"_id": {"$in": list(default_feature_ids)}}
         ):
-            feature = FeatureModel(**feature_dict)
             feature_id_to_primary_table_ids[feature.id] = feature.primary_table_ids
 
         # construct primary entity IDs and primary table IDs & add these attributes to feature namespace docs
@@ -180,7 +178,7 @@ class FeatureNamespaceController(
             )
             max_readiness = FeatureReadiness(new_default_feature.readiness)
             version: Optional[str] = None
-            async for feature_dict in self.feature_service.list_documents_iterator(
+            async for feature_dict in self.feature_service.list_documents_as_dict_iterator(
                 query_filter={"_id": {"$in": feature_namespace.feature_ids}}
             ):
                 max_readiness = max(max_readiness, FeatureReadiness(feature_dict["readiness"]))
@@ -226,12 +224,12 @@ class FeatureNamespaceController(
         """
         _ = verbose
         namespace = await self.service.get_document(document_id=document_id)
-        entities = await self.entity_service.list_documents(
+        entities = await self.entity_service.list_documents_as_dict(
             page=1, page_size=0, query_filter={"_id": {"$in": namespace.entity_ids}}
         )
         primary_entity = get_primary_entity_from_entities(entities=entities)
 
-        tables = await self.table_service.list_documents(
+        tables = await self.table_service.list_documents_as_dict(
             page=1, page_size=0, query_filter={"_id": {"$in": namespace.table_ids}}
         )
 

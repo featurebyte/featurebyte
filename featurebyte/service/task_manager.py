@@ -17,6 +17,7 @@ from featurebyte.models.task import Task as TaskModel
 from featurebyte.persistent import Persistent
 from featurebyte.schema.task import Task
 from featurebyte.schema.worker.task.base import BaseTaskPayload
+from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
 from featurebyte.service.periodic_task import PeriodicTaskService
 
 TaskId = Union[ObjectId, UUID]
@@ -102,7 +103,7 @@ class TaskManager:
     async def list_tasks(
         self,
         page: int = 1,
-        page_size: int = 10,
+        page_size: int = DEFAULT_PAGE_SIZE,
         ascending: bool = True,
     ) -> tuple[list[Task], int]:
         """
@@ -292,7 +293,7 @@ class TaskManager:
             catalog_id=self.catalog_id,
         )
 
-        result = await periodic_task_service.list_documents(
+        result = await periodic_task_service.list_documents_as_dict(
             page=1,
             page_size=0,
             query_filter={"name": name},
@@ -334,7 +335,7 @@ class TaskManager:
             persistent=self.persistent,
             catalog_id=self.catalog_id,
         )
-        result = await periodic_task_service.list_documents(
+        result = await periodic_task_service.list_documents_as_dict(
             page=1,
             page_size=0,
             query_filter={"name": name},

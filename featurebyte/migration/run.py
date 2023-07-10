@@ -170,7 +170,7 @@ async def post_migration_sanity_check(service: BaseMigrationServiceMixin) -> Non
         Service used to perform the sanity check
     """
     # check document deserialization
-    docs = await service.delegate_service.list_documents(page_size=0)
+    docs = await service.delegate_service.list_documents_as_dict(page_size=0)
     step_size = max(len(docs["data"]) // 5, 1)
     audit_record_count = 0
     for i, doc_dict in enumerate(docs["data"]):

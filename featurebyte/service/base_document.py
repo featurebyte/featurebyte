@@ -33,7 +33,13 @@ from featurebyte.models.persistent import (
 )
 from featurebyte.persistent.base import Persistent
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, BaseInfo
-from featurebyte.service.mixin import Document, DocumentCreateSchema, OpsServiceMixin, SortDir
+from featurebyte.service.mixin import (
+    DEFAULT_PAGE_SIZE,
+    Document,
+    DocumentCreateSchema,
+    OpsServiceMixin,
+    SortDir,
+)
 
 DocumentUpdateSchema = TypeVar("DocumentUpdateSchema", bound=BaseDocumentServiceUpdateSchema)
 InfoDocument = TypeVar("InfoDocument", bound=BaseInfo)
@@ -317,7 +323,7 @@ class BaseDocumentService(
 
     def construct_list_query_filter(
         self,
-        query_filter: Optional[Dict[str, Any]] = None,
+        query_filter: Optional[QueryFilter] = None,
         use_raw_query_filter: bool = False,
         **kwargs: Any,
     ) -> QueryFilter:
@@ -326,7 +332,7 @@ class BaseDocumentService(
 
         Parameters
         ----------
-        query_filter: Optional[Dict[str, Any]]
+        query_filter: Optional[QueryFilter]
             Query filter to use as starting point
         use_raw_query_filter: bool
             Use only provided query filter
@@ -343,6 +349,7 @@ class BaseDocumentService(
             Using raw query filter without activating override
         """
         _ = self
+        output: QueryFilter
         if not query_filter:
             output = {}
         else:
@@ -364,10 +371,10 @@ class BaseDocumentService(
 
         return output
 
-    async def list_documents(
+    async def list_documents_as_dict(
         self,
         page: int = 1,
-        page_size: int = 10,
+        page_size: int = DEFAULT_PAGE_SIZE,
         sort_by: str | None = "created_at",
         sort_dir: SortDir = "desc",
         use_raw_query_filter: bool = False,
@@ -418,10 +425,10 @@ class BaseDocumentService(
             raise QueryNotSupportedError from exc
         return {"page": page, "page_size": page_size, "total": total, "data": list(docs)}
 
-    async def list_documents_iterator(
+    async def list_documents_as_dict_iterator(
         self,
-        query_filter: Dict[str, Any],
-        page_size: int = 1000,
+        query_filter: QueryFilter,
+        page_size: int = DEFAULT_PAGE_SIZE,
         use_raw_query_filter: bool = False,
     ) -> AsyncIterator[Dict[str, Any]]:
         """
@@ -429,7 +436,7 @@ class BaseDocumentService(
 
         Parameters
         ----------
-        query_filter: Dict[str, Any]
+        query_filter: QueryFilter
             Query filter
         page_size: int
             Page size
@@ -444,7 +451,7 @@ class BaseDocumentService(
         to_iterate, page = True, 1
 
         while to_iterate:
-            list_results = await self.list_documents(
+            list_results = await self.list_documents_as_dict(
                 page=page,
                 page_size=page_size,
                 query_filter=query_filter,
@@ -455,6 +462,36 @@ class BaseDocumentService(
 
             to_iterate = bool(list_results["total"] > (page * page_size))
             page += 1
+
+    async def list_documents_iterator(
+        self,
+        query_filter: QueryFilter,
+        page_size: int = DEFAULT_PAGE_SIZE,
+        use_raw_query_filter: bool = False,
+    ) -> AsyncIterator[Document]:
+        """
+        List documents iterator to retrieve all the results based on given document service & query filter
+
+        Parameters
+        ----------
+        query_filter: QueryFilter
+            Query filter
+        page_size: int
+            Page size per query
+        use_raw_query_filter: bool
+            Use only provided query filter (without any further processing)
+
+        Yields
+        -------
+        AsyncIterator[Document]
+            List query output
+        """
+        async for doc in self.list_documents_as_dict_iterator(
+            query_filter=query_filter,
+            page_size=page_size,
+            use_raw_query_filter=use_raw_query_filter,
+        ):
+            yield self.document_class(**doc)
 
     def _construct_list_audit_query_filter(
         self, query_filter: Optional[QueryFilter], **kwargs: Any
@@ -484,7 +521,7 @@ class BaseDocumentService(
         document_id: ObjectId,
         query_filter: Optional[QueryFilter] = None,
         page: int = 1,
-        page_size: int = 10,
+        page_size: int = DEFAULT_PAGE_SIZE,
         sort_by: str | None = "created_at",
         sort_dir: SortDir = "desc",
         **kwargs: Any,

@@ -163,15 +163,15 @@ class FeatureService(BaseNamespaceService[FeatureModel, FeatureServiceCreate]):
         DocumentNotFoundError
             If the specified feature name & version cannot be found
         """
-        document_dict = None
+        out_feat = None
         query_filter = {"name": name, "version": version.dict()}
-        async for doc_dict in self.list_documents_iterator(query_filter=query_filter, page_size=1):
-            document_dict = doc_dict
+        async for feat in self.list_documents_iterator(query_filter=query_filter, page_size=1):
+            out_feat = feat
 
-        if document_dict is None:
+        if out_feat is None:
             exception_detail = (
                 f'{self.class_name} (name: "{name}", version: "{version.to_str()}") not found. '
                 f"Please save the {self.class_name} object first."
             )
             raise DocumentNotFoundError(exception_detail)
-        return FeatureModel(**document_dict)
+        return out_feat

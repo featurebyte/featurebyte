@@ -82,7 +82,7 @@ class EntityService(BaseDocumentService[EntityModel, EntityCreate, EntityService
         docs = self.list_documents_iterator(
             query_filter={"serving_names": {"$in": list(serving_names_set)}}
         )
-        return [EntityModel(**doc) async for doc in docs]
+        return [doc async for doc in docs]
 
     async def get_children_entities(self, entity_id: ObjectId) -> list[EntityModel]:
         """
@@ -99,7 +99,7 @@ class EntityService(BaseDocumentService[EntityModel, EntityCreate, EntityService
         """
         query_filter = {"parents": {"$elemMatch": {"id": ObjectId(entity_id)}}}
         docs = self.list_documents_iterator(query_filter=query_filter)
-        return [EntityModel(**doc) async for doc in docs]
+        return [doc async for doc in docs]
 
     async def get_entities(self, entity_ids: set[ObjectId]) -> list[EntityModel]:
         """
@@ -115,7 +115,7 @@ class EntityService(BaseDocumentService[EntityModel, EntityCreate, EntityService
         list[EntityModel]
         """
         docs = self.list_documents_iterator(query_filter={"_id": {"$in": list(entity_ids)}})
-        return [EntityModel(**doc) async for doc in docs]
+        return [doc async for doc in docs]
 
     async def get_entity_brief_info_list(self, entity_ids: set[ObjectId]) -> EntityBriefInfoList:
         """
@@ -130,7 +130,7 @@ class EntityService(BaseDocumentService[EntityModel, EntityCreate, EntityService
         -------
         EntityBriefInfoList
         """
-        entities = await self.list_documents(
+        entities = await self.list_documents_as_dict(
             page=1, page_size=0, query_filter={"_id": {"$in": list(entity_ids)}}
         )
         if not entities:

@@ -18,7 +18,6 @@ from featurebyte.exception import DocumentInconsistencyError
 from featurebyte.logging import get_logger
 from featurebyte.models.base import PydanticObjectId, activate_catalog
 from featurebyte.models.feature import FeatureModel
-from featurebyte.models.feature_namespace import FeatureNamespaceModel
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.schema.feature import BatchFeatureItem, FeatureServiceCreate
 from featurebyte.schema.worker.task.base import BaseTaskPayload
@@ -103,7 +102,7 @@ class BatchFeatureCreateTask(BaseTask):
             Saved feature ids
         """
         saved_feature_ids = set()
-        async for doc in self.app_container.feature_service.list_documents_iterator(
+        async for doc in self.app_container.feature_service.list_documents_as_dict_iterator(
             query_filter={"_id": {"$in": feature_ids}}
         ):
             saved_feature_ids.add(doc["_id"])
@@ -130,11 +129,11 @@ class BatchFeatureCreateTask(BaseTask):
             Conflict feature name to resolution feature id mapping
         """
         conflict_to_resolution_feature_id_map = {}
+        service = self.app_container.feature_namespace_service
         if conflict_resolution == "retrieve":
-            async for doc in self.app_container.feature_namespace_service.list_documents_iterator(
+            async for feat_namespace in service.list_documents_iterator(
                 query_filter={"name": {"$in": feature_names}}
             ):
-                feat_namespace = FeatureNamespaceModel(**doc)
                 assert feat_namespace.name is not None
                 conflict_to_resolution_feature_id_map[
                     feat_namespace.name

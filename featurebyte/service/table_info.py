@@ -42,10 +42,10 @@ class TableInfoService:
         -------
         Dict[str, Any]
         """
-        entities = await self.entity_service.list_documents(
+        entities = await self.entity_service.list_documents_as_dict(
             page=1, page_size=0, query_filter={"_id": {"$in": data_document.entity_ids}}
         )
-        semantics = await self.semantic_service.list_documents(
+        semantics = await self.semantic_service.list_documents_as_dict(
             page=1, page_size=0, query_filter={"_id": {"$in": data_document.semantic_ids}}
         )
         columns_info = None

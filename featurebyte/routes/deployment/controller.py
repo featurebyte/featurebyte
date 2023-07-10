@@ -36,6 +36,7 @@ from featurebyte.service.catalog import CatalogService
 from featurebyte.service.context import ContextService
 from featurebyte.service.deployment import DeploymentService
 from featurebyte.service.feature_list import FeatureListService
+from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
 from featurebyte.service.online_serving import OnlineServingService
 
 
@@ -212,7 +213,7 @@ class DeploymentController(
         feature_list_ids = set()
         feature_ids = set()
         with self.service.allow_use_raw_query_filter():
-            deployment_data = await self.service.list_documents(
+            deployment_data = await self.service.list_documents_as_dict(
                 page=1,
                 page_size=0,
                 query_filter={"enabled": True},
@@ -224,12 +225,11 @@ class DeploymentController(
             feature_list_ids.add(deployment_model.feature_list_id)
 
         with self.feature_list_service.allow_use_raw_query_filter():
-            async for doc in self.feature_list_service.list_documents_iterator(
+            async for feature_list in self.feature_list_service.list_documents_iterator(
                 query_filter={"_id": {"$in": list(feature_list_ids)}},
                 use_raw_query_filter=True,
             ):
-                feature_list_model = FeatureListModel(**doc)
-                feature_ids.update(set(feature_list_model.feature_ids))
+                feature_ids.update(set(feature_list.feature_ids))
 
         return DeploymentSummary(
             num_feature_list=len(feature_list_ids),
@@ -239,7 +239,7 @@ class DeploymentController(
     async def list_all_deployments(
         self,
         page: int = 1,
-        page_size: int = 10,
+        page_size: int = DEFAULT_PAGE_SIZE,
         sort_by: str | None = "created_at",
         sort_dir: Literal["asc", "desc"] = "desc",
         enabled: bool | None = None,
@@ -265,7 +265,7 @@ class DeploymentController(
         AllDeploymentList
         """
         with self.service.allow_use_raw_query_filter():
-            deployment_data = await self.service.list_documents(
+            deployment_data = await self.service.list_documents_as_dict(
                 page=page,
                 page_size=page_size,
                 sort_by=sort_by,
@@ -276,7 +276,7 @@ class DeploymentController(
 
         feature_list_ids = {doc["feature_list_id"] for doc in deployment_data["data"]}
         with self.feature_list_service.allow_use_raw_query_filter():
-            feature_list_documents = await self.feature_list_service.list_documents(
+            feature_list_documents = await self.feature_list_service.list_documents_as_dict(
                 page_size=0,
                 query_filter={"_id": {"$in": list(feature_list_ids)}},
                 use_raw_query_filter=True,
@@ -286,7 +286,7 @@ class DeploymentController(
             }
 
         catalog_ids = {doc["catalog_id"] for doc in deployment_data["data"]}
-        catalog_documents = await self.catalog_service.list_documents(
+        catalog_documents = await self.catalog_service.list_documents_as_dict(
             page_size=0, query_filter={"_id": {"$in": list(catalog_ids)}}
         )
         deployment_id_to_catalog_name = {

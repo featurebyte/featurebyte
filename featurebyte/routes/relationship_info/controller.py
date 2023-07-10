@@ -13,6 +13,7 @@ from featurebyte.schema.relationship_info import (
     RelationshipInfoList,
 )
 from featurebyte.service.entity import EntityService
+from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
 from featurebyte.service.relationship_info import RelationshipInfoService
 from featurebyte.service.table import TableService
 from featurebyte.service.user_service import UserService
@@ -93,7 +94,7 @@ class RelationshipInfoController(
     async def list_relationship_info(
         self,
         page: int = 1,
-        page_size: int = 10,
+        page_size: int = DEFAULT_PAGE_SIZE,
         sort_by: Optional[str] = "created_at",
         sort_dir: Literal["asc", "desc"] = "desc",
         search: Optional[str] = None,

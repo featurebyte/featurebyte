@@ -148,7 +148,7 @@ async def test_user_defined_function_service__retrieval(
         await user_defined_function_service.get_document(document_id=doc_with_same_name.id)
 
     # check retrieving a user defined function by name
-    retrieved_docs = await user_defined_function_service.list_documents(
+    retrieved_docs = await user_defined_function_service.list_documents_as_dict(
         query_filter={"name": global_user_defined_function_doc.name}
     )
     expected_catalog_ids = {
@@ -158,8 +158,10 @@ async def test_user_defined_function_service__retrieval(
     assert retrieved_docs["total"] == 2
     assert set(doc["catalog_id"] for doc in retrieved_docs["data"]) == expected_catalog_ids
 
-    retrieved_docs = await user_defined_function_service_with_different_catalog.list_documents(
-        query_filter={"name": global_user_defined_function_doc.name}
+    retrieved_docs = (
+        await user_defined_function_service_with_different_catalog.list_documents_as_dict(
+            query_filter={"name": global_user_defined_function_doc.name}
+        )
     )
     expected_catalog_ids = {
         doc_with_same_name.catalog_id,

@@ -154,7 +154,7 @@ async def _get_list_object(
     -------
     ObjectT
     """
-    res = await service.list_documents(
+    res = await service.list_documents_as_dict(
         page=1, page_size=0, query_filter={"_id": {"$in": document_ids}}
     )
     return list_object_class(**{**res, "page_size": 1})
@@ -344,7 +344,7 @@ class FeatureController(
 
         if feature.feature_list_ids:
             feature_list_info = []
-            async for feature_list in self.feature_list_service.list_documents_iterator(
+            async for feature_list in self.feature_list_service.list_documents_as_dict_iterator(
                 query_filter={"_id": {"$in": feature.feature_list_ids}}
             ):
                 feature_list_info.append(
@@ -436,7 +436,7 @@ class FeatureController(
             params["query_filter"] = query_filter
 
         # list documents from persistent
-        document_data = await self.service.list_documents(
+        document_data = await self.service.list_documents_as_dict(
             page=page,
             page_size=page_size,
             sort_by=sort_by,
@@ -450,7 +450,7 @@ class FeatureController(
         )
         namespace_ids = {document["feature_namespace_id"] for document in document_data["data"]}
         namespace_id_to_default_id = {}
-        async for namespace in self.feature_namespace_service.list_documents_iterator(
+        async for namespace in self.feature_namespace_service.list_documents_as_dict_iterator(
             query_filter={"_id": {"$in": list(namespace_ids)}}
         ):
             namespace_id_to_default_id[namespace["_id"]] = namespace["default_feature_id"]
@@ -595,7 +595,7 @@ class FeatureController(
         feature = await self.service.get_document(document_id=document_id)
         catalog = await self.catalog_service.get_document(feature.catalog_id)
         data_id_to_doc = {}
-        async for doc in self.table_service.list_documents_iterator(
+        async for doc in self.table_service.list_documents_as_dict_iterator(
             query_filter={"_id": {"$in": feature.table_ids}}
         ):
             doc["catalog_name"] = catalog.name
@@ -615,7 +615,7 @@ class FeatureController(
                 document_id=feature.feature_namespace_id
             )
             versions_info = FeatureBriefInfoList.from_paginated_data(
-                await self.service.list_documents(
+                await self.service.list_documents_as_dict(
                     page=1,
                     page_size=0,
                     query_filter={"_id": {"$in": namespace.feature_ids}},

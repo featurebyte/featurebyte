@@ -139,7 +139,9 @@ async def test_feature_document_contains_raw_graph(feature_service, feature, api
         "tile_id"
     ] = "TILE_F1800_M300_B600_B5CAF33CCFEDA76C257EC2CB7F66C4AD22009B0F"
     expected_raw_groupby_node = {**expected_groupby_node, "parameters": expected_raw_groupby_params}
-    async for doc in feature_service.list_documents_iterator(query_filter={"_id": feature.id}):
+    async for doc in feature_service.list_documents_as_dict_iterator(
+        query_filter={"_id": feature.id}
+    ):
         graph = QueryGraphModel(**doc["graph"])
         raw_graph = QueryGraphModel(**doc["raw_graph"])
         groupby_node = graph.get_node_by_name("groupby_1")

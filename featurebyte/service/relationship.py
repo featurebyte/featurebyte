@@ -119,7 +119,7 @@ class RelationshipService(BaseService):
 
             # update all objects which have child_id in their ancestor_ids
             query_filter = {"ancestor_ids": {"$in": [child_id]}}
-            async for obj in self.document_service.list_documents_iterator(
+            async for obj in self.document_service.list_documents_as_dict_iterator(
                 query_filter=query_filter
             ):
                 await self.document_service.update_document(
@@ -180,7 +180,7 @@ class RelationshipService(BaseService):
 
             # update all objects which have child_id in their ancestor_ids
             query_filter = {"ancestor_ids": {"$in": [child_id]}}
-            async for obj in self.document_service.list_documents_iterator(
+            async for obj in self.document_service.list_documents_as_dict_iterator(
                 query_filter=query_filter
             ):
                 await self.document_service.update_document(

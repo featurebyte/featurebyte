@@ -182,7 +182,7 @@ class DeployService(BaseService):
 
             # if enabling deployment, check is there any feature with readiness not equal to production ready
             query_filter = {"_id": {"$in": feature_list.feature_ids}}
-            async for feature in self.feature_service.list_documents_iterator(
+            async for feature in self.feature_service.list_documents_as_dict_iterator(
                 query_filter=query_filter
             ):
                 if FeatureReadiness(feature["readiness"]) != FeatureReadiness.PRODUCTION_READY:
@@ -259,7 +259,7 @@ class DeployService(BaseService):
         if update_progress:
             update_progress(0, "Start updating feature list")
 
-        list_deployment_results = await self.deployment_service.list_documents(
+        list_deployment_results = await self.deployment_service.list_documents_as_dict(
             query_filter={"feature_list_id": feature_list_id, "enabled": True}
         )
         target_deployed = list_deployment_results["total"] > 0
