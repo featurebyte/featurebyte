@@ -296,11 +296,6 @@ class BaseDocumentService(
         -------
         int
             number of records deleted
-
-        Raises
-        ------
-        DocumentNotFoundError
-            If the requested document not found
         """
         document = await self.get_document(
             document_id=document_id,
