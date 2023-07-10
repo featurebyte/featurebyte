@@ -126,7 +126,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         observation_table_id=observation_table.id,
         target_id=float_target.id,
         graph=feature_list._get_feature_clusters()[0].graph,
-        node=feature_list._get_feature_clusters()[0].node_names,
+        node_names=feature_list._get_feature_clusters()[0].node_names,
     )
     batch_request_table = BatchRequestTableCreate(
         name="batch_request_table",
