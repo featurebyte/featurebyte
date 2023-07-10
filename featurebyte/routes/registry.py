@@ -111,6 +111,7 @@ from featurebyte.service.view_construction import ViewConstructionService
 from featurebyte.service.working_schema import WorkingSchemaService
 from featurebyte.storage import Storage
 from featurebyte.utils.credential import MongoBackedCredentialProvider
+from featurebyte.worker.util.observation_set_helper import ObservationSetHelper
 
 app_container_config = AppContainerConfig()
 
@@ -170,6 +171,7 @@ app_container_config.register_class(ItemTableController)
 app_container_config.register_class(ItemTableService)
 app_container_config.register_class(MongoBackedCredentialProvider)
 app_container_config.register_class(NamespaceHandler)
+app_container_config.register_class(ObservationSetHelper)
 app_container_config.register_class(ObservationTableController)
 app_container_config.register_class(ObservationTableService)
 app_container_config.register_class(OnlineEnableService)
