@@ -167,7 +167,7 @@ class FeatureController(
         self.table_service = table_service
         self.feature_namespace_controller = feature_namespace_controller
         self.derive_primary_entity_helper = derive_primary_entity_helper
-        self.feature_metadata_extractor = feature_or_target_metadata_extractor
+        self.feature_or_target_metadata_extractor = feature_or_target_metadata_extractor
 
     async def submit_batch_feature_create_task(self, data: BatchFeatureCreate) -> Optional[Task]:
         """
@@ -521,7 +521,7 @@ class FeatureController(
             )
 
         op_struct = feature.extract_operation_structure()
-        metadata = await self.feature_metadata_extractor.extract(op_struct=op_struct)
+        metadata = await self.feature_or_target_metadata_extractor.extract(op_struct=op_struct)
         return FeatureInfo(
             **namespace_info.dict(),
             version={"this": feature.version.to_str(), "default": default_feature.version.to_str()},

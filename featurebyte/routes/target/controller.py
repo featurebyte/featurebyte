@@ -38,14 +38,14 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
         entity_service: EntityService,
         preview_service: PreviewService,
         table_service: TableService,
-        feature_metadata_extractor: FeatureOrTargetMetadataExtractor,
+        feature_or_target_metadata_extractor: FeatureOrTargetMetadataExtractor,
     ):
         super().__init__(target_service)
         self.target_namespace_service = target_namespace_service
         self.entity_service = entity_service
         self.preview_service = preview_service
         self.table_service = table_service
-        self.feature_metadata_extractor = feature_metadata_extractor
+        self.feature_or_target_metadata_extractor = feature_or_target_metadata_extractor
 
     async def create_target(
         self,
@@ -146,7 +146,9 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
 
         # Get metadata
         group_op_structure = target_doc.extract_operation_structure()
-        target_metadata = await self.feature_metadata_extractor.extract(group_op_structure)
+        target_metadata = await self.feature_or_target_metadata_extractor.extract(
+            group_op_structure
+        )
 
         return TargetInfo(
             id=document_id,
