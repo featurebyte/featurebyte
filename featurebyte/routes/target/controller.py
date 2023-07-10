@@ -13,11 +13,13 @@ from fastapi import HTTPException
 from featurebyte.exception import MissingPointInTimeColumnError, RequiredEntityNotProvidedError
 from featurebyte.models.target import TargetModel
 from featurebyte.routes.common.base import BaseDocumentController
+from featurebyte.routes.common.feature_metadata_extractor import FeatureOrTargetMetadataExtractor
 from featurebyte.schema.preview import FeatureOrTargetPreview
-from featurebyte.schema.target import TargetCreate, TargetInfo, TargetList
+from featurebyte.schema.target import InputData, TableMetadata, TargetCreate, TargetInfo, TargetList
 from featurebyte.service.entity import EntityService
 from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
 from featurebyte.service.preview import PreviewService
+from featurebyte.service.table import TableService
 from featurebyte.service.target import TargetService
 from featurebyte.service.target_namespace import TargetNamespaceService
 
@@ -35,11 +37,15 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
         target_namespace_service: TargetNamespaceService,
         entity_service: EntityService,
         preview_service: PreviewService,
+        table_service: TableService,
+        feature_or_target_metadata_extractor: FeatureOrTargetMetadataExtractor,
     ):
         super().__init__(target_service)
         self.target_namespace_service = target_namespace_service
         self.entity_service = entity_service
         self.preview_service = preview_service
+        self.table_service = table_service
+        self.feature_or_target_metadata_extractor = feature_or_target_metadata_extractor
 
     async def create_target(
         self,
@@ -125,6 +131,25 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
         entity_brief_info_list = await self.entity_service.get_entity_brief_info_list(
             set(entity_ids)
         )
+
+        # Get input table metadata
+        assert (
+            len(target_doc.table_ids) == 1
+        ), "Target should have only one table for now, until forward joins are supported."
+        table_doc = await self.table_service.get_document(document_id=target_doc.table_ids[0])
+        input_data = InputData(
+            main_data=TableMetadata(
+                name=table_doc.name,
+                data_type=str(table_doc.type),
+            ),
+        )
+
+        # Get metadata
+        group_op_structure = target_doc.extract_operation_structure()
+        target_metadata = await self.feature_or_target_metadata_extractor.extract(
+            group_op_structure
+        )
+
         return TargetInfo(
             id=document_id,
             target_name=target_doc.name,
@@ -133,6 +158,8 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
             has_recipe=bool(target_doc.graph),
             created_at=target_doc.created_at,
             updated_at=target_doc.updated_at,
+            input_data=input_data,
+            metadata=target_metadata,
         )
 
     async def preview(
