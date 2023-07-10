@@ -5,8 +5,6 @@ from __future__ import annotations
 
 from typing import Any, cast
 
-from pathlib import Path
-
 from featurebyte.logging import get_logger
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
 from featurebyte.schema.worker.task.historical_feature_table import (
@@ -14,7 +12,6 @@ from featurebyte.schema.worker.task.historical_feature_table import (
 )
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 from featurebyte.service.historical_features import HistoricalFeaturesService
-from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin
 from featurebyte.worker.util.observation_set_helper import ObservationSetHelper
