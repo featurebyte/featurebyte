@@ -951,6 +951,18 @@ def historical_feature_table_fixture(
     return historical_feature_table
 
 
+@pytest.fixture(name="target_table")
+def target_table_fixture(
+    float_target, observation_table_from_source, snowflake_execute_query_for_materialized_table
+):
+    """
+    Fixture for a TargetTable
+    """
+    _ = snowflake_execute_query_for_materialized_table
+    float_target.save()
+    return float_target.compute_target_table(observation_table_from_source, "my_target_table")
+
+
 @pytest.fixture(name="grouped_event_view")
 def grouped_event_view_fixture(snowflake_event_view_with_entity):
     """
