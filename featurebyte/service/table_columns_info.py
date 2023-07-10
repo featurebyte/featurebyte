@@ -68,8 +68,8 @@ class TableColumnsInfoService(BaseService):
             if getattr(col_info, field_name)
         ]
         found_id_values = [
-            ObjectId(doc["_id"])
-            async for doc in service.list_documents_as_dict_iterator(
+            doc.id
+            async for doc in service.list_documents_iterator(
                 query_filter={"_id": {"$in": id_values}}
             )
         ]

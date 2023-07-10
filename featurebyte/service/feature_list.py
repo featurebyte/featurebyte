@@ -10,7 +10,6 @@ from bson.objectid import ObjectId
 from featurebyte.common.model_util import get_version
 from featurebyte.exception import DocumentError, DocumentInconsistencyError, DocumentNotFoundError
 from featurebyte.models.base import VersionIdentifier
-from featurebyte.models.entity import EntityModel
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import (
     EntityRelationshipInfo,
@@ -183,17 +182,15 @@ class FeatureListService(
             entity_ids.update(feature.entity_ids)
 
         ancestor_entity_ids = set(entity_ids)
-        async for entity_doc in self.entity_service.list_documents_as_dict_iterator(
+        async for entity in self.entity_service.list_documents_iterator(
             query_filter={"_id": {"$in": list(entity_ids)}}
         ):
-            entity = EntityModel(**entity_doc)
             ancestor_entity_ids.update(entity.ancestor_ids)
 
         descendant_entity_ids = set(entity_ids)
-        async for entity_doc in self.entity_service.list_documents_as_dict_iterator(
+        async for entity in self.entity_service.list_documents_iterator(
             query_filter={"ancestor_ids": {"$in": list(entity_ids)}}
         ):
-            entity = EntityModel(**entity_doc)
             descendant_entity_ids.add(entity.id)
 
         relationships_info = [

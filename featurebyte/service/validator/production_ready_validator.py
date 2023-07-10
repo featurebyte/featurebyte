@@ -132,13 +132,13 @@ class ProductionReadyValidator:
             "name": promoted_feature.name,
             "readiness": FeatureReadiness.PRODUCTION_READY.value,
         }
-        async for feature_doc in self.feature_service.list_documents_as_dict_iterator(
+        async for feature in self.feature_service.list_documents_iterator(
             query_filter=query_filter
         ):
-            if feature_doc["_id"] != promoted_feature.id:
+            if feature.id != promoted_feature.id:
                 raise DocumentUpdateError(
                     f"Found another feature version that is already PRODUCTION_READY. Please deprecate the feature "
-                    f"\"{promoted_feature.name}\" with ID {feature_doc['_id']} first before promoting the promoted "
+                    f'"{promoted_feature.name}" with ID {feature.id} first before promoting the promoted '
                     "version as there can only be one feature version that is production ready at any point in time. "
                     f"We are unable to promote the feature with ID {promoted_feature.id} right now."
                 )
@@ -161,12 +161,9 @@ class ProductionReadyValidator:
             "_id": {"$in": promoted_feature.table_ids},
             "status": TableStatus.DEPRECATED.value,
         }
-        async for table_doc in self.table_service.list_documents_as_dict_iterator(
-            query_filter=query_filter
-        ):
-            table_name = table_doc["name"]
+        async for table in self.table_service.list_documents_iterator(query_filter=query_filter):
             raise DocumentUpdateError(
-                f'Found a deprecated table "{table_name}" that is used by the feature "{promoted_feature.name}". '
+                f'Found a deprecated table "{table.name}" that is used by the feature "{promoted_feature.name}". '
                 "We are unable to promote the feature to PRODUCTION_READY right now."
             )
 
