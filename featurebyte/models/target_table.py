@@ -1,5 +1,5 @@
 """
-HistoricalFeatureTableModel
+TargetTableModel
 """
 from __future__ import annotations
 

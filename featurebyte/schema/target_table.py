@@ -52,7 +52,7 @@ class TargetTableList(PaginationMixin):
 
 class TargetTableListRecord(BaseMaterializedTableListRecord):
     """
-    Schema for listing historical feature tables as a DataFrame
+    Schema for listing target tables as a DataFrame
     """
 
     feature_store_id: PydanticObjectId
