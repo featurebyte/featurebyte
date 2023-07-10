@@ -360,6 +360,7 @@ class MaterializedTableNamePrefix(StrEnum):
     HISTORICAL_FEATURE_TABLE = "HISTORICAL_FEATURE_TABLE"
     BATCH_REQUEST_TABLE = "BATCH_REQUEST_TABLE"
     BATCH_FEATURE_TABLE = "BATCH_FEATURE_TABLE"
+    TARGET_TABLE = "TARGET_TABLE"
 
     @classmethod
     def all(cls) -> list[str]:

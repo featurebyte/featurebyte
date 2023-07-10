@@ -25,7 +25,7 @@ class TargetTableService(BaseMaterializedTableService[TargetTableModel, TargetTa
     """
 
     document_class = TargetTableModel
-    materialized_table_name_prefix = MaterializedTableNamePrefix.HISTORICAL_FEATURE_TABLE
+    materialized_table_name_prefix = MaterializedTableNamePrefix.TARGET_TABLE
 
     @property
     def class_name(self) -> str:
