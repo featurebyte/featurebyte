@@ -27,7 +27,7 @@ from featurebyte.query_graph.model.feature_job_setting import (
 )
 from featurebyte.query_graph.node.cleaning_operation import TableCleaningOperation
 from featurebyte.routes.common.base import BaseDocumentController, DerivePrimaryEntityHelper
-from featurebyte.routes.common.feature_metadata_extractor import FeatureMetadataExtractor
+from featurebyte.routes.common.feature_metadata_extractor import FeatureOrTargetMetadataExtractor
 from featurebyte.routes.feature_namespace.controller import FeatureNamespaceController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.feature import (
@@ -151,7 +151,7 @@ class FeatureController(
         table_service: TableService,
         feature_namespace_controller: FeatureNamespaceController,
         derive_primary_entity_helper: DerivePrimaryEntityHelper,
-        feature_metadata_extractor: FeatureMetadataExtractor,
+        feature_metadata_extractor: FeatureOrTargetMetadataExtractor,
     ):
         # pylint: disable=too-many-arguments
         super().__init__(feature_service)

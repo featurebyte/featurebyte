@@ -13,7 +13,7 @@ from fastapi import HTTPException
 from featurebyte.exception import MissingPointInTimeColumnError, RequiredEntityNotProvidedError
 from featurebyte.models.target import TargetModel
 from featurebyte.routes.common.base import BaseDocumentController
-from featurebyte.routes.common.feature_metadata_extractor import FeatureMetadataExtractor
+from featurebyte.routes.common.feature_metadata_extractor import FeatureOrTargetMetadataExtractor
 from featurebyte.schema.preview import FeatureOrTargetPreview
 from featurebyte.schema.target import InputData, TableMetadata, TargetCreate, TargetInfo, TargetList
 from featurebyte.service.entity import EntityService
@@ -38,7 +38,7 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
         entity_service: EntityService,
         preview_service: PreviewService,
         table_service: TableService,
-        feature_metadata_extractor: FeatureMetadataExtractor,
+        feature_metadata_extractor: FeatureOrTargetMetadataExtractor,
     ):
         super().__init__(target_service)
         self.target_namespace_service = target_namespace_service
@@ -145,8 +145,7 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
         )
 
         # Get metadata
-        operation_structure = target_doc.graph.extract_operation_structure(target_doc.node)
-        group_op_structure = operation_structure.to_group_operation_structure()
+        group_op_structure = target_doc.extract_operation_structure()
         target_metadata = await self.feature_metadata_extractor.extract(group_op_structure)
 
         return TargetInfo(

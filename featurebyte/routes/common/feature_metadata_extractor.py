@@ -46,9 +46,9 @@ async def _get_list_object(
     return list_object_class(**{**res, "page_size": 1})
 
 
-class FeatureMetadataExtractor:
+class FeatureOrTargetMetadataExtractor:
     """
-    Feature metadata extractor.
+    Feature or target metadata extractor.
     """
 
     def __init__(
