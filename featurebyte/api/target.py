@@ -131,13 +131,13 @@ class Target(Series, SavableApiObject):
         """
         Materializes a Target object using a small observation set of up to 50 rows.
 
-        The small observation set should combine historical points-in-time and key values of the primary entity from
+        The small observation set should combine points-in-time and key values of the primary entity from
         the target. Associated serving entities can also be utilized.
 
         Parameters
         ----------
         observation_set : pd.DataFrame
-            Observation set DataFrame which combines historical points-in-time and values of the target primary entity
+            Observation set DataFrame which combines points-in-time and values of the target primary entity
             or its descendant (serving entities). The column containing the point-in-time values should be named
             `POINT_IN_TIME`, while the columns representing entity values should be named using accepted serving
             names for the entity.
@@ -225,8 +225,8 @@ class Target(Series, SavableApiObject):
         serving_names_mapping: Optional[Dict[str, str]] = None,
     ) -> TargetTable:
         """
-        Materialize feature list using an observation table asynchronously. The historical features
-        will be materialized into a historical feature table.
+        Materialize feature list using an observation table asynchronously. The targets
+        will be materialized into a target table.
 
         Parameters
         ----------
@@ -234,7 +234,7 @@ class Target(Series, SavableApiObject):
             Observation set with `POINT_IN_TIME` and serving names columns. This can be either an
             ObservationTable of a pandas DataFrame.
         target_table_name: str
-            Name of the historical feature table to be created
+            Name of the target table to be created
         serving_names_mapping : Optional[Dict[str, str]]
             Optional serving names mapping if the training events table has different serving name
 

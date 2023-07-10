@@ -56,7 +56,7 @@ def test_delete(target_table):
 
 
 def test_info(target_table):
-    """Test get historical feature table info"""
+    """Test get target table info"""
     info_dict = target_table.info()
     assert info_dict["table_details"]["table_name"].startswith("TARGET_TABLE_")
     assert info_dict == {
