@@ -3,7 +3,7 @@ Module for datetime operations related sql generation
 """
 from __future__ import annotations
 
-from typing import Literal, Union, cast
+from typing import Union, cast
 
 from dataclasses import dataclass
 
@@ -60,8 +60,8 @@ class DatetimeExtractNode(ExpressionNode):
                 this="F_TIMEZONE_OFFSET_TO_SECOND",
                 expressions=[timezone_offset_expr],
             )
-            timestamp_expr = expressions.Anonymous(
-                this="DATEADD", expressions=["second", timezone_offset_seconds, input_expr_node.sql]
+            timestamp_expr = context.adapter.dateadd_second(
+                timezone_offset_seconds, input_expr_node.sql
             )
 
         sql_node = DatetimeExtractNode(
@@ -81,25 +81,16 @@ class DateDiffNode(ExpressionNode):
     right_node: ExpressionNode
     query_node_type = NodeType.DATE_DIFF
 
-    def with_unit(self, unit: TimedeltaSupportedUnitType) -> Expression:
-        """Construct a date difference expression with provided time unit
-
-        Parameters
-        ----------
-        unit : TimedeltaSupportedUnitType
-            Time unit
+    def total_microseconds(self) -> Expression:
+        """Construct a date difference expression in microseconds
 
         Returns
         -------
         Expression
         """
-        output_expr = expressions.Anonymous(
-            this="DATEDIFF",
-            expressions=[
-                expressions.Identifier(this=unit),
-                self.right_node.sql,
-                self.left_node.sql,
-            ],
+        output_expr = self.context.adapter.datediff_microsecond(
+            timestamp_expr_1=self.right_node.sql,
+            timestamp_expr_2=self.left_node.sql,
         )
         return output_expr
 
@@ -109,9 +100,8 @@ class DateDiffNode(ExpressionNode):
         # rounding but others don't. To keep a consistent behaviour, always work in the highest
         # supported precision (microsecond) and convert the result back to the desired unit
         # explicitly.
-        working_unit: Literal["microsecond"] = "microsecond"
         return TimedeltaExtractNode.convert_timedelta_unit(
-            input_expr=self.with_unit(working_unit), input_unit=working_unit, output_unit="second"
+            input_expr=self.total_microseconds(), input_unit="microsecond", output_unit="second"
         )
 
     @classmethod
@@ -137,7 +127,7 @@ class TimedeltaExtractNode(ExpressionNode):
     @property
     def sql(self) -> Expression:
         if isinstance(self.timedelta_node, DateDiffNode):
-            expr = self.timedelta_node.with_unit("microsecond")
+            expr = self.timedelta_node.total_microseconds()
             output_expr = self.convert_timedelta_unit(expr, "microsecond", self.unit)
         else:
             output_expr = self.convert_timedelta_unit(
@@ -264,7 +254,7 @@ class DateAddNode(ExpressionNode):
         elif isinstance(self.timedelta_node, DateDiffNode):
             # timedelta is the result of date difference
             date_add_args = [
-                self.timedelta_node.with_unit("microsecond"),
+                self.timedelta_node.total_microseconds(),
                 self.input_date_node.sql,
             ]
         else:
