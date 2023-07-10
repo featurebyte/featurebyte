@@ -29,8 +29,6 @@ class TargetTableTask(DataWarehouseMixin, BaseTask):
         """
         Execute TargetTableTask
         """
-        # There's still some steps to _actually_ compute the target table. This currently just creates a mongo db
-        # document
         payload = cast(TargetTableTaskPayload, self.payload)
         feature_store = await self.app_container.feature_store_service.get_document(
             document_id=payload.feature_store_id
