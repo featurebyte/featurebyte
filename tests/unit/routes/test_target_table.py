@@ -98,10 +98,7 @@ class TestTargetTableApi(BaseMaterializedTableTestSuite):
             "featurebyte.query_graph.sql.feature_historical.get_historical_features_expr",
             return_value=(expressions.select("*").from_("my_table"), ["a", "b", "c"]),
         ):
-            with patch(
-                "featurebyte.service.historical_features.compute_tiles_on_demand",
-            ):
-                yield
+            yield
 
     @pytest.fixture(autouse=True)
     def always_patched_observation_table_service(self, patched_observation_table_service):

@@ -62,9 +62,7 @@ async def get_targets(  # pylint: disable=too-many-locals, too-many-arguments
     progress_callback: Optional[Callable[[int, str], None]] = None,
 ) -> None:
     """
-    Get targets
-
-    TODO: main difference is no on demand tiling logic
+    Get targets.
 
     Parameters
     ----------
@@ -94,7 +92,6 @@ async def get_targets(  # pylint: disable=too-many-locals, too-many-arguments
 
     # Validate request
     validate_request_schema(observation_set)
-    # validate_historical_requests_point_in_time(observation_set)  # TODO: update to some other validation?
 
     # use a unique request table name
     request_id = session.generate_session_unique_id()
@@ -131,7 +128,7 @@ async def get_targets(  # pylint: disable=too-many-locals, too-many-arguments
         if progress_callback
         else None,
     )
-    logger.debug(f"compute_historical_features in total took {time.time() - tic_:.2f}s")
+    logger.debug(f"compute_targets in total took {time.time() - tic_:.2f}s")
 
 
 class TargetService(BaseNamespaceService[TargetModel, TargetCreate]):
@@ -294,7 +291,7 @@ class TargetService(BaseNamespaceService[TargetModel, TargetCreate]):
         progress_callback: Optional[Callable[[int, str], None]] = None,
     ) -> None:
         """
-        Get historical features for Feature List
+        Get target values for a target
 
         Parameters
         ----------
