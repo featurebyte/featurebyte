@@ -90,6 +90,25 @@ class BaseAdapter:  # pylint: disable=too-many-public-methods
 
     @classmethod
     @abstractmethod
+    def dateadd_second(cls, quantity_expr: Expression, timestamp_expr: Expression) -> Expression:
+        """
+        Expression to perform DATEADD using second as the time unit. Use this only when there is no
+        sub-second components in the quantity.
+
+        Parameters
+        ----------
+        quantity_expr : Expression
+            Number of microseconds to add to the timestamp
+        timestamp_expr : Expression
+            Expression for the timestamp
+
+        Returns
+        -------
+        Expression
+        """
+
+    @classmethod
+    @abstractmethod
     def dateadd_microsecond(
         cls, quantity_expr: Expression, timestamp_expr: Expression
     ) -> Expression:
@@ -107,6 +126,37 @@ class BaseAdapter:  # pylint: disable=too-many-public-methods
         -------
         Expression
         """
+
+    @classmethod
+    def datediff_microsecond(
+        cls, timestamp_expr_1: Expression, timestamp_expr_2: Expression
+    ) -> Expression:
+        """
+        Expression to perform DATEDIFF using microsecond as the time unit
+
+        This calculates:
+
+        timestamp_expr_2 - timestamp_expr_1
+
+        Parameters
+        ----------
+        timestamp_expr_1: Expression
+            Expression for the first timestamp
+        timestamp_expr_2 : Expression
+            Expression for the second timestamp
+
+        Returns
+        -------
+        Expression
+        """
+        return expressions.Anonymous(
+            this="DATEDIFF",
+            expressions=[
+                expressions.Identifier(this="microsecond"),
+                timestamp_expr_1,
+                timestamp_expr_2,
+            ],
+        )
 
     @classmethod
     def construct_key_value_aggregation_sql(
@@ -627,6 +677,13 @@ class SnowflakeAdapter(BaseAdapter):
         )
 
     @classmethod
+    def dateadd_second(cls, quantity_expr: Expression, timestamp_expr: Expression) -> Expression:
+        output_expr = expressions.Anonymous(
+            this="DATEADD", expressions=["second", quantity_expr, timestamp_expr]
+        )
+        return output_expr
+
+    @classmethod
     def dateadd_microsecond(
         cls, quantity_expr: Expression, timestamp_expr: Expression
     ) -> Expression:
@@ -884,8 +941,11 @@ class DatabricksAdapter(BaseAdapter):
         )
 
     @classmethod
-    def dateadd_microsecond(
-        cls, quantity_expr: Expression, timestamp_expr: Expression
+    def _dateadd_by_casting_to_seconds(
+        cls,
+        quantity_expr: Expression,
+        timestamp_expr: Expression,
+        quantity_scale: Optional[float] = None,
     ) -> Expression:
         # DATEADD with a customisable unit is not supported in older versions of Spark (< 3.3). To
         # workaround that, convert to double (epoch seconds with sub-seconds preserved) to perform
@@ -893,7 +953,12 @@ class DatabricksAdapter(BaseAdapter):
         timestamp_seconds = expressions.Cast(
             this=timestamp_expr, to=expressions.DataType.build("DOUBLE")
         )
-        seconds_quantity = expressions.Div(this=quantity_expr, expression=make_literal_value(1e6))
+        if quantity_scale is None:
+            seconds_quantity = quantity_expr
+        else:
+            seconds_quantity = expressions.Div(
+                this=quantity_expr, expression=make_literal_value(quantity_scale)
+            )
         timestamp_seconds_added = expressions.Add(
             this=timestamp_seconds, expression=seconds_quantity
         )
@@ -902,6 +967,16 @@ class DatabricksAdapter(BaseAdapter):
         return expressions.Cast(
             this=timestamp_seconds_added, to=expressions.DataType.build("TIMESTAMP")
         )
+
+    @classmethod
+    def dateadd_second(cls, quantity_expr: Expression, timestamp_expr: Expression) -> Expression:
+        return cls._dateadd_by_casting_to_seconds(quantity_expr, timestamp_expr)
+
+    @classmethod
+    def dateadd_microsecond(
+        cls, quantity_expr: Expression, timestamp_expr: Expression
+    ) -> Expression:
+        return cls._dateadd_by_casting_to_seconds(quantity_expr, timestamp_expr, quantity_scale=1e6)
 
     @classmethod
     def get_physical_type_from_dtype(cls, dtype: DBVarType) -> str:
@@ -1019,6 +1094,23 @@ class SparkAdapter(DatabricksAdapter):
     @classmethod
     def is_string_type(cls, column_expr: Expression) -> Expression:
         raise NotImplementedError()
+
+    @classmethod
+    def datediff_microsecond(
+        cls, timestamp_expr_1: Expression, timestamp_expr_2: Expression
+    ) -> Expression:
+        def _to_microseconds(expr):
+            return expressions.Mul(
+                this=expressions.Cast(this=expr, to=expressions.DataType.build("DOUBLE")),
+                expression=make_literal_value(1e6),
+            )
+
+        return expressions.Paren(
+            this=expressions.Sub(
+                this=_to_microseconds(timestamp_expr_2),
+                expression=_to_microseconds(timestamp_expr_1),
+            )
+        )
 
 
 def get_sql_adapter(source_type: SourceType) -> BaseAdapter:
