@@ -3,7 +3,7 @@ Module for datetime operations related sql generation
 """
 from __future__ import annotations
 
-from typing import Literal, Union, cast
+from typing import Union, cast
 
 from dataclasses import dataclass
 
@@ -63,9 +63,6 @@ class DatetimeExtractNode(ExpressionNode):
             timestamp_expr = context.adapter.dateadd_second(
                 timezone_offset_seconds, input_expr_node.sql
             )
-            # timestamp_expr = expressions.Anonymous(
-            #     this="DATEADD", expressions=["second", timezone_offset_seconds, input_expr_node.sql]
-            # )
 
         sql_node = DatetimeExtractNode(
             context=context,

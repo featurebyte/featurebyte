@@ -1,7 +1,7 @@
 """
 Module for helper classes to generate engine specific SQL expressions
 """
-# pylint: disable=too-many-lines
+# pylint: disable=too-many-lines,too-many-public-methods
 from __future__ import annotations
 
 from typing import Literal, Optional, cast
@@ -1099,7 +1099,7 @@ class SparkAdapter(DatabricksAdapter):
     def datediff_microsecond(
         cls, timestamp_expr_1: Expression, timestamp_expr_2: Expression
     ) -> Expression:
-        def _to_microseconds(expr):
+        def _to_microseconds(expr: Expression) -> Expression:
             return expressions.Mul(
                 this=expressions.Cast(this=expr, to=expressions.DataType.build("DOUBLE")),
                 expression=make_literal_value(1e6),
