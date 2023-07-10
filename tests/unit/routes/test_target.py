@@ -101,4 +101,5 @@ class TestTargetApi(BaseCatalogApiTestSuite):
             "created_at": response_dict["created_at"],
             "updated_at": None,
             "user_id": str(user_id),
+            "block_modification_by": [],
         }

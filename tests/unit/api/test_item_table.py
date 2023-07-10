@@ -118,6 +118,7 @@ def test_create_item_table(snowflake_database_table_item_table, item_table_dict,
     item_table_dict["_id"] = item_table.id
     item_table_dict["created_at"] = item_table.created_at
     item_table_dict["updated_at"] = item_table.updated_at
+    item_table_dict["block_modification_by"] = []
     item_table_dict["columns_info"][1]["semantic_id"] = item_table.columns_info[1].semantic_id
     assert output == item_table_dict
 

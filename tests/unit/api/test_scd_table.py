@@ -206,6 +206,7 @@ def test_create_scd_table(snowflake_database_table_scd_table, scd_table_dict):
     scd_table_dict["current_flag_column"] = scd_table_dict.pop("current_flag")  # DEV-556
     scd_table_dict["created_at"] = scd_table.created_at
     scd_table_dict["updated_at"] = scd_table.updated_at
+    scd_table_dict["block_modification_by"] = []
     scd_table_dict["columns_info"][0]["semantic_id"] = scd_table.columns_info[0].semantic_id
     scd_table_dict["columns_info"][3]["semantic_id"] = scd_table.columns_info[3].semantic_id
     assert output == scd_table_dict

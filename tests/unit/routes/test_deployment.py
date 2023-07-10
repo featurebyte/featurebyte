@@ -102,6 +102,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
                     "user_id": response_dict["data"][0]["user_id"],
                     "created_at": response_dict["data"][0]["created_at"],
                     "updated_at": response_dict["data"][0]["updated_at"],
+                    "block_modification_by": [],
                 },
                 {
                     "_id": response_dict["data"][1]["_id"],
@@ -112,6 +113,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
                     "user_id": response_dict["data"][1]["user_id"],
                     "created_at": response_dict["data"][1]["created_at"],
                     "updated_at": response_dict["data"][1]["updated_at"],
+                    "block_modification_by": [],
                 },
                 {
                     "_id": response_dict["data"][2]["_id"],
@@ -122,6 +124,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
                     "user_id": response_dict["data"][2]["user_id"],
                     "created_at": response_dict["data"][2]["created_at"],
                     "updated_at": response_dict["data"][2]["updated_at"],
+                    "block_modification_by": [],
                 },
             ],
             "page": 1,

@@ -216,6 +216,15 @@ class UniqueValuesConstraint(FeatureByteBaseModel):
     extra_query_params: Optional[Dict[str, Any]] = Field(default=None)
 
 
+class ReferenceInfo(FeatureByteBaseModel):
+    """
+    Reference information for a document
+    """
+
+    collection_name: str
+    document_id: PydanticObjectId
+
+
 class FeatureByteBaseDocumentModel(FeatureByteBaseModel):
     """
     FeatureByte specific BaseDocumentModel
@@ -230,6 +239,8 @@ class FeatureByteBaseDocumentModel(FeatureByteBaseModel):
         Record creation datetime when the document get stored at the persistent
     updated_at: Optional[datetime]
         Record update datetime when the document get updated at the persistent
+    block_modifications_by: List[ReferenceInfo]
+        List of reference information that blocks modifications to the document
     """
 
     id: PydanticObjectId = Field(
@@ -244,6 +255,11 @@ class FeatureByteBaseDocumentModel(FeatureByteBaseModel):
     )
     updated_at: Optional[datetime] = Field(
         default=None, allow_mutation=False, description="Record last updated time"
+    )
+    block_modification_by: List[ReferenceInfo] = Field(
+        default_factory=list,
+        allow_mutation=False,
+        description="List of reference information that blocks modifications to the document",
     )
 
     @validator("id", pre=True)

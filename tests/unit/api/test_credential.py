@@ -149,6 +149,13 @@ async def test_credential_update(credential, snowflake_feature_store, persistent
             (
                 "INSERT",
                 'insert: "sf_featurestore"',
+                "block_modification_by",
+                np.nan,
+                [],
+            ),
+            (
+                "INSERT",
+                'insert: "sf_featurestore"',
                 "created_at",
                 np.nan,
                 before_record["created_at"].isoformat(),
@@ -253,6 +260,7 @@ def test_get_credentials(credential):
         "feature_store_id",
         "database_credential",
         "storage_credential",
+        "block_modification_by",
     }
 
 

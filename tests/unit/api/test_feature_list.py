@@ -73,6 +73,7 @@ def test_feature_list_creation__success(
         "updated_at": None,
         "user_id": None,
         "catalog_id": DEFAULT_CATALOG_ID,
+        "block_modification_by": [],
     }
     for obj in flist.feature_objects.values():
         assert isinstance(obj, Feature)
@@ -136,6 +137,7 @@ def test_feature_list_creation__feature_and_group(production_ready_feature, feat
         ],
         "name": "my_feature_list",
         "catalog_id": DEFAULT_CATALOG_ID,
+        "block_modification_by": [],
     }
     for obj in flist.feature_objects.values():
         assert isinstance(obj, Feature)
@@ -482,16 +484,17 @@ def test_get_feature_list(saved_feature_list):
     audit_history = saved_feature_list.audit()
     expected_audit_history = pd.DataFrame(
         [
+            ("block_modification_by", []),
             ("catalog_id", str(DEFAULT_CATALOG_ID)),
             ("created_at", saved_feature_list.created_at.isoformat()),
             ("deployed", False),
-            ("feature_clusters", audit_history.new_value.iloc[3]),
+            ("feature_clusters", audit_history.new_value.iloc[4]),
             ("feature_ids", [str(saved_feature_list.feature_ids[0])]),
             ("feature_list_namespace_id", str(saved_feature_list.feature_list_namespace.id)),
             ("name", "my_feature_list"),
             ("online_enabled_feature_ids", []),
             ("readiness_distribution", [{"readiness": "DRAFT", "count": 1}]),
-            ("relationships_info", audit_history.new_value.iloc[9]),
+            ("relationships_info", audit_history.new_value.iloc[10]),
             ("updated_at", None),
             ("user_id", None),
             ("version.name", saved_feature_list.version),

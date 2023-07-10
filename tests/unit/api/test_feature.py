@@ -484,6 +484,7 @@ def test_get_feature(saved_feature):
         "catalog_id",
         "definition",
         "user_defined_function_ids",
+        "block_modification_by",
     }
 
     with pytest.raises(RecordRetrievalException) as exc:
