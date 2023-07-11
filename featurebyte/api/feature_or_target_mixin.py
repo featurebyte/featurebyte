@@ -1,7 +1,9 @@
 """
 Mixin class containing common methods for feature or target classes
 """
-from typing import cast
+from typing import Any, cast
+
+from functools import wraps
 
 from featurebyte.api.api_object import ApiObject
 from featurebyte.common.formatting_util import CodeStr
@@ -48,10 +50,12 @@ def substitute_docstring(new_docstring: str) -> Func:
     """
 
     def decorator(func: Func) -> Func:
-        qualified_name = func.__qualname__
-        class_name, _ = qualified_name.rsplit(".", 1)
-        func.__doc__ = new_docstring.format(object_name=class_name.lower())
-        return func
+        @wraps(func)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            return func(*args, **kwargs)
+
+        wrapper.__doc__ = new_docstring
+        return wrapper
 
     return decorator
 
