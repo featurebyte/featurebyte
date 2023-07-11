@@ -1,6 +1,10 @@
 """
 Test init module functions
 """
+from unittest import mock
+
+import pytest
+
 import featurebyte as fb
 from featurebyte.config import Configurations
 
@@ -23,10 +27,29 @@ def _assert_tutorial_profile_with_api_token(api_token: str) -> None:
     assert config.profile.name == "tutorial"
 
 
-def test_register_tutorial_api_token():
+@pytest.fixture(name="noop_check_sdk_versions")
+def patch_check_sdk_versions_fixture():
+    """
+    Patch check_sdk_versions function
+    """
+    with mock.patch("featurebyte.config.Configurations.check_sdk_versions"):
+        yield
+
+
+@pytest.fixture(name="noop_log_env_summary")
+def patch_log_env_summary_fixture():
+    """
+    Patch log_env_summary function to be a no-op
+    """
+    with mock.patch("featurebyte.log_env_summary"):
+        yield
+
+
+def test_register_tutorial_api_token(noop_check_sdk_versions, noop_log_env_summary):
     """
     Test register_tutorial_api_token function
     """
+    _ = noop_check_sdk_versions, noop_log_env_summary
     config = Configurations()
     tutorial_profile_name = "tutorial"
     # Verify that there's no profile with tutorial
