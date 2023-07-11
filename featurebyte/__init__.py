@@ -210,7 +210,7 @@ def register_tutorial_api_token(api_token: str) -> None:
     # Write to config file if profile was updated
     if updated_profile:
         yaml_str = yaml.dump(loaded_config, sort_keys=False)
-        with open(config_file_path, "w") as file_obj:
+        with open(config_file_path, "w", encoding="utf-8") as file_obj:
             file_obj.write(yaml_str)
 
     # Use the tutorial profile
