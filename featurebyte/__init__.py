@@ -1,10 +1,14 @@
 """Python Library for FeatureOps"""
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
+import os
+import shutil
 import sys
 from http import HTTPStatus
+from pathlib import Path
 
 import pandas as pd
+import yaml
 
 from featurebyte.api.api_object_util import iterate_api_object_using_paginated_routes
 from featurebyte.api.batch_feature_table import BatchFeatureTable
@@ -163,6 +167,65 @@ def use_profile(profile: str) -> None:
             log_env_summary()
         except InvalidSettingsError:
             pass
+
+
+def register_tutorial_api_token(api_token: str) -> None:
+    """
+    Register tutorial api token, and use the tutorial profile. This will write a new tutorial profile to the
+    configuration file.
+
+    Parameters
+    ----------
+    api_token: str
+        Tutorial api token
+
+    Examples
+    --------
+    >>> fb.register_tutorial_api_token("your_api_token")  # doctest: +SKIP
+    """
+    # Read configuration file
+    config_file_path = Configurations().config_file_path
+    with open(config_file_path, encoding="utf-8") as file_obj:
+        loaded_config = yaml.safe_load(file_obj)
+
+    profiles: List[Any] = loaded_config["profile"]
+    tutorial_profile_name = "tutorial"
+    # Update API token in existing profile if it's there
+    tutorial_url = "https://tutorials.featurebyte.com/api/v1"
+    for profile in profiles:
+        if profile["name"] == tutorial_profile_name:
+            if "api_token" in profile:
+                updated_profile = profile["api_token"] != api_token
+            else:
+                updated_profile = True
+            profile["api_token"] = api_token
+            profile["api_url"] = tutorial_url
+            break
+    # Add tutorial profile if it's not already there
+    else:
+        profiles.append(
+            {
+                "name": tutorial_profile_name,
+                "api_url": tutorial_url,
+                "api_token": api_token,
+            }
+        )
+        loaded_config["profile"] = profiles
+        updated_profile = True
+
+    # Write to config file if profile was updated
+    if updated_profile:
+        yaml_str = yaml.dump(loaded_config, sort_keys=False)
+        # Backup existing config file before overwriting
+        backup_file_path = os.path.join(
+            os.path.dirname(config_file_path), config_file_path.name + ".bak"
+        )
+        shutil.copyfile(config_file_path, backup_file_path)
+        with open(config_file_path, "w", encoding="utf-8") as file_obj:
+            file_obj.write(yaml_str)
+
+    # Use the tutorial profile
+    use_profile(tutorial_profile_name)
 
 
 def list_credentials(
