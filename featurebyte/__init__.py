@@ -192,7 +192,10 @@ def register_tutorial_api_token(api_token: str) -> None:
     # Update API token in existing profile if it's there
     for profile in profiles:
         if profile["name"] == tutorial_profile_name:
-            updated_profile = profile["api_token"] != api_token
+            if "api_token" in profile:
+                updated_profile = profile["api_token"] != api_token
+            else:
+                updated_profile = True
             profile["api_token"] = api_token
             has_tutorial_profile = True
     # Add tutorial profile if it's not already there
