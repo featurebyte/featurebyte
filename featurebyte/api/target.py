@@ -3,13 +3,13 @@ Target API object
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Sequence, Union
 
 from http import HTTPStatus
 
 import pandas as pd
 from bson import ObjectId
-from pydantic import Field, StrictStr, root_validator
+from pydantic import Field, root_validator
 from typeguard import typechecked
 
 from featurebyte.api.api_object_util import ForeignKeyMapping
@@ -20,7 +20,13 @@ from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.savable_api_object import SavableApiObject
 from featurebyte.api.target_table import TargetTable
 from featurebyte.api.templates.doc_util import substitute_docstring
-from featurebyte.api.templates.feature_or_target_doc import DEFINITION_DOC
+from featurebyte.api.templates.feature_or_target_doc import (
+    CATALOG_ID_DOC,
+    DEFINITION_DOC,
+    ENTITY_IDS_DOC,
+    TABLE_IDS_DOC,
+    VERSION_DOC,
+)
 from featurebyte.common.utils import (
     dataframe_from_json,
     dataframe_to_arrow_bytes,
@@ -28,9 +34,7 @@ from featurebyte.common.utils import (
 )
 from featurebyte.config import Configurations
 from featurebyte.core.series import Series
-from featurebyte.enum import DBVarType
 from featurebyte.exception import RecordRetrievalException
-from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.target import TargetModel
 from featurebyte.query_graph.model.common_table import TabularSource
@@ -44,12 +48,6 @@ class Target(Series, SavableApiObject, FeatureOrTargetMixin):
     Target class used to represent a Target in FeatureByte.
     """
 
-    internal_entity_ids: Optional[List[PydanticObjectId]] = Field(alias="entity_ids")
-    internal_horizon: Optional[StrictStr] = Field(alias="horizon")
-    internal_node_name: Optional[str] = Field(allow_mutation=False, alias="node_name")
-    internal_dtype: DBVarType = Field(allow_mutation=False, alias="dtype")
-    internal_tabular_source: TabularSource = Field(allow_mutation=False, alias="tabular_source")
-
     # pydantic instance variable (public)
     feature_store: FeatureStoreModel = Field(
         exclude=True,
@@ -57,15 +55,18 @@ class Target(Series, SavableApiObject, FeatureOrTargetMixin):
         description="Provides information about the feature store that the target is connected to.",
     )
 
+    # class variables
     _route = "/target"
     _update_schema_class = TargetUpdate
-
     _list_schema = TargetModel
     _get_schema = TargetModel
     _list_fields = ["name", "entities"]
     _list_foreign_keys = [
         ForeignKeyMapping("entity_ids", Entity, "entities"),
     ]
+
+    def _get_init_params_from_object(self) -> dict[str, Any]:
+        return {"feature_store": self.feature_store}
 
     @root_validator(pre=True)
     @classmethod
@@ -77,10 +78,35 @@ class Target(Series, SavableApiObject, FeatureOrTargetMixin):
                 values["feature_store"] = FeatureStore.get_by_id(id=feature_store_id)
         return values
 
-    def _get_init_params_from_object(self) -> dict[str, Any]:
-        return {
-            "feature_store": self.feature_store,
-        }
+    @property  # type: ignore
+    @substitute_docstring(
+        doc_template=VERSION_DOC,
+        examples=(
+            """
+            >>> target = catalog.get_feature("CustomerProductGroupCounts_7d")  # doctest: +SKIP
+            >>> target.version  # doctest: +SKIP
+            'V230323'
+            """
+        ),
+        format_kwargs={"class_name": "Feature"},
+    )
+    def version(self) -> str:  # pylint: disable=missing-function-docstring
+        return self._get_version()
+
+    @property  # type: ignore
+    @substitute_docstring(doc_template=CATALOG_ID_DOC, format_kwargs={"class_name": "Target"})
+    def catalog_id(self) -> ObjectId:  # pylint: disable=missing-function-docstring
+        return self._get_catalog_id()
+
+    @property  # type: ignore
+    @substitute_docstring(doc_template=ENTITY_IDS_DOC, format_kwargs={"class_name": "Target"})
+    def entity_ids(self) -> Sequence[ObjectId]:  # pylint: disable=missing-function-docstring
+        return self._get_entity_ids()
+
+    @property  # type: ignore
+    @substitute_docstring(doc_template=TABLE_IDS_DOC, format_kwargs={"class_name": "Target"})
+    def table_ids(self) -> Sequence[ObjectId]:  # pylint: disable=missing-function-docstring
+        return self._get_table_ids()
 
     @property
     def entities(self) -> List[Entity]:
@@ -91,11 +117,7 @@ class Target(Series, SavableApiObject, FeatureOrTargetMixin):
         -------
         List[Entity]
         """
-        try:
-            entity_ids = self.cached_model.entity_ids  # type: ignore[attr-defined]
-        except RecordRetrievalException:
-            entity_ids = self.internal_entity_ids
-        return [Entity.get_by_id(entity_id) for entity_id in entity_ids]
+        return [Entity.get_by_id(entity_id) for entity_id in self.entity_ids]
 
     @property
     def horizon(self) -> Optional[str]:
@@ -105,11 +127,19 @@ class Target(Series, SavableApiObject, FeatureOrTargetMixin):
         Returns
         -------
         Optional[str]
+
+        Raises
+        ------
+        ValueError
+            If the target does not have a horizon.
         """
         try:
-            return self.cached_model.horizon
+            horizon = self.cached_model.graph.get_forward_aggregate_horizon(self.node_name)
         except RecordRetrievalException:
-            return self.internal_horizon
+            horizon = self.graph.get_forward_aggregate_horizon(self.node_name)
+        if horizon is None:
+            raise ValueError("Target does not have a horizon")
+        return horizon
 
     @property  # type: ignore
     @substitute_docstring(
@@ -120,7 +150,7 @@ class Target(Series, SavableApiObject, FeatureOrTargetMixin):
             >>> target_definition = target.definition  # doctest: +SKIP
             """
         ),
-        object_type="target",
+        format_kwargs={"object_type": "target"},
     )
     def definition(self) -> str:  # pylint: disable=missing-function-docstring
         return self._generate_definition()

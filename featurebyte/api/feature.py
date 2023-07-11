@@ -26,7 +26,13 @@ from featurebyte.api.feature_util import FEATURE_COMMON_LIST_FIELDS, FEATURE_LIS
 from featurebyte.api.feature_validation_util import assert_is_lookup_feature
 from featurebyte.api.savable_api_object import DeletableApiObject, SavableApiObject
 from featurebyte.api.templates.doc_util import substitute_docstring
-from featurebyte.api.templates.feature_or_target_doc import DEFINITION_DOC
+from featurebyte.api.templates.feature_or_target_doc import (
+    CATALOG_ID_DOC,
+    DEFINITION_DOC,
+    ENTITY_IDS_DOC,
+    TABLE_IDS_DOC,
+    VERSION_DOC,
+)
 from featurebyte.common.descriptor import ClassInstanceMethodDescriptor
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.typing import Scalar, ScalarSequence
@@ -40,7 +46,7 @@ from featurebyte.enum import ConflictResolution
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.logging import get_logger
-from featurebyte.models.base import PydanticObjectId, get_active_catalog_id
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_namespace import DefaultVersionMode, FeatureReadiness
 from featurebyte.models.feature_store import FeatureStoreModel
@@ -110,11 +116,6 @@ class Feature(
     ]
     _list_foreign_keys = FEATURE_LIST_FOREIGN_KEYS
 
-    # pydantic instance variable (internal use)
-    internal_catalog_id: PydanticObjectId = Field(
-        default_factory=get_active_catalog_id, alias="catalog_id"
-    )
-
     def _get_init_params_from_object(self) -> dict[str, Any]:
         return {"feature_store": self.feature_store}
 
@@ -132,69 +133,51 @@ class Feature(
                 values["feature_store"] = FeatureStore.get_by_id(id=feature_store_id)
         return values
 
+    @property  # type: ignore
+    @substitute_docstring(
+        doc_template=VERSION_DOC,
+        examples=(
+            """
+            >>> feature = catalog.get_feature("CustomerProductGroupCounts_7d")
+            >>> feature.version  # doctest: +SKIP
+            'V230323'
+            """
+        ),
+        format_kwargs={"class_name": "Feature"},
+    )
+    def version(self) -> str:  # pylint: disable=missing-function-docstring
+        return self._get_version()
+
+    @property  # type: ignore
+    @substitute_docstring(doc_template=CATALOG_ID_DOC, format_kwargs={"class_name": "Feature"})
+    def catalog_id(self) -> ObjectId:  # pylint: disable=missing-function-docstring
+        return self._get_catalog_id()
+
+    @property  # type: ignore
+    @substitute_docstring(doc_template=ENTITY_IDS_DOC, format_kwargs={"class_name": "Feature"})
+    def entity_ids(self) -> Sequence[ObjectId]:  # pylint: disable=missing-function-docstring
+        return self._get_entity_ids()
+
+    @property  # type: ignore
+    @substitute_docstring(doc_template=TABLE_IDS_DOC, format_kwargs={"class_name": "Feature"})
+    def table_ids(self) -> Sequence[ObjectId]:  # pylint: disable=missing-function-docstring
+        return self._get_table_ids()
+
     @property
-    def version(self) -> str:
+    def primary_entity(self) -> List[Entity]:
         """
-        Returns the version identifier of a Feature object.
+        Returns the primary entity of the Feature object.
 
         Returns
         -------
-        str
-
-        Examples
-        --------
-        >>> feature = catalog.get_feature("CustomerProductGroupCounts_7d")
-        >>> feature.version  # doctest: +SKIP
-        'V230323'
+        list[Entity]
+            Primary entity
         """
-        return cast(FeatureModel, self.cached_model).version.to_str()
-
-    @property
-    def catalog_id(self) -> ObjectId:
-        """
-        Returns the catalog ID that is associated with the Feature object.
-
-        Returns
-        -------
-        ObjectId
-            Catalog ID of the table.
-
-        See Also
-        --------
-        - [Catalog](/reference/featurebyte.api.catalog.Catalog)
-        """
-        try:
-            return cast(FeatureModel, self.cached_model).catalog_id
-        except RecordRetrievalException:
-            return self.internal_catalog_id
-
-    @property
-    def entity_ids(self) -> Sequence[ObjectId]:
-        """
-        Returns the entity IDs associated with the Feature object.
-
-        Returns
-        -------
-        Sequence[ObjectId]
-        """
-        try:
-            return cast(FeatureModel, self.cached_model).entity_ids
-        except RecordRetrievalException:
-            return self.graph.get_entity_ids(node_name=self.node_name)
-
-    @property
-    def table_ids(self) -> Sequence[ObjectId]:
-        """
-        Returns the table IDs used by the Feature object.
-
-        Returns
-        -------
-        Sequence[ObjectId]
-        """
-        try:
-            return cast(FeatureModel, self.cached_model).table_ids
-        except RecordRetrievalException:
-            return self.graph.get_table_ids(node_name=self.node_name)
+        entities = []
+        for entity_id in self.entity_ids:
+            entities.append(Entity.get_by_id(entity_id))
+        primary_entity = derive_primary_entity(entities)  # type: ignore
+        return primary_entity
 
     @property
     def feature_list_ids(self) -> Sequence[ObjectId]:
@@ -206,6 +189,20 @@ class Feature(
         Sequence[ObjectId]
         """
         return cast(FeatureModel, self.cached_model).feature_list_ids
+
+    @property  # type: ignore
+    @substitute_docstring(
+        doc_template=DEFINITION_DOC,
+        examples=(
+            """
+            >>> feature = catalog.get_feature("InvoiceCount_60days")
+            >>> feature_definition = feature.definition
+            """
+        ),
+        format_kwargs={"object_type": "feature"},
+    )
+    def definition(self) -> str:  # pylint: disable=missing-function-docstring
+        return self._generate_definition()
 
     @typechecked
     def isin(self: FrozenSeriesT, other: Union[FrozenSeries, ScalarSequence]) -> FrozenSeriesT:
@@ -645,36 +642,6 @@ class Feature(
         bool
         """
         return super().saved
-
-    @property  # type: ignore
-    @substitute_docstring(
-        doc_template=DEFINITION_DOC,
-        examples=(
-            """
-            >>> feature = catalog.get_feature("InvoiceCount_60days")
-            >>> feature_definition = feature.definition
-            """
-        ),
-        object_type="feature",
-    )
-    def definition(self) -> str:  # pylint: disable=missing-function-docstring
-        return self._generate_definition()
-
-    @property
-    def primary_entity(self) -> List[Entity]:
-        """
-        Returns the primary entity of the Feature object.
-
-        Returns
-        -------
-        list[Entity]
-            Primary entity
-        """
-        entities = []
-        for entity_id in self.entity_ids:
-            entities.append(Entity.get_by_id(entity_id))
-        primary_entity = derive_primary_entity(entities)  # type: ignore
-        return primary_entity
 
     @typechecked
     def save(

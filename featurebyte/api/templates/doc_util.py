@@ -1,7 +1,7 @@
 """
 Utility functions for docstring templating
 """
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 import textwrap
 from functools import wraps
@@ -15,7 +15,7 @@ def substitute_docstring(
     returns: Optional[str] = None,
     raises: Optional[str] = None,
     examples: Optional[str] = None,
-    **kwargs: Any,
+    format_kwargs: Optional[Dict[str, str]] = None,
 ) -> Func:
     """
     Decorator to substitute the docstring of a function
@@ -32,7 +32,7 @@ def substitute_docstring(
         Raises section of the docstring
     examples: Optional[str]
         Examples section of the docstring
-    kwargs: Any
+    format_kwargs: Optional[Dict[str, str]]
         Additional keyword arguments to be passed to the docstring formatter
 
     Returns
@@ -51,7 +51,7 @@ def substitute_docstring(
         returns=_section_formatter(returns),
         raises=_section_formatter(raises),
         examples=_section_formatter(examples),
-        **kwargs,
+        **(format_kwargs or {}),
     )
 
     def decorator(func: Func) -> Func:

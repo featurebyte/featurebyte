@@ -38,7 +38,7 @@ def test_forward_aggregate(forward_aggregator):
 
     # Assert forward aggregate node has been added into the graph
     view = forward_aggregator.view
-    target_node = target.graph.get_node_by_name(target.internal_node_name)
+    target_node = target.node
     forward_aggregate_nodes = [
         node for node in view.graph.iterate_nodes(target_node, NodeType.FORWARD_AGGREGATE)
     ]

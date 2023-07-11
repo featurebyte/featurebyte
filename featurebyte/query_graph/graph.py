@@ -27,7 +27,7 @@ from featurebyte.query_graph.model.graph import Edge, GraphNodeNameMap, QueryGra
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.base import NodeT
 from featurebyte.query_graph.node.function import GenericFunctionNode
-from featurebyte.query_graph.node.generic import GroupByNode, LookupNode
+from featurebyte.query_graph.node.generic import ForwardAggregateNode, GroupByNode, LookupNode
 from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.metadata.operation import (
     DerivedDataColumn,
@@ -160,6 +160,28 @@ class QueryGraph(QueryGraphModel):
             assert isinstance(node, GenericFunctionNode)
             output.append(node.parameters.function_id)
         return sorted(set(output))
+
+    def get_forward_aggregate_horizon(self, node_name: str) -> Optional[str]:
+        """
+        Get the horizon of the forward aggregate node
+
+        Parameters
+        ----------
+        node_name: str
+            Name of the node to get the horizon for
+
+        Returns
+        -------
+        Optional[str]
+            Horizon of the forward aggregate node
+        """
+        target_node = self.get_node_by_name(node_name)
+        for node in self.iterate_nodes(
+            target_node=target_node, node_type=NodeType.FORWARD_AGGREGATE
+        ):
+            assert isinstance(node, ForwardAggregateNode)
+            return node.parameters.horizon
+        return None
 
     def get_entity_columns(self, node_name: str) -> List[str]:
         """
