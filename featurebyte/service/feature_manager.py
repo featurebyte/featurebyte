@@ -16,10 +16,8 @@ from featurebyte.common import date_util
 from featurebyte.common.date_util import get_next_job_datetime
 from featurebyte.feature_manager.sql_template import (
     tm_delete_online_store_mapping,
-    tm_delete_tile_feature_mapping,
     tm_feature_tile_monitor,
     tm_upsert_online_store_mapping,
-    tm_upsert_tile_feature_mapping,
 )
 from featurebyte.logging import get_logger
 from featurebyte.models.online_store import OnlineFeatureSpec
@@ -272,20 +270,6 @@ class FeatureManagerService(BaseService):
             Set of unscheduled result names. These result names are not in the online store mapping
             table yet and should be inserted.
         """
-        for tile_spec in feature_spec.feature.tile_specs:
-            upsert_sql = tm_upsert_tile_feature_mapping.render(
-                tile_id=tile_spec.tile_id,
-                aggregation_id=tile_spec.aggregation_id,
-                feature_name=feature_spec.feature.name,
-                feature_type=feature_spec.value_type,
-                feature_version=feature_spec.feature.version.to_str(),
-                feature_readiness=str(feature_spec.feature.readiness),
-                feature_event_table_ids=",".join([str(i) for i in feature_spec.event_table_ids]),
-                is_deleted=False,
-            )
-            await session.execute_query(upsert_sql)
-            logger.debug(f"Done insert tile_feature_mapping for {tile_spec.aggregation_id}")
-
         for query in self._get_unscheduled_precompute_queries(
             feature_spec, unscheduled_result_names
         ):
@@ -314,13 +298,6 @@ class FeatureManagerService(BaseService):
         """
         # delete records from tile-feature mapping table
         for agg_id in feature_spec.aggregation_ids:
-            delete_sql = tm_delete_tile_feature_mapping.render(
-                aggregation_id=agg_id,
-                feature_name=feature_spec.feature.name,
-                feature_version=feature_spec.feature.version.to_str(),
-            )
-            await session.execute_query(delete_sql)
-            logger.debug(f"Done delete tile_feature_mapping for {agg_id}")
             for query in feature_spec.precompute_queries:
                 delete_sql = tm_delete_online_store_mapping.render(result_id=query.result_name)
                 await session.execute_query(delete_sql)

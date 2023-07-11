@@ -12,10 +12,8 @@ from featurebyte.common.model_util import get_version
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.feature_manager.sql_template import (
     tm_delete_online_store_mapping,
-    tm_delete_tile_feature_mapping,
     tm_feature_tile_monitor,
     tm_upsert_online_store_mapping,
-    tm_upsert_tile_feature_mapping,
 )
 from featurebyte.models.online_store import OnlineFeatureSpec
 from featurebyte.session.snowflake import SnowflakeSession
