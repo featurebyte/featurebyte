@@ -54,13 +54,10 @@ class StringContains(ExpressionNode):
     @property
     def sql(self) -> Expression:
         if self.case:
-            return fb_expressions.Contains(
-                this=self.expr.sql,
-                pattern=make_literal_value(self.pattern),
-            )
-        return fb_expressions.Contains(
-            this=expressions.Lower(this=self.expr.sql),
-            pattern=expressions.Lower(this=make_literal_value(self.pattern)),
+            return self.context.adapter.str_contains(self.expr.sql, self.pattern)
+        return self.context.adapter.str_contains(
+            expressions.Lower(this=self.expr.sql),
+            self.pattern.lower(),
         )
 
     @classmethod

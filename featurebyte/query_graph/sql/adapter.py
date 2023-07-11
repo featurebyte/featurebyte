@@ -73,6 +73,26 @@ class BaseAdapter:  # pylint: disable=too-many-public-methods
         """
 
     @classmethod
+    def str_contains(cls, expr: Expression, pattern: str) -> Expression:
+        """
+        Expression to check if string contains a pattern
+
+        Parameters
+        ----------
+        expr: Expression
+            String expression to check if it contains a pattern
+        pattern: str
+            Pattern to check if it is contained in the string
+
+        Returns
+        ------
+        Expression
+        """
+        return expressions.Anonymous(
+            this="CONTAINS", expressions=[expr, make_literal_value(pattern)]
+        )
+
+    @classmethod
     @abstractmethod
     def adjust_dayofweek(cls, extracted_expr: Expression) -> Expression:
         """
@@ -1111,6 +1131,11 @@ class SparkAdapter(DatabricksAdapter):
                 expression=_to_microseconds(timestamp_expr_1),
             )
         )
+
+    @classmethod
+    def str_contains(cls, expr: Expression, pattern: str) -> Expression:
+        pattern = "%{}%".format(pattern.replace("%", "\\%"))
+        return expressions.Like(this=expr, expression=make_literal_value(pattern))
 
 
 def get_sql_adapter(source_type: SourceType) -> BaseAdapter:
