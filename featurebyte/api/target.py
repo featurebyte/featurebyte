@@ -165,6 +165,7 @@ class Target(Series, SavableApiObject, FeatureOrTargetMixin):
     @substitute_docstring(
         doc_template=PREVIEW_DOC,
         description="Materializes a Target object using a small observation set of up to 50 rows.",
+        format_kwargs={"object_type": "target"},
     )
     @enforce_observation_set_row_order
     @typechecked

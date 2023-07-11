@@ -810,6 +810,7 @@ class Feature(
               Get historical features from a feature list.
             """
         ),
+        format_kwargs={"object_type": "feature"},
     )
     @enforce_observation_set_row_order
     @typechecked
