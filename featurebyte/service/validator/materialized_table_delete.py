@@ -13,6 +13,7 @@ from featurebyte.service.historical_feature_table import HistoricalFeatureTableS
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.static_source_table import StaticSourceTableService
 from featurebyte.service.table import TableService
+from featurebyte.service.target_table import TargetTableService
 
 MATERIALIZED_TABLE_DELETE_ERROR_MESSAGE = (
     "Cannot delete {table_name} Table {document_id} because it is referenced by "
@@ -20,50 +21,74 @@ MATERIALIZED_TABLE_DELETE_ERROR_MESSAGE = (
 )
 
 
-async def check_delete_observation_table(
-    observation_table_service: ObservationTableService,
-    historical_feature_table_service: HistoricalFeatureTableService,
-    document_id: ObjectId,
-) -> ObservationTableModel:
+class ObservationTableDeleteValidator:
     """
-    Check delete observation table given the document id & services
-
-    Parameters
-    ----------
-    observation_table_service: ObservationTableService
-        Observation table service
-    historical_feature_table_service: HistoricalFeatureTableService
-        Historical feature table service
-    document_id: ObjectId
-        Document id to delete
-
-    Returns
-    -------
-    ObservationTableModel
-
-    Raises
-    ------
-    DocumentDeletionError
-        If the document cannot be deleted
+    Observation Table Delete Validator
     """
-    document = await observation_table_service.get_document(document_id=document_id)
-    reference_ids = [
-        str(doc["_id"])
-        async for doc in historical_feature_table_service.list_documents_as_dict_iterator(
-            query_filter={"observation_table_id": document.id}
+
+    def __init__(
+        self,
+        observation_table_service: ObservationTableService,
+        historical_feature_table_service: HistoricalFeatureTableService,
+        target_table_service: TargetTableService,
+    ):
+        self.observation_table_service = observation_table_service
+        self.historical_feature_table_service = historical_feature_table_service
+        self.target_table_service = target_table_service
+
+    async def check_delete_observation_table(
+        self,
+        observation_table_id: ObjectId,
+    ) -> ObservationTableModel:
+        """
+        Check that the observation table is not referenced in historical features or target tables.
+
+        Parameters
+        ----------
+        observation_table_id: ObjectId
+            Document id to delete
+
+        Returns
+        -------
+        ObservationTableModel
+
+        Raises
+        ------
+        DocumentDeletionError
+            If the document cannot be deleted
+        """
+        document = await self.observation_table_service.get_document(
+            document_id=observation_table_id
         )
-    ]
-    if reference_ids:
-        raise DocumentDeletionError(
-            MATERIALIZED_TABLE_DELETE_ERROR_MESSAGE.format(
-                document_id=document.id,
-                table_name="Observation",
-                ref_table_name="Historical Feature",
-                ref_document_ids=reference_ids,
-                total_ref_documents=len(reference_ids),
+        reference_ids = [
+            str(doc["_id"])
+            async for doc in self.historical_feature_table_service.list_documents_as_dict_iterator(
+                query_filter={"observation_table_id": document.id}
             )
-        )
-    return document
+        ]
+        target_reference_ids = [
+            str(doc["_id"])
+            async for doc in self.target_table_service.list_documents_as_dict_iterator(
+                query_filter={"observation_table_id": document.id}
+            )
+        ]
+        all_reference_ids = reference_ids + target_reference_ids
+        if all_reference_ids:
+            table_names = []
+            if reference_ids:
+                table_names.append("Historical Feature")
+            if target_reference_ids:
+                table_names.append("Target")
+            raise DocumentDeletionError(
+                MATERIALIZED_TABLE_DELETE_ERROR_MESSAGE.format(
+                    document_id=document.id,
+                    table_name="Observation",
+                    ref_table_name=", ".join(table_names),
+                    ref_document_ids=all_reference_ids,
+                    total_ref_documents=len(all_reference_ids),
+                )
+            )
+        return document
 
 
 async def check_delete_batch_request_table(

@@ -120,7 +120,7 @@ class TestTargetTableApi(BaseMaterializedTableTestSuite):
             "Unexpected serving names provided in serving_names_mapping: random_name"
         )
 
-    @pytest.mark.skip(reason="skip for now since the observation table isn't used fully yet.")
+    @pytest.mark.asyncio
     async def test_observation_table_delete_422__observation_table_failed_validation_check(
         self, test_api_client_persistent, create_success_response, user_id
     ):
