@@ -127,6 +127,7 @@ class Target(Series, SavableApiObject, FeatureOrTargetMixin):
             If the target does not have a horizon.
         """
         try:
+            # TODO: Should use horizon value from TargetNamespace once it is available
             horizon = self.cached_model.graph.get_forward_aggregate_horizon(self.node_name)
         except RecordRetrievalException:
             horizon = self.graph.get_forward_aggregate_horizon(self.node_name)
@@ -147,20 +148,6 @@ class Target(Series, SavableApiObject, FeatureOrTargetMixin):
     )
     def definition(self) -> str:  # pylint: disable=missing-function-docstring
         return self._generate_definition()
-
-    def _get_pruned_target_model(self) -> TargetModel:
-        """
-        Get pruned model of target
-
-        Returns
-        -------
-        FeatureModel
-        """
-        pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
-        target_dict = self.dict(by_alias=True)
-        target_dict["graph"] = pruned_graph.dict()
-        target_dict["node_name"] = mapped_node.name
-        return TargetModel(**target_dict)
 
     @substitute_docstring(
         doc_template=PREVIEW_DOC,
