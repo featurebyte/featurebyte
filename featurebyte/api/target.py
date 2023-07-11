@@ -15,15 +15,12 @@ from typeguard import typechecked
 
 from featurebyte.api.api_object_util import ForeignKeyMapping
 from featurebyte.api.entity import Entity
-from featurebyte.api.feature_or_target_mixin import (
-    DEFINITION_DOCSTRING,
-    FeatureOrTargetMixin,
-    substitute_docstring,
-)
+from featurebyte.api.feature_or_target_mixin import FeatureOrTargetMixin, substitute_docstring
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.savable_api_object import SavableApiObject
 from featurebyte.api.target_table import TargetTable
+from featurebyte.api.templates.feature_or_target_doc import DEFINITION_DOC
 from featurebyte.common.utils import (
     dataframe_from_json,
     dataframe_to_arrow_bytes,
@@ -116,7 +113,7 @@ class Target(Series, SavableApiObject, FeatureOrTargetMixin):
 
     @property  # type: ignore
     @substitute_docstring(
-        DEFINITION_DOCSTRING.format(
+        DEFINITION_DOC.format(
             object_type="feature",
             example=textwrap.dedent(
                 """
