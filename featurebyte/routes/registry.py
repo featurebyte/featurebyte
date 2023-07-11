@@ -105,6 +105,7 @@ from featurebyte.service.tile_registry_service import TileRegistryService
 from featurebyte.service.tile_scheduler import TileSchedulerService
 from featurebyte.service.user_defined_function import UserDefinedFunctionService
 from featurebyte.service.user_service import UserService
+from featurebyte.service.validator.materialized_table_delete import ObservationTableDeleteValidator
 from featurebyte.service.validator.production_ready_validator import ProductionReadyValidator
 from featurebyte.service.version import VersionService
 from featurebyte.service.view_construction import ViewConstructionService
@@ -173,6 +174,7 @@ app_container_config.register_class(MongoBackedCredentialProvider)
 app_container_config.register_class(NamespaceHandler)
 app_container_config.register_class(ObservationSetHelper)
 app_container_config.register_class(ObservationTableController)
+app_container_config.register_class(ObservationTableDeleteValidator)
 app_container_config.register_class(ObservationTableService)
 app_container_config.register_class(OnlineEnableService)
 app_container_config.register_class(OnlineServingService)

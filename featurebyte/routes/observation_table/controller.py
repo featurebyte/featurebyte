@@ -12,10 +12,9 @@ from featurebyte.schema.info import ObservationTableInfo
 from featurebyte.schema.observation_table import ObservationTableCreate, ObservationTableList
 from featurebyte.schema.task import Task
 from featurebyte.service.feature_store import FeatureStoreService
-from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.preview import PreviewService
-from featurebyte.service.validator.materialized_table_delete import check_delete_observation_table
+from featurebyte.service.validator.materialized_table_delete import ObservationTableDeleteValidator
 
 
 class ObservationTableController(
@@ -33,14 +32,14 @@ class ObservationTableController(
         self,
         observation_table_service: ObservationTableService,
         preview_service: PreviewService,
-        historical_feature_table_service: HistoricalFeatureTableService,
         task_controller: TaskController,
         feature_store_service: FeatureStoreService,
+        observation_table_delete_validator: ObservationTableDeleteValidator,
     ):
         super().__init__(service=observation_table_service, preview_service=preview_service)
-        self.historical_feature_table_service = historical_feature_table_service
         self.task_controller = task_controller
         self.feature_store_service = feature_store_service
+        self.observation_table_delete_validator = observation_table_delete_validator
 
     async def create_observation_table(
         self,
@@ -63,10 +62,8 @@ class ObservationTableController(
         return await self.task_controller.get_task(task_id=str(task_id))
 
     async def _verify_delete_operation(self, document_id: ObjectId) -> None:
-        await check_delete_observation_table(
-            observation_table_service=self.service,
-            historical_feature_table_service=self.historical_feature_table_service,
-            document_id=document_id,
+        await self.observation_table_delete_validator.check_delete_observation_table(
+            observation_table_id=document_id,
         )
 
     async def get_info(self, document_id: ObjectId, verbose: bool) -> ObservationTableInfo:

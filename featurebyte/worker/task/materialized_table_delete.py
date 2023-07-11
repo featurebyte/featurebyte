@@ -11,8 +11,8 @@ from featurebyte.schema.worker.task.materialized_table_delete import (
     MaterializedTableDeleteTaskPayload,
 )
 from featurebyte.service.validator.materialized_table_delete import (
+    ObservationTableDeleteValidator,
     check_delete_batch_request_table,
-    check_delete_observation_table,
     check_delete_static_source_table,
 )
 from featurebyte.worker.task.base import BaseTask
@@ -58,10 +58,11 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask):
         return cast(MaterializedTableModel, document)
 
     async def _delete_observation_table(self) -> MaterializedTableModel:
-        document = await check_delete_observation_table(
-            observation_table_service=self.app_container.observation_table_service,
-            historical_feature_table_service=self.app_container.historical_feature_table_service,
-            document_id=self.task_payload.document_id,
+        validator: ObservationTableDeleteValidator = (
+            self.app_container.observation_table_delete_validator
+        )
+        document = await validator.check_delete_observation_table(
+            observation_table_id=self.task_payload.document_id,
         )
         await self.app_container.observation_table_service.delete_document(
             document_id=self.task_payload.document_id
