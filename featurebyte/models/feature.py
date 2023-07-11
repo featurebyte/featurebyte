@@ -24,6 +24,7 @@ from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
+from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 
 
 class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
@@ -235,6 +236,31 @@ class FeatureModel(BaseFeatureModel):
     deployed_feature_list_ids: List[PydanticObjectId] = Field(
         allow_mutation=False, default_factory=list
     )
+    aggregation_ids: List[str] = Field(allow_mutation=False, default_factory=list)
+
+    @root_validator
+    @classmethod
+    def _add_tile_derived_attributes(cls, values: dict[str, Any]) -> dict[str, Any]:
+        if not values.get("aggregation_ids"):
+            graph = QueryGraph(**values["internal_graph"])
+            node_name = values["node_name"]
+            feature_store_type = graph.get_input_node(
+                node_name
+            ).parameters.feature_store_details.type
+
+            interpreter = GraphInterpreter(graph, feature_store_type)
+            node = graph.get_node_by_name(node_name)
+            tile_infos = interpreter.construct_tile_gen_sql(node, is_on_demand=False)
+
+            # Each aggregation_id refers to a set of columns in a tile table. It is associated to a
+            # specific scheduled tile task.
+            aggregation_ids = []
+            for info in tile_infos:
+                aggregation_ids.append(info.aggregation_id)
+
+            values["aggregation_ids"] = aggregation_ids
+
+        return values
 
     class Settings(BaseFeatureModel.Settings):
         """
@@ -248,4 +274,5 @@ class FeatureModel(BaseFeatureModel):
             pymongo.operations.IndexModel("feature_namespace_id"),
             pymongo.operations.IndexModel("feature_list_ids"),
             pymongo.operations.IndexModel("deployed_feature_list_ids"),
+            pymongo.operations.IndexModel("aggregation_ids"),
         ]

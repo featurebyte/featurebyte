@@ -17,6 +17,7 @@ from featurebyte.logging import get_logger
 from featurebyte.models.tile import TileScheduledJobParameters, TileSpec, TileType
 from featurebyte.persistent import Persistent
 from featurebyte.service.base_service import BaseService
+from featurebyte.service.feature import FeatureService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.tile_registry_service import TileRegistryService
 from featurebyte.service.tile_scheduler import TileSchedulerService
@@ -43,11 +44,13 @@ class TileManagerService(BaseService):
         online_store_table_version_service: OnlineStoreTableVersionService,
         tile_scheduler_service: TileSchedulerService,
         tile_registry_service: TileRegistryService,
+        feature_service: FeatureService,
     ):
         super().__init__(user, persistent, catalog_id)
         self.online_store_table_version_service = online_store_table_version_service
         self.tile_scheduler_service = tile_scheduler_service
         self.tile_registry_service = tile_registry_service
+        self.feature_service = feature_service
 
     async def generate_tiles_on_demand(
         self,
@@ -356,26 +359,25 @@ class TileManagerService(BaseService):
 
         return None
 
-    async def remove_tile_jobs(
-        self,
-        session: BaseSession,
-        tile_spec: TileSpec,
-    ) -> None:
+    async def remove_tile_jobs(self, tile_spec: TileSpec) -> None:
         """
         Remove tiles
 
         Parameters
         ----------
-        session: BaseSession
-            Instance of BaseSession to interact with the data warehouse
         tile_spec: TileSpec
             the input TileSpec
         """
-        exist_mapping = await session.execute_query(
-            f"SELECT * FROM TILE_FEATURE_MAPPING WHERE AGGREGATION_ID = '{tile_spec.aggregation_id}' and IS_DELETED = FALSE"
-        )
-        # only disable tile jobs when there is no tile-feature mapping records for the particular tile
-        if exist_mapping is None or len(exist_mapping) == 0:
+        async for _ in self.feature_service.list_documents_as_dict_iterator(
+            query_filter={
+                "aggregation_ids": tile_spec.aggregation_id,
+                "online_enabled": True,
+            }
+        ):
+            break
+        else:
+            # Only disable the tile job is the aggregation_id is not referenced by any currently
+            # online enabled features
             logger.info("Stopping job with custom scheduler")
             for t_type in [TileType.ONLINE, TileType.OFFLINE]:
                 await self.tile_scheduler_service.stop_job(

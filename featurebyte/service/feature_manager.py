@@ -328,7 +328,7 @@ class FeatureManagerService(BaseService):
 
         # disable tile scheduled jobs
         for tile_spec in feature_spec.feature.tile_specs:
-            await self.tile_manager_service.remove_tile_jobs(session, tile_spec)
+            await self.tile_manager_service.remove_tile_jobs(tile_spec)
 
     @staticmethod
     async def retrieve_feature_tile_inconsistency_data(
