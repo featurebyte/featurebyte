@@ -5,8 +5,6 @@ from __future__ import annotations
 
 from typing import Any, cast
 
-from pathlib import Path
-
 from featurebyte.logging import get_logger
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
 from featurebyte.schema.worker.task.historical_feature_table import (
@@ -14,9 +12,9 @@ from featurebyte.schema.worker.task.historical_feature_table import (
 )
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 from featurebyte.service.historical_features import HistoricalFeaturesService
-from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin
+from featurebyte.worker.util.observation_set_helper import ObservationSetHelper
 
 logger = get_logger(__name__)
 
@@ -38,26 +36,13 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask):
         )
         db_session = await self.get_db_session(feature_store)
 
-        app_container = self.app_container
-
-        if payload.observation_table_id is not None:
-            # ObservationTable as observation set
-            assert payload.observation_set_storage_path is None
-            observation_table_service: ObservationTableService = (
-                app_container.observation_table_service
-            )
-            observation_set = await observation_table_service.get_document(
-                payload.observation_table_id
-            )
-        else:
-            # In-memory DataFrame as observation set
-            assert payload.observation_set_storage_path is not None
-            observation_set = await self.get_temp_storage().get_dataframe(
-                Path(payload.observation_set_storage_path)
-            )
+        observation_set_helper: ObservationSetHelper = self.app_container.observation_set_helper
+        observation_set = await observation_set_helper.get_observation_set(
+            payload.observation_table_id, payload.observation_set_storage_path
+        )
 
         historical_feature_table_service: HistoricalFeatureTableService = (
-            app_container.historical_feature_table_service
+            self.app_container.historical_feature_table_service
         )
         location = await historical_feature_table_service.generate_materialized_table_location(
             self.get_credential, payload.feature_store_id
@@ -67,7 +52,7 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask):
             db_session=db_session, table_details=location.table_details
         ):
             historical_features_service: HistoricalFeaturesService = (
-                app_container.historical_features_service
+                self.app_container.historical_features_service
             )
             await historical_features_service.compute_historical_features(
                 observation_set=observation_set,

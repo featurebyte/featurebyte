@@ -3,10 +3,12 @@ Tests for TargetTable routes
 """
 import copy
 from http import HTTPStatus
+from unittest.mock import patch
 
 import pandas as pd
 import pytest
 from bson.objectid import ObjectId
+from sqlglot import expressions
 
 from featurebyte.common.utils import dataframe_to_arrow_bytes
 from featurebyte.models.base import DEFAULT_CATALOG_ID
@@ -85,6 +87,18 @@ class TestTargetTableApi(BaseMaterializedTableTestSuite):
             payload["_id"] = str(ObjectId())
             payload["name"] = f'{self.payload["name"]}_{i}'
             yield payload
+
+    @pytest.fixture(autouse=True)
+    def always_patched_get_historical_feature(self):
+        """
+        Patch parts of compute_historical_features that have coverage elsewhere and not relevant to unit
+        testing the routes
+        """
+        with patch(
+            "featurebyte.query_graph.sql.feature_historical.get_historical_features_expr",
+            return_value=(expressions.select("*").from_("my_table"), ["a", "b", "c"]),
+        ):
+            yield
 
     @pytest.fixture(autouse=True)
     def always_patched_observation_table_service(self, patched_observation_table_service):

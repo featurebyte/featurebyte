@@ -184,7 +184,7 @@ def test_forward_aggregate(
         )
 
         # Transform and sample to get a smaller sample dataframe just for preview
-        expected_values = transform_and_sample_observation_set(expected_values)
+        preview_expected_values = transform_and_sample_observation_set(expected_values)
 
         # Build actual Target preview results
         target = event_view.groupby(entity_column_name).forward_aggregate(
@@ -193,7 +193,16 @@ def test_forward_aggregate(
             horizon=target_parameter.horizon,
             target_name=target_parameter.target_name,
         )
-        results = target.preview(expected_values[["POINT_IN_TIME", "üser id"]])
+        results = target.preview(preview_expected_values[["POINT_IN_TIME", "üser id"]])
 
         # Compare actual preview, against sampled results
-        fb_assert_frame_equal(results, expected_values)
+        fb_assert_frame_equal(results, preview_expected_values)
+
+        # Build full materialized Target
+        df_targets = target.compute_target(
+            observation_set, serving_names_mapping={"üser id": "ÜSER ID"}
+        )
+        expected_values["POINT_IN_TIME"] = pd.to_datetime(
+            expected_values["POINT_IN_TIME"], utc=True
+        ).dt.tz_localize(None)
+        fb_assert_frame_equal(df_targets, expected_values)

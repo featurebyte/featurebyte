@@ -3,23 +3,30 @@ Target class
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Callable, Optional, Union
 
+import pandas as pd
 from bson import ObjectId
 
 from featurebyte.common.model_util import parse_duration_string
 from featurebyte.exception import DocumentCreationError, DocumentNotFoundError
 from featurebyte.models.feature_namespace import DefaultVersionMode
+from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.target import TargetModel
 from featurebyte.models.target_namespace import TargetNamespaceModel
 from featurebyte.persistent import Persistent
-from featurebyte.schema.target import TargetCreate
+from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.schema.target import ComputeTargetRequest, TargetCreate
 from featurebyte.schema.target_namespace import TargetNamespaceCreate, TargetNamespaceServiceUpdate
 from featurebyte.service.base_namespace_service import BaseNamespaceService
+from featurebyte.service.entity_validation import EntityValidationService
+from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.namespace_handler import (
     NamespaceHandler,
     validate_version_and_namespace_consistency,
 )
+from featurebyte.service.session_manager import SessionManagerService
+from featurebyte.service.target_helper.compute_target import get_targets
 from featurebyte.service.target_namespace import TargetNamespaceService
 
 
@@ -37,10 +44,16 @@ class TargetService(BaseNamespaceService[TargetModel, TargetCreate]):
         catalog_id: ObjectId,
         target_namespace_service: TargetNamespaceService,
         namespace_handler: NamespaceHandler,
+        feature_store_service: FeatureStoreService,
+        entity_validation_service: EntityValidationService,
+        session_manager_service: SessionManagerService,
     ):
         super().__init__(user=user, persistent=persistent, catalog_id=catalog_id)
         self.target_namespace_service = target_namespace_service
         self.namespace_handler = namespace_handler
+        self.feature_store_service = feature_store_service
+        self.entity_validation_service = entity_validation_service
+        self.session_manager_service = session_manager_service
 
     async def prepare_target_model(
         self, data: TargetCreate, sanitize_for_definition: bool
@@ -167,3 +180,63 @@ class TargetService(BaseNamespaceService[TargetModel, TargetCreate]):
                     ),
                 )
         return await self.get_document(document_id=insert_id)
+
+    async def compute_targets(
+        self,
+        observation_set: Union[pd.DataFrame, ObservationTableModel],
+        compute_target_request: ComputeTargetRequest,
+        get_credential: Any,
+        output_table_details: TableDetails,
+        progress_callback: Optional[Callable[[int, str], None]] = None,
+    ) -> None:
+        """
+        Get target values for a target
+
+        Parameters
+        ----------
+        observation_set: pd.DataFrame
+            Observation set data
+        compute_target_request: ComputeTargetRequest
+            Compute target request
+        get_credential: Any
+            Get credential handler function
+        output_table_details: TableDetails
+            Table details to write the results to
+        progress_callback: Optional[Callable[[int, str], None]]
+            Optional progress callback function
+        """
+        feature_store = await self.feature_store_service.get_document(
+            document_id=compute_target_request.feature_store_id
+        )
+
+        if isinstance(observation_set, pd.DataFrame):
+            request_column_names = set(observation_set.columns)
+        else:
+            request_column_names = {col.name for col in observation_set.columns_info}
+
+        parent_serving_preparation = (
+            await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
+                graph=compute_target_request.graph,
+                nodes=compute_target_request.nodes,
+                request_column_names=request_column_names,
+                feature_store=feature_store,
+                serving_names_mapping=compute_target_request.serving_names_mapping,
+            )
+        )
+
+        db_session = await self.session_manager_service.get_feature_store_session(
+            feature_store=feature_store,
+            get_credential=get_credential,
+        )
+
+        await get_targets(
+            session=db_session,
+            graph=compute_target_request.graph,
+            nodes=compute_target_request.nodes,
+            observation_set=observation_set,
+            serving_names_mapping=compute_target_request.serving_names_mapping,
+            feature_store=feature_store,
+            parent_serving_preparation=parent_serving_preparation,
+            output_table_details=output_table_details,
+            progress_callback=progress_callback,
+        )
