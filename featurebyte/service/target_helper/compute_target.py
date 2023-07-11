@@ -11,7 +11,7 @@ import pandas as pd
 
 from featurebyte.common.progress import get_ranged_progress_callback
 from featurebyte.logging import get_logger
-from featurebyte.models import FeatureStoreModel
+from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.parent_serving import ParentServingPreparation
 from featurebyte.query_graph.graph import QueryGraph
