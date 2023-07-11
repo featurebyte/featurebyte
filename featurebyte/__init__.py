@@ -1,10 +1,11 @@
 """Python Library for FeatureOps"""
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 import sys
 from http import HTTPStatus
 
 import pandas as pd
+import yaml
 
 from featurebyte.api.api_object_util import iterate_api_object_using_paginated_routes
 from featurebyte.api.batch_feature_table import BatchFeatureTable
@@ -163,6 +164,57 @@ def use_profile(profile: str) -> None:
             log_env_summary()
         except InvalidSettingsError:
             pass
+
+
+def register_tutorial_api_token(api_token: str) -> None:
+    """
+    Register tutorial api token, and use the tutorial profile. This will write a new tutorial profile to the
+    configuration file.
+
+    Parameters
+    ----------
+    api_token: str
+        Tutorial api token
+
+    Examples
+    --------
+    >>> fb.register_tutorial_api_token("your_api_token")  # doctest: +SKIP
+    """
+    # Read configuration file
+    config_file_path = Configurations().config_file_path
+    with open(config_file_path, encoding="utf-8") as file_obj:
+        loaded_config = yaml.safe_load(file_obj)
+
+    profiles: List[Any] = loaded_config["profile"]
+    tutorial_profile_name = "tutorial"
+    has_tutorial_profile = False
+    updated_profile = False
+    # Update API token in existing profile if it's there
+    for profile in profiles:
+        if profile["name"] == tutorial_profile_name:
+            updated_profile = profile["api_token"] != api_token
+            profile["api_token"] = api_token
+            has_tutorial_profile = True
+    # Add tutorial profile if it's not already there
+    if not has_tutorial_profile:
+        profiles.append(
+            {
+                "name": tutorial_profile_name,
+                "api_url": "https://tutorials.featurebyte.com/api/v1",
+                "api_token": api_token,
+            }
+        )
+        loaded_config["profile"] = profiles
+        updated_profile = True
+
+    # Write to config file if profile was updated
+    if updated_profile:
+        yaml_str = yaml.dump(loaded_config, sort_keys=False)
+        with open(config_file_path, "w") as file_obj:
+            file_obj.write(yaml_str)
+
+    # Use the tutorial profile
+    use_profile(tutorial_profile_name)
 
 
 def list_credentials(
