@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from typing import Any, ClassVar, Dict, List, Literal, Optional, Sequence, Tuple, Type, Union, cast
 
+import textwrap
 import time
 from http import HTTPStatus
 
@@ -20,13 +21,17 @@ from featurebyte.api.api_object_util import is_server_mode
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature_job import FeatureJobMixin
 from featurebyte.api.feature_namespace import FeatureNamespace
+from featurebyte.api.feature_or_target_mixin import (
+    DEFINITION_DOCSTRING,
+    FeatureOrTargetMixin,
+    substitute_docstring,
+)
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.feature_util import FEATURE_COMMON_LIST_FIELDS, FEATURE_LIST_FOREIGN_KEYS
 from featurebyte.api.feature_validation_util import assert_is_lookup_feature
 from featurebyte.api.savable_api_object import DeletableApiObject, SavableApiObject
 from featurebyte.common.descriptor import ClassInstanceMethodDescriptor
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.formatting_util import CodeStr
 from featurebyte.common.typing import Scalar, ScalarSequence
 from featurebyte.common.utils import dataframe_from_json, enforce_observation_set_row_order
 from featurebyte.config import Configurations
@@ -66,6 +71,7 @@ class Feature(
     Series,
     DeletableApiObject,
     SavableApiObject,
+    FeatureOrTargetMixin,
     CdAccessorMixin,
     FeatureJobMixin,
     FeatureDtAccessorMixin,
@@ -643,36 +649,20 @@ class Feature(
         """
         return super().saved
 
-    @property
-    def definition(self) -> str:
-        """
-        Displays the feature definition file of the feature.
-
-        The file is the single source of truth for a feature version. The file is generated automatically after a
-        feature is declared in the SDK and is stored in the FeatureByte Service.
-
-        This file uses the same SDK syntax as the feature declaration and provides an explicit outline of the intended
-        operations of the feature declaration, including those that are inherited but not explicitly declared by the
-        user. These operations may include feature job settings and cleaning operations inherited from tables metadata.
-
-        The feature definition file serves as the basis for generating the final logical execution graph, which is
-        then transpiled into platform-specific SQL (e.g. SnowSQL, SparkSQL) for feature materialization.
-
-        Returns
-        -------
-        str
-
-        Examples
-        --------
-        >>> feature = catalog.get_feature("InvoiceCount_60days")
-        >>> feature_definition = feature.definition
-        """
-        try:
-            definition = self.cached_model.definition
-            assert definition is not None, "Saved feature's definition should not be None."
-        except RecordRetrievalException:
-            definition = self._generate_code(to_format=True, to_use_saved_data=True)
-        return CodeStr(definition)
+    @property  # type: ignore
+    @substitute_docstring(
+        DEFINITION_DOCSTRING.format(
+            object_type="feature",
+            example=textwrap.dedent(
+                """
+                >>> feature = catalog.get_feature("InvoiceCount_60days")
+                >>> feature_definition = feature.definition
+                """
+            ).strip(),
+        )
+    )
+    def definition(self) -> str:  # pylint: disable=missing-function-docstring
+        return self._generate_definition()
 
     @property
     def primary_entity(self) -> List[Entity]:

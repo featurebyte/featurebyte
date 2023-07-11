@@ -3,7 +3,7 @@ Common utilities related to typing
 """
 from __future__ import annotations
 
-from typing import Any, Literal, Optional, Sequence, Type, Union, cast
+from typing import Any, Callable, Literal, Optional, Sequence, Type, Union, cast
 
 import pandas as pd
 from pandas.api.types import is_scalar
@@ -36,6 +36,8 @@ Numeric = Union[StrictInt, StrictFloat]
 Timestamp = Union[pd.Timestamp]
 
 AllSupportedValueTypes = Union[Scalar, ScalarSequence, Timestamp]
+
+Func = Callable[..., Any]
 
 
 def is_scalar_nan(value: Any) -> bool:

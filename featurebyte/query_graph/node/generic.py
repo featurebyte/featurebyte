@@ -530,6 +530,39 @@ class ForwardAggregateNode(AggregationOpStructMixin, BaseNode):
     ) -> Sequence[str]:
         return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
 
+    def _derive_sdk_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+        context: CodeGenerationContext,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        var_name_expressions = self._assert_no_info_dict(node_inputs)
+        statements, var_name = self._convert_expression_to_variable(
+            var_name_expression=var_name_expressions[0],
+            var_name_generator=var_name_generator,
+            node_output_type=NodeOutputType.FRAME,
+            node_output_category=NodeOutputCategory.VIEW,
+            to_associate_with_node_name=False,
+        )
+        keys = ValueStr.create(self.parameters.keys)
+        category = ValueStr.create(self.parameters.value_by)
+        grouped = f"{var_name}.groupby(by_keys={keys}, category={category})"
+        out_var_name = var_name_generator.convert_to_variable_name(
+            variable_name_prefix="target",
+            node_name=self.name,
+        )
+        expression = get_object_class_from_function_call(
+            callable_name=f"{grouped}.forward_aggregate",
+            value_column=self.parameters.parent,
+            method=self.parameters.agg_func,
+            horizon=self.parameters.horizon,
+            target_name=self.parameters.name,
+        )
+        statements.append((out_var_name, expression))
+        return statements, out_var_name
+
 
 class GroupByNode(AggregationOpStructMixin, BaseNode):
     """GroupByNode class"""

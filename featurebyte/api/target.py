@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Union
 
+import textwrap
 from http import HTTPStatus
 
 import pandas as pd
@@ -14,6 +15,11 @@ from typeguard import typechecked
 
 from featurebyte.api.api_object_util import ForeignKeyMapping
 from featurebyte.api.entity import Entity
+from featurebyte.api.feature_or_target_mixin import (
+    DEFINITION_DOCSTRING,
+    FeatureOrTargetMixin,
+    substitute_docstring,
+)
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.savable_api_object import SavableApiObject
@@ -36,7 +42,7 @@ from featurebyte.schema.target import TargetUpdate
 from featurebyte.schema.target_table import TargetTableCreate
 
 
-class Target(Series, SavableApiObject):
+class Target(Series, SavableApiObject, FeatureOrTargetMixin):
     """
     Target class used to represent a Target in FeatureByte.
     """
@@ -107,6 +113,21 @@ class Target(Series, SavableApiObject):
             return self.cached_model.horizon
         except RecordRetrievalException:
             return self.internal_horizon
+
+    @property  # type: ignore
+    @substitute_docstring(
+        DEFINITION_DOCSTRING.format(
+            object_type="feature",
+            example=textwrap.dedent(
+                """
+                >>> target = catalog.get_target("InvoiceCount_60days")  # doctest: +SKIP
+                >>> target_definition = target.definition  # doctest: +SKIP
+                """
+            ).strip(),
+        )
+    )
+    def definition(self) -> str:  # pylint: disable=missing-function-docstring
+        return self._generate_definition()
 
     def _get_pruned_target_model(self) -> TargetModel:
         """
