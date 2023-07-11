@@ -321,22 +321,6 @@ class SnowflakeSchemaInitializer(BaseSchemaInitializer):
         query = f"DROP {object_type} {self._fully_qualified(name)}"
         await self.session.execute_query(query)
 
-    async def list_functions(self) -> list[str]:
-        df_result = await self.list_objects("USER FUNCTIONS")
-        out = []
-        if df_result is not None:
-            df_result = df_result[df_result["schema_name"] == self.session.schema_name]
-            out.extend(df_result["name"])
-        return out
-
-    async def list_procedures(self) -> list[str]:
-        df_result = await self.list_objects("PROCEDURES")
-        out = []
-        if df_result is not None:
-            df_result = df_result[df_result["schema_name"] == self.session.schema_name]
-            out.extend(df_result["name"])
-        return out
-
     @staticmethod
     def _format_arguments_to_be_droppable(arguments_list: list[str]) -> list[str]:
         return [arguments.split(" RETURN", 1)[0] for arguments in arguments_list]

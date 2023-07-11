@@ -94,12 +94,6 @@ def base_schema_initializer_test_fixture():
         async def create_schema(self) -> None:
             return
 
-        async def list_functions(self) -> list[str]:
-            return []
-
-        async def list_procedures(self) -> list[str]:
-            return []
-
         async def drop_all_objects_in_working_schema(self) -> None:
             return
 

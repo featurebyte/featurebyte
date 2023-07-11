@@ -553,14 +553,6 @@ class BaseSchemaInitializer(ABC):
     async def create_schema(self) -> None:
         """Create the featurebyte working schema"""
 
-    @abstractmethod
-    async def list_functions(self) -> list[str]:
-        """Retrieve list of functions in the working schema"""
-
-    @abstractmethod
-    async def list_procedures(self) -> list[str]:
-        """Retrieve list of procedures in the working schema"""
-
     @property
     @abstractmethod
     def sql_directory_name(self) -> str:
@@ -799,7 +791,7 @@ class BaseSchemaInitializer(ABC):
     @classmethod
     def _normalize_casing(cls, identifier: str) -> str:
         # Some database warehouses convert the names returned from list_tables(), list_schemas(),
-        # list_functions() etc to always upper case (Snowflake) or lower case (Databricks). To unify
+        # list_objects() etc to always upper case (Snowflake) or lower case (Databricks). To unify
         # the handling between different engines, this converts the identifiers used internally for
         # initialization purpose to be always upper case.
         return identifier.upper()

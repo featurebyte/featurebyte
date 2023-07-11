@@ -263,16 +263,3 @@ def test_databricks_schema_initializer__sql_objects(patched_databricks_session_c
         return sorted(lst, key=lambda x: x["filename"])
 
     assert _sorted_result(sql_objects) == _sorted_result(expected)
-
-
-@pytest.mark.asyncio
-async def test_databricks_schema_initializer__commands(patched_databricks_session_cls):
-    """Test Databricks schema initializer dispatches the correct queries"""
-    session = patched_databricks_session_cls()
-    initializer = BaseSparkSchemaInitializer(session)
-
-    await initializer.list_functions()
-    assert session.execute_query.call_args_list == [call("SHOW USER FUNCTIONS IN featurebyte")]
-
-    assert await initializer.list_procedures() == []
-    assert session.execute_query.call_args_list == [call("SHOW USER FUNCTIONS IN featurebyte")]
