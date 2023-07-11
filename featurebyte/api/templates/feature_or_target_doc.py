@@ -20,5 +20,5 @@ str
 
 Examples
 --------
-{example}
+{examples}
 """

@@ -113,15 +113,14 @@ class Target(Series, SavableApiObject, FeatureOrTargetMixin):
 
     @property  # type: ignore
     @substitute_docstring(
-        DEFINITION_DOC.format(
-            object_type="feature",
-            example=textwrap.dedent(
-                """
-                >>> target = catalog.get_target("InvoiceCount_60days")  # doctest: +SKIP
-                >>> target_definition = target.definition  # doctest: +SKIP
-                """
-            ).strip(),
-        )
+        doc_template=DEFINITION_DOC,
+        examples=(
+            """
+            >>> target = catalog.get_target("InvoiceCount_60days")  # doctest: +SKIP
+            >>> target_definition = target.definition  # doctest: +SKIP
+            """
+        ),
+        object_type="target",
     )
     def definition(self) -> str:  # pylint: disable=missing-function-docstring
         return self._generate_definition()

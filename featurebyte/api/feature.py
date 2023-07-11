@@ -648,15 +648,14 @@ class Feature(
 
     @property  # type: ignore
     @substitute_docstring(
-        DEFINITION_DOC.format(
-            object_type="feature",
-            example=textwrap.dedent(
-                """
-                >>> feature = catalog.get_feature("InvoiceCount_60days")
-                >>> feature_definition = feature.definition
-                """
-            ).strip(),
-        )
+        doc_template=DEFINITION_DOC,
+        examples=(
+            """
+            >>> feature = catalog.get_feature("InvoiceCount_60days")
+            >>> feature_definition = feature.definition
+            """
+        ),
+        object_type="feature",
     )
     def definition(self) -> str:  # pylint: disable=missing-function-docstring
         return self._generate_definition()
