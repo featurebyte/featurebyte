@@ -30,7 +30,8 @@ def test_register_tutorial_api_token():
     config = Configurations()
     tutorial_profile_name = "tutorial"
     # Verify that there's no profile with tutorial
-    assert not any([tutorial_profile_name == profile.name for profile in config.profiles])
+    for profile in config.profiles:
+        assert profile.name != tutorial_profile_name
     # Verify that the active profile is not tutorial
     original_profile_name = config.profile.name
     assert original_profile_name != "tutorial"
