@@ -195,6 +195,10 @@ class AppContainerConfig:
         -------
         bool
             True if there's a circular dependency, False otherwise.
+
+        Raises
+        ------
+        ValueError
         """
         # Mark current node as visited and adds to recursion stack.
         visited_nodes[class_def.name] = True
@@ -204,6 +208,13 @@ class AppContainerConfig:
         # If any dependency has been visited before, and is in the current recursive stack, the
         # dependency graph is cyclic.
         for neighbour_name in class_def_mapping[class_def.name].dependencies:
+            if neighbour_name not in class_def_mapping:
+                raise ValueError(
+                    f"Unable to find dependency {neighbour_name} in class_def_mappings. This is likely "
+                    "because we have either not registered the dependency, or the variable name of "
+                    "the dependency in the constructor isn't a snake case formatted name of the class "
+                    "you are trying to inject."
+                )
             neighbour = class_def_mapping[neighbour_name]
             if not visited_nodes.get(neighbour.name, False):
                 is_cyclic, path = self._is_cyclic_dfs(
