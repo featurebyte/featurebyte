@@ -34,6 +34,7 @@ from featurebyte.api.feature import Feature, FeatureNamespace
 from featurebyte.api.feature_job import FeatureJobMixin
 from featurebyte.api.feature_job_setting_analysis import FeatureJobSettingAnalysis
 from featurebyte.api.feature_list import FeatureList, FeatureListNamespace
+from featurebyte.api.feature_or_target_mixin import FeatureOrTargetMixin
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.historical_feature_table import HistoricalFeatureTable
 from featurebyte.api.item_table import ItemTable
@@ -271,6 +272,7 @@ def test_all_methods_are_exposed_in_catalog(method_list):
         DeletableApiObject,
         TableApiObject,
         TableListMixin,
+        FeatureOrTargetMixin,
     }
     assert len(api_object_children) == len(method_list) + len(excluded_children)
 
