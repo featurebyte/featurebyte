@@ -6,7 +6,6 @@ from __future__ import annotations
 
 from typing import Any, ClassVar, Dict, List, Literal, Optional, Sequence, Tuple, Type, Union, cast
 
-import time
 from http import HTTPStatus
 
 import pandas as pd
@@ -30,13 +29,14 @@ from featurebyte.api.templates.feature_or_target_doc import (
     CATALOG_ID_DOC,
     DEFINITION_DOC,
     ENTITY_IDS_DOC,
+    PREVIEW_DOC,
     TABLE_IDS_DOC,
     VERSION_DOC,
 )
 from featurebyte.common.descriptor import ClassInstanceMethodDescriptor
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.typing import Scalar, ScalarSequence
-from featurebyte.common.utils import dataframe_from_json, enforce_observation_set_row_order
+from featurebyte.common.utils import enforce_observation_set_row_order
 from featurebyte.config import Configurations
 from featurebyte.core.accessor.count_dict import CdAccessorMixin
 from featurebyte.core.accessor.feature_datetime import FeatureDtAccessorMixin
@@ -65,7 +65,6 @@ from featurebyte.schema.feature import (
     FeatureSQL,
     FeatureUpdate,
 )
-from featurebyte.schema.preview import FeatureOrTargetPreview
 
 logger = get_logger(__name__)
 
@@ -771,99 +770,54 @@ class Feature(
     def unary_op_series_params(self) -> dict[str, Any]:
         return {"entity_ids": self.entity_ids}
 
-    def _get_pruned_feature_model(self) -> FeatureModel:
-        """
-        Get pruned model of feature
+    @substitute_docstring(
+        doc_template=PREVIEW_DOC,
+        description=(
+            """
+            Materializes a Feature object using a small observation set of up to 50 rows. Unlike compute_historical_features,
+            this method does not store partial aggregations (tiles) to speed up future computation. Instead, it computes
+            the feature values on the fly, and should be used only for small observation sets for debugging or prototyping
+            unsaved features.
+            """
+        ),
+        examples=(
+            """
+            Examples
+            --------
+            Preview feature with a small observation set.
 
-        Returns
-        -------
-        FeatureModel
-        """
-        pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
-        feature_dict = self.dict(by_alias=True)
-        feature_dict["graph"] = pruned_graph.dict()
-        feature_dict["node_name"] = mapped_node.name
-        return FeatureModel(**feature_dict)
-
+            >>> catalog.get_feature("InvoiceCount_60days").preview(
+            ...     observation_set=pd.DataFrame({
+            ...         "POINT_IN_TIME": ["2022-06-01 00:00:00", "2022-06-02 00:00:00"],
+            ...         "GROCERYCUSTOMERGUID": [
+            ...             "a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3",
+            ...             "ac479f28-e0ff-41a4-8e60-8678e670e80b",
+            ...         ],
+            ...     })
+            ... )
+              POINT_IN_TIME                   GROCERYCUSTOMERGUID  InvoiceCount_60days
+            0    2022-06-01  a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3                 10.0
+            1    2022-06-02  ac479f28-e0ff-41a4-8e60-8678e670e80b                  6.0
+            """
+        ),
+        see_also=(
+            """
+            See Also
+            --------
+            - [FeatureGroup.preview](/reference/featurebyte.api.feature_group.FeatureGroup.preview/):
+              Preview feature group.
+            - [FeatureList.compute_historical_features](/reference/featurebyte.api.feature_list.FeatureList.compute_historical_features/):
+              Get historical features from a feature list.
+            """
+        ),
+    )
     @enforce_observation_set_row_order
     @typechecked
-    def preview(
+    def preview(  # pylint: disable=missing-function-docstring
         self,
         observation_set: pd.DataFrame,
     ) -> pd.DataFrame:
-        """
-        Materializes a Feature object using a small observation set of up to 50 rows. Unlike compute_historical_features,
-        this method does not store partial aggregations (tiles) to speed up future computation. Instead, it computes
-        the feature values on the fly, and should be used only for small observation sets for debugging or prototyping
-        unsaved features.
-
-        The small observation set should combine historical points-in-time and key values of the primary entity from
-        the feature. Associated serving entities can also be utilized.
-
-        Parameters
-        ----------
-        observation_set : pd.DataFrame
-            Observation set DataFrame which combines historical points-in-time and values of the feature primary entity
-            or its descendant (serving entities). The column containing the point-in-time values should be named
-            `POINT_IN_TIME`, while the columns representing entity values should be named using accepted serving
-            names for the entity.
-
-        Returns
-        -------
-        pd.DataFrame
-            Materialized feature values.
-            The returned DataFrame will have the same number of rows, and include all columns from the observation set.
-
-            **Note**: `POINT_IN_TIME` values will be converted to UTC time.
-
-        Raises
-        ------
-        RecordRetrievalException
-            Failed to materialize feature preview.
-
-        Examples
-        --------
-        Preview feature with a small observation set.
-
-        >>> catalog.get_feature("InvoiceCount_60days").preview(
-        ...     observation_set=pd.DataFrame({
-        ...         "POINT_IN_TIME": ["2022-06-01 00:00:00", "2022-06-02 00:00:00"],
-        ...         "GROCERYCUSTOMERGUID": [
-        ...             "a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3",
-        ...             "ac479f28-e0ff-41a4-8e60-8678e670e80b",
-        ...         ],
-        ...     })
-        ... )
-          POINT_IN_TIME                   GROCERYCUSTOMERGUID  InvoiceCount_60days
-        0    2022-06-01  a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3                 10.0
-        1    2022-06-02  ac479f28-e0ff-41a4-8e60-8678e670e80b                  6.0
-
-        See Also
-        --------
-        - [FeatureGroup.preview](/reference/featurebyte.api.feature_group.FeatureGroup.preview/):
-          Preview feature group.
-        - [FeatureList.compute_historical_features](/reference/featurebyte.api.feature_list.FeatureList.compute_historical_features/):
-          Get historical features from a feature list.
-        """
-        tic = time.time()
-
-        feature = self._get_pruned_feature_model()
-        payload = FeatureOrTargetPreview(
-            feature_store_name=self.feature_store.name,
-            graph=feature.graph,
-            node_name=feature.node_name,
-            point_in_time_and_serving_name_list=observation_set.to_dict(orient="records"),
-        )
-
-        client = Configurations().get_client()
-        response = client.post(url="/feature/preview", json=payload.json_dict())
-        if response.status_code != HTTPStatus.OK:
-            raise RecordRetrievalException(response)
-        result = response.json()
-
-        elapsed = time.time() - tic
-        logger.debug(f"Preview took {elapsed:.2f}s")
-        return dataframe_from_json(result)  # pylint: disable=no-member
+        return self._preview(observation_set=observation_set, url="/feature/preview")
 
     @typechecked
     def create_new_version(
@@ -1148,11 +1102,10 @@ class Feature(
         RecordRetrievalException
             Failed to get feature SQL.
         """
-        feature = self._get_pruned_feature_model()
-
+        pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
         payload = FeatureSQL(
-            graph=feature.graph,
-            node_name=feature.node_name,
+            graph=pruned_graph,
+            node_name=mapped_node.name,
         )
 
         client = Configurations().get_client()

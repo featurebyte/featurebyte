@@ -63,3 +63,30 @@ Examples
 --------
 {examples}
 """
+
+PREVIEW_DOC = """
+{description}
+
+The small observation set should combine historical points-in-time and key values of the primary entity from
+the feature. Associated serving entities can also be utilized.
+
+Parameters
+----------
+observation_set : pd.DataFrame
+    Observation set DataFrame which combines historical points-in-time and values of the feature primary entity
+    or its descendant (serving entities). The column containing the point-in-time values should be named
+    `POINT_IN_TIME`, while the columns representing entity values should be named using accepted serving
+    names for the entity.
+
+Returns
+-------
+pd.DataFrame
+    Materialized feature values.
+    The returned DataFrame will have the same number of rows, and include all columns from the observation set.
+
+    **Note**: `POINT_IN_TIME` values will be converted to UTC time.
+
+{examples}
+
+{see_also}
+"""

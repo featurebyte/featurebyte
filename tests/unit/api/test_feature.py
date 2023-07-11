@@ -213,11 +213,8 @@ def test_feature_deserialization(
     )
 
     # check pruned graph and node_name are set properly
-    feat_model = feature_group["sum_1d"]._get_pruned_feature_model()
     pruned_graph, mapped_node = feature_group["sum_1d"].extract_pruned_graph_and_node()
     assert mapped_node.name != feature_group["sum_1d"].node_name
-    assert feat_model.graph == pruned_graph
-    assert feat_model.node_name == mapped_node.name
 
 
 def test_feature_to_json(float_feature):

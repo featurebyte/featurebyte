@@ -5,8 +5,6 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Sequence, Union
 
-from http import HTTPStatus
-
 import pandas as pd
 from bson import ObjectId
 from pydantic import Field, root_validator
@@ -24,21 +22,16 @@ from featurebyte.api.templates.feature_or_target_doc import (
     CATALOG_ID_DOC,
     DEFINITION_DOC,
     ENTITY_IDS_DOC,
+    PREVIEW_DOC,
     TABLE_IDS_DOC,
     VERSION_DOC,
 )
-from featurebyte.common.utils import (
-    dataframe_from_json,
-    dataframe_to_arrow_bytes,
-    enforce_observation_set_row_order,
-)
-from featurebyte.config import Configurations
+from featurebyte.common.utils import dataframe_to_arrow_bytes, enforce_observation_set_row_order
 from featurebyte.core.series import Series
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.target import TargetModel
 from featurebyte.query_graph.model.common_table import TabularSource
-from featurebyte.schema.preview import FeatureOrTargetPreview
 from featurebyte.schema.target import TargetUpdate
 from featurebyte.schema.target_table import TargetTableCreate
 
@@ -169,57 +162,17 @@ class Target(Series, SavableApiObject, FeatureOrTargetMixin):
         target_dict["node_name"] = mapped_node.name
         return TargetModel(**target_dict)
 
+    @substitute_docstring(
+        doc_template=PREVIEW_DOC,
+        description="Materializes a Target object using a small observation set of up to 50 rows.",
+    )
     @enforce_observation_set_row_order
     @typechecked
-    def preview(
+    def preview(  # pylint: disable=missing-function-docstring
         self,
         observation_set: pd.DataFrame,
     ) -> pd.DataFrame:
-        """
-        Materializes a Target object using a small observation set of up to 50 rows.
-
-        The small observation set should combine points-in-time and key values of the primary entity from
-        the target. Associated serving entities can also be utilized.
-
-        Parameters
-        ----------
-        observation_set : pd.DataFrame
-            Observation set DataFrame which combines points-in-time and values of the target primary entity
-            or its descendant (serving entities). The column containing the point-in-time values should be named
-            `POINT_IN_TIME`, while the columns representing entity values should be named using accepted serving
-            names for the entity.
-
-        Returns
-        -------
-        pd.DataFrame
-            Materialized target values.
-            The returned DataFrame will have the same number of rows, and include all columns from the observation set.
-
-            **Note**: `POINT_IN_TIME` values will be converted to UTC time.
-
-        Raises
-        ------
-        RecordRetrievalException
-            Failed to materialize feature preview.
-        """
-        target = self._get_pruned_target_model()
-        graph = target.graph
-        node_name = target.node_name
-        assert node_name is not None
-        payload = FeatureOrTargetPreview(
-            feature_store_name=self.feature_store.name,
-            graph=graph,
-            node_name=node_name,
-            point_in_time_and_serving_name_list=observation_set.to_dict(orient="records"),
-        )
-
-        client = Configurations().get_client()
-        response = client.post(url="/target/preview", json=payload.json_dict())
-        if response.status_code != HTTPStatus.OK:
-            raise RecordRetrievalException(response)
-        result = response.json()
-
-        return dataframe_from_json(result)  # pylint: disable=no-member
+        return self._preview(observation_set=observation_set, url="/target/preview")
 
     @enforce_observation_set_row_order
     @typechecked

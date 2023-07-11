@@ -11,10 +11,12 @@ from featurebyte.common.typing import Func
 
 def substitute_docstring(
     doc_template: str,
+    description: Optional[str] = None,
     parameters: Optional[str] = None,
     returns: Optional[str] = None,
     raises: Optional[str] = None,
     examples: Optional[str] = None,
+    see_also: Optional[str] = None,
     format_kwargs: Optional[Dict[str, str]] = None,
 ) -> Func:
     """
@@ -22,6 +24,8 @@ def substitute_docstring(
 
     Parameters
     ----------
+    description: Optional[str]
+        Description section of the docstring
     doc_template: str
         Template of the docstring
     parameters: Optional[str]
@@ -32,6 +36,8 @@ def substitute_docstring(
         Raises section of the docstring
     examples: Optional[str]
         Examples section of the docstring
+    see_also: Optional[str]
+        See also section of the docstring
     format_kwargs: Optional[Dict[str, str]]
         Additional keyword arguments to be passed to the docstring formatter
 
@@ -47,12 +53,14 @@ def substitute_docstring(
 
     # prepare new docstring
     new_docstring = doc_template.format(
+        description=_section_formatter(description),
         parameters=_section_formatter(parameters),
         returns=_section_formatter(returns),
         raises=_section_formatter(raises),
         examples=_section_formatter(examples),
+        see_also=_section_formatter(see_also),
         **(format_kwargs or {}),
-    )
+    ).rstrip()
 
     def decorator(func: Func) -> Func:
         @wraps(func)

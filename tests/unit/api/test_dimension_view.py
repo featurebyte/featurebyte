@@ -277,9 +277,6 @@ def test_as_feature_same_column_name(
     new_feature = feature_b == feature_a
     new_feature.name = "lookup_combined_feature"
 
-    # This is to check that when we prune and create operation structure, we don't get an error.
-    new_feature._get_pruned_feature_model()
-
 
 def test_as_feature__from_view_column(snowflake_dimension_view_with_entity, cust_id_entity):
     """

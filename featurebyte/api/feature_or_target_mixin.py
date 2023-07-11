@@ -3,15 +3,25 @@ Mixin class containing common methods for feature or target classes
 """
 from typing import Sequence, cast
 
+import time
+from http import HTTPStatus
+
+import pandas as pd
 from bson import ObjectId
 from pydantic import Field
 
 from featurebyte.api.api_object import ApiObject
 from featurebyte.common.formatting_util import CodeStr
+from featurebyte.common.utils import dataframe_from_json
+from featurebyte.config import Configurations
 from featurebyte.core.generic import QueryObject
 from featurebyte.exception import RecordRetrievalException
+from featurebyte.logging import get_logger
 from featurebyte.models.base import PydanticObjectId, get_active_catalog_id
 from featurebyte.models.feature import BaseFeatureModel
+from featurebyte.schema.preview import FeatureOrTargetPreview
+
+logger = get_logger(__name__)
 
 
 class FeatureOrTargetMixin(QueryObject, ApiObject):
@@ -61,3 +71,24 @@ class FeatureOrTargetMixin(QueryObject, ApiObject):
         except RecordRetrievalException:
             definition = self._generate_code(to_format=True, to_use_saved_data=True)
         return CodeStr(definition)
+
+    def _preview(self, observation_set: pd.DataFrame, url: str) -> pd.DataFrame:
+        # helper function to preview
+        tic = time.time()
+        pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
+        payload = FeatureOrTargetPreview(
+            feature_store_name=self.feature_store.name,
+            graph=pruned_graph,
+            node_name=mapped_node.name,
+            point_in_time_and_serving_name_list=observation_set.to_dict(orient="records"),
+        )
+
+        client = Configurations().get_client()
+        response = client.post(url=url, json=payload.json_dict())
+        if response.status_code != HTTPStatus.OK:
+            raise RecordRetrievalException(response)
+        result = response.json()
+
+        elapsed = time.time() - tic
+        logger.debug(f"Preview took {elapsed:.2f}s")
+        return dataframe_from_json(result)  # pylint: disable=no-member
