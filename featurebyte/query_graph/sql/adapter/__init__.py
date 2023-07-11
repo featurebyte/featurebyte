@@ -9,6 +9,14 @@ from featurebyte.query_graph.sql.adapter.databricks import DatabricksAdapter
 from featurebyte.query_graph.sql.adapter.snowflake import SnowflakeAdapter
 from featurebyte.query_graph.sql.adapter.spark import SparkAdapter
 
+__all__ = [
+    "BaseAdapter",
+    "DatabricksAdapter",
+    "SnowflakeAdapter",
+    "SparkAdapter",
+    "get_sql_adapter",
+]
+
 
 def get_sql_adapter(source_type: SourceType) -> BaseAdapter:
     """

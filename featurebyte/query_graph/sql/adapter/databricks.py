@@ -7,12 +7,12 @@ from typing import Literal, Optional
 
 import re
 
-from sqlglot import Expression, expressions
-from sqlglot.expressions import Select
+from sqlglot import expressions
+from sqlglot.expressions import Expression, Select
 
 from featurebyte.enum import DBVarType, StrEnum
 from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.query_graph.sql.adapter import BaseAdapter
+from featurebyte.query_graph.sql.adapter.base import BaseAdapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import get_fully_qualified_table_name
 

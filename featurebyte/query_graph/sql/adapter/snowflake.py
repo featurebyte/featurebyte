@@ -8,13 +8,13 @@ from typing import Literal, Optional, cast
 import re
 import string
 
-from sqlglot import Expression, expressions
-from sqlglot.expressions import Select, alias_
+from sqlglot import expressions
+from sqlglot.expressions import Expression, Select, alias_
 
 from featurebyte.enum import DBVarType, InternalName, StrEnum
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql import expression as fb_expressions
-from featurebyte.query_graph.sql.adapter import BaseAdapter
+from featurebyte.query_graph.sql.adapter.base import BaseAdapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, quoted_identifier
 

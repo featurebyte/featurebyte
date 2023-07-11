@@ -3,9 +3,10 @@ SparkAdapter class for generating Spark specific SQL expressions
 """
 from __future__ import annotations
 
-from sqlglot import Expression, expressions
+from sqlglot import expressions
+from sqlglot.expressions import Expression
 
-from featurebyte.query_graph.sql.adapter import DatabricksAdapter
+from featurebyte.query_graph.sql.adapter.databricks import DatabricksAdapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 
 

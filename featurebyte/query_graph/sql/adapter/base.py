@@ -7,8 +7,8 @@ from typing import Literal, Optional
 
 from abc import abstractmethod
 
-from sqlglot import Expression, expressions, select
-from sqlglot.expressions import Select, alias_
+from sqlglot import expressions
+from sqlglot.expressions import Expression, Select, alias_, select
 
 from featurebyte.enum import DBVarType, InternalName
 from featurebyte.query_graph.node.schema import TableDetails
