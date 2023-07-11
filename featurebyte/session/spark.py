@@ -151,14 +151,27 @@ class SparkSession(BaseSparkSession):
         return False
 
     async def list_databases(self) -> list[str]:
-        databases = await self.execute_query("SHOW CATALOGS")
+        try:
+            databases = await self.execute_query("SHOW CATALOGS")
+        except OperationalError as exc:
+            if "ParseException" in str(exc):
+                # Spark 3.2 and prior don't support SHOW CATALOGS
+                return ["spark_catalog"]
+            raise
         output = []
         if databases is not None:
             output.extend(databases["catalog"])
         return output
 
     async def list_schemas(self, database_name: str | None = None) -> list[str]:
-        schemas = await self.execute_query(f"SHOW SCHEMAS IN `{database_name}`")
+        try:
+            schemas = await self.execute_query(f"SHOW SCHEMAS IN `{database_name}`")
+        except OperationalError as exc:
+            if "ParseException" in str(exc):
+                # Spark 3.2 and prior don't support SHOW SCHEMAS with the IN clause
+                schemas = await self.execute_query("SHOW SCHEMAS")
+            else:
+                raise
         output = []
         if schemas is not None:
             output.extend(schemas.get("namespace", schemas.get("databaseName")))

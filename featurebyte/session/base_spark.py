@@ -318,7 +318,7 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
         if not await self.schema_exists():
             return
 
-        for function in await self.list_functions():
+        for function in await self._list_functions():
             await self.drop_object("FUNCTION", function)
 
         for name in await self.list_droppable_tables_in_working_schema():
@@ -364,22 +364,21 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
         query = f"DROP {object_type} {name}"
         await self.session.execute_query(query)
 
-    async def list_functions(self) -> list[str]:
+    async def list_objects(self, object_type: str) -> pd.DataFrame:
+        query = f"SHOW {object_type}"
+        return await self.session.execute_query(query)
+
+    async def _list_functions(self) -> list[str]:
         def _function_name_to_identifier(function_name: str) -> str:
             # function names returned from SHOW FUNCTIONS are three part fully qualified, but
             # identifiers are based on function names only
             return function_name.rsplit(".", 1)[1]
 
-        df_result = await self.session.execute_query(
-            f"SHOW USER FUNCTIONS IN {self.session.schema_name}"
-        )
+        df_result = await self.list_objects("USER FUNCTIONS")
         out = []
         if df_result is not None:
             out.extend(df_result["function"].apply(_function_name_to_identifier))
         return out
-
-    async def list_procedures(self) -> list[str]:
-        return []
 
     async def register_missing_objects(self) -> None:
         # check storage connection is working
