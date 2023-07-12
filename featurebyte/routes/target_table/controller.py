@@ -23,7 +23,6 @@ from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.preview import PreviewService
 from featurebyte.service.target import TargetService
 from featurebyte.service.target_table import TargetTableService
-from featurebyte.storage import Storage
 
 
 class TargetTableController(
@@ -56,7 +55,6 @@ class TargetTableController(
         self,
         data: TargetTableCreate,
         observation_set: Optional[UploadFile],
-        temp_storage: Storage,
     ) -> Task:
         """
         Create TargetTable by submitting an async historical feature request task
@@ -67,8 +65,6 @@ class TargetTableController(
             TargetTable creation payload
         observation_set: Optional[UploadFile]
             Observation set file
-        temp_storage: Storage
-            Storage instance
 
         Returns
         -------
@@ -112,7 +108,7 @@ class TargetTableController(
 
         # prepare task payload and submit task
         payload = await self.service.get_target_table_task_payload(
-            data=data, storage=temp_storage, observation_set_dataframe=observation_set_dataframe
+            data=data, observation_set_dataframe=observation_set_dataframe
         )
         task_id = await self.task_controller.task_manager.submit(payload=payload)
         return await self.task_controller.get_task(task_id=str(task_id))

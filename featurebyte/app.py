@@ -84,8 +84,6 @@ def _get_api_deps() -> Callable[[Request, PydanticObjectId], None]:
         request.state.get_credential = MongoBackedCredentialProvider(
             persistent=request.state.persistent
         ).get_credential
-        request.state.get_storage = get_storage
-        request.state.get_temp_storage = get_temp_storage
         request.state.app_container = LazyAppContainer(
             user=request.state.user,
             persistent=request.state.persistent,
