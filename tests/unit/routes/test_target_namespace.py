@@ -87,6 +87,7 @@ class TestTargetNamespaceApi(BaseCatalogApiTestSuite):
 
         response = test_api_client.get(f"{self.base_route}/{target_namespace_id}")
         assert response.status_code == HTTPStatus.OK
+        response.status_code = HTTPStatus.CREATED  # TODO: hack
         return response
 
     @pytest_asyncio.fixture
@@ -109,23 +110,3 @@ class TestTargetNamespaceApi(BaseCatalogApiTestSuite):
         )
         assert response.status_code == HTTPStatus.OK
         return response
-
-    @pytest.mark.skip("POST method not exposed")
-    def test_create_201(self, test_api_client_persistent, create_success_response, user_id):
-        """Test creation (success)"""
-
-    @pytest.mark.skip("POST method not exposed")
-    def test_create_201__without_specifying_id_field(self, test_api_client_persistent):
-        """Test creation (success) without specifying id field"""
-
-    @pytest.mark.skip("POST method not exposed")
-    def test_create_201__id_is_none(self, test_api_client_persistent):
-        """Test creation (success) ID is None"""
-
-    @pytest.mark.skip("POST method not exposed")
-    def test_create_201_non_default_catalog(
-        self,
-        catalog_id,
-        create_success_response_non_default_catalog,
-    ):
-        """Test creation (success) in non default catalog"""

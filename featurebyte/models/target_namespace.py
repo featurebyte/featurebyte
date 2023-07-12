@@ -39,7 +39,7 @@ class TargetNamespaceModel(BaseFeatureNamespaceModel):
 
     # list of IDs attached to this feature namespace or target namespace
     target_ids: List[PydanticObjectId] = Field(allow_mutation=False)
-    default_target_id: PydanticObjectId = Field(allow_mutation=False)
+    default_target_id: Optional[PydanticObjectId] = Field(allow_mutation=False)
 
     # pydantic validators
     _sort_feature_ids_validator = validator("target_ids", "entity_ids", allow_reuse=True)(

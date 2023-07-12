@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import Optional, cast
 
+from http import HTTPStatus
+
 from fastapi import APIRouter, Request
 
 from featurebyte.models.base import PydanticObjectId
@@ -21,12 +23,23 @@ from featurebyte.routes.common.schema import (
     VerboseQuery,
 )
 from featurebyte.schema.target_namespace import (
+    TargetNamespaceCreate,
     TargetNamespaceInfo,
     TargetNamespaceList,
     TargetNamespaceUpdate,
 )
 
 router = APIRouter(prefix="/target_namespace")
+
+
+@router.post("", response_model=TargetNamespaceModel, status_code=HTTPStatus.CREATED)
+async def create_target(request: Request, data: TargetNamespaceCreate) -> TargetNamespaceModel:
+    """
+    Create target namespace
+    """
+    controller = request.state.app_container.target_namespace_controller
+    target_namespace: TargetNamespaceModel = await controller.create_target_namespace(data=data)
+    return target_namespace
 
 
 @router.get("/{target_namespace_id}", response_model=TargetNamespaceModel)

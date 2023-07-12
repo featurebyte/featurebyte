@@ -6,7 +6,11 @@ from bson import ObjectId
 
 from featurebyte.models.target_namespace import TargetNamespaceModel
 from featurebyte.routes.common.base import BaseDocumentController
-from featurebyte.schema.target_namespace import TargetNamespaceInfo, TargetNamespaceList
+from featurebyte.schema.target_namespace import (
+    TargetNamespaceCreate,
+    TargetNamespaceInfo,
+    TargetNamespaceList,
+)
 from featurebyte.service.target_namespace import TargetNamespaceService
 
 
@@ -18,6 +22,25 @@ class TargetNamespaceController(
     """
 
     paginated_document_class = TargetNamespaceList
+
+    async def create_target_namespace(
+        self,
+        data: TargetNamespaceCreate,
+    ) -> TargetNamespaceModel:
+        """
+        Create TargetNamespace at persistent
+
+        Parameters
+        ----------
+        data: TargetNamespaceCreate
+            Target namespace creation payload
+
+        Returns
+        -------
+        TargetNamespaceModel
+            Newly created TargetNamespace object
+        """
+        return await self.service.create_document(data)
 
     async def get_info(self, document_id: ObjectId, verbose: bool) -> TargetNamespaceInfo:
         """
