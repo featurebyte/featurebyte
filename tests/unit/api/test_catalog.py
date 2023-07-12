@@ -46,6 +46,7 @@ from featurebyte.api.scd_table import SCDTable
 from featurebyte.api.static_source_table import StaticSourceTable
 from featurebyte.api.table import Table
 from featurebyte.api.target import Target
+from featurebyte.api.target_namespace import TargetNamespace
 from featurebyte.api.target_table import TargetTable
 from featurebyte.api.user_defined_function import UserDefinedFunction
 from featurebyte.exception import (
@@ -272,6 +273,7 @@ def test_all_methods_are_exposed_in_catalog(method_list):
         DeletableApiObject,
         TableApiObject,
         TableListMixin,
+        TargetNamespace,
         FeatureOrTargetMixin,
     }
     assert len(api_object_children) == len(method_list) + len(excluded_children)

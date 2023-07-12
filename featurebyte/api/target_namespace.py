@@ -7,13 +7,15 @@ from typing import List, Optional
 
 from pydantic import Field
 
-from featurebyte import DefaultVersionMode, Entity, RecordRetrievalException
 from featurebyte.api.api_handler.base import ListHandler
 from featurebyte.api.api_handler.target_namespace import TargetNamespaceListHandler
 from featurebyte.api.api_object_util import ForeignKeyMapping
 from featurebyte.api.base_table import TableApiObject
+from featurebyte.api.entity import Entity
 from featurebyte.api.savable_api_object import SavableApiObject
+from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.feature_namespace import DefaultVersionMode
 from featurebyte.models.target_namespace import TargetNamespaceModel
 from featurebyte.schema.target_namespace import TargetNamespaceUpdate
 
@@ -25,9 +27,7 @@ class TargetNamespace(SavableApiObject):
     """
 
     internal_window: Optional[str] = Field(alias="window")
-    internal_entity_ids: Optional[List[PydanticObjectId]] = Field(
-        default_factory=list, alias="entity_ids"
-    )
+    internal_entity_ids: List[PydanticObjectId] = Field(default_factory=list, alias="entity_ids")
 
     # class variables
     _route = "/target_namespace"
@@ -111,7 +111,7 @@ class TargetNamespace(SavableApiObject):
         try:
             return self.cached_model.entity_ids
         except RecordRetrievalException:
-            return self.internal_entity_ids
+            return self.internal_entity_ids or []
 
     @property
     def default_target_id(self) -> PydanticObjectId:

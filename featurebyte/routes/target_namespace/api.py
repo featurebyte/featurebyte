@@ -33,7 +33,9 @@ router = APIRouter(prefix="/target_namespace")
 
 
 @router.post("", response_model=TargetNamespaceModel, status_code=HTTPStatus.CREATED)
-async def create_target(request: Request, data: TargetNamespaceCreate) -> TargetNamespaceModel:
+async def create_target_namespace(
+    request: Request, data: TargetNamespaceCreate
+) -> TargetNamespaceModel:
     """
     Create target namespace
     """
