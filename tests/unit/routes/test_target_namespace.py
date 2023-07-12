@@ -3,8 +3,6 @@ Test for target namespace routes
 """
 from http import HTTPStatus
 
-import pytest
-import pytest_asyncio
 from bson import ObjectId
 
 from featurebyte.models.base import DEFAULT_CATALOG_ID
@@ -19,7 +17,9 @@ class TestTargetNamespaceApi(BaseCatalogApiTestSuite):
     class_name = "TargetNamespace"
     base_route = "/target_namespace"
     unknown_id = ObjectId()
-    payload = BaseCatalogApiTestSuite.load_payload("tests/fixtures/request_payloads/target.json")
+    payload = BaseCatalogApiTestSuite.load_payload(
+        "tests/fixtures/request_payloads/target_namespace.json"
+    )
     create_conflict_payload_expected_detail_pairs = []
     create_unprocessable_payload_expected_detail_pairs = []
     create_parent_unprocessable_payload_expected_detail_pairs = [
@@ -52,61 +52,10 @@ class TestTargetNamespaceApi(BaseCatalogApiTestSuite):
 
     def multiple_success_payload_generator(self, api_client):
         """Create multiple payload for setting up create_multiple_success_responses fixture"""
-        target_payload = self.load_payload("tests/fixtures/request_payloads/target.json")
+        target_payload = self.load_payload("tests/fixtures/request_payloads/target_namespace.json")
         _ = api_client
         for i in range(3):
             target_payload = target_payload.copy()
             target_payload["_id"] = str(ObjectId())
             target_payload["name"] = f'{target_payload["name"]}_{i}'
             yield target_payload
-
-    @pytest_asyncio.fixture
-    async def create_multiple_success_responses(self, test_api_client_persistent):
-        """Post multiple success responses"""
-        test_api_client, _ = test_api_client_persistent
-        self.setup_creation_route(test_api_client)
-
-        output = []
-        for target_payload in self.multiple_success_payload_generator(test_api_client):
-            target_response = test_api_client.post("/target", json=target_payload)
-            target_namespace_id = target_response.json()["target_namespace_id"]
-            response = test_api_client.get(f"{self.base_route}/{target_namespace_id}")
-            assert response.status_code == HTTPStatus.OK
-            output.append(response)
-        return output
-
-    @pytest_asyncio.fixture
-    async def create_success_response(self, test_api_client_persistent):
-        """Post route success response object"""
-        test_api_client, _ = test_api_client_persistent
-        self.setup_creation_route(test_api_client)
-
-        target_payload = self.load_payload("tests/fixtures/request_payloads/target.json")
-        target_response = test_api_client.post("/target", json=target_payload)
-        target_namespace_id = target_response.json()["target_namespace_id"]
-
-        response = test_api_client.get(f"{self.base_route}/{target_namespace_id}")
-        assert response.status_code == HTTPStatus.OK
-        response.status_code = HTTPStatus.CREATED  # TODO: hack
-        return response
-
-    @pytest_asyncio.fixture
-    async def create_success_response_non_default_catalog(
-        self, test_api_client_persistent, catalog_id
-    ):
-        """Create object with non default catalog"""
-        test_api_client, _ = test_api_client_persistent
-        self.setup_creation_route(test_api_client, catalog_id=catalog_id)
-
-        target_payload = self.load_payload("tests/fixtures/request_payloads/target.json")
-        target_response = test_api_client.post(
-            "/target", headers={"active-catalog-id": str(catalog_id)}, json=target_payload
-        )
-        target_namespace_id = target_response.json()["target_namespace_id"]
-
-        response = test_api_client.get(
-            f"{self.base_route}/{target_namespace_id}",
-            headers={"active-catalog-id": str(catalog_id)},
-        )
-        assert response.status_code == HTTPStatus.OK
-        return response
