@@ -241,29 +241,27 @@ class FeatureModel(BaseFeatureModel):
     @root_validator
     @classmethod
     def _add_tile_derived_attributes(cls, values: dict[str, Any]) -> dict[str, Any]:
-        if not values.get("aggregation_ids"):
-            # Each aggregation_id refers to a set of columns in a tile table. It is associated to a
-            # specific scheduled tile task.
+        # Each aggregation_id refers to a set of columns in a tile table. It is associated to a
+        # specific scheduled tile task.
+        if values.get("aggregation_ids"):
+            return values
 
-            graph_dict = values["internal_graph"]
-            if isinstance(graph_dict, QueryGraphModel):
-                graph_dict = graph_dict.dict(by_alias=True)
-            graph = QueryGraph(**graph_dict)
-            node_name = values["node_name"]
-            feature_store_type = graph.get_input_node(
-                node_name
-            ).parameters.feature_store_details.type
+        graph_dict = values["internal_graph"]
+        if isinstance(graph_dict, QueryGraphModel):
+            graph_dict = graph_dict.dict(by_alias=True)
+        graph = QueryGraph(**graph_dict)
+        node_name = values["node_name"]
+        feature_store_type = graph.get_input_node(node_name).parameters.feature_store_details.type
 
-            interpreter = GraphInterpreter(graph, feature_store_type)
-            node = graph.get_node_by_name(node_name)
-            tile_infos = interpreter.construct_tile_gen_sql(node, is_on_demand=False)
+        interpreter = GraphInterpreter(graph, feature_store_type)
+        node = graph.get_node_by_name(node_name)
+        tile_infos = interpreter.construct_tile_gen_sql(node, is_on_demand=False)
 
-            aggregation_ids = []
-            for info in tile_infos:
-                aggregation_ids.append(info.aggregation_id)
+        aggregation_ids = []
+        for info in tile_infos:
+            aggregation_ids.append(info.aggregation_id)
 
-            values["aggregation_ids"] = aggregation_ids
-
+        values["aggregation_ids"] = aggregation_ids
         return values
 
     class Settings(BaseFeatureModel.Settings):
