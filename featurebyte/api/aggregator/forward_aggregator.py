@@ -132,7 +132,6 @@ class ForwardAggregator(BaseAggregator):
             "serving_names": self.serving_names,
             "value_by": self.category,
             "entity_ids": self.entity_ids,
-            "table_details": self.view.tabular_source.table_details,
             "timestamp_col": timestamp_col,
         }
 

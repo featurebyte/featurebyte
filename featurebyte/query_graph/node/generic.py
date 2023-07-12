@@ -44,7 +44,6 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     get_object_class_from_function_call,
 )
 from featurebyte.query_graph.node.mixin import AggregationOpStructMixin, BaseGroupbyParameters
-from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.util import append_to_lineage
 
 
@@ -476,8 +475,6 @@ class ForwardAggregateParameters(BaseGroupbyParameters):
 
     name: str
     window: Optional[str]
-    # TableDetails are needed because we will be performing the aggregation query directly on the calling table.
-    table_details: TableDetails
     timestamp_col: InColumnStr
 
 
