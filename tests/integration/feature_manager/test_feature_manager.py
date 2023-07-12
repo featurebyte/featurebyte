@@ -2,7 +2,6 @@
 This module contains integration tests for FeatureSnowflake
 """
 import contextlib
-import copy
 from datetime import datetime
 from unittest.mock import PropertyMock, patch
 
@@ -17,9 +16,9 @@ from featurebyte.api.feature_list import FeatureList
 from featurebyte.enum import InternalName
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.online_store import OnlineFeatureSpec
+from featurebyte.models.online_store_compute_query import OnlineStoreComputeQueryModel
 from featurebyte.models.periodic_task import Interval
 from featurebyte.models.tile import TileType
-from featurebyte.query_graph.sql.online_serving import OnlineStorePrecomputeQuery
 
 
 @contextlib.contextmanager
@@ -134,7 +133,7 @@ async def test_online_enabled__without_snowflake_scheduling(
 ):
     with patch.object(ExtendedFeatureModel, "tile_specs", PropertyMock(return_value=[tile_spec])):
         mock_precompute_queries = [
-            OnlineStorePrecomputeQuery(
+            OnlineStoreComputeQueryModel(
                 sql=feature_sql,
                 tile_id=tile_spec.tile_id,
                 aggregation_id=tile_spec.aggregation_id,
@@ -170,10 +169,7 @@ async def test_online_enabled__without_snowflake_scheduling(
             assert len(tasks) == 0
 
         finally:
-            await feature_manager_service.online_disable(session, online_feature_spec)
-            await session.execute_query(
-                f"DELETE FROM ONLINE_STORE_MAPPING WHERE TILE_ID = '{online_feature_spec.tile_ids[0]}'"
-            )
+            await feature_manager_service.online_disable(online_feature_spec)
             await session.execute_query(
                 f"DELETE FROM {feature_store_table_name} WHERE {InternalName.ONLINE_STORE_RESULT_NAME_COLUMN} = 'sum_30h'"
             )
@@ -196,7 +192,7 @@ async def online_enabled_feature_spec_fixture(
 
     with patch.object(ExtendedFeatureModel, "tile_specs", PropertyMock(return_value=[tile_spec])):
         mock_precompute_queries = [
-            OnlineStorePrecomputeQuery(
+            OnlineStoreComputeQueryModel(
                 sql=feature_sql,
                 tile_id=tile_spec.tile_id,
                 aggregation_id=tile_spec.aggregation_id,
@@ -217,10 +213,7 @@ async def online_enabled_feature_spec_fixture(
 
         yield online_feature_spec, schedule_time
 
-        await feature_manager_service.online_disable(session, online_feature_spec)
-        await session.execute_query(
-            f"DELETE FROM ONLINE_STORE_MAPPING WHERE TILE_ID = '{online_feature_spec.tile_ids[0]}'"
-        )
+        await feature_manager_service.online_disable(online_feature_spec)
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
@@ -231,6 +224,7 @@ async def test_online_enabled_feature_spec(
     tile_spec,
     feature_sql,
     feature_store_table_name,
+    online_store_compute_query_service,
 ):
     """
     Test online_enable
@@ -241,22 +235,21 @@ async def test_online_enabled_feature_spec(
     expected_tile_id = tile_spec.tile_id
     expected_aggregation_id = tile_spec.aggregation_id
 
-    sql = f"SELECT * FROM ONLINE_STORE_MAPPING WHERE TILE_ID = '{expected_tile_id}'"
-    result = await session.execute_query(sql)
+    result = [
+        doc
+        async for doc in online_store_compute_query_service.list_documents_iterator(
+            query_filter={"tile_id": expected_tile_id}
+        )
+    ]
     assert len(result) == 1
-    expected_df = pd.DataFrame(
-        {
-            "TILE_ID": [expected_tile_id],
-            "AGGREGATION_ID": [expected_aggregation_id],
-            "RESULT_ID": ["sum_30h"],
-            "RESULT_TYPE": ["FLOAT"],
-            "SQL_QUERY": feature_sql,
-            "ONLINE_STORE_TABLE_NAME": feature_store_table_name,
-            "ENTITY_COLUMN_NAMES": ['"cust_id"'],
-        }
-    )
-    result = result.drop(columns=["CREATED_AT"])
-    assert_frame_equal(result, expected_df)
+    result = result[0]
+    assert result.tile_id == expected_tile_id
+    assert result.aggregation_id == expected_aggregation_id
+    assert result.result_name == "sum_30h"
+    assert result.result_type == "FLOAT"
+    assert result.sql == feature_sql
+    assert result.table_name == feature_store_table_name
+    assert result.serving_names == ["cust_id"]
 
     # validate generate historical tiles
     sql = f"SELECT * FROM {expected_tile_id}"
@@ -346,7 +339,7 @@ async def test_online_enable__re_deploy_from_latest_tile_start(
     last_tile_start_ts = tile_model.last_tile_metadata_offline.start_date
 
     # disable/un-deploy
-    await feature_manager_service.online_disable(session, online_feature_spec)
+    await feature_manager_service.online_disable(online_feature_spec)
 
     # re-deploy and verify that the tile start ts is the same as the last tile start ts
     with patch(

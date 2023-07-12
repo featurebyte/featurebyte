@@ -11,6 +11,7 @@ from featurebyte.common import date_util
 from featurebyte.enum import InternalName
 from featurebyte.logging import get_logger
 from featurebyte.models.tile import TileScheduledJobParameters
+from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.tile_registry_service import TileRegistryService
 from featurebyte.session.base import BaseSession
@@ -32,9 +33,11 @@ class TileTaskExecutor:
     def __init__(
         self,
         online_store_table_version_service: OnlineStoreTableVersionService,
+        online_store_compute_query_service: OnlineStoreComputeQueryService,
         tile_registry_service: TileRegistryService,
     ):
         self.online_store_table_version_service = online_store_table_version_service
+        self.online_store_compute_query_service = online_store_compute_query_service
         self.tile_registry_service = tile_registry_service
 
     # pylint: disable=too-many-locals,too-many-statements
@@ -190,6 +193,7 @@ class TileTaskExecutor:
             aggregation_id=params.aggregation_id,
             job_schedule_ts_str=corrected_job_ts.strftime(date_format),
             online_store_table_version_service=self.online_store_table_version_service,
+            online_store_compute_query_service=self.online_store_compute_query_service,
         )
 
         step_specs: List[Dict[str, Any]] = [

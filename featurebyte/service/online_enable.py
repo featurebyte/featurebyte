@@ -165,7 +165,7 @@ class OnlineEnableService(BaseService):
                 session, online_feature_spec, is_recreating_schema=is_recreating_schema
             )
         else:
-            await feature_manager_service.online_disable(session, online_feature_spec)
+            await feature_manager_service.online_disable(online_feature_spec)
 
     async def update_data_warehouse(
         self, updated_feature: FeatureModel, online_enabled_before_update: bool, get_credential: Any

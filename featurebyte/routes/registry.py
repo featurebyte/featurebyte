@@ -79,6 +79,7 @@ from featurebyte.service.namespace_handler import NamespaceHandler
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.online_enable import OnlineEnableService
 from featurebyte.service.online_serving import OnlineServingService
+from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.parent_serving import ParentEntityLookupService
 from featurebyte.service.periodic_task import PeriodicTaskService
@@ -178,6 +179,7 @@ app_container_config.register_class(ObservationTableDeleteValidator)
 app_container_config.register_class(ObservationTableService)
 app_container_config.register_class(OnlineEnableService)
 app_container_config.register_class(OnlineServingService)
+app_container_config.register_class(OnlineStoreComputeQueryService)
 app_container_config.register_class(OnlineStoreTableVersionService)
 app_container_config.register_class(ParentEntityLookupService)
 app_container_config.register_class(

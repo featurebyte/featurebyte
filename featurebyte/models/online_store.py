@@ -8,11 +8,11 @@ from pydantic import validator
 from featurebyte.enum import TableDataType
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.models.online_store_compute_query import OnlineStoreComputeQueryModel
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.online_serving import (
-    OnlineStorePrecomputeQuery,
     get_online_store_precompute_queries,
     is_online_store_eligible,
 )
@@ -35,14 +35,14 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
     """
 
     feature: ExtendedFeatureModel
-    precompute_queries: List[OnlineStorePrecomputeQuery] = []
+    precompute_queries: List[OnlineStoreComputeQueryModel] = []
 
     @validator("precompute_queries", always=True)
     def _generate_precompute_queries(  # pylint: disable=no-self-argument
         cls,
-        val: List[OnlineStorePrecomputeQuery],
+        val: List[OnlineStoreComputeQueryModel],
         values: Dict[str, Any],
-    ) -> List[OnlineStorePrecomputeQuery]:
+    ) -> List[OnlineStoreComputeQueryModel]:
         if val:
             # Allow direct setting; mainly used in integration tests
             return val

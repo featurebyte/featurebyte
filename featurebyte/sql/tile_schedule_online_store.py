@@ -1,21 +1,19 @@
 """
 Tile Generate online store Job Script
 """
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 import textwrap
 from datetime import datetime
 
 import pandas as pd
 from pydantic import Field
-from sqlglot import expressions
-from sqlglot.expressions import select
 
 from featurebyte.enum import InternalName, SourceType
 from featurebyte.logging import get_logger
+from featurebyte.models.online_store_compute_query import OnlineStoreComputeQueryModel
 from featurebyte.models.online_store_table_version import OnlineStoreTableVersion
-from featurebyte.query_graph.sql.ast.literal import make_literal_value
-from featurebyte.query_graph.sql.common import sql_to_string
+from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.sql.base import BaseSqlModel
 from featurebyte.sql.common import construct_create_table_query, retry_sql
@@ -33,6 +31,7 @@ class TileScheduleOnlineStore(BaseSqlModel):
     retry_num: int = Field(default=10)
     aggregation_result_name: Optional[str] = Field(default=None)
     online_store_table_version_service: OnlineStoreTableVersionService
+    online_store_compute_query_service: OnlineStoreComputeQueryService
 
     class Config:
         """
@@ -61,16 +60,13 @@ class TileScheduleOnlineStore(BaseSqlModel):
         Execute tile schedule online store operation
         """
         # pylint: disable=too-many-locals,too-many-statements
-        online_store_df = await self._retrieve_online_store_mapping()
+        compute_queries = await self._retrieve_online_store_compute_queries()
 
-        if online_store_df is None or len(online_store_df) == 0:
-            return
-
-        for _, row in online_store_df.iterrows():
-            f_name = row["RESULT_ID"]
-            f_sql = row["SQL_QUERY"]
-            fs_table = row["ONLINE_STORE_TABLE_NAME"]
-            f_entity_columns = row["ENTITY_COLUMN_NAMES"]
+        for compute_query in compute_queries:
+            f_name = compute_query.result_name
+            f_sql = compute_query.sql
+            fs_table = compute_query.table_name
+            f_entity_columns = compute_query.serving_names
             f_sql = f_sql.replace(
                 "__FB_POINT_IN_TIME_SQL_PLACEHOLDER", "'" + self.job_schedule_ts_str + "'"
             )
@@ -89,9 +85,7 @@ class TileScheduleOnlineStore(BaseSqlModel):
             quoted_value_column = self.quote_column(InternalName.ONLINE_STORE_VALUE_COLUMN)
             quoted_version_column = self.quote_column(InternalName.ONLINE_STORE_VERSION_COLUMN)
             quoted_entity_columns = (
-                [self.quote_column(col.replace('"', "")) for col in f_entity_columns.split(",")]
-                if f_entity_columns
-                else []
+                [self.quote_column(col) for col in f_entity_columns] if f_entity_columns else []
             )
             column_names = ", ".join(
                 quoted_entity_columns + [quoted_result_name_column, quoted_value_column]
@@ -164,28 +158,19 @@ class TileScheduleOnlineStore(BaseSqlModel):
             else:
                 await self.online_store_table_version_service.update_version(f_name, next_version)
 
-    async def _retrieve_online_store_mapping(self) -> Optional[pd.DataFrame]:
-        query = select(
-            "RESULT_ID",
-            "SQL_QUERY",
-            "ONLINE_STORE_TABLE_NAME",
-            "ENTITY_COLUMN_NAMES",
-            "RESULT_TYPE",
-        ).from_("ONLINE_STORE_MAPPING")
-
+    async def _retrieve_online_store_compute_queries(self) -> List[OnlineStoreComputeQueryModel]:
         if self.aggregation_result_name is not None:
-            # Retrieve entries specific to a particular result_id (e.g. a_sum_7d)
-            query = query.where(
-                expressions.EQ(
-                    this="RESULT_ID", expression=make_literal_value(self.aggregation_result_name)
-                )
+            # Retrieve compute queries for a specific result name (e.g. sum_30d)
+            iterator = self.online_store_compute_query_service.list_by_result_names(
+                [self.aggregation_result_name]
             )
         else:
-            # Retrieve all entries for the aggregation_id (e.g. a_sum_24h, a_sum_7d, a_sum_30d, etc)
-            query = query.where(
-                expressions.EQ(
-                    this="AGGREGATION_ID", expression=make_literal_value(self.aggregation_id)
-                )
+            # Retrieve all compute queries associated with an aggregation_id (e.g. sum_1d, sum_7d,
+            # sum_30d, etc)
+            iterator = self.online_store_compute_query_service.list_by_aggregation_id(
+                self.aggregation_id
             )
-
-        return await self._session.execute_query(sql_to_string(query, self._session.source_type))
+        out = []
+        async for doc in iterator:
+            out.append(doc)
+        return out

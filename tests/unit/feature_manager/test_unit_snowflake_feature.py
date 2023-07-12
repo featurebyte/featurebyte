@@ -10,14 +10,9 @@ import pytest
 from featurebyte import SourceType
 from featurebyte.common.model_util import get_version
 from featurebyte.feature_manager.model import ExtendedFeatureModel
-from featurebyte.feature_manager.sql_template import (
-    tm_delete_online_store_mapping,
-    tm_feature_tile_monitor,
-    tm_upsert_online_store_mapping,
-)
+from featurebyte.feature_manager.sql_template import tm_feature_tile_monitor
 from featurebyte.models.online_store import OnlineFeatureSpec
 from featurebyte.session.snowflake import SnowflakeSession
-from featurebyte.utils.snowflake.sql import escape_column_names
 
 
 @pytest.fixture(name="mock_snowflake_feature")
@@ -113,25 +108,20 @@ async def test_online_enable(
     mock_schedule_offline_tiles.assert_called_once()
     mock_generate_tiles.assert_called_once()
 
-    # Expected execute_query calls:
-    # 1. merge into ONLINE_STORE_MAPPING
-    # 2. call SP_TILES_SCHEDULE_ONLINE_STORE
+    # Expected execute_query calls are triggered by TileScheduleOnlineStore:
+    # 1. Check if online store table exists
+    # 2. Insert into online store table
     assert mock_snowflake_session.execute_query.call_count == 2
 
-    queries = feature_spec.precompute_queries
-    assert len(queries) == 1
-    query = queries[0]
-    upsert_sql = tm_upsert_online_store_mapping.render(
-        tile_id=query.tile_id,
-        aggregation_id=query.aggregation_id,
-        result_id=query.result_name,
-        result_type=query.result_type,
-        sql_query=query.sql.replace("'", "''"),
-        online_store_table_name=query.table_name,
-        entity_column_names=",".join(escape_column_names(query.serving_names)),
-        is_deleted=False,
+    # First call
+    args, _ = mock_snowflake_session.execute_query.call_args_list[0]
+    assert args[0] == (
+        "select * from online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c limit 1"
     )
-    assert mock_snowflake_session.execute_query.call_args_list[0] == mock.call(upsert_sql)
+
+    # Second call
+    args, _ = mock_snowflake_session.execute_query.call_args_list[1]
+    assert args[0].strip().startswith("INSERT INTO online_store_")
 
 
 @mock.patch("featurebyte.service.tile_manager.TileManagerService.schedule_online_tiles")
@@ -250,12 +240,12 @@ async def test_online_disable(
         "featurebyte.service.tile_manager.TileManagerService.remove_tile_jobs"
     ) as mock_tile_manager:
         mock_tile_manager.side_effect = None
-        await feature_manager_service.online_disable(mock_snowflake_session, feature_spec)
+        with mock.patch(
+            "featurebyte.service.online_store_compute_query_service.OnlineStoreComputeQueryService.delete_by_result_name"
+        ) as mock_delete_by_result_name:
+            await feature_manager_service.online_disable(feature_spec)
 
-    delete_sql = tm_delete_online_store_mapping.render(
-        result_id=feature_spec.precompute_queries[0].result_name,
-    )
-    assert mock_snowflake_session.execute_query.call_args_list[0] == mock.call(delete_sql)
+    mock_delete_by_result_name.assert_called_once()
 
 
 @pytest.mark.asyncio

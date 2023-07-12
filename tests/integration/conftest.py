@@ -1457,3 +1457,11 @@ def tile_registry_service_fixture(app_container):
     Fixture for TileRegistryService
     """
     return app_container.tile_registry_service
+
+
+@pytest.fixture(name="online_store_compute_query_service")
+def online_store_compute_query_service_fixture(app_container):
+    """
+    Online store compute query service fixture
+    """
+    return app_container.online_store_compute_query_service
