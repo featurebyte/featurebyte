@@ -376,7 +376,7 @@ class TileManagerService(BaseService):
         ):
             break
         else:
-            # Only disable the tile job is the aggregation_id is not referenced by any currently
+            # Only disable the tile job if the aggregation_id is not referenced by any currently
             # online enabled features
             logger.info("Stopping job with custom scheduler")
             for t_type in [TileType.ONLINE, TileType.OFFLINE]:
