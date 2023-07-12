@@ -55,7 +55,6 @@ def test_forward_aggregate(forward_aggregator):
         "serving_names": forward_aggregator.serving_names,
         "value_by": None,
         "entity_ids": forward_aggregator.entity_ids,
-        "table_details": forward_aggregator.view.tabular_source.table_details.dict(),
         "timestamp_col": "event_timestamp",
     }
 
@@ -91,7 +90,6 @@ def test_prepare_node_parameters(forward_aggregator):
         "serving_names": forward_aggregator.serving_names,
         "value_by": None,
         "entity_ids": forward_aggregator.entity_ids,
-        "table_details": forward_aggregator.view.tabular_source.table_details,
         "timestamp_col": "timestamp_col",
     }
 
