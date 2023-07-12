@@ -20,6 +20,9 @@ class OnlineStoreComputeQueryService(
 ):
     """
     OnlineStoreComputeQueryService
+
+    The collection keeps track of currently active queries that are being run periodically to update
+    online store tables.
     """
 
     document_class = OnlineStoreComputeQueryModel
