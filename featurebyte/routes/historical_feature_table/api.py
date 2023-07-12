@@ -48,7 +48,6 @@ async def create_historical_feature_table(
     task_submit: Task = await controller.create_historical_feature_table(
         data=data,
         observation_set=observation_set,
-        temp_storage=request.state.get_temp_storage(),
     )
     return task_submit
 

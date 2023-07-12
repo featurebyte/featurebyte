@@ -3,7 +3,7 @@ TargetTableService class
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional
 
 from pathlib import Path
 
@@ -13,8 +13,10 @@ from bson import ObjectId
 from featurebyte.enum import MaterializedTableNamePrefix
 from featurebyte.models.base import FeatureByteBaseDocumentModel
 from featurebyte.models.target_table import TargetTableModel
+from featurebyte.persistent import Persistent
 from featurebyte.schema.target_table import TargetTableCreate
 from featurebyte.schema.worker.task.target_table import TargetTableTaskPayload
+from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.materialized_table import BaseMaterializedTableService
 from featurebyte.storage import Storage
 
@@ -27,6 +29,17 @@ class TargetTableService(BaseMaterializedTableService[TargetTableModel, TargetTa
     document_class = TargetTableModel
     materialized_table_name_prefix = MaterializedTableNamePrefix.TARGET_TABLE
 
+    def __init__(
+        self,
+        user: Any,
+        persistent: Persistent,
+        catalog_id: ObjectId,
+        feature_store_service: FeatureStoreService,
+        temp_storage: Storage,
+    ):
+        super().__init__(user, persistent, catalog_id, feature_store_service)
+        self.temp_storage = temp_storage
+
     @property
     def class_name(self) -> str:
         return "TargetTable"
@@ -34,7 +47,6 @@ class TargetTableService(BaseMaterializedTableService[TargetTableModel, TargetTa
     async def get_target_table_task_payload(
         self,
         data: TargetTableCreate,
-        storage: Storage,
         observation_set_dataframe: Optional[pd.DataFrame],
     ) -> TargetTableTaskPayload:
         """
@@ -45,8 +57,6 @@ class TargetTableService(BaseMaterializedTableService[TargetTableModel, TargetTa
         ----------
         data: TargetTableCreate
             TargetTable creation payload
-        storage: Storage
-            Storage instance
         observation_set_dataframe: Optional[pd.DataFrame]
             Optional observation set DataFrame. If provided, the DataFrame will be stored in the
             temp storage to be used by the TargetTable creation task.
@@ -66,7 +76,7 @@ class TargetTableService(BaseMaterializedTableService[TargetTableModel, TargetTa
             observation_set_storage_path = (
                 f"target_table/observation_set/{output_document_id}.parquet"
             )
-            await storage.put_dataframe(
+            await self.temp_storage.put_dataframe(
                 observation_set_dataframe, Path(observation_set_storage_path)
             )
         else:

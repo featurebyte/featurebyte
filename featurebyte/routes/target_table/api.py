@@ -45,7 +45,6 @@ async def create_target_table(
     task_submit: Task = await controller.create_target_table(
         data=data,
         observation_set=observation_set,
-        temp_storage=request.state.get_temp_storage(),
     )
     return task_submit
 
