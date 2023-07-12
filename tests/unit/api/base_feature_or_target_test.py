@@ -76,12 +76,18 @@ class FeatureOrTargetBaseTestSuite:
         self, saved_item_under_test, snowflake_event_table, cust_id_entity
     ):
         """Test saved item properties"""
-        assert saved_item_under_test.version.startswith(
-            get_version()
-        )  # make sure it is a valid string
+        assert saved_item_under_test.version.startswith(get_version())
         assert saved_item_under_test.catalog_id == DEFAULT_CATALOG_ID
         assert saved_item_under_test.entity_ids == [cust_id_entity.id]
         assert saved_item_under_test.table_ids == [snowflake_event_table.id]
         assert saved_item_under_test.definition.strip() == self.get_expected_definition(
             self.expected_saved_item_definition, snowflake_event_table, saved_item_under_test
         )
+
+    def test_info(self, saved_item_under_test):
+        """Test info"""
+        # TODO: Add more assertions to check the info
+        info = saved_item_under_test.info()
+        assert info["entities"] == [
+            {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}
+        ]
