@@ -78,7 +78,7 @@ class TargetInfo(FeatureByteBaseModel):
     id: PydanticObjectId
     target_name: str
     entities: EntityBriefInfoList
-    horizon: Optional[str]
+    window: Optional[str]
     has_recipe: bool
     created_at: datetime
     updated_at: Optional[datetime]

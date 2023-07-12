@@ -18,7 +18,7 @@ def test_duration_validator(snowflake_event_table):
     TargetModel(
         graph=graph,
         node_name="node name",
-        horizon="7d",
+        window="7d",
         entity_ids=[],
         tabular_source=snowflake_event_table.tabular_source,
     )
@@ -28,8 +28,8 @@ def test_duration_validator(snowflake_event_table):
         TargetModel(
             graph=graph,
             node_name="node name",
-            horizon="random",
+            window="random",
             entity_ids=[],
             tabular_source=snowflake_event_table.tabular_source,
         )
-    assert "horizon" in str(exc)
+    assert "window" in str(exc)

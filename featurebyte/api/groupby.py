@@ -425,7 +425,7 @@ class GroupBy:
         self,
         value_column: str,
         method: str,
-        horizon: Optional[str] = None,
+        window: Optional[str] = None,
         target_name: Optional[str] = None,
     ) -> Target:
         """
@@ -440,8 +440,8 @@ class GroupBy:
             Column to be aggregated
         method: str
             Aggregation method.
-        horizon: Optional[str]
-            Optional horizon to apply to the point in time column in the target request.
+        window: Optional[str]
+            Optional window to apply to the point in time column in the target request.
         target_name: Optional[str]
             Output target name
 
@@ -454,6 +454,6 @@ class GroupBy:
         ).forward_aggregate(
             value_column=value_column,
             method=method,
-            horizon=horizon,
+            window=window,
             target_name=target_name,
         )

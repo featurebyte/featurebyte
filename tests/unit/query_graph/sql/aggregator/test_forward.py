@@ -20,7 +20,7 @@ def forward_node_parameters_fixture(entity_id):
     return ForwardAggregateParameters(
         name="target",
         timestamp_col="timestamp_col",
-        horizon="7d",
+        window="7d",
         table_details=TableDetails(table_name="table"),
         keys=["cust_id", "other_key"],
         parent="value",

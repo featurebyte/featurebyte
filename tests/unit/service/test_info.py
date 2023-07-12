@@ -703,7 +703,7 @@ async def test_get_target_info(app_container, entity, target):
         entities=[
             EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
         ],
-        horizon="1d",  # TODO: fix this
+        window="1d",  # TODO: fix this
         has_recipe=bool(target.graph),
         created_at=target.created_at,
         updated_at=target.updated_at,

@@ -113,9 +113,9 @@ class Target(Series, SavableApiObject, FeatureOrTargetMixin):
         return [Entity.get_by_id(entity_id) for entity_id in self.entity_ids]
 
     @property
-    def horizon(self) -> Optional[str]:
+    def window(self) -> Optional[str]:
         """
-        Returns the horizon of this target.
+        Returns the window of this target.
 
         Returns
         -------
@@ -124,16 +124,16 @@ class Target(Series, SavableApiObject, FeatureOrTargetMixin):
         Raises
         ------
         ValueError
-            If the target does not have a horizon.
+            If the target does not have a window.
         """
         try:
-            # TODO: Should use horizon value from TargetNamespace once it is available
-            horizon = self.cached_model.graph.get_forward_aggregate_horizon(self.node_name)
+            # TODO: Should use window value from TargetNamespace once it is available
+            window = self.cached_model.graph.get_forward_aggregate_window(self.node_name)
         except RecordRetrievalException:
-            horizon = self.graph.get_forward_aggregate_horizon(self.node_name)
-        if horizon is None:
-            raise ValueError("Target does not have a horizon")
-        return horizon
+            window = self.graph.get_forward_aggregate_window(self.node_name)
+        if window is None:
+            raise ValueError("Target does not have a window")
+        return window
 
     @property  # type: ignore
     @substitute_docstring(
