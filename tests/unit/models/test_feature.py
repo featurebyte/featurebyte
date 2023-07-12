@@ -88,6 +88,7 @@ def test_feature_model(feature_model_dict, api_object_to_id):
         "primary_table_ids": [ObjectId(api_object_to_id["event_table"])],
         "user_defined_function_ids": [],
         "block_modification_by": [],
+        "aggregation_ids": ["sum_aed233b0e8a6e1c1e0d5427b126b03c949609481"],
     }
 
 
