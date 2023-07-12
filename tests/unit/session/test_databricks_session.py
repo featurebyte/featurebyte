@@ -246,11 +246,6 @@ def test_databricks_schema_initializer__sql_objects(patched_databricks_session_c
             "filename": "T_ONLINE_STORE_MAPPING.sql",
             "identifier": "ONLINE_STORE_MAPPING",
         },
-        {
-            "type": "table",
-            "filename": "T_TILE_FEATURE_MAPPING.sql",
-            "identifier": "TILE_FEATURE_MAPPING",
-        },
         {"type": "table", "filename": "T_TILE_JOB_MONITOR.sql", "identifier": "TILE_JOB_MONITOR"},
         {
             "type": "table",

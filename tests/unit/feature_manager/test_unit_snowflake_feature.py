@@ -114,22 +114,9 @@ async def test_online_enable(
     mock_generate_tiles.assert_called_once()
 
     # Expected execute_query calls:
-    # 1. merge into TILE_FEATURE_MAPPING
-    # 2. merge into ONLINE_STORE_MAPPING
-    # 3. call SP_TILES_SCHEDULE_ONLINE_STORE
-    assert mock_snowflake_session.execute_query.call_count == 3
-
-    upsert_sql = tm_upsert_tile_feature_mapping.render(
-        tile_id=feature_spec.tile_ids[0],
-        aggregation_id=feature_spec.aggregation_ids[0],
-        feature_name=feature_spec.feature.name,
-        feature_type=feature_spec.value_type,
-        feature_version=feature_spec.feature.version.to_str(),
-        feature_readiness=str(mock_snowflake_feature.readiness),
-        feature_event_table_ids=",".join([str(i) for i in feature_spec.event_table_ids]),
-        is_deleted=False,
-    )
-    assert mock_snowflake_session.execute_query.call_args_list[0] == mock.call(upsert_sql)
+    # 1. merge into ONLINE_STORE_MAPPING
+    # 2. call SP_TILES_SCHEDULE_ONLINE_STORE
+    assert mock_snowflake_session.execute_query.call_count == 2
 
     queries = feature_spec.precompute_queries
     assert len(queries) == 1
@@ -144,7 +131,7 @@ async def test_online_enable(
         entity_column_names=",".join(escape_column_names(query.serving_names)),
         is_deleted=False,
     )
-    assert mock_snowflake_session.execute_query.call_args_list[1] == mock.call(upsert_sql)
+    assert mock_snowflake_session.execute_query.call_args_list[0] == mock.call(upsert_sql)
 
 
 @mock.patch("featurebyte.service.tile_manager.TileManagerService.schedule_online_tiles")
@@ -265,17 +252,10 @@ async def test_online_disable(
         mock_tile_manager.side_effect = None
         await feature_manager_service.online_disable(mock_snowflake_session, feature_spec)
 
-    delete_sql = tm_delete_tile_feature_mapping.render(
-        aggregation_id=feature_spec.aggregation_ids[0],
-        feature_name=feature_spec.feature.name,
-        feature_version=feature_spec.feature.version.to_str(),
-    )
-    assert mock_snowflake_session.execute_query.call_args_list[0] == mock.call(delete_sql)
-
     delete_sql = tm_delete_online_store_mapping.render(
         result_id=feature_spec.precompute_queries[0].result_name,
     )
-    assert mock_snowflake_session.execute_query.call_args_list[1] == mock.call(delete_sql)
+    assert mock_snowflake_session.execute_query.call_args_list[0] == mock.call(delete_sql)
 
 
 @pytest.mark.asyncio

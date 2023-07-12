@@ -175,7 +175,6 @@ EXPECTED_FUNCTIONS = [
 EXPECTED_TABLES = [
     "METADATA_SCHEMA",
     "TILE_MONITOR_SUMMARY",
-    "TILE_FEATURE_MAPPING",
     "ONLINE_STORE_MAPPING",
     "TILE_JOB_MONITOR",
 ]
@@ -329,11 +328,6 @@ def test_schema_initializer__sql_objects(
         {
             "filename": "T_TILE_MONITOR_SUMMARY.sql",
             "identifier": "TILE_MONITOR_SUMMARY",
-            "type": "table",
-        },
-        {
-            "filename": "T_TILE_FEATURE_MAPPING.sql",
-            "identifier": "TILE_FEATURE_MAPPING",
             "type": "table",
         },
         {
