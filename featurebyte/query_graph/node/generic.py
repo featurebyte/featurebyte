@@ -475,7 +475,7 @@ class ForwardAggregateParameters(BaseGroupbyParameters):
     """
 
     name: str
-    horizon: Optional[str]
+    window: Optional[str]
     # TableDetails are needed because we will be performing the aggregation query directly on the calling table.
     table_details: TableDetails
     timestamp_col: InColumnStr
@@ -507,7 +507,7 @@ class ForwardAggregateNode(AggregationOpStructMixin, BaseNode):
                 name=self.parameters.name,
                 method=self.parameters.agg_func,
                 keys=self.parameters.keys,
-                window=self.parameters.horizon,
+                window=self.parameters.window,
                 category=self.parameters.value_by,
                 column=col_name_map.get(self.parameters.parent),
                 filter=any(col.filter for col in columns),
@@ -557,7 +557,7 @@ class ForwardAggregateNode(AggregationOpStructMixin, BaseNode):
             callable_name=f"{grouped}.forward_aggregate",
             value_column=self.parameters.parent,
             method=self.parameters.agg_func,
-            horizon=self.parameters.horizon,
+            window=self.parameters.window,
             target_name=self.parameters.name,
         )
         statements.append((out_var_name, expression))

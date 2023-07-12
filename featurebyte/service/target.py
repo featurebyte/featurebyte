@@ -94,9 +94,9 @@ class TargetService(BaseNamespaceService[TargetModel, TargetCreate]):
         )
 
     @staticmethod
-    def derive_horizon(document: TargetModel, namespace: TargetNamespaceModel) -> Optional[str]:
+    def derive_window(document: TargetModel, namespace: TargetNamespaceModel) -> Optional[str]:
         """
-        Derive the horizon from the target and namespace
+        Derive the window from the target and namespace
 
         Parameters
         ----------
@@ -112,20 +112,20 @@ class TargetService(BaseNamespaceService[TargetModel, TargetCreate]):
         Raises
         ------
         DocumentCreationError
-            If the target horizon is greater than the namespace horizon
+            If the target window is greater than the namespace window
         """
-        document_horizon = document.derive_horizon()
-        if namespace.horizon is None:
-            return document_horizon
+        document_window = document.derive_window()
+        if namespace.window is None:
+            return document_window
 
-        namespace_duration = parse_duration_string(namespace.horizon)
-        if document_horizon:
-            document_duration = parse_duration_string(document_horizon)
+        namespace_duration = parse_duration_string(namespace.window)
+        if document_window:
+            document_duration = parse_duration_string(document_window)
             if document_duration > namespace_duration:
                 raise DocumentCreationError(
-                    f"Target horizon {document_horizon} is greater than namespace horizon {namespace.horizon}"
+                    f"Target window {document_window} is greater than namespace window {namespace.window}"
                 )
-        return namespace.horizon
+        return namespace.window
 
     async def create_document(self, data: TargetCreate) -> TargetModel:
         document = await self.prepare_target_model(data=data, sanitize_for_definition=False)
@@ -161,7 +161,7 @@ class TargetService(BaseNamespaceService[TargetModel, TargetCreate]):
                     document_id=document.target_namespace_id,
                     data=TargetNamespaceServiceUpdate(
                         target_ids=self.include_object_id(target_namespace.target_ids, document.id),
-                        horizon=self.derive_horizon(document=document, namespace=target_namespace),
+                        window=self.derive_window(document=document, namespace=target_namespace),
                     ),
                     return_document=True,
                 )
@@ -176,7 +176,7 @@ class TargetService(BaseNamespaceService[TargetModel, TargetCreate]):
                         default_target_id=insert_id,
                         default_version_mode=DefaultVersionMode.AUTO,
                         entity_ids=sorted(entity_ids),
-                        horizon=document.derive_horizon(),
+                        window=document.derive_window(),
                     ),
                 )
         return await self.get_document(document_id=insert_id)

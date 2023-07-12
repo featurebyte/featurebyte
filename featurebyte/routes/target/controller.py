@@ -154,7 +154,7 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
             id=document_id,
             target_name=target_doc.name,
             entities=entity_brief_info_list,
-            horizon=namespace.horizon,
+            window=namespace.window,
             has_recipe=bool(target_doc.graph),
             created_at=target_doc.created_at,
             updated_at=target_doc.updated_at,

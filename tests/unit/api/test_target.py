@@ -24,7 +24,7 @@ class TestTargetTestSuite(FeatureOrTargetBaseTestSuite):
     ).forward_aggregate(
         value_column="col_float",
         method="sum",
-        horizon="1d",
+        window="1d",
         target_name="float_target",
     )
     feat = target["float_target"]
@@ -48,7 +48,7 @@ class TestTargetTestSuite(FeatureOrTargetBaseTestSuite):
     ).forward_aggregate(
         value_column="col_float",
         method="sum",
-        horizon="1d",
+        window="1d",
         target_name="float_target",
     )
     feat = target["float_target"]

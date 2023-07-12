@@ -53,27 +53,27 @@ class TargetModel(BaseFeatureModel):
     # ID related fields associated with this target
     target_namespace_id: PydanticObjectId = Field(allow_mutation=False, default_factory=ObjectId)
 
-    def derive_horizon(self) -> Optional[str]:
+    def derive_window(self) -> Optional[str]:
         """
-        Derive horizon from the graph, if there are multiple horizons, return the largest one.
+        Derive window from the graph, if there are multiple windows, return the largest one.
 
         Returns
         -------
         Optional[str]
         """
-        horizon_to_durations = {}
+        window_to_durations = {}
         target_node = self.graph.get_node_by_name(self.node_name)
         for node in self.graph.iterate_nodes(
             target_node=target_node, node_type=NodeType.FORWARD_AGGREGATE
         ):
             assert isinstance(node, ForwardAggregateNode)
-            if node.parameters.horizon:
-                duration = parse_duration_string(node.parameters.horizon)
-                horizon_to_durations[node.parameters.horizon] = duration
+            if node.parameters.window:
+                duration = parse_duration_string(node.parameters.window)
+                window_to_durations[node.parameters.window] = duration
 
-        if not horizon_to_durations:
+        if not window_to_durations:
             return None
-        return max(horizon_to_durations, key=horizon_to_durations.get)  # type: ignore
+        return max(window_to_durations, key=window_to_durations.get)  # type: ignore
 
     class Settings(BaseFeatureModel.Settings):
         """

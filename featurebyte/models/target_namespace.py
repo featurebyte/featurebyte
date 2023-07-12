@@ -35,7 +35,7 @@ class TargetNamespaceModel(BaseFeatureNamespaceModel):
         Table IDs used by the target
     """
 
-    horizon: Optional[str]
+    window: Optional[str]
 
     # list of IDs attached to this feature namespace or target namespace
     target_ids: List[PydanticObjectId] = Field(allow_mutation=False)
@@ -45,9 +45,7 @@ class TargetNamespaceModel(BaseFeatureNamespaceModel):
     _sort_feature_ids_validator = validator("target_ids", "entity_ids", allow_reuse=True)(
         construct_sort_validator()
     )
-    _duration_validator = validator("horizon", pre=True, allow_reuse=True)(
-        duration_string_validator
-    )
+    _duration_validator = validator("window", pre=True, allow_reuse=True)(duration_string_validator)
 
     class Settings(BaseFeatureNamespaceModel.Settings):
         """

@@ -1023,7 +1023,7 @@ def float_target_fixture(grouped_event_view):
     target = grouped_event_view.forward_aggregate(
         method="sum",
         value_column="col_float",
-        horizon="1d",
+        window="1d",
         target_name="float_target",
     )
     return target

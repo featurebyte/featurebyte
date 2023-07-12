@@ -34,7 +34,7 @@ def test_forward_aggregate(forward_aggregator):
     target = forward_aggregator.forward_aggregate("col_float", AggFunc.SUM, "7d", "target")
     # Assert Target is constructed with appropriate values
     assert target.name == "target"
-    # assert target.horizon == "7d"  # TODO: Fix this
+    # assert target.window == "7d"  # TODO: Fix this
 
     # Assert forward aggregate node has been added into the graph
     view = forward_aggregator.view
@@ -51,7 +51,7 @@ def test_forward_aggregate(forward_aggregator):
         "name": "target",
         "parent": "col_float",
         "agg_func": AggFunc.SUM,
-        "horizon": "7d",
+        "window": "7d",
         "serving_names": forward_aggregator.serving_names,
         "value_by": None,
         "entity_ids": forward_aggregator.entity_ids,
@@ -78,7 +78,7 @@ def test_prepare_node_parameters(forward_aggregator):
     node_params = forward_aggregator._prepare_node_parameters(
         value_column="col_float",
         method=AggFunc.SUM,
-        horizon="7d",
+        window="7d",
         target_name="target",
         timestamp_col="timestamp_col",
     )
@@ -86,7 +86,7 @@ def test_prepare_node_parameters(forward_aggregator):
         "keys": forward_aggregator.keys,
         "parent": "col_float",
         "agg_func": "sum",
-        "horizon": "7d",
+        "window": "7d",
         "name": "target",
         "serving_names": forward_aggregator.serving_names,
         "value_by": None,
@@ -97,7 +97,7 @@ def test_prepare_node_parameters(forward_aggregator):
 
 
 @pytest.mark.parametrize(
-    "value_column, method, horizon, target_name, expected_error",
+    "value_column, method, window, target_name, expected_error",
     [
         ("col_float", AggFunc.SUM, "7d", "target", None),
         ("random", AggFunc.SUM, "7d", "target", KeyError),
@@ -106,7 +106,7 @@ def test_prepare_node_parameters(forward_aggregator):
     ],
 )
 def test_validate_parameters(
-    forward_aggregator, value_column, method, horizon, target_name, expected_error
+    forward_aggregator, value_column, method, window, target_name, expected_error
 ):
     """
     Test validate parameters
@@ -116,13 +116,13 @@ def test_validate_parameters(
             forward_aggregator._validate_parameters(
                 value_column=value_column,
                 method=method,
-                horizon=horizon,
+                window=window,
                 target_name=target_name,
             )
     else:
         forward_aggregator._validate_parameters(
             value_column=value_column,
             method=method,
-            horizon=horizon,
+            window=window,
             target_name=target_name,
         )

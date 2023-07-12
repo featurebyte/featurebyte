@@ -61,14 +61,14 @@ class ForwardAggregator(NonTileBasedAggregator[ForwardAggregateSpec]):
         # End point expression
         point_in_time_expr = get_qualified_column_identifier(SpecialColumnName.POINT_IN_TIME, "REQ")
         point_in_time_epoch_expr = self.adapter.to_epoch_seconds(point_in_time_expr)
-        horizon_in_seconds = 0
-        if spec.parameters.horizon:
-            horizon_in_seconds = pd.Timedelta(spec.parameters.horizon).total_seconds()
+        window_in_seconds = 0
+        if spec.parameters.window:
+            window_in_seconds = pd.Timedelta(spec.parameters.window).total_seconds()
         end_point_expr = expressions.Add(
-            this=point_in_time_epoch_expr, expression=make_literal_value(horizon_in_seconds)
+            this=point_in_time_epoch_expr, expression=make_literal_value(window_in_seconds)
         )
 
-        # Get valid records (timestamp column is within the point in time, and point in time + horizon)
+        # Get valid records (timestamp column is within the point in time, and point in time + window)
         # TODO: update to range join
         table_timestamp_col = get_qualified_column_identifier(
             spec.parameters.timestamp_col, "SOURCE_TABLE"

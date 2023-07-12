@@ -31,11 +31,11 @@ class ForwardAggregator(BaseAggregator):
         self,
         value_column: str,
         method: str,
-        horizon: Optional[str] = None,
+        window: Optional[str] = None,
         target_name: Optional[str] = None,
     ) -> Target:
         """
-        Aggregate given value_column for each group specified in keys over a time horizon.
+        Aggregate given value_column for each group specified in keys over a time window.
 
         Parameters
         ----------
@@ -43,8 +43,8 @@ class ForwardAggregator(BaseAggregator):
             Column to be aggregated
         method: str
             Aggregation method
-        horizon: str
-            Horizon of the aggregation
+        window: str
+            Window of the aggregation
         target_name: str
             Name of the target column
 
@@ -56,7 +56,7 @@ class ForwardAggregator(BaseAggregator):
         self._validate_parameters(
             value_column=value_column,
             method=method,
-            horizon=horizon,
+            window=window,
             target_name=target_name,
         )
         # Create new node parameters
@@ -64,7 +64,7 @@ class ForwardAggregator(BaseAggregator):
         node_params = self._prepare_node_parameters(
             value_column=value_column,
             method=method,
-            horizon=horizon,
+            window=window,
             target_name=target_name,
             timestamp_col=self.view.timestamp_column,
         )
@@ -99,7 +99,7 @@ class ForwardAggregator(BaseAggregator):
         self,
         value_column: str,
         method: str,
-        horizon: Optional[str],
+        window: Optional[str],
         target_name: Optional[str],
         timestamp_col: Optional[str],
     ) -> dict[str, Any]:
@@ -112,8 +112,8 @@ class ForwardAggregator(BaseAggregator):
             Column to be aggregated
         method: str
             Aggregation method
-        horizon: str
-            Horizon of the aggregation
+        window: str
+            Window of the aggregation
         target_name: str
             Name of the target column
         timestamp_col: str
@@ -127,7 +127,7 @@ class ForwardAggregator(BaseAggregator):
             "keys": self.keys,
             "parent": value_column,
             "agg_func": method,
-            "horizon": horizon,
+            "window": window,
             "name": target_name,
             "serving_names": self.serving_names,
             "value_by": self.category,
@@ -140,7 +140,7 @@ class ForwardAggregator(BaseAggregator):
         self,
         value_column: str,
         method: Optional[str] = None,
-        horizon: Optional[str] = None,
+        window: Optional[str] = None,
         target_name: Optional[str] = None,
     ) -> None:
         """
@@ -152,8 +152,8 @@ class ForwardAggregator(BaseAggregator):
             Column to be aggregated
         method: str
             Aggregation method
-        horizon: str
-            Horizon of the aggregation
+        window: str
+            Window of the aggregation
         target_name: str
             Name of the target column
 
@@ -167,5 +167,5 @@ class ForwardAggregator(BaseAggregator):
         if not target_name:
             raise ValueError("Target name must be specified")
 
-        if horizon:
-            parse_duration_string(horizon)
+        if window:
+            parse_duration_string(window)

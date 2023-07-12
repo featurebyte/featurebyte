@@ -93,7 +93,7 @@ class TestTargetApi(BaseCatalogApiTestSuite):
             "name": "float_target",
             "dtype": "FLOAT",
             "target_ids": [create_response_dict["_id"]],
-            "horizon": "1d",
+            "window": "1d",
             "default_target_id": create_response_dict["_id"],
             "default_version_mode": "AUTO",
             "entity_ids": response_dict["entity_ids"],

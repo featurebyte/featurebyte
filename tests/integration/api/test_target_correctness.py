@@ -22,7 +22,7 @@ class TargetParameter:
 
     variable_column_name: str
     agg_name: str
-    horizon: str
+    window: str
     target_name: str
     agg_func: callable
 
@@ -92,7 +92,7 @@ def calculate_forward_aggregate_ground_truth(
     entity_value,
     variable_column_name: str,
     agg_func: callable,
-    horizon: Optional[float],
+    window: Optional[float],
     category=None,
 ):
     """
@@ -104,8 +104,8 @@ def calculate_forward_aggregate_ground_truth(
     pit_utc = point_in_time.tz_convert("UTC").tz_localize(None)
     window_start = pit_utc
 
-    if horizon is not None:
-        window_end = window_start + pd.Timedelta(horizon, unit="s")
+    if window is not None:
+        window_end = window_start + pd.Timedelta(window, unit="s")
     else:
         window_end = None
 
@@ -129,7 +129,7 @@ def get_expected_target_values(
     utc_event_timestamps,
     variable_column_name: str,
     agg_func: callable,
-    horizon: Optional[float],
+    window: Optional[float],
     category=None,
 ) -> pd.DataFrame:
     expected_output = defaultdict(list)
@@ -145,7 +145,7 @@ def get_expected_target_values(
             entity_column_name=entity_column_name,
             variable_column_name=variable_column_name,
             agg_func=agg_func,
-            horizon=horizon,
+            window=window,
             category=category,
         )
         expected_output["POINT_IN_TIME"].append(point_in_time)
@@ -180,7 +180,7 @@ def test_forward_aggregate(
             utc_event_timestamps=utc_event_timestamps,
             variable_column_name=target_parameter.variable_column_name,
             agg_func=target_parameter.agg_func,
-            horizon=convert_duration_str_to_seconds(target_parameter.horizon),
+            window=convert_duration_str_to_seconds(target_parameter.window),
         )
 
         # Transform and sample to get a smaller sample dataframe just for preview
@@ -190,7 +190,7 @@ def test_forward_aggregate(
         target = event_view.groupby(entity_column_name).forward_aggregate(
             method=target_parameter.agg_name,
             value_column=target_parameter.variable_column_name,
-            horizon=target_parameter.horizon,
+            window=target_parameter.window,
             target_name=target_parameter.target_name,
         )
         results = target.preview(preview_expected_values[["POINT_IN_TIME", "üser id"]])

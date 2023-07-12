@@ -365,7 +365,7 @@ def query_graph_with_forward_aggregate_fixture(query_graph_and_assign_node, even
         node_type=NodeType.FORWARD_AGGREGATE,
         node_params={
             "name": "biz_id_sum_7d",
-            "horizon": "7d",
+            "window": "7d",
             "table_details": event_table_details,
             "timestamp_col": "timestamp_col",
             "keys": ["biz_id"],
