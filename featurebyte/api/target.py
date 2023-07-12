@@ -3,13 +3,11 @@ Target API object
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Union
-
-from http import HTTPStatus
+from typing import Any, Dict, List, Optional, Sequence, Union
 
 import pandas as pd
 from bson import ObjectId
-from pydantic import Field, StrictStr, root_validator
+from pydantic import Field, root_validator
 from typeguard import typechecked
 
 from featurebyte.api.api_object_util import ForeignKeyMapping
@@ -20,21 +18,20 @@ from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.savable_api_object import SavableApiObject
 from featurebyte.api.target_table import TargetTable
 from featurebyte.api.templates.doc_util import substitute_docstring
-from featurebyte.api.templates.feature_or_target_doc import DEFINITION_DOC
-from featurebyte.common.utils import (
-    dataframe_from_json,
-    dataframe_to_arrow_bytes,
-    enforce_observation_set_row_order,
+from featurebyte.api.templates.feature_or_target_doc import (
+    CATALOG_ID_DOC,
+    DEFINITION_DOC,
+    ENTITY_IDS_DOC,
+    PREVIEW_DOC,
+    TABLE_IDS_DOC,
+    VERSION_DOC,
 )
-from featurebyte.config import Configurations
+from featurebyte.common.utils import dataframe_to_arrow_bytes, enforce_observation_set_row_order
 from featurebyte.core.series import Series
-from featurebyte.enum import DBVarType
 from featurebyte.exception import RecordRetrievalException
-from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.target import TargetModel
 from featurebyte.query_graph.model.common_table import TabularSource
-from featurebyte.schema.preview import FeatureOrTargetPreview
 from featurebyte.schema.target import TargetUpdate
 from featurebyte.schema.target_table import TargetTableCreate
 
@@ -44,12 +41,6 @@ class Target(Series, SavableApiObject, FeatureOrTargetMixin):
     Target class used to represent a Target in FeatureByte.
     """
 
-    internal_entity_ids: Optional[List[PydanticObjectId]] = Field(alias="entity_ids")
-    internal_horizon: Optional[StrictStr] = Field(alias="horizon")
-    internal_node_name: Optional[str] = Field(allow_mutation=False, alias="node_name")
-    internal_dtype: DBVarType = Field(allow_mutation=False, alias="dtype")
-    internal_tabular_source: TabularSource = Field(allow_mutation=False, alias="tabular_source")
-
     # pydantic instance variable (public)
     feature_store: FeatureStoreModel = Field(
         exclude=True,
@@ -57,15 +48,18 @@ class Target(Series, SavableApiObject, FeatureOrTargetMixin):
         description="Provides information about the feature store that the target is connected to.",
     )
 
+    # class variables
     _route = "/target"
     _update_schema_class = TargetUpdate
-
     _list_schema = TargetModel
     _get_schema = TargetModel
     _list_fields = ["name", "entities"]
     _list_foreign_keys = [
         ForeignKeyMapping("entity_ids", Entity, "entities"),
     ]
+
+    def _get_init_params_from_object(self) -> dict[str, Any]:
+        return {"feature_store": self.feature_store}
 
     @root_validator(pre=True)
     @classmethod
@@ -77,10 +71,35 @@ class Target(Series, SavableApiObject, FeatureOrTargetMixin):
                 values["feature_store"] = FeatureStore.get_by_id(id=feature_store_id)
         return values
 
-    def _get_init_params_from_object(self) -> dict[str, Any]:
-        return {
-            "feature_store": self.feature_store,
-        }
+    @property  # type: ignore
+    @substitute_docstring(
+        doc_template=VERSION_DOC,
+        examples=(
+            """
+            >>> target = catalog.get_feature("CustomerProductGroupCounts_7d")  # doctest: +SKIP
+            >>> target.version  # doctest: +SKIP
+            'V230323'
+            """
+        ),
+        format_kwargs={"class_name": "Feature"},
+    )
+    def version(self) -> str:  # pylint: disable=missing-function-docstring
+        return self._get_version()
+
+    @property  # type: ignore
+    @substitute_docstring(doc_template=CATALOG_ID_DOC, format_kwargs={"class_name": "Target"})
+    def catalog_id(self) -> ObjectId:  # pylint: disable=missing-function-docstring
+        return self._get_catalog_id()
+
+    @property  # type: ignore
+    @substitute_docstring(doc_template=ENTITY_IDS_DOC, format_kwargs={"class_name": "Target"})
+    def entity_ids(self) -> Sequence[ObjectId]:  # pylint: disable=missing-function-docstring
+        return self._get_entity_ids()
+
+    @property  # type: ignore
+    @substitute_docstring(doc_template=TABLE_IDS_DOC, format_kwargs={"class_name": "Target"})
+    def table_ids(self) -> Sequence[ObjectId]:  # pylint: disable=missing-function-docstring
+        return self._get_table_ids()
 
     @property
     def entities(self) -> List[Entity]:
@@ -91,11 +110,7 @@ class Target(Series, SavableApiObject, FeatureOrTargetMixin):
         -------
         List[Entity]
         """
-        try:
-            entity_ids = self.cached_model.entity_ids  # type: ignore[attr-defined]
-        except RecordRetrievalException:
-            entity_ids = self.internal_entity_ids
-        return [Entity.get_by_id(entity_id) for entity_id in entity_ids]
+        return [Entity.get_by_id(entity_id) for entity_id in self.entity_ids]
 
     @property
     def horizon(self) -> Optional[str]:
@@ -105,11 +120,20 @@ class Target(Series, SavableApiObject, FeatureOrTargetMixin):
         Returns
         -------
         Optional[str]
+
+        Raises
+        ------
+        ValueError
+            If the target does not have a horizon.
         """
         try:
-            return self.cached_model.horizon
+            # TODO: Should use horizon value from TargetNamespace once it is available
+            horizon = self.cached_model.graph.get_forward_aggregate_horizon(self.node_name)
         except RecordRetrievalException:
-            return self.internal_horizon
+            horizon = self.graph.get_forward_aggregate_horizon(self.node_name)
+        if horizon is None:
+            raise ValueError("Target does not have a horizon")
+        return horizon
 
     @property  # type: ignore
     @substitute_docstring(
@@ -120,76 +144,23 @@ class Target(Series, SavableApiObject, FeatureOrTargetMixin):
             >>> target_definition = target.definition  # doctest: +SKIP
             """
         ),
-        object_type="target",
+        format_kwargs={"object_type": "target"},
     )
     def definition(self) -> str:  # pylint: disable=missing-function-docstring
         return self._generate_definition()
 
-    def _get_pruned_target_model(self) -> TargetModel:
-        """
-        Get pruned model of target
-
-        Returns
-        -------
-        FeatureModel
-        """
-        pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
-        target_dict = self.dict(by_alias=True)
-        target_dict["graph"] = pruned_graph.dict()
-        target_dict["node_name"] = mapped_node.name
-        return TargetModel(**target_dict)
-
+    @substitute_docstring(
+        doc_template=PREVIEW_DOC,
+        description="Materializes a Target object using a small observation set of up to 50 rows.",
+        format_kwargs={"object_type": "target"},
+    )
     @enforce_observation_set_row_order
     @typechecked
-    def preview(
+    def preview(  # pylint: disable=missing-function-docstring
         self,
         observation_set: pd.DataFrame,
     ) -> pd.DataFrame:
-        """
-        Materializes a Target object using a small observation set of up to 50 rows.
-
-        The small observation set should combine points-in-time and key values of the primary entity from
-        the target. Associated serving entities can also be utilized.
-
-        Parameters
-        ----------
-        observation_set : pd.DataFrame
-            Observation set DataFrame which combines points-in-time and values of the target primary entity
-            or its descendant (serving entities). The column containing the point-in-time values should be named
-            `POINT_IN_TIME`, while the columns representing entity values should be named using accepted serving
-            names for the entity.
-
-        Returns
-        -------
-        pd.DataFrame
-            Materialized target values.
-            The returned DataFrame will have the same number of rows, and include all columns from the observation set.
-
-            **Note**: `POINT_IN_TIME` values will be converted to UTC time.
-
-        Raises
-        ------
-        RecordRetrievalException
-            Failed to materialize feature preview.
-        """
-        target = self._get_pruned_target_model()
-        graph = target.graph
-        node_name = target.node_name
-        assert node_name is not None
-        payload = FeatureOrTargetPreview(
-            feature_store_name=self.feature_store.name,
-            graph=graph,
-            node_name=node_name,
-            point_in_time_and_serving_name_list=observation_set.to_dict(orient="records"),
-        )
-
-        client = Configurations().get_client()
-        response = client.post(url="/target/preview", json=payload.json_dict())
-        if response.status_code != HTTPStatus.OK:
-            raise RecordRetrievalException(response)
-        result = response.json()
-
-        return dataframe_from_json(result)  # pylint: disable=no-member
+        return self._preview(observation_set=observation_set, url="/target/preview")
 
     @enforce_observation_set_row_order
     @typechecked
