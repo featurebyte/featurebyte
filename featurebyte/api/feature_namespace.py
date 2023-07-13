@@ -7,7 +7,7 @@ import pandas as pd
 
 from featurebyte.api.api_handler.base import ListHandler
 from featurebyte.api.api_handler.feature_namespace import FeatureNamespaceListHandler
-from featurebyte.api.base_feature_target_namespace import BaseFeatureTargetNamespace
+from featurebyte.api.feature_or_target_namespace_mixin import FeatureOrTargetNamespaceMixin
 from featurebyte.api.feature_util import (
     FEATURE_COMMON_LIST_FIELDS,
     FEATURE_LIST_FOREIGN_KEYS,
@@ -21,7 +21,7 @@ from featurebyte.schema.feature_namespace import (
 )
 
 
-class FeatureNamespace(BaseFeatureTargetNamespace):
+class FeatureNamespace(FeatureOrTargetNamespaceMixin):
     """
     FeatureNamespace represents a Feature set, in which all the features in the set have the same name. The different
     elements typically refer to different versions of a Feature.

@@ -10,9 +10,9 @@ from pydantic import Field
 from featurebyte.api.api_handler.base import ListHandler
 from featurebyte.api.api_handler.target_namespace import TargetNamespaceListHandler
 from featurebyte.api.api_object_util import ForeignKeyMapping
-from featurebyte.api.base_feature_target_namespace import BaseFeatureTargetNamespace
 from featurebyte.api.base_table import TableApiObject
 from featurebyte.api.entity import Entity
+from featurebyte.api.feature_or_target_namespace_mixin import FeatureOrTargetNamespaceMixin
 from featurebyte.api.savable_api_object import SavableApiObject
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.base import PydanticObjectId
@@ -20,7 +20,7 @@ from featurebyte.models.target_namespace import TargetNamespaceModel
 from featurebyte.schema.target_namespace import TargetNamespaceUpdate
 
 
-class TargetNamespace(BaseFeatureTargetNamespace, SavableApiObject):
+class TargetNamespace(FeatureOrTargetNamespaceMixin, SavableApiObject):
     """
     TargetNamespace represents a Target set, in which all the targets in the set have the same name. The different
     elements typically refer to different versions of a Target.

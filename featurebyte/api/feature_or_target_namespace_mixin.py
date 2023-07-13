@@ -11,7 +11,7 @@ from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_namespace import BaseFeatureNamespaceModel, DefaultVersionMode
 
 
-class BaseFeatureTargetNamespace(ApiObject):
+class FeatureOrTargetNamespaceMixin(ApiObject):
     """
     Base feature target namespace
     """
