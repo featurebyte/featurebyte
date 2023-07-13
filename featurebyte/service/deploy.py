@@ -22,16 +22,16 @@ from featurebyte.schema.deployment import DeploymentUpdate
 from featurebyte.schema.feature import FeatureServiceUpdate
 from featurebyte.schema.feature_list import FeatureListServiceUpdate
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
-from featurebyte.service.base_service import BaseService
 from featurebyte.service.deployment import DeploymentService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_list_status import FeatureListStatusService
+from featurebyte.service.mixin import OpsServiceMixin
 from featurebyte.service.online_enable import OnlineEnableService
 
 
-class DeployService(BaseService):
+class DeployService(OpsServiceMixin):
     """
     DeployService class is responsible for maintaining the feature & feature list structure
     of feature list deployment.
@@ -39,9 +39,7 @@ class DeployService(BaseService):
 
     def __init__(
         self,
-        user: Any,
-        persistent: Persistent,
-        catalog_id: Optional[ObjectId],
+        persistent: Persistent, 
         feature_service: FeatureService,
         online_enable_service: OnlineEnableService,
         feature_list_status_service: FeatureListStatusService,
@@ -49,7 +47,7 @@ class DeployService(BaseService):
         feature_list_namespace_service: FeatureListNamespaceService,
         feature_list_service: FeatureListService,
     ):
-        super().__init__(user, persistent, catalog_id)
+        self.persistent = persistent
         self.feature_service = feature_service
         self.online_enable_service = online_enable_service
         self.feature_list_service = feature_list_service
