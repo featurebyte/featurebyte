@@ -1,6 +1,8 @@
 """
 Test target module
 """
+import pytest
+
 from tests.unit.api.base_feature_or_target_test import FeatureOrTargetBaseTestSuite, TestItemType
 
 
@@ -55,3 +57,17 @@ class TestTargetTestSuite(FeatureOrTargetBaseTestSuite):
     output = feat
     output.save(_id=ObjectId("{item_id}"))
     """
+
+    def test_invalid_operations_with_feature(self, bool_feature, float_target, float_feature):
+        """
+        Test invalid operations with feature
+        """
+        # Test binary series operation
+        with pytest.raises(TypeError) as exc_info:
+            _ = float_target + float_feature
+        assert "Operation between Target and Feature is not supported" in str(exc_info)
+
+        # Test series assignment
+        with pytest.raises(TypeError) as exc_info:
+            float_target[bool_feature] = float_feature
+        assert "Operation between Target and Feature is not supported" in str(exc_info)

@@ -27,7 +27,7 @@ from featurebyte.api.templates.feature_or_target_doc import (
     VERSION_DOC,
 )
 from featurebyte.common.utils import dataframe_to_arrow_bytes, enforce_observation_set_row_order
-from featurebyte.core.series import Series
+from featurebyte.core.series import FrozenSeries, Series
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.target import TargetModel
@@ -60,6 +60,21 @@ class Target(Series, SavableApiObject, FeatureOrTargetMixin):
 
     def _get_init_params_from_object(self) -> dict[str, Any]:
         return {"feature_store": self.feature_store}
+
+    def validate_series_operation(self, other_series: Series) -> bool:
+        """
+        Validate that the other series is a Target.
+
+        Parameters
+        ----------
+        other_series: FrozenSeries
+            The other series to validate.
+
+        Returns
+        -------
+        bool
+        """
+        return isinstance(other_series, Target)
 
     @root_validator(pre=True)
     @classmethod
