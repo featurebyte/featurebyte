@@ -94,6 +94,7 @@ async def test_schedule_generate_tile_online(
     assert result["CREATED_AT"].iloc[3] > result["CREATED_AT"].iloc[2]
 
 
+@pytest.mark.usefixtures("enable_tile_monitoring")
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_schedule_monitor_tile_online(session, base_sql_model, tile_task_executor):
