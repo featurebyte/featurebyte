@@ -7,21 +7,21 @@ import pandas as pd
 
 from featurebyte.api.api_handler.base import ListHandler
 from featurebyte.api.api_handler.feature_namespace import FeatureNamespaceListHandler
-from featurebyte.api.api_object import ApiObject
+from featurebyte.api.feature_or_target_namespace_mixin import FeatureOrTargetNamespaceMixin
 from featurebyte.api.feature_util import (
     FEATURE_COMMON_LIST_FIELDS,
     FEATURE_LIST_FOREIGN_KEYS,
     filter_feature_list,
 )
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.feature_namespace import DefaultVersionMode, FeatureReadiness
+from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.schema.feature_namespace import (
     FeatureNamespaceModelResponse,
     FeatureNamespaceUpdate,
 )
 
 
-class FeatureNamespace(ApiObject):
+class FeatureNamespace(FeatureOrTargetNamespaceMixin):
     """
     FeatureNamespace represents a Feature set, in which all the features in the set have the same name. The different
     elements typically refer to different versions of a Feature.
@@ -81,17 +81,6 @@ class FeatureNamespace(ApiObject):
         PydanticObjectId
         """
         return self.cached_model.default_feature_id
-
-    @property
-    def default_version_mode(self) -> DefaultVersionMode:
-        """
-        Default feature namespace version mode of this feature namespace
-
-        Returns
-        -------
-        DefaultVersionMode
-        """
-        return self.cached_model.default_version_mode
 
     @classmethod
     def _list_handler(cls) -> ListHandler:

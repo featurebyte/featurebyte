@@ -45,9 +45,6 @@ class BaseFeatureNamespaceModel(FeatureByteCatalogBaseDocumentModel):
     It contains all the attributes that are shared between FeatureNamespaceModel & TargetNamespaceModel.
     """
 
-    dtype: DBVarType = Field(
-        allow_mutation=False, description="database variable type for the feature"
-    )
     default_version_mode: DefaultVersionMode = Field(
         default=DefaultVersionMode.AUTO, allow_mutation=False
     )
@@ -109,6 +106,9 @@ class FeatureNamespaceModel(BaseFeatureNamespaceModel):
         Table IDs used by the feature
     """
 
+    dtype: DBVarType = Field(
+        allow_mutation=False, description="database variable type for the feature"
+    )
     readiness: FeatureReadiness = Field(allow_mutation=False)
 
     # list of IDs attached to this feature namespace or target namespace

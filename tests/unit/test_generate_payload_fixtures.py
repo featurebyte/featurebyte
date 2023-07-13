@@ -23,6 +23,7 @@ from featurebyte.schema.historical_feature_table import HistoricalFeatureTableCr
 from featurebyte.schema.observation_table import ObservationTableCreate
 from featurebyte.schema.relationship_info import RelationshipInfoCreate
 from featurebyte.schema.static_source_table import StaticSourceTableCreate
+from featurebyte.schema.target_namespace import TargetNamespaceCreate
 from featurebyte.schema.target_table import TargetTableCreate
 from featurebyte.schema.user_defined_function import UserDefinedFunctionCreate
 from tests.util.helper import iet_entropy
@@ -120,6 +121,13 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
             feature_list_id=feature_list.id,
         ),
     )
+    target_namespace = TargetNamespaceCreate(
+        name="target_namespace",
+        target_ids=[float_target.id],
+        default_target_id=float_target.id,
+        entity_ids=[cust_id_entity.id],
+        window="7d",
+    )
     target_table = TargetTableCreate(
         name="target_table",
         feature_store_id=snowflake_feature_store.id,
@@ -207,6 +215,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
             (static_source_table, "static_source_table"),
             (catalog, "catalog"),
             (credential, "credential"),
+            (target_namespace, "target_namespace"),
         ]
         for schema, name in schema_payload_name_pairs:
             filename = f"{request_payload_dir}/{name}.json"

@@ -7,6 +7,7 @@ import pymongo
 from pydantic import Field, validator
 
 from featurebyte.common.validator import construct_sort_validator, duration_string_validator
+from featurebyte.enum import DBVarType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_namespace import BaseFeatureNamespaceModel
 
@@ -35,11 +36,14 @@ class TargetNamespaceModel(BaseFeatureNamespaceModel):
         Table IDs used by the target
     """
 
+    dtype: Optional[DBVarType] = Field(
+        allow_mutation=False, description="database variable type for the target"
+    )
     window: Optional[str]
 
     # list of IDs attached to this feature namespace or target namespace
     target_ids: List[PydanticObjectId] = Field(allow_mutation=False)
-    default_target_id: PydanticObjectId = Field(allow_mutation=False)
+    default_target_id: Optional[PydanticObjectId] = Field(allow_mutation=False)
 
     # pydantic validators
     _sort_feature_ids_validator = validator("target_ids", "entity_ids", allow_reuse=True)(
