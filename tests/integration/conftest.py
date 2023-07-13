@@ -995,60 +995,66 @@ def snowflake_feature_expected_tile_spec_dict_fixture():
 
 
 @pytest.fixture(name="user_entity", scope="session")
-def user_entity_fixture():
+def user_entity_fixture(catalog):
     """
     Fixture for an Entity "User"
     """
+    _ = catalog
     entity = Entity(name="User", serving_names=["üser id"])
     entity.save()
     return entity
 
 
 @pytest.fixture(name="product_action_entity", scope="session")
-def product_action_entity_fixture():
+def product_action_entity_fixture(catalog):
     """
     Fixture for an Entity "ProductAction"
     """
+    _ = catalog
     entity = Entity(name="ProductAction", serving_names=["PRODUCT_ACTION"])
     entity.save()
     return entity
 
 
 @pytest.fixture(name="customer_entity", scope="session")
-def customer_entity_fixture():
+def customer_entity_fixture(catalog):
     """
     Fixture for an Entity "Customer"
     """
+    _ = catalog
     entity = Entity(name="Customer", serving_names=["cust_id"])
     entity.save()
     return entity
 
 
 @pytest.fixture(name="order_entity", scope="session")
-def order_entity_fixture():
+def order_entity_fixture(catalog):
     """
     Fixture for an Entity "Order"
     """
+    _ = catalog
     entity = Entity(name="Order", serving_names=["order_id"])
     entity.save()
     return entity
 
 
 @pytest.fixture(name="item_entity", scope="session")
-def item_entity_fixture():
+def item_entity_fixture(catalog):
     """
     Fixture for an Entity "Item"
     """
+    _ = catalog
     entity = Entity(name="Item", serving_names=["item_id"])
     entity.save()
     return entity
 
 
 @pytest.fixture(name="status_entity", scope="session")
-def status_entity_fixture():
+def status_entity_fixture(catalog):
     """
     Fixture for an Entity "UserStatus"
     """
+    _ = catalog
     entity = Entity(name="UserStatus", serving_names=["user_status"])
     entity.save()
     return entity
@@ -1124,10 +1130,12 @@ def event_table_fixture(
     product_action_entity,
     customer_entity,
     order_entity,
+    catalog,
 ):
     """
     Fixture for an EventTable in integration tests
     """
+    _ = catalog
     _ = user_entity
     _ = product_action_entity
     _ = customer_entity
@@ -1158,10 +1166,12 @@ def item_table_fixture(
     event_table,
     order_entity,
     item_entity,
+    catalog,
 ):
     """
     Fixture for an ItemTable in integration tests
     """
+    _ = catalog
     database_table = data_source.get_source_table(
         database_name=session.database_name,
         schema_name=session.schema_name,
@@ -1193,10 +1203,12 @@ def dimension_table_fixture(
     dimension_data_table_name,
     dimension_table_name,
     item_entity,
+    catalog,
 ):
     """
     Fixture for a DimensionTable in integration tests
     """
+    _ = catalog
     database_table = data_source.get_source_table(
         database_name=session.database_name,
         schema_name=session.schema_name,
@@ -1241,10 +1253,12 @@ def scd_table_fixture(
     scd_table_name,
     user_entity,
     status_entity,
+    catalog,
 ):
     """
     Fixture for a SCDTable in integration tests
     """
+    _ = catalog
     scd_table = scd_data_tabular_source.create_scd_table(
         name=scd_table_name,
         natural_key_column="User ID",
