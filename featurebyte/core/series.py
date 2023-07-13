@@ -1063,14 +1063,14 @@ class Series(FrozenSeries):
     This class supports in-place column modification, and is the primary interface for column.
     """
 
-    def validate_series_operation(self, other_series: FrozenSeries) -> bool:
+    def validate_series_operation(self, other_series: Series) -> bool:
         """
         Validate the other series for series operation. This method is when performing the __setitem__ operation
         between two series.
 
         Parameters
         ----------
-        other_series: FrozenSeries
+        other_series: Series
             The other series to validate
 
         Returns
