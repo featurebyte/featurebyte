@@ -6,8 +6,9 @@ import json
 import numpy as np
 import pandas as pd
 import pytest
+from bson import ObjectId
 
-from featurebyte import FeatureList
+from featurebyte import Entity, FeatureJobSetting, FeatureList
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 from tests.util.helper import assert_preview_result_equal, make_online_request
 
@@ -146,6 +147,102 @@ async def test_scd_join_small(session, data_source, source_type):
     event_view = event_view.join(scd_view, on="cust_id", rsuffix="_latest_v2")
     df_actual = event_view.preview()
     pd.testing.assert_frame_equal(df_actual, df_expected, check_dtype=False)
+
+
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.asyncio
+async def test_feature_derived_from_multiple_scd_joins(session, data_source, source_type):
+    """
+    Test case to test feature derived from multiple SCD joins
+    """
+    df_events = pd.DataFrame(
+        {
+            "ts": pd.to_datetime(
+                [
+                    "2022-04-10 10:00:00",
+                    "2022-04-15 10:00:00",
+                    "2022-04-20 10:00:00",
+                ]
+            ),
+            "event_id": [1, 2, 3],
+            "event_type": ["A", "B", "A"],
+            "account_id": [1000, 1000, 1000],
+        }
+    )
+    df_scd = pd.DataFrame(
+        {
+            "effective_ts": pd.to_datetime(["2022-04-12 10:00:00", "2022-04-20 10:00:00"]),
+            "account_id": [1000, 1000],
+            "customer_id": ["c1", "c1"],
+        }
+    )
+    df_scd_2 = pd.DataFrame(
+        {
+            "effective_ts": pd.to_datetime(["2022-04-12 10:00:00", "2022-04-20 10:00:00"]),
+            "customer_id": ["c1", "c1"],
+            "state_code": ["CA", "MA"],
+        }
+    )
+    table_prefix = str(ObjectId())
+    await session.register_table(f"{table_prefix}_EVENT", df_events, temporary=False)
+    await session.register_table(f"{table_prefix}_SCD", df_scd, temporary=False)
+    await session.register_table(f"{table_prefix}_SCD_2", df_scd_2, temporary=False)
+    event_source_table = data_source.get_source_table(
+        table_name=f"{table_prefix}_EVENT",
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+    )
+    event_table = event_source_table.create_event_table(
+        name=f"{source_type}_{table_prefix}_EVENT_DATA",
+        event_id_column="event_id",
+        event_timestamp_column="ts",
+    )
+    event_view = event_table.get_view()
+    scd_source_table = data_source.get_source_table(
+        table_name=f"{table_prefix}_SCD",
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+    )
+    scd_table = scd_source_table.create_scd_table(
+        name=f"{source_type}_{table_prefix}_SCD_DATA",
+        natural_key_column="account_id",
+        effective_timestamp_column="effective_ts",
+    )
+    scd_source_table_2 = data_source.get_source_table(
+        table_name=f"{table_prefix}_SCD_2",
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+    )
+    scd_table_2 = scd_source_table_2.create_scd_table(
+        name=f"{source_type}_{table_prefix}_SCD_DATA_2",
+        natural_key_column="customer_id",
+        effective_timestamp_column="effective_ts",
+    )
+
+    state_entity = Entity.create(f"{table_prefix}_state", ["state_code"])
+    scd_table_2["state_code"].as_entity(state_entity.name)
+
+    customer_entity = Entity.create(f"{table_prefix}_customer", ["customer_id"])
+    scd_table["customer_id"].as_entity(customer_entity.name)
+    scd_table_2["customer_id"].as_entity(customer_entity.name)
+
+    scd_view = scd_table.get_view()
+    scd_view_2 = scd_table_2.get_view()
+    event_view = event_view.join(scd_view[["account_id", "customer_id"]], on="account_id")
+    event_view = event_view.join(scd_view_2[["customer_id", "state_code"]], on="customer_id")
+    features = event_view.groupby("state_code", category="event_type").aggregate_over(
+        None,
+        "count",
+        windows=["30d"],
+        feature_names=["state_code_counts_30d"],
+        feature_job_setting=FeatureJobSetting(
+            frequency="24h", time_modulo_frequency="1h", blind_spot="2h"
+        ),
+    )
+    df_observations = pd.DataFrame(
+        {"POINT_IN_TIME": ["2022-04-25 10:00:00"], "customer_id": ["c1"]}
+    )
+    df = features.preview(df_observations)
 
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
