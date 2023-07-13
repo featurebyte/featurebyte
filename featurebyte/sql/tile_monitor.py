@@ -30,6 +30,8 @@ class TileMonitor(TileCommon):
         """
         Execute tile monitor operation
         """
+        # Disable tile monitoring for now since it is not yet user facing but the current
+        # implementation incurs significant cost when many features are deployed.
         if not int(os.environ.get("FEATUREBYTE_TILE_MONITORING_ENABLED", "0")):
             return
 
