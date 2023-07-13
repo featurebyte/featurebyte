@@ -23,7 +23,7 @@ class BaseFeatureTargetNamespace(ApiObject):
     @property
     def default_version_mode(self) -> DefaultVersionMode:
         """
-        Default feature namespace version mode of this feature namespace
+        Default feature namespace version mode of this namespace
 
         Returns
         -------
@@ -34,7 +34,7 @@ class BaseFeatureTargetNamespace(ApiObject):
     @property
     def entity_ids(self) -> List[PydanticObjectId]:
         """
-        List of entity IDs used by the target namespace
+        List of entity IDs used by the namespace
 
         Returns
         -------
