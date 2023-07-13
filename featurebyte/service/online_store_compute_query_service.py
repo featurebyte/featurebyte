@@ -57,7 +57,7 @@ class OnlineStoreComputeQueryService(
         Parameters
         ----------
         result_names: list[str]
-            Result ids
+            Result names
 
         Yields
         ------
@@ -71,17 +71,17 @@ class OnlineStoreComputeQueryService(
 
     async def delete_by_result_name(self, result_name: str) -> None:
         """
-        Delete a document by result_id
+        Delete a document by result_name
 
         Parameters
         ----------
         result_name: str
-            Result id
+            Result name
 
         Raises
         ------
         DocumentNotFoundError
-            If the result_id is not found
+            If there is no document with the given result_name
         """
         query_filter = {"result_name": result_name}
         async for doc in self.list_documents_as_dict_iterator(query_filter):
