@@ -84,7 +84,6 @@ class SessionValidatorService:
         feature_store_name: str,
         session_type: SourceType,
         details: DatabaseDetails,
-        get_credential: Any,
     ) -> BaseSession:
         """
         Retrieves a session.
@@ -97,22 +96,15 @@ class SessionValidatorService:
             session type
         details: DatabaseDetails
             JSON dumps of feature store type &
-        get_credential: Any
-            credential handler function
 
         Returns
         -------
         BaseSession
             session for the parameters passed in
         """
-        if get_credential is not None:
-            credential = await get_credential(
-                user_id=self.user.id, feature_store_name=feature_store_name
-            )
-        else:
-            credential = await self.credential_provider.get_credential(
-                user_id=self.user.id, feature_store_name=feature_store_name
-            )
+        credential = await self.credential_provider.get_credential(
+            user_id=self.user.id, feature_store_name=feature_store_name
+        )
         session_manager = SessionManager(credentials={feature_store_name: credential})
         return await session_manager.get_session_with_params(
             feature_store_name, session_type, details
@@ -139,47 +131,11 @@ class SessionValidatorService:
         if users_feature_store_id is None:
             raise NoFeatureStorePresentError
 
-    async def validate_details(
-        self,
-        feature_store_name: str,
-        session_type: SourceType,
-        details: DatabaseDetails,
-        get_credential: Any,
-    ) -> ValidateStatus:
-        """
-        Validate whether the existing details exist in the persistent layer
-        or in the data warehouse.
-
-        Parameters
-        ----------
-        feature_store_name: str
-            feature store name
-        session_type: SourceType
-            session type
-        details: DatabaseDetails
-            database details
-        get_credential: Any
-            credential handler function
-
-        Returns
-        -------
-        ValidateStatus
-            The status of the validation
-        """
-        # Retrieve the feature store ID
-        users_feature_store_id = await self.get_feature_store_id_from_details(details)
-
-        # Check whether the feature store ID has been used in the data warehouse.
-        return await self.validate_feature_store_id_not_used_in_warehouse(
-            feature_store_name, session_type, details, get_credential, users_feature_store_id
-        )
-
     async def validate_feature_store_id_not_used_in_warehouse(
         self,
         feature_store_name: str,
         session_type: SourceType,
         details: DatabaseDetails,
-        get_credential: Any,
         users_feature_store_id: Optional[PydanticObjectId],
     ) -> ValidateStatus:
         """
@@ -194,8 +150,6 @@ class SessionValidatorService:
             session type
         details: DatabaseDetails
             database details
-        get_credential: Any
-            credential handler function
         users_feature_store_id: Optional[PydanticObjectId]
             users feature store ID
 
@@ -204,7 +158,7 @@ class SessionValidatorService:
         ValidateStatus
             The status of the validation
         """
-        session = await self._get_session(feature_store_name, session_type, details, get_credential)
+        session = await self._get_session(feature_store_name, session_type, details)
         return await self.validate_existing_session(session, users_feature_store_id)
 
     async def get_feature_store_id_from_details(

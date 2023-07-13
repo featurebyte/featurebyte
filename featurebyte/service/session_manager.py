@@ -32,7 +32,7 @@ class SessionManagerService:
     async def get_feature_store_session(
         self,
         feature_store: FeatureStoreModel,
-        get_credential: Any,
+        get_credential: Any = None,
         user_override: Optional[User] = None,
     ) -> BaseSession:
         """
@@ -57,18 +57,14 @@ class SessionManagerService:
         CredentialsError
             When the credentials used to access the feature store is missing or invalid
         """
+        _ = get_credential
         user_to_use = self.user
         if user_override is not None:
             user_to_use = user_override
         try:
-            if get_credential is not None:
-                credential = await get_credential(
-                    user_id=user_to_use.id, feature_store_name=feature_store.name
-                )
-            else:
-                credential = await self.credential_provider.get_credential(
-                    user_id=user_to_use.id, feature_store_name=feature_store.name
-                )
+            credential = await self.credential_provider.get_credential(
+                user_id=user_to_use.id, feature_store_name=feature_store.name
+            )
             credentials = {feature_store.name: credential}
             session_manager = SessionManager(credentials=credentials)
             session = await session_manager.get_session(feature_store)
