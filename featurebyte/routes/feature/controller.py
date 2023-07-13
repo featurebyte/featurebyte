@@ -50,9 +50,9 @@ from featurebyte.service.entity import EntityService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
+from featurebyte.service.feature_preview import FeaturePreviewService
 from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
-from featurebyte.service.preview import PreviewService
 from featurebyte.service.table import TableService
 from featurebyte.service.version import VersionService
 
@@ -143,7 +143,7 @@ class FeatureController(
         entity_service: EntityService,
         feature_list_service: FeatureListService,
         feature_readiness_service: FeatureReadinessService,
-        preview_service: PreviewService,
+        feature_preview_service: FeaturePreviewService,
         version_service: VersionService,
         feature_store_warehouse_service: FeatureStoreWarehouseService,
         task_controller: TaskController,
@@ -159,7 +159,7 @@ class FeatureController(
         self.entity_service = entity_service
         self.feature_list_service = feature_list_service
         self.feature_readiness_service = feature_readiness_service
-        self.preview_service = preview_service
+        self.feature_preview_service = feature_preview_service
         self.version_service = version_service
         self.feature_store_warehouse_service = feature_store_warehouse_service
         self.task_controller = task_controller
@@ -463,7 +463,7 @@ class FeatureController(
             Invalid request payload
         """
         try:
-            return await self.preview_service.preview_target_or_feature(
+            return await self.feature_preview_service.preview_target_or_feature(
                 feature_or_target_preview=feature_preview, get_credential=get_credential
             )
         except (MissingPointInTimeColumnError, RequiredEntityNotProvidedError) as exc:
@@ -560,7 +560,7 @@ class FeatureController(
         str
             Dataframe converted to json string
         """
-        return await self.preview_service.feature_sql(feature_sql=feature_sql)
+        return await self.feature_preview_service.feature_sql(feature_sql=feature_sql)
 
     async def get_feature_job_logs(
         self, feature_id: ObjectId, hour_limit: int, get_credential: Any

@@ -34,7 +34,7 @@ def update_and_reset_catalog(func: Any) -> Any:
     def wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
         active_catalog_id = get_active_catalog_id()
         # If the catalog is already active, just call the function
-        if self.id == active_catalog_id:
+        if self.id == active_catalog_id or active_catalog_id is None:
             return func(self, *args, **kwargs)
         # Activate catalog of object
         activate_catalog(self.id)

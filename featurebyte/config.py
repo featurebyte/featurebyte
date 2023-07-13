@@ -170,9 +170,9 @@ class APIClient(BaseAPIClient):
         """
         try:
             headers = kwargs.get("headers", {})
-            headers["active-catalog-id"] = headers.get(
-                "active-catalog-id", str(get_active_catalog_id())
-            )
+            active_catalog_id = headers.get("active-catalog-id", get_active_catalog_id())
+            if active_catalog_id:
+                headers["active-catalog-id"] = str(active_catalog_id)
             kwargs["headers"] = headers
             kwargs["allow_redirects"] = False
             return super().request(

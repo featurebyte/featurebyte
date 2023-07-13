@@ -22,7 +22,7 @@ class TileSchedulerService(BaseService):
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: ObjectId,
+        catalog_id: Optional[ObjectId],
         task_manager: TaskManager,
     ):
         super().__init__(user, persistent, catalog_id)

@@ -41,7 +41,7 @@ class TargetService(BaseNamespaceService[TargetModel, TargetCreate]):
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: ObjectId,
+        catalog_id: Optional[ObjectId],
         target_namespace_service: TargetNamespaceService,
         namespace_handler: NamespaceHandler,
         feature_store_service: FeatureStoreService,

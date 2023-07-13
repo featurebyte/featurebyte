@@ -20,7 +20,7 @@ from tests.util.helper import patch_import_package
 
 
 @pytest_asyncio.fixture(name="saved_analysis")
-async def saved_analysis_fixture(mock_get_persistent, saved_event_table):
+async def saved_analysis_fixture(mock_get_persistent, saved_event_table, catalog):
     """
     Saved analysis
     """
@@ -29,6 +29,7 @@ async def saved_analysis_fixture(mock_get_persistent, saved_event_table):
     with open("tests/fixtures/feature_job_setting_analysis/result.json", "r") as file_handle:
         analysis = FeatureJobSettingAnalysisModel(**json.load(file_handle))
     analysis.event_table_id = saved_event_table.id
+    analysis.catalog_id = catalog.id
     return await persistent.insert_one(
         collection_name=FeatureJobSettingAnalysisModel.collection_name(),
         document=analysis.dict(),
@@ -106,7 +107,7 @@ def test_info(saved_analysis):
             "frequency": "180s",
             "time_modulo_frequency": "61s",
         },
-        "catalog_name": "default",
+        "catalog_name": "catalog",
     }
 
 

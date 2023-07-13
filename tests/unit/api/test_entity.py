@@ -27,10 +27,11 @@ from featurebyte.query_graph.node.schema import TableDetails
 
 
 @pytest.fixture(name="entity")
-def entity_fixture():
+def entity_fixture(catalog):
     """
     Entity fixture
     """
+    _ = catalog
     entity = Entity(name="customer", serving_names=["cust_id"])
     previous_id = entity.id
     assert entity.saved is False
@@ -120,7 +121,7 @@ def test_entity_creation(entity):
             Entity(name="Customer", serving_names=["cust_id"]).save()
 
 
-def test_entity_update_name(entity):
+def test_entity_update_name(entity, catalog):
     """
     Test update entity name
     """
@@ -148,7 +149,7 @@ def test_entity_update_name(entity):
             ("UPDATE", 'update: "customer"', "updated_at", None, entity.updated_at.isoformat()),
             ("INSERT", 'insert: "customer"', "ancestor_ids", np.nan, []),
             ("INSERT", 'insert: "customer"', "block_modification_by", np.nan, []),
-            ("INSERT", 'insert: "customer"', "catalog_id", np.nan, str(DEFAULT_CATALOG_ID)),
+            ("INSERT", 'insert: "customer"', "catalog_id", np.nan, str(catalog.id)),
             ("INSERT", 'insert: "customer"', "created_at", np.nan, entity.created_at.isoformat()),
             ("INSERT", 'insert: "customer"', "name", np.nan, "customer"),
             ("INSERT", 'insert: "customer"', "parents", np.nan, []),

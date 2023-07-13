@@ -6,7 +6,6 @@ import pytest_asyncio
 from bson import ObjectId
 
 from featurebyte.exception import DocumentConflictError, DocumentNotFoundError
-from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.schema.user_defined_function import UserDefinedFunctionCreate
 from featurebyte.service.user_defined_function import UserDefinedFunctionService
 
@@ -63,15 +62,15 @@ async def global_user_defined_function_doc_fixture(
 
 @pytest_asyncio.fixture(name="user_defined_function_doc")
 async def user_defined_function_doc_fixture(
-    user_defined_function_service, user_defined_function_dict
+    user_defined_function_service, user_defined_function_dict, catalog
 ):
     """User defined function doc fixture"""
     payload = user_defined_function_dict.copy()
-    payload["catalog_id"] = DEFAULT_CATALOG_ID
+    payload["catalog_id"] = catalog.id
     doc = await user_defined_function_service.create_document(
         data=UserDefinedFunctionCreate(**payload)
     )
-    assert doc.catalog_id == DEFAULT_CATALOG_ID
+    assert doc.catalog_id == catalog.id
     return doc
 
 
@@ -82,17 +81,18 @@ async def test_user_defined_function_service__creation(
     user_defined_function_doc,
     user_defined_function_dict,
     global_user_defined_function_doc,
+    catalog,
 ):
     """Test UserDefinedFunctionService (creation)"""
     # create a user defined function with the same name in the same catalog
-    user_defined_function_dict["catalog_id"] = DEFAULT_CATALOG_ID
+    user_defined_function_dict["catalog_id"] = catalog.id
     with pytest.raises(DocumentConflictError) as exc:
         await user_defined_function_service.create_document(
             data=UserDefinedFunctionCreate(**user_defined_function_dict)
         )
     expected_error_message = (
         'User defined function with name "method_name" already exists in catalog '
-        f"(catalog_id: {DEFAULT_CATALOG_ID})."
+        f"(catalog_id: {catalog.id})."
     )
     assert expected_error_message in str(exc.value)
 

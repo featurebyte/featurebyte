@@ -14,6 +14,7 @@ from bson.objectid import ObjectId
 
 from featurebyte.common.dict_util import get_field_path_value
 from featurebyte.exception import (
+    CatalogNotSpecifiedError,
     DocumentConflictError,
     DocumentModificationBlockedError,
     DocumentNotFoundError,
@@ -84,11 +85,15 @@ class BaseDocumentService(
 
     document_class: Type[Document]
 
-    def __init__(self, user: Any, persistent: Persistent, catalog_id: ObjectId):
+    def __init__(self, user: Any, persistent: Persistent, catalog_id: Optional[ObjectId]):
         self.user = user
         self.persistent = persistent
         self.catalog_id = catalog_id
         self._allow_to_use_raw_query_filter = False
+        if self.is_catalog_specific and not catalog_id:
+            raise CatalogNotSpecifiedError(
+                f"No active catalog specified for service: {self.__class__.__name__}"
+            )
 
     @contextmanager
     def allow_use_raw_query_filter(self) -> Iterator[None]:

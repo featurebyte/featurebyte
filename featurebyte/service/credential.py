@@ -33,7 +33,7 @@ class CredentialService(
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: ObjectId,
+        catalog_id: Optional[ObjectId],
         feature_store_warehouse_service: FeatureStoreWarehouseService,
         feature_store_service: FeatureStoreService,
     ):

@@ -327,11 +327,11 @@ def test_info(saved_feature):
     expected_info = {
         "name": "sum_1d",
         "dtype": "FLOAT",
-        "entities": [{"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}],
+        "entities": [{"name": "customer", "serving_names": ["cust_id"], "catalog_name": "catalog"}],
         "primary_entity": [
-            {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}
+            {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "catalog"}
         ],
-        "tables": [{"name": "sf_event_table", "status": "PUBLIC_DRAFT", "catalog_name": "default"}],
+        "tables": [{"name": "sf_event_table", "status": "PUBLIC_DRAFT", "catalog_name": "catalog"}],
         "table_feature_job_setting": {
             "this": [data_feature_job_setting],
             "default": [data_feature_job_setting],
@@ -340,7 +340,7 @@ def test_info(saved_feature):
         "default_version_mode": "AUTO",
         "default_feature_id": str(saved_feature.id),
         "readiness": {"this": "DRAFT", "default": "DRAFT"},
-        "catalog_name": "default",
+        "catalog_name": "catalog",
     }
     assert info_dict.items() > expected_info.items(), info_dict
     assert "created_at" in info_dict, info_dict
@@ -1448,7 +1448,7 @@ def test_list_unsaved_features(
             )["sum_1d"]
             > 100.0
         )
-        activate_and_get_catalog("default")
+        activate_and_get_catalog("catalog")
 
         # create unsaved features
         unsaved_feature = float_feature
@@ -1505,22 +1505,22 @@ def test_list_unsaved_features(
                     None,
                 ],
                 "catalog": [
-                    "default",
-                    "default",
-                    "default",
-                    "default",
-                    "default",
-                    "default",
-                    "default",
-                    "default",
-                    "default",
-                    "default",
-                    "default",
-                    "default",
-                    "default",
-                    "default",
-                    "default",
-                    "default",
+                    "catalog",
+                    "catalog",
+                    "catalog",
+                    "catalog",
+                    "catalog",
+                    "catalog",
+                    "catalog",
+                    "catalog",
+                    "catalog",
+                    "catalog",
+                    "catalog",
+                    "catalog",
+                    "catalog",
+                    "catalog",
+                    "catalog",
+                    "catalog",
                     "test_catalog",
                 ],
                 "active_catalog": [
@@ -1591,7 +1591,7 @@ def test_list_unsaved_features(
             ),
         )
     finally:
-        activate_and_get_catalog("default")
+        activate_and_get_catalog("catalog")
 
 
 def test_unsaved_feature_repr(

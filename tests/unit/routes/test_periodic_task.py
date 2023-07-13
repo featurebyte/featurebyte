@@ -9,10 +9,10 @@ import pytest_asyncio
 from bson.objectid import ObjectId
 from requests import Response
 
-from featurebyte.models.base import DEFAULT_CATALOG_ID, User
+from featurebyte.models.base import User
 from featurebyte.models.periodic_task import Interval, PeriodicTask
 from featurebyte.service.periodic_task import PeriodicTaskService
-from tests.unit.routes.base import BaseApiTestSuite
+from tests.unit.routes.base import BaseCatalogApiTestSuite
 
 
 class MockResponse(Response):
@@ -27,7 +27,7 @@ class MockResponse(Response):
         self.status_code = status_code
 
 
-class TestPeriodicTaskApi(BaseApiTestSuite):
+class TestPeriodicTaskApi(BaseCatalogApiTestSuite):
     """
     Tests for PeriodicTask route
     """
@@ -40,8 +40,7 @@ class TestPeriodicTaskApi(BaseApiTestSuite):
         interval=Interval(every=1, period="minutes"),
         args=[],
         kwargs={"some_key": "some_value"},
-        catalog_id=DEFAULT_CATALOG_ID,
-    ).dict()
+    ).json_dict()
     unknown_id = ObjectId()
 
     @pytest.mark.skip("POST method not exposed")
@@ -55,14 +54,6 @@ class TestPeriodicTaskApi(BaseApiTestSuite):
     @pytest.mark.skip("POST method not exposed")
     def test_create_201__id_is_none(self, test_api_client_persistent):
         """Test creation (success) ID is None"""
-
-    @pytest.mark.skip("POST method not exposed")
-    def test_create_201_non_default_catalog(
-        self,
-        catalog_id,
-        create_success_response_non_default_catalog,
-    ):
-        """Test creation (success) in non default catalog"""
 
     @pytest.mark.skip("GET method not exposed")
     def test_list_audit_422(
@@ -79,12 +70,12 @@ class TestPeriodicTaskApi(BaseApiTestSuite):
 
     @pytest_asyncio.fixture()
     async def create_success_response(
-        self, test_api_client_persistent, user_id
+        self, test_api_client_persistent, user_id, default_catalog_id
     ):  # pylint: disable=arguments-differ
         """Post route success response object"""
         _, persistent = test_api_client_persistent
         periodic_task_service = PeriodicTaskService(
-            user=User(id=user_id), persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
+            user=User(id=user_id), persistent=persistent, catalog_id=ObjectId(default_catalog_id)
         )
         document = await periodic_task_service.create_document(data=PeriodicTask(**self.payload))
         return MockResponse(
@@ -93,13 +84,13 @@ class TestPeriodicTaskApi(BaseApiTestSuite):
 
     @pytest_asyncio.fixture()
     async def create_multiple_success_responses(
-        self, test_api_client_persistent, user_id
+        self, test_api_client_persistent, user_id, default_catalog_id
     ):  # pylint: disable=arguments-differ
         """Post multiple success responses"""
         _, persistent = test_api_client_persistent
         output = []
         periodic_task_service = PeriodicTaskService(
-            user=User(id=user_id), persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
+            user=User(id=user_id), persistent=persistent, catalog_id=ObjectId(default_catalog_id)
         )
         for payload in self.multiple_success_payload_generator(None):
             document = await periodic_task_service.create_document(data=PeriodicTask(**payload))

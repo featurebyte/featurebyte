@@ -46,10 +46,10 @@ from featurebyte.service.deploy import DeployService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
+from featurebyte.service.feature_preview import FeaturePreviewService
 from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
-from featurebyte.service.preview import PreviewService
 from featurebyte.service.version import VersionService
 
 
@@ -71,7 +71,7 @@ class FeatureListController(
         feature_service: FeatureService,
         feature_readiness_service: FeatureReadinessService,
         deploy_service: DeployService,
-        preview_service: PreviewService,
+        feature_preview_service: FeaturePreviewService,
         version_service: VersionService,
         feature_store_warehouse_service: FeatureStoreWarehouseService,
         task_controller: TaskController,
@@ -81,7 +81,7 @@ class FeatureListController(
         self.feature_service = feature_service
         self.feature_readiness_service = feature_readiness_service
         self.deploy_service = deploy_service
-        self.preview_service = preview_service
+        self.feature_preview_service = feature_preview_service
         self.version_service = version_service
         self.feature_store_warehouse_service = feature_store_warehouse_service
         self.task_controller = task_controller
@@ -338,7 +338,7 @@ class FeatureListController(
             Invalid request payload
         """
         try:
-            return await self.preview_service.preview_featurelist(
+            return await self.feature_preview_service.preview_featurelist(
                 featurelist_preview=featurelist_preview, get_credential=get_credential
             )
         except (MissingPointInTimeColumnError, RequiredEntityNotProvidedError) as exc:
@@ -384,7 +384,7 @@ class FeatureListController(
         str
             SQL statements
         """
-        return await self.preview_service.featurelist_sql(featurelist_sql=featurelist_sql)
+        return await self.feature_preview_service.featurelist_sql(featurelist_sql=featurelist_sql)
 
     async def get_historical_features_sql(
         self,
@@ -412,7 +412,7 @@ class FeatureListController(
             Invalid request payload
         """
         try:
-            return await self.preview_service.get_historical_features_sql(
+            return await self.feature_preview_service.get_historical_features_sql(
                 observation_set=dataframe_from_arrow_stream(observation_set.file),
                 featurelist_get_historical_features=featurelist_get_historical_features,
             )

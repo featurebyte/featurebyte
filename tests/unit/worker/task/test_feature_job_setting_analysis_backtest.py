@@ -30,7 +30,7 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
         "tests/fixtures/task_payloads/feature_job_setting_analysis_backtest.json"
     )
 
-    async def setup_persistent_storage(self, persistent, storage, temp_storage):
+    async def setup_persistent_storage(self, persistent, storage, temp_storage, catalog):
         """
         Setup for post route
         """
@@ -44,6 +44,7 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
 
         # save event table
         payload = self.load_payload("tests/fixtures/request_payloads/event_table.json")
+        payload["catalog_id"] = catalog.id
         await persistent.insert_one(
             collection_name=EventTableModel.collection_name(),
             document=EventTableModel(**payload).dict(by_alias=True),
@@ -52,16 +53,17 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
 
     @pytest_asyncio.fixture(autouse=True)
     async def setup(  # pylint: disable=W0221
-        self, mongo_persistent, storage, temp_storage, mock_event_dataset, get_credential
+        self, mongo_persistent, storage, temp_storage, mock_event_dataset, get_credential, catalog
     ):
         _ = mock_event_dataset
         persistent, _ = mongo_persistent
-        await self.setup_persistent_storage(persistent, storage, temp_storage)
+        await self.setup_persistent_storage(persistent, storage, temp_storage, catalog)
 
         # save analyse
         payload = self.load_payload(
             "tests/fixtures/task_payloads/feature_job_setting_analysis.json"
         )
+        payload["catalog_id"] = catalog.id
         await self.execute_task(
             task_class=FeatureJobSettingAnalysisTask,
             payload=payload,

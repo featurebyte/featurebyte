@@ -46,7 +46,7 @@ class VersionService(BaseService):
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: ObjectId,
+        catalog_id: Optional[ObjectId],
         table_service: TableService,
         feature_service: FeatureService,
         feature_namespace_service: FeatureNamespaceService,

@@ -11,7 +11,7 @@ import pytest
 from bson.objectid import ObjectId
 
 from featurebyte.exception import DocumentNotFoundError
-from featurebyte.models.base import DEFAULT_CATALOG_ID, User
+from featurebyte.models.base import User
 from featurebyte.models.periodic_task import Crontab, Interval
 from featurebyte.models.task import Task
 from featurebyte.schema.task import TaskStatus
@@ -35,20 +35,20 @@ def celery_fixture():
 
 
 @pytest.fixture(name="task_manager")
-def task_manager_fixture(user_id, persistent, celery):
+def task_manager_fixture(user_id, persistent, celery, catalog):
     """Task manager fixture"""
     yield TaskManager(
-        user=User(id=user_id), persistent=persistent, celery=celery, catalog_id=DEFAULT_CATALOG_ID
+        user=User(id=user_id), persistent=persistent, celery=celery, catalog_id=catalog.id
     )
 
 
 @pytest.mark.asyncio
 @pytest.mark.disable_task_manager_mock
-async def test_task_manager__long_running_tasks(task_manager, celery, user_id, persistent):
+async def test_task_manager__long_running_tasks(task_manager, celery, user_id, persistent, catalog):
     """Test task manager service"""
     expected_tasks = []
     for _ in range(3):
-        payload = LongRunningPayload(user_id=user_id, catalog_id=DEFAULT_CATALOG_ID)
+        payload = LongRunningPayload(user_id=user_id, catalog_id=catalog.id)
         task_id = await task_manager.submit(payload=payload)
 
         # check celery task submission
@@ -95,13 +95,13 @@ async def test_task_manager__long_running_tasks(task_manager, celery, user_id, p
 
 @pytest.mark.asyncio
 @pytest.mark.disable_task_manager_mock
-async def test_task_manager__list_tasks(task_manager, celery, user_id, persistent):
+async def test_task_manager__list_tasks(task_manager, celery, user_id, persistent, catalog):
     """Test task manager service -- list task status"""
     task_num = 10
     task_ids = []
     for _ in range(task_num):
         task_id = await task_manager.submit(
-            payload=LongRunningPayload(user_id=user_id, catalog_id=DEFAULT_CATALOG_ID)
+            payload=LongRunningPayload(user_id=user_id, catalog_id=catalog.id)
         )
         task_ids.append(task_id)
         # insert task into db manually since we are mocking celery
@@ -147,12 +147,12 @@ async def test_task_manager__list_tasks(task_manager, celery, user_id, persisten
 
 
 @pytest.mark.asyncio
-async def test_task_manager__schedule_interval_task(task_manager, user_id):
+async def test_task_manager__schedule_interval_task(task_manager, user_id, catalog):
     """
     Test task manager service -- schedule interval task
     """
     interval = Interval(every=1, period="minutes")
-    payload = LongRunningPayload(user_id=user_id, catalog_id=DEFAULT_CATALOG_ID)
+    payload = LongRunningPayload(user_id=user_id, catalog_id=catalog.id)
     periodic_task_id = await task_manager.schedule_interval_task(
         name="test_interval_task",
         payload=payload,
@@ -172,12 +172,12 @@ async def test_task_manager__schedule_interval_task(task_manager, user_id):
 
 
 @pytest.mark.asyncio
-async def test_task_manager__schedule_cron_task(task_manager, user_id):
+async def test_task_manager__schedule_cron_task(task_manager, user_id, catalog):
     """
     Test task manager service -- schedule interval task
     """
     crontab = Crontab(minute="*/1", hour="*", day_of_week="*", day_of_month="*", month_of_year="*")
-    payload = LongRunningPayload(user_id=user_id, catalog_id=DEFAULT_CATALOG_ID)
+    payload = LongRunningPayload(user_id=user_id, catalog_id=catalog.id)
     periodic_task_id = await task_manager.schedule_cron_task(
         name="test_cron_task",
         payload=payload,

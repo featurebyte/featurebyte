@@ -2,7 +2,6 @@
 BaseApiTestSuite
 """
 # pylint: disable=too-many-lines
-import copy
 import json
 import os
 import tempfile
@@ -20,7 +19,6 @@ from bson.objectid import ObjectId
 
 from featurebyte.common.utils import dataframe_to_arrow_bytes, parquet_from_arrow_stream
 from featurebyte.enum import DBVarType
-from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.query_graph.node.schema import FeatureStoreDetails
 from featurebyte.schema.table import TableCreate
 
@@ -157,9 +155,12 @@ class BaseApiTestSuite:
             headers={"active-catalog-id": str(catalog_id)},
             json={"enabled": enabled},
         )
-        assert response.status_code == HTTPStatus.OK
+        assert response.status_code == HTTPStatus.OK, response.json()
         self.wait_for_results(api_client, response)
-        deployment_response = api_client.get(f"/deployment/{deployment_id}")
+        deployment_response = api_client.get(
+            f"/deployment/{deployment_id}",
+            headers={"active-catalog-id": str(catalog_id)},
+        )
         assert deployment_response.status_code == HTTPStatus.OK
         assert deployment_response.json()["enabled"] == enabled
 
@@ -183,7 +184,7 @@ class BaseApiTestSuite:
             sleep(0.1)
         return response
 
-    def setup_creation_route(self, api_client, catalog_id=DEFAULT_CATALOG_ID):
+    def setup_creation_route(self, api_client):
         """Setup for post route"""
 
     def post(self, api_client, payload, **kwargs):
@@ -197,6 +198,25 @@ class BaseApiTestSuite:
             return api_client.post(self.base_route, data=data, **kwargs)
 
         return api_client.post(self.base_route, json=payload, **kwargs)
+
+    def activate_catalog(self, api_client):
+        """Create and activate catalog"""
+        # create feature store
+        payload = self.load_payload("tests/fixtures/request_payloads/feature_store.json")
+        api_client.post("/feature_store", json=payload)
+
+        # create catalog
+        payload = self.load_payload("tests/fixtures/request_payloads/catalog.json")
+        response = api_client.post("/catalog", json=payload)
+        assert response.status_code == HTTPStatus.CREATED, response.json()
+        catalog_id = response.json()["_id"]
+
+        api_client.headers["active-catalog-id"] = catalog_id
+
+    @pytest.fixture()
+    def test_api_client_persistent(self, api_client_persistent):
+        """Test api client with persistent headers"""
+        return api_client_persistent
 
     @pytest_asyncio.fixture()
     async def create_success_response(self, test_api_client_persistent):
@@ -461,6 +481,19 @@ class BaseAsyncApiTestSuite(BaseApiTestSuite):
 
     async_create = True
 
+    @pytest.fixture()
+    def test_api_client_persistent(self, api_client_persistent):
+        """Test api client with persistent headers"""
+        api_client, _ = api_client_persistent
+        self.activate_catalog(api_client)
+        return api_client_persistent
+
+    @pytest.fixture()
+    def default_catalog_id(self, test_api_client_persistent):
+        """Get default catalog id for testing"""
+        api_client, _ = test_api_client_persistent
+        return api_client.headers["active-catalog-id"]
+
     @pytest_asyncio.fixture()
     async def create_success_response(self, test_api_client_persistent):
         """Post route success response object"""
@@ -504,6 +537,12 @@ class BaseCatalogApiTestSuite(BaseApiTestSuite):
     BaseCatalogApiTestSuite includes some checks for behaviour of objects that belong to catalogs
     """
 
+    @pytest.fixture()
+    def default_catalog_id(self, test_api_client_persistent):
+        """Get default catalog id for testing"""
+        api_client, _ = test_api_client_persistent
+        return api_client.headers["active-catalog-id"]
+
     @pytest.fixture(name="catalog_id")
     def catalog_id_fixture(self, test_api_client_persistent):
         """
@@ -515,6 +554,13 @@ class BaseCatalogApiTestSuite(BaseApiTestSuite):
         )
         assert response.status_code == HTTPStatus.CREATED
         return ObjectId(response.json()["_id"])
+
+    @pytest.fixture()
+    def test_api_client_persistent(self, api_client_persistent):
+        """Test api client with persistent headers"""
+        api_client, _ = api_client_persistent
+        self.activate_catalog(api_client)
+        return api_client_persistent
 
     @staticmethod
     def create_new_feature_version(test_api_client, feature_id):
@@ -538,98 +584,6 @@ class BaseCatalogApiTestSuite(BaseApiTestSuite):
         assert post_feature_response.status_code == HTTPStatus.CREATED
         new_feature_id = post_feature_response.json()["_id"]
         return new_feature_id
-
-    @pytest_asyncio.fixture()
-    async def create_success_response_non_default_catalog(
-        self, test_api_client_persistent, catalog_id
-    ):
-        """Create object with non default catalog"""
-        test_api_client, _ = test_api_client_persistent
-        self.setup_creation_route(test_api_client, catalog_id=catalog_id)
-        payload = copy.deepcopy(self.payload)
-        payload["_id"] = str(ObjectId())
-        payload["catalog_id"] = str(catalog_id)
-        response = test_api_client.post(
-            f"{self.base_route}", headers={"active-catalog-id": str(catalog_id)}, json=payload
-        )
-        assert response.status_code == HTTPStatus.CREATED, response.json()
-        return response
-
-    def test_create_201(self, test_api_client_persistent, create_success_response, user_id):
-        """Test creation (success)"""
-        super().test_create_201(test_api_client_persistent, create_success_response, user_id)
-        # test default catalog id is captured in document
-        response_dict = create_success_response.json()
-        assert response_dict["catalog_id"] == str(DEFAULT_CATALOG_ID)
-
-    def test_create_201_non_default_catalog(
-        self, catalog_id, create_success_response_non_default_catalog
-    ):
-        """Test creation (success) in non default catalog"""
-        response = create_success_response_non_default_catalog
-        result = response.json()
-
-        # check catalog id is updated correctly
-        if self.async_create:
-            assert result["payload"]["catalog_id"] == str(catalog_id)
-        else:
-            assert result["catalog_id"] == str(catalog_id)
-
-    def test_list_200_non_default_catalog(
-        self,
-        test_api_client_persistent,
-        catalog_id,
-        create_success_response_non_default_catalog,
-    ):
-        """Test list in non default catalog"""
-        test_api_client, _ = test_api_client_persistent
-        create_response_dict = create_success_response_non_default_catalog.json()
-        if self.async_create:
-            custom_catalog_document_id = create_response_dict["payload"]["output_document_id"]
-        else:
-            custom_catalog_document_id = create_response_dict["_id"]
-
-        # expect to see document in the catalog
-        response = test_api_client.get(
-            f"{self.base_route}", headers={"active-catalog-id": str(catalog_id)}
-        )
-        assert response.status_code == HTTPStatus.OK
-        results = response.json()
-        assert results["total"] == 1
-        assert results["data"][0]["_id"] == custom_catalog_document_id
-
-        # expect not to see document in the default catalog
-        response = test_api_client.get(f"{self.base_route}")
-        assert response.status_code == HTTPStatus.OK
-        results = response.json()
-        assert results["total"] == 0
-
-    def test_get_200_non_default_catalog(
-        self,
-        test_api_client_persistent,
-        catalog_id,
-        create_success_response_non_default_catalog,
-    ):
-        """Test get (success)"""
-        test_api_client, _ = test_api_client_persistent
-        create_response_dict = create_success_response_non_default_catalog.json()
-        if self.async_create:
-            custom_catalog_document_id = create_response_dict["payload"]["output_document_id"]
-        else:
-            custom_catalog_document_id = create_response_dict["_id"]
-
-        # expect to see document in the catalog
-        response = test_api_client.get(
-            f"{self.base_route}/{custom_catalog_document_id}",
-            headers={"active-catalog-id": str(catalog_id)},
-        )
-        assert response.status_code == HTTPStatus.OK
-        results = response.json()
-        assert results["_id"] == custom_catalog_document_id
-
-        # expect not to see document in the default catalog
-        response = test_api_client.get(f"{self.base_route}/{custom_catalog_document_id}")
-        assert response.status_code == HTTPStatus.NOT_FOUND
 
 
 class BaseRelationshipApiTestSuite(BaseApiTestSuite):
@@ -822,19 +776,16 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
                 ),
             )
 
-    def setup_creation_route(self, api_client, catalog_id=DEFAULT_CATALOG_ID):
+    def setup_creation_route(self, api_client):
         """
         Setup for post route
         """
         api_object_filename_pairs = [
-            ("feature_store", "feature_store"),
             ("entity", "entity"),
         ]
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
-            response = api_client.post(
-                f"/{api_object}", headers={"active-catalog-id": str(catalog_id)}, json=payload
-            )
+            response = api_client.post(f"/{api_object}", json=payload)
             assert response.status_code == HTTPStatus.CREATED
 
     def multiple_success_payload_generator(self, api_client):

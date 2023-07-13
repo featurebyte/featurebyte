@@ -8,7 +8,6 @@ import pytest
 import pytest_asyncio
 from bson import ObjectId
 
-from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.scd_table import SCDTableModel
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.table import SCDTableData
@@ -76,9 +75,7 @@ class TestSCDTableApi(BaseTableApiTestSuite):
         """SCD ID semantic IDs fixture"""
         user = mock.Mock()
         user.id = user_id
-        semantic_service = SemanticService(
-            user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
-        )
+        semantic_service = SemanticService(user=user, persistent=persistent, catalog_id=None)
         natural_data = await semantic_service.get_or_create_document("natural_id")
         surrogate_data = await semantic_service.get_or_create_document("surrogate_id")
         return natural_data.id, surrogate_data.id
@@ -164,7 +161,7 @@ class TestSCDTableApi(BaseTableApiTestSuite):
             "entities": [],
             "semantics": ["scd_surrogate_key_id", "scd_natural_key_id"],
             "column_count": 10,
-            "catalog_name": "default",
+            "catalog_name": "grocery",
         }
         assert response.status_code == HTTPStatus.OK, response.text
         response_dict = response.json()

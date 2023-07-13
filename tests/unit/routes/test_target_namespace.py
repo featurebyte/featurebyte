@@ -5,7 +5,6 @@ from http import HTTPStatus
 
 from bson import ObjectId
 
-from featurebyte.models.base import DEFAULT_CATALOG_ID
 from tests.unit.routes.base import BaseCatalogApiTestSuite
 
 
@@ -33,21 +32,18 @@ class TestTargetNamespaceApi(BaseCatalogApiTestSuite):
         )
     ]
 
-    def setup_creation_route(self, api_client, catalog_id=DEFAULT_CATALOG_ID):
+    def setup_creation_route(self, api_client):
         """
         Setup for post route
         """
         api_object_filename_pairs = [
-            ("feature_store", "feature_store"),
             ("entity", "entity"),
             ("event_table", "event_table"),
             ("item_table", "item_table"),
         ]
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
-            response = api_client.post(
-                f"/{api_object}", headers={"active-catalog-id": str(catalog_id)}, json=payload
-            )
+            response = api_client.post(f"/{api_object}", json=payload)
             assert response.status_code == HTTPStatus.CREATED, response.json()
 
     def multiple_success_payload_generator(self, api_client):

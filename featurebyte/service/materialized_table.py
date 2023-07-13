@@ -3,7 +3,7 @@ BaseMaterializedTableService contains common functionality for materialized tabl
 """
 from __future__ import annotations
 
-from typing import Any, List, Tuple
+from typing import Any, List, Optional, Tuple
 
 from bson import ObjectId
 
@@ -36,7 +36,7 @@ class BaseMaterializedTableService(
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: ObjectId,
+        catalog_id: Optional[ObjectId],
         feature_store_service: FeatureStoreService,
     ):
         super().__init__(user, persistent, catalog_id)

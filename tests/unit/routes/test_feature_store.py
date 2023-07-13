@@ -342,6 +342,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
         """Payload for table sample"""
         _ = create_success_response
         test_api_client, _ = test_api_client_persistent
+        self.activate_catalog(test_api_client)
         payload = self.load_payload("tests/fixtures/request_payloads/event_table.json")
         response = test_api_client.post("/event_table", json=payload)
         assert response.status_code == HTTPStatus.CREATED, response.json()

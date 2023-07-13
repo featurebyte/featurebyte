@@ -33,7 +33,7 @@ class BaseTaskTestSuite:
             return json.loads(fhandle.read())
 
     @abstractmethod
-    async def setup_persistent_storage(self, persistent, storage, temp_storage):
+    async def setup_persistent_storage(self, persistent, storage, temp_storage, catalog):
         """
         Setup records in persistent and storage for testing
         """
@@ -56,12 +56,12 @@ class BaseTaskTestSuite:
         yield
 
     @pytest_asyncio.fixture(autouse=True)
-    async def setup(self, mongo_persistent, storage, temp_storage):
+    async def setup(self, mongo_persistent, storage, temp_storage, catalog):
         """
         Run setup
         """
         persistent, _ = mongo_persistent
-        await self.setup_persistent_storage(persistent, storage, temp_storage)
+        await self.setup_persistent_storage(persistent, storage, temp_storage, catalog)
 
     @pytest.fixture(name="progress")
     def mock_progress(self):
@@ -92,12 +92,13 @@ class BaseTaskTestSuite:
 
     @pytest_asyncio.fixture()
     async def task_completed(
-        self, mongo_persistent, progress, storage, temp_storage, get_credential
+        self, mongo_persistent, progress, storage, temp_storage, get_credential, catalog
     ):
         """
         Test execution of the task
         """
         persistent, _ = mongo_persistent
+        self.payload["catalog_id"] = catalog.id
         await self.execute_task(
             task_class=self.task_class,
             payload=self.payload,

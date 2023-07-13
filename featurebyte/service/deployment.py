@@ -15,3 +15,13 @@ class DeploymentService(BaseDocumentService[DeploymentModel, DeploymentModel, De
 
     document_class = DeploymentModel
     document_update_class = DeploymentUpdate
+
+
+class AllDeploymentService(DeploymentService):
+    """
+    AllDeploymentService class
+    """
+
+    @property
+    def is_catalog_specific(self) -> bool:
+        return False

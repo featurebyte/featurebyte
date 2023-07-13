@@ -94,7 +94,7 @@ def db_session_fixture():
 
 @pytest.mark.asyncio
 async def test_create_observation_table_from_source_table(
-    observation_table_from_source_table, observation_table_service
+    observation_table_from_source_table, observation_table_service, catalog
 ):
     """
     Test creating an ObservationTable from a source table
@@ -105,6 +105,7 @@ async def test_create_observation_table_from_source_table(
     )
     loaded_table_dict = loaded_table.dict(exclude={"created_at", "updated_at"})
     expected_dict = observation_table_from_source_table.dict(exclude={"created_at", "updated_at"})
+    expected_dict["catalog_id"] = catalog.id
     assert expected_dict == loaded_table_dict
 
 

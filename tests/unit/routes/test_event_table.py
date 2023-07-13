@@ -8,7 +8,6 @@ import pytest
 import pytest_asyncio
 from bson import ObjectId
 
-from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.event_table import EventTableModel
 from featurebyte.models.feature_store import TableStatus
 from featurebyte.query_graph.graph import QueryGraph
@@ -73,12 +72,12 @@ class TestEventTableApi(BaseTableApiTestSuite):
     update_unprocessable_payload_expected_detail_pairs = []
 
     @pytest_asyncio.fixture(name="event_timestamp_id_semantic_ids")
-    async def event_timestamp_id_semantic_fixture(self, user_id, persistent):
+    async def event_timestamp_id_semantic_fixture(self, user_id, persistent, default_catalog_id):
         """Event timestamp & event ID semantic IDs fixture"""
         user = mock.Mock()
         user.id = user_id
         semantic_service = SemanticService(
-            user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
+            user=user, persistent=persistent, catalog_id=ObjectId(default_catalog_id)
         )
         event_timestamp = await semantic_service.get_or_create_document("event_timestamp")
         event_id = await semantic_service.get_or_create_document("event_id")
@@ -92,6 +91,7 @@ class TestEventTableApi(BaseTableApiTestSuite):
         user_id,
         event_timestamp_id_semantic_ids,
         feature_store_details,
+        default_catalog_id,
     ):
         """Fixture for a Event Data dict"""
         event_timestamp_semantic_id, event_id_semantic_id = event_timestamp_id_semantic_ids
@@ -131,6 +131,7 @@ class TestEventTableApi(BaseTableApiTestSuite):
         output = EventTableModel(**event_table_dict).json_dict()
         assert output.pop("created_at") is None
         assert output.pop("updated_at") is None
+        output["catalog_id"] = str(default_catalog_id)
         return output
 
     @pytest.fixture(name="data_update_dict")
@@ -316,10 +317,10 @@ class TestEventTableApi(BaseTableApiTestSuite):
             },
             "status": "PUBLIC_DRAFT",
             "entities": [
-                {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}
+                {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "grocery"}
             ],
             "column_count": 9,
-            "catalog_name": "default",
+            "catalog_name": "grocery",
         }
         assert response.status_code == HTTPStatus.OK, response.text
         response_dict = response.json()

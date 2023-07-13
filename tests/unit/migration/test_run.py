@@ -172,7 +172,8 @@ async def test_post_migration_sanity_check(app_container):
         call_args.kwargs["document_id"] for call_args in mock_call.call_args_list
     ]
     expected_document_ids = [doc.id for i, doc in enumerate(docs) if i % step_size == 0]
-    assert called_document_ids == expected_document_ids
+    # Additional feature store document is created during the test
+    assert called_document_ids[:-1] == expected_document_ids
 
 
 @pytest.mark.asyncio

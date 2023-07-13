@@ -1,7 +1,7 @@
 """
 Lazy app container functions the same as the app_container, but only initializes dependencies when needed.
 """
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from bson import ObjectId
 from celery import Celery
@@ -147,7 +147,7 @@ class LazyAppContainer:
         temp_storage: Storage,
         celery: Celery,
         storage: Storage,
-        catalog_id: ObjectId,
+        catalog_id: Optional[ObjectId],
         app_container_config: AppContainerConfig,
     ):
         self.app_container_config = app_container_config

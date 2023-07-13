@@ -8,7 +8,6 @@ import pytest
 
 from featurebyte.api.base_table import TableColumn
 from featurebyte.enum import StrEnum
-from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.feature_store import TableStatus
 from featurebyte.query_graph.node.cleaning_operation import (
     ColumnCleaningOperation,
@@ -108,7 +107,7 @@ class BaseTableTestSuite:
         # when accessing the `columns` attribute, make sure we retrieve it properly
         assert set(table_under_test.columns) == self.expected_columns
 
-    def test_table_preview_sql(self, imputed_table_under_test):
+    def test_table_preview_sql(self, imputed_table_under_test, catalog):
         """
         Test preview table (make sure imputed table show only raw table sql)
         """
@@ -124,7 +123,7 @@ class BaseTableTestSuite:
                 cleaning_operations=[MissingValueImputation(imputed_value=0)],
             )
         ]
-        assert imputed_table_under_test.catalog_id == DEFAULT_CATALOG_ID
+        assert imputed_table_under_test.catalog_id == catalog.id
 
     def test_table_column_preview_sql(self, table_under_test):
         """

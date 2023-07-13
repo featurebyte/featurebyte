@@ -7,7 +7,6 @@ from unittest.mock import patch
 import pytest
 from bson.objectid import ObjectId
 
-from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.credential import decrypt_value
 from tests.unit.routes.base import BaseApiTestSuite
 
@@ -54,7 +53,7 @@ class TestCredentialApi(BaseApiTestSuite):
         with patch("featurebyte.service.credential.CredentialService._validate_credential"):
             yield
 
-    def setup_creation_route(self, api_client, catalog_id=DEFAULT_CATALOG_ID):
+    def setup_creation_route(self, api_client):
         """
         Setup for post route
         """
@@ -63,9 +62,7 @@ class TestCredentialApi(BaseApiTestSuite):
         ]
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
-            response = api_client.post(
-                f"/{api_object}", params={"catalog_id": catalog_id}, json=payload
-            )
+            response = api_client.post(f"/{api_object}", json=payload)
             assert response.status_code == HTTPStatus.CREATED
 
         # delete credential stored for feature store

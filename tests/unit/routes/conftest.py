@@ -41,7 +41,7 @@ def get_mock_get_session_fixture(session_manager, snowflake_execute_query):
 
 
 @pytest.fixture()
-def test_api_client_persistent(persistent, user_id, temp_storage):
+def api_client_persistent(persistent, user_id, temp_storage):
     """
     Test API client
     """

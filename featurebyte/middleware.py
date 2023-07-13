@@ -12,6 +12,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
 from featurebyte.exception import (
+    CatalogNotSpecifiedError,
     CredentialsError,
     DatabaseNotFoundError,
     DocumentConflictError,
@@ -215,6 +216,12 @@ ExecutionContext.register(
     TableNotFoundError,
     handle_status_code=HTTPStatus.FAILED_DEPENDENCY,
     handle_message="Table not found. Please specify a valid table name.",
+)
+
+ExecutionContext.register(
+    CatalogNotSpecifiedError,
+    handle_status_code=HTTPStatus.FAILED_DEPENDENCY,
+    handle_message="Catalog not specified. Please specify a catalog.",
 )
 
 

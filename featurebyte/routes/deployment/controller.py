@@ -32,10 +32,10 @@ from featurebyte.schema.worker.task.deployment_create_update import (
     DeploymentCreateUpdateTaskPayload,
     UpdateDeploymentPayload,
 )
-from featurebyte.service.catalog import CatalogService
+from featurebyte.service.catalog import AllCatalogService, CatalogService
 from featurebyte.service.context import ContextService
-from featurebyte.service.deployment import DeploymentService
-from featurebyte.service.feature_list import FeatureListService
+from featurebyte.service.deployment import AllDeploymentService, DeploymentService
+from featurebyte.service.feature_list import AllFeatureListService, FeatureListService
 from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
 from featurebyte.service.online_serving import OnlineServingService
 
@@ -200,6 +200,28 @@ class DeploymentController(
             ) from exc
         assert result is not None, result
         return result
+
+
+class AllDeploymentController(
+    BaseDocumentController[DeploymentModel, AllDeploymentService, DeploymentList]
+):
+    """
+    All Deployment Controller
+    """
+
+    paginated_document_class = DeploymentList
+
+    def __init__(
+        self,
+        all_deployment_service: AllDeploymentService,
+        all_catalog_service: AllCatalogService,
+        all_feature_list_service: AllFeatureListService,
+        task_controller: TaskController,
+    ):
+        super().__init__(all_deployment_service)
+        self.catalog_service = all_catalog_service
+        self.feature_list_service = all_feature_list_service
+        self.task_controller = task_controller
 
     async def get_deployment_summary(self) -> DeploymentSummary:
         """

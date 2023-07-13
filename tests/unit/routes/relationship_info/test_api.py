@@ -7,7 +7,7 @@ import pytest
 import pytest_asyncio
 from bson import ObjectId
 
-from featurebyte.models.base import DEFAULT_CATALOG_ID, User
+from featurebyte.models.base import User
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
 from featurebyte.schema.relationship_info import RelationshipInfoCreate, RelationshipInfoUpdate
@@ -51,12 +51,11 @@ class TestRelationshipInfoApi(BaseCatalogApiTestSuite):
             payload["name"] = f'{self.payload["name"]}_{i}'
             yield payload
 
-    def setup_creation_route(self, api_client, catalog_id=DEFAULT_CATALOG_ID):
+    def setup_creation_route(self, api_client):
         """
         Setup for post route
         """
         api_object_filename_pairs = [
-            ("feature_store", "feature_store"),
             ("event_table", "event_table"),
             ("entity", "entity"),
             ("entity", "entity_transaction"),
@@ -65,9 +64,7 @@ class TestRelationshipInfoApi(BaseCatalogApiTestSuite):
         ]
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
-            response = api_client.post(
-                f"/{api_object}", headers={"active-catalog-id": str(catalog_id)}, json=payload
-            )
+            response = api_client.post(f"/{api_object}", json=payload)
             assert response.status_code == HTTPStatus.CREATED
 
     @staticmethod
@@ -86,13 +83,13 @@ class TestRelationshipInfoApi(BaseCatalogApiTestSuite):
 
     @pytest_asyncio.fixture
     async def create_success_response(
-        self, test_api_client_persistent, user_id
+        self, test_api_client_persistent, user_id, default_catalog_id
     ):  # pylint: disable=arguments-differ
         """Post a relationship info"""
         test_api_client, persistent = test_api_client_persistent
         self.setup_creation_route(test_api_client)
         app_container = self.create_app_container(
-            persistent=persistent, user_id=user_id, catalog_id=DEFAULT_CATALOG_ID
+            persistent=persistent, user_id=user_id, catalog_id=ObjectId(default_catalog_id)
         )
 
         # create relationship info
@@ -106,38 +103,14 @@ class TestRelationshipInfoApi(BaseCatalogApiTestSuite):
         return response
 
     @pytest_asyncio.fixture
-    async def create_success_response_non_default_catalog(
-        self, test_api_client_persistent, user_id, catalog_id
-    ):  # pylint: disable=arguments-differ
-        """Post a relationship info using non-default catalog"""
-        test_api_client, persistent = test_api_client_persistent
-        self.setup_creation_route(test_api_client, catalog_id=catalog_id)
-        app_container = self.create_app_container(
-            persistent=persistent, user_id=user_id, catalog_id=catalog_id
-        )
-
-        # create relationship info
-        relationship_info = (
-            await app_container.relationship_info_controller.create_relationship_info(
-                data=RelationshipInfoCreate(**self.payload)
-            )
-        )
-        response = test_api_client.get(
-            f"{self.base_route}/{relationship_info.id}",
-            headers={"active-catalog-id": str(catalog_id)},
-        )
-        assert response.status_code == HTTPStatus.OK, response.text
-        return response
-
-    @pytest_asyncio.fixture
     async def create_multiple_success_responses(
-        self, test_api_client_persistent, user_id
+        self, test_api_client_persistent, user_id, default_catalog_id
     ):  # pylint: disable=arguments-differ
         """Post multiple relationship info"""
         test_api_client, persistent = test_api_client_persistent
         self.setup_creation_route(test_api_client)
         app_container = self.create_app_container(
-            persistent=persistent, user_id=user_id, catalog_id=DEFAULT_CATALOG_ID
+            persistent=persistent, user_id=user_id, catalog_id=ObjectId(default_catalog_id)
         )
 
         # create multiple relationship info
@@ -164,14 +137,6 @@ class TestRelationshipInfoApi(BaseCatalogApiTestSuite):
     @pytest.mark.skip("POST method not exposed")
     def test_create_201__id_is_none(self, test_api_client_persistent):
         """Test creation (success) ID is None"""
-
-    @pytest.mark.skip("POST method not exposed")
-    def test_create_201_non_default_catalog(
-        self,
-        catalog_id,
-        create_success_response_non_default_catalog,
-    ):
-        """Test creation (success) in non default catalog"""
 
     @pytest.mark.asyncio
     async def test_get_info_200(self, test_api_client_persistent, create_success_response):

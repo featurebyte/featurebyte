@@ -124,10 +124,11 @@ def event_table_dict_fixture(snowflake_database_table):
     }
 
 
-def test_create_event_table(snowflake_database_table, event_table_dict):
+def test_create_event_table(snowflake_database_table, event_table_dict, catalog):
     """
     Test EventTable creation using tabular source
     """
+    _ = catalog
     event_table = snowflake_database_table.create_event_table(
         name="sf_event_table",
         event_id_column="col_int",
@@ -294,8 +295,11 @@ class TestEventTableTestSuite(BaseTableTestSuite):
     expected_timestamp_column = "event_timestamp"
 
 
-def test_info__event_table_without_record_creation_date(snowflake_database_table_dimension_table):
+def test_info__event_table_without_record_creation_date(
+    snowflake_database_table_dimension_table, catalog
+):
     """Test info on event table with record creation timestamp is None"""
+    _ = catalog
     event_table = snowflake_database_table_dimension_table.create_event_table(
         name="sf_event_table",
         event_id_column="col_int",
@@ -319,14 +323,14 @@ def test_info(saved_event_table, cust_id_entity):
         "record_creation_timestamp_column": "created_at",
         "default_feature_job_setting": None,
         "status": "PUBLIC_DRAFT",
-        "entities": [{"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}],
+        "entities": [{"name": "customer", "serving_names": ["cust_id"], "catalog_name": "catalog"}],
         "column_count": 9,
         "table_details": {
             "database_name": "sf_database",
             "schema_name": "sf_schema",
             "table_name": "sf_table",
         },
-        "catalog_name": "default",
+        "catalog_name": "catalog",
     }
     assert info_dict.items() > expected_info.items(), info_dict
     assert info_dict["updated_at"] is not None, info_dict["updated_at"]

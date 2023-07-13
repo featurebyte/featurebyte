@@ -32,7 +32,7 @@ class TaskManager:
     """
 
     def __init__(
-        self, user: Any, persistent: Persistent, celery: Celery, catalog_id: ObjectId
+        self, user: Any, persistent: Persistent, celery: Celery, catalog_id: Optional[ObjectId]
     ) -> None:
         self.user = user
         self.persistent = persistent

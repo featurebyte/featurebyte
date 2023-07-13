@@ -534,7 +534,10 @@ def log_env_summary() -> None:
 
     # catalog informaton
     current_catalog = Catalog.get_active()
-    logger.info(f"Active catalog: {current_catalog.name}")
+    if current_catalog is None:
+        logger.info("No catalog activated.")
+    else:
+        logger.info(f"Active catalog: {current_catalog.name}")
 
     # list deployments
     client = conf.get_client()

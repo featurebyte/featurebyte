@@ -23,7 +23,6 @@ from featurebyte.exception import (
     RecordRetrievalException,
     RecordUpdateException,
 )
-from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.feature_list import FeatureListStatus
 from featurebyte.models.feature_namespace import DefaultVersionMode, FeatureReadiness
 from featurebyte.query_graph.enum import NodeType
@@ -60,7 +59,7 @@ def single_feat_flist_fixture(production_ready_feature):
 
 @freeze_time("2022-05-01")
 def test_feature_list_creation__success(
-    production_ready_feature, single_feat_flist, mocked_compute_tiles_on_demand
+    production_ready_feature, single_feat_flist, mocked_compute_tiles_on_demand, catalog
 ):
     """Test FeatureList can be created with valid inputs"""
     flist = FeatureList([production_ready_feature], name="my_feature_list")
@@ -72,7 +71,7 @@ def test_feature_list_creation__success(
         "created_at": None,
         "updated_at": None,
         "user_id": None,
-        "catalog_id": DEFAULT_CATALOG_ID,
+        "catalog_id": catalog.id,
         "block_modification_by": [],
     }
     for obj in flist.feature_objects.values():
@@ -119,7 +118,7 @@ def test_feature_list__get_historical_features(single_feat_flist, mocked_compute
     mock_feature_table.delete.assert_called_once()
 
 
-def test_feature_list_creation__feature_and_group(production_ready_feature, feature_group):
+def test_feature_list_creation__feature_and_group(production_ready_feature, feature_group, catalog):
     """Test FeatureList can be created with valid inputs"""
     flist = FeatureList(
         [production_ready_feature, feature_group[["sum_30m", "sum_1d"]]],
@@ -136,7 +135,7 @@ def test_feature_list_creation__feature_and_group(production_ready_feature, feat
             feature_group["sum_1d"].id,
         ],
         "name": "my_feature_list",
-        "catalog_id": DEFAULT_CATALOG_ID,
+        "catalog_id": catalog.id,
         "block_modification_by": [],
     }
     for obj in flist.feature_objects.values():
@@ -149,7 +148,7 @@ def test_feature_list_creation__not_a_list():
         FeatureList("my_feature", name="my_feature_list")
     expected_error = (
         'type of argument "items"[0] must be one of (featurebyte.api.feature.Feature,'
-        " BaseFeatureGroup); got str instead"
+        " featurebyte.api.feature_group.BaseFeatureGroup); got str instead"
     )
     assert expected_error in str(exc_info.value)
 
@@ -167,7 +166,7 @@ def test_feature_list_creation__invalid_item():
         FeatureList(["my_feature"], name="my_feature_list")
     error_message = (
         'type of argument "items"[0] must be one of '
-        "(featurebyte.api.feature.Feature, BaseFeatureGroup); got str instead"
+        "(featurebyte.api.feature.Feature, featurebyte.api.feature_group.BaseFeatureGroup); got str instead"
     )
     assert error_message in str(exc_info.value)
 
@@ -417,11 +416,11 @@ def test_info(saved_feature_list):
     expected_info = {
         "name": "my_feature_list",
         "dtype_distribution": [{"dtype": "FLOAT", "count": 1}],
-        "entities": [{"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}],
+        "entities": [{"name": "customer", "serving_names": ["cust_id"], "catalog_name": "catalog"}],
         "primary_entity": [
-            {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}
+            {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "catalog"}
         ],
-        "tables": [{"name": "sf_event_table", "status": "PUBLIC_DRAFT", "catalog_name": "default"}],
+        "tables": [{"name": "sf_event_table", "status": "PUBLIC_DRAFT", "catalog_name": "catalog"}],
         "default_version_mode": "AUTO",
         "status": "DRAFT",
         "feature_count": 1,
@@ -429,7 +428,7 @@ def test_info(saved_feature_list):
         "production_ready_fraction": {"this": 0.0, "default": 0.0},
         "default_feature_fraction": {"this": 1.0, "default": 1.0},
         "deployed": False,
-        "catalog_name": "default",
+        "catalog_name": "catalog",
         "default_feature_list_id": str(saved_feature_list.id),
         "created_at": info_dict["created_at"],
         "version": info_dict["version"],
@@ -452,7 +451,7 @@ def test_info(saved_feature_list):
     }, verbose_info_dict
 
 
-def test_get_feature_list(saved_feature_list):
+def test_get_feature_list(saved_feature_list, catalog):
     """
     Test get feature list using feature list name
     """
@@ -485,7 +484,7 @@ def test_get_feature_list(saved_feature_list):
     expected_audit_history = pd.DataFrame(
         [
             ("block_modification_by", []),
-            ("catalog_id", str(DEFAULT_CATALOG_ID)),
+            ("catalog_id", str(catalog.id)),
             ("created_at", saved_feature_list.created_at.isoformat()),
             ("deployed", False),
             ("feature_clusters", audit_history.new_value.iloc[4]),
@@ -773,7 +772,7 @@ def test_deploy__feature_list_with_already_production_ready_features_doesnt_erro
             [
                 {
                     "name": expected_deployment_name,
-                    "catalog_name": "default",
+                    "catalog_name": "catalog",
                     "feature_list_name": feature_list.name,
                     "feature_list_version": feature_list.version,
                     "num_feature": len(feature_list.feature_names),

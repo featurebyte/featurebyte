@@ -37,7 +37,7 @@ class EntityValidationService(BaseService):
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: ObjectId,
+        catalog_id: Optional[ObjectId],
         entity_service: EntityService,
         parent_entity_lookup_service: ParentEntityLookupService,
     ):

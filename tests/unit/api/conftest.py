@@ -10,6 +10,7 @@ import pytest
 from bson.objectid import ObjectId
 from pandas.testing import assert_frame_equal
 
+from featurebyte import Catalog
 from featurebyte.api.base_table import TableColumn
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_table import EventTable
@@ -62,6 +63,15 @@ def expected_item_table_preview_query() -> str:
     ).strip()
 
 
+@pytest.fixture(name="catalog")
+def catalog_fixture(snowflake_feature_store):
+    """
+    Catalog object fixture
+    """
+    catalog = Catalog.create(name="catalog", feature_store_name=snowflake_feature_store.name)
+    return catalog
+
+
 @pytest.fixture(name="snowflake_database_table")
 def snowflake_database_table_fixture(snowflake_data_source):
     """
@@ -76,11 +86,12 @@ def snowflake_database_table_fixture(snowflake_data_source):
 
 @pytest.fixture(name="snowflake_event_table")
 def snowflake_event_table_fixture(
-    snowflake_database_table, mock_get_persistent, snowflake_event_table_id
+    snowflake_database_table, mock_get_persistent, snowflake_event_table_id, catalog
 ):
     """
     Snowflake EventTable object fixture (using config object)
     """
+    _ = catalog
     _ = mock_get_persistent
     yield snowflake_database_table.create_event_table(
         name="sf_event_table",
@@ -121,10 +132,11 @@ def saved_event_table_fixture(snowflake_event_table):
 
 
 @pytest.fixture(name="saved_dimension_table")
-def saved_dimension_table_fixture(snowflake_dimension_table):
+def saved_dimension_table_fixture(snowflake_dimension_table, catalog):
     """
     Saved dimension table fixture
     """
+    _ = catalog
     previous_id = snowflake_dimension_table.id
     assert snowflake_dimension_table.saved is True
     assert snowflake_dimension_table.id == previous_id
@@ -135,11 +147,31 @@ def saved_dimension_table_fixture(snowflake_dimension_table):
     yield snowflake_dimension_table
 
 
+@pytest.fixture(name="snowflake_scd_table")
+def snowflake_scd_table_fixture(
+    snowflake_database_table_scd_table, snowflake_scd_table_id, catalog
+):
+    """SCDTable object fixture"""
+    _ = catalog
+    scd_table = snowflake_database_table_scd_table.create_scd_table(
+        name="sf_scd_table",
+        natural_key_column="col_text",
+        surrogate_key_column="col_int",
+        effective_timestamp_column="effective_timestamp",
+        end_timestamp_column="end_timestamp",
+        current_flag_column="is_active",
+        _id=snowflake_scd_table_id,
+    )
+    assert scd_table.frame.node.parameters.id == scd_table.id
+    yield scd_table
+
+
 @pytest.fixture(name="saved_scd_table")
-def saved_scd_table_fixture(snowflake_scd_table):
+def saved_scd_table_fixture(snowflake_scd_table, catalog):
     """
     Saved SCD table fixture
     """
+    _ = catalog
     previous_id = snowflake_scd_table.id
     assert snowflake_scd_table.saved is True
     assert snowflake_scd_table.id == previous_id
@@ -187,10 +219,11 @@ def item_entity_id():
 
 
 @pytest.fixture
-def item_entity(item_entity_id):
+def item_entity(item_entity_id, catalog):
     """
     Item entity fixture
     """
+    _ = catalog
     entity = Entity(name="item", serving_names=["item_id"], _id=item_entity_id)
     entity.save()
     return entity
@@ -308,9 +341,10 @@ def mock_post_async_task():
 
 @pytest.fixture(name="batch_request_table_from_source")
 def batch_request_table_from_source_fixture(
-    snowflake_database_table, snowflake_execute_query_for_materialized_table
+    snowflake_database_table, snowflake_execute_query_for_materialized_table, catalog
 ):
     """Batch request table from source table fixture"""
+    _ = catalog
     return snowflake_database_table.create_batch_request_table(
         "batch_request_table_from_source_table"
     )

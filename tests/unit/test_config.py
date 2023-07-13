@@ -26,7 +26,6 @@ from featurebyte.config import (
 )
 from featurebyte.exception import InvalidSettingsError
 from featurebyte.logging import get_logger
-from featurebyte.models.base import DEFAULT_CATALOG_ID
 
 logger = get_logger(__name__)
 
@@ -200,7 +199,7 @@ def test_client_redirection(mock_check_sdk_versions, mock_get_home_path):
             "GET",
             "https://app1.featurebyte.com/api/v1/user/me",
             allow_redirects=False,
-            headers={"active-catalog-id": str(DEFAULT_CATALOG_ID)},
+            headers={},
         )
 
         # check api token included in header

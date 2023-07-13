@@ -41,7 +41,7 @@ class TileManagerService(BaseService):
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: ObjectId,
+        catalog_id: Optional[ObjectId],
         online_store_table_version_service: OnlineStoreTableVersionService,
         online_store_compute_query_service: OnlineStoreComputeQueryService,
         tile_scheduler_service: TileSchedulerService,

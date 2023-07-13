@@ -3,7 +3,7 @@ EntityService class
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
 import copy
 
@@ -54,7 +54,7 @@ class EntityService(BaseDocumentService[EntityModel, EntityCreate, EntityService
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: ObjectId,
+        catalog_id: Optional[ObjectId],
         catalog_name_injector: CatalogNameInjector,
     ):
         super().__init__(user, persistent, catalog_id)

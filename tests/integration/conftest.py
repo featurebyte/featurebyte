@@ -32,13 +32,19 @@ from bson.objectid import ObjectId
 from fastapi.testclient import TestClient
 from motor.motor_asyncio import AsyncIOMotorClient
 
-from featurebyte import Configurations, DatabricksDetails, FeatureJobSetting, SnowflakeDetails
+from featurebyte import (
+    Catalog,
+    Configurations,
+    DatabricksDetails,
+    FeatureJobSetting,
+    SnowflakeDetails,
+)
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.app import app
 from featurebyte.enum import InternalName, SourceType, StorageType
 from featurebyte.logging import get_logger
-from featurebyte.models.base import DEFAULT_CATALOG_ID, User
+from featurebyte.models.base import User
 from featurebyte.models.credential import (
     AccessTokenCredential,
     CredentialModel,
@@ -428,6 +434,14 @@ def data_source_fixture(feature_store):
     Data source fixture
     """
     return feature_store.get_data_source()
+
+
+@pytest.fixture(name="catalog", scope="session")
+def catalog_fixture(feature_store):
+    """
+    Catalog fixture
+    """
+    return Catalog.create(name="default", feature_store_name=feature_store.name)
 
 
 @pytest.fixture(name="mock_config_path_env", scope="session")
@@ -1379,18 +1393,18 @@ def user():
 
 
 @pytest.fixture()
-def online_store_table_version_service(user, mongo_persistent):
+def online_store_table_version_service(user, mongo_persistent, catalog):
     """
     Fixture for online store table version service
     """
     service = OnlineStoreTableVersionService(
-        user=user, persistent=mongo_persistent[0], catalog_id=DEFAULT_CATALOG_ID
+        user=user, persistent=mongo_persistent[0], catalog_id=catalog.id
     )
     yield service
 
 
 @pytest.fixture()
-def online_store_table_version_service_factory(mongo_database_name):
+def online_store_table_version_service_factory(mongo_database_name, catalog):
     """
     Fixture for a callback that returns a new OnlineStoreTableVersionService with a new persistent
 
@@ -1402,25 +1416,25 @@ def online_store_table_version_service_factory(mongo_database_name):
         return OnlineStoreTableVersionService(
             user=user(),
             persistent=get_new_persistent(mongo_database_name)[0],
-            catalog_id=DEFAULT_CATALOG_ID,
+            catalog_id=catalog.id,
         )
 
     return factory
 
 
 @pytest.fixture(name="task_manager")
-def task_manager_fixture(persistent, user):
+def task_manager_fixture(persistent, user, catalog):
     """
     Return a task manager used in tests.
     """
     task_manager = TaskManager(
-        user=user, persistent=persistent, celery=get_celery(), catalog_id=DEFAULT_CATALOG_ID
+        user=user, persistent=persistent, celery=get_celery(), catalog_id=catalog.id
     )
     return task_manager
 
 
 @pytest.fixture(name="app_container")
-def app_container_fixture(persistent, user):
+def app_container_fixture(persistent, user, catalog):
     """
     Return an app container used in tests. This will allow us to easily retrieve instances of the right type.
     """
@@ -1430,7 +1444,7 @@ def app_container_fixture(persistent, user):
         temp_storage=LocalTempStorage(),
         celery=get_celery(),
         storage=LocalTempStorage(),
-        catalog_id=DEFAULT_CATALOG_ID,
+        catalog_id=catalog.id,
         app_container_config=app_container_config,
     )
 

@@ -19,10 +19,11 @@ def test_get(static_source_table_from_source):
 
 
 @pytest.mark.usefixtures("static_source_table_from_source", "static_source_table_from_view")
-def test_list():
+def test_list(catalog):
     """
     Test listing StaticSourceTable objects
     """
+    _ = catalog
     df = StaticSourceTable.list()
     assert df.columns.tolist() == [
         "id",

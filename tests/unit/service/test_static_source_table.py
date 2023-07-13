@@ -41,7 +41,7 @@ def static_source_table_from_source_table_fixture(event_table, user):
 
 @pytest.mark.asyncio
 async def test_create_static_source_table_from_source_table(
-    static_source_table_from_source_table, static_source_table_service
+    static_source_table_from_source_table, static_source_table_service, catalog
 ):
     """
     Test creating an StaticSourceTable from a source table
@@ -52,4 +52,5 @@ async def test_create_static_source_table_from_source_table(
     )
     loaded_table_dict = loaded_table.dict(exclude={"created_at", "updated_at"})
     expected_dict = static_source_table_from_source_table.dict(exclude={"created_at", "updated_at"})
+    expected_dict["catalog_id"] = catalog.id
     assert expected_dict == loaded_table_dict

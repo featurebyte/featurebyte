@@ -3,7 +3,7 @@ FeatureService class
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
 from bson import ObjectId
 
@@ -37,7 +37,7 @@ class FeatureService(BaseNamespaceService[FeatureModel, FeatureServiceCreate]):
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: ObjectId,
+        catalog_id: Optional[ObjectId],
         table_service: TableService,
         feature_namespace_service: FeatureNamespaceService,
         namespace_handler: NamespaceHandler,
