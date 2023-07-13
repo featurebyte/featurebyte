@@ -7,8 +7,8 @@ from typing import List, Optional, Tuple, cast
 
 from dataclasses import dataclass
 
-from sqlglot import Expression, expressions, parse_one, select
-from sqlglot.expressions import alias_
+from sqlglot import expressions, parse_one
+from sqlglot.expressions import Expression, alias_, select
 
 from featurebyte.enum import InternalName, SourceType, SpecialColumnName
 from featurebyte.models.online_store_compute_query import OnlineStoreComputeQueryModel
