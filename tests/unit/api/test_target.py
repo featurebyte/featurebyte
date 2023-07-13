@@ -58,7 +58,9 @@ class TestTargetTestSuite(FeatureOrTargetBaseTestSuite):
     output.save(_id=ObjectId("{item_id}"))
     """
 
-    def test_invalid_operations_with_feature(self, bool_feature, float_target, float_feature):
+    def test_invalid_operations_with_feature(
+        self, float_target, float_feature, snowflake_event_view_with_entity
+    ):
         """
         Test invalid operations with feature
         """
@@ -67,7 +69,17 @@ class TestTargetTestSuite(FeatureOrTargetBaseTestSuite):
             _ = float_target + float_feature
         assert "Operation between Target and Feature is not supported" in str(exc_info)
 
-        # Test series assignment
+        arbitrary_mask = float_target > 20
+        # Test series assignment fails when other series is a feature
         with pytest.raises(TypeError) as exc_info:
-            float_target[bool_feature] = float_feature
+            float_target[arbitrary_mask] = float_feature
         assert "Operation between Target and Feature is not supported" in str(exc_info)
+
+        # Test series assignment fails when other series is a view column
+        with pytest.raises(TypeError) as exc_info:
+            float_target[arbitrary_mask] = snowflake_event_view_with_entity["col_int"]
+        assert "Operation between Target and EventViewColumn is not supported" in str(exc_info)
+
+        # Assigning a target to a target is ok
+        new_target = float_target + 1
+        float_target[arbitrary_mask] = new_target

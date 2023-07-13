@@ -1067,6 +1067,15 @@ class Series(FrozenSeries):
         """
         Validate the other series for series operation. This method is when performing the __setitem__ operation
         between two series.
+
+        Parameters
+        ----------
+        other_series: FrozenSeries
+            The other series to validate
+
+        Returns
+        -------
+        bool
         """
         _ = other_series
         return True
