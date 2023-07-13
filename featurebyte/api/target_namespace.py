@@ -10,24 +10,23 @@ from pydantic import Field
 from featurebyte.api.api_handler.base import ListHandler
 from featurebyte.api.api_handler.target_namespace import TargetNamespaceListHandler
 from featurebyte.api.api_object_util import ForeignKeyMapping
+from featurebyte.api.base_feature_target_namespace import BaseFeatureTargetNamespace
 from featurebyte.api.base_table import TableApiObject
 from featurebyte.api.entity import Entity
 from featurebyte.api.savable_api_object import SavableApiObject
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.feature_namespace import DefaultVersionMode
 from featurebyte.models.target_namespace import TargetNamespaceModel
 from featurebyte.schema.target_namespace import TargetNamespaceUpdate
 
 
-class TargetNamespace(SavableApiObject):
+class TargetNamespace(BaseFeatureTargetNamespace, SavableApiObject):
     """
     TargetNamespace represents a Target set, in which all the targets in the set have the same name. The different
     elements typically refer to different versions of a Target.
     """
 
     internal_window: Optional[str] = Field(alias="window")
-    internal_entity_ids: List[PydanticObjectId] = Field(default_factory=list, alias="entity_ids")
 
     # class variables
     _route = "/target_namespace"
@@ -77,7 +76,7 @@ class TargetNamespace(SavableApiObject):
     @property
     def window(self) -> Optional[str]:
         """
-        Window of the feature namespace.
+        Window of the target namespace.
 
         Returns
         -------
@@ -91,27 +90,13 @@ class TargetNamespace(SavableApiObject):
     @property
     def target_ids(self) -> List[PydanticObjectId]:
         """
-        List of target IDs from the same feature namespace
+        List of target IDs from the same target namespace
 
         Returns
         -------
         List[PydanticObjectId]
         """
         return self.cached_model.target_ids
-
-    @property
-    def entity_ids(self) -> List[PydanticObjectId]:
-        """
-        List of entity IDs used by the feature namespace
-
-        Returns
-        -------
-        List[PydanticObjectId]
-        """
-        try:
-            return self.cached_model.entity_ids
-        except RecordRetrievalException:
-            return self.internal_entity_ids or []
 
     @property
     def default_target_id(self) -> PydanticObjectId:
@@ -123,17 +108,6 @@ class TargetNamespace(SavableApiObject):
         PydanticObjectId
         """
         return self.cached_model.default_target_id
-
-    @property
-    def default_version_mode(self) -> DefaultVersionMode:
-        """
-        Default feature namespace version mode of this feature namespace
-
-        Returns
-        -------
-        DefaultVersionMode
-        """
-        return self.cached_model.default_version_mode
 
     @classmethod
     def _list_handler(cls) -> ListHandler:

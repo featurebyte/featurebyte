@@ -24,7 +24,7 @@ class TargetNamespaceCreate(FeatureByteBaseModel):
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
-    dtype: DBVarType = Field(default=DBVarType.UNKNOWN)
+    dtype: Optional[DBVarType]
     target_ids: List[PydanticObjectId] = Field(default_factory=list)
     default_target_id: Optional[PydanticObjectId]
     default_version_mode: DefaultVersionMode = Field(default=DefaultVersionMode.AUTO)
