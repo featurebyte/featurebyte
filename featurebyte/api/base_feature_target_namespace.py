@@ -8,13 +8,15 @@ from pydantic import Field
 from featurebyte.api.api_object import ApiObject
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.feature_namespace import DefaultVersionMode
+from featurebyte.models.feature_namespace import BaseFeatureNamespaceModel, DefaultVersionMode
 
 
 class BaseFeatureTargetNamespace(ApiObject):
     """
     Base feature target namespace
     """
+
+    _get_schema = BaseFeatureNamespaceModel
 
     internal_entity_ids: List[PydanticObjectId] = Field(default_factory=list, alias="entity_ids")
 

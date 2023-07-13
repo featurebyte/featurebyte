@@ -7,7 +7,6 @@ import pandas as pd
 
 from featurebyte.api.api_handler.base import ListHandler
 from featurebyte.api.api_handler.feature_namespace import FeatureNamespaceListHandler
-from featurebyte.api.api_object import ApiObject
 from featurebyte.api.base_feature_target_namespace import BaseFeatureTargetNamespace
 from featurebyte.api.feature_util import (
     FEATURE_COMMON_LIST_FIELDS,
@@ -15,7 +14,7 @@ from featurebyte.api.feature_util import (
     filter_feature_list,
 )
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.feature_namespace import DefaultVersionMode, FeatureReadiness
+from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.schema.feature_namespace import (
     FeatureNamespaceModelResponse,
     FeatureNamespaceUpdate,
