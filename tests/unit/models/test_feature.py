@@ -89,6 +89,9 @@ def test_feature_model(feature_model_dict, api_object_to_id):
         "user_defined_function_ids": [],
         "block_modification_by": [],
         "aggregation_ids": ["sum_aed233b0e8a6e1c1e0d5427b126b03c949609481"],
+        "aggregation_result_names": [
+            "_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481"
+        ],
     }
 
 

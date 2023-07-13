@@ -484,6 +484,7 @@ def test_get_feature(saved_feature):
         "user_defined_function_ids",
         "block_modification_by",
         "aggregation_ids",
+        "aggregation_result_names",
     }
 
     with pytest.raises(RecordRetrievalException) as exc:

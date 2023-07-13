@@ -12,7 +12,6 @@ from bson import ObjectId
 
 from featurebyte.common import date_util
 from featurebyte.common.date_util import get_next_job_datetime
-from featurebyte.exception import DocumentNotFoundError
 from featurebyte.feature_manager.sql_template import tm_feature_tile_monitor
 from featurebyte.logging import get_logger
 from featurebyte.models.online_store import OnlineFeatureSpec
@@ -20,6 +19,7 @@ from featurebyte.models.online_store_compute_query import OnlineStoreComputeQuer
 from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.persistent import Persistent
 from featurebyte.service.base_service import BaseService
+from featurebyte.service.feature import FeatureService
 from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
 from featurebyte.service.tile_manager import TileManagerService
 from featurebyte.service.tile_registry_service import TileRegistryService
@@ -42,11 +42,13 @@ class FeatureManagerService(BaseService):
         tile_manager_service: TileManagerService,
         tile_registry_service: TileRegistryService,
         online_store_compute_query_service: OnlineStoreComputeQueryService,
+        feature_service: FeatureService,
     ):
         super().__init__(user, persistent, catalog_id)
         self.tile_manager_service = tile_manager_service
         self.tile_registry_service = tile_registry_service
         self.online_store_compute_query_service = online_store_compute_query_service
+        self.feature_service = feature_service
 
     async def online_enable(
         self,
@@ -259,21 +261,36 @@ class FeatureManagerService(BaseService):
         feature_spec: OnlineFeatureSpec
             input feature instance
         """
-        # delete records from tile-feature mapping table
-        for agg_id in feature_spec.aggregation_ids:
-            for query in feature_spec.precompute_queries:
-                try:
-                    await self.online_store_compute_query_service.delete_by_result_name(
-                        result_name=query.result_name
-                    )
-                except DocumentNotFoundError:
-                    # TODO: this is caused by an existing bug (https://featurebyte.atlassian.net/issues/DEV-1845)
-                    pass
-            logger.debug(f"Done delete online_store_mapping for {agg_id}")
+        await self.remove_online_store_compute_queries(feature_spec)
 
         # disable tile scheduled jobs
         for tile_spec in feature_spec.feature.tile_specs:
             await self.tile_manager_service.remove_tile_jobs(tile_spec)
+
+    async def remove_online_store_compute_queries(self, feature_spec: OnlineFeatureSpec) -> None:
+        """
+        Update the list of currently active online store compute queries
+
+        Parameters
+        ----------
+        feature_spec: OnlineFeatureSpec
+            Specification of the feature that is currently being online disabled
+        """
+        aggregation_result_names = {query.result_name for query in feature_spec.precompute_queries}
+        query_filter = {
+            "online_enabled": True,
+            "aggregation_result_names": {
+                "$in": list(aggregation_result_names),
+            },
+        }
+        aggregation_result_names_still_in_use = set()
+        async for feature_model in self.feature_service.list_documents_as_dict_iterator(
+            query_filter=query_filter
+        ):
+            aggregation_result_names_still_in_use.update(feature_model["aggregation_result_names"])
+        for result_name in aggregation_result_names:
+            if result_name not in aggregation_result_names_still_in_use:
+                await self.online_store_compute_query_service.delete_by_result_name(result_name)
 
     @staticmethod
     async def retrieve_feature_tile_inconsistency_data(

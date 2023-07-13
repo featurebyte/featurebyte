@@ -53,6 +53,7 @@ from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
 from featurebyte.schema.task import TaskStatus
 from featurebyte.schema.worker.task.base import BaseTaskPayload
+from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.base_spark import BaseSparkSchemaInitializer
@@ -1460,7 +1461,7 @@ def tile_registry_service_fixture(app_container):
 
 
 @pytest.fixture(name="online_store_compute_query_service")
-def online_store_compute_query_service_fixture(app_container):
+def online_store_compute_query_service_fixture(app_container) -> OnlineStoreComputeQueryService:
     """
     Online store compute query service fixture
     """

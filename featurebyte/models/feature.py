@@ -25,6 +25,9 @@ from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
+from featurebyte.query_graph.sql.online_store_compute_query import (
+    get_online_store_precompute_queries,
+)
 
 
 class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
@@ -240,13 +243,15 @@ class FeatureModel(BaseFeatureModel):
         allow_mutation=False, default_factory=list
     )
     aggregation_ids: List[str] = Field(allow_mutation=False, default_factory=list)
+    aggregation_result_names: List[str] = Field(allow_mutation=False, default_factory=list)
 
     @root_validator
     @classmethod
     def _add_tile_derived_attributes(cls, values: dict[str, Any]) -> dict[str, Any]:
         # Each aggregation_id refers to a set of columns in a tile table. It is associated to a
-        # specific scheduled tile task.
-        if values.get("aggregation_ids"):
+        # specific scheduled tile task. An aggregation_id can produce multiple aggregation results
+        # using different feature derivation windows.
+        if values.get("aggregation_ids") and values.get("aggregation_result_names"):
             return values
 
         graph_dict = values["internal_graph"]
@@ -265,6 +270,13 @@ class FeatureModel(BaseFeatureModel):
             aggregation_ids.append(info.aggregation_id)
 
         values["aggregation_ids"] = aggregation_ids
+
+        values["aggregation_result_names"] = [
+            query.result_name
+            for query in get_online_store_precompute_queries(
+                graph, graph.get_node_by_name(node_name), feature_store_type
+            )
+        ]
         return values
 
     class Settings(BaseFeatureModel.Settings):
@@ -280,4 +292,5 @@ class FeatureModel(BaseFeatureModel):
             pymongo.operations.IndexModel("feature_list_ids"),
             pymongo.operations.IndexModel("deployed_feature_list_ids"),
             pymongo.operations.IndexModel("aggregation_ids"),
+            pymongo.operations.IndexModel("aggregation_result_names"),
         ]
