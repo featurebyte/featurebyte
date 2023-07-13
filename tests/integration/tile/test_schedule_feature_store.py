@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 
 from featurebyte.enum import InternalName
-from featurebyte.query_graph.sql.adapter import get_sql_adapter
+from featurebyte.models.online_store_compute_query import OnlineStoreComputeQueryModel
 from featurebyte.sql.tile_schedule_online_store import TileScheduleOnlineStore
 
 
@@ -26,7 +26,12 @@ async def retrieve_online_store_content(session, feature_store_table_name, aggre
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_schedule_update_feature_store__update_feature_value(
-    session, tile_task_prep_spark, base_sql_model, online_store_table_version_service
+    session,
+    persistent,
+    tile_task_prep_spark,
+    base_sql_model,
+    online_store_table_version_service,
+    online_store_compute_query_service,
 ):
     """
     Test the stored procedure for updating feature store
@@ -40,6 +45,7 @@ async def test_schedule_update_feature_store__update_feature_value(
         aggregation_id=agg_id,
         job_schedule_ts_str=date_ts_str,
         online_store_table_version_service=online_store_table_version_service,
+        online_store_compute_query_service=online_store_compute_query_service,
     )
     await tile_online_store_ins.execute()
 
@@ -51,9 +57,7 @@ async def test_schedule_update_feature_store__update_feature_value(
 
     number_records = 2
     quote_feature_name = base_sql_model.quote_column(feature_name)
-    adapter = get_sql_adapter(session.source_type)
-    new_sql_query = adapter.escape_quote_char(
-        f"""
+    new_sql_query = f"""
         select
           {entity_col_names},
           '{feature_name}' as {InternalName.ONLINE_STORE_RESULT_NAME_COLUMN},
@@ -62,18 +66,18 @@ async def test_schedule_update_feature_store__update_feature_value(
           select {entity_col_names}, 100.0 as {quote_feature_name} from TEMP_TABLE limit {number_records}
         )
         """
+    await persistent._update_one(
+        "online_store_compute_query",
+        {"tile_id": tile_id},
+        {"$set": {"sql": new_sql_query}},
     )
-    update_mapping_sql = f"""
-        UPDATE ONLINE_STORE_MAPPING SET SQL_QUERY = '{new_sql_query}'
-        WHERE TILE_ID = '{tile_id}'
-"""
-    await session.execute_query(update_mapping_sql)
 
     tile_online_store_ins = TileScheduleOnlineStore(
         session=session,
         aggregation_id=agg_id,
         job_schedule_ts_str=date_ts_str,
         online_store_table_version_service=online_store_table_version_service,
+        online_store_compute_query_service=online_store_compute_query_service,
     )
     await tile_online_store_ins.execute()
 
@@ -87,7 +91,11 @@ async def test_schedule_update_feature_store__update_feature_value(
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_schedule_update_feature_store__insert_with_new_feature_column(
-    session, tile_task_prep_spark, base_sql_model, online_store_table_version_service
+    session,
+    tile_task_prep_spark,
+    base_sql_model,
+    online_store_table_version_service,
+    online_store_compute_query_service,
 ):
     """
     Test the stored procedure for updating feature store
@@ -101,6 +109,7 @@ async def test_schedule_update_feature_store__insert_with_new_feature_column(
         aggregation_id=agg_id,
         job_schedule_ts_str=date_ts_str,
         online_store_table_version_service=online_store_table_version_service,
+        online_store_compute_query_service=online_store_compute_query_service,
     )
     await tile_online_store_ins.execute()
 
@@ -113,9 +122,7 @@ async def test_schedule_update_feature_store__insert_with_new_feature_column(
 
     new_feature_name = feature_name + "_2"
     quote_feature_name = base_sql_model.quote_column(new_feature_name)
-    adapter = get_sql_adapter(session.source_type)
-    new_sql_query = adapter.escape_quote_char(
-        f"""
+    new_sql_query = f"""
         select
           {entity_col_names},
           '{new_feature_name}' as {InternalName.ONLINE_STORE_RESULT_NAME_COLUMN},
@@ -124,36 +131,24 @@ async def test_schedule_update_feature_store__insert_with_new_feature_column(
           select {entity_col_names}, cast(value_2 as float) as {quote_feature_name} from TEMP_TABLE limit 2
         )
         """
+    await online_store_compute_query_service.create_document(
+        OnlineStoreComputeQueryModel(
+            tile_id=tile_id,
+            aggregation_id=agg_id,
+            result_name=new_feature_name,
+            result_type="FLOAT",
+            sql=new_sql_query,
+            table_name=feature_store_table_name,
+            serving_names=entity_col_names.split(","),
+        )
     )
-    insert_new_mapping_sql = f"""
-            insert into ONLINE_STORE_MAPPING(
-                TILE_ID,
-                AGGREGATION_ID,
-                RESULT_ID,
-                RESULT_TYPE,
-                SQL_QUERY,
-                ONLINE_STORE_TABLE_NAME,
-                ENTITY_COLUMN_NAMES,
-                CREATED_AT
-            )
-            values (
-                '{tile_id}',
-                '{agg_id}',
-                '{new_feature_name}',
-                'FLOAT',
-                '{new_sql_query}',
-                '{feature_store_table_name}',
-                '{entity_col_names}',
-                current_timestamp()
-            )
-    """
-    await session.execute_query(insert_new_mapping_sql)
 
     tile_online_store_ins = TileScheduleOnlineStore(
         session=session,
         aggregation_id=agg_id,
         job_schedule_ts_str=date_ts_str,
         online_store_table_version_service=online_store_table_version_service,
+        online_store_compute_query_service=online_store_compute_query_service,
     )
     await tile_online_store_ins.execute()
 
@@ -177,7 +172,12 @@ async def test_schedule_update_feature_store__insert_with_new_feature_column(
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_schedule_online_feature_store__change_entity_universe(
-    session, tile_task_prep_spark, base_sql_model, online_store_table_version_service
+    session,
+    persistent,
+    tile_task_prep_spark,
+    base_sql_model,
+    online_store_table_version_service,
+    online_store_compute_query_service,
 ):
     """
     Test the stored procedure for updating feature store
@@ -191,6 +191,7 @@ async def test_schedule_online_feature_store__change_entity_universe(
         aggregation_id=agg_id,
         job_schedule_ts_str=date_ts_str,
         online_store_table_version_service=online_store_table_version_service,
+        online_store_compute_query_service=online_store_compute_query_service,
     )
     await tile_online_store_ins.execute()
 
@@ -201,9 +202,7 @@ async def test_schedule_online_feature_store__change_entity_universe(
     assert result["PRODUCT_ACTION"].tolist() == ["view", "view"]
 
     quote_feature_name = base_sql_model.quote_column(feature_name)
-    adapter = get_sql_adapter(session.source_type)
-    new_select_sql = adapter.escape_quote_char(
-        f"""
+    new_select_sql = f"""
         select
           {entity_col_names},
           '{feature_name}' as {InternalName.ONLINE_STORE_RESULT_NAME_COLUMN},
@@ -212,19 +211,18 @@ async def test_schedule_online_feature_store__change_entity_universe(
           select {entity_col_names}, 100.0 as {quote_feature_name} from TEMP_TABLE ORDER BY __FB_TILE_START_DATE_COLUMN ASC limit 2
         )
         """
+    await persistent._update_one(
+        "online_store_compute_query",
+        {"tile_id": tile_id},
+        {"$set": {"sql": new_select_sql}},
     )
-    update_mapping_sql = f"""
-        UPDATE ONLINE_STORE_MAPPING
-        SET SQL_QUERY = '{new_select_sql}'
-        WHERE TILE_ID = '{tile_id}'
-"""
-    await session.execute_query(update_mapping_sql)
 
     tile_online_store_ins = TileScheduleOnlineStore(
         session=session,
         aggregation_id=agg_id,
         job_schedule_ts_str=date_ts_str,
         online_store_table_version_service=online_store_table_version_service,
+        online_store_compute_query_service=online_store_compute_query_service,
     )
     await tile_online_store_ins.execute()
 

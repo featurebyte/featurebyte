@@ -204,14 +204,20 @@ def test_online_store_feature_compute_sql(query_graph_with_groupby, update_fixtu
         "result_type": "FLOAT",
         "serving_names": ["CUSTOMER_ID"],
     }
-    assert queries[0].dict(exclude={"sql"}) == {
-        "result_name": f"_fb_internal_window_w7200_avg_{aggregation_id}",
-        **expected_query_params,
-    }
-    assert queries[1].dict(exclude={"sql"}) == {
-        "result_name": f"_fb_internal_window_w172800_avg_{aggregation_id}",
-        **expected_query_params,
-    }
+    assert (
+        queries[0].dict(exclude={"sql"}).items()
+        >= {
+            "result_name": f"_fb_internal_window_w7200_avg_{aggregation_id}",
+            **expected_query_params,
+        }.items()
+    )
+    assert (
+        queries[1].dict(exclude={"sql"}).items()
+        >= {
+            "result_name": f"_fb_internal_window_w172800_avg_{aggregation_id}",
+            **expected_query_params,
+        }.items()
+    )
     assert_equal_with_expected_fixture(
         queries[0].sql,
         "tests/fixtures/expected_online_precompute_0.sql",
@@ -254,14 +260,20 @@ def test_complex_features(complex_feature_query_graph, update_fixtures):
         "result_type": "FLOAT",
         "serving_names": ["BUSINESS_ID"],
     }
-    assert queries[0].dict(exclude={"sql"}) == {
-        "result_name": "_fb_internal_window_w7200_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb",
-        **expected_query_params_tile_1,
-    }
-    assert queries[1].dict(exclude={"sql"}) == {
-        "result_name": "_fb_internal_window_w604800_sum_ea3e51f28222785a9bc856e4f09a8ce4642bc6c8",
-        **expected_query_params_tile_2,
-    }
+    assert (
+        queries[0].dict(exclude={"sql"}).items()
+        >= {
+            "result_name": "_fb_internal_window_w7200_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb",
+            **expected_query_params_tile_1,
+        }.items()
+    )
+    assert (
+        queries[1].dict(exclude={"sql"}).items()
+        >= {
+            "result_name": "_fb_internal_window_w604800_sum_ea3e51f28222785a9bc856e4f09a8ce4642bc6c8",
+            **expected_query_params_tile_2,
+        }.items()
+    )
     assert_equal_with_expected_fixture(
         queries[0].sql,
         "tests/fixtures/expected_online_precompute_complex_0.sql",

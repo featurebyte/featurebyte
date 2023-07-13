@@ -18,6 +18,7 @@ from featurebyte.models.tile import TileScheduledJobParameters, TileSpec, TileTy
 from featurebyte.persistent import Persistent
 from featurebyte.service.base_service import BaseService
 from featurebyte.service.feature import FeatureService
+from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.tile_registry_service import TileRegistryService
 from featurebyte.service.tile_scheduler import TileSchedulerService
@@ -42,12 +43,14 @@ class TileManagerService(BaseService):
         persistent: Persistent,
         catalog_id: ObjectId,
         online_store_table_version_service: OnlineStoreTableVersionService,
+        online_store_compute_query_service: OnlineStoreComputeQueryService,
         tile_scheduler_service: TileSchedulerService,
         tile_registry_service: TileRegistryService,
         feature_service: FeatureService,
     ):
         super().__init__(user, persistent, catalog_id)
         self.online_store_table_version_service = online_store_table_version_service
+        self.online_store_compute_query_service = online_store_compute_query_service
         self.tile_scheduler_service = tile_scheduler_service
         self.tile_registry_service = tile_registry_service
         self.feature_service = feature_service
@@ -145,6 +148,7 @@ class TileManagerService(BaseService):
             aggregation_id=tile_spec.aggregation_id,
             job_schedule_ts_str=job_schedule_ts_str,
             online_store_table_version_service=self.online_store_table_version_service,
+            online_store_compute_query_service=self.online_store_compute_query_service,
             aggregation_result_name=aggregation_result_name,
         )
         await executor.execute()
