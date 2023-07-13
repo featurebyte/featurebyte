@@ -61,6 +61,21 @@ class Target(Series, SavableApiObject, FeatureOrTargetMixin):
     def _get_init_params_from_object(self) -> dict[str, Any]:
         return {"feature_store": self.feature_store}
 
+    def validate_series_operation(self, other_series: Series) -> bool:
+        """
+        Validate that the other series is a Target.
+
+        Parameters
+        ----------
+        other_series: Series
+            The other series to validate.
+
+        Returns
+        -------
+        bool
+        """
+        return isinstance(other_series, Target)
+
     @root_validator(pre=True)
     @classmethod
     def _set_feature_store(cls, values: dict[str, Any]) -> dict[str, Any]:

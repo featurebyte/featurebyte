@@ -1063,10 +1063,36 @@ class Series(FrozenSeries):
     This class supports in-place column modification, and is the primary interface for column.
     """
 
+    def validate_series_operation(self, other_series: Series) -> bool:
+        """
+        Validate the other series for series operation. This method is when performing the __setitem__ operation
+        between two series.
+
+        Parameters
+        ----------
+        other_series: Series
+            The other series to validate
+
+        Returns
+        -------
+        bool
+        """
+        _ = other_series
+        return True
+
     @typechecked
     def __setitem__(
         self, key: FrozenSeries, value: Union[int, float, str, bool, None, FrozenSeries]
     ) -> None:
+        if isinstance(value, Series):
+            if not self.validate_series_operation(value) or not value.validate_series_operation(
+                self
+            ):
+                raise TypeError(
+                    f"Operation between {self.__class__.__name__} and {value.__class__.__name__} "
+                    f"is not supported"
+                )
+
         if self.row_index_lineage != key.row_index_lineage:
             raise ValueError(f"Row indices between '{self}' and '{key}' are not aligned!")
         if key.dtype != DBVarType.BOOL:
