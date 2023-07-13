@@ -1082,7 +1082,7 @@ class Series(FrozenSeries):
 
     @typechecked
     def __setitem__(
-        self, key: FrozenSeries, value: Union[int, float, str, bool, None, Series]
+        self, key: FrozenSeries, value: Union[int, float, str, bool, None, FrozenSeries]
     ) -> None:
         if isinstance(value, Series):
             if not self.validate_series_operation(value) or not value.validate_series_operation(
