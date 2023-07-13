@@ -1068,6 +1068,7 @@ class Series(FrozenSeries):
         Validate the other series for series operation. This method is when performing the __setitem__ operation
         between two series.
         """
+        _ = other_series
         return True
 
     @typechecked

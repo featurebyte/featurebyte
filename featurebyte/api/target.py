@@ -27,7 +27,7 @@ from featurebyte.api.templates.feature_or_target_doc import (
     VERSION_DOC,
 )
 from featurebyte.common.utils import dataframe_to_arrow_bytes, enforce_observation_set_row_order
-from featurebyte.core.series import FrozenSeries, Series
+from featurebyte.core.series import Series
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.target import TargetModel
@@ -67,7 +67,7 @@ class Target(Series, SavableApiObject, FeatureOrTargetMixin):
 
         Parameters
         ----------
-        other_series: FrozenSeries
+        other_series: Series
             The other series to validate.
 
         Returns
