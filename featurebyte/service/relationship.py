@@ -3,9 +3,8 @@ RelationshipService class
 """
 from __future__ import annotations
 
-from typing import Any, Optional, TypeVar, cast
-
 from abc import abstractmethod
+from typing import TypeVar, cast
 
 from bson import ObjectId
 
@@ -17,8 +16,8 @@ from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.schema.entity import EntityServiceUpdate
 from featurebyte.schema.semantic import SemanticServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService
-from featurebyte.service.base_service import BaseService
 from featurebyte.service.entity import EntityService
+from featurebyte.service.mixin import OpsServiceMixin
 from featurebyte.service.semantic import SemanticService
 
 ParentT = TypeVar("ParentT", bound=Parent)
@@ -27,12 +26,18 @@ BaseDocumentServiceT = BaseDocumentService[
 ]
 
 
-class RelationshipService(BaseService):
+class RelationshipService(OpsServiceMixin):
     """
     RelationshipService class is responsible for manipulating object relationship and maintaining
     the expected relationship property (example, no cyclic relationship like A is an ancestor of B and
     B is also an ancestor of A).
     """
+
+    def __init__(
+        self,
+        persistent: Persistent,
+    ):
+        self.persistent = persistent
 
     @property
     @abstractmethod
@@ -201,14 +206,8 @@ class EntityRelationshipService(RelationshipService):
     EntityRelationshipService is responsible to update relationship between different entities.
     """
 
-    def __init__(
-        self,
-        user: Any,
-        persistent: Persistent,
-        catalog_id: Optional[ObjectId],
-        entity_service: EntityService,
-    ):
-        super().__init__(user, persistent, catalog_id)
+    def __init__(self, persistent: Persistent, entity_service: EntityService):
+        super().__init__(persistent=persistent)
         self.entity_service = entity_service
 
     @property
@@ -227,11 +226,9 @@ class SemanticRelationshipService(RelationshipService):
     SemanticRelationshipService is responsible to update relationship between different semantics.
     """
 
-    def __init__(self, user: Any, persistent: Persistent, catalog_id: Optional[ObjectId]):
-        super().__init__(user, persistent, catalog_id)
-        self.semantic_service = SemanticService(
-            user=user, persistent=persistent, catalog_id=catalog_id
-        )
+    def __init__(self, persistent: Persistent, semantic_service: SemanticService):
+        super().__init__(persistent=persistent)
+        self.semantic_service = semantic_service
 
     @property
     def document_service(self) -> BaseDocumentServiceT:

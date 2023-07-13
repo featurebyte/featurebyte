@@ -3,9 +3,7 @@ Module to support serving using parent-child relationship
 """
 from __future__ import annotations
 
-from typing import Any, Optional
-
-from bson import ObjectId
+from typing import Optional
 
 from featurebyte.exception import (
     AmbiguousEntityRelationshipError,
@@ -17,17 +15,15 @@ from featurebyte.models.entity import EntityModel
 from featurebyte.models.entity_validation import EntityInfo
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.parent_serving import ParentServingPreparation
-from featurebyte.persistent import Persistent
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import FeatureStoreDetails
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
-from featurebyte.service.base_service import BaseService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.parent_serving import ParentEntityLookupService
 
 
-class EntityValidationService(BaseService):
+class EntityValidationService:
     """
     EntityValidationService class is responsible for validating that required entities are
     provided in feature requests during preview, historical features, and online serving.
@@ -35,13 +31,9 @@ class EntityValidationService(BaseService):
 
     def __init__(
         self,
-        user: Any,
-        persistent: Persistent,
-        catalog_id: Optional[ObjectId],
         entity_service: EntityService,
         parent_entity_lookup_service: ParentEntityLookupService,
     ):
-        super().__init__(user, persistent, catalog_id)
         self.entity_service = entity_service
         self.parent_entity_lookup_service = parent_entity_lookup_service
 

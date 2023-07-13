@@ -3,9 +3,8 @@ Module to support serving parent features using child entities
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional, Tuple
-
 from collections import OrderedDict
+from typing import List, Tuple
 
 from bson import ObjectId
 
@@ -13,13 +12,11 @@ from featurebyte.exception import AmbiguousEntityRelationshipError, EntityJoinPa
 from featurebyte.models.entity import EntityModel
 from featurebyte.models.entity_validation import EntityInfo
 from featurebyte.models.parent_serving import JoinStep
-from featurebyte.persistent import Persistent
-from featurebyte.service.base_service import BaseService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.table import TableService
 
 
-class ParentEntityLookupService(BaseService):
+class ParentEntityLookupService:
     """
     ParentEntityLookupService is responsible for identifying the joins required to lookup parent
     entities in order to serve parent features given child entities
@@ -27,13 +24,9 @@ class ParentEntityLookupService(BaseService):
 
     def __init__(
         self,
-        user: Any,
-        persistent: Persistent,
-        catalog_id: Optional[ObjectId],
         entity_service: EntityService,
         table_service: TableService,
     ):
-        super().__init__(user, persistent, catalog_id)
         self.entity_service = entity_service
         self.table_service = table_service
 

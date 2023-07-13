@@ -5,9 +5,8 @@ We split this into a separate service, as these typically require a session obje
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional
-
 import datetime
+from typing import Any, List
 
 import pandas as pd
 from bson.objectid import ObjectId
@@ -19,30 +18,24 @@ from featurebyte.exception import DatabaseNotFoundError, SchemaNotFoundError, Ta
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.user_defined_function import UserDefinedFunctionModel
-from featurebyte.persistent import Persistent
 from featurebyte.query_graph.node.schema import ColumnSpec
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
-from featurebyte.service.base_service import BaseService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.session.base import BaseSession
 
 
-class FeatureStoreWarehouseService(BaseService):
+class FeatureStoreWarehouseService:
     """
     FeatureStoreWarehouseService is responsible for interacting with the data warehouse.
     """
 
     def __init__(
         self,
-        user: Any,
-        persistent: Persistent,
-        catalog_id: Optional[ObjectId],
         session_manager_service: SessionManagerService,
         feature_store_service: FeatureStoreService,
     ):
-        super().__init__(user, persistent, catalog_id)
         self.session_manager_service = session_manager_service
         self.feature_store_service = feature_store_service
 

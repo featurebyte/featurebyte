@@ -24,15 +24,15 @@ from featurebyte.schema.feature import FeatureServiceUpdate
 from featurebyte.schema.feature_list import FeatureListServiceUpdate
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
-from featurebyte.service.base_service import BaseService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
+from featurebyte.service.mixin import OpsServiceMixin
 from featurebyte.service.validator.production_ready_validator import ProductionReadyValidator
 
 
-class FeatureReadinessService(BaseService):
+class FeatureReadinessService(OpsServiceMixin):
     """
     FeatureReadinessService class is responsible for maintaining the feature readiness structure
     consistencies between feature & feature list (version & namespace).
@@ -40,16 +40,14 @@ class FeatureReadinessService(BaseService):
 
     def __init__(
         self,
-        user: Any,
         persistent: Persistent,
-        catalog_id: Optional[ObjectId],
         feature_service: FeatureService,
         feature_namespace_service: FeatureNamespaceService,
         feature_list_service: FeatureListService,
         feature_list_namespace_service: FeatureListNamespaceService,
         production_ready_validator: ProductionReadyValidator,
     ):
-        super().__init__(user, persistent, catalog_id)
+        self.persistent = persistent
         self.feature_service = feature_service
         self.feature_namespace_service = feature_namespace_service
         self.feature_list_service = feature_list_service

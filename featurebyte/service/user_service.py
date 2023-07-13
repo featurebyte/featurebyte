@@ -4,10 +4,9 @@ User service module
 from typing import Optional
 
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.service.base_service import BaseService
 
 
-class UserService(BaseService):
+class UserService:
     """
     Basic no-op user service.
 

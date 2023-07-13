@@ -1,31 +1,27 @@
 """
 TableStatusService class
 """
-from typing import Any, Optional
 
 from bson import ObjectId
 
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.feature_store import TableStatus
 from featurebyte.persistent import Persistent
-from featurebyte.service.base_service import BaseService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.table_columns_info import TableDocumentService
 
 
-class TableStatusService(BaseService):
+class TableStatusService:
     """TableStatusService class"""
 
     def __init__(
         self,
-        user: Any,
         persistent: Persistent,
-        catalog_id: Optional[ObjectId],
         feature_service: FeatureService,
         feature_readiness_service: FeatureReadinessService,
     ):
-        super().__init__(user, persistent, catalog_id)
+        self.persistent = persistent
         self.feature_service = feature_service
         self.feature_readiness_service = feature_readiness_service
 

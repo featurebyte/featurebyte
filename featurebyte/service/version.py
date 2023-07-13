@@ -17,7 +17,6 @@ from featurebyte.models.event_table import EventTableModel
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.proxy_table import ProxyTableModel
-from featurebyte.persistent import Persistent
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.feature_job_setting import (
     FeatureJobSetting,
@@ -28,7 +27,6 @@ from featurebyte.query_graph.node.cleaning_operation import TableCleaningOperati
 from featurebyte.query_graph.node.generic import GroupByNode
 from featurebyte.schema.feature import FeatureNewVersionCreate, FeatureServiceCreate
 from featurebyte.schema.feature_list import FeatureListNewVersionCreate, FeatureListServiceCreate
-from featurebyte.service.base_service import BaseService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
@@ -37,16 +35,13 @@ from featurebyte.service.table import TableService
 from featurebyte.service.view_construction import ViewConstructionService
 
 
-class VersionService(BaseService):
+class VersionService:
     """
     VersionService class is responsible for creating new feature version
     """
 
     def __init__(
         self,
-        user: Any,
-        persistent: Persistent,
-        catalog_id: Optional[ObjectId],
         table_service: TableService,
         feature_service: FeatureService,
         feature_namespace_service: FeatureNamespaceService,
@@ -54,7 +49,6 @@ class VersionService(BaseService):
         feature_list_namespace_service: FeatureListNamespaceService,
         view_construction_service: ViewConstructionService,
     ):
-        super().__init__(user, persistent, catalog_id)
         self.table_service = table_service
         self.feature_service = feature_service
         self.feature_namespace_service = feature_namespace_service

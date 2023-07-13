@@ -3,22 +3,21 @@ DefaultVersionModeService class
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Optional
 
 from bson.objectid import ObjectId
 
 from featurebyte.models.feature_list import FeatureListNamespaceModel
 from featurebyte.models.feature_namespace import DefaultVersionMode, FeatureNamespaceModel
-from featurebyte.persistent import Persistent
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
-from featurebyte.service.base_service import BaseService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_readiness import FeatureReadinessService
+from featurebyte.service.mixin import OpsServiceMixin
 
 
-class DefaultVersionModeService(BaseService):
+class DefaultVersionModeService(OpsServiceMixin):
     """
     DefaultVersionModeService class is responsible for handling feature & feature list version mode.
     When there is a change in default version mode, this class will orchestrate feature readiness update
@@ -27,14 +26,10 @@ class DefaultVersionModeService(BaseService):
 
     def __init__(
         self,
-        user: Any,
-        persistent: Persistent,
-        catalog_id: Optional[ObjectId],
         feature_namespace_service: FeatureNamespaceService,
         feature_readiness_service: FeatureReadinessService,
         feature_list_namespace_service: FeatureListNamespaceService,
     ):
-        super().__init__(user, persistent, catalog_id)
         self.feature_namespace_service = feature_namespace_service
         self.feature_readiness_service = feature_readiness_service
         self.feature_list_namespace_service = feature_list_namespace_service

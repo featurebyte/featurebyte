@@ -3,15 +3,13 @@ TileCacheService class
 """
 from __future__ import annotations
 
-from typing import Any, Callable, Optional
+from typing import Callable, Optional
 
 from bson import ObjectId
 
 from featurebyte.logging import get_logger
-from featurebyte.persistent import Persistent
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
-from featurebyte.service.base_service import BaseService
 from featurebyte.service.tile_manager import TileManagerService
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.tile_cache import TileCache
@@ -19,19 +17,15 @@ from featurebyte.tile.tile_cache import TileCache
 logger = get_logger(__name__)
 
 
-class TileCacheService(BaseService):
+class TileCacheService:
     """
     TileCacheService is responsible for managing the tile cache for features.
     """
 
     def __init__(
         self,
-        user: Any,
-        persistent: Persistent,
-        catalog_id: Optional[ObjectId],
         tile_manager_service: TileManagerService,
     ):
-        super().__init__(user, persistent, catalog_id)
         self.tile_manager_service = tile_manager_service
 
     async def compute_tiles_on_demand(
