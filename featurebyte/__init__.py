@@ -317,7 +317,6 @@ def list_catalogs(include_id: Optional[bool] = False) -> pd.DataFrame:
     >>> fb.list_catalogs()[["name", "active"]]
               name  active
         0  grocery    True
-        1  default   False
     """
     return Catalog.list(include_id=include_id)
 

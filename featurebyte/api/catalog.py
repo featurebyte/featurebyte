@@ -229,7 +229,6 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         >>> fb.Catalog.list()[["name", "active"]]
               name  active
         0  grocery    True
-        1  default   False
 
         See Also
         --------
