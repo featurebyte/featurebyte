@@ -425,11 +425,14 @@ def test_event_table__save__exceptions(saved_event_table):
     assert expected_msg in str(exc.value)
 
 
-def test_event_table__record_creation_exception(snowflake_database_table, snowflake_event_table_id):
+def test_event_table__record_creation_exception(
+    snowflake_database_table, snowflake_event_table_id, catalog
+):
     """
     Test save event table failure due to conflict
     """
     # check unhandled response status code
+    _ = catalog
     with pytest.raises(RecordCreationException):
         with patch("featurebyte.api.savable_api_object.Configurations"):
             snowflake_database_table.create_event_table(
