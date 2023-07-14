@@ -35,14 +35,14 @@ def get_active_catalog_id() -> Optional[ObjectId]:
     return ACTIVE_CATALOG_ID
 
 
-def activate_catalog(catalog_id: ObjectId) -> None:
+def activate_catalog(catalog_id: Optional[ObjectId]) -> None:
     """
     Set active catalog
 
     Parameters
     ----------
-    catalog_id: ObjectId
-        Catalog ID to set as active
+    catalog_id: Optional[ObjectId]
+        Catalog ID to set as active, or None to set no active catalog
     """
     global ACTIVE_CATALOG_ID  # pylint: disable=global-statement
     ACTIVE_CATALOG_ID = catalog_id

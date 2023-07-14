@@ -119,9 +119,9 @@ from featurebyte.worker.util.observation_set_helper import ObservationSetHelper
 app_container_config = AppContainerConfig()
 
 # Register classes - please keep sorted by alphabetical order.
+app_container_config.register_class(AllCatalogService)
 app_container_config.register_class(AllDeploymentController)
 app_container_config.register_class(AllDeploymentService)
-app_container_config.register_class(AllCatalogService)
 app_container_config.register_class(AllFeatureListService)
 app_container_config.register_class(BatchFeatureTableController)
 app_container_config.register_class(BatchFeatureTableService)
