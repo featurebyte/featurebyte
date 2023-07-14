@@ -7,7 +7,6 @@ import pytest
 import pytest_asyncio
 from bson.objectid import ObjectId
 
-from featurebyte.models.base import DEFAULT_CATALOG_ID
 from tests.unit.routes.base import BaseApiTestSuite
 
 
@@ -92,10 +91,7 @@ class TestCatalogApi(BaseApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         self.setup_creation_route(test_api_client)
         output = []
-        for index, payload in enumerate(self.multiple_success_payload_generator(test_api_client)):
-            # skip first payload since default catalog is created automatically
-            if index == 0:
-                continue
+        for _, payload in enumerate(self.multiple_success_payload_generator(test_api_client)):
             # payload name is set here as we need the exact name value for test_list_200 test
             response = test_api_client.post(f"{self.base_route}", json=payload)
             assert response.status_code == HTTPStatus.CREATED
@@ -105,14 +101,7 @@ class TestCatalogApi(BaseApiTestSuite):
     def multiple_success_payload_generator(self, api_client):
         """Create multiple payload for setting up create_multiple_success_responses fixture"""
         _ = api_client
-
-        # default catalog
-        payload = self.payload.copy()
-        payload["_id"] = str(DEFAULT_CATALOG_ID)
-        payload["name"] = "default"
-        yield payload
-
-        for i in range(2):
+        for i in range(3):
             payload = self.payload.copy()
             payload["_id"] = str(ObjectId())
             payload["name"] = f'{self.payload["name"]}_{i}'

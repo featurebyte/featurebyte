@@ -29,7 +29,7 @@ def test_set_environment_variable():
 
 
 @pytest.mark.asyncio
-async def test_execute_sdk_code(test_catalog):
+async def test_execute_sdk_code(test_catalog, catalog):
     """Test execute sdk code"""
     # save the current active catalog
     current_active_catalog = Catalog.get_active()
@@ -56,4 +56,4 @@ async def test_execute_sdk_code(test_catalog):
     # restore the active catalog
     activate_catalog(catalog_id=current_active_catalog.id)
     catalog = Catalog.get_active()
-    assert catalog.id == current_active_catalog.id
+    assert catalog == current_active_catalog

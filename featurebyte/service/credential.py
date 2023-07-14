@@ -33,7 +33,7 @@ class CredentialService(
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: ObjectId,
+        catalog_id: Optional[ObjectId],
         feature_store_warehouse_service: FeatureStoreWarehouseService,
         feature_store_service: FeatureStoreService,
     ):
@@ -48,7 +48,8 @@ class CredentialService(
             document_id=document_id, use_raw_query_filter=use_raw_query_filter, **kwargs
         )
         # credentials are personal to the user
-        query_filter["user_id"] = self.user.id
+        if not use_raw_query_filter:
+            query_filter["user_id"] = self.user.id
         return query_filter
 
     def construct_list_query_filter(
@@ -63,7 +64,8 @@ class CredentialService(
             **kwargs,
         )
         # credentials are personal to the user
-        output["user_id"] = self.user.id
+        if not use_raw_query_filter:
+            output["user_id"] = self.user.id
         return output
 
     async def _validate_credential(self, credential: CredentialModel) -> None:

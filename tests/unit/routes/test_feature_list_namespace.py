@@ -7,7 +7,6 @@ import pytest
 import pytest_asyncio
 from bson import ObjectId
 
-from featurebyte.models.base import DEFAULT_CATALOG_ID
 from tests.unit.routes.base import BaseCatalogApiTestSuite
 
 
@@ -29,12 +28,11 @@ class TestFeatureListNamespaceApi(BaseCatalogApiTestSuite):
         """Class name used to save the object"""
         return "FeatureList"
 
-    def setup_creation_route(self, api_client, catalog_id=DEFAULT_CATALOG_ID):
+    def setup_creation_route(self, api_client):
         """
         Setup for post route
         """
         api_object_filename_pairs = [
-            ("feature_store", "feature_store"),
             ("entity", "entity"),
             ("event_table", "event_table"),
             ("feature", "feature_sum_30m"),
@@ -42,9 +40,7 @@ class TestFeatureListNamespaceApi(BaseCatalogApiTestSuite):
         ]
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
-            response = api_client.post(
-                f"/{api_object}", headers={"active-catalog-id": str(catalog_id)}, json=payload
-            )
+            response = api_client.post(f"/{api_object}", json=payload)
             assert response.status_code == HTTPStatus.CREATED, response.json()
 
     @pytest_asyncio.fixture
@@ -79,9 +75,9 @@ class TestFeatureListNamespaceApi(BaseCatalogApiTestSuite):
     def test_create_201_non_default_catalog(
         self,
         catalog_id,
-        create_success_response_non_default_catalog,
+        create_success_response,
     ):
-        """Test creation (success) in non default catalog"""
+        """Test creation (success) in default catalog"""
 
     def multiple_success_payload_generator(self, api_client):
         """Generate multiple success payloads"""
@@ -112,7 +108,6 @@ class TestFeatureListNamespaceApi(BaseCatalogApiTestSuite):
     def _create_fl_namespace_with_manual_version_mode_and_new_feature_id(self, test_api_client):
         """Create feature list namespace with manual version mode"""
         api_object_filename_pairs = [
-            ("feature_store", "feature_store"),
             ("entity", "entity"),
             ("event_table", "event_table"),
             ("feature", "feature_sum_30m"),
@@ -263,13 +258,13 @@ class TestFeatureListNamespaceApi(BaseCatalogApiTestSuite):
             "created_at": response_dict["created_at"],
             "updated_at": None,
             "entities": [
-                {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}
+                {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "grocery"}
             ],
             "primary_entity": [
-                {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}
+                {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "grocery"}
             ],
             "tables": [
-                {"name": "sf_event_table", "status": "PUBLIC_DRAFT", "catalog_name": "default"}
+                {"name": "sf_event_table", "status": "PUBLIC_DRAFT", "catalog_name": "grocery"}
             ],
             "feature_namespace_ids": create_response_dict["feature_namespace_ids"],
             "default_feature_ids": response_dict["default_feature_ids"],
@@ -279,35 +274,10 @@ class TestFeatureListNamespaceApi(BaseCatalogApiTestSuite):
             "version_count": 1,
             "feature_count": 2,
             "status": "DRAFT",
-            "catalog_name": "default",
+            "catalog_name": "grocery",
         }
 
         verbose_response = test_api_client.get(
             f"{self.base_route}/{doc_id}/info", params={"verbose": True}
         )
         assert verbose_response.status_code == HTTPStatus.OK, verbose_response.text
-
-    @pytest_asyncio.fixture
-    async def create_success_response_non_default_catalog(
-        self, test_api_client_persistent, catalog_id
-    ):
-        """Post route success response object"""
-        api_client, _ = test_api_client_persistent
-        self.setup_creation_route(api_client, catalog_id=catalog_id)
-
-        feature_list_payload = self.load_payload(
-            "tests/fixtures/request_payloads/feature_list_multi.json"
-        )
-        feature_list_response = api_client.post(
-            "/feature_list",
-            headers={"active-catalog-id": str(catalog_id)},
-            json=feature_list_payload,
-        )
-        feature_list_namespace_id = feature_list_response.json()["feature_list_namespace_id"]
-
-        response = api_client.get(
-            f"{self.base_route}/{feature_list_namespace_id}",
-            headers={"active-catalog-id": str(catalog_id)},
-        )
-        assert response.status_code == HTTPStatus.OK
-        return response

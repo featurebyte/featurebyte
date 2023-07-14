@@ -14,10 +14,14 @@ import pytest
 import pytest_asyncio
 from bson.objectid import ObjectId
 
+from featurebyte import Catalog
 from featurebyte.enum import SemanticType, SourceType
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.entity import ParentEntity
 from featurebyte.models.entity_validation import EntityInfo
+from featurebyte.routes.lazy_app_container import LazyAppContainer
+from featurebyte.routes.registry import app_container_config
+from featurebyte.schema.catalog import CatalogCreate
 from featurebyte.schema.context import ContextCreate
 from featurebyte.schema.dimension_table import DimensionTableCreate
 from featurebyte.schema.entity import EntityCreate, EntityServiceUpdate
@@ -29,6 +33,9 @@ from featurebyte.schema.feature_store import FeatureStoreCreate
 from featurebyte.schema.item_table import ItemTableCreate
 from featurebyte.schema.scd_table import SCDTableCreate
 from featurebyte.schema.target import TargetCreate
+from featurebyte.service.catalog import CatalogService
+from featurebyte.storage import LocalTempStorage
+from featurebyte.worker import get_celery
 
 
 @pytest.fixture(name="get_credential")
@@ -42,6 +49,22 @@ def get_credential_fixture(credentials):
         return credentials.get(feature_store_name)
 
     return get_credential
+
+
+@pytest.fixture(name="app_container")
+def app_container_fixture(persistent, user, catalog):
+    """
+    Return an app container used in tests. This will allow us to easily retrieve instances of the right type.
+    """
+    return LazyAppContainer(
+        user=user,
+        persistent=persistent,
+        temp_storage=LocalTempStorage(),
+        celery=get_celery(),
+        storage=LocalTempStorage(),
+        catalog_id=catalog.id,
+        app_container_config=app_container_config,
+    )
 
 
 @pytest.fixture(name="feature_store_service")
@@ -184,6 +207,12 @@ def preview_service_fixture(app_container):
     return app_container.preview_service
 
 
+@pytest.fixture(name="feature_preview_service")
+def feature_preview_service_fixture(app_container):
+    """FeaturePreviewService fixture"""
+    return app_container.feature_preview_service
+
+
 @pytest.fixture(name="historical_features_service")
 def historical_features_service_fixture(app_container):
     """HistoricalFeaturesService fixture"""
@@ -303,6 +332,18 @@ async def feature_store_fixture(test_dir, feature_store_service):
             data=FeatureStoreCreate(**payload)
         )
         return feature_store
+
+
+@pytest_asyncio.fixture(name="catalog")
+async def catalog_fixture(test_dir, user, persistent):
+    """Catalog model"""
+    fixture_path = os.path.join(test_dir, "fixtures/request_payloads/catalog.json")
+    catalog_service = CatalogService(user, persistent, catalog_id=DEFAULT_CATALOG_ID)
+    with open(fixture_path, encoding="utf") as fhandle:
+        payload = json.loads(fhandle.read())
+        catalog = await catalog_service.create_document(data=CatalogCreate(**payload))
+        Catalog.activate(catalog.name)
+        return catalog
 
 
 @pytest_asyncio.fixture(name="entity")
@@ -620,6 +661,7 @@ async def setup_for_feature_readiness_fixture(
         persistent=persistent,
         readiness="DEPRECATED",
         namespace_id=feature.feature_namespace_id,
+        catalog_id=feature.catalog_id,
     )
     feat_namespace = await feature_namespace_service.update_document(
         document_id=feature.feature_namespace_id,

@@ -24,6 +24,7 @@ from featurebyte import (
     UsernamePasswordCredential,
 )
 from featurebyte.api.api_object import ApiObject
+from featurebyte.api.catalog import Catalog
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_group import FeatureGroup
@@ -33,7 +34,7 @@ from featurebyte.api.groupby import GroupBy
 from featurebyte.api.item_table import ItemTable
 from featurebyte.app import User, app, get_celery
 from featurebyte.enum import AggFunc, InternalName
-from featurebyte.models.base import DEFAULT_CATALOG_ID
+from featurebyte.exception import DuplicatedRecordException
 from featurebyte.models.credential import CredentialModel
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.models.task import Task as TaskModel
@@ -339,7 +340,10 @@ def snowflake_feature_store_fixture(snowflake_feature_store_params, snowflake_ex
     Snowflake database source fixture
     """
     _ = snowflake_execute_query
-    return FeatureStore.create(**snowflake_feature_store_params)
+    try:
+        return FeatureStore.create(**snowflake_feature_store_params)
+    except DuplicatedRecordException:
+        return FeatureStore.get(snowflake_feature_store_params["name"])
 
 
 @pytest.fixture(name="credentials")
@@ -508,8 +512,9 @@ def transaction_entity_id_fixture():
 
 
 @pytest.fixture(name="snowflake_event_table")
-def snowflake_event_table_fixture(snowflake_database_table, snowflake_event_table_id):
+def snowflake_event_table_fixture(snowflake_database_table, snowflake_event_table_id, catalog):
     """EventTable object fixture"""
+    _ = catalog
     event_table = snowflake_database_table.create_event_table(
         name="sf_event_table",
         event_id_column="col_int",
@@ -527,8 +532,10 @@ def snowflake_event_table_with_tz_offset_column_fixture(
     snowflake_event_table_with_tz_offset_column_id,
     transaction_entity,
     cust_id_entity,
+    catalog,
 ):
     """EventTable object fixture"""
+    _ = catalog
     event_table = snowflake_database_table_no_tz.create_event_table(
         name="sf_event_table",
         event_id_column="col_int",
@@ -548,8 +555,10 @@ def snowflake_event_table_with_tz_offset_constant_fixture(
     snowflake_event_table_with_tz_offset_constant_id,
     transaction_entity,
     cust_id_entity,
+    catalog,
 ):
     """EventTable object fixture"""
+    _ = catalog
     event_table = snowflake_database_table_no_tz.create_event_table(
         name="sf_event_table",
         event_id_column="col_int",
@@ -565,9 +574,10 @@ def snowflake_event_table_with_tz_offset_constant_fixture(
 
 @pytest.fixture(name="snowflake_dimension_table")
 def snowflake_dimension_table_fixture(
-    snowflake_database_table_dimension_table, snowflake_dimension_table_id
+    snowflake_database_table_dimension_table, snowflake_dimension_table_id, catalog
 ):
     """DimensionTable object fixture"""
+    _ = catalog
     dimension_table = snowflake_database_table_dimension_table.create_dimension_table(
         name="sf_dimension_table",
         dimension_id_column="col_int",
@@ -654,10 +664,12 @@ def snowflake_item_table_with_timezone_offset_column_fixture(
     snowflake_database_table_item_table,
     mock_get_persistent,
     snowflake_event_table_with_tz_offset_column,
+    catalog,
 ):
     """
     Snowflake ItemTable object fixture where the EventTable has a timezone offset column
     """
+    _ = catalog
     _ = mock_get_persistent
     item_table = snowflake_database_table_item_table.create_item_table(
         name="sf_item_table",
@@ -669,20 +681,22 @@ def snowflake_item_table_with_timezone_offset_column_fixture(
 
 
 @pytest.fixture(name="cust_id_entity")
-def cust_id_entity_fixture(cust_id_entity_id):
+def cust_id_entity_fixture(cust_id_entity_id, catalog):
     """
     Customer ID entity fixture
     """
+    _ = catalog
     entity = Entity(name="customer", serving_names=["cust_id"], _id=cust_id_entity_id)
     entity.save()
     yield entity
 
 
 @pytest.fixture(name="transaction_entity")
-def transaction_entity_fixture(transaction_entity_id):
+def transaction_entity_fixture(transaction_entity_id, catalog):
     """
     Event entity fixture
     """
+    _ = catalog
     entity = Entity(name="transaction", serving_names=["transaction_id"], _id=transaction_entity_id)
     entity.save()
     assert entity.id == transaction_entity_id
@@ -890,11 +904,12 @@ def snowflake_execute_query_for_materialized_table_fixture(
 
 @pytest.fixture(name="observation_table_from_source")
 def observation_table_from_source_fixture(
-    snowflake_database_table, patched_observation_table_service
+    snowflake_database_table, patched_observation_table_service, catalog
 ):
     """
     Observation table created from SourceTable
     """
+    _ = catalog
     _ = patched_observation_table_service
     return snowflake_database_table.create_observation_table("observation_table_from_source_table")
 
@@ -910,11 +925,12 @@ def observation_table_from_view_fixture(snowflake_event_view, patched_observatio
 
 @pytest.fixture(name="static_source_table_from_source")
 def static_source_table_from_source_fixture(
-    snowflake_database_table, patched_static_source_table_service
+    snowflake_database_table, patched_static_source_table_service, catalog
 ):
     """
     Static source table created from SourceTable
     """
+    _ = catalog
     _ = patched_static_source_table_service
     return snowflake_database_table.create_static_source_table(
         "static_source_table_from_source_table"
@@ -1328,8 +1344,16 @@ def user():
     return user
 
 
+@pytest.fixture(name="catalog")
+def catalog_fixture(snowflake_feature_store):
+    """
+    Catalog fixture
+    """
+    return Catalog.create(name="catalog", feature_store_name=snowflake_feature_store.name)
+
+
 @pytest.fixture(name="app_container")
-def app_container_fixture(persistent, user):
+def app_container_fixture(persistent, user, catalog):
     """
     Return an app container used in tests. This will allow us to easily retrieve instances of the right type.
     """
@@ -1339,7 +1363,7 @@ def app_container_fixture(persistent, user):
         temp_storage=LocalTempStorage(),
         celery=get_celery(),
         storage=LocalTempStorage(),
-        catalog_id=DEFAULT_CATALOG_ID,
+        catalog_id=catalog.id,
         app_container_config=app_container_config,
     )
 

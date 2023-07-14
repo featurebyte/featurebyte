@@ -26,7 +26,7 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         "tests/fixtures/task_payloads/feature_job_setting_analysis.json"
     )
 
-    async def setup_persistent_storage(self, persistent, storage, temp_storage):
+    async def setup_persistent_storage(self, persistent, storage, temp_storage, catalog):
         """
         Setup for post route
         """
@@ -40,6 +40,7 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
 
         # save event table
         payload = self.load_payload("tests/fixtures/request_payloads/event_table.json")
+        payload["catalog_id"] = catalog.id
         await persistent.insert_one(
             collection_name=EventTableModel.collection_name(),
             document=EventTableModel(**payload).dict(by_alias=True),

@@ -102,7 +102,7 @@ def test_list_deployment(deployment, snowflake_feature_store):
 
 
 @patch("featurebyte.core.mixin.SampleMixin.preview")
-def test_get_online_serving_code(mock_preview, deployment):
+def test_get_online_serving_code(mock_preview, deployment, catalog):
     """Test feature get_online_serving_code"""
     mock_preview.return_value = pd.DataFrame(
         {"col_int": ["sample_col_int"], "cust_id": ["sample_cust_id"]}
@@ -135,7 +135,7 @@ def test_get_online_serving_code(mock_preview, deployment):
                 """
                 response = requests.post(
                     url="{url}",
-                    headers={{"Content-Type": "application/json", "active-catalog-id": "63eda344d0313fb925f7883a", "Authorization": "Bearer token"}},
+                    headers={{"Content-Type": "application/json", "active-catalog-id": "{catalog.id}", "Authorization": "Bearer token"}},
                     json={{"entity_serving_names": entity_serving_names}},
                 )
                 assert response.status_code == 200, response.json()
@@ -154,7 +154,7 @@ def test_get_online_serving_code(mock_preview, deployment):
 
             curl -X POST \\
                 -H 'Content-Type: application/json' \\
-                -H 'active-catalog-id: 63eda344d0313fb925f7883a' \\
+                -H 'active-catalog-id: {catalog.id}' \\
                 -H 'Authorization: Bearer token' \\
                 -d '{{"entity_serving_names": [{{"cust_id": "sample_cust_id"}}]}}' \\
                 {url}

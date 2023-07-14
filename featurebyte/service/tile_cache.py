@@ -28,7 +28,7 @@ class TileCacheService(BaseService):
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: ObjectId,
+        catalog_id: Optional[ObjectId],
         tile_manager_service: TileManagerService,
     ):
         super().__init__(user, persistent, catalog_id)

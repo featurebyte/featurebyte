@@ -11,7 +11,6 @@ from bson.objectid import ObjectId
 from sqlglot import expressions
 
 from featurebyte.common.utils import dataframe_to_arrow_bytes
-from featurebyte.models.base import DEFAULT_CATALOG_ID
 from tests.unit.routes.base import BaseMaterializedTableTestSuite
 
 
@@ -53,12 +52,11 @@ class TestHistoricalFeatureTableApi(BaseMaterializedTableTestSuite):
         ),
     ]
 
-    def setup_creation_route(self, api_client, catalog_id=DEFAULT_CATALOG_ID):
+    def setup_creation_route(self, api_client):
         """
         Setup for post route
         """
         api_object_filename_pairs = [
-            ("feature_store", "feature_store"),
             ("entity", "entity"),
             ("context", "context"),
             ("observation_table", "observation_table"),
@@ -67,13 +65,10 @@ class TestHistoricalFeatureTableApi(BaseMaterializedTableTestSuite):
             ("feature_list", "feature_list_single"),
             ("deployment", "deployment"),
         ]
+        catalog_id = api_client.get("/catalog").json()["data"][0]["_id"]
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
-            response = api_client.post(
-                f"/{api_object}",
-                headers={"active-catalog-id": str(catalog_id)},
-                json=payload,
-            )
+            response = api_client.post(f"/{api_object}", json=payload)
             if api_object == "feature":
                 self.make_feature_production_ready(api_client, response.json()["_id"], catalog_id)
 
@@ -131,7 +126,7 @@ class TestHistoricalFeatureTableApi(BaseMaterializedTableTestSuite):
 
     @pytest.mark.asyncio
     async def test_observation_table_delete_422__observation_table_failed_validation_check(
-        self, test_api_client_persistent, create_success_response, user_id
+        self, test_api_client_persistent, create_success_response, user_id, default_catalog_id
     ):
         """Test delete 422 for observation table failed validation check"""
         test_api_client, persistent = test_api_client_persistent
@@ -147,7 +142,7 @@ class TestHistoricalFeatureTableApi(BaseMaterializedTableTestSuite):
             document={
                 **payload,
                 "_id": ObjectId(),
-                "catalog_id": DEFAULT_CATALOG_ID,
+                "catalog_id": ObjectId(default_catalog_id),
                 "user_id": user_id,
                 "observation_table_id": ObjectId(),  # different batch request table id
                 "columns_info": [],

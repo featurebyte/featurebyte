@@ -16,7 +16,6 @@ from pandas.testing import assert_frame_equal
 
 from featurebyte.common.model_util import get_version
 from featurebyte.common.utils import dataframe_from_json
-from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.schema.feature import FeatureCreate
 from featurebyte.session.snowflake import SnowflakeSession
@@ -109,18 +108,15 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         )
         yield mock_get_session
 
-    def setup_creation_route(self, api_client, catalog_id=DEFAULT_CATALOG_ID):
+    def setup_creation_route(self, api_client):
         """Setup for post route"""
         api_object_filename_pairs = [
-            ("feature_store", "feature_store"),
             ("entity", "entity"),
             ("event_table", "event_table"),
         ]
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
-            response = api_client.post(
-                f"/{api_object}", headers={"active-catalog-id": str(catalog_id)}, json=payload
-            )
+            response = api_client.post(f"/{api_object}", json=payload)
             assert response.status_code == HTTPStatus.CREATED
 
     def multiple_success_payload_generator(self, api_client):
@@ -326,7 +322,6 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
 
         # create feature list first
         api_object_filename_pairs = [
-            ("feature_store", "feature_store"),
             ("entity", "entity"),
             ("event_table", "event_table"),
             ("feature", "feature_sum_30m"),
@@ -584,17 +579,17 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         expected_info_response = {
             "name": "sum_30m",
             "entities": [
-                {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}
+                {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "grocery"}
             ],
             "tables": [
-                {"name": "sf_event_table", "status": "PUBLIC_DRAFT", "catalog_name": "default"}
+                {"name": "sf_event_table", "status": "PUBLIC_DRAFT", "catalog_name": "grocery"}
             ],
             "dtype": "FLOAT",
             "default_version_mode": "AUTO",
             "version_count": 1,
             "readiness": {"this": "DRAFT", "default": "DRAFT"},
             "version": {"this": version, "default": version},
-            "catalog_name": "default",
+            "catalog_name": "grocery",
         }
         assert response.status_code == HTTPStatus.OK, response.text
         response_dict = response.json()

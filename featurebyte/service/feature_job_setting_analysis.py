@@ -3,7 +3,7 @@ FeatureJobSettingAnalysisService class
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
 from bson.objectid import ObjectId
 
@@ -41,7 +41,7 @@ class FeatureJobSettingAnalysisService(
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: ObjectId,
+        catalog_id: Optional[ObjectId],
         event_table_service: EventTableService,
     ):
         super().__init__(user, persistent, catalog_id)

@@ -374,3 +374,9 @@ class TableNotFoundError(FeatureByteException):
     """
     Raise when the requested table does not exist in the data warehouse
     """
+
+
+class CatalogNotSpecifiedError(FeatureByteException):
+    """
+    Raise when the catalog is not specified in a catalog-specific request
+    """

@@ -36,7 +36,7 @@ class OnlineEnableService(BaseService):
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: ObjectId,
+        catalog_id: Optional[ObjectId],
         session_manager_service: SessionManagerService,
         feature_service: FeatureService,
         feature_store_service: FeatureStoreService,

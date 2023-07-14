@@ -19,11 +19,7 @@ from tests.util.helper import check_sdk_code_generation
 @pytest.fixture(name="catalog")
 def catalog_fixture(snowflake_feature_store):
     """Catalog fixture"""
-    try:
-        yield Catalog.create(name="test_catalog", feature_store_name=snowflake_feature_store.name)
-    finally:
-        # change back to default catalog to avoid side effects on other tests
-        Catalog.activate("default")
+    yield Catalog.create(name="test_catalog", feature_store_name=snowflake_feature_store.name)
 
 
 @pytest.fixture(name="cos_udf")

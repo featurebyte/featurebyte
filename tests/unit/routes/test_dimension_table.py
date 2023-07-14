@@ -8,7 +8,6 @@ import pytest
 import pytest_asyncio
 from bson import ObjectId
 
-from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.dimension_table import DimensionTableModel
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.table import DimensionTableData
@@ -78,9 +77,7 @@ class TestDimensionTableApi(BaseTableApiTestSuite):
         """Dimension ID semantic IDs fixture"""
         user = mock.Mock()
         user.id = user_id
-        semantic_service = SemanticService(
-            user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
-        )
+        semantic_service = SemanticService(user=user, persistent=persistent, catalog_id=None)
         dimension_id_semantic = await semantic_service.get_or_create_document("dimension_id")
         return dimension_id_semantic.id
 
@@ -154,7 +151,7 @@ class TestDimensionTableApi(BaseTableApiTestSuite):
             "entities": [],
             "semantics": ["dimension_id"],
             "column_count": 9,
-            "catalog_name": "default",
+            "catalog_name": "grocery",
         }
         assert response.status_code == HTTPStatus.OK, response.text
         response_dict = response.json()

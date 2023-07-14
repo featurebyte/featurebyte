@@ -17,8 +17,8 @@ from featurebyte.routes.common.feature_metadata_extractor import FeatureOrTarget
 from featurebyte.schema.preview import FeatureOrTargetPreview
 from featurebyte.schema.target import InputData, TableMetadata, TargetCreate, TargetInfo, TargetList
 from featurebyte.service.entity import EntityService
+from featurebyte.service.feature_preview import FeaturePreviewService
 from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
-from featurebyte.service.preview import PreviewService
 from featurebyte.service.table import TableService
 from featurebyte.service.target import TargetService
 from featurebyte.service.target_namespace import TargetNamespaceService
@@ -36,14 +36,14 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
         target_service: TargetService,
         target_namespace_service: TargetNamespaceService,
         entity_service: EntityService,
-        preview_service: PreviewService,
+        feature_preview_service: FeaturePreviewService,
         table_service: TableService,
         feature_or_target_metadata_extractor: FeatureOrTargetMetadataExtractor,
     ):
         super().__init__(target_service)
         self.target_namespace_service = target_namespace_service
         self.entity_service = entity_service
-        self.preview_service = preview_service
+        self.feature_preview_service = feature_preview_service
         self.table_service = table_service
         self.feature_or_target_metadata_extractor = feature_or_target_metadata_extractor
 
@@ -186,7 +186,7 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
             Invalid request payload
         """
         try:
-            return await self.preview_service.preview_target_or_feature(
+            return await self.feature_preview_service.preview_target_or_feature(
                 feature_or_target_preview=target_preview, get_credential=get_credential
             )
         except (MissingPointInTimeColumnError, RequiredEntityNotProvidedError) as exc:

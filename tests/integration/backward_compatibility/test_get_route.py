@@ -44,6 +44,7 @@ def test_api_client_fixture(mongo_persistent):
             mock_user.return_value.id = ObjectId()
             mock_get_persistent.return_value = mongo_persistent
             with TestClient(app) as client:
+                client.headers["active-catalog-id"] = str(ObjectId())
                 yield client
 
 

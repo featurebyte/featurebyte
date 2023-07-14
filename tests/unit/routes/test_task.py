@@ -36,9 +36,9 @@ class TestTaskStatusApi:
             payload=LongRunningPayload(user_id=user_id, catalog_id=DEFAULT_CATALOG_ID)
         )
 
-    def test_get_200(self, test_api_client_persistent, task_status_id, user_id):
+    def test_get_200(self, api_client_persistent, task_status_id, user_id):
         """Test get (success)"""
-        test_api_client, _ = test_api_client_persistent
+        test_api_client, _ = api_client_persistent
         response = test_api_client.get(f"{self.base_route}/{task_status_id}")
         assert response.status_code == HTTPStatus.OK
         response_dict = response.json()
@@ -52,9 +52,9 @@ class TestTaskStatusApi:
             }.items()
         )
 
-    def test_get_404(self, test_api_client_persistent):
+    def test_get_404(self, api_client_persistent):
         """Test get (not found)"""
-        test_api_client, _ = test_api_client_persistent
+        test_api_client, _ = api_client_persistent
         unknown_id = ObjectId()
         response = test_api_client.get(f"{self.base_route}/{unknown_id}")
         assert response.status_code == HTTPStatus.NOT_FOUND
@@ -62,7 +62,7 @@ class TestTaskStatusApi:
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize("sort_dir", ["desc", "asc"])
-    async def test_list_200(self, user_id, task_manager, test_api_client_persistent, sort_dir):
+    async def test_list_200(self, user_id, task_manager, api_client_persistent, sort_dir):
         """Test list (success, multiple)"""
         expected_task_ids = []
         for _ in range(3):
@@ -70,7 +70,7 @@ class TestTaskStatusApi:
                 payload=LongRunningPayload(user_id=user_id, catalog_id=DEFAULT_CATALOG_ID)
             )
             expected_task_ids.append(task_id)
-        test_api_client, _ = test_api_client_persistent
+        test_api_client, _ = api_client_persistent
         response = test_api_client.get(self.base_route, params={"sort_dir": sort_dir})
         response_dict = response.json()
         assert response.status_code == HTTPStatus.OK

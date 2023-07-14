@@ -1,7 +1,7 @@
 """
 TableStatusService class
 """
-from typing import Any
+from typing import Any, Optional
 
 from bson import ObjectId
 
@@ -21,7 +21,7 @@ class TableStatusService(BaseService):
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: ObjectId,
+        catalog_id: Optional[ObjectId],
         feature_service: FeatureService,
         feature_readiness_service: FeatureReadinessService,
     ):

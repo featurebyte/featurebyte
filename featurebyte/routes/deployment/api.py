@@ -167,7 +167,7 @@ async def list_all_deployments(
     """
     List All Deployments (Regardless of Catalog)
     """
-    controller = request.state.app_container.deployment_controller
+    controller = request.state.app_container.all_deployment_controller
     deployment_list: AllDeploymentList = await controller.list_all_deployments(
         page=page,
         page_size=page_size,
@@ -185,6 +185,6 @@ async def get_deployment_summary(
     """
     Get Deployment Summary
     """
-    controller = request.state.app_container.deployment_controller
+    controller = request.state.app_container.all_deployment_controller
     deployment_summary: DeploymentSummary = await controller.get_deployment_summary()
     return deployment_summary

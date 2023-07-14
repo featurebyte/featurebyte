@@ -5,7 +5,7 @@ We split this into a separate service, as these typically require a session obje
 """
 from __future__ import annotations
 
-from typing import Any, List
+from typing import Any, List, Optional
 
 import datetime
 
@@ -38,7 +38,7 @@ class FeatureStoreWarehouseService(BaseService):
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: ObjectId,
+        catalog_id: Optional[ObjectId],
         session_manager_service: SessionManagerService,
         feature_store_service: FeatureStoreService,
     ):

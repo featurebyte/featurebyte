@@ -3,7 +3,7 @@ Module to support serving parent features using child entities
 """
 from __future__ import annotations
 
-from typing import Any, List, Tuple
+from typing import Any, List, Optional, Tuple
 
 from collections import OrderedDict
 
@@ -29,7 +29,7 @@ class ParentEntityLookupService(BaseService):
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: ObjectId,
+        catalog_id: Optional[ObjectId],
         entity_service: EntityService,
         table_service: TableService,
     ):

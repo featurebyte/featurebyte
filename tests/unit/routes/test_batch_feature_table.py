@@ -8,7 +8,6 @@ from unittest.mock import patch
 import pytest
 from bson.objectid import ObjectId
 
-from featurebyte.models.base import DEFAULT_CATALOG_ID
 from tests.unit.routes.base import BaseMaterializedTableTestSuite
 
 
@@ -58,12 +57,11 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
         with patch("featurebyte.service.deploy.OnlineEnableService.update_data_warehouse"):
             yield
 
-    def setup_creation_route(self, api_client, catalog_id=DEFAULT_CATALOG_ID):
+    def setup_creation_route(self, api_client):
         """
         Setup for post route
         """
         api_object_filename_pairs = [
-            ("feature_store", "feature_store"),
             ("entity", "entity"),
             ("context", "context"),
             ("batch_request_table", "batch_request_table"),
@@ -72,13 +70,10 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
             ("feature_list", "feature_list_single"),
             ("deployment", "deployment"),
         ]
+        catalog_id = api_client.get("/catalog").json()["data"][0]["_id"]
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
-            response = api_client.post(
-                f"/{api_object}",
-                headers={"active-catalog-id": str(catalog_id)},
-                json=payload,
-            )
+            response = api_client.post(f"/{api_object}", json=payload)
             if api_object in {"batch_request_table", "deployment"}:
                 response = self.wait_for_results(api_client, response)
                 assert response.json()["status"] == "SUCCESS"
@@ -126,7 +121,7 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
 
     @pytest.mark.asyncio
     async def test_batch_request_table_delete_422__batch_request_table_failed_validation_check(
-        self, test_api_client_persistent, create_success_response, user_id
+        self, test_api_client_persistent, create_success_response, user_id, default_catalog_id
     ):
         """Test delete 422 for batch request table failed validation check"""
         test_api_client, persistent = test_api_client_persistent
@@ -141,7 +136,7 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
             collection_name="batch_feature_table",
             document={
                 **payload,
-                "catalog_id": DEFAULT_CATALOG_ID,
+                "catalog_id": ObjectId(default_catalog_id),
                 "user_id": user_id,
                 "batch_request_table_id": ObjectId(),  # different batch request table id
                 "columns_info": [],

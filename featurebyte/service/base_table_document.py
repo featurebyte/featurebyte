@@ -124,7 +124,8 @@ class BaseTableDocumentService(BaseDocumentService[Document, DocumentCreate, Doc
         data_doc_id = data.id or ObjectId()
         payload_dict = {**data.dict(by_alias=True), "_id": data_doc_id}
         if self.is_catalog_specific:
-            payload_dict = {**payload_dict, "catalog_id": self.catalog_id}
+            assert self.catalog_id
+            payload_dict["catalog_id"] = self.catalog_id
 
         # create document for insertion
         document = self.document_class(

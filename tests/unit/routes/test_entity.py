@@ -242,7 +242,7 @@ class TestEntityApi(BaseCatalogApiTestSuite):
             "name": "customer",
             "updated_at": None,
             "serving_names": ["cust_id"],
-            "catalog_name": "default",
+            "catalog_name": "grocery",
         }
         assert response.status_code == HTTPStatus.OK, response.text
         response_dict = response.json()

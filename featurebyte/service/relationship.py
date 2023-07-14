@@ -3,7 +3,7 @@ RelationshipService class
 """
 from __future__ import annotations
 
-from typing import Any, TypeVar, cast
+from typing import Any, Optional, TypeVar, cast
 
 from abc import abstractmethod
 
@@ -202,7 +202,11 @@ class EntityRelationshipService(RelationshipService):
     """
 
     def __init__(
-        self, user: Any, persistent: Persistent, catalog_id: ObjectId, entity_service: EntityService
+        self,
+        user: Any,
+        persistent: Persistent,
+        catalog_id: Optional[ObjectId],
+        entity_service: EntityService,
     ):
         super().__init__(user, persistent, catalog_id)
         self.entity_service = entity_service
@@ -223,7 +227,7 @@ class SemanticRelationshipService(RelationshipService):
     SemanticRelationshipService is responsible to update relationship between different semantics.
     """
 
-    def __init__(self, user: Any, persistent: Persistent, catalog_id: ObjectId):
+    def __init__(self, user: Any, persistent: Persistent, catalog_id: Optional[ObjectId]):
         super().__init__(user, persistent, catalog_id)
         self.semantic_service = SemanticService(
             user=user, persistent=persistent, catalog_id=catalog_id

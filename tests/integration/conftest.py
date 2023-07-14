@@ -32,13 +32,19 @@ from bson.objectid import ObjectId
 from fastapi.testclient import TestClient
 from motor.motor_asyncio import AsyncIOMotorClient
 
-from featurebyte import Configurations, DatabricksDetails, FeatureJobSetting, SnowflakeDetails
+from featurebyte import (
+    Catalog,
+    Configurations,
+    DatabricksDetails,
+    FeatureJobSetting,
+    SnowflakeDetails,
+)
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.app import app
 from featurebyte.enum import InternalName, SourceType, StorageType
 from featurebyte.logging import get_logger
-from featurebyte.models.base import DEFAULT_CATALOG_ID, User
+from featurebyte.models.base import User
 from featurebyte.models.credential import (
     AccessTokenCredential,
     CredentialModel,
@@ -428,6 +434,14 @@ def data_source_fixture(feature_store):
     Data source fixture
     """
     return feature_store.get_data_source()
+
+
+@pytest.fixture(name="catalog", scope="session")
+def catalog_fixture(feature_store):
+    """
+    Catalog fixture
+    """
+    return Catalog.create(name="default", feature_store_name=feature_store.name)
 
 
 @pytest.fixture(name="mock_config_path_env", scope="session")
@@ -981,60 +995,66 @@ def snowflake_feature_expected_tile_spec_dict_fixture():
 
 
 @pytest.fixture(name="user_entity", scope="session")
-def user_entity_fixture():
+def user_entity_fixture(catalog):
     """
     Fixture for an Entity "User"
     """
+    _ = catalog
     entity = Entity(name="User", serving_names=["üser id"])
     entity.save()
     return entity
 
 
 @pytest.fixture(name="product_action_entity", scope="session")
-def product_action_entity_fixture():
+def product_action_entity_fixture(catalog):
     """
     Fixture for an Entity "ProductAction"
     """
+    _ = catalog
     entity = Entity(name="ProductAction", serving_names=["PRODUCT_ACTION"])
     entity.save()
     return entity
 
 
 @pytest.fixture(name="customer_entity", scope="session")
-def customer_entity_fixture():
+def customer_entity_fixture(catalog):
     """
     Fixture for an Entity "Customer"
     """
+    _ = catalog
     entity = Entity(name="Customer", serving_names=["cust_id"])
     entity.save()
     return entity
 
 
 @pytest.fixture(name="order_entity", scope="session")
-def order_entity_fixture():
+def order_entity_fixture(catalog):
     """
     Fixture for an Entity "Order"
     """
+    _ = catalog
     entity = Entity(name="Order", serving_names=["order_id"])
     entity.save()
     return entity
 
 
 @pytest.fixture(name="item_entity", scope="session")
-def item_entity_fixture():
+def item_entity_fixture(catalog):
     """
     Fixture for an Entity "Item"
     """
+    _ = catalog
     entity = Entity(name="Item", serving_names=["item_id"])
     entity.save()
     return entity
 
 
 @pytest.fixture(name="status_entity", scope="session")
-def status_entity_fixture():
+def status_entity_fixture(catalog):
     """
     Fixture for an Entity "UserStatus"
     """
+    _ = catalog
     entity = Entity(name="UserStatus", serving_names=["user_status"])
     entity.save()
     return entity
@@ -1110,10 +1130,12 @@ def event_table_fixture(
     product_action_entity,
     customer_entity,
     order_entity,
+    catalog,
 ):
     """
     Fixture for an EventTable in integration tests
     """
+    _ = catalog
     _ = user_entity
     _ = product_action_entity
     _ = customer_entity
@@ -1144,10 +1166,12 @@ def item_table_fixture(
     event_table,
     order_entity,
     item_entity,
+    catalog,
 ):
     """
     Fixture for an ItemTable in integration tests
     """
+    _ = catalog
     database_table = data_source.get_source_table(
         database_name=session.database_name,
         schema_name=session.schema_name,
@@ -1179,10 +1203,12 @@ def dimension_table_fixture(
     dimension_data_table_name,
     dimension_table_name,
     item_entity,
+    catalog,
 ):
     """
     Fixture for a DimensionTable in integration tests
     """
+    _ = catalog
     database_table = data_source.get_source_table(
         database_name=session.database_name,
         schema_name=session.schema_name,
@@ -1227,10 +1253,12 @@ def scd_table_fixture(
     scd_table_name,
     user_entity,
     status_entity,
+    catalog,
 ):
     """
     Fixture for a SCDTable in integration tests
     """
+    _ = catalog
     scd_table = scd_data_tabular_source.create_scd_table(
         name=scd_table_name,
         natural_key_column="User ID",
@@ -1379,18 +1407,18 @@ def user():
 
 
 @pytest.fixture()
-def online_store_table_version_service(user, mongo_persistent):
+def online_store_table_version_service(user, mongo_persistent, catalog):
     """
     Fixture for online store table version service
     """
     service = OnlineStoreTableVersionService(
-        user=user, persistent=mongo_persistent[0], catalog_id=DEFAULT_CATALOG_ID
+        user=user, persistent=mongo_persistent[0], catalog_id=catalog.id
     )
     yield service
 
 
 @pytest.fixture()
-def online_store_table_version_service_factory(mongo_database_name):
+def online_store_table_version_service_factory(mongo_database_name, catalog):
     """
     Fixture for a callback that returns a new OnlineStoreTableVersionService with a new persistent
 
@@ -1402,25 +1430,25 @@ def online_store_table_version_service_factory(mongo_database_name):
         return OnlineStoreTableVersionService(
             user=user(),
             persistent=get_new_persistent(mongo_database_name)[0],
-            catalog_id=DEFAULT_CATALOG_ID,
+            catalog_id=catalog.id,
         )
 
     return factory
 
 
 @pytest.fixture(name="task_manager")
-def task_manager_fixture(persistent, user):
+def task_manager_fixture(persistent, user, catalog):
     """
     Return a task manager used in tests.
     """
     task_manager = TaskManager(
-        user=user, persistent=persistent, celery=get_celery(), catalog_id=DEFAULT_CATALOG_ID
+        user=user, persistent=persistent, celery=get_celery(), catalog_id=catalog.id
     )
     return task_manager
 
 
 @pytest.fixture(name="app_container")
-def app_container_fixture(persistent, user):
+def app_container_fixture(persistent, user, catalog):
     """
     Return an app container used in tests. This will allow us to easily retrieve instances of the right type.
     """
@@ -1430,7 +1458,7 @@ def app_container_fixture(persistent, user):
         temp_storage=LocalTempStorage(),
         celery=get_celery(),
         storage=LocalTempStorage(),
-        catalog_id=DEFAULT_CATALOG_ID,
+        catalog_id=catalog.id,
         app_container_config=app_container_config,
     )
 

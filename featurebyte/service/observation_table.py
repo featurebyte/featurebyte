@@ -3,7 +3,7 @@ ObservationTableService class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, cast
+from typing import Any, Dict, Optional, cast
 
 import pandas as pd
 from bson import ObjectId
@@ -40,7 +40,7 @@ class ObservationTableService(
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: ObjectId,
+        catalog_id: Optional[ObjectId],
         feature_store_service: FeatureStoreService,
         context_service: ContextService,
     ):

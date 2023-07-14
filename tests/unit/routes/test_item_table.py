@@ -8,7 +8,6 @@ import pytest
 from bson.objectid import ObjectId
 
 from featurebyte.enum import SemanticType
-from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.item_table import ItemTableModel
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.table import ItemTableData
@@ -103,12 +102,12 @@ class TestItemTableApi(BaseTableApiTestSuite):
         return {"status": "PUBLISHED"}
 
     @pytest.mark.asyncio
-    async def test_item_id_semantic(self, user_id, persistent, data_response):
+    async def test_item_id_semantic(self, user_id, persistent, data_response, default_catalog_id):
         """Test item id semantic is set correctly"""
         user = mock.Mock()
         user.id = user_id
         semantic_service = SemanticService(
-            user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
+            user=user, persistent=persistent, catalog_id=ObjectId(default_catalog_id)
         )
         item_id_semantic = await semantic_service.get_or_create_document(name=SemanticType.ITEM_ID)
 
@@ -151,7 +150,7 @@ class TestItemTableApi(BaseTableApiTestSuite):
             "semantics": ["item_id"],
             "column_count": 6,
             "event_table_name": "sf_event_table",
-            "catalog_name": "default",
+            "catalog_name": "grocery",
         }
         assert response.status_code == HTTPStatus.OK, response.text
         response_dict = response.json()

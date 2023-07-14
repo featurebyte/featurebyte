@@ -55,17 +55,17 @@ from featurebyte.exception import (
     RecordRetrievalException,
     RecordUpdateException,
 )
-from featurebyte.models.base import DEFAULT_CATALOG_ID, activate_catalog, get_active_catalog_id
+from featurebyte.models.base import activate_catalog, get_active_catalog_id
 
 
 @pytest.fixture(autouse=True)
-def reset_catalog():
+def reset_catalog(catalog):
     """
     Reset back to default catalog after every test.
     """
     yield
 
-    activate_catalog(DEFAULT_CATALOG_ID)
+    activate_catalog(catalog.id)
 
 
 @dataclass
@@ -340,7 +340,7 @@ def test_methods_call_the_correct_delegated_method(method_item):
         mocked_list.assert_called()
 
 
-@pytest.fixture(name="catalog")
+@pytest.fixture(name="new_catalog")
 def catalog_fixture():
     """
     Catalog fixture
@@ -363,15 +363,15 @@ def test_catalog_creation__input_validation():
     assert "str type expected (type=type_error.str)" in str(exc.value)
 
 
-def test_catalog__update_name(catalog):
+def test_catalog__update_name(new_catalog):
     """
     Test update_name in Catalog class
     """
     # test update name (saved object)
-    assert catalog.name == "grocery"
-    catalog.update_name("Grocery")
-    assert catalog.name == "Grocery"
-    assert catalog.saved is True
+    assert new_catalog.name == "grocery"
+    new_catalog.update_name("Grocery")
+    assert new_catalog.name == "Grocery"
+    assert new_catalog.saved is True
 
     # test update name (non-saved object)
     another_catalog = Catalog(name="CreditCard", default_feature_store_ids=[])
@@ -387,11 +387,11 @@ def test_catalog__update_name(catalog):
     assert another_catalog.saved is False
 
 
-def test_info(catalog):
+def test_info(new_catalog):
     """
     Test info
     """
-    info_dict = catalog.info(verbose=True)
+    info_dict = new_catalog.info(verbose=True)
     expected_info = {
         "name": "grocery",
         "updated_at": None,
@@ -400,12 +400,12 @@ def test_info(catalog):
     assert "created_at" in info_dict, info_dict
 
 
-def test_catalog_creation(catalog):
+def test_catalog_creation(new_catalog):
     """
     Test catalog creation
     """
-    assert catalog.name == "grocery"
-    name_history = catalog.name_history
+    assert new_catalog.name == "grocery"
+    name_history = new_catalog.name_history
     assert len(name_history) == 1
     assert name_history[0].items() > {"name": "grocery"}.items()
 
@@ -418,20 +418,20 @@ def test_catalog_creation(catalog):
     assert expected_msg in str(exc.value)
 
 
-def test_catalog_update_name(catalog):
+def test_catalog_update_name(new_catalog):
     """
     Test update catalog name
     """
-    name_history = catalog.name_history
+    name_history = new_catalog.name_history
     assert len(name_history) == 1
     assert name_history[0].items() > {"name": "grocery"}.items()
 
-    catalog_id = catalog.id
+    catalog_id = new_catalog.id
     tic = datetime.utcnow()
-    catalog.update_name("Grocery")
+    new_catalog.update_name("Grocery")
     toc = datetime.utcnow()
-    assert catalog.id == catalog_id
-    name_history = catalog.name_history
+    assert new_catalog.id == catalog_id
+    name_history = new_catalog.name_history
     assert len(name_history) == 2
     assert name_history[0].items() >= {"name": "Grocery"}.items()
     assert toc > datetime.fromisoformat(name_history[0]["created_at"]) > tic
@@ -439,13 +439,19 @@ def test_catalog_update_name(catalog):
     assert tic > datetime.fromisoformat(name_history[1]["created_at"])
 
     # check audit history
-    audit_history = catalog.audit()
+    audit_history = new_catalog.audit()
     expected_audit_history = pd.DataFrame(
         [
             ("UPDATE", 'update: "grocery"', "name", "grocery", "Grocery"),
-            ("UPDATE", 'update: "grocery"', "updated_at", None, catalog.updated_at.isoformat()),
+            ("UPDATE", 'update: "grocery"', "updated_at", None, new_catalog.updated_at.isoformat()),
             ("INSERT", 'insert: "grocery"', "block_modification_by", np.nan, []),
-            ("INSERT", 'insert: "grocery"', "created_at", np.nan, catalog.created_at.isoformat()),
+            (
+                "INSERT",
+                'insert: "grocery"',
+                "created_at",
+                np.nan,
+                new_catalog.created_at.isoformat(),
+            ),
             ("INSERT", 'insert: "grocery"', "default_feature_store_ids", np.nan, []),
             ("INSERT", 'insert: "grocery"', "name", np.nan, "grocery"),
             ("INSERT", 'insert: "grocery"', "updated_at", np.nan, None),
@@ -461,11 +467,11 @@ def test_catalog_update_name(catalog):
     Catalog(name="creditcard", default_feature_store_ids=[]).save()
 
     with pytest.raises(TypeError) as exc:
-        catalog.update_name(type)
+        new_catalog.update_name(type)
     assert 'type of argument "name" must be str; got type instead' in str(exc.value)
 
     with pytest.raises(DuplicatedRecordException) as exc:
-        catalog.update_name("creditcard")
+        new_catalog.update_name("creditcard")
     assert exc.value.response.json() == {
         "detail": (
             'Catalog (name: "creditcard") already exists. '
@@ -475,10 +481,10 @@ def test_catalog_update_name(catalog):
 
     with mock.patch("featurebyte.api.api_object.Configurations"):
         with pytest.raises(RecordUpdateException):
-            catalog.update_name("hello")
+            new_catalog.update_name("hello")
 
 
-def test_get_catalog():
+def test_get_catalog(catalog):
     """
     Test Catalog.get function
     """
@@ -507,8 +513,7 @@ def test_get_catalog():
             Catalog.get("anything")
     assert "Failed to retrieve the specified object." in str(exc.value)
 
-    # default catalog is created automatically
-    default_catalog = Catalog.activate("default")
+    default_catalog = Catalog.activate(catalog.name)
     # test list catalog names
     catalog_list = Catalog.list()
     expected_catalog_list = pd.DataFrame(
@@ -557,7 +562,7 @@ def test_get_catalog():
     assert (Catalog.list()["active"] == [False, True, False, False]).all()
 
 
-def test_activate(snowflake_feature_store):
+def test_activate(snowflake_feature_store, catalog):
     """
     Test Catalog.activate
     """
@@ -578,7 +583,7 @@ def test_activate(snowflake_feature_store):
     assert Entity.list()["name"].tolist() == ["CreditCardCustomer"]
 
     # switch to default catalog
-    activate_catalog(DEFAULT_CATALOG_ID)
+    activate_catalog(catalog.id)
     assert Entity.list()["name"].tolist() == []
 
 
@@ -591,6 +596,7 @@ def test_functions_are_called_from_active_catalog(method_item, snowflake_feature
     Test that catalog_obj.(list|get)_<x> functions are able to be called from the active, or inactive catalog.
     """
     method_name = method_item.class_method_delegated
+    print(Catalog.list())
     credit_card_catalog = Catalog.create(
         name="creditcard", feature_store_name=snowflake_feature_store.name
     )

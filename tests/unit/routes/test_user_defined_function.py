@@ -9,35 +9,31 @@ import pytest
 from bson import ObjectId
 
 from featurebyte.enum import SourceType
-from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.session.base import BaseSession
-from tests.unit.routes.base import BaseApiTestSuite
+from tests.unit.routes.base import BaseCatalogApiTestSuite
 
 
-class TestUserDefinedFunctionApi(BaseApiTestSuite):
+class TestUserDefinedFunctionApi(BaseCatalogApiTestSuite):
     """
     Test for UserDefinedFunction route
     """
 
     class_name = "UserDefinedFunction"
     base_route = "/user_defined_function"
-    payload = BaseApiTestSuite.load_payload(
+    payload = BaseCatalogApiTestSuite.load_payload(
         "tests/fixtures/request_payloads/user_defined_function.json"
     )
 
-    def setup_creation_route(self, api_client, catalog_id=DEFAULT_CATALOG_ID):
+    def setup_creation_route(self, api_client):
         """Setup for creation route"""
         api_object_filename_pairs = [
-            ("feature_store", "feature_store"),
             ("entity", "entity"),
             ("event_table", "event_table"),
             ("feature", "feature_sum_30m"),
         ]
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
-            response = api_client.post(
-                f"/{api_object}", headers={"active-catalog-id": str(catalog_id)}, json=payload
-            )
+            response = api_client.post(f"/{api_object}", json=payload)
             assert response.status_code == HTTPStatus.CREATED
 
     def multiple_success_payload_generator(self, api_client):

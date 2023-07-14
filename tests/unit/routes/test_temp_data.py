@@ -13,11 +13,11 @@ class TestTempDataApi:
     base_route = "/temp_data"
 
     @pytest.mark.asyncio
-    async def test_retrieve_html(self, test_api_client_persistent, temp_storage):
+    async def test_retrieve_html(self, api_client_persistent, temp_storage):
         """
         Retrieve temp html file
         """
-        test_api_client, _ = test_api_client_persistent
+        test_api_client, _ = api_client_persistent
 
         source_file = "tests/fixtures/feature_job_setting_analysis/backtest.html"
         dest_path = "feature_job_setting_analysis/backtest/62f301e841b9a757c9ff871b.html"
@@ -33,11 +33,11 @@ class TestTempDataApi:
         assert response.content.decode("utf-8") == expected_content
 
     @pytest.mark.asyncio
-    async def test_retrieve_parquet(self, test_api_client_persistent, temp_storage):
+    async def test_retrieve_parquet(self, api_client_persistent, temp_storage):
         """
         Retrieve temp parquet file
         """
-        test_api_client, _ = test_api_client_persistent
+        test_api_client, _ = api_client_persistent
 
         source_file = "tests/fixtures/feature_job_setting_analysis/backtest.parquet"
         dest_path = "feature_job_setting_analysis/backtest/62f301e841b9a757c9ff871b.parquet"

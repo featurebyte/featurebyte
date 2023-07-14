@@ -317,7 +317,6 @@ def list_catalogs(include_id: Optional[bool] = False) -> pd.DataFrame:
     >>> fb.list_catalogs()[["name", "active"]]
               name  active
         0  grocery    True
-        1  default   False
     """
     return Catalog.list(include_id=include_id)
 
@@ -534,7 +533,10 @@ def log_env_summary() -> None:
 
     # catalog informaton
     current_catalog = Catalog.get_active()
-    logger.info(f"Active catalog: {current_catalog.name}")
+    if current_catalog is None:
+        logger.info("No catalog activated.")
+    else:
+        logger.info(f"Active catalog: {current_catalog.name}")
 
     # list deployments
     client = conf.get_client()

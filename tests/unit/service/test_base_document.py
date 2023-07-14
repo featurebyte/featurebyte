@@ -4,7 +4,7 @@ Tests functions/methods in routes/common directory
 from typing import List
 
 from datetime import datetime
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import AsyncMock, Mock, patch
 
 import numpy as np
 import pytest
@@ -12,12 +12,12 @@ import pytest_asyncio
 from bson import ObjectId
 
 from featurebyte.exception import (
+    CatalogNotSpecifiedError,
     DocumentConflictError,
     DocumentModificationBlockedError,
     DocumentNotFoundError,
 )
 from featurebyte.models.base import (
-    DEFAULT_CATALOG_ID,
     FeatureByteBaseDocumentModel,
     ReferenceInfo,
     UniqueConstraintResolutionSignature,
@@ -48,7 +48,7 @@ class DocumentService(BaseDocumentService):
 @pytest.fixture(name="document_service")
 def document_service_fixture(user, persistent):
     """Fixture for DocumentService"""
-    return DocumentService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
+    return DocumentService(user=user, persistent=persistent, catalog_id=None)
 
 
 @pytest.mark.asyncio
@@ -95,7 +95,7 @@ async def test_check_document_creation_conflict(
     persistent.find_one.return_value = {"_id": "conflict_id_val", "name": "conflict_name_val"}
     with pytest.raises(DocumentConflictError) as exc:
         await DocumentService(
-            user=Mock(), persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
+            user=Mock(), persistent=persistent, catalog_id=None
         )._check_document_unique_constraint(
             query_filter=query_filter,
             conflict_signature=conflict_signature,
@@ -497,3 +497,16 @@ async def test_document_not_modifiable_if_block_modification_by_not_empty(
     await document_service.delete_document(document_id=document.id)
     with pytest.raises(DocumentNotFoundError):
         await document_service.get_document(document_id=document.id)
+
+
+def test_catalog_specific_service_requires_catalog_id(user, persistent):
+    """
+    Test catalog specific service initialization without catalog_id
+    """
+    with patch(
+        "featurebyte.service.base_document.BaseDocumentService.is_catalog_specific"
+    ) as mock_is_catalog_specific:
+        with pytest.raises(CatalogNotSpecifiedError) as exc:
+            mock_is_catalog_specific.return_value = True
+            DocumentService(user=user, persistent=persistent, catalog_id=None)
+        assert str(exc.value) == "No active catalog specified for service: DocumentService"

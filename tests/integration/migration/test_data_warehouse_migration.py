@@ -239,4 +239,4 @@ async def test_tile_column_type_extractor_build_tile_column_name_to_type_mapping
     """Test build_tile_column_name_to_type_mapping"""
     extractor = app_container.tile_column_type_extractor
     await extractor.setup()
-    assert extractor.tile_column_name_to_type == {}
+    assert len(extractor.tile_column_name_to_type) == 2

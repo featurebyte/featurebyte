@@ -11,7 +11,6 @@ from bson.objectid import ObjectId
 from sqlglot import expressions
 
 from featurebyte.common.utils import dataframe_to_arrow_bytes
-from featurebyte.models.base import DEFAULT_CATALOG_ID
 from tests.unit.routes.base import BaseMaterializedTableTestSuite
 
 
@@ -53,12 +52,11 @@ class TestTargetTableApi(BaseMaterializedTableTestSuite):
         ),
     ]
 
-    def setup_creation_route(self, api_client, catalog_id=DEFAULT_CATALOG_ID):
+    def setup_creation_route(self, api_client):
         """
         Setup for post route
         """
         api_object_filename_pairs = [
-            ("feature_store", "feature_store"),
             ("entity", "entity"),
             ("context", "context"),
             ("observation_table", "observation_table"),
@@ -67,11 +65,7 @@ class TestTargetTableApi(BaseMaterializedTableTestSuite):
         ]
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
-            response = api_client.post(
-                f"/{api_object}",
-                headers={"active-catalog-id": str(catalog_id)},
-                json=payload,
-            )
+            response = api_client.post(f"/{api_object}", json=payload)
 
             if api_object == "observation_table":
                 response = self.wait_for_results(api_client, response)
@@ -122,7 +116,7 @@ class TestTargetTableApi(BaseMaterializedTableTestSuite):
 
     @pytest.mark.asyncio
     async def test_observation_table_delete_422__observation_table_failed_validation_check(
-        self, test_api_client_persistent, create_success_response, user_id
+        self, test_api_client_persistent, create_success_response, user_id, default_catalog_id
     ):
         """Test delete 422 for observation table failed validation check"""
         test_api_client, persistent = test_api_client_persistent
@@ -138,7 +132,7 @@ class TestTargetTableApi(BaseMaterializedTableTestSuite):
             document={
                 **payload,
                 "_id": ObjectId(),
-                "catalog_id": DEFAULT_CATALOG_ID,
+                "catalog_id": ObjectId(default_catalog_id),
                 "user_id": user_id,
                 "observation_table_id": ObjectId(),  # different batch request table id
                 "columns_info": [],

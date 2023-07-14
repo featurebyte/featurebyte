@@ -23,7 +23,7 @@ from featurebyte.routes.common.base import DerivePrimaryEntityHelper
 from featurebyte.routes.common.feature_metadata_extractor import FeatureOrTargetMetadataExtractor
 from featurebyte.routes.context.controller import ContextController
 from featurebyte.routes.credential.controller import CredentialController
-from featurebyte.routes.deployment.controller import DeploymentController
+from featurebyte.routes.deployment.controller import AllDeploymentController, DeploymentController
 from featurebyte.routes.dimension_table.controller import DimensionTableController
 from featurebyte.routes.entity.controller import EntityController
 from featurebyte.routes.event_table.controller import EventTableController
@@ -52,23 +52,24 @@ from featurebyte.routes.temp_data.controller import TempDataController
 from featurebyte.routes.user_defined_function.controller import UserDefinedFunctionController
 from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.batch_request_table import BatchRequestTableService
-from featurebyte.service.catalog import CatalogService
+from featurebyte.service.catalog import AllCatalogService, CatalogService
 from featurebyte.service.context import ContextService
 from featurebyte.service.credential import CredentialService
 from featurebyte.service.default_version_mode import DefaultVersionModeService
 from featurebyte.service.deploy import DeployService
-from featurebyte.service.deployment import DeploymentService
+from featurebyte.service.deployment import AllDeploymentService, DeploymentService
 from featurebyte.service.dimension_table import DimensionTableService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.event_table import EventTableService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_job_setting_analysis import FeatureJobSettingAnalysisService
-from featurebyte.service.feature_list import FeatureListService
+from featurebyte.service.feature_list import AllFeatureListService, FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_list_status import FeatureListStatusService
 from featurebyte.service.feature_manager import FeatureManagerService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
+from featurebyte.service.feature_preview import FeaturePreviewService
 from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
@@ -118,6 +119,10 @@ from featurebyte.worker.util.observation_set_helper import ObservationSetHelper
 app_container_config = AppContainerConfig()
 
 # Register classes - please keep sorted by alphabetical order.
+app_container_config.register_class(AllCatalogService)
+app_container_config.register_class(AllDeploymentController)
+app_container_config.register_class(AllDeploymentService)
+app_container_config.register_class(AllFeatureListService)
 app_container_config.register_class(BatchFeatureTableController)
 app_container_config.register_class(BatchFeatureTableService)
 app_container_config.register_class(BatchRequestTableController)
@@ -162,6 +167,7 @@ app_container_config.register_class(FeatureManagerService)
 app_container_config.register_class(FeatureOrTargetMetadataExtractor)
 app_container_config.register_class(FeatureNamespaceController)
 app_container_config.register_class(FeatureNamespaceService)
+app_container_config.register_class(FeaturePreviewService)
 app_container_config.register_class(FeatureReadinessService)
 app_container_config.register_class(FeatureStoreController)
 app_container_config.register_class(FeatureStoreService)

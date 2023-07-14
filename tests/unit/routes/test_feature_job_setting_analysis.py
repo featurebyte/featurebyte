@@ -20,7 +20,6 @@ from featurebyte_freeware.feature_job_analysis.schema import (
 )
 from pandas.testing import assert_frame_equal
 
-from featurebyte.models.base import DEFAULT_CATALOG_ID
 from tests.unit.routes.base import BaseAsyncApiTestSuite
 
 
@@ -144,23 +143,17 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
         _ = snowflake_execute_query
         yield
 
-    def setup_creation_route(self, api_client, catalog_id=DEFAULT_CATALOG_ID):
+    def setup_creation_route(self, api_client):
         """
         Setup for post route
         """
-        # save feature store
-        payload = self.load_payload("tests/fixtures/request_payloads/feature_store.json")
-        response = api_client.post(
-            "/feature_store", headers={"active-catalog-id": str(catalog_id)}, json=payload
-        )
-        assert response.status_code == HTTPStatus.CREATED
-
-        # save event table
-        payload = self.load_payload("tests/fixtures/request_payloads/event_table.json")
-        response = api_client.post(
-            "/event_table", headers={"active-catalog-id": str(catalog_id)}, json=payload
-        )
-        assert response.status_code == HTTPStatus.CREATED
+        api_object_filename_pairs = [
+            ("event_table", "event_table"),
+        ]
+        for api_object, filename in api_object_filename_pairs:
+            payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
+            response = api_client.post(f"/{api_object}", json=payload)
+            assert response.status_code == HTTPStatus.CREATED, response.json()
 
     def multiple_success_payload_generator(self, api_client):
         """Create multiple payload for setting up create_multiple_success_responses fixture"""
@@ -323,7 +316,7 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
                 "frequency": "180s",
                 "time_modulo_frequency": "61s",
             },
-            "catalog_name": "default",
+            "catalog_name": "grocery",
         }
         assert response_dict.items() == expected_info_response.items()
 

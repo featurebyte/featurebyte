@@ -29,7 +29,7 @@ class DefaultVersionModeService(BaseService):
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: ObjectId,
+        catalog_id: Optional[ObjectId],
         feature_namespace_service: FeatureNamespaceService,
         feature_readiness_service: FeatureReadinessService,
         feature_list_namespace_service: FeatureListNamespaceService,

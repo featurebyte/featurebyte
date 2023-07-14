@@ -41,7 +41,7 @@ class DeployService(BaseService):
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: ObjectId,
+        catalog_id: Optional[ObjectId],
         feature_service: FeatureService,
         online_enable_service: OnlineEnableService,
         feature_list_status_service: FeatureListStatusService,

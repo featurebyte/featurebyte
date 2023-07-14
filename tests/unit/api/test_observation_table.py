@@ -19,10 +19,11 @@ def test_get(observation_table_from_source):
 
 
 @pytest.mark.usefixtures("observation_table_from_source", "observation_table_from_view")
-def test_list():
+def test_list(catalog):
     """
     Test listing ObservationTable objects
     """
+    _ = catalog
     df = ObservationTable.list()
     assert df.columns.tolist() == [
         "id",

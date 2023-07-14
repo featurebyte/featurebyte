@@ -34,7 +34,7 @@ def mock_get_feature_store_session_fixture():
 
 @pytest.mark.asyncio
 async def test_preview_feature__time_based_feature_without_point_in_time_errors(
-    preview_service, float_feature
+    feature_preview_service, float_feature
 ):
     """
     Test preview feature
@@ -46,13 +46,13 @@ async def test_preview_feature__time_based_feature_without_point_in_time_errors(
         node_name=float_feature.node_name,
     )
     with pytest.raises(MissingPointInTimeColumnError) as exc:
-        await preview_service.preview_target_or_feature(feature_preview, AsyncMock())
+        await feature_preview_service.preview_target_or_feature(feature_preview, AsyncMock())
     assert "Point in time column not provided" in str(exc)
 
 
 @pytest.mark.asyncio
 async def test_preview_feature__non_time_based_feature_without_point_in_time_doesnt_error(
-    preview_service, transaction_entity, non_time_based_feature, get_credential
+    feature_preview_service, transaction_entity, non_time_based_feature, get_credential
 ):
     """
     Test preview feature
@@ -68,13 +68,13 @@ async def test_preview_feature__non_time_based_feature_without_point_in_time_doe
         graph=non_time_based_feature.graph,
         node_name=non_time_based_feature.node_name,
     )
-    await preview_service.preview_target_or_feature(feature_preview, get_credential)
+    await feature_preview_service.preview_target_or_feature(feature_preview, get_credential)
 
 
 @pytest.mark.usefixtures("mock_get_feature_store_session")
 @pytest.mark.asyncio
 async def test_preview_feature__missing_entity(
-    preview_service, production_ready_feature, get_credential
+    feature_preview_service, production_ready_feature, get_credential
 ):
     """
     Test preview feature but without providing the required entity
@@ -91,7 +91,7 @@ async def test_preview_feature__missing_entity(
         node_name=production_ready_feature.node_name,
     )
     with pytest.raises(RequiredEntityNotProvidedError) as exc:
-        await preview_service.preview_target_or_feature(feature_preview, get_credential)
+        await feature_preview_service.preview_target_or_feature(feature_preview, get_credential)
     expected = (
         'Required entities are not provided in the request: customer (serving name: "cust_id")'
     )
@@ -100,7 +100,7 @@ async def test_preview_feature__missing_entity(
 
 @pytest.mark.asyncio
 async def test_preview_featurelist__time_based_feature_errors_without_time(
-    preview_service, float_feature, get_credential
+    feature_preview_service, float_feature, get_credential
 ):
     """
     Test preview featurelist
@@ -121,13 +121,13 @@ async def test_preview_featurelist__time_based_feature_errors_without_time(
         ],
     )
     with pytest.raises(MissingPointInTimeColumnError) as exc:
-        await preview_service.preview_featurelist(feature_list_preview, get_credential)
+        await feature_preview_service.preview_featurelist(feature_list_preview, get_credential)
     assert "Point in time column not provided" in str(exc)
 
 
 @pytest.mark.asyncio
 async def test_preview_featurelist__non_time_based_feature_no_error_without_time(
-    preview_service, transaction_entity, non_time_based_feature, get_credential
+    feature_preview_service, transaction_entity, non_time_based_feature, get_credential
 ):
     """
     Test preview featurelist
@@ -148,12 +148,12 @@ async def test_preview_featurelist__non_time_based_feature_no_error_without_time
             }
         ],
     )
-    await preview_service.preview_featurelist(feature_list_preview, get_credential)
+    await feature_preview_service.preview_featurelist(feature_list_preview, get_credential)
 
 
 @pytest.mark.asyncio
 async def test_preview_featurelist__missing_entity(
-    preview_service, production_ready_feature_list, get_credential
+    feature_preview_service, production_ready_feature_list, get_credential
 ):
     """
     Test preview featurelist but without providing the required entity
@@ -169,7 +169,7 @@ async def test_preview_featurelist__missing_entity(
         ],
     )
     with pytest.raises(RequiredEntityNotProvidedError) as exc:
-        await preview_service.preview_featurelist(feature_list_preview, get_credential)
+        await feature_preview_service.preview_featurelist(feature_list_preview, get_credential)
     expected = (
         'Required entities are not provided in the request: customer (serving name: "cust_id")'
     )

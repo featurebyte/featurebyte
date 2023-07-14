@@ -1,7 +1,7 @@
 """
 FastAPI Application
 """
-from typing import Callable
+from typing import Any, Callable, Coroutine, Optional
 
 import aioredis
 import uvicorn
@@ -41,7 +41,7 @@ import featurebyte.routes.user_defined_function.api as user_defined_function_api
 from featurebyte.common.utils import get_version
 from featurebyte.logging import get_logger
 from featurebyte.middleware import ExceptionMiddleware
-from featurebyte.models.base import DEFAULT_CATALOG_ID, PydanticObjectId, User
+from featurebyte.models.base import PydanticObjectId, User
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
 from featurebyte.schema import APIServiceStatus
@@ -55,46 +55,70 @@ from featurebyte.worker import get_celery
 logger = get_logger(__name__)
 
 
-def _get_api_deps() -> Callable[[Request, PydanticObjectId], None]:
+def _dep_injection_func(
+    request: Request, active_catalog_id: Optional[PydanticObjectId] = None
+) -> None:
+    """
+    Inject dependencies into the requests
+
+    Parameters
+    ----------
+    request: Request
+        Request object to be updated
+    active_catalog_id: Optional[PydanticObjectId]
+        Catalog ID to be used for the request
+    """
+    request.state.persistent = get_persistent()
+    request.state.user = User()
+    request.state.get_credential = MongoBackedCredentialProvider(
+        persistent=request.state.persistent
+    ).get_credential
+    request.state.app_container = LazyAppContainer(
+        user=request.state.user,
+        persistent=request.state.persistent,
+        temp_storage=get_temp_storage(),
+        celery=get_celery(),
+        storage=get_storage(),
+        catalog_id=active_catalog_id,
+        app_container_config=app_container_config,
+    )
+
+
+def _get_api_deps() -> Callable[[Request], Coroutine[Any, Any, None]]:
     """
     Get API dependency injection function
 
     Returns
     -------
-    Callable[Request, PydanticObjectId]
+    Callable[Request]
         Dependency injection function
     """
 
-    def _dep_injection_func(
-        request: Request, active_catalog_id: PydanticObjectId = Header(None)
+    async def _wrapper(
+        request: Request,
     ) -> None:
-        """
-        Inject dependencies into the requests
+        _dep_injection_func(request)
 
-        Parameters
-        ----------
-        request: Request
-            Request object to be updated
-        active_catalog_id: PydanticObjectId
-            Catalog ID from header
-        """
-        active_catalog_id = active_catalog_id or PydanticObjectId(DEFAULT_CATALOG_ID)
-        request.state.persistent = get_persistent()
-        request.state.user = User()
-        request.state.get_credential = MongoBackedCredentialProvider(
-            persistent=request.state.persistent
-        ).get_credential
-        request.state.app_container = LazyAppContainer(
-            user=request.state.user,
-            persistent=request.state.persistent,
-            temp_storage=get_temp_storage(),
-            celery=get_celery(),
-            storage=get_storage(),
-            catalog_id=active_catalog_id,
-            app_container_config=app_container_config,
-        )
+    return _wrapper
 
-    return _dep_injection_func
+
+def _get_api_deps_with_catalog() -> Callable[[Request], Coroutine[Any, Any, None]]:
+    """
+    Get API dependency injection function with catalog
+
+    Returns
+    -------
+    Callable[Request]
+        Dependency injection function
+    """
+
+    async def _wrapper(
+        request: Request,
+        active_catalog_id: Optional[PydanticObjectId] = Header(None),
+    ) -> None:
+        _dep_injection_func(request, active_catalog_id)
+
+    return _wrapper
 
 
 def get_app() -> FastAPI:
@@ -108,9 +132,25 @@ def get_app() -> FastAPI:
     """
     _app = FastAPI()
 
-    # add routers into the app
+    # register routes that are not catalog-specific
     resource_apis = [
         credential_api,
+        feature_store_api,
+        semantic_api,
+        task_api,
+        temp_data_api,
+        catalog_api,
+    ]
+    dependencies = _get_api_deps()
+    for resource_api in resource_apis:
+        _app.include_router(
+            resource_api.router,
+            dependencies=[Depends(dependencies)],
+            tags=[resource_api.router.prefix[1:]],
+        )
+
+    # register routes that are catalog-specific
+    resource_apis = [
         context_api,
         deployment_api,
         dimension_table_api,
@@ -122,26 +162,21 @@ def get_app() -> FastAPI:
         feature_list_api,
         feature_list_namespace_api,
         feature_namespace_api,
-        feature_store_api,
         relationship_info_api,
         scd_table_api,
-        semantic_api,
         static_source_table_api,
         table_api,
-        task_api,
-        temp_data_api,
-        catalog_api,
-        periodic_tasks_api,
         observation_table_api,
         historical_feature_table_api,
         batch_request_table_api,
         batch_feature_table_api,
         target_api,
         target_namespace_api,
+        periodic_tasks_api,
         user_defined_function_api,
         target_table_api,
     ]
-    dependencies = _get_api_deps()
+    dependencies = _get_api_deps_with_catalog()
     for resource_api in resource_apis:
         _app.include_router(
             resource_api.router,

@@ -3,7 +3,7 @@ BatchRequestTableService class
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
 from bson import ObjectId
 
@@ -32,7 +32,7 @@ class BatchRequestTableService(
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: ObjectId,
+        catalog_id: Optional[ObjectId],
         feature_store_service: FeatureStoreService,
         context_service: ContextService,
     ):

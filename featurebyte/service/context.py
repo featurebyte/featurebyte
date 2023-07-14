@@ -29,7 +29,7 @@ class ContextService(BaseDocumentService[ContextModel, ContextCreate, ContextUpd
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: ObjectId,
+        catalog_id: Optional[ObjectId],
         entity_service: EntityService,
     ):
         super().__init__(user, persistent, catalog_id)

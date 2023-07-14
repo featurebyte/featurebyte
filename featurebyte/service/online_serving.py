@@ -31,7 +31,7 @@ class OnlineServingService(BaseService):
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: ObjectId,
+        catalog_id: Optional[ObjectId],
         session_manager_service: SessionManagerService,
         entity_validation_service: EntityValidationService,
         online_store_table_version_service: OnlineStoreTableVersionService,

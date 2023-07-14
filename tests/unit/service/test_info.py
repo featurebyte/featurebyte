@@ -60,7 +60,7 @@ async def test_get_feature_store_info(feature_store_service, feature_store):
         ),
         created_at=info.created_at,
         updated_at=None,
-        catalog_name="default",
+        catalog_name="grocery",
     )
     assert info == expected_info
 
@@ -79,7 +79,7 @@ async def test_get_entity_info(app_container, entity):
         created_at=info.created_at,
         updated_at=None,
         serving_names=["cust_id"],
-        catalog_name="default",
+        catalog_name="grocery",
     )
     assert info == expected_info
 
@@ -108,14 +108,14 @@ async def test_get_event_table_info(app_container, event_table, entity):
             blind_spot="10m", frequency="30m", time_modulo_frequency="5m"
         ),
         entities=[
-            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
+            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="grocery")
         ],
         semantics=["event_timestamp"],
         column_count=9,
         columns_info=None,
         created_at=info.created_at,
         updated_at=info.updated_at,
-        catalog_name="default",
+        catalog_name="grocery",
     )
     assert info == expected_info
 
@@ -167,7 +167,7 @@ async def test_get_item_table_info(app_container, item_table, event_table):
         columns_info=None,
         created_at=info.created_at,
         updated_at=info.updated_at,
-        catalog_name="default",
+        catalog_name="grocery",
     )
     assert info == expected_info
 
@@ -211,7 +211,7 @@ async def test_get_dimension_table_info(app_container, dimension_table):
         columns_info=None,
         created_at=info.created_at,
         updated_at=info.updated_at,
-        catalog_name="default",
+        catalog_name="grocery",
     )
     assert info == expected_info
 
@@ -262,7 +262,7 @@ async def test_get_scd_table_info(app_container, scd_table):
         columns_info=None,
         created_at=info.created_at,
         updated_at=info.updated_at,
-        catalog_name="default",
+        catalog_name="grocery",
     )
     assert info == expected_info
 
@@ -323,16 +323,16 @@ async def test_get_feature_info(app_container, production_ready_feature, feature
     expected_info = FeatureInfo(
         name="sum_30m",
         entities=[
-            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
+            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="grocery")
         ],
         primary_entity=[
-            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
+            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="grocery")
         ],
         tables=[
-            TableBriefInfo(name="sf_event_table", status="PUBLIC_DRAFT", catalog_name="default")
+            TableBriefInfo(name="sf_event_table", status="PUBLIC_DRAFT", catalog_name="grocery")
         ],
         primary_table=[
-            TableBriefInfo(name="sf_event_table", status="PUBLIC_DRAFT", catalog_name="default")
+            TableBriefInfo(name="sf_event_table", status="PUBLIC_DRAFT", catalog_name="grocery")
         ],
         default_version_mode="AUTO",
         version_count=1,
@@ -350,7 +350,7 @@ async def test_get_feature_info(app_container, production_ready_feature, feature
         metadata=expected_metadata,
         created_at=feature_namespace.created_at,
         updated_at=info.updated_at,
-        catalog_name="default",
+        catalog_name="grocery",
     )
     assert info == expected_info
 
@@ -437,16 +437,16 @@ def expected_feature_iet_info_fixture(feature_iet):
     return FeatureInfo(
         name="iet_entropy_24h",
         entities=[
-            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
+            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="grocery")
         ],
         primary_entity=[
-            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
+            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="grocery")
         ],
         tables=[
-            TableBriefInfo(name="sf_event_table", status="PUBLIC_DRAFT", catalog_name="default")
+            TableBriefInfo(name="sf_event_table", status="PUBLIC_DRAFT", catalog_name="grocery")
         ],
         primary_table=[
-            TableBriefInfo(name="sf_event_table", status="PUBLIC_DRAFT", catalog_name="default")
+            TableBriefInfo(name="sf_event_table", status="PUBLIC_DRAFT", catalog_name="grocery")
         ],
         default_version_mode="AUTO",
         version_count=1,
@@ -465,7 +465,7 @@ def expected_feature_iet_info_fixture(feature_iet):
         metadata=expected_metadata,
         created_at=feature_iet.created_at,
         updated_at=feature_iet.updated_at,
-        catalog_name="default",
+        catalog_name="grocery",
     )
 
 
@@ -545,16 +545,16 @@ async def test_get_feature_namespace_info(app_container, feature_namespace):
     expected_info = FeatureNamespaceInfo(
         name="sum_30m",
         entities=[
-            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
+            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="grocery")
         ],
         primary_entity=[
-            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
+            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="grocery")
         ],
         tables=[
-            TableBriefInfo(name="sf_event_table", status="PUBLIC_DRAFT", catalog_name="default")
+            TableBriefInfo(name="sf_event_table", status="PUBLIC_DRAFT", catalog_name="grocery")
         ],
         primary_table=[
-            TableBriefInfo(name="sf_event_table", status="PUBLIC_DRAFT", catalog_name="default")
+            TableBriefInfo(name="sf_event_table", status="PUBLIC_DRAFT", catalog_name="grocery")
         ],
         default_version_mode="AUTO",
         version_count=1,
@@ -562,7 +562,7 @@ async def test_get_feature_namespace_info(app_container, feature_namespace):
         default_feature_id=feature_namespace.default_feature_id,
         created_at=feature_namespace.created_at,
         updated_at=None,
-        catalog_name="default",
+        catalog_name="grocery",
     )
     assert info == expected_info
 
@@ -581,13 +581,13 @@ async def test_get_feature_list_info(feature_list_service, feature_list, feature
     expected_info = FeatureListInfo(
         name="sf_feature_list",
         entities=[
-            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
+            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="grocery")
         ],
         primary_entity=[
-            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
+            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="grocery")
         ],
         tables=[
-            TableBriefInfo(name="sf_event_table", status="PUBLIC_DRAFT", catalog_name="default")
+            TableBriefInfo(name="sf_event_table", status="PUBLIC_DRAFT", catalog_name="grocery")
         ],
         default_version_mode="AUTO",
         version_count=1,
@@ -603,7 +603,7 @@ async def test_get_feature_list_info(feature_list_service, feature_list, feature
         updated_at=None,
         deployed=False,
         serving_endpoint=None,
-        catalog_name="default",
+        catalog_name="grocery",
         default_feature_list_id=feature_list_namespace.default_feature_list_id,
     )
     assert info == expected_info
@@ -637,13 +637,13 @@ async def test_get_feature_list_namespace_info(
     expected_info = FeatureListNamespaceInfo(
         name="sf_feature_list",
         entities=[
-            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
+            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="grocery")
         ],
         primary_entity=[
-            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
+            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="grocery")
         ],
         tables=[
-            TableBriefInfo(name="sf_event_table", status="PUBLIC_DRAFT", catalog_name="default")
+            TableBriefInfo(name="sf_event_table", status="PUBLIC_DRAFT", catalog_name="grocery")
         ],
         default_version_mode="AUTO",
         version_count=1,
@@ -655,7 +655,7 @@ async def test_get_feature_list_namespace_info(
         feature_count=1,
         created_at=feature_list_namespace.created_at,
         updated_at=None,
-        catalog_name="default",
+        catalog_name="grocery",
     )
     assert info == expected_info
 
@@ -701,7 +701,7 @@ async def test_get_target_info(app_container, entity, target):
         id=target.id,
         target_name=target.name,
         entities=[
-            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="default")
+            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="grocery")
         ],
         window="1d",  # TODO: fix this
         has_recipe=bool(target.graph),
@@ -719,10 +719,11 @@ async def test_get_target_info(app_container, entity, target):
 
 
 @pytest.fixture(name="transaction_entity")
-def transaction_entity_fixture():
+def transaction_entity_fixture(catalog):
     """
     Transaction entity fixture
     """
+    _ = catalog
     entity = Entity(name="transaction", serving_names=["transaction_id"])
     entity.save()
     yield entity

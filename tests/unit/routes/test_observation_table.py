@@ -6,7 +6,6 @@ from http import HTTPStatus
 import pytest
 from bson.objectid import ObjectId
 
-from featurebyte.models.base import DEFAULT_CATALOG_ID
 from tests.unit.routes.base import BaseMaterializedTableTestSuite
 
 
@@ -43,30 +42,18 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         )
     ]
 
-    def setup_creation_route(self, api_client, catalog_id=DEFAULT_CATALOG_ID):
+    def setup_creation_route(self, api_client):
         """
         Setup for post route
         """
-        # save feature store
-        payload = self.load_payload("tests/fixtures/request_payloads/feature_store.json")
-        response = api_client.post(
-            "/feature_store", headers={"active-catalog-id": str(catalog_id)}, json=payload
-        )
-        assert response.status_code == HTTPStatus.CREATED
-
-        # save entity
-        payload = self.load_payload("tests/fixtures/request_payloads/entity.json")
-        response = api_client.post(
-            "/entity", headers={"active-catalog-id": str(catalog_id)}, json=payload
-        )
-        assert response.status_code == HTTPStatus.CREATED
-
-        # save context
-        payload = self.load_payload("tests/fixtures/request_payloads/context.json")
-        response = api_client.post(
-            "/context", headers={"active-catalog-id": str(catalog_id)}, json=payload
-        )
-        assert response.status_code == HTTPStatus.CREATED
+        api_object_filename_pairs = [
+            ("entity", "entity"),
+            ("context", "context"),
+        ]
+        for api_object, filename in api_object_filename_pairs:
+            payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
+            response = api_client.post(f"/{api_object}", json=payload)
+            assert response.status_code == HTTPStatus.CREATED, response.json()
 
     def multiple_success_payload_generator(self, api_client):
         """Create multiple payload for setting up create_multiple_success_responses fixture"""

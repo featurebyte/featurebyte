@@ -3,7 +3,7 @@ ViewConstructionService class
 """
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import Any, Optional, cast
 
 from collections import defaultdict
 
@@ -41,7 +41,11 @@ class ViewConstructionService(BaseService):
     """
 
     def __init__(
-        self, user: Any, persistent: Persistent, catalog_id: ObjectId, table_service: TableService
+        self,
+        user: Any,
+        persistent: Persistent,
+        catalog_id: Optional[ObjectId],
+        table_service: TableService,
     ):
         super().__init__(user, persistent, catalog_id)
         self.table_service = table_service

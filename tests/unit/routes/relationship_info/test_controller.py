@@ -13,7 +13,6 @@ from featurebyte.exception import DocumentNotFoundError
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.relationship import RelationshipType
 from featurebyte.schema.event_table import EventTableCreate
-from featurebyte.schema.feature_store import FeatureStoreCreate
 from featurebyte.schema.relationship_info import RelationshipInfoCreate
 
 
@@ -91,7 +90,7 @@ async def test_validate_relationship_info_create__table_id_error_thrown(
 
 
 @pytest_asyncio.fixture(name="event_table")
-async def event_table_fixture(app_container):
+async def event_table_fixture(app_container, snowflake_feature_store):
     """
     Create event_table fixture
     """
@@ -99,32 +98,21 @@ async def event_table_fixture(app_container):
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
         payload["tabular_source"]["table_details"]["table_name"] = "sf_event_table"
+        payload["tabular_source"]["feature_store_id"] = snowflake_feature_store.id
         event_table = await app_container.event_table_service.create_document(
             data=EventTableCreate(**payload)
         )
         yield event_table
 
 
-@pytest_asyncio.fixture(name="feature_store")
-async def feature_store_fixture(app_container):
-    """FeatureStore model"""
-    fixture_path = os.path.join("tests/fixtures/request_payloads/feature_store.json")
-    with open(fixture_path, encoding="utf") as fhandle:
-        payload = json.loads(fhandle.read())
-        feature_store = await app_container.feature_store_service.create_document(
-            data=FeatureStoreCreate(**payload)
-        )
-        return feature_store
-
-
 @pytest.mark.asyncio
 async def test_validate_relationship_info_create__no_error_thrown(
-    relationship_info_controller, relationship_info_create, entities, feature_store, event_table
+    relationship_info_controller, relationship_info_create, entities, event_table
 ):
     """
     Test validate_relationship_info_create
     """
-    _, _ = feature_store, entities
+    _ = entities
 
     # Try to create relationship info again - expect no error
     create_dict = relationship_info_create.dict()

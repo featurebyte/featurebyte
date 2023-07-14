@@ -42,7 +42,7 @@ class FeatureReadinessService(BaseService):
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: ObjectId,
+        catalog_id: Optional[ObjectId],
         feature_service: FeatureService,
         feature_namespace_service: FeatureNamespaceService,
         feature_list_service: FeatureListService,

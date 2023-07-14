@@ -3,7 +3,7 @@ TableColumnsInfoService
 """
 from __future__ import annotations
 
-from typing import Any, List, Tuple, Union
+from typing import Any, List, Optional, Tuple, Union
 
 from collections import defaultdict
 
@@ -43,7 +43,7 @@ class TableColumnsInfoService(BaseService):
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: ObjectId,
+        catalog_id: Optional[ObjectId],
         semantic_service: SemanticService,
         entity_service: EntityService,
         relationship_info_service: RelationshipInfoService,

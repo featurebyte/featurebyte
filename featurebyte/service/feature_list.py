@@ -122,7 +122,7 @@ class FeatureListService(
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: ObjectId,
+        catalog_id: Optional[ObjectId],
         entity_service: EntityService,
         relationship_info_service: RelationshipInfoService,
         feature_service: FeatureService,
@@ -393,3 +393,17 @@ class FeatureListService(
             versions_info=versions_info,
             deployed=feature_list.deployed,
         )
+
+
+class AllFeatureListService(
+    BaseDocumentService[FeatureListModel, FeatureListServiceCreate, FeatureListServiceUpdate]
+):
+    """
+    AllFeatureListService class
+    """
+
+    document_class = FeatureListModel
+
+    @property
+    def is_catalog_specific(self) -> bool:
+        return False

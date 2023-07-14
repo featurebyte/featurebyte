@@ -8,7 +8,6 @@ import pytest
 from featurebyte.common.model_util import get_version
 from featurebyte.enum import StrEnum
 from featurebyte.exception import RecordRetrievalException
-from featurebyte.models.base import DEFAULT_CATALOG_ID
 
 
 class TestItemType(StrEnum):
@@ -56,7 +55,7 @@ class FeatureOrTargetBaseTestSuite:
         )
         return expected_definition.strip()
 
-    def test_item_properties(self, item_under_test, snowflake_event_table, cust_id_entity):
+    def test_item_properties(self, item_under_test, snowflake_event_table, cust_id_entity, catalog):
         """Test item properties"""
         with pytest.raises(RecordRetrievalException) as exc:
             _ = item_under_test.version
@@ -65,7 +64,7 @@ class FeatureOrTargetBaseTestSuite:
             f"Please save the {self.item_type} object first."
         )
         assert expected_error_message in str(exc.value)
-        assert item_under_test.catalog_id == DEFAULT_CATALOG_ID
+        assert item_under_test.catalog_id == catalog.id
         assert item_under_test.entity_ids == [cust_id_entity.id]
         assert item_under_test.table_ids == [snowflake_event_table.id]
         assert item_under_test.definition.strip() == self.get_expected_definition(
@@ -73,11 +72,11 @@ class FeatureOrTargetBaseTestSuite:
         )
 
     def test_saved_item_properties(
-        self, saved_item_under_test, snowflake_event_table, cust_id_entity
+        self, saved_item_under_test, snowflake_event_table, cust_id_entity, catalog
     ):
         """Test saved item properties"""
         assert saved_item_under_test.version.startswith(get_version())
-        assert saved_item_under_test.catalog_id == DEFAULT_CATALOG_ID
+        assert saved_item_under_test.catalog_id == catalog.id
         assert saved_item_under_test.entity_ids == [cust_id_entity.id]
         assert saved_item_under_test.table_ids == [snowflake_event_table.id]
         assert saved_item_under_test.definition.strip() == self.get_expected_definition(
@@ -89,5 +88,5 @@ class FeatureOrTargetBaseTestSuite:
         # TODO: Add more assertions to check the info
         info = saved_item_under_test.info()
         assert info["entities"] == [
-            {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}
+            {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "catalog"}
         ]

@@ -229,7 +229,6 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         >>> fb.Catalog.list()[["name", "active"]]
               name  active
         0  grocery    True
-        1  default   False
 
         See Also
         --------
@@ -243,14 +242,14 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
             return Catalog.create(name=name, feature_store_name=feature_store_name)
 
     @classmethod
-    def get_active(cls) -> Catalog:
+    def get_active(cls) -> Optional[Catalog]:
         """
         Gets the currently active catalog.
 
         Returns
         -------
-        Catalog
-            The currently active catalog.
+        Optional[Catalog]
+            The currently active catalog or None if no catalog is active.
 
         Examples
         --------
@@ -258,7 +257,10 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         >>> catalog.name
         'grocery'
         """
-        return cls.get_by_id(get_active_catalog_id())
+        active_catalog_id = get_active_catalog_id()
+        if not active_catalog_id:
+            return None
+        return cls.get_by_id(active_catalog_id)
 
     @classmethod
     def _list_handler(cls) -> ListHandler:

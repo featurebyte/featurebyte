@@ -1,7 +1,7 @@
 """
 FeatureListStatusService class
 """
-from typing import Any
+from typing import Any, Optional
 
 import json
 
@@ -26,7 +26,7 @@ class FeatureListStatusService(BaseService):
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: ObjectId,
+        catalog_id: Optional[ObjectId],
         feature_list_namespace_service: FeatureListNamespaceService,
         feature_list_service: FeatureListService,
     ):
