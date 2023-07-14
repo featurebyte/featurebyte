@@ -283,7 +283,7 @@ class QueryGraph(QueryGraphModel):
     def extract_operation_structure(
         self,
         node: Node,
-        keep_all_source_columns: bool,
+        keep_all_source_columns: bool = True,
         **kwargs: Any,
     ) -> OperationStructure:
         """
