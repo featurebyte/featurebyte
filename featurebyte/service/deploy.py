@@ -39,7 +39,7 @@ class DeployService(OpsServiceMixin):
 
     def __init__(
         self,
-        persistent: Persistent, 
+        persistent: Persistent,
         feature_service: FeatureService,
         online_enable_service: OnlineEnableService,
         feature_list_status_service: FeatureListStatusService,
