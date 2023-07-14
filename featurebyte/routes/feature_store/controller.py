@@ -60,7 +60,6 @@ class FeatureStoreController(
     async def create_feature_store(
         self,
         data: FeatureStoreCreate,
-        get_credential: Any,
     ) -> FeatureStoreModel:
         """
         Create Feature Store at persistent
@@ -127,9 +126,6 @@ class FeatureStoreController(
                 Any
                     credentials
                 """
-                cred = await get_credential(user_id, feature_store_name)
-                if cred is not None:
-                    return cred
                 return credential
 
             get_credential_to_use = _updated_get_credential

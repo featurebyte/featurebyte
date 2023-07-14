@@ -41,9 +41,7 @@ async def create_feature_store(request: Request, data: FeatureStoreCreate) -> Fe
     Create Feature Store
     """
     controller = request.state.app_container.feature_store_controller
-    feature_store: FeatureStoreModel = await controller.create_feature_store(
-        data=data, get_credential=request.state.get_credential
-    )
+    feature_store: FeatureStoreModel = await controller.create_feature_store(data=data)
     return feature_store
 
 
