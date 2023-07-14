@@ -144,8 +144,8 @@ class SessionValidatorService:
         feature_store_name: str,
         session_type: SourceType,
         details: DatabaseDetails,
-        get_credential: Any,
         users_feature_store_id: Optional[PydanticObjectId],
+        get_credential: Any = None,
     ) -> ValidateStatus:
         """
         Validate whether the existing details exist in the persistent layer

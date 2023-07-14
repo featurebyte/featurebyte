@@ -68,8 +68,6 @@ class FeatureStoreController(
         ----------
         data: FeatureStoreCreate
             FeatureStore creation payload
-        get_credential: Any
-            credential handler function
 
         Returns
         -------
@@ -107,33 +105,10 @@ class FeatureStoreController(
                 storage_credential=data.storage_credential,
             )
 
-            async def _updated_get_credential(user_id: str, feature_store_name: str) -> Any:
-                """
-                Updated get_credential will try to look up the credentials from config.
-
-                If there are credentials in the config, we will ignore whatever is passed in here.
-                If not, we will use the params that are passed in.
-
-                Parameters
-                ----------
-                user_id: str
-                    user id
-                feature_store_name: str
-                    feature store name
-
-                Returns
-                -------
-                Any
-                    credentials
-                """
-                return credential
-
-            get_credential_to_use = _updated_get_credential
             await self.session_validator_service.validate_feature_store_id_not_used_in_warehouse(
                 feature_store_name=data.name,
                 session_type=data.type,
                 details=data.details,
-                get_credential=get_credential_to_use,
                 users_feature_store_id=document.id,
             )
             logger.debug("End validate_feature_store_id_not_used_in_warehouse")
@@ -143,7 +118,6 @@ class FeatureStoreController(
                 feature_store=FeatureStoreModel(
                     name=data.name, type=data.type, details=data.details
                 ),
-                get_credential=get_credential_to_use,
             )
             # Try to persist credential
             credential_doc = await self.credential_service.create_document(
