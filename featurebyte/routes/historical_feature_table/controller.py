@@ -10,6 +10,8 @@ import pandas as pd
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
 from featurebyte.routes.common.feature_or_target_table import (
     FeatureOrTargetTableController,
+    MaterializedTableDocumentT,
+    TableCreateT,
     ValidationParameters,
 )
 from featurebyte.routes.task.controller import TaskController
@@ -63,16 +65,16 @@ class HistoricalFeatureTableController(
 
     async def get_payload(
         self,
-        table_create: HistoricalFeatureTableCreate,
+        table_create: TableCreateT,
         observation_set_dataframe: Optional[pd.DataFrame],
     ) -> HistoricalFeatureTableTaskPayload:
+        assert isinstance(table_create, HistoricalFeatureTableCreate)
         return await self.service.get_historical_feature_table_task_payload(
             data=table_create, observation_set_dataframe=observation_set_dataframe
         )
 
-    async def get_validation_parameters(
-        self, table_create: HistoricalFeatureTableCreate
-    ) -> ValidationParameters:
+    async def get_validation_parameters(self, table_create: TableCreateT) -> ValidationParameters:
+        assert isinstance(table_create, HistoricalFeatureTableCreate)
         # feature cluster group feature graph by feature store ID, only single feature store is
         # supported
         feature_cluster = table_create.featurelist_get_historical_features.feature_clusters[0]
@@ -87,8 +89,9 @@ class HistoricalFeatureTableController(
         )
 
     async def get_additional_info_params(
-        self, document: HistoricalFeatureTableModel
+        self, document: MaterializedTableDocumentT
     ) -> dict[str, Any]:
+        assert isinstance(document, HistoricalFeatureTableModel)
         feature_list = await self.feature_list_service.get_document(
             document_id=document.feature_list_id
         )
