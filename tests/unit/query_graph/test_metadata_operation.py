@@ -149,16 +149,26 @@ def test_insert_column():
         DerivedDataColumn.insert_column({}, col1), another_col1
     )
     assert to_dict(col_map) == {
-        "col1": {
+        ("col1", "filter_1"): {
             "name": "col1",
-            "node_names": {"input_1", "project_1", "filter_1"},
+            "node_names": {"input_1", "filter_1"},
             "node_name": "filter_1",
             "table_id": None,
             "table_type": "event_table",
             "type": "source",
             "filter": True,
             "dtype": "FLOAT",
-        }
+        },
+        ("col1", "input_1"): {
+            "name": "col1",
+            "node_names": {"input_1", "project_1"},
+            "node_name": "input_1",
+            "table_id": None,
+            "table_type": "event_table",
+            "type": "source",
+            "filter": False,
+            "dtype": "FLOAT",
+        },
     }
 
 

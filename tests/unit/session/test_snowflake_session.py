@@ -64,6 +64,7 @@ async def test_snowflake_session__credential_from_config(snowflake_session_dict)
         "fixed_table",
         "non_scalar_table",
         "scd_table",
+        "scd_table_state_map",
         "dimension_table",
         "sf_view",
     ]

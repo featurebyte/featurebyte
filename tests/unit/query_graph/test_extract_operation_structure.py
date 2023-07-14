@@ -458,22 +458,31 @@ def test_extract_operation__join_node(
     if keep_all_source_columns:
         # include columns that affected the row index lineage
         def _get_other_params(column_name):
-            common_column_params = {
-                "table_id": None,
-                "table_type": "item_table",
-                "filter": False,
-                "type": "source",
-                "node_names": {"input_1"},
+            common_column_params = {"table_id": None, "filter": False, "type": "source"}
+            input_1_params = {
                 "node_name": "input_1",
+                "node_names": {"input_1"},
+                "table_type": "item_table",
+            }
+            input_2_params = {
+                "node_name": "input_2",
+                "node_names": {"input_2"},
+                "table_type": "event_table",
             }
             other_params = {
                 "columns": [
-                    {"name": "order_id", "dtype": "INT", **common_column_params},
-                    {"name": column_name, "dtype": "VARCHAR", **common_column_params},
+                    {"name": "order_id", "dtype": "INT", **common_column_params, **input_1_params},
+                    {
+                        "name": column_name,
+                        "dtype": "VARCHAR",
+                        **common_column_params,
+                        **input_1_params,
+                    },
+                    {"name": "order_id", "dtype": "INT", **common_column_params, **input_2_params},
                 ],
                 "filter": False,
                 "node_name": "join_1",
-                "node_names": {"input_1", "join_1"},
+                "node_names": {"input_1", "join_1", "input_2"},
                 "transforms": ["join"],
                 "type": "derived",
             }
@@ -881,7 +890,7 @@ def test_extract_operation__complicated_assignment_case_1(dataframe):
             {
                 "name": "TIMESTAMP_VALUE",
                 "dtype": "TIMESTAMP",
-                **extract_column_parameters(input_node, {"project_1", "project_3"}),
+                **extract_column_parameters(input_node, {"project_1"}),
             }
         ],
         "transforms": ["date_diff", "date_add"],
@@ -977,9 +986,7 @@ def test_extract_operation__complicated_assignment_case_2(dataframe):
                     {
                         "name": "CUST_ID",
                         "dtype": "INT",
-                        **extract_column_parameters(
-                            input_node, {"project_2", "input_1", "project_4"}
-                        ),
+                        **extract_column_parameters(input_node, {"input_1", "project_4"}),
                     },
                 ],
                 "filter": False,

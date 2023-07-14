@@ -224,6 +224,13 @@ def test_join_with_assign_node__join_node_parameters_pruning(
     )
 
     # expected values
+    common_column_params = {"filter": False, "table_id": None, "type": "source"}
+    input_1_params = {"node_name": "input_1", "node_names": {"input_1"}, "table_type": "item_table"}
+    input_2_params = {
+        "node_name": "input_2",
+        "node_names": {"input_2"},
+        "table_type": "event_table",
+    }
     expected_op_struct_columns = [
         {
             "dtype": "INT",
@@ -237,32 +244,15 @@ def test_join_with_assign_node__join_node_parameters_pruning(
         },
         {
             "columns": [
-                {
-                    "dtype": "INT",
-                    "filter": False,
-                    "name": "order_id",
-                    "node_name": "input_1",
-                    "node_names": {"input_1"},
-                    "table_id": None,
-                    "table_type": "item_table",
-                    "type": "source",
-                },
-                {
-                    "dtype": "VARCHAR",
-                    "filter": False,
-                    "name": "item_type",
-                    "node_name": "input_1",
-                    "node_names": {"input_1"},
-                    "table_id": None,
-                    "table_type": "item_table",
-                    "type": "source",
-                },
+                {"dtype": "INT", "name": "order_id", **common_column_params, **input_1_params},
+                {"dtype": "VARCHAR", "name": "item_type", **common_column_params, **input_1_params},
+                {"dtype": "INT", "name": "order_id", **common_column_params, **input_2_params},
             ],
             "dtype": "VARCHAR",
             "filter": False,
             "name": "item_type",
             "node_name": "join_1",
-            "node_names": {"join_1", "input_1"},
+            "node_names": {"join_1", "input_1", "input_2"},
             "transforms": ["join"],
             "type": "derived",
         },
@@ -382,7 +372,7 @@ def test_join_is_prunable(
     for i, name in enumerate(input_and_join_names):
         assert to_dict(op_struct.columns[i + 3], **kwargs) == {
             "name": name,
-            "node_names": {pruned_it_node.name, "join_1"},
+            "node_names": {pruned_it_node.name, "join_1", pruned_ev_node.name},
         }
 
     # check join node can be pruned

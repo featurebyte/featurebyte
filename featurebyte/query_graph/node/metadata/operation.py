@@ -177,8 +177,8 @@ class BaseDerivedColumn(BaseColumn):
 
     @staticmethod
     def insert_column(
-        column_map: Dict[str, BaseDataColumn], column: BaseDataColumn
-    ) -> Dict[str, BaseDataColumn]:
+        column_map: Dict[Tuple[str, str], BaseDataColumn], column: BaseDataColumn
+    ) -> Dict[Tuple[str, str], BaseDataColumn]:
         """
         Insert column into dictionary. If more than more columns with the same name, aggregate the node names
         (make sure we don't miss any node which is used for pruning) and combine filter flag (take the max
@@ -186,20 +186,21 @@ class BaseDerivedColumn(BaseColumn):
 
         Parameters
         ----------
-        column_map: Dict[str, BaseDataColumn]
+        column_map: Dict[Tuple[str, str], BaseDataColumn]
             Dictionary map
         column: BaseDataColumn
             Data column object
 
         Returns
         -------
-        Dict[str, BaseDataColumn]
+        Dict[Tuple[str, str], BaseDataColumn]
         """
+        key = (column.name, column.node_name)
         if column.name not in column_map:
-            column_map[column.name] = column
+            column_map[key] = column
         else:
-            cur_col = column_map[column.name]
-            column_map[column.name] = column.clone(
+            cur_col = column_map[key]
+            column_map[key] = column.clone(
                 node_names=cur_col.node_names.union(column.node_names),
                 node_name=cur_col.node_name
                 if len(cur_col.node_names) > len(column.node_names)
@@ -212,7 +213,7 @@ class BaseDerivedColumn(BaseColumn):
     def _flatten_columns(
         cls, columns: Sequence[Union[BaseDataColumn, "BaseDerivedColumn"]]
     ) -> Tuple[Sequence[BaseDataColumn], List[str], Set[str]]:
-        col_map: Dict[str, BaseDataColumn] = {}
+        col_map: Dict[Tuple[str, str], BaseDataColumn] = {}
         transforms: List[str] = []
         node_names: Set[str] = set()
         for column in columns:
