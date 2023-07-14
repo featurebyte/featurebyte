@@ -12,6 +12,7 @@ from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.feature_namespace import FeatureNamespaceModel
 from featurebyte.models.online_store import OnlineFeatureSpec
+from featurebyte.persistent import Persistent
 from featurebyte.schema.feature import FeatureServiceUpdate
 from featurebyte.schema.feature_list import FeatureListServiceUpdate
 from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
@@ -33,6 +34,7 @@ class OnlineEnableService(OpsServiceMixin):
 
     def __init__(
         self,
+        persistent: Persistent,
         session_manager_service: SessionManagerService,
         feature_service: FeatureService,
         feature_store_service: FeatureStoreService,
@@ -41,6 +43,7 @@ class OnlineEnableService(OpsServiceMixin):
         feature_manager_service: FeatureManagerService,
     ):
         # pylint: disable=too-many-arguments
+        self.persistent = persistent
         self.feature_service = feature_service
         self.session_manager_service = session_manager_service
         self.feature_store_service = feature_store_service
