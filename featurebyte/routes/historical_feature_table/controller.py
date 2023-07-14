@@ -7,7 +7,6 @@ from typing import Any, Optional
 
 from http import HTTPStatus
 
-from bson import ObjectId
 from fastapi import HTTPException, UploadFile
 
 from featurebyte.common.utils import dataframe_from_arrow_stream
@@ -22,10 +21,6 @@ from featurebyte.schema.info import HistoricalFeatureTableInfo
 from featurebyte.schema.task import Task
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_list import FeatureListService
-from featurebyte.service.feature_or_target_helper.info_helper import (
-    FeatureOrTargetInfoHelper,
-    InfoType,
-)
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 from featurebyte.service.observation_table import ObservationTableService
@@ -42,7 +37,6 @@ class HistoricalFeatureTableController(
     """
 
     paginated_document_class = HistoricalFeatureTableList
-    info_type = InfoType.HISTORICAL_FEATURE
     info_class = HistoricalFeatureTableInfo
 
     def __init__(
@@ -54,19 +48,17 @@ class HistoricalFeatureTableController(
         entity_validation_service: EntityValidationService,
         task_controller: TaskController,
         feature_list_service: FeatureListService,
-        feature_or_target_info_helper: FeatureOrTargetInfoHelper,
     ):
         super().__init__(
             service=historical_feature_table_service,
             preview_service=preview_service,
-            feature_or_target_info_helper=feature_or_target_info_helper,
+            observation_table_service=observation_table_service,
         )
         self.feature_store_service = feature_store_service
         self.observation_table_service = observation_table_service
         self.entity_validation_service = entity_validation_service
         self.task_controller = task_controller
         self.feature_list_service = feature_list_service
-        self.feature_or_target_info_helper = feature_or_target_info_helper
 
     async def create_historical_feature_table(
         self,
@@ -131,10 +123,11 @@ class HistoricalFeatureTableController(
         task_id = await self.task_controller.task_manager.submit(payload=payload)
         return await self.task_controller.get_task(task_id=str(task_id))
 
-    async def get_additional_info_params(self, document_id: ObjectId) -> dict[str, Any]:
-        historical_feature_table = await self.service.get_document(document_id=document_id)
+    async def get_additional_info_params(
+        self, document: HistoricalFeatureTableModel
+    ) -> dict[str, Any]:
         feature_list = await self.feature_list_service.get_document(
-            document_id=historical_feature_table.feature_list_id
+            document_id=document.feature_list_id
         )
         return {
             "feature_list_name": feature_list.name,

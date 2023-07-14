@@ -69,7 +69,6 @@ from featurebyte.service.feature_list_namespace import FeatureListNamespaceServi
 from featurebyte.service.feature_list_status import FeatureListStatusService
 from featurebyte.service.feature_manager import FeatureManagerService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
-from featurebyte.service.feature_or_target_helper.info_helper import FeatureOrTargetInfoHelper
 from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
@@ -163,7 +162,6 @@ app_container_config.register_class(FeatureManagerService)
 app_container_config.register_class(FeatureOrTargetMetadataExtractor)
 app_container_config.register_class(FeatureNamespaceController)
 app_container_config.register_class(FeatureNamespaceService)
-app_container_config.register_class(FeatureOrTargetInfoHelper)
 app_container_config.register_class(FeatureReadinessService)
 app_container_config.register_class(FeatureStoreController)
 app_container_config.register_class(FeatureStoreService)
