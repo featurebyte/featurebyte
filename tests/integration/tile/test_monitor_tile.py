@@ -11,6 +11,14 @@ from featurebyte.sql.tile_generate import TileGenerate
 from featurebyte.sql.tile_monitor import TileMonitor
 
 
+@pytest.fixture(autouse=True)
+def auto_enable_tile_monitoring(enable_tile_monitoring):
+    """
+    Enable tile monitoring for all tests in this module
+    """
+    yield
+
+
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_monitor_tile__missing_tile(session, base_sql_model, tile_registry_service):

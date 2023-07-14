@@ -1,6 +1,8 @@
 """
 Tile Monitor Job
 """
+import os
+
 from sqlglot import expressions
 
 from featurebyte.enum import InternalName
@@ -28,6 +30,10 @@ class TileMonitor(TileCommon):
         """
         Execute tile monitor operation
         """
+        # Disable tile monitoring for now since it is not yet user facing but the current
+        # implementation incurs significant cost when many features are deployed.
+        if not int(os.environ.get("FEATUREBYTE_TILE_MONITORING_ENABLED", "0")):
+            return
 
         tile_table_exist_flag = await self.table_exists(self.tile_id)
         logger.debug(f"tile_table_exist_flag: {tile_table_exist_flag}")
