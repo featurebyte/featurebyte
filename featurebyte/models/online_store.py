@@ -12,9 +12,9 @@ from featurebyte.models.online_store_compute_query import OnlineStoreComputeQuer
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
-from featurebyte.query_graph.sql.online_serving import (
+from featurebyte.query_graph.sql.online_serving import is_online_store_eligible
+from featurebyte.query_graph.sql.online_store_compute_query import (
     get_online_store_precompute_queries,
-    is_online_store_eligible,
 )
 
 

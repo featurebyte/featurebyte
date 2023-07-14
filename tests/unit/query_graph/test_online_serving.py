@@ -13,10 +13,12 @@ from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.query_graph.sql.online_serving import (
-    OnlineStorePrecomputePlan,
-    get_online_store_precompute_queries,
     get_online_store_retrieval_template,
     is_online_store_eligible,
+)
+from featurebyte.query_graph.sql.online_store_compute_query import (
+    OnlineStorePrecomputePlan,
+    get_online_store_precompute_queries,
 )
 from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
 from tests.util.helper import assert_equal_with_expected_fixture

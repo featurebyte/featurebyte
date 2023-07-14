@@ -66,7 +66,10 @@ def test_forward_aggregate(forward_aggregator):
     }
 
     # Get operation structure to verify output category
-    operation_structure = target.graph.extract_operation_structure(target_node)
+    operation_structure = target.graph.extract_operation_structure(
+        target_node,
+        keep_all_source_columns=True,
+    )
     assert operation_structure.output_category == "target"
 
 

@@ -226,15 +226,46 @@ def test_join_with_assign_node__join_node_parameters_pruning(
     # expected values
     expected_op_struct_columns = [
         {
+            "dtype": "INT",
+            "filter": False,
+            "name": "cust_id",
+            "node_name": "join_1",
+            "node_names": {"input_2", "join_1"},
+            "table_id": None,
+            "table_type": "event_table",
+            "type": "source",
+        },
+        {
+            "columns": [
+                {
+                    "dtype": "INT",
+                    "filter": False,
+                    "name": "order_id",
+                    "node_name": "input_1",
+                    "node_names": {"input_1"},
+                    "table_id": None,
+                    "table_type": "item_table",
+                    "type": "source",
+                },
+                {
+                    "dtype": "VARCHAR",
+                    "filter": False,
+                    "name": "item_type",
+                    "node_name": "input_1",
+                    "node_names": {"input_1"},
+                    "table_id": None,
+                    "table_type": "item_table",
+                    "type": "source",
+                },
+            ],
+            "dtype": "VARCHAR",
+            "filter": False,
             "name": "item_type",
             "node_name": "join_1",
             "node_names": {"join_1", "input_1"},
-            "table_id": None,
-            "table_type": "item_table",
-            "type": "source",
-            "dtype": "VARCHAR",
-            "filter": False,
-        }
+            "transforms": ["join"],
+            "type": "derived",
+        },
     ]
     expected_op_struct_aggregations = [
         {
@@ -259,7 +290,9 @@ def test_join_with_assign_node__join_node_parameters_pruning(
     pruned_graph = QueryGraph(**pruned_graph.json_dict())
     pruned_node = pruned_graph.get_node_by_name(node_name_map[groupby_node.name])
 
-    op_struct = pruned_graph.extract_operation_structure(node=pruned_node)
+    op_struct = pruned_graph.extract_operation_structure(
+        node=pruned_node, keep_all_source_columns=True
+    )
     assert to_dict(op_struct.columns) == expected_op_struct_columns
     assert to_dict(op_struct.aggregations) == expected_op_struct_aggregations
 
@@ -272,14 +305,12 @@ def test_join_with_assign_node__join_node_parameters_pruning(
     pruned_graph = QueryGraph(**pruned_graph.json_dict())
     pruned_node = pruned_graph.get_node_by_name(node_name_map[groupby_node.name])
 
-    op_struct = pruned_graph.extract_operation_structure(node=pruned_node)
-    expected_op_struct_columns = sorted(
-        to_dict(col, exclude=["node_names"]) for col in op_struct.columns
+    op_struct = pruned_graph.extract_operation_structure(
+        node=pruned_node, keep_all_source_columns=True
     )
-    assert (
-        sorted(to_dict(col, exclude=["node_names"]) for col in op_struct.columns)
-        == expected_op_struct_columns
-    )
+    col_names = [col.name for col in op_struct.columns]
+    expected_col_names = [col["name"] for col in expected_op_struct_columns]
+    assert set(col_names) == set(expected_col_names)
     assert to_dict(op_struct.aggregations) == expected_op_struct_aggregations
 
     # check pruned join node
@@ -337,7 +368,9 @@ def test_join_is_prunable(
     pruned_it_node = pruned_graph.get_node_by_name(node_name_map[item_table_input_node.name])
 
     # check operation structure of the join node output
-    op_struct = pruned_graph.extract_operation_structure(node=join_node)
+    op_struct = pruned_graph.extract_operation_structure(
+        node=join_node, keep_all_source_columns=True
+    )
     kwargs = {"include": ["name", "node_names"]}
     input_only_names = ["cust_id", "order_id", "order_method"]
     input_and_join_names = ["item_type", "item_name"]

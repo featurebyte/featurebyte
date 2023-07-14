@@ -1,8 +1,11 @@
 """
 Tile Tests for Spark Session
 """
+import os
 from datetime import datetime
+from unittest.mock import patch
 
+import pytest
 import pytest_asyncio
 from bson import ObjectId
 
@@ -111,3 +114,12 @@ async def tile_manager_service_fixture(
 @pytest_asyncio.fixture(name="base_sql_model")
 async def base_sql_model(session):
     return BaseSqlModel(session)
+
+
+@pytest.fixture(name="enable_tile_monitoring")
+def enable_tile_monitoring_fixture():
+    """
+    Fixture to enable tile monitoring
+    """
+    with patch.dict(os.environ, {"FEATUREBYTE_TILE_MONITORING_ENABLED": "1"}):
+        yield

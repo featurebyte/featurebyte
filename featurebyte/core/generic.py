@@ -94,7 +94,7 @@ class QueryObject(FeatureByteBaseModel):
         -------
         OperationStructure
         """
-        return self.graph.extract_operation_structure(self.node)
+        return self.graph.extract_operation_structure(self.node, keep_all_source_columns=True)
 
     @property
     def row_index_lineage(self) -> Tuple[str, ...]:

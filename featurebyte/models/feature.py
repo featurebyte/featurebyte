@@ -78,7 +78,7 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
 
             # extract dtype from the graph
             node = graph.get_node_by_name(node_name)
-            op_struct = graph.extract_operation_structure(node=node)
+            op_struct = graph.extract_operation_structure(node=node, keep_all_source_columns=True)
             if len(op_struct.aggregations) != 1:
                 raise ValueError("Feature or target graph must have exactly one aggregation output")
 
@@ -142,14 +142,17 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
 
     def extract_operation_structure(self) -> GroupOperationStructure:
         """
-        Extract feature or target operation structure based on query graph.
+        Extract feature or target operation structure based on query graph. This method is mainly
+        used for deriving feature or target metadata used in feature/target info.
 
         Returns
         -------
         GroupOperationStructure
         """
         # group the view columns by source columns & derived columns
-        operation_structure = self.graph.extract_operation_structure(self.node)
+        operation_structure = self.graph.extract_operation_structure(
+            self.node, keep_all_source_columns=False
+        )
         return operation_structure.to_group_operation_structure()
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):

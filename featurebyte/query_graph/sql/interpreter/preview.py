@@ -128,7 +128,7 @@ class PreviewMixin(BaseGraphInterpreter):
 
         # apply type conversions
         operation_structure = QueryGraph(**self.query_graph.dict()).extract_operation_structure(
-            self.query_graph.get_node_by_name(node_name)
+            self.query_graph.get_node_by_name(node_name), keep_all_source_columns=True
         )
         if skip_conversion:
             type_conversions: dict[Optional[str], DBVarType] = {}
@@ -735,7 +735,7 @@ class PreviewMixin(BaseGraphInterpreter):
             SQL code, type conversions to apply on result, row indices, columns
         """
         operation_structure = QueryGraph(**self.query_graph.dict()).extract_operation_structure(
-            self.query_graph.get_node_by_name(node_name)
+            self.query_graph.get_node_by_name(node_name), keep_all_source_columns=True
         )
 
         sql_tree, type_conversions = self._construct_sample_sql(

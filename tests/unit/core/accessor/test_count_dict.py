@@ -153,7 +153,7 @@ def test_get_value_from_dictionary__success(
     for per_cat_feat in [count_per_category_feature, sum_per_category_feature]:
         # check the count_dict has a proper dtype
         count_dict_op_struct = per_cat_feat.graph.extract_operation_structure(
-            node=per_cat_feat.node
+            node=per_cat_feat.node, keep_all_source_columns=True
         )
         assert len(count_dict_op_struct.aggregations) == 1
         assert count_dict_op_struct.aggregations[0].dtype == "OBJECT"

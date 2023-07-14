@@ -303,7 +303,9 @@ class ItemView(View, GroupByMixin, RawMixin):
         -------
         bool
         """
-        operation_structure = self.graph.extract_operation_structure(self.node)
+        operation_structure = self.graph.extract_operation_structure(
+            self.node, keep_all_source_columns=True
+        )
         for column_name in column_names:
             column_structure = next(
                 column for column in operation_structure.columns if column.name == column_name
