@@ -157,7 +157,7 @@ class FeatureOrTargetTableController(
         observation_set: Optional[UploadFile],
     ) -> Task:
         """
-        Create HistoricalFeatureTable by submitting an async historical feature request task
+        Create table by submitting an async request task
 
         Parameters
         ----------
@@ -213,7 +213,7 @@ class FeatureOrTargetTableController(
         self, document: BaseFeatureOrTargetTableModel
     ) -> BaseFeatureOrTargetTableInfo:
         """
-        Get TargetTable info
+        Get common table info
 
         Parameters
         ----------
@@ -242,7 +242,7 @@ class FeatureOrTargetTableController(
 
     async def get_info(self, document_id: ObjectId, verbose: bool) -> InfoTypeT:
         """
-        Get HistoricalFeatureTable info
+        Get info
 
         Parameters
         ----------
