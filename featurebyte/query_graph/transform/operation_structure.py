@@ -143,7 +143,7 @@ class OperationStructureExtractor(
         proxy_input_operation_structures: Optional[List[OperationStructure]] = None,
         **kwargs: Any,
     ) -> OperationStructureInfo:
-        state_params: Dict[str, Any] = {"keep_all_source_columns": False}
+        state_params: Dict[str, Any] = {"keep_all_source_columns": True}
         if "keep_all_source_columns" in kwargs:
             # if this parameter is set, then the operation structure will keep all the source columns
             # even if they are not directly used in the operation (for example, event timestamp & entity columns

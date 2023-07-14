@@ -122,7 +122,9 @@ class ContextService(BaseDocumentService[ContextModel, ContextCreate, ContextUpd
         document = await self.get_document(document_id=document_id)
         if data.graph and data.node_name:
             node = data.graph.get_node_by_name(data.node_name)
-            operation_structure = data.graph.extract_operation_structure(node=node)
+            operation_structure = data.graph.extract_operation_structure(
+                node=node, keep_all_source_columns=True
+            )
             await self._validate_view(operation_structure=operation_structure, context=document)
 
         document = await super().update_document(

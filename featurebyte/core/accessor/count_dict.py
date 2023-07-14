@@ -322,7 +322,9 @@ class CountDictAccessor:
             # We only need to assign value if we have been passed in a single scalar value.
             additional_node_params["value"] = key
         # construct operation structure of the get value node output
-        op_struct = self._feature_obj.graph.extract_operation_structure(node=self._feature_obj.node)
+        op_struct = self._feature_obj.graph.extract_operation_structure(
+            node=self._feature_obj.node, keep_all_source_columns=True
+        )
         get_value_node = GetValueFromDictionaryNode(name="temp", parameters=additional_node_params)
 
         series_operator = DefaultSeriesBinaryOperator(self._feature_obj, key)

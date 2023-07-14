@@ -412,7 +412,7 @@ FeatureDataColumn = Annotated[
 
 
 class GroupOperationStructure(BaseModel):
-    """GroupOperationStructure class"""
+    """GroupOperationStructure class is used to construct feature/target info's metadata attribute."""
 
     source_columns: List[SourceDataColumn] = Field(default_factory=list)
     derived_columns: List[DerivedDataColumn] = Field(default_factory=list)

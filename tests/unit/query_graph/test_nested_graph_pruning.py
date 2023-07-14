@@ -93,7 +93,17 @@ def test_nested_graph_pruning(input_details, groupby_node_params):
     )
 
     # check operation structure
-    operation_structure = graph.extract_operation_structure(node=node_proj_2h_avg)
+    operation_structure = graph.extract_operation_structure(
+        node=node_proj_2h_avg, keep_all_source_columns=True
+    )
+    common_column_params = {
+        "node_names": {"input_1"},
+        "node_name": "input_1",
+        "table_id": None,
+        "table_type": "event_table",
+        "type": "source",
+        "filter": False,
+    }
     assert to_dict(operation_structure) == {
         "aggregations": [
             {
@@ -121,16 +131,9 @@ def test_nested_graph_pruning(input_details, groupby_node_params):
             }
         ],
         "columns": [
-            {
-                "filter": False,
-                "name": "a",
-                "node_names": {"input_1"},
-                "node_name": "input_1",
-                "table_id": None,
-                "table_type": "event_table",
-                "type": "source",
-                "dtype": "FLOAT",
-            }
+            {"name": "ts", "dtype": "TIMESTAMP", **common_column_params},
+            {"name": "cust_id", "dtype": "INT", **common_column_params},
+            {"name": "a", "dtype": "FLOAT", **common_column_params},
         ],
         "output_category": "feature",
         "output_type": "series",

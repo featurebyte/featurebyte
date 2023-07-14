@@ -322,7 +322,7 @@ class PreviewService(BaseService):
         graph = feature_or_target_preview.graph
         feature_node = graph.get_node_by_name(feature_or_target_preview.node_name)
         operation_struction = feature_or_target_preview.graph.extract_operation_structure(
-            feature_node
+            feature_node, keep_all_source_columns=True
         )
 
         # We only need to ensure that the point in time column is provided,
@@ -389,7 +389,7 @@ class PreviewService(BaseService):
             for feature_node_name in feature_cluster.node_names:
                 feature_node = feature_cluster.graph.get_node_by_name(feature_node_name)
                 operation_struction = feature_cluster.graph.extract_operation_structure(
-                    feature_node
+                    feature_node, keep_all_source_columns=True
                 )
                 if operation_struction.is_time_based:
                     has_time_based_feature = True
