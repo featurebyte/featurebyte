@@ -19,7 +19,7 @@ from featurebyte.enum import StrEnum
 
 Model = TypeVar("Model", bound="FeatureByteBaseModel")
 
-DEFAULT_CATALOG_ID = ObjectId("63eda344d0313fb925f7883a")
+DEFAULT_CATALOG_ID = ObjectId("23eda344d0313fb925f7883a")
 ACTIVE_CATALOG_ID: Optional[ObjectId] = None
 CAMEL_CASE_TO_SNAKE_CASE_PATTERN = re.compile("((?!^)(?<!_)[A-Z][a-z]+|(?<=[a-z0-9])[A-Z])")
 
