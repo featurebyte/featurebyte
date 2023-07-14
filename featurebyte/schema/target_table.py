@@ -5,26 +5,22 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from bson import ObjectId
-from pydantic import Field, StrictStr, root_validator
+from pydantic import StrictStr, root_validator
 
-from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.target_table import TargetTableModel
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.schema.common.base import PaginationMixin
+from featurebyte.schema.common.feature_or_target import FeatureOrTargetTableCreate
 from featurebyte.schema.materialized_table import BaseMaterializedTableListRecord
 
 
-class TargetTableCreate(FeatureByteBaseModel):
+class TargetTableCreate(FeatureOrTargetTableCreate):
     """
     TargetTable creation payload
     """
 
-    id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
-    name: StrictStr
-    feature_store_id: PydanticObjectId
-    observation_table_id: Optional[PydanticObjectId]
     serving_names_mapping: Optional[Dict[str, str]]
     target_id: Optional[PydanticObjectId]
     graph: QueryGraph

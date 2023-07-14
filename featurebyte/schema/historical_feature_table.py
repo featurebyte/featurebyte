@@ -3,27 +3,23 @@ HistoricalFeatureTable API payload schema
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
-from bson import ObjectId
-from pydantic import Field, StrictStr, root_validator
+from pydantic import root_validator
 
-from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
 from featurebyte.schema.common.base import PaginationMixin
+from featurebyte.schema.common.feature_or_target import FeatureOrTargetTableCreate
 from featurebyte.schema.feature_list import FeatureListGetHistoricalFeatures
 from featurebyte.schema.materialized_table import BaseMaterializedTableListRecord
 
 
-class HistoricalFeatureTableCreate(FeatureByteBaseModel):
+class HistoricalFeatureTableCreate(FeatureOrTargetTableCreate):
     """
     HistoricalFeatureTable creation payload
     """
 
-    id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
-    name: StrictStr
-    feature_store_id: PydanticObjectId
-    observation_table_id: Optional[PydanticObjectId]
     featurelist_get_historical_features: FeatureListGetHistoricalFeatures
 
 

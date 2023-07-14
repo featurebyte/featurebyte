@@ -45,7 +45,7 @@ async def create_historical_feature_table(
     """
     data = HistoricalFeatureTableCreate(**json.loads(payload))
     controller = request.state.app_container.historical_feature_table_controller
-    task_submit: Task = await controller.create_historical_feature_table(
+    task_submit: Task = await controller.create_table(
         data=data,
         observation_set=observation_set,
     )
