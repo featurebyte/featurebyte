@@ -890,7 +890,7 @@ def test_extract_operation__complicated_assignment_case_1(dataframe):
             {
                 "name": "TIMESTAMP_VALUE",
                 "dtype": "TIMESTAMP",
-                **extract_column_parameters(input_node, {"project_1"}),
+                **extract_column_parameters(input_node, {"project_1", "project_3"}),
             }
         ],
         "transforms": ["date_diff", "date_add"],
@@ -986,7 +986,9 @@ def test_extract_operation__complicated_assignment_case_2(dataframe):
                     {
                         "name": "CUST_ID",
                         "dtype": "INT",
-                        **extract_column_parameters(input_node, {"input_1", "project_4"}),
+                        **extract_column_parameters(
+                            input_node, {"project_2", "input_1", "project_4"}
+                        ),
                     },
                 ],
                 "filter": False,

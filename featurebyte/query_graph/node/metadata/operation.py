@@ -196,7 +196,7 @@ class BaseDerivedColumn(BaseColumn):
         Dict[Tuple[str, str], BaseDataColumn]
         """
         key = (column.name, column.node_name)
-        if column.name not in column_map:
+        if key not in column_map:
             column_map[key] = column
         else:
             cur_col = column_map[key]
@@ -560,7 +560,7 @@ class OperationStructure:
         Tuple[List[AggregationColumn], List[PostAggregationColumn]],
     ]:
         _ = self
-        input_column_map: Dict[str, Any] = {}
+        input_column_map: Dict[Tuple[str, str], Any] = {}
         derived_column_map: Dict[Any, None] = {}
         for column in columns:
             if isinstance(column, (DerivedDataColumn, PostAggregationColumn)):
