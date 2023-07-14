@@ -49,7 +49,7 @@ def test_generic_function__view_type(global_graph, input_node):
     assert gfunc.derive_var_type(inputs=[]) == DBVarType.FLOAT
 
     # check output operation structure
-    op_struct = global_graph.extract_operation_structure(node=gfunc)
+    op_struct = global_graph.extract_operation_structure(node=gfunc, keep_all_source_columns=True)
     assert op_struct.is_time_based is False
     assert op_struct.output_category == NodeOutputCategory.VIEW
     assert op_struct.output_type == NodeOutputType.SERIES
@@ -86,7 +86,10 @@ def test_generic_function__view_type(global_graph, input_node):
     assert definition.endswith("\n".join(expected_definition_lines))
 
 
-def test_generic_function__feature_type(global_graph, query_graph_with_groupby_and_feature_nodes):
+@pytest.mark.parametrize("keep_all_source_columns", [True, False])
+def test_generic_function__feature_type(
+    global_graph, query_graph_with_groupby_and_feature_nodes, keep_all_source_columns
+):
     """Test adding generic function node to query graph (Feature)"""
     graph, feature_proj, _ = query_graph_with_groupby_and_feature_nodes
     gfunc = graph.add_operation(
@@ -110,20 +113,27 @@ def test_generic_function__feature_type(global_graph, query_graph_with_groupby_a
     assert gfunc.derive_var_type(inputs=[]) == DBVarType.FLOAT
 
     # check output operation structure
-    op_struct = graph.extract_operation_structure(node=gfunc)
+    op_struct = graph.extract_operation_structure(
+        node=gfunc, keep_all_source_columns=keep_all_source_columns
+    )
+    if keep_all_source_columns:
+        expected_col_type_pairs = [("ts", "TIMESTAMP"), ("cust_id", "INT"), ("a", "FLOAT")]
+    else:
+        expected_col_type_pairs = [("a", "FLOAT")]
     assert op_struct.is_time_based is True
     assert op_struct.output_category == NodeOutputCategory.FEATURE
     assert op_struct.output_type == NodeOutputType.SERIES
     assert op_struct.columns == [
         SourceDataColumn(
-            name="a",
-            dtype=DBVarType.FLOAT,
+            name=col_name,
+            dtype=DBVarType(var_type),
             filter=False,
             node_names={"input_1"},
             node_name="input_1",
             table_id=None,
             table_type=TableDataType.EVENT_TABLE,
-        ),
+        )
+        for col_name, var_type in expected_col_type_pairs
     ]
     assert op_struct.aggregations == [
         PostAggregationColumn(

@@ -65,7 +65,9 @@ class BaseGraphInterpreter:
             SQL code to execute, and column count
         """
         flat_graph, flat_node = self.flatten_graph(node_name=node_name)
-        operation_structure = QueryGraph(**flat_graph.dict()).extract_operation_structure(flat_node)
+        operation_structure = QueryGraph(**flat_graph.dict()).extract_operation_structure(
+            flat_node, keep_all_source_columns=True
+        )
         sql_tree = (
             SQLOperationGraph(
                 flat_graph, sql_type=SQLType.MATERIALIZE, source_type=self.source_type

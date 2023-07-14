@@ -53,7 +53,7 @@ def is_online_store_eligible(graph: QueryGraph, node: Node) -> bool:
     -------
     bool
     """
-    op_struct = graph.extract_operation_structure(node)
+    op_struct = graph.extract_operation_structure(node, keep_all_source_columns=True)
     if not op_struct.is_time_based:
         return False
     has_point_in_time_groupby = False

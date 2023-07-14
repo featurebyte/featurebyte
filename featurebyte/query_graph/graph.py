@@ -280,7 +280,12 @@ class QueryGraph(QueryGraphModel):
             node_name_map[node.name] = node_global.name
         return self, node_name_map
 
-    def extract_operation_structure(self, node: Node, **kwargs: Any) -> OperationStructure:
+    def extract_operation_structure(
+        self,
+        node: Node,
+        keep_all_source_columns: bool,
+        **kwargs: Any,
+    ) -> OperationStructure:
         """
         Extract operation structure from the graph given target node
 
@@ -288,6 +293,8 @@ class QueryGraph(QueryGraphModel):
         ----------
         node: Node
             Target node used to construct the operation structure
+        keep_all_source_columns: bool
+            Whether to keep all source columns in the operation structure
         kwargs: Any
             Additional arguments to be passed to the OperationStructureExtractor.extract() method
 
@@ -295,7 +302,9 @@ class QueryGraph(QueryGraphModel):
         -------
         OperationStructure
         """
-        op_struct_info = OperationStructureExtractor(graph=self).extract(node=node, **kwargs)
+        op_struct_info = OperationStructureExtractor(graph=self).extract(
+            node=node, keep_all_source_columns=keep_all_source_columns, **kwargs
+        )
         return op_struct_info.operation_structure_map[node.name]
 
     def prune(self, target_node: Node) -> GraphNodeNameMap:

@@ -119,7 +119,9 @@ def test_graph_node_create__non_empty_input_nodes(input_node_params):
     inserted_graph_node = graph.add_node(
         node=graph_node, input_nodes=[proj_int_node, proj_float_node]
     )
-    operation_structure = graph.extract_operation_structure(node=inserted_graph_node)
+    operation_structure = graph.extract_operation_structure(
+        node=inserted_graph_node, keep_all_source_columns=True
+    )
     # internal node names should not be included (node_names: add_1)
     assert to_dict(operation_structure) == {
         "aggregations": [],
@@ -199,7 +201,9 @@ def nested_input_graph_fixture(input_node_params):
     assert graph.edges == [{"source": "graph_1", "target": "add_1"}]
 
     # internal node names should not be included (node_names: input_1, project_1)
-    operation_structure = graph.extract_operation_structure(node=add_node)
+    operation_structure = graph.extract_operation_structure(
+        node=add_node, keep_all_source_columns=True
+    )
     assert to_dict(operation_structure) == {
         "aggregations": [],
         "columns": [
@@ -267,7 +271,9 @@ def nested_output_graph_fixture(input_node_params):
     assert graph.edges == [{"source": "input_1", "target": "graph_1"}]
 
     # internal node names should not be included (node_names: project_1, add_1)
-    operation_structure = graph.extract_operation_structure(node=inserted_graph_node)
+    operation_structure = graph.extract_operation_structure(
+        node=inserted_graph_node, keep_all_source_columns=True
+    )
     assert to_dict(operation_structure) == {
         "aggregations": [],
         "columns": [
@@ -357,7 +363,9 @@ def deep_nested_graph_fixture(input_node_params):
     assert inserted_deepest_graph.edges == []
 
     # internal node names should not be included (node_names: project_1, add_1)
-    operation_structure = graph.extract_operation_structure(node=inserted_graph_node)
+    operation_structure = graph.extract_operation_structure(
+        node=inserted_graph_node, keep_all_source_columns=True
+    )
     assert to_dict(operation_structure) == {
         "aggregations": [],
         "columns": [
@@ -473,7 +481,9 @@ def test_graph_node__redundant_graph_node(input_node_params):
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[graph_node],
     )
-    operation_structure = graph.extract_operation_structure(node=proj_node)
+    operation_structure = graph.extract_operation_structure(
+        node=proj_node, keep_all_source_columns=True
+    )
     assert to_dict(operation_structure) == {
         "aggregations": [],
         "columns": [

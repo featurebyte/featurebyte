@@ -606,7 +606,9 @@ class Feature(
         bool
             True if the feature is time based, False otherwise.
         """
-        operation_structure = self.graph.extract_operation_structure(self.node)
+        operation_structure = self.graph.extract_operation_structure(
+            self.node, keep_all_source_columns=True
+        )
         return operation_structure.is_time_based
 
     @property
