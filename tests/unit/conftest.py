@@ -163,6 +163,7 @@ def snowflake_query_map_fixture():
             {"name": "fixed_table"},
             {"name": "non_scalar_table"},
             {"name": "scd_table"},
+            {"name": "scd_table_state_map"},
             {"name": "dimension_table"},
         ],
         'SHOW VIEWS IN SCHEMA "sf_database"."sf_schema"': [{"name": "sf_view"}],
@@ -280,6 +281,27 @@ def snowflake_query_map_fixture():
             },
             {"column_name": "created_at", "data_type": json.dumps({"type": "TIMESTAMP_TZ"})},
             {"column_name": "cust_id", "data_type": json.dumps({"type": "FIXED", "scale": 0})},
+        ],
+        'SHOW COLUMNS IN "sf_database"."sf_schema"."scd_table_state_map"': [
+            {"column_name": "col_int", "data_type": json.dumps({"type": "FIXED", "scale": 0})},
+            {
+                "column_name": "is_active",
+                "data_type": json.dumps({"type": "BOOLEAN", "length": 1}),
+            },
+            {
+                "column_name": "col_text",
+                "data_type": json.dumps({"type": "TEXT", "length": 2**24}),
+            },
+            {
+                "column_name": "effective_timestamp",
+                "data_type": json.dumps({"type": "TIMESTAMP_TZ"}),
+            },
+            {
+                "column_name": "end_timestamp",
+                "data_type": json.dumps({"type": "TIMESTAMP_TZ"}),
+            },
+            {"column_name": "col_boolean", "data_type": json.dumps({"type": "BOOLEAN"})},
+            {"column_name": "state_code", "data_type": json.dumps({"type": "FIXED", "scale": 0})},
         ],
         "SHOW SCHEMAS": [
             {"name": "PUBLIC"},
@@ -591,6 +613,25 @@ def snowflake_scd_table_fixture(snowflake_database_table_scd_table, snowflake_sc
         _id=snowflake_scd_table_id,
     )
     assert scd_table.frame.node.parameters.id == scd_table.id
+    yield scd_table
+
+
+@pytest.fixture(name="snowflake_scd_table_state_map")
+def snowflake_scd_table_state_map_fixture(snowflake_data_source):
+    """SCDTable object fixture"""
+    source_table = snowflake_data_source.get_source_table(
+        database_name="sf_database",
+        schema_name="sf_schema",
+        table_name="scd_table_state_map",
+    )
+    scd_table = source_table.create_scd_table(
+        name="scd_table_state_map",
+        natural_key_column="col_text",
+        surrogate_key_column="col_int",
+        effective_timestamp_column="effective_timestamp",
+        end_timestamp_column="end_timestamp",
+        current_flag_column="is_active",
+    )
     yield scd_table
 
 
@@ -1179,6 +1220,47 @@ def count_per_category_feature_2h_fixture(count_per_category_feature_group):
     Aggregation per category feature fixture (2h window)
     """
     yield count_per_category_feature_group["counts_2h"]
+
+
+@pytest.fixture(name="multiple_scd_joined_feature")
+def multiple_scd_joined_feature_fixture(
+    snowflake_event_table_with_entity,
+    snowflake_scd_table,
+    snowflake_scd_table_state_map,
+    cust_id_entity,
+):
+    """
+    Feature that is built from multiple SCD tables joined with event table
+    """
+    col_boolean_entity = Entity.create("col_boolean", serving_names=["col_boolean"])
+    snowflake_scd_table.col_int.as_entity(cust_id_entity.name)
+    snowflake_scd_table.col_boolean.as_entity(col_boolean_entity.name)
+
+    state_code_entity = Entity.create("state_code", serving_names=["state_code"])
+    snowflake_scd_table_state_map.col_boolean.as_entity(col_boolean_entity.name)
+    snowflake_scd_table_state_map.state_code.as_entity(state_code_entity.name)
+
+    event_view = snowflake_event_table_with_entity.get_view()
+    scd_view = snowflake_scd_table.get_view()
+    state_view = snowflake_scd_table_state_map.get_view()
+    event_view_cols = ["col_int", "event_timestamp"]
+    event_view = event_view[event_view_cols].join(
+        scd_view[["col_int", "col_boolean"]], on="col_int"
+    )
+    event_view = event_view.join(
+        state_view[["col_boolean", "state_code"]], on="col_boolean", rsuffix="_scd"
+    )
+
+    feature = event_view.groupby("state_code_scd").aggregate_over(
+        None,
+        "count",
+        windows=["30d"],
+        feature_names=["state_code_counts_30d"],
+        feature_job_setting=FeatureJobSetting(
+            frequency="24h", time_modulo_frequency="1h", blind_spot="2h"
+        ),
+    )["state_code_counts_30d"]
+    yield feature
 
 
 @pytest.fixture(name="session_manager")
