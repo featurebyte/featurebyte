@@ -139,41 +139,6 @@ class SessionValidatorService:
         if users_feature_store_id is None:
             raise NoFeatureStorePresentError
 
-    async def validate_details(
-        self,
-        feature_store_name: str,
-        session_type: SourceType,
-        details: DatabaseDetails,
-        get_credential: Any,
-    ) -> ValidateStatus:
-        """
-        Validate whether the existing details exist in the persistent layer
-        or in the data warehouse.
-
-        Parameters
-        ----------
-        feature_store_name: str
-            feature store name
-        session_type: SourceType
-            session type
-        details: DatabaseDetails
-            database details
-        get_credential: Any
-            credential handler function
-
-        Returns
-        -------
-        ValidateStatus
-            The status of the validation
-        """
-        # Retrieve the feature store ID
-        users_feature_store_id = await self.get_feature_store_id_from_details(details)
-
-        # Check whether the feature store ID has been used in the data warehouse.
-        return await self.validate_feature_store_id_not_used_in_warehouse(
-            feature_store_name, session_type, details, get_credential, users_feature_store_id
-        )
-
     async def validate_feature_store_id_not_used_in_warehouse(
         self,
         feature_store_name: str,
