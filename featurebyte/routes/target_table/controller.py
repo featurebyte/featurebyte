@@ -18,7 +18,6 @@ from featurebyte.routes.common.feature_or_target_table import (
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.info import TargetTableInfo
 from featurebyte.schema.target_table import TargetTableCreate, TargetTableList
-from featurebyte.schema.worker.task.target_table import TargetTableTaskPayload
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.observation_table import ObservationTableService

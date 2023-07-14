@@ -21,9 +21,6 @@ from featurebyte.schema.historical_feature_table import (
     HistoricalFeatureTableList,
 )
 from featurebyte.schema.info import HistoricalFeatureTableInfo
-from featurebyte.schema.worker.task.historical_feature_table import (
-    HistoricalFeatureTableTaskPayload,
-)
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_store import FeatureStoreService
