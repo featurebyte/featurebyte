@@ -243,6 +243,10 @@ async def test_feature_derived_from_multiple_scd_joins(session, data_source, sou
         {"POINT_IN_TIME": ["2022-04-25 10:00:00"], "customer_id": ["c1"]}
     )
     df = features.preview(df_observations)
+    expected = df_observations.copy()
+    expected["POINT_IN_TIME"] = pd.to_datetime(expected["POINT_IN_TIME"])
+    expected["state_code_counts_30d"] = '{\n  "A": 1\n}'
+    pd.testing.assert_frame_equal(df, expected)
 
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)

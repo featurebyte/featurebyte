@@ -3,10 +3,8 @@ Unit tests for SCDView class
 """
 import pytest
 
-from featurebyte.api.entity import Entity
 from featurebyte.api.scd_view import SCDView
 from featurebyte.exception import JoinViewMismatchError
-from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
 from tests.util.helper import check_sdk_code_generation, get_node
 
@@ -287,5 +285,11 @@ def test_aggregate_asat_sdk_code_generation(saved_scd_table, transaction_entity,
 
 def test_feature_derived_from_multiple_scd_joins(multiple_scd_joined_feature):
     """Test saving a feature derived from multiple SCD joins"""
-    # FIXME: this test is disabled because the feature is not saved
-    _ = multiple_scd_joined_feature
+    # check that the feature can be saved (pruning does not fail)
+    feat = multiple_scd_joined_feature
+    feat.save()
+
+    # check that table names are correct
+    feat_info = feat.info()
+    table_names = [table["name"] for table in feat_info["tables"]]
+    assert table_names == ["scd_table_state_map", "sf_scd_table", "sf_event_table"]
