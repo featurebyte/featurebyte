@@ -303,8 +303,9 @@ class ItemView(View, GroupByMixin, RawMixin):
         -------
         bool
         """
+        # FIXME: This method is may not work correctly when the column is from SCD table joined with EventTable
         operation_structure = self.graph.extract_operation_structure(
-            self.node, keep_all_source_columns=True
+            self.node, keep_all_source_columns=False
         )
         for column_name in column_names:
             column_structure = next(

@@ -1,8 +1,6 @@
 """
 Unit tests for SCDView class
 """
-import textwrap
-
 import pytest
 
 from featurebyte.api.scd_view import SCDView
@@ -283,3 +281,15 @@ def test_aggregate_asat_sdk_code_generation(saved_scd_table, transaction_entity,
         table_id=saved_scd_table.id,
         update_fixtures=update_fixtures,
     )
+
+
+def test_feature_derived_from_multiple_scd_joins(multiple_scd_joined_feature):
+    """Test saving a feature derived from multiple SCD joins"""
+    # check that the feature can be saved (pruning does not fail)
+    feat = multiple_scd_joined_feature
+    feat.save()
+
+    # check that table names are correct
+    feat_info = feat.info()
+    table_names = [table["name"] for table in feat_info["tables"]]
+    assert table_names == ["scd_table_state_map", "sf_scd_table", "sf_event_table"]

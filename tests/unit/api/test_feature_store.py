@@ -80,6 +80,7 @@ def test_list_tables(snowflake_connector, snowflake_execute_query, snowflake_fea
         "fixed_table",
         "non_scalar_table",
         "scd_table",
+        "scd_table_state_map",
         "dimension_table",
         "sf_view",
     ]

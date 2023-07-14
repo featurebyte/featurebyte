@@ -1069,6 +1069,7 @@ class JoinNode(BasePrunableNode):
             for col in inputs[0].columns
             if col.name in left_col_map
         }
+        left_on_col = next(col for col in inputs[0].columns if col.name == self.parameters.left_on)
         right_columns = {}
         right_on_col = next(
             col for col in inputs[1].columns if col.name == self.parameters.right_on
@@ -1080,7 +1081,7 @@ class JoinNode(BasePrunableNode):
                     # so that any changes on the right_on column can be tracked.
                     right_columns[col.name] = DerivedDataColumn.create(
                         name=right_col_map[col.name],  # type: ignore
-                        columns=[right_on_col, col],
+                        columns=[right_on_col, col, left_on_col],
                         transform=self.transform_info,
                         node_name=self.name,
                         dtype=col.dtype,
