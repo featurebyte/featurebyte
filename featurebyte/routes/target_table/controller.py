@@ -11,6 +11,7 @@ from featurebyte.models.target_table import TargetTableModel
 from featurebyte.routes.common.feature_or_target_table import (
     FeatureOrTargetTableController,
     MaterializedTableDocumentT,
+    PayloadT,
     TableCreateT,
     ValidationParameters,
 )
@@ -58,7 +59,7 @@ class TargetTableController(
 
     async def get_payload(
         self, table_create: TableCreateT, observation_set_dataframe: Optional[pd.DataFrame]
-    ) -> TargetTableTaskPayload:
+    ) -> PayloadT:
         assert isinstance(table_create, TargetTableCreate)
         return await self.service.get_target_table_task_payload(
             data=table_create, observation_set_dataframe=observation_set_dataframe

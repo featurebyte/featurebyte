@@ -11,6 +11,7 @@ from featurebyte.models.historical_feature_table import HistoricalFeatureTableMo
 from featurebyte.routes.common.feature_or_target_table import (
     FeatureOrTargetTableController,
     MaterializedTableDocumentT,
+    PayloadT,
     TableCreateT,
     ValidationParameters,
 )
@@ -67,7 +68,7 @@ class HistoricalFeatureTableController(
         self,
         table_create: TableCreateT,
         observation_set_dataframe: Optional[pd.DataFrame],
-    ) -> HistoricalFeatureTableTaskPayload:
+    ) -> PayloadT:
         assert isinstance(table_create, HistoricalFeatureTableCreate)
         return await self.service.get_historical_feature_table_task_payload(
             data=table_create, observation_set_dataframe=observation_set_dataframe

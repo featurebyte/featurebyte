@@ -14,8 +14,8 @@ from bson import ObjectId
 from fastapi import HTTPException, UploadFile
 
 from featurebyte.common.utils import dataframe_from_arrow_stream
-from featurebyte.models import FeatureStoreModel
 from featurebyte.models.base_feature_or_target_table import BaseFeatureOrTargetTableModel
+from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.target_table import TargetTableModel
