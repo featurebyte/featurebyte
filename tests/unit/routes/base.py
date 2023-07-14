@@ -585,6 +585,14 @@ class BaseCatalogApiTestSuite(BaseApiTestSuite):
         new_feature_id = post_feature_response.json()["_id"]
         return new_feature_id
 
+    def test_list_no_catalog_424(self, api_client_persistent):
+        """
+        Test list when no catalog is active
+        """
+        api_client, _ = api_client_persistent
+        response = api_client.get(self.base_route)
+        assert response.status_code == HTTPStatus.FAILED_DEPENDENCY
+
 
 class BaseRelationshipApiTestSuite(BaseApiTestSuite):
     """
