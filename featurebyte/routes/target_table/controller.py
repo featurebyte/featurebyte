@@ -3,7 +3,7 @@ Target API route controller
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional
 
 from http import HTTPStatus
 
@@ -13,11 +13,16 @@ from fastapi import HTTPException, UploadFile
 from featurebyte.common.utils import dataframe_from_arrow_stream
 from featurebyte.models.target_table import TargetTableModel
 from featurebyte.routes.common.base_materialized_table import BaseMaterializedTableController
+from featurebyte.routes.common.feature_or_target_table import FeatureOrTargetTableController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.info import TargetTableInfo
 from featurebyte.schema.target_table import TargetTableCreate, TargetTableList
 from featurebyte.schema.task import Task
 from featurebyte.service.entity_validation import EntityValidationService
+from featurebyte.service.feature_or_target_helper.info_helper import (
+    FeatureOrTargetInfoHelper,
+    InfoType,
+)
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.preview import PreviewService
@@ -26,13 +31,15 @@ from featurebyte.service.target_table import TargetTableService
 
 
 class TargetTableController(
-    BaseMaterializedTableController[TargetTableModel, TargetTableService, TargetTableList],
+    FeatureOrTargetTableController[TargetTableModel, TargetTableService, TargetTableList],
 ):
     """
     TargetTable Controller
     """
 
     paginated_document_class = TargetTableList
+    info_type = InfoType.TARGET
+    info_class = TargetTableInfo
 
     def __init__(
         self,
@@ -43,13 +50,19 @@ class TargetTableController(
         entity_validation_service: EntityValidationService,
         task_controller: TaskController,
         target_service: TargetService,
+        feature_or_target_info_helper: FeatureOrTargetInfoHelper,
     ):
-        super().__init__(service=target_table_service, preview_service=preview_service)
+        super().__init__(
+            service=target_table_service,
+            preview_service=preview_service,
+            feature_or_target_info_helper=feature_or_target_info_helper,
+        )
         self.feature_store_service = feature_store_service
         self.observation_table_service = observation_table_service
         self.entity_validation_service = entity_validation_service
         self.task_controller = task_controller
         self.target_service = target_service
+        self.feature_or_target_info_helper = feature_or_target_info_helper
 
     async def create_target_table(
         self,
@@ -113,35 +126,7 @@ class TargetTableController(
         task_id = await self.task_controller.task_manager.submit(payload=payload)
         return await self.task_controller.get_task(task_id=str(task_id))
 
-    async def get_info(self, document_id: ObjectId, verbose: bool) -> TargetTableInfo:
-        """
-        Get TargetTable info
-
-        Parameters
-        ----------
-        document_id: ObjectId
-            TargetTable ID
-        verbose: bool
-            Whether to return verbose info
-
-        Returns
-        -------
-        TargetTableInfo
-        """
-        _ = verbose
+    async def get_additional_info_params(self, document_id: ObjectId) -> dict[str, Any]:
         target_table = await self.service.get_document(document_id=document_id)
-        if target_table.observation_table_id is not None:
-            observation_table = await self.observation_table_service.get_document(
-                document_id=target_table.observation_table_id
-            )
-        else:
-            observation_table = None
         target = await self.target_service.get_document(target_table.target_id)
-        return TargetTableInfo(
-            name=target_table.name,
-            target_name=target.name,
-            observation_table_name=observation_table.name if observation_table else None,
-            table_details=target_table.location.table_details,
-            created_at=target_table.created_at,
-            updated_at=target_table.updated_at,
-        )
+        return {"target_name": target.name}

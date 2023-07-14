@@ -3,7 +3,7 @@ HistoricalTable API route controller
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional
 
 from http import HTTPStatus
 
@@ -12,7 +12,7 @@ from fastapi import HTTPException, UploadFile
 
 from featurebyte.common.utils import dataframe_from_arrow_stream
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
-from featurebyte.routes.common.base_materialized_table import BaseMaterializedTableController
+from featurebyte.routes.common.feature_or_target_table import FeatureOrTargetTableController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.historical_feature_table import (
     HistoricalFeatureTableCreate,
@@ -22,6 +22,10 @@ from featurebyte.schema.info import HistoricalFeatureTableInfo
 from featurebyte.schema.task import Task
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_list import FeatureListService
+from featurebyte.service.feature_or_target_helper.info_helper import (
+    FeatureOrTargetInfoHelper,
+    InfoType,
+)
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 from featurebyte.service.observation_table import ObservationTableService
@@ -29,7 +33,7 @@ from featurebyte.service.preview import PreviewService
 
 
 class HistoricalFeatureTableController(
-    BaseMaterializedTableController[
+    FeatureOrTargetTableController[
         HistoricalFeatureTableModel, HistoricalFeatureTableService, HistoricalFeatureTableList
     ],
 ):
@@ -38,6 +42,8 @@ class HistoricalFeatureTableController(
     """
 
     paginated_document_class = HistoricalFeatureTableList
+    info_type = InfoType.HISTORICAL_FEATURE
+    info_class = HistoricalFeatureTableInfo
 
     def __init__(
         self,
@@ -48,13 +54,19 @@ class HistoricalFeatureTableController(
         entity_validation_service: EntityValidationService,
         task_controller: TaskController,
         feature_list_service: FeatureListService,
+        feature_or_target_info_helper: FeatureOrTargetInfoHelper,
     ):
-        super().__init__(service=historical_feature_table_service, preview_service=preview_service)
+        super().__init__(
+            service=historical_feature_table_service,
+            preview_service=preview_service,
+            feature_or_target_info_helper=feature_or_target_info_helper,
+        )
         self.feature_store_service = feature_store_service
         self.observation_table_service = observation_table_service
         self.entity_validation_service = entity_validation_service
         self.task_controller = task_controller
         self.feature_list_service = feature_list_service
+        self.feature_or_target_info_helper = feature_or_target_info_helper
 
     async def create_historical_feature_table(
         self,
@@ -119,38 +131,12 @@ class HistoricalFeatureTableController(
         task_id = await self.task_controller.task_manager.submit(payload=payload)
         return await self.task_controller.get_task(task_id=str(task_id))
 
-    async def get_info(self, document_id: ObjectId, verbose: bool) -> HistoricalFeatureTableInfo:
-        """
-        Get HistoricalFeatureTable info
-
-        Parameters
-        ----------
-        document_id: ObjectId
-            HistoricalFeatureTable ID
-        verbose: bool
-            Whether to return verbose info
-
-        Returns
-        -------
-        HistoricalFeatureTableInfo
-        """
-        _ = verbose
+    async def get_additional_info_params(self, document_id: ObjectId) -> dict[str, Any]:
         historical_feature_table = await self.service.get_document(document_id=document_id)
-        if historical_feature_table.observation_table_id is not None:
-            observation_table = await self.observation_table_service.get_document(
-                document_id=historical_feature_table.observation_table_id
-            )
-        else:
-            observation_table = None
         feature_list = await self.feature_list_service.get_document(
             document_id=historical_feature_table.feature_list_id
         )
-        return HistoricalFeatureTableInfo(
-            name=historical_feature_table.name,
-            feature_list_name=feature_list.name,
-            feature_list_version=feature_list.version.to_str(),
-            observation_table_name=observation_table.name if observation_table else None,
-            table_details=historical_feature_table.location.table_details,
-            created_at=historical_feature_table.created_at,
-            updated_at=historical_feature_table.updated_at,
-        )
+        return {
+            "feature_list_name": feature_list.name,
+            "feature_list_version": feature_list.version.to_str(),
+        }

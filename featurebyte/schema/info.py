@@ -395,25 +395,30 @@ class ObservationTableInfo(BaseInfo):
     table_details: TableDetails
 
 
-class HistoricalFeatureTableInfo(BaseInfo):
+class BaseFeatureOrTargetTableInfo(BaseInfo):
+    """
+    BaseFeatureOrTargetTable info schema
+    """
+
+    observation_table_name: Optional[str]
+    table_details: TableDetails
+
+
+class HistoricalFeatureTableInfo(BaseFeatureOrTargetTableInfo):
     """
     Schema for historical feature table info
     """
 
-    observation_table_name: Optional[str]
     feature_list_name: str
     feature_list_version: str
-    table_details: TableDetails
 
 
-class TargetTableInfo(BaseInfo):
+class TargetTableInfo(BaseFeatureOrTargetTableInfo):
     """
     Schema for target table info
     """
 
-    observation_table_name: Optional[str]
     target_name: str
-    table_details: TableDetails
 
 
 class DeploymentInfo(BaseInfo):
