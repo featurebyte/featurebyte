@@ -5,6 +5,7 @@ from typing import Optional
 
 from bson import ObjectId
 
+from featurebyte.models.base import User
 from featurebyte.models.periodic_task import Interval, PeriodicTask
 from featurebyte.models.tile import TileScheduledJobParameters
 from featurebyte.schema.worker.task.tile import TileTaskPayload
@@ -18,8 +19,12 @@ class TileSchedulerService:
 
     def __init__(
         self,
+        user: User,
+        catalog_id: ObjectId,
         task_manager: TaskManager,
     ):
+        self.user = user
+        self.catalog_id = catalog_id
         self.task_manager = task_manager
 
     async def start_job_with_interval(

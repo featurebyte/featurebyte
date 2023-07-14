@@ -6,6 +6,8 @@ from __future__ import annotations
 from bson import ObjectId
 
 from featurebyte.logging import get_logger
+from featurebyte.models.base import User
+from featurebyte.persistent import Persistent
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_manager import FeatureManagerService
 from featurebyte.service.online_enable import OnlineEnableService
@@ -42,10 +44,14 @@ class WorkingSchemaService:
 
     def __init__(
         self,
+        user: User,
+        persistent: Persistent,
         feature_service: FeatureService,
         feature_manager_service: FeatureManagerService,
         tile_registry_service: TileRegistryService,
     ):
+        self.user = user
+        self.persistent = persistent
         self.feature_service = feature_service
         self.feature_manager_service = feature_manager_service
         self.tile_registry_service = tile_registry_service
