@@ -12,6 +12,7 @@ from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_namespace import DefaultVersionMode, FeatureReadiness
 from featurebyte.persistent import Persistent
+from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.schema.feature import FeatureServiceCreate
 from featurebyte.schema.feature_namespace import (
     FeatureNamespaceCreate,
@@ -64,26 +65,26 @@ class FeatureService(BaseNamespaceService[FeatureModel, FeatureServiceCreate]):
         -------
         FeatureModel
         """
-        document = FeatureModel(
+        data_dict = data.dict(by_alias=True)
+        graph = QueryGraph(**data_dict.pop("graph"))
+        node = graph.get_node_by_name(data_dict.pop("node_name"))
+        # Prepare the graph to store. This performs the necessary pruning steps to ensure the graph
+        # does not contain unnecessary operations.
+        graph, node_name = await self.namespace_handler.prepare_graph_to_store(
+            graph=graph,
+            node=node,
+            sanitize_for_definition=sanitize_for_definition,
+        )
+        return FeatureModel(
             **{
-                **data.dict(by_alias=True),
+                **data_dict,
+                "graph": graph,
+                "node_name": node_name,
                 "readiness": FeatureReadiness.DRAFT,
                 "version": await self.get_document_version(data.name),
                 "user_id": self.user.id,
                 "catalog_id": self.catalog_id,
             }
-        )
-
-        # prepare the graph to store
-        graph, node_name = await self.namespace_handler.prepare_graph_to_store(
-            graph=document.graph,
-            node=document.node,
-            sanitize_for_definition=sanitize_for_definition,
-        )
-
-        # create a new feature document (so that the derived attributes like table_ids is generated properly)
-        return FeatureModel(
-            **{**document.dict(by_alias=True), "graph": graph, "node_name": node_name}
         )
 
     async def create_document(self, data: FeatureServiceCreate) -> FeatureModel:
