@@ -27,7 +27,9 @@ from featurebyte.service.target_table import TargetTableService
 
 
 class TargetTableController(
-    FeatureOrTargetTableController[TargetTableModel, TargetTableService, TargetTableList],
+    FeatureOrTargetTableController[
+        TargetTableModel, TargetTableService, TargetTableList, TargetTableInfo
+    ],
 ):
     """
     TargetTable Controller

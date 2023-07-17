@@ -3,7 +3,7 @@ Feature or target table controller
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional, TypeVar
+from typing import Any, Generic, List, Optional, TypeVar
 
 from abc import abstractmethod
 from dataclasses import dataclass
@@ -81,7 +81,8 @@ class ValidationParameters:
 class FeatureOrTargetTableController(
     BaseMaterializedTableController[
         MaterializedTableDocumentT, MaterializedTableDocumentServiceT, PaginatedDocument
-    ]
+    ],
+    Generic[InfoTypeT, MaterializedTableDocumentT, MaterializedTableDocumentServiceT],
 ):
     """
     Feature or target table controller

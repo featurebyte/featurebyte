@@ -31,7 +31,10 @@ from featurebyte.service.preview import PreviewService
 
 class HistoricalFeatureTableController(
     FeatureOrTargetTableController[
-        HistoricalFeatureTableModel, HistoricalFeatureTableService, HistoricalFeatureTableList
+        HistoricalFeatureTableModel,
+        HistoricalFeatureTableService,
+        HistoricalFeatureTableList,
+        HistoricalFeatureTableInfo,
     ],
 ):
     """
