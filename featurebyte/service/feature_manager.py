@@ -3,10 +3,11 @@ FeatureManagerService class
 """
 from __future__ import annotations
 
+from typing import List, Optional, Set
+
 from datetime import datetime, timedelta, timezone
 
 import pandas as pd
-from typing import List, Optional, Set
 
 from featurebyte.common import date_util
 from featurebyte.common.date_util import get_next_job_datetime
