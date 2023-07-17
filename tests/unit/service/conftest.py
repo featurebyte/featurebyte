@@ -225,6 +225,14 @@ def tile_cache_service_fixture(app_container):
     return app_container.tile_cache_service
 
 
+@pytest.fixture(name="tile_job_log_service")
+def tile_job_log_service(app_container):
+    """
+    TileJobLogService fixture
+    """
+    return app_container.tile_job_log_service
+
+
 @pytest.fixture(name="tile_task_executor")
 def tile_task_executor_fixture(app_container):
     """
