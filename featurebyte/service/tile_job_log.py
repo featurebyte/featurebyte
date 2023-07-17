@@ -26,7 +26,7 @@ class TileJobLogService(
     TileJobLogService class
 
     This service is used by TileTaskExecutor and downstream steps to update the status of the tile
-    jobs. It also supports reporting of tile jobs summary via FeatureStoreWarehouseService.
+    jobs. It also supports reporting of feature jobs summary to users.
     """
 
     document_class = TileJobLogModel
