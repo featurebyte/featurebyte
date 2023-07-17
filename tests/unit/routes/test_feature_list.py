@@ -1,7 +1,6 @@
 """
 Tests for FeatureList route
 """
-import textwrap
 from collections import defaultdict
 from http import HTTPStatus
 from unittest.mock import AsyncMock, Mock, call, patch

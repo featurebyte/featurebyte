@@ -241,7 +241,6 @@ def test_databricks_schema_initializer__sql_objects(patched_databricks_session_c
         item["filename"] = os.path.basename(item["filename"])
         item["type"] = item["type"].value
     expected = [
-        {"type": "table", "filename": "T_TILE_JOB_MONITOR.sql", "identifier": "TILE_JOB_MONITOR"},
         {
             "type": "table",
             "filename": "T_TILE_MONITOR_SUMMARY.sql",

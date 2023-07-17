@@ -1,7 +1,6 @@
 """
 Tests for Feature route
 """
-import textwrap
 from collections import defaultdict
 from datetime import datetime
 from http import HTTPStatus
