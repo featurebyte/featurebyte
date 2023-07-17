@@ -16,17 +16,17 @@ from featurebyte.persistent import Persistent
 from featurebyte.schema.feature import FeatureServiceUpdate
 from featurebyte.schema.feature_list import FeatureListServiceUpdate
 from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
-from featurebyte.service.base_service import BaseService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_manager import FeatureManagerService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.mixin import OpsServiceMixin
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.session.base import BaseSession
 
 
-class OnlineEnableService(BaseService):
+class OnlineEnableService(OpsServiceMixin):
     """
     OnlineEnableService class is responsible for maintaining the feature & feature list structure
     of feature online enablement.
@@ -34,9 +34,7 @@ class OnlineEnableService(BaseService):
 
     def __init__(
         self,
-        user: Any,
         persistent: Persistent,
-        catalog_id: Optional[ObjectId],
         session_manager_service: SessionManagerService,
         feature_service: FeatureService,
         feature_store_service: FeatureStoreService,
@@ -45,7 +43,7 @@ class OnlineEnableService(BaseService):
         feature_manager_service: FeatureManagerService,
     ):
         # pylint: disable=too-many-arguments
-        super().__init__(user, persistent, catalog_id)
+        self.persistent = persistent
         self.feature_service = feature_service
         self.session_manager_service = session_manager_service
         self.feature_store_service = feature_store_service

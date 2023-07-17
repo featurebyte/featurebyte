@@ -1,31 +1,30 @@
 """
 TileSchedulerService class
 """
-from typing import Any, Optional
+from typing import Optional
 
 from bson import ObjectId
 
+from featurebyte.models.base import User
 from featurebyte.models.periodic_task import Interval, PeriodicTask
 from featurebyte.models.tile import TileScheduledJobParameters
-from featurebyte.persistent import Persistent
 from featurebyte.schema.worker.task.tile import TileTaskPayload
-from featurebyte.service.base_service import BaseService
 from featurebyte.service.task_manager import TaskManager
 
 
-class TileSchedulerService(BaseService):
+class TileSchedulerService:
     """
     TileSchedulerService is responsible for scheduling tile tasks
     """
 
     def __init__(
         self,
-        user: Any,
-        persistent: Persistent,
-        catalog_id: Optional[ObjectId],
+        user: User,
+        catalog_id: ObjectId,
         task_manager: TaskManager,
     ):
-        super().__init__(user, persistent, catalog_id)
+        self.user = user
+        self.catalog_id = catalog_id
         self.task_manager = task_manager
 
     async def start_job_with_interval(

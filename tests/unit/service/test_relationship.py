@@ -7,6 +7,7 @@ import pytest_asyncio
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.relationship import Parent, Relationship
+from featurebyte.persistent import Persistent
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.relationship import RelationshipService
 
@@ -57,11 +58,13 @@ class FamilyDocumentService(BaseDocumentService):
 class FamilyRelationshipService(RelationshipService):
     """FamilyRelationshipService class"""
 
+    def __init__(self, persistent: Persistent, family_document_service: FamilyDocumentService):
+        super().__init__(persistent=persistent)
+        self.family_document_service = family_document_service
+
     @property
     def document_service(self):
-        return FamilyDocumentService(
-            user=self.user, persistent=self.persistent, catalog_id=DEFAULT_CATALOG_ID
-        )
+        return self.family_document_service
 
     @classmethod
     def prepare_document_update_payload(cls, ancestor_ids, parents):
@@ -75,10 +78,10 @@ def family_document_service_fixture(user, persistent):
 
 
 @pytest.fixture(name="family_relationship_service")
-def family_relationship_service_fixture(user, persistent):
+def family_relationship_service_fixture(persistent, family_document_service):
     """FamilyRelationshipService object"""
     return FamilyRelationshipService(
-        user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
+        persistent=persistent, family_document_service=family_document_service
     )
 
 

@@ -3,13 +3,11 @@ WorkingSchemaService class
 """
 from __future__ import annotations
 
-from typing import Any, Optional
-
 from bson import ObjectId
 
 from featurebyte.logging import get_logger
+from featurebyte.models.base import User
 from featurebyte.persistent import Persistent
-from featurebyte.service.base_service import BaseService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_manager import FeatureManagerService
 from featurebyte.service.online_enable import OnlineEnableService
@@ -39,21 +37,21 @@ async def drop_all_objects(session: BaseSession) -> None:
         return
 
 
-class WorkingSchemaService(BaseService):
+class WorkingSchemaService:
     """
     WorkingSchemaService is responsible for managing the working schema in the data warehouse
     """
 
     def __init__(
         self,
-        user: Any,
+        user: User,
         persistent: Persistent,
-        catalog_id: Optional[ObjectId],
         feature_service: FeatureService,
         feature_manager_service: FeatureManagerService,
         tile_registry_service: TileRegistryService,
     ):
-        super().__init__(user, persistent, catalog_id)
+        self.user = user
+        self.persistent = persistent
         self.feature_service = feature_service
         self.feature_manager_service = feature_manager_service
         self.tile_registry_service = tile_registry_service

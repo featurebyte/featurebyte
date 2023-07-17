@@ -3,20 +3,17 @@ TileManagerService class
 """
 from __future__ import annotations
 
-from typing import Any, Callable, List, Optional, Tuple
+from typing import Callable, List, Optional, Tuple
 
 import time
 from datetime import datetime
 
 import numpy as np
 import pandas as pd
-from bson import ObjectId
 
 from featurebyte.enum import InternalName
 from featurebyte.logging import get_logger
 from featurebyte.models.tile import TileScheduledJobParameters, TileSpec, TileType
-from featurebyte.persistent import Persistent
-from featurebyte.service.base_service import BaseService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
@@ -31,7 +28,7 @@ from featurebyte.tile.sql_template import tm_retrieve_tile_job_audit_logs
 logger = get_logger(__name__)
 
 
-class TileManagerService(BaseService):
+class TileManagerService:
     """
     TileManagerService is responsible for materialization of tiles in the data warehouse and
     scheduling of periodic tile jobs
@@ -39,16 +36,12 @@ class TileManagerService(BaseService):
 
     def __init__(
         self,
-        user: Any,
-        persistent: Persistent,
-        catalog_id: Optional[ObjectId],
         online_store_table_version_service: OnlineStoreTableVersionService,
         online_store_compute_query_service: OnlineStoreComputeQueryService,
         tile_scheduler_service: TileSchedulerService,
         tile_registry_service: TileRegistryService,
         feature_service: FeatureService,
     ):
-        super().__init__(user, persistent, catalog_id)
         self.online_store_table_version_service = online_store_table_version_service
         self.online_store_compute_query_service = online_store_compute_query_service
         self.tile_scheduler_service = tile_scheduler_service

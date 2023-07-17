@@ -3,7 +3,7 @@ TableColumnsInfoService
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional, Tuple, Union
+from typing import List, Tuple, Union
 
 from collections import defaultdict
 
@@ -11,7 +11,7 @@ from bson.objectid import ObjectId
 
 from featurebyte.enum import TableDataType
 from featurebyte.exception import DocumentUpdateError
-from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.base import PydanticObjectId, User
 from featurebyte.models.entity import ParentEntity
 from featurebyte.models.feature_store import TableModel
 from featurebyte.models.relationship import RelationshipType
@@ -19,11 +19,11 @@ from featurebyte.persistent import Persistent
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.schema.entity import EntityServiceUpdate
 from featurebyte.schema.relationship_info import RelationshipInfoCreate
-from featurebyte.service.base_service import BaseService
 from featurebyte.service.dimension_table import DimensionTableService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_table import EventTableService
 from featurebyte.service.item_table import ItemTableService
+from featurebyte.service.mixin import OpsServiceMixin
 from featurebyte.service.relationship import EntityRelationshipService
 from featurebyte.service.relationship_info import RelationshipInfoService
 from featurebyte.service.scd_table import SCDTableService
@@ -34,22 +34,22 @@ TableDocumentService = Union[
 ]
 
 
-class TableColumnsInfoService(BaseService):
+class TableColumnsInfoService(OpsServiceMixin):
     """
     TableColumnsInfoService is responsible to orchestrate the update of the table columns info.
     """
 
     def __init__(
         self,
-        user: Any,
+        user: User,
         persistent: Persistent,
-        catalog_id: Optional[ObjectId],
         semantic_service: SemanticService,
         entity_service: EntityService,
         relationship_info_service: RelationshipInfoService,
         entity_relationship_service: EntityRelationshipService,
     ):
-        super().__init__(user, persistent, catalog_id)
+        self.user = user
+        self.persistent = persistent
         self.semantic_service = semantic_service
         self.entity_service = entity_service
         self.relationship_info_service = relationship_info_service

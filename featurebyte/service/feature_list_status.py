@@ -1,7 +1,6 @@
 """
 FeatureListStatusService class
 """
-from typing import Any, Optional
 
 import json
 
@@ -9,14 +8,12 @@ from bson import ObjectId
 
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.feature_list import FeatureListStatus
-from featurebyte.persistent import Persistent
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
-from featurebyte.service.base_service import BaseService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 
 
-class FeatureListStatusService(BaseService):
+class FeatureListStatusService:
     """
     FeatureListStatusService class is responsible for handling feature list status update and
     orchestrate feature list status update through FeatureListService and FeatureListNamespaceService.
@@ -24,13 +21,9 @@ class FeatureListStatusService(BaseService):
 
     def __init__(
         self,
-        user: Any,
-        persistent: Persistent,
-        catalog_id: Optional[ObjectId],
         feature_list_namespace_service: FeatureListNamespaceService,
         feature_list_service: FeatureListService,
     ):
-        super().__init__(user, persistent, catalog_id)
         self.feature_list_namespace_service = feature_list_namespace_service
         self.feature_list_service = feature_list_service
 

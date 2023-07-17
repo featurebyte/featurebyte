@@ -27,8 +27,6 @@ class OpsServiceMixin:
     OpsServiceMixin class contains common operation methods used across different type of services
     """
 
-    user: Any
-
     @staticmethod
     def include_object_id(
         document_ids: list[ObjectId] | list[PydanticObjectId], document_id: ObjectId

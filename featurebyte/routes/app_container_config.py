@@ -12,6 +12,8 @@ from dataclasses import dataclass
 
 from featurebyte.models.base import CAMEL_CASE_TO_SNAKE_CASE_PATTERN
 
+ARGS_AND_KWARGS = {"args", "kwargs"}
+
 
 def _get_class_name(class_name: str, name_override: Optional[str] = None) -> str:
     """
@@ -42,7 +44,7 @@ def _get_class_name(class_name: str, name_override: Optional[str] = None) -> str
 
 
 def _get_constructor_params_from_class(
-    class_: type, dependency_override: Optional[dict[str, str]] = None, skip_params: int = 0
+    class_: type, dependency_override: Optional[dict[str, str]] = None
 ) -> List[str]:
     """
     Helper method to get constructor params from class.
@@ -59,10 +61,13 @@ def _get_constructor_params_from_class(
     """
     sig = inspect.signature(class_.__init__)  # type: ignore[misc]
     keys = list(sig.parameters.keys())
-    keys_to_skip = 1 + skip_params
+    keys_to_skip = 1  # skip the `self` param
     params = []
     dep_override = dependency_override or {}
     for key in keys[keys_to_skip:]:
+        # Skip args and kwargs parameters that appears in the default constructor.
+        if key in ARGS_AND_KWARGS:
+            continue
         param_type = sig.parameters[key]
         type_annotation = param_type.name
         if isinstance(type_annotation, type):
@@ -210,7 +215,7 @@ class AppContainerConfig:
         for neighbour_name in class_def_mapping[class_def.name].dependencies:
             if neighbour_name not in class_def_mapping:
                 raise ValueError(
-                    f"Unable to find dependency {neighbour_name} in class_def_mappings. This is likely "
+                    f"Unable to find dependency {neighbour_name} in class_def_mappings for {class_def.name}. This is likely "
                     "because we have either not registered the dependency, or the variable name of "
                     "the dependency in the constructor isn't a snake case formatted name of the class "
                     "you are trying to inject."

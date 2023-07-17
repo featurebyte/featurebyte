@@ -3,12 +3,11 @@ FeatureManagerService class
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional, Set
+from typing import List, Optional, Set
 
 from datetime import datetime, timedelta, timezone
 
 import pandas as pd
-from bson import ObjectId
 
 from featurebyte.common import date_util
 from featurebyte.common.date_util import get_next_job_datetime
@@ -17,8 +16,6 @@ from featurebyte.logging import get_logger
 from featurebyte.models.online_store import OnlineFeatureSpec
 from featurebyte.models.online_store_compute_query import OnlineStoreComputeQueryModel
 from featurebyte.models.tile import TileSpec, TileType
-from featurebyte.persistent import Persistent
-from featurebyte.service.base_service import BaseService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
 from featurebyte.service.tile_manager import TileManagerService
@@ -28,7 +25,7 @@ from featurebyte.session.base import BaseSession
 logger = get_logger(__name__)
 
 
-class FeatureManagerService(BaseService):
+class FeatureManagerService:
     """
     FeatureManagerService is responsible for orchestrating the materialization of features and tiles
     when a feature is online enabled or disabled.
@@ -36,15 +33,11 @@ class FeatureManagerService(BaseService):
 
     def __init__(
         self,
-        user: Any,
-        persistent: Persistent,
-        catalog_id: Optional[ObjectId],
         tile_manager_service: TileManagerService,
         tile_registry_service: TileRegistryService,
         online_store_compute_query_service: OnlineStoreComputeQueryService,
         feature_service: FeatureService,
     ):
-        super().__init__(user, persistent, catalog_id)
         self.tile_manager_service = tile_manager_service
         self.tile_registry_service = tile_registry_service
         self.online_store_compute_query_service = online_store_compute_query_service

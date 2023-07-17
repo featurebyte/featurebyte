@@ -16,7 +16,6 @@ from featurebyte.logging import get_logger
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.parent_serving import ParentServingPreparation
-from featurebyte.persistent import Persistent
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import TableDetails
@@ -34,7 +33,6 @@ from featurebyte.query_graph.sql.feature_historical import (
 )
 from featurebyte.query_graph.sql.parent_serving import construct_request_table_with_parent_entities
 from featurebyte.schema.feature_list import FeatureListGetHistoricalFeatures
-from featurebyte.service.base_service import BaseService
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_store import FeatureStoreService
@@ -247,23 +245,19 @@ async def get_historical_features(  # pylint: disable=too-many-locals, too-many-
     logger.debug(f"compute_historical_features in total took {time.time() - tic_:.2f}s")
 
 
-class HistoricalFeaturesService(BaseService):
+class HistoricalFeaturesService:
     """
     HistoricalFeaturesService is responsible for requesting for historical features for a Feature List.
     """
 
     def __init__(
         self,
-        user: Any,
-        persistent: Persistent,
-        catalog_id: Optional[ObjectId],
         feature_store_service: FeatureStoreService,
         entity_validation_service: EntityValidationService,
         session_manager_service: SessionManagerService,
         feature_list_service: FeatureListService,
         tile_cache_service: TileCacheService,
     ):
-        super().__init__(user, persistent, catalog_id)
         self.feature_store_service = feature_store_service
         self.entity_validation_service = entity_validation_service
         self.session_manager_service = session_manager_service

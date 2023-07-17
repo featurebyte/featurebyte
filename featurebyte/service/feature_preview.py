@@ -6,13 +6,11 @@ from __future__ import annotations
 from typing import Any, Dict, Optional, Tuple
 
 import pandas as pd
-from bson import ObjectId
 
 from featurebyte.common.utils import dataframe_to_json
 from featurebyte.enum import SpecialColumnName
 from featurebyte.exception import MissingPointInTimeColumnError
 from featurebyte.logging import get_logger
-from featurebyte.persistent import Persistent
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, sql_to_string
 from featurebyte.query_graph.sql.feature_historical import get_historical_features_expr
 from featurebyte.query_graph.sql.feature_preview import get_feature_or_target_preview_sql
@@ -42,16 +40,11 @@ class FeaturePreviewService(PreviewService):
 
     def __init__(
         self,
-        user: Any,
-        persistent: Persistent,
-        catalog_id: Optional[ObjectId],
         session_manager_service: SessionManagerService,
         entity_validation_service: EntityValidationService,
         feature_store_service: FeatureStoreService,
     ):
-        super().__init__(
-            user, persistent, catalog_id, session_manager_service, feature_store_service
-        )
+        super().__init__(session_manager_service, feature_store_service)
         self.entity_validation_service = entity_validation_service
 
     @staticmethod

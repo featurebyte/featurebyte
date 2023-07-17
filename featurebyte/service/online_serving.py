@@ -6,38 +6,31 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional, Union
 
 import pandas as pd
-from bson import ObjectId
 
 from featurebyte.exception import FeatureListNotOnlineEnabledError
 from featurebyte.models.batch_request_table import BatchRequestTableModel
 from featurebyte.models.feature_list import FeatureListModel
-from featurebyte.persistent import Persistent
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.online_serving import get_online_features
 from featurebyte.schema.deployment import OnlineFeaturesResponseModel
-from featurebyte.service.base_service import BaseService
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.session_manager import SessionManagerService
 
 
-class OnlineServingService(BaseService):
+class OnlineServingService:
     """
     OnlineServingService is responsible for retrieving features from online store
     """
 
     def __init__(
         self,
-        user: Any,
-        persistent: Persistent,
-        catalog_id: Optional[ObjectId],
         session_manager_service: SessionManagerService,
         entity_validation_service: EntityValidationService,
         online_store_table_version_service: OnlineStoreTableVersionService,
         feature_store_service: FeatureStoreService,
     ):
-        super().__init__(user, persistent, catalog_id)
         self.feature_store_service = feature_store_service
         self.session_manager_service = session_manager_service
         self.entity_validation_service = entity_validation_service

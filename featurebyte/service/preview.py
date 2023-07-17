@@ -8,13 +8,11 @@ from typing import Any, AsyncGenerator, Optional, Tuple
 import os
 
 import pandas as pd
-from bson import ObjectId
 
 from featurebyte.common.utils import dataframe_to_json
 from featurebyte.exception import LimitExceededError
 from featurebyte.logging import get_logger
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.persistent import Persistent
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.sql.common import sql_to_string
@@ -25,7 +23,6 @@ from featurebyte.schema.feature_store import (
     FeatureStoreSample,
     FeatureStoreShape,
 )
-from featurebyte.service.base_service import BaseService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.session.base import BaseSession
@@ -38,20 +35,16 @@ MAX_TABLE_CELLS = int(
 logger = get_logger(__name__)
 
 
-class PreviewService(BaseService):
+class PreviewService:
     """
     PreviewService class
     """
 
     def __init__(
         self,
-        user: Any,
-        persistent: Persistent,
-        catalog_id: Optional[ObjectId],
         session_manager_service: SessionManagerService,
         feature_store_service: FeatureStoreService,
     ):
-        super().__init__(user, persistent, catalog_id)
         self.feature_store_service = feature_store_service
         self.session_manager_service = session_manager_service
 

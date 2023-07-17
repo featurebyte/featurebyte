@@ -3,7 +3,7 @@ ViewConstructionService class
 """
 from __future__ import annotations
 
-from typing import Any, Optional, cast
+from typing import Any, cast
 
 from collections import defaultdict
 
@@ -11,7 +11,6 @@ from bson import ObjectId
 
 from featurebyte import ColumnCleaningOperation, TableCleaningOperation
 from featurebyte.exception import GraphInconsistencyError
-from featurebyte.persistent import Persistent
 from featurebyte.query_graph.enum import GraphNodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
@@ -30,24 +29,16 @@ from featurebyte.query_graph.node.nested import (
     ViewMetadata,
 )
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
-from featurebyte.service.base_service import BaseService
 from featurebyte.service.table import TableService
 
 
-class ViewConstructionService(BaseService):
+class ViewConstructionService:
     """
     ViewConstructionService class is responsible for constructing view graph nodes inside a query graph.
     This service will retrieve the table from the table service and construct the view graph nodes.
     """
 
-    def __init__(
-        self,
-        user: Any,
-        persistent: Persistent,
-        catalog_id: Optional[ObjectId],
-        table_service: TableService,
-    ):
-        super().__init__(user, persistent, catalog_id)
+    def __init__(self, table_service: TableService):
         self.table_service = table_service
 
     @staticmethod
@@ -221,7 +212,7 @@ class ViewConstructionService(BaseService):
             Feature model graph
         target_node: Node
             Target node of the feature model graph
-        table_cleaning_operations: Optional[List[TableCleaningOperation]]
+        table_cleaning_operations: List[TableCleaningOperation]
             Table cleaning operations
         use_source_settings: bool
             Whether to use source table's table cleaning operations
