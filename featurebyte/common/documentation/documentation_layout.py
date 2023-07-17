@@ -271,6 +271,7 @@ def _get_feature_or_target_items(section: str) -> List[DocLayoutItem]:
     List[DocLayoutItem]
         The common documentation items for Feature and Target
     """
+    assert section in {FEATURE, TARGET}
     return [
         DocLayoutItem([section]),
         DocLayoutItem([section, EXPLORE, f"{section}.preview"]),
@@ -284,6 +285,7 @@ def _get_feature_or_target_items(section: str) -> List[DocLayoutItem]:
         DocLayoutItem([section, LINEAGE, f"{section}.id"]),
         DocLayoutItem([section, LINEAGE, f"{section}.definition"]),
         DocLayoutItem([section, LINEAGE, f"{section}.catalog_id"]),
+        *_get_series_properties_layout(section),
     ]
 
 
@@ -596,7 +598,7 @@ def _get_series_properties_layout(series_type: str) -> List[DocLayoutItem]:
     -------
     List[DocLayoutItem]
     """
-    assert series_type in {VIEW_COLUMN, FEATURE}
+    assert series_type in {VIEW_COLUMN, FEATURE, TARGET}
     return [
         DocLayoutItem([series_type, TRANSFORM, f"{series_type}.{field}"])
         for field in [
