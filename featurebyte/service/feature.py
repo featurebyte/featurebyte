@@ -68,9 +68,9 @@ class FeatureService(BaseNamespaceService[FeatureModel, FeatureServiceCreate]):
         data_dict = data.dict(by_alias=True)
         graph = QueryGraph(**data_dict.pop("graph"))
         node = graph.get_node_by_name(data_dict.pop("node_name"))
-        # Prepare the graph to store. This performs the necessary pruning steps to ensure the graph
-        # does not contain unnecessary operations.
-        graph, node_name = await self.namespace_handler.prepare_graph_to_store(
+        # Prepare the graph to store. This performs the required pruning steps to remove any
+        # unnecessary operations or parameters from the graph.
+        prepared_graph, prepared_node_name = await self.namespace_handler.prepare_graph_to_store(
             graph=graph,
             node=node,
             sanitize_for_definition=sanitize_for_definition,
@@ -78,8 +78,8 @@ class FeatureService(BaseNamespaceService[FeatureModel, FeatureServiceCreate]):
         return FeatureModel(
             **{
                 **data_dict,
-                "graph": graph,
-                "node_name": node_name,
+                "graph": prepared_graph,
+                "node_name": prepared_node_name,
                 "readiness": FeatureReadiness.DRAFT,
                 "version": await self.get_document_version(data.name),
                 "user_id": self.user.id,
