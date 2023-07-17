@@ -48,6 +48,10 @@ jobs:
       run: |-
         poetry config virtualenvs.in-project true
         poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
+    - name: Install packages needed for build
+      run: sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
+    - name: Install packages needed for Kerberos
+      run: sudo apt-get install libkrb5-dev
     - name: Set Github Committer Settings
       run: |-
         git config --global user.name "featurebyte[bot]"
@@ -91,6 +95,10 @@ jobs:
       run: |-
         poetry config virtualenvs.in-project true
         poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
+    - name: Install packages needed for build
+      run: sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
+    - name: Install packages needed for Kerberos
+      run: sudo apt-get install libkrb5-dev
     - name: Set Github Committer Settings
       run: |-
         git config --global user.name "featurebyte[bot]"
@@ -134,6 +142,10 @@ jobs:
       run: |-
         poetry config virtualenvs.in-project true
         poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
+    - name: Install packages needed for build
+      run: sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
+    - name: Install packages needed for Kerberos
+      run: sudo apt-get install libkrb5-dev
     - name: Set Github Committer Settings
       run: |-
         git config --global user.name "featurebyte[bot]"
