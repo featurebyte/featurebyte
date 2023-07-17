@@ -45,5 +45,5 @@ class TileJobLogService(
         data = defaultdict(list)
         async for doc in self.list_documents_as_dict_iterator(query_filter=query_filter):
             for col in columns:
-                data[col].append(doc[col])
+                data[col.upper()].append(doc[col])
         return pd.DataFrame(data=data)
