@@ -315,8 +315,6 @@ def _get_feature_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE, MANAGE, "Feature.list_versions"]),
         DocLayoutItem([FEATURE, MANAGE, "Feature.update_default_version_mode"]),
         DocLayoutItem([FEATURE, MANAGE, "Feature.update_readiness"]),
-        DocLayoutItem([FEATURE, TRANSFORM, "Feature.abs"]),
-        DocLayoutItem([FEATURE, TRANSFORM, "Feature.astype"]),
         DocLayoutItem([FEATURE, TRANSFORM, "Feature.cd.cosine_similarity"]),
         DocLayoutItem([FEATURE, TRANSFORM, "Feature.cd.entropy"]),
         DocLayoutItem([FEATURE, TRANSFORM, "Feature.cd.get_rank"]),
@@ -324,17 +322,8 @@ def _get_feature_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE, TRANSFORM, "Feature.cd.get_value"]),
         DocLayoutItem([FEATURE, TRANSFORM, "Feature.cd.most_frequent"]),
         DocLayoutItem([FEATURE, TRANSFORM, "Feature.cd.unique_count"]),
-        DocLayoutItem([FEATURE, TRANSFORM, "Feature.ceil"]),
-        DocLayoutItem([FEATURE, TRANSFORM, "Feature.exp"]),
-        DocLayoutItem([FEATURE, TRANSFORM, "Feature.fillna"]),
-        DocLayoutItem([FEATURE, TRANSFORM, "Feature.floor"]),
         *_get_datetime_accessor_properties_layout(FEATURE),
-        DocLayoutItem([FEATURE, TRANSFORM, "Feature.isin"]),
-        DocLayoutItem([FEATURE, TRANSFORM, "Feature.isnull"]),
-        DocLayoutItem([FEATURE, TRANSFORM, "Feature.log"]),
-        DocLayoutItem([FEATURE, TRANSFORM, "Feature.notnull"]),
-        DocLayoutItem([FEATURE, TRANSFORM, "Feature.pow"]),
-        DocLayoutItem([FEATURE, TRANSFORM, "Feature.sqrt"]),
+        *_get_series_properties_layout(FEATURE),
         *_get_str_accessor_properties_layout(FEATURE),
     ]
 
@@ -565,7 +554,7 @@ def _get_datetime_accessor_properties_layout(series_type: str) -> List[DocLayout
 
 def _get_str_accessor_properties_layout(series_type: str) -> List[DocLayoutItem]:
     """
-    The layout for the DatetimeAccessor related properties
+    The layout for the StringAccessor related properties
 
     Parameters
     ----------
@@ -594,6 +583,39 @@ def _get_str_accessor_properties_layout(series_type: str) -> List[DocLayoutItem]
     ]
 
 
+def _get_series_properties_layout(series_type: str) -> List[DocLayoutItem]:
+    """
+    The layout for the Series related properties
+
+    Parameters
+    ----------
+    series_type : str
+        The type of the series, either "ViewColumn" or "Feature"
+
+    Returns
+    -------
+    List[DocLayoutItem]
+    """
+    assert series_type in {VIEW_COLUMN, FEATURE}
+    return [
+        DocLayoutItem([series_type, TRANSFORM, f"{series_type}.{field}"])
+        for field in [
+            "astype",
+            "abs",
+            "ceil",
+            "exp",
+            "fillna",
+            "floor",
+            "isin",
+            "isnull",
+            "log",
+            "notnull",
+            "pow",
+            "sqrt",
+        ]
+    ]
+
+
 def _get_view_column_layout() -> List[DocLayoutItem]:
     """
     The layout for the ViewColumn class.
@@ -618,19 +640,8 @@ def _get_view_column_layout() -> List[DocLayoutItem]:
         DocLayoutItem([VIEW_COLUMN, LAGS, "EventViewColumn.lag"]),
         DocLayoutItem([VIEW_COLUMN, LINEAGE, "ViewColumn.feature_store"]),
         DocLayoutItem([VIEW_COLUMN, LINEAGE, "ViewColumn.preview_sql"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.astype"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.abs"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.ceil"]),
         *_get_datetime_accessor_properties_layout(VIEW_COLUMN),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.exp"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.fillna"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.floor"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.isin"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.isnull"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.log"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.notnull"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.pow"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.sqrt"]),
+        *_get_series_properties_layout(VIEW_COLUMN),
         *_get_str_accessor_properties_layout(VIEW_COLUMN),
     ]
 
