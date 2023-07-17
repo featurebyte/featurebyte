@@ -260,8 +260,8 @@ class FeatureOrTargetTableController(
         _ = verbose
         document = await self.service.get_document(document_id)
         basic_info = await self.get_basic_info(document)
-        additional_params = await self.get_additional_info_params(document)
-        return self.info_class(
+        additional_params = await self.get_additional_info_params(document)  # type: ignore[arg-type]
+        return self.info_class(  # type: ignore[no-any-return,misc]
             **additional_params,
             **basic_info.dict(),
         )

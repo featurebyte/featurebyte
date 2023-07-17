@@ -67,7 +67,7 @@ class HistoricalFeatureTableController(
         observation_set_dataframe: Optional[pd.DataFrame],
     ) -> PayloadT:
         assert isinstance(table_create, HistoricalFeatureTableCreate)
-        return await self.service.get_historical_feature_table_task_payload(
+        return await self.service.get_historical_feature_table_task_payload(  # type: ignore[return-value]
             data=table_create, observation_set_dataframe=observation_set_dataframe
         )
 

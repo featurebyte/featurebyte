@@ -60,7 +60,7 @@ class TargetTableController(
         self, table_create: TableCreateT, observation_set_dataframe: Optional[pd.DataFrame]
     ) -> PayloadT:
         assert isinstance(table_create, TargetTableCreate)
-        return await self.service.get_target_table_task_payload(
+        return await self.service.get_target_table_task_payload(  # type: ignore[return-value]
             data=table_create, observation_set_dataframe=observation_set_dataframe
         )
 
