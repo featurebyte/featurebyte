@@ -56,6 +56,7 @@ methods_without_examples = {
     "featurebyte.view.get_join_column",
     "featurebyte.view.preview_sql",
     "featurebyte.viewcolumn.preview_sql",
+    "featurebyte.target.preview",  # example added via substitute_docstring
 }
 
 

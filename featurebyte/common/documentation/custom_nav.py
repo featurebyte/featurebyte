@@ -48,6 +48,8 @@ from featurebyte.common.documentation.constants import (
     SOURCE_TABLE,
     TABLE,
     TABLE_COLUMN,
+    TARGET,
+    TARGET_NAMESPACE,
     TRANSFORM,
     TYPE,
     USER_DEFINED_FUNCTION,
@@ -87,6 +89,8 @@ class BetaWave3Nav(Nav):
         BATCH_REQUEST_TABLE,
         BATCH_FEATURE_TABLE,
         USER_DEFINED_FUNCTION,
+        TARGET,
+        TARGET_NAMESPACE,
         UTILITY_CLASSES,
         UTILITY_METHODS,
     ]
