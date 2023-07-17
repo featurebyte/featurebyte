@@ -180,6 +180,39 @@ class Target(Series, SavableApiObject, FeatureOrTargetMixin):
     ) -> pd.DataFrame:
         return self._preview(observation_set=observation_set, url="/target/preview")
 
+    @typechecked
+    def info(self, verbose: bool = False) -> Dict[str, Any]:
+        """
+        Returns a dictionary that summarizes the essential information of an Target object. The dictionary
+        contains the following keys:
+
+        - `name`: The name of the FeatureList object.
+        - `created_at`: The timestamp indicating when the FeatureList object was created.
+        - `updated_at`: The timestamp indicating when the FeatureList object was last updated.
+        - `entities`: List of entities involved in the computation of the features contained in the Target object.
+        - `window`: Window of the Target object.
+        - `has_recipe`: Whether the Target object has a recipe attached.
+        - `default_version_mode`: Indicates whether the default version mode is 'auto' or 'manual'.
+        - `input_data`: Data used to create the target.
+        - `metadata`: Summary of key operations.
+
+        Parameters
+        ----------
+        verbose: bool
+            Control verbose level of the summary.
+
+        Returns
+        -------
+        Dict[str, Any]
+            Key-value mapping of properties of the object.
+
+        Examples
+        --------
+        >>> target = catalog.get_target("target")  # doctest: +SKIP
+        >>> info = target.info()  # doctest: +SKIP
+        """
+        return super().info(verbose)
+
     @enforce_observation_set_row_order
     @typechecked
     def compute_target(

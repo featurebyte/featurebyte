@@ -68,6 +68,14 @@ class TargetNamespace(FeatureOrTargetNamespaceMixin, SavableApiObject):
         -------
         TargetNamespace
             The created TargetNamespace
+
+        Examples
+        --------
+        >>> target_namespace = fb.TargetNamespace.create(  # doctest: +SKIP
+        ...     name="amount_7d_target",
+        ...     window="7d",
+        ...     entities=["customer"]
+        ... )
         """
         entity_ids = None
         if entities:
