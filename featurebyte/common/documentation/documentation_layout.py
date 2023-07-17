@@ -48,6 +48,8 @@ from featurebyte.common.documentation.constants import (
     SOURCE_TABLE,
     TABLE,
     TABLE_COLUMN,
+    TARGET,
+    TARGET_NAMESPACE,
     TRANSFORM,
     TYPE,
     USER_DEFINED_FUNCTION,
@@ -255,6 +257,36 @@ def _get_entity_layout() -> List[DocLayoutItem]:
     ]
 
 
+def _get_feature_or_target_items(section: str) -> List[DocLayoutItem]:
+    """
+    Get common documentation items for Feature and Target.
+
+    Parameters
+    ----------
+    section : str
+        The section to use for the documentation items
+
+    Returns
+    -------
+    List[DocLayoutItem]
+        The common documentation items for Feature and Target
+    """
+    return [
+        DocLayoutItem([section]),
+        DocLayoutItem([section, EXPLORE, f"{section}.preview"]),
+        DocLayoutItem([section, INFO, f"{section}.created_at"]),
+        DocLayoutItem([section, INFO, f"{section}.dtype"]),
+        DocLayoutItem([section, INFO, f"{section}.info"]),
+        DocLayoutItem([section, INFO, f"{section}.name"]),
+        DocLayoutItem([section, INFO, f"{section}.updated_at"]),
+        DocLayoutItem([section, LINEAGE, f"{section}.entity_ids"]),
+        DocLayoutItem([section, LINEAGE, f"{section}.feature_store"]),
+        DocLayoutItem([section, LINEAGE, f"{section}.id"]),
+        DocLayoutItem([section, LINEAGE, f"{section}.definition"]),
+        DocLayoutItem([section, LINEAGE, f"{section}.catalog_id"]),
+    ]
+
+
 def _get_feature_layout() -> List[DocLayoutItem]:
     """
     Returns the layout for the feature documentation
@@ -265,28 +297,17 @@ def _get_feature_layout() -> List[DocLayoutItem]:
         The layout for the feature documentation
     """
     return [
-        DocLayoutItem([FEATURE]),
+        *_get_feature_or_target_items(FEATURE),
         DocLayoutItem([FEATURE, SAVE, "Feature.save"]),
-        DocLayoutItem([FEATURE, EXPLORE, "Feature.preview"]),
-        DocLayoutItem([FEATURE, INFO, "Feature.created_at"]),
-        DocLayoutItem([FEATURE, INFO, "Feature.dtype"]),
-        DocLayoutItem([FEATURE, INFO, "Feature.info"]),
-        DocLayoutItem([FEATURE, INFO, "Feature.name"]),
         DocLayoutItem([FEATURE, INFO, "Feature.saved"]),
         DocLayoutItem([FEATURE, INFO, "Feature.readiness"]),
-        DocLayoutItem([FEATURE, INFO, "Feature.updated_at"]),
         DocLayoutItem([FEATURE, INFO, "Feature.is_datetime"]),
         DocLayoutItem([FEATURE, INFO, "Feature.is_numeric"]),
         DocLayoutItem([FEATURE, INFO, "Feature.is_default"]),
         DocLayoutItem([FEATURE, INFO, "Feature.version"]),
-        DocLayoutItem([FEATURE, LINEAGE, "Feature.entity_ids"]),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.primary_entity"]),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.feature_list_ids"]),
-        DocLayoutItem([FEATURE, LINEAGE, "Feature.feature_store"]),
-        DocLayoutItem([FEATURE, LINEAGE, "Feature.id"]),
-        DocLayoutItem([FEATURE, LINEAGE, "Feature.definition"]),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.sql"]),
-        DocLayoutItem([FEATURE, LINEAGE, "Feature.catalog_id"]),
         DocLayoutItem([FEATURE, MANAGE, "Feature.delete"]),
         DocLayoutItem([FEATURE, MANAGE, "Feature.get_feature_jobs_status"]),
         DocLayoutItem([FEATURE, MANAGE, "Feature.as_default_version"]),
@@ -962,6 +983,35 @@ def _get_user_defined_function_layout() -> List[DocLayoutItem]:
     ]
 
 
+def _get_target_layout() -> List[DocLayoutItem]:
+    """
+    The layout for the Target module.
+
+    Returns
+    -------
+    List[DocLayoutItem]
+        The layout for the Target module.
+    """
+    return [
+        *_get_feature_or_target_items(TARGET),
+    ]
+
+
+def _get_target_namespace_layout() -> List[DocLayoutItem]:
+    """
+    The layout for the TargetNamespace module.
+
+    Returns
+    -------
+    List[DocLayoutItem]
+        The layout for the TargetNamespace module.
+    """
+    return [
+        DocLayoutItem([TARGET_NAMESPACE]),
+        DocLayoutItem([TARGET_NAMESPACE, CLASS_METHODS, "TargetNamespace.create"]),
+    ]
+
+
 def get_overall_layout() -> List[DocLayoutItem]:
     """
     The overall layout for the documentation.
@@ -994,4 +1044,6 @@ def get_overall_layout() -> List[DocLayoutItem]:
         *_get_observation_table_layout(),
         *_get_historical_feature_table_layout(),
         *_get_user_defined_function_layout(),
+        *_get_target_layout(),
+        *_get_target_namespace_layout(),
     ]

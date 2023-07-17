@@ -39,6 +39,8 @@ from featurebyte.api.scd_table import SCDTable
 from featurebyte.api.scd_view import SCDView
 from featurebyte.api.source_table import SourceTable
 from featurebyte.api.table import Table
+from featurebyte.api.target import Target
+from featurebyte.api.target_namespace import TargetNamespace
 from featurebyte.api.user_defined_function import UDF, UserDefinedFunction
 from featurebyte.common.env_util import is_notebook
 from featurebyte.common.utils import get_version
@@ -477,6 +479,8 @@ __all__ = [
     "to_timedelta",
     "Table",
     "TableFeatureJobSetting",
+    "Target",
+    "TargetNamespace",
     # credentials
     "AzureBlobStorageCredential",
     "AccessTokenCredential",

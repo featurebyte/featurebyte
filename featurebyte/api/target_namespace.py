@@ -14,6 +14,7 @@ from featurebyte.api.base_table import TableApiObject
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature_or_target_namespace_mixin import FeatureOrTargetNamespaceMixin
 from featurebyte.api.savable_api_object import SavableApiObject
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.target_namespace import TargetNamespaceModel
@@ -25,6 +26,8 @@ class TargetNamespace(FeatureOrTargetNamespaceMixin, SavableApiObject):
     TargetNamespace represents a Target set, in which all the targets in the set have the same name. The different
     elements typically refer to different versions of a Target.
     """
+
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.TargetNamespace")
 
     internal_window: Optional[str] = Field(alias="window")
 

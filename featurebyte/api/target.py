@@ -26,6 +26,7 @@ from featurebyte.api.templates.feature_or_target_doc import (
     TABLE_IDS_DOC,
     VERSION_DOC,
 )
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.utils import dataframe_to_arrow_bytes, enforce_observation_set_row_order
 from featurebyte.core.series import Series
 from featurebyte.exception import RecordRetrievalException
@@ -40,6 +41,8 @@ class Target(Series, SavableApiObject, FeatureOrTargetMixin):
     """
     Target class used to represent a Target in FeatureByte.
     """
+
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.Target")
 
     # pydantic instance variable (public)
     feature_store: FeatureStoreModel = Field(
