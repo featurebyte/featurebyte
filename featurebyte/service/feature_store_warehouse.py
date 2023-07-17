@@ -7,8 +7,6 @@ from __future__ import annotations
 
 from typing import Any, List
 
-from bson.objectid import ObjectId
-
 from featurebyte.exception import DatabaseNotFoundError, SchemaNotFoundError, TableNotFoundError
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.user_defined_function import UserDefinedFunctionModel
