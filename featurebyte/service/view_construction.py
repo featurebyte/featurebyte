@@ -3,8 +3,9 @@ ViewConstructionService class
 """
 from __future__ import annotations
 
-from collections import defaultdict
 from typing import Any, Optional, cast
+
+from collections import defaultdict
 
 from bson import ObjectId
 

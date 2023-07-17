@@ -3,9 +3,10 @@ TileManagerService class
 """
 from __future__ import annotations
 
+from typing import Callable, List, Optional, Tuple
+
 import time
 from datetime import datetime
-from typing import Callable, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd

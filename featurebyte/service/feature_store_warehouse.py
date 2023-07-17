@@ -5,8 +5,9 @@ We split this into a separate service, as these typically require a session obje
 """
 from __future__ import annotations
 
-import datetime
 from typing import Any, List
+
+import datetime
 
 import pandas as pd
 from bson.objectid import ObjectId

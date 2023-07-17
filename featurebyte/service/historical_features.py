@@ -3,8 +3,9 @@ HistoricalFeaturesService
 """
 from __future__ import annotations
 
-import time
 from typing import Any, Callable, Optional, Union
+
+import time
 
 import pandas as pd
 from bson import ObjectId

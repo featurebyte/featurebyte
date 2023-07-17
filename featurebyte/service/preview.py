@@ -3,8 +3,9 @@ PreviewService class
 """
 from __future__ import annotations
 
-import os
 from typing import Any, AsyncGenerator, Optional, Tuple
+
+import os
 
 import pandas as pd
 

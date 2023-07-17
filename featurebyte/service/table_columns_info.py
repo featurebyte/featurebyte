@@ -3,8 +3,9 @@ TableColumnsInfoService
 """
 from __future__ import annotations
 
-from collections import defaultdict
 from typing import List, Tuple, Union
+
+from collections import defaultdict
 
 from bson.objectid import ObjectId
 

@@ -3,8 +3,9 @@ Module to support serving parent features using child entities
 """
 from __future__ import annotations
 
-from collections import OrderedDict
 from typing import List, Tuple
+
+from collections import OrderedDict
 
 from bson import ObjectId
 
