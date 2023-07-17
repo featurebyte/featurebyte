@@ -52,7 +52,6 @@ from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_preview import FeaturePreviewService
 from featurebyte.service.feature_readiness import FeatureReadinessService
-from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.service.table import TableService
 from featurebyte.service.tile_job_log import TileJobLogService
 from featurebyte.service.version import VersionService

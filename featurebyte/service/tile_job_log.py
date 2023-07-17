@@ -33,6 +33,20 @@ class TileJobLogService(
     document_update_class = BaseDocumentServiceUpdateSchema
 
     async def get_logs_dataframe(self, aggregation_ids: list[str], hour_limit: int) -> pd.DataFrame:
+        """
+        Retrieve tile job logs for a list of aggregation_ids as a pandas DataFrame
+
+        Parameters
+        ----------
+        aggregation_ids: list[str]
+            List of aggregation_ids to fetch
+        hour_limit: int
+            Limit in hours on the job history to fetch
+
+        Returns
+        -------
+        pd.DataFrame
+        """
         datetime_now = datetime.datetime.utcnow()
         min_created_at = datetime_now - datetime.timedelta(hours=hour_limit)
         query_filter = {
@@ -51,10 +65,10 @@ class TileJobLogService(
         async for doc in self.list_documents_as_dict_iterator(query_filter=query_filter):
             for col in columns:
                 data[col.upper()].append(doc[col])
-        df = pd.DataFrame(data=data)
-        if df.shape[0] == 0:
+        result = pd.DataFrame(data=data)
+        if result.shape[0] == 0:
             return pd.DataFrame(columns=[col.upper() for col in columns])
-        return df
+        return result
 
     async def get_feature_job_logs(
         self,
