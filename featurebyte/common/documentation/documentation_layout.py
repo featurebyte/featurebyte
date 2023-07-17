@@ -335,16 +335,7 @@ def _get_feature_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE, TRANSFORM, "Feature.notnull"]),
         DocLayoutItem([FEATURE, TRANSFORM, "Feature.pow"]),
         DocLayoutItem([FEATURE, TRANSFORM, "Feature.sqrt"]),
-        DocLayoutItem([FEATURE, TRANSFORM, "Feature.str.contains"]),
-        DocLayoutItem([FEATURE, TRANSFORM, "Feature.str.len"]),
-        DocLayoutItem([FEATURE, TRANSFORM, "Feature.str.lower"]),
-        DocLayoutItem([FEATURE, TRANSFORM, "Feature.str.lstrip"]),
-        DocLayoutItem([FEATURE, TRANSFORM, "Feature.str.pad"]),
-        DocLayoutItem([FEATURE, TRANSFORM, "Feature.str.replace"]),
-        DocLayoutItem([FEATURE, TRANSFORM, "Feature.str.rstrip"]),
-        DocLayoutItem([FEATURE, TRANSFORM, "Feature.str.slice"]),
-        DocLayoutItem([FEATURE, TRANSFORM, "Feature.str.strip"]),
-        DocLayoutItem([FEATURE, TRANSFORM, "Feature.str.upper"]),
+        *_get_str_accessor_properties_layout(FEATURE),
     ]
 
 
@@ -572,6 +563,37 @@ def _get_datetime_accessor_properties_layout(series_type: str) -> List[DocLayout
     ]
 
 
+def _get_str_accessor_properties_layout(series_type: str) -> List[DocLayoutItem]:
+    """
+    The layout for the DatetimeAccessor related properties
+
+    Parameters
+    ----------
+    series_type : str
+        The type of the series, either "ViewColumn" or "Feature"
+
+    Returns
+    -------
+    List[DocLayoutItem]
+    """
+    assert series_type in {VIEW_COLUMN, FEATURE}
+    return [
+        DocLayoutItem([series_type, TRANSFORM, f"{series_type}.str.{field}"])
+        for field in [
+            "contains",
+            "len",
+            "lower",
+            "lstrip",
+            "pad",
+            "replace",
+            "rstrip",
+            "slice",
+            "strip",
+            "upper",
+        ]
+    ]
+
+
 def _get_view_column_layout() -> List[DocLayoutItem]:
     """
     The layout for the ViewColumn class.
@@ -609,16 +631,7 @@ def _get_view_column_layout() -> List[DocLayoutItem]:
         DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.notnull"]),
         DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.pow"]),
         DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.sqrt"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.str.contains"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.str.len"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.str.lower"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.str.lstrip"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.str.pad"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.str.replace"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.str.rstrip"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.str.slice"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.str.strip"]),
-        DocLayoutItem([VIEW_COLUMN, TRANSFORM, "ViewColumn.str.upper"]),
+        *_get_str_accessor_properties_layout(VIEW_COLUMN),
     ]
 
 
