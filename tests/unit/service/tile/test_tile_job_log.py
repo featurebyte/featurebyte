@@ -139,3 +139,25 @@ async def test_get_jobs_dataframe_multiple_aggregation_ids(tile_job_log_service)
         }
     )
     pd.testing.assert_frame_equal(df, expected_df)
+
+
+@freezegun.freeze_time(datetime(2023, 1, 20, 12, 30, 0))
+@pytest.mark.usefixtures("saved_models")
+@pytest.mark.asyncio
+async def test_get_jobs_dataframe_empty(tile_job_log_service):
+    """
+    Test get_jobs_dataframe with multiple aggregation ids
+    """
+    df = await tile_job_log_service.get_logs_dataframe(["agg_id_1", "agg_id_2"], 1)
+    df.sort_values("CREATED_AT", inplace=True)
+    df = df.reset_index(drop=True)
+    expected_df = pd.DataFrame(
+        {
+            "SESSION_ID": [],
+            "CREATED_AT": [],
+            "AGGREGATION_ID": [],
+            "STATUS": [],
+            "MESSAGE": [],
+        }
+    )
+    pd.testing.assert_frame_equal(df, expected_df, check_dtype=False)

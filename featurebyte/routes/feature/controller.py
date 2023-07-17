@@ -54,6 +54,7 @@ from featurebyte.service.feature_preview import FeaturePreviewService
 from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.service.table import TableService
+from featurebyte.service.tile_job_log import TileJobLogService
 from featurebyte.service.version import VersionService
 
 
@@ -145,13 +146,13 @@ class FeatureController(
         feature_readiness_service: FeatureReadinessService,
         feature_preview_service: FeaturePreviewService,
         version_service: VersionService,
-        feature_store_warehouse_service: FeatureStoreWarehouseService,
         task_controller: TaskController,
         catalog_service: CatalogService,
         table_service: TableService,
         feature_namespace_controller: FeatureNamespaceController,
         derive_primary_entity_helper: DerivePrimaryEntityHelper,
         feature_or_target_metadata_extractor: FeatureOrTargetMetadataExtractor,
+        tile_job_log_service: TileJobLogService,
     ):
         # pylint: disable=too-many-arguments
         super().__init__(feature_service)
@@ -161,13 +162,13 @@ class FeatureController(
         self.feature_readiness_service = feature_readiness_service
         self.feature_preview_service = feature_preview_service
         self.version_service = version_service
-        self.feature_store_warehouse_service = feature_store_warehouse_service
         self.task_controller = task_controller
         self.catalog_service = catalog_service
         self.table_service = table_service
         self.feature_namespace_controller = feature_namespace_controller
         self.derive_primary_entity_helper = derive_primary_entity_helper
         self.feature_or_target_metadata_extractor = feature_or_target_metadata_extractor
+        self.tile_job_log_service = tile_job_log_service
 
     async def submit_batch_feature_create_task(self, data: BatchFeatureCreate) -> Optional[Task]:
         """
@@ -562,9 +563,7 @@ class FeatureController(
         """
         return await self.feature_preview_service.feature_sql(feature_sql=feature_sql)
 
-    async def get_feature_job_logs(
-        self, feature_id: ObjectId, hour_limit: int, get_credential: Any
-    ) -> dict[str, Any]:
+    async def get_feature_job_logs(self, feature_id: ObjectId, hour_limit: int) -> dict[str, Any]:
         """
         Retrieve table preview for query graph node
 
@@ -574,8 +573,6 @@ class FeatureController(
             Feature Id
         hour_limit: int
             Limit in hours on the job history to fetch
-        get_credential: Any
-            Get credential handler function
 
         Returns
         -------
@@ -583,9 +580,7 @@ class FeatureController(
             Dataframe converted to json string
         """
         feature = await self.service.get_document(feature_id)
-        return await self.feature_store_warehouse_service.get_feature_job_logs(
-            feature_store_id=feature.tabular_source.feature_store_id,
+        return await self.tile_job_log_service.get_feature_job_logs(
             features=[ExtendedFeatureModel(**feature.dict(by_alias=True))],
             hour_limit=hour_limit,
-            get_credential=get_credential,
         )

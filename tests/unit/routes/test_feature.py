@@ -5,7 +5,7 @@ import textwrap
 from collections import defaultdict
 from datetime import datetime
 from http import HTTPStatus
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, Mock, call, patch
 
 import numpy as np
 import pandas as pd
@@ -706,7 +706,6 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         self,
         test_api_client_persistent,
         create_success_response,
-        mock_get_session,
     ):
         """Test get feature job logs"""
         test_api_client, _ = test_api_client_persistent
@@ -741,9 +740,11 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
                 "MESSAGE": [""] * 5 + ["Some error has occurred"],
             }
         )
-        mock_session = mock_get_session.return_value
-        mock_session.execute_query.return_value = job_logs
-        response = test_api_client.get(f"{self.base_route}/{feature_id}/feature_job_logs")
+        with patch(
+            "featurebyte.service.tile_job_log.TileJobLogService.get_logs_dataframe"
+        ) as mock_get_jobs_dataframe:
+            mock_get_jobs_dataframe.return_value = job_logs
+            response = test_api_client.get(f"{self.base_route}/{feature_id}/feature_job_logs")
         assert response.status_code == HTTPStatus.OK
         expected_df = pd.DataFrame(
             {
@@ -759,24 +760,8 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
             }
         )
         assert_frame_equal(dataframe_from_json(response.json()), expected_df)
-        assert (
-            mock_session.execute_query.call_args[0][0]
-            == textwrap.dedent(
-                f"""
-            SELECT
-              "SESSION_ID",
-              "CREATED_AT",
-              "AGGREGATION_ID",
-              "STATUS",
-              "MESSAGE"
-            FROM TILE_JOB_MONITOR
-            WHERE
-              "CREATED_AT" >= CAST('2022-01-01 10:00:00' AS TIMESTAMPNTZ)
-              AND "CREATED_AT" < CAST('2022-01-02 10:00:00' AS TIMESTAMPNTZ)
-              AND "AGGREGATION_ID" IN ('{aggregation_id}')
-              AND "TILE_TYPE" = 'ONLINE'
-            """
-            ).strip()
+        assert mock_get_jobs_dataframe.call_args == call(
+            aggregation_ids=[aggregation_id], hour_limit=24
         )
 
     @pytest.mark.asyncio

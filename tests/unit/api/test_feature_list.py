@@ -1025,9 +1025,9 @@ def test_list_features(saved_feature_list, float_feature):
 def test_get_feature_jobs_status(saved_feature_list, feature_job_logs, update_fixtures):
     """Test get_feature_jobs_status"""
     with patch(
-        "featurebyte.session.snowflake.SnowflakeSession.execute_query"
-    ) as mock_execute_query:
-        mock_execute_query.return_value = feature_job_logs
+        "featurebyte.service.tile_job_log.TileJobLogService.get_logs_dataframe"
+    ) as mock_get_jobs_dataframe:
+        mock_get_jobs_dataframe.return_value = feature_job_logs
         job_status_result = saved_feature_list.get_feature_jobs_status(
             job_history_window=24, job_duration_tolerance=1700
         )
