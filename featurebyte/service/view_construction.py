@@ -5,8 +5,6 @@ from __future__ import annotations
 
 from typing import Any, cast
 
-from collections import defaultdict
-
 from bson import ObjectId
 
 from featurebyte import ColumnCleaningOperation, TableCleaningOperation
@@ -17,18 +15,11 @@ from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.graph import GraphNodeNameMap, QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.input import InputNode
-from featurebyte.query_graph.node.metadata.operation import (
-    DerivedDataColumn,
-    OperationStructure,
-    SourceDataColumn,
-    ViewDataColumnType,
-)
 from featurebyte.query_graph.node.nested import (
     BaseGraphNode,
     BaseViewGraphNodeParameters,
     ViewMetadata,
 )
-from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 from featurebyte.service.table import TableService
 
 
@@ -175,26 +166,6 @@ class ViewConstructionService:
         )
         return new_view_graph_node, new_view_columns_info
 
-    @staticmethod
-    def _prepare_table_id_to_table_column_names(
-        operation_structure: OperationStructure,
-    ) -> dict[ObjectId, set[str]]:
-        # prepare table ID to source column names mapping, use this mapping to prune the view graph node parameters
-        table_id_to_source_column_names: dict[ObjectId, set[str]] = defaultdict(set)
-        for col in operation_structure.columns:
-            if col.type == ViewDataColumnType.SOURCE:
-                assert isinstance(col, SourceDataColumn)
-                assert col.table_id is not None, "Source table ID is missing."
-                table_id_to_source_column_names[col.table_id].add(col.name)
-            else:
-                assert isinstance(col, DerivedDataColumn)
-                for derived_source_col in col.columns:
-                    assert derived_source_col.table_id is not None, "Source table ID is missing."
-                    table_id_to_source_column_names[derived_source_col.table_id].add(
-                        derived_source_col.name
-                    )
-        return table_id_to_source_column_names
-
     async def prepare_view_node_name_to_replacement_node(
         self,
         query_graph: QueryGraphModel,
@@ -226,6 +197,7 @@ class ViewConstructionService:
         GraphInconsistencyError
             If the graph has unexpected structure
         """
+        query_graph = QueryGraph(**query_graph.dict(by_alias=True))
         node_name_to_replacement_node: dict[str, Node] = {}
         table_name_to_column_cleaning_operations: dict[str, list[ColumnCleaningOperation]] = {
             table_clean_op.table_name: table_clean_op.column_cleaning_operations
@@ -234,13 +206,9 @@ class ViewConstructionService:
         # view node name to (view graph node, view columns_info & table input node)
         view_node_name_to_table_info: dict[str, tuple[Node, list[ColumnInfo], InputNode]] = {}
 
-        # prepare operation structure of nodes
-        operation_structure_info = OperationStructureExtractor(graph=query_graph).extract(
-            node=target_node,
-            keep_all_source_columns=True,
-        )
-        table_id_to_source_column_names = self._prepare_table_id_to_table_column_names(
-            operation_structure=operation_structure_info.operation_structure_map[target_node.name]
+        # prepare table ID to required source column names mapping
+        table_id_to_source_column_names = query_graph.extract_table_id_to_table_column_names(
+            node=target_node
         )
 
         # since the graph node is topologically sorted, input to the view graph node will always be
