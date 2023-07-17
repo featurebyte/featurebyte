@@ -3,7 +3,7 @@ ViewConstructionService class
 """
 from __future__ import annotations
 
-from typing import Any, Optional, cast
+from typing import Any, cast
 
 from collections import defaultdict
 
@@ -212,7 +212,7 @@ class ViewConstructionService:
             Feature model graph
         target_node: Node
             Target node of the feature model graph
-        table_cleaning_operations: Optional[List[TableCleaningOperation]]
+        table_cleaning_operations: List[TableCleaningOperation]
             Table cleaning operations
         use_source_settings: bool
             Whether to use source table's table cleaning operations
