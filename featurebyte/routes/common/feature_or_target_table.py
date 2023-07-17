@@ -83,7 +83,7 @@ class FeatureOrTargetTableController(
         MaterializedTableDocumentT, MaterializedTableDocumentServiceT, PaginatedDocument
     ],
     Generic[
-        InfoTypeT, MaterializedTableDocumentT, MaterializedTableDocumentServiceT, PaginatedDocument
+        MaterializedTableDocumentT, MaterializedTableDocumentServiceT, PaginatedDocument, InfoTypeT
     ],
 ):
     """
