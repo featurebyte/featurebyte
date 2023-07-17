@@ -238,8 +238,15 @@ def test_complex_features(complex_feature_query_graph, update_fixtures):
     """
     node, graph = complex_feature_query_graph
 
+    # Prune graph to remove unused windows (in the actual code paths, graph is always pruned before
+    # any sql generation)
+    pruned_graph_model, node_name_map = graph.prune(node)
+    pruned_node = pruned_graph_model.get_node_by_name(node_name_map[node.name])
+    pruned_graph, loaded_node_name_map = QueryGraph().load(pruned_graph_model)
+    pruned_node = pruned_graph.get_node_by_name(loaded_node_name_map[pruned_node.name])
+
     # Check precompute sqls
-    queries = get_online_store_precompute_queries(graph, node, SourceType.SNOWFLAKE)
+    queries = get_online_store_precompute_queries(pruned_graph, pruned_node, SourceType.SNOWFLAKE)
     assert len(queries) == 2
     expected_query_params_tile_1 = {
         "tile_id": "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
@@ -279,13 +286,6 @@ def test_complex_features(complex_feature_query_graph, update_fixtures):
         "tests/fixtures/expected_online_precompute_complex_1.sql",
         update_fixture=update_fixtures,
     )
-
-    # Prune graph to remove unused windows (in the actual code paths, graph is always pruned before
-    # any sql generation)
-    pruned_graph_model, node_name_map = graph.prune(node)
-    pruned_node = pruned_graph_model.get_node_by_name(node_name_map[node.name])
-    pruned_graph, loaded_node_name_map = QueryGraph().load(pruned_graph_model)
-    pruned_node = pruned_graph.get_node_by_name(loaded_node_name_map[pruned_node.name])
 
     # Check retrieval sql
     sql = get_online_store_retrieval_sql(

@@ -306,16 +306,6 @@ def get_online_store_precompute_queries(
     -------
     list[OnlineStoreComputeQueryModel]
     """
-    # Prune the graph to only include the aggregations that are required. This is necessary when
-    # this function is called from FeatureModel._add_tile_derived_attributes() root validator
-    # because the graph may not have been pruned yet.
-    pruned_graph_model, node_name_map = graph.prune(node)
-    pruned_node = pruned_graph_model.get_node_by_name(node_name_map[node.name])
-    pruned_graph, loaded_node_name_map = QueryGraph().load(pruned_graph_model)
-    pruned_node = pruned_graph.get_node_by_name(loaded_node_name_map[pruned_node.name])
-
-    universe_plan = OnlineStorePrecomputePlan(
-        pruned_graph, pruned_node, adapter=get_sql_adapter(source_type)
-    )
+    universe_plan = OnlineStorePrecomputePlan(graph, node, adapter=get_sql_adapter(source_type))
     queries = universe_plan.construct_online_store_precompute_queries(source_type=source_type)
     return queries

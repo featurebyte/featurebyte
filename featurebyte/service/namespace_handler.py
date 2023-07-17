@@ -92,7 +92,10 @@ class NamespaceHandler:
         -------
         QueryGraphModel
         """
-        # reconstruct view graph node to remove unused column cleaning operations
+        # Using a pruned graph, reconstruct view graph node to remove unused column cleaning
+        # operations
+        graph, node_name_map = QueryGraph(**graph.dict(by_alias=True)).prune(target_node=node)
+        node = graph.get_node_by_name(node_name_map[node.name])
         constructed_graph, node_name_map = await self.view_construction_service.construct_graph(
             query_graph=graph,
             target_node=node,
@@ -100,7 +103,7 @@ class NamespaceHandler:
         )
         node = constructed_graph.get_node_by_name(node_name_map[node.name])
 
-        # prune the graph to remove unused nodes
+        # Prune the graph to remove unused nodes and parameters
         pruned_graph, pruned_node_name_map = QueryGraph(
             **constructed_graph.dict(by_alias=True)
         ).prune(target_node=node)

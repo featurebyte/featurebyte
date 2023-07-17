@@ -70,7 +70,10 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
         if any(not x for x in derived_attributes):
             # only derive attributes if any of them is missing
             # extract table ids & entity ids from the graph
-            graph = QueryGraph(**values["internal_graph"])
+            graph_dict = values["internal_graph"]
+            if isinstance(graph_dict, QueryGraphModel):
+                graph_dict = graph_dict.dict(by_alias=True)
+            graph = QueryGraph(**graph_dict)
             node_name = values["node_name"]
             values["primary_table_ids"] = graph.get_primary_table_ids(node_name=node_name)
             values["table_ids"] = graph.get_table_ids(node_name=node_name)
