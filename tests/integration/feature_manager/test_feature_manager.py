@@ -94,6 +94,21 @@ async def list_scheduled_tasks(periodic_task_service, feature_service, saved_fea
     return out
 
 
+async def list_online_store_compute_queries(
+    online_store_compute_query_service, feature_service, saved_feature
+):
+    """
+    List online store compute queries for the given feature
+    """
+    feature_model = await feature_service.get_document(saved_feature.id)
+    assert len(feature_model.aggregation_ids) == 1
+    agg_id = feature_model.aggregation_ids[0]
+    out = []
+    async for query in online_store_compute_query_service.list_by_aggregation_id(agg_id):
+        out.append(query)
+    return out
+
+
 @pytest.fixture(name="feature_sql")
 def feature_sql_fixture():
     """
@@ -283,13 +298,14 @@ async def test_online_disable(
     feature_sum_30h_transformed,
     periodic_task_service,
     feature_service,
+    online_store_compute_query_service,
 ):
     """
     Test online_disable behaves correctly
     """
     with create_and_enable_deployment(feature_sum_30h) as deployment1:
         with create_and_enable_deployment(feature_sum_30h_transformed) as deployment2:
-            # Check that both features share the same tile tasks
+            # 1. Check that both features share the same tile tasks
             tasks1 = await list_scheduled_tasks(
                 periodic_task_service, feature_service, feature_sum_30h
             )
@@ -299,7 +315,13 @@ async def test_online_disable(
             assert len(tasks1) > 0
             assert set(tasks1) == set(tasks2)
 
-            # Disable the first feature. Since the tile is still used by the second feature, the
+            # Both features share the same compute query
+            online_store_compute_queries = await list_online_store_compute_queries(
+                online_store_compute_query_service, feature_service, feature_sum_30h_transformed
+            )
+            assert len(online_store_compute_queries) == 1
+
+            # 2. Disable the first feature. Since the tile is still used by the second feature, the
             # tile tasks should not be removed.
             deployment1.disable()
             tasks = await list_scheduled_tasks(
@@ -307,13 +329,25 @@ async def test_online_disable(
             )
             assert set(tasks) == set(tasks2)
 
-            # Disable the second feature. Since the tile is no longer used by any feature, the tile
-            # tasks should be removed.
+            # The query should still exist because it is still used by the second feature
+            online_store_compute_queries = await list_online_store_compute_queries(
+                online_store_compute_query_service, feature_service, feature_sum_30h_transformed
+            )
+            assert len(online_store_compute_queries) == 1
+
+            # 3. Disable the second feature. Since the tile is no longer used by any feature, the
+            # tile tasks should be removed.
             deployment2.disable()
             tasks = await list_scheduled_tasks(
                 periodic_task_service, feature_service, feature_sum_30h_transformed
             )
             assert len(tasks) == 0
+
+            # The query should be removed now
+            online_store_compute_queries = await list_online_store_compute_queries(
+                online_store_compute_query_service, feature_service, feature_sum_30h_transformed
+            )
+            assert len(online_store_compute_queries) == 0
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
