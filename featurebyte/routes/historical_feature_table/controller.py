@@ -10,8 +10,6 @@ import pandas as pd
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
 from featurebyte.routes.common.feature_or_target_table import (
     FeatureOrTargetTableController,
-    PayloadT,
-    TableCreateT,
     ValidationParameters,
 )
 from featurebyte.routes.task.controller import TaskController
@@ -20,6 +18,9 @@ from featurebyte.schema.historical_feature_table import (
     HistoricalFeatureTableList,
 )
 from featurebyte.schema.info import HistoricalFeatureTableInfo
+from featurebyte.schema.worker.task.historical_feature_table import (
+    HistoricalFeatureTableTaskPayload,
+)
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_store import FeatureStoreService
@@ -34,6 +35,8 @@ class HistoricalFeatureTableController(
         HistoricalFeatureTableService,
         HistoricalFeatureTableList,
         HistoricalFeatureTableInfo,
+        HistoricalFeatureTableTaskPayload,
+        HistoricalFeatureTableCreate,
     ],
 ):
     """
@@ -65,16 +68,16 @@ class HistoricalFeatureTableController(
 
     async def get_payload(
         self,
-        table_create: TableCreateT,
+        table_create: HistoricalFeatureTableCreate,
         observation_set_dataframe: Optional[pd.DataFrame],
-    ) -> PayloadT:
-        assert isinstance(table_create, HistoricalFeatureTableCreate)
+    ) -> HistoricalFeatureTableTaskPayload:
         return await self.service.get_historical_feature_table_task_payload(  # type: ignore[return-value]
             data=table_create, observation_set_dataframe=observation_set_dataframe
         )
 
-    async def get_validation_parameters(self, table_create: TableCreateT) -> ValidationParameters:
-        assert isinstance(table_create, HistoricalFeatureTableCreate)
+    async def get_validation_parameters(
+        self, table_create: HistoricalFeatureTableCreate
+    ) -> ValidationParameters:
         # feature cluster group feature graph by feature store ID, only single feature store is
         # supported
         feature_cluster = table_create.featurelist_get_historical_features.feature_clusters[0]
