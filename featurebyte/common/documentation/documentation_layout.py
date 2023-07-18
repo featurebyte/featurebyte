@@ -286,6 +286,8 @@ def _get_feature_or_target_items(section: str) -> List[DocLayoutItem]:
         DocLayoutItem([section, LINEAGE, f"{section}.definition"]),
         DocLayoutItem([section, LINEAGE, f"{section}.catalog_id"]),
         *_get_series_properties_layout(section),
+        *_get_datetime_accessor_properties_layout(section),
+        *_get_str_accessor_properties_layout(section),
     ]
 
 
@@ -324,9 +326,6 @@ def _get_feature_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE, TRANSFORM, "Feature.cd.get_value"]),
         DocLayoutItem([FEATURE, TRANSFORM, "Feature.cd.most_frequent"]),
         DocLayoutItem([FEATURE, TRANSFORM, "Feature.cd.unique_count"]),
-        *_get_datetime_accessor_properties_layout(FEATURE),
-        *_get_series_properties_layout(FEATURE),
-        *_get_str_accessor_properties_layout(FEATURE),
     ]
 
 
@@ -534,7 +533,7 @@ def _get_datetime_accessor_properties_layout(series_type: str) -> List[DocLayout
     -------
     List[DocLayoutItem]
     """
-    assert series_type in {VIEW_COLUMN, FEATURE}
+    assert series_type in {VIEW_COLUMN, FEATURE, TARGET}
     return [
         DocLayoutItem([series_type, TRANSFORM, f"{series_type}.dt.{field}"])
         for field in [
@@ -567,7 +566,7 @@ def _get_str_accessor_properties_layout(series_type: str) -> List[DocLayoutItem]
     -------
     List[DocLayoutItem]
     """
-    assert series_type in {VIEW_COLUMN, FEATURE}
+    assert series_type in {VIEW_COLUMN, FEATURE, TARGET}
     return [
         DocLayoutItem([series_type, TRANSFORM, f"{series_type}.str.{field}"])
         for field in [

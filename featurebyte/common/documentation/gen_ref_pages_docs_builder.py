@@ -363,6 +363,12 @@ def get_accessor_to_classes_using() -> Dict[str, Any]:
             ],
             property_name="str",
         ),
+        "TargetStringAccessor": AccessorMetadata(
+            classes_using_accessor=[
+                "featurebyte.Target",
+            ],
+            property_name="str",
+        ),
         "CountDictAccessor": AccessorMetadata(
             classes_using_accessor=[
                 "featurebyte.Feature",
@@ -379,6 +385,12 @@ def get_accessor_to_classes_using() -> Dict[str, Any]:
         "FeatureDatetimeAccessor": AccessorMetadata(
             classes_using_accessor=[
                 "featurebyte.Feature",
+            ],
+            property_name="dt",
+        ),
+        "TargetDatetimeAccessor": AccessorMetadata(
+            classes_using_accessor=[
+                "featurebyte.Target",
             ],
             property_name="dt",
         ),
