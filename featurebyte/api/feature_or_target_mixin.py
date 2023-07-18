@@ -20,6 +20,7 @@ from featurebyte.exception import RecordRetrievalException
 from featurebyte.logging import get_logger
 from featurebyte.models.base import PydanticObjectId, get_active_catalog_id
 from featurebyte.models.feature import BaseFeatureModel
+from featurebyte.models.relationship_analysis import derive_primary_entity
 from featurebyte.schema.preview import FeatureOrTargetPreview
 
 logger = get_logger(__name__)
