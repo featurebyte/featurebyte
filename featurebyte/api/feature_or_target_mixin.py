@@ -10,8 +10,8 @@ import pandas as pd
 from bson import ObjectId
 from pydantic import Field
 
-from featurebyte import Entity
 from featurebyte.api.api_object import ApiObject
+from featurebyte.api.entity import Entity
 from featurebyte.common.formatting_util import CodeStr
 from featurebyte.common.utils import dataframe_from_json
 from featurebyte.config import Configurations
