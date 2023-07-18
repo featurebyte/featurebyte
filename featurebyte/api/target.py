@@ -28,6 +28,8 @@ from featurebyte.api.templates.feature_or_target_doc import (
 )
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.utils import dataframe_to_arrow_bytes, enforce_observation_set_row_order
+from featurebyte.core.accessor.target_datetime import TargetDtAccessorMixin
+from featurebyte.core.accessor.target_string import TargetStrAccessorMixin
 from featurebyte.core.series import Series
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.feature_store import FeatureStoreModel
@@ -37,7 +39,9 @@ from featurebyte.schema.target import TargetUpdate
 from featurebyte.schema.target_table import TargetTableCreate
 
 
-class Target(Series, SavableApiObject, FeatureOrTargetMixin):
+class Target(
+    Series, SavableApiObject, FeatureOrTargetMixin, TargetDtAccessorMixin, TargetStrAccessorMixin
+):
     """
     Target class used to represent a Target in FeatureByte.
     """

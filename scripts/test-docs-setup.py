@@ -198,6 +198,17 @@ def setup() -> None:
         is_global=True,
     )
 
+    # Target
+    target_customer_amount_7d = grocery_invoice_view.groupby(
+        "GroceryCustomerGuid"
+    ).forward_aggregate(
+        value_column="Amount",
+        method="avg",
+        window="7d",
+        target_name="target_customer_amount_7d",
+    )
+    target_customer_amount_7d.save(conflict_resolution="retrieve")
+
 
 if __name__ == "__main__":
     setup()
