@@ -250,9 +250,8 @@ class QueryGraph(QueryGraphModel):
                 # for the item view, the timestamp column is from the event table, not the item table
                 # therefore the column is a DerivedDataColumn
                 assert isinstance(timestamp_col, DerivedDataColumn)
-                table_id = None
-                for column in timestamp_col.columns:
-                    table_id = column.table_id
+                # use the last column's table ID as timestamp column's table ID
+                table_id = timestamp_col.columns[-1].table_id
 
             assert table_id is not None, "Table ID not found"
             yield group_by_node, table_id

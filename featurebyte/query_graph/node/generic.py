@@ -1081,7 +1081,10 @@ class JoinNode(BasePrunableNode):
                     # so that any changes on the right_on column can be tracked.
                     right_columns[col.name] = DerivedDataColumn.create(
                         name=right_col_map[col.name],  # type: ignore
-                        columns=[right_on_col, col, left_on_col],
+                        # the main source column must be on the right most side
+                        # this is used to decide the timestamp column source table in
+                        # `iterate_group_by_node_and_table_id_pairs`
+                        columns=[left_on_col, right_on_col, col],
                         transform=self.transform_info,
                         node_name=self.name,
                         dtype=col.dtype,

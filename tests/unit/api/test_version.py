@@ -174,3 +174,41 @@ def test_feature_list__as_default_version(feature_group):
         )
         == new_feature_list_version
     )
+
+
+def test_create_new_version_on_item_view_aggregate_over_feature(
+    snowflake_item_table, transaction_entity
+):
+    """This is a test for creating a new feature version on an item view feature"""
+    snowflake_item_table.event_id_col.as_entity(transaction_entity.name)
+    item_view = snowflake_item_table.get_view(event_suffix="_event_table")
+    feat = item_view.groupby("cust_id_event_table").aggregate_over(
+        value_column="item_amount",
+        method="sum",
+        feature_names=["amt_sum_30m"],
+        windows=["30m"],
+    )["amt_sum_30m"]
+    feat.save()
+
+    # test create new version with timestamp column on the right table of a join
+    new_feat = feat.create_new_version(
+        table_feature_job_settings=[
+            TableFeatureJobSetting(
+                table_name="sf_event_table",
+                feature_job_setting=FeatureJobSetting(
+                    blind_spot="75m", frequency="30m", time_modulo_frequency="15m"
+                ),
+            )
+        ],
+    )
+    setting = new_feat.info()["table_feature_job_setting"]["this"]
+    assert setting == [
+        {
+            "table_name": "sf_event_table",
+            "feature_job_setting": {
+                "blind_spot": "4500s",
+                "frequency": "1800s",
+                "time_modulo_frequency": "900s",
+            },
+        }
+    ]

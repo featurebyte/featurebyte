@@ -244,9 +244,9 @@ def test_join_with_assign_node__join_node_parameters_pruning(
         },
         {
             "columns": [
+                {"dtype": "INT", "name": "order_id", **common_column_params, **input_2_params},
                 {"dtype": "INT", "name": "order_id", **common_column_params, **input_1_params},
                 {"dtype": "VARCHAR", "name": "item_type", **common_column_params, **input_1_params},
-                {"dtype": "INT", "name": "order_id", **common_column_params, **input_2_params},
             ],
             "dtype": "VARCHAR",
             "filter": False,
