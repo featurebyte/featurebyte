@@ -150,7 +150,7 @@ def clean_catalogs(verbose=True):
 
                 cleaned = True
 
-    if cleaned:
+    if cleaned and current_catalog:
         catalog = fb.activate_and_get_catalog(current_catalog.name)
 
 
