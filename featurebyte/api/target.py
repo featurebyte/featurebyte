@@ -121,7 +121,7 @@ class Target(
 
     @property
     @substitute_docstring(doc_template=PRIMARY_ENTITY_DOC, format_kwargs={"class_name": "Target"})
-    def primary_entity(self) -> List[Entity]:
+    def primary_entity(self) -> List[Entity]:  # pylint: disable=missing-function-docstring
         return self._primary_entity()
 
     @property  # type: ignore
