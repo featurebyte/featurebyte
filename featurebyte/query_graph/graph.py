@@ -10,6 +10,7 @@ from typing import (
     List,
     Literal,
     Optional,
+    Set,
     Tuple,
     TypedDict,
     cast,
@@ -306,6 +307,30 @@ class QueryGraph(QueryGraphModel):
             node=node, keep_all_source_columns=keep_all_source_columns, **kwargs
         )
         return op_struct_info.operation_structure_map[node.name]
+
+    def extract_table_id_to_table_column_names(self, node: Node) -> Dict[ObjectId, Set[str]]:
+        """
+        Extract table ID to table column names based on the graph & given target node.
+        This mapping is used to prune the view graph node parameters or extract the table columns used by the
+        query graph object.
+
+        Parameters
+        ----------
+        node: Node
+            Target node used to the mapping
+
+        Returns
+        -------
+        dict[ObjectId, set[str]]
+            Table ID to table column names
+        """
+        operation_structure = self.extract_operation_structure(node, keep_all_source_columns=True)
+        # prepare table ID to source column names mapping, use this mapping to prune the view graph node parameters
+        table_id_to_source_column_names: Dict[ObjectId, Set[str]] = defaultdict(set)
+        for src_col in operation_structure.iterate_source_columns():
+            assert src_col.table_id is not None, "Source table ID is missing."
+            table_id_to_source_column_names[src_col.table_id].add(src_col.name)
+        return table_id_to_source_column_names
 
     def prune(self, target_node: Node) -> GraphNodeNameMap:
         """
