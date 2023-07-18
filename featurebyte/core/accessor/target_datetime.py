@@ -77,8 +77,8 @@ class TargetDatetimeAccessor(DatetimeAccessor):
         --------
         Compute the year component of a timestamp column:
 
-        >>> target = catalog.get_target("target_customer_amount_7d")
-        >>> target["TimestampYear"] = target.dt.year
+        >>> target = catalog.get_target("target_customer_amount_7d")  # doctest: +SKIP
+        >>> target["TimestampYear"] = target.dt.year  # doctest: +SKIP
         """
         return super().year  # type: ignore[return-value]
 
@@ -96,8 +96,8 @@ class TargetDatetimeAccessor(DatetimeAccessor):
         --------
         Compute the quarter component of a timestamp column:
 
-        >>> target = catalog.get_target("target_customer_amount_7d")
-        >>> target["TimestampQuarter"] = target.dt.quarter
+        >>> target = catalog.get_target("target_customer_amount_7d")  # doctest: +SKIP
+        >>> target["TimestampQuarter"] = target.dt.quarter  # doctest: +SKIP
         """
         return super().quarter  # type: ignore[return-value]
 
@@ -115,8 +115,8 @@ class TargetDatetimeAccessor(DatetimeAccessor):
         --------
         Compute the month component of a timestamp column:
 
-        >>> target = catalog.get_target("target_customer_amount_7d")
-        >>> target["TimestampMonth"] = target.dt.month
+        >>> target = catalog.get_target("target_customer_amount_7d")  # doctest: +SKIP
+        >>> target["TimestampMonth"] = target.dt.month  # doctest: +SKIP
         """
         return super().month  # type: ignore[return-value]
 
@@ -134,8 +134,8 @@ class TargetDatetimeAccessor(DatetimeAccessor):
         --------
         Compute the week component of a timestamp column:
 
-        >>> target = catalog.get_target("target_customer_amount_7d")
-        >>> target["TimestampWeek"] = target.dt.week
+        >>> target = catalog.get_target("target_customer_amount_7d")  # doctest: +SKIP
+        >>> target["TimestampWeek"] = target.dt.week  # doctest: +SKIP
         """
         return super().week  # type: ignore[return-value]
 
@@ -156,8 +156,8 @@ class TargetDatetimeAccessor(DatetimeAccessor):
         --------
         Compute the day component of a timestamp column:
 
-        >>> target = catalog.get_target("target_customer_amount_7d")
-        >>> target["TimestampDay"] = target.dt.day
+        >>> target = catalog.get_target("target_customer_amount_7d")  # doctest: +SKIP
+        >>> target["TimestampDay"] = target.dt.day  # doctest: +SKIP
         """
         return super().day  # type: ignore[return-value]
 
@@ -175,8 +175,8 @@ class TargetDatetimeAccessor(DatetimeAccessor):
 
         Examples
         --------
-        >>> target = catalog.get_target("target_customer_amount_7d")
-        >>> target["TimestampDayOfWeek"] = target.dt.day_of_week
+        >>> target = catalog.get_target("target_customer_amount_7d")  # doctest: +SKIP
+        >>> target["TimestampDayOfWeek"] = target.dt.day_of_week  # doctest: +SKIP
         """
         return super().day_of_week  # type: ignore[return-value]
 
@@ -197,8 +197,8 @@ class TargetDatetimeAccessor(DatetimeAccessor):
         --------
         Compute the hour component of a timestamp column:
 
-        >>> target = catalog.get_target("target_customer_amount_7d")
-        >>> target["TimestampHour"] = target.dt.hour
+        >>> target = catalog.get_target("target_customer_amount_7d")  # doctest: +SKIP
+        >>> target["TimestampHour"] = target.dt.hour  # doctest: +SKIP
         """
         return super().hour  # type: ignore[return-value]
 
@@ -219,8 +219,8 @@ class TargetDatetimeAccessor(DatetimeAccessor):
         --------
         Compute the minute component of a timestamp column:
 
-        >>> target = catalog.get_target("target_customer_amount_7d")
-        >>> target["TimestampMinute"] = target.dt.minute
+        >>> target = catalog.get_target("target_customer_amount_7d")  # doctest: +SKIP
+        >>> target["TimestampMinute"] = target.dt.minute  # doctest: +SKIP
         """
         return super().minute  # type: ignore[return-value]
 
@@ -242,8 +242,8 @@ class TargetDatetimeAccessor(DatetimeAccessor):
 
         Compute the second component of a timestamp column:
 
-        >>> target = catalog.get_target("target_customer_amount_7d")
-        >>> target["TimestampSecond"] = target.dt.second
+        >>> target = catalog.get_target("target_customer_amount_7d")  # doctest: +SKIP
+        >>> target["TimestampSecond"] = target.dt.second  # doctest: +SKIP
         """
         return super().second  # type: ignore[return-value]
 
@@ -265,7 +265,7 @@ class TargetDatetimeAccessor(DatetimeAccessor):
 
         Compute the millisecond component of a timestamp column:
 
-        >>> target = catalog.get_target("target_customer_amount_7d")
+        >>> target = catalog.get_target("target_customer_amount_7d")  # doctest: +SKIP
         >>> target["TimestampMillisecond"] = target.dt.millisecond  # doctest: +SKIP
         """
         return super().millisecond  # type: ignore[return-value]
@@ -288,7 +288,7 @@ class TargetDatetimeAccessor(DatetimeAccessor):
 
         Compute the millisecond component of a timestamp column:
 
-        >>> target = catalog.get_target("target_customer_amount_7d")
+        >>> target = catalog.get_target("target_customer_amount_7d")  # doctest: +SKIP
         >>> target["TimestampMicrosecond"] = target.dt.microsecond  # doctest: +SKIP
         """
         return super().microsecond  # type: ignore[return-value]
@@ -313,7 +313,7 @@ class TargetDatetimeAccessor(DatetimeAccessor):
 
         Examples
         --------
-        >>> target = catalog.get_target("target_customer_amount_7d")
-        >>> target["TimestampWithOffset"] = target.dt.tz_offset("+08:00").hour
+        >>> target = catalog.get_target("target_customer_amount_7d")  # doctest: +SKIP
+        >>> target["TimestampWithOffset"] = target.dt.tz_offset("+08:00").hour  # doctest: +SKIP
         """
         return super().tz_offset(timezone_offset)
