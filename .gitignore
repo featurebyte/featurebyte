@@ -567,3 +567,5 @@ debug/
 
 # task cache
 .task/
+
+notebooks/.ipynb_checkpoints/

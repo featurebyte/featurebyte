@@ -1,0 +1,219 @@
+# THIS FILE IS GENERATED. PLEASE DO NOT MODIFY DIRECTLY.
+# Please refer to the `test_notebooks.py` file in the `featurebyte/infrastructure` repo if you want to update it.
+
+name: test-notebooks
+'on':
+  workflow_dispatch: {}
+  pull_request:
+    types:
+    - opened
+    - synchronize
+    - reopened
+  push:
+    branches:
+    - main
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
+env:
+  GCR_DOCKER_LOCATION: us-central1
+  POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD: ${{ secrets.GCR_PYPI_CREDENTIALS_R_B64 }}
+  POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME: _json_key_base64
+jobs:
+  test-deep-dive-notebooks:
+    runs-on: ubuntu-latest-4-cores
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - uses: arduino/setup-task@v1
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        version: 3.x
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Setup cache
+      uses: actions/cache@v3
+      with:
+        key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
+        path: .venv
+        restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
+    - name: Install Poetry
+      uses: abatilo/actions-poetry@v2
+      with:
+        poetry-version: 1.5.1
+    - name: Configure Poetry
+      run: |-
+        poetry config virtualenvs.in-project true
+        poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
+    - name: Install packages needed for build
+      run: sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
+    - name: Install packages needed for Kerberos
+      run: sudo apt-get install libkrb5-dev
+    - name: Set Github Committer Settings
+      run: |-
+        git config --global user.name "featurebyte[bot]"
+        git config --global user.email "featurebyte[bot]@users.noreply.github.com"
+    - name: Run task install
+      run: task install
+    - name: Docker Login to Non-Prod Artifact Registry
+      uses: docker/login-action@v2
+      with:
+        password: ${{ secrets.GCR_DOCKER_CREDENTIALS_R_B64 }}
+        registry: ${{ env.GCR_DOCKER_LOCATION }}-docker.pkg.dev
+        username: _json_key_base64
+    - name: Run notebook tests
+      run: task test-deep-dive-notebooks
+    timeout-minutes: 30
+  test-quick-start-notebooks:
+    runs-on: ubuntu-latest-4-cores
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - uses: arduino/setup-task@v1
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        version: 3.x
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Setup cache
+      uses: actions/cache@v3
+      with:
+        key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
+        path: .venv
+        restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
+    - name: Install Poetry
+      uses: abatilo/actions-poetry@v2
+      with:
+        poetry-version: 1.5.1
+    - name: Configure Poetry
+      run: |-
+        poetry config virtualenvs.in-project true
+        poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
+    - name: Install packages needed for build
+      run: sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
+    - name: Install packages needed for Kerberos
+      run: sudo apt-get install libkrb5-dev
+    - name: Set Github Committer Settings
+      run: |-
+        git config --global user.name "featurebyte[bot]"
+        git config --global user.email "featurebyte[bot]@users.noreply.github.com"
+    - name: Run task install
+      run: task install
+    - name: Docker Login to Non-Prod Artifact Registry
+      uses: docker/login-action@v2
+      with:
+        password: ${{ secrets.GCR_DOCKER_CREDENTIALS_R_B64 }}
+        registry: ${{ env.GCR_DOCKER_LOCATION }}-docker.pkg.dev
+        username: _json_key_base64
+    - name: Run notebook tests
+      run: task test-quick-start-notebooks
+    timeout-minutes: 45
+  test-playground-notebooks:
+    runs-on: ubuntu-latest-4-cores
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - uses: arduino/setup-task@v1
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        version: 3.x
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Setup cache
+      uses: actions/cache@v3
+      with:
+        key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
+        path: .venv
+        restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
+    - name: Install Poetry
+      uses: abatilo/actions-poetry@v2
+      with:
+        poetry-version: 1.5.1
+    - name: Configure Poetry
+      run: |-
+        poetry config virtualenvs.in-project true
+        poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
+    - name: Install packages needed for build
+      run: sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
+    - name: Install packages needed for Kerberos
+      run: sudo apt-get install libkrb5-dev
+    - name: Set Github Committer Settings
+      run: |-
+        git config --global user.name "featurebyte[bot]"
+        git config --global user.email "featurebyte[bot]@users.noreply.github.com"
+    - name: Run task install
+      run: task install
+    - name: Docker Login to Non-Prod Artifact Registry
+      uses: docker/login-action@v2
+      with:
+        password: ${{ secrets.GCR_DOCKER_CREDENTIALS_R_B64 }}
+        registry: ${{ env.GCR_DOCKER_LOCATION }}-docker.pkg.dev
+        username: _json_key_base64
+    - name: Run notebook tests
+      run: task test-playground-notebooks
+    timeout-minutes: 30
+  slack:
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    needs:
+    - test-quick-start-notebooks
+    - test-deep-dive-notebooks
+    - test-playground-notebooks
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - if: ${{ github.event_name == 'pull_request' }}
+      name: Get Author Email (PR)
+      run: echo "AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_HEAD_REF}")" >> $GITHUB_ENV
+    - if: ${{ github.event_name != 'pull_request' }}
+      name: Get Author Email (PUSH)
+      run: echo "AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_REF_NAME}")" >> $GITHUB_ENV
+    - name: Get Channel ID
+      run: |-
+        export AUTHOR_ID=`curl -X POST -H "Authorization: Bearer ${{ secrets.SLACK_OAUTH }}" -H 'Content-type: application/json; charset=utf-8' https://slack.com/api/users.list | grep -oP $(echo '"id":"\K[^"]+?"(?:(?!"id").)*${AUTHOR_EMAIL}' | envsubst) | grep -oP '^[^"]+'`
+        echo "CHANNEL_ID=${AUTHOR_ID}" >> $GITHUB_ENV
+    - name: Load TEST_QUICK_START_NOTEBOOKS_RESULT into env
+      run: echo "TEST_QUICK_START_NOTEBOOKS_RESULT=${{ needs.test-quick-start-notebooks.result }}" >> $GITHUB_ENV
+    - name: Load TEST_DEEP_DIVE_NOTEBOOKS_RESULT into env
+      run: echo "TEST_DEEP_DIVE_NOTEBOOKS_RESULT=${{ needs.test-deep-dive-notebooks.result }}" >> $GITHUB_ENV
+    - name: Load TEST_PLAYGROUND_NOTEBOOKS_RESULT into env
+      run: echo "TEST_PLAYGROUND_NOTEBOOKS_RESULT=${{ needs.test-playground-notebooks.result }}" >> $GITHUB_ENV
+    - name: Load REPOSITORY into env
+      run: echo "REPOSITORY=$(echo '${{ github.repository }}' | cut -d / -f2)" >> $GITHUB_ENV
+    - env:
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_OAUTH }}
+      if: ${{ env.CHANNEL_ID != '' }}
+      name: Send Slack notification with workflow result.
+      uses: slackapi/slack-github-action@v1.24.0
+      with:
+        channel-id: ${{ env.CHANNEL_ID }}
+        payload: |-
+          {
+              "text": "${{ env.REPOSITORY }} [${{ github.workflow }}] [${{ env.TEST_QUICK_START_NOTEBOOKS_RESULT }}, ${{ env.TEST_DEEP_DIVE_NOTEBOOKS_RESULT }}, ${{ env.TEST_PLAYGROUND_NOTEBOOKS_RESULT }}]",
+              "blocks": [
+                  {
+                      "type": "section",
+                      "text": {
+                          "type": "mrkdwn",
+                          "text": "`${{ env.REPOSITORY }} [${{ github.workflow }}]`: ${{ github.event.pull_request.html_url || github.event.head_commit.url }}"
+                      }
+                  },
+                  {
+                      "type": "section",
+                      "text": {
+                          "type": "mrkdwn",
+                          "text": "```test-quick-start-notebooks: [${{ env.TEST_QUICK_START_NOTEBOOKS_RESULT }}]\n--> test-deep-dive-notebooks: [${{ env.TEST_DEEP_DIVE_NOTEBOOKS_RESULT }}]\n--> test-playground-notebooks: [${{ env.TEST_PLAYGROUND_NOTEBOOKS_RESULT }}]```"
+                      }
+                  }
+              ]
+          }
