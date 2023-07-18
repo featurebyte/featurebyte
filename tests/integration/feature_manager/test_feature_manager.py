@@ -370,7 +370,7 @@ async def test_online_enable__re_deploy_from_latest_tile_start(
         tile_spec.tile_id, tile_spec.aggregation_id
     )
     assert tile_model is not None
-    last_tile_start_ts = tile_model.last_tile_metadata_offline.start_date
+    last_tile_start_ts = tile_model.last_run_metadata_offline.tile_end_date
 
     # disable/un-deploy
     await feature_manager_service.online_disable(online_feature_spec)

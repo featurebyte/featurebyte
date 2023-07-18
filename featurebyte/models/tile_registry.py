@@ -3,12 +3,12 @@ TileModel document model
 """
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from datetime import datetime
 
 import pymongo
-from pydantic import BaseModel, Field, StrictStr
+from pydantic import BaseModel, Field, StrictStr, root_validator
 
 from featurebyte.models.base import (
     FeatureByteCatalogBaseDocumentModel,
@@ -18,12 +18,28 @@ from featurebyte.models.base import (
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 
 
-class LastTileMetadata(BaseModel):
+class LastRunMetadata(BaseModel):
     """
-    LastTileMetadata class
+    LastRunMetadata class
+
+    Metadata of the latest run of tile generation
+
+    tile_end_date: datetime
+        The tile end date used in the latest run of tile generation. This can be used as the tile
+        start date when running tile generation again.
+    index: int
+        Tile index corresponding to the tile end date
     """
 
-    start_date: datetime
+    @root_validator(pre=True)
+    @classmethod
+    def _convert_start_date(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        # DEV-556: backward compatibility after renaming field
+        if values.get("start_date"):
+            values["tile_end_date"] = values["start_date"]
+        return values
+
+    tile_end_date: datetime
     index: int
 
 
@@ -45,8 +61,8 @@ class TileModel(FeatureByteCatalogBaseDocumentModel):
     time_modulo_frequency_second: int = Field(ge=0)
     blind_spot_second: int = Field(ge=0)
 
-    last_tile_metadata_online: Optional[LastTileMetadata]
-    last_tile_metadata_offline: Optional[LastTileMetadata]
+    last_run_metadata_online: Optional[LastRunMetadata]
+    last_run_metadata_offline: Optional[LastRunMetadata]
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
@@ -82,5 +98,5 @@ class TileUpdate(BaseDocumentServiceUpdateSchema):
     Schema for TileUpdate
     """
 
-    last_tile_metadata_online: Optional[LastTileMetadata]
-    last_tile_metadata_offline: Optional[LastTileMetadata]
+    last_run_metadata_online: Optional[LastRunMetadata]
+    last_run_metadata_offline: Optional[LastRunMetadata]
