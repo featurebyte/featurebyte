@@ -64,7 +64,7 @@ class TargetTableController(
     async def get_payload(
         self, table_create: TargetTableCreate, observation_set_dataframe: Optional[pd.DataFrame]
     ) -> TargetTableTaskPayload:
-        return await self.service.get_target_table_task_payload(  # type: ignore[return-value]
+        return await self.service.get_target_table_task_payload(
             data=table_create, observation_set_dataframe=observation_set_dataframe
         )
 

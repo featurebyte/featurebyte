@@ -71,7 +71,7 @@ class HistoricalFeatureTableController(
         table_create: HistoricalFeatureTableCreate,
         observation_set_dataframe: Optional[pd.DataFrame],
     ) -> HistoricalFeatureTableTaskPayload:
-        return await self.service.get_historical_feature_table_task_payload(  # type: ignore[return-value]
+        return await self.service.get_historical_feature_table_task_payload(
             data=table_create, observation_set_dataframe=observation_set_dataframe
         )
 
