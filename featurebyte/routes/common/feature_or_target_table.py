@@ -16,7 +16,9 @@ from fastapi import HTTPException, UploadFile
 from featurebyte.common.utils import dataframe_from_arrow_stream
 from featurebyte.models.base_feature_or_target_table import BaseFeatureOrTargetTableModel
 from featurebyte.models.feature_store import FeatureStoreModel
+from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
 from featurebyte.models.observation_table import ObservationTableModel
+from featurebyte.models.target_table import TargetTableModel
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.routes.common.base import PaginatedDocument
@@ -43,7 +45,8 @@ InfoTypeT = TypeVar("InfoTypeT", HistoricalFeatureTableInfo, TargetTableInfo)
 
 MaterializedTableDocumentT = TypeVar(
     "MaterializedTableDocumentT",
-    bound=BaseFeatureOrTargetTableModel,
+    HistoricalFeatureTableModel,
+    TargetTableModel,
 )
 MaterializedTableDocumentServiceT = TypeVar(
     "MaterializedTableDocumentServiceT",
