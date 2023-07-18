@@ -148,8 +148,8 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         """
         Returns the day component of each element.
 
-        This is also available for Series containing timedelta values, which is a result of taking
-        the difference between two timestamp Series.
+        This is also available for Features containing timedelta values, which is a result of taking
+        the difference between two timestamp Features.
 
         Returns
         -------
@@ -191,8 +191,8 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         """
         Returns the hour component of each element.
 
-        This is also available for Series containing timedelta values, which is a result of taking
-        the difference between two timestamp Series.
+        This is also available for Features containing timedelta values, which is a result of taking
+        the difference between two timestamp Features.
 
         Returns
         -------
@@ -214,8 +214,8 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         """
         Returns the minute component of each element.
 
-        This is also available for Series containing timedelta values, which is a result of taking
-        the difference between two timestamp Series.
+        This is also available for Features containing timedelta values, which is a result of taking
+        the difference between two timestamp Features.
 
         Returns
         -------
@@ -237,8 +237,8 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         """
         Returns the second component of each element.
 
-        This is also available for Series containing timedelta values, which is a result of taking
-        the difference between two timestamp Series.
+        This is also available for Features containing timedelta values, which is a result of taking
+        the difference between two timestamp Features.
 
         Returns
         -------
@@ -261,8 +261,8 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         """
         Returns the millisecond component of each element.
 
-        This is available only for Series containing timedelta values, which is a result of taking
-        the difference between two timestamp Series.
+        This is available only for Features containing timedelta values, which is a result of taking
+        the difference between two timestamp Features.
 
         Returns
         -------
@@ -285,8 +285,8 @@ class FeatureDatetimeAccessor(DatetimeAccessor):
         """
         Returns the microsecond component of each element.
 
-        This is available only for Series containing timedelta values, which is a result of taking
-        the difference between two timestamp Series.
+        This is available only for Features containing timedelta values, which is a result of taking
+        the difference between two timestamp Features.
 
         Returns
         -------

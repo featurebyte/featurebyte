@@ -198,16 +198,16 @@ def setup() -> None:
         is_global=True,
     )
 
-    # Target
-    target_customer_amount_7d = grocery_invoice_view.groupby(
+    # Target - latest invoice timestamp
+    target_latest_invoice_timestamp = grocery_invoice_view.groupby(
         "GroceryCustomerGuid"
     ).forward_aggregate(
-        value_column="Amount",
-        method="avg",
+        value_column="Timestamp",
+        method="latest",
         window="7d",
-        target_name="target_customer_amount_7d",
+        target_name="target_latest_invoice_timestamp",
     )
-    target_customer_amount_7d.save(conflict_resolution="retrieve")
+    target_latest_invoice_timestamp.save(conflict_resolution="retrieve")
 
 
 if __name__ == "__main__":

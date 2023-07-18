@@ -113,7 +113,7 @@ class FeatureStringAccessor(StringAccessor):
 
         Examples
         --------
-        Remove leading and trailing "M" characters from the Title column:
+        Remove leading and trailing "M" characters from the ProductGroupLookup feature:
 
         >>> feature = catalog.get_feature("ProductGroupLookup")
         >>> feature_group = fb.FeatureGroup([feature])
@@ -137,7 +137,7 @@ class FeatureStringAccessor(StringAccessor):
 
         Examples
         --------
-        Remove leading "M" characters from the Title column:
+        Remove leading "M" characters from the ProductGroupLookup feature:
 
         >>> feature = catalog.get_feature("ProductGroupLookup")
         >>> feature_group = fb.FeatureGroup([feature])
@@ -161,7 +161,7 @@ class FeatureStringAccessor(StringAccessor):
 
         Examples
         --------
-        Remove trailing "M" characters from the Title column:
+        Remove trailing "M" characters from the ProductGroupLookup feature:
 
         >>> feature = catalog.get_feature("ProductGroupLookup")
         >>> feature_group = fb.FeatureGroup([feature])
@@ -215,7 +215,7 @@ class FeatureStringAccessor(StringAccessor):
 
         Examples
         --------
-        Pad the Title column to 10 characters:
+        Pad the ProductGroupLookup feature to 10 characters:
 
         >>> feature = catalog.get_feature("ProductGroupLookup")
         >>> feature_group = fb.FeatureGroup([feature])

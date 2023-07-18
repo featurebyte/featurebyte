@@ -110,7 +110,7 @@ class TargetStringAccessor(StringAccessor):
 
         Examples
         --------
-        Remove leading and trailing "M" characters from the Title column:
+        Remove leading and trailing "M" characters from the ProductGroupLookup target:
 
         >>> target = catalog.get_target("ProductGroupLookup")  # doctest: +SKIP
         >>> target["ProductGroupStrip"] = target.str.strip("M")  # doctest: +SKIP
@@ -133,7 +133,7 @@ class TargetStringAccessor(StringAccessor):
 
         Examples
         --------
-        Remove leading "M" characters from the Title column:
+        Remove leading "M" characters from the ProductGroupLookup target:
 
         >>> target = catalog.get_target("ProductGroupLookup")  # doctest: +SKIP
         >>> target["ProductGroupStrip"] = target.str.lstrip("M")  # doctest: +SKIP
@@ -156,7 +156,7 @@ class TargetStringAccessor(StringAccessor):
 
         Examples
         --------
-        Remove trailing "M" characters from the Title column:
+        Remove trailing "M" characters from the ProductGroupLookup target:
 
         >>> target = catalog.get_target("ProductGroupLookup")  # doctest: +SKIP
         >>> target["ProductGroupStrip"] = target.str.rstrip(".")  # doctest: +SKIP
@@ -208,7 +208,7 @@ class TargetStringAccessor(StringAccessor):
 
         Examples
         --------
-        Pad the Title column to 10 characters:
+        Pad the ProductGroupLookup target to 10 characters:
 
         >>> target = catalog.get_target("ProductGroupLookup")  # doctest: +SKIP
         >>> target["ProductGroupLookupPadded"] = target.str.pad(10, fillchar="0")  # doctest: +SKIP
