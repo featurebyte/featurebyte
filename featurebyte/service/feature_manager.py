@@ -11,6 +11,7 @@ import pandas as pd
 
 from featurebyte.common import date_util
 from featurebyte.common.date_util import get_next_job_datetime
+from featurebyte.exception import DocumentNotFoundError
 from featurebyte.feature_manager.sql_template import tm_feature_tile_monitor
 from featurebyte.logging import get_logger
 from featurebyte.models.online_store import OnlineFeatureSpec
@@ -283,7 +284,12 @@ class FeatureManagerService:
             aggregation_result_names_still_in_use.update(feature_model["aggregation_result_names"])
         for result_name in aggregation_result_names:
             if result_name not in aggregation_result_names_still_in_use:
-                await self.online_store_compute_query_service.delete_by_result_name(result_name)
+                try:
+                    await self.online_store_compute_query_service.delete_by_result_name(result_name)
+                except DocumentNotFoundError:
+                    # Backward compatibility for features created before the queries are managed by
+                    # OnlineStoreComputeQueryService
+                    pass
 
     @staticmethod
     async def retrieve_feature_tile_inconsistency_data(
