@@ -16,21 +16,18 @@ from fastapi import HTTPException, UploadFile
 from featurebyte.common.utils import dataframe_from_arrow_stream
 from featurebyte.models.base_feature_or_target_table import BaseFeatureOrTargetTableModel
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
 from featurebyte.models.observation_table import ObservationTableModel
-from featurebyte.models.target_table import TargetTableModel
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.routes.common.base import PaginatedDocument
 from featurebyte.routes.common.base_materialized_table import BaseMaterializedTableController
 from featurebyte.routes.task.controller import TaskController
-from featurebyte.schema.historical_feature_table import HistoricalFeatureTableCreate
+from featurebyte.schema.common.feature_or_target import FeatureOrTargetTableCreate
 from featurebyte.schema.info import (
     BaseFeatureOrTargetTableInfo,
     HistoricalFeatureTableInfo,
     TargetTableInfo,
 )
-from featurebyte.schema.target_table import TargetTableCreate
 from featurebyte.schema.task import Task
 from featurebyte.schema.worker.task.historical_feature_table import (
     HistoricalFeatureTableTaskPayload,
@@ -46,8 +43,7 @@ InfoTypeT = TypeVar("InfoTypeT", HistoricalFeatureTableInfo, TargetTableInfo)
 
 MaterializedTableDocumentT = TypeVar(
     "MaterializedTableDocumentT",
-    HistoricalFeatureTableModel,
-    TargetTableModel,
+    bound=BaseFeatureOrTargetTableModel,
 )
 MaterializedTableDocumentServiceT = TypeVar(
     "MaterializedTableDocumentServiceT",
@@ -61,8 +57,7 @@ PayloadT = TypeVar(
 )
 TableCreateT = TypeVar(
     "TableCreateT",
-    TargetTableCreate,
-    HistoricalFeatureTableCreate,
+    bound=FeatureOrTargetTableCreate,
 )
 
 
