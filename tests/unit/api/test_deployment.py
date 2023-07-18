@@ -163,14 +163,16 @@ def test_get_online_serving_code(mock_preview, deployment, catalog):
     )
 
 
-@patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
 @freeze_time("2023-01-20 03:20:00")
-def test_get_feature_jobs_status(mock_execute_query, deployment, feature_job_logs):
+def test_get_feature_jobs_status(deployment, feature_job_logs):
     """Test get feature job status"""
-    mock_execute_query.return_value = feature_job_logs
-    feature_job_status = deployment.get_feature_jobs_status(
-        job_history_window=24, job_duration_tolerance=1700
-    )
+    with patch(
+        "featurebyte.service.tile_job_log.TileJobLogService.get_logs_dataframe"
+    ) as mock_get_jobs_dataframe:
+        mock_get_jobs_dataframe.return_value = feature_job_logs
+        feature_job_status = deployment.get_feature_jobs_status(
+            job_history_window=24, job_duration_tolerance=1700
+        )
 
     fixture_path = "tests/fixtures/feature_job_status/expected_session_logs.parquet"
     expected_session_logs = pd.read_parquet(fixture_path)

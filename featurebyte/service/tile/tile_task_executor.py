@@ -10,12 +10,13 @@ import dateutil.parser
 from featurebyte.common import date_util
 from featurebyte.enum import InternalName
 from featurebyte.logging import get_logger
-from featurebyte.models.tile import TileScheduledJobParameters
+from featurebyte.models.tile import TileScheduledJobParameters, TileType
+from featurebyte.models.tile_job_log import TileJobLogModel
 from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
+from featurebyte.service.tile_job_log import TileJobLogService
 from featurebyte.service.tile_registry_service import TileRegistryService
 from featurebyte.session.base import BaseSession
-from featurebyte.sql.common import retry_sql
 from featurebyte.sql.tile_common import TileCommon
 from featurebyte.sql.tile_generate import TileGenerate
 from featurebyte.sql.tile_monitor import TileMonitor
@@ -35,10 +36,12 @@ class TileTaskExecutor:
         online_store_table_version_service: OnlineStoreTableVersionService,
         online_store_compute_query_service: OnlineStoreComputeQueryService,
         tile_registry_service: TileRegistryService,
+        tile_job_log_service: TileJobLogService,
     ):
         self.online_store_table_version_service = online_store_table_version_service
         self.online_store_compute_query_service = online_store_compute_query_service
         self.tile_registry_service = tile_registry_service
+        self.tile_job_log_service = tile_job_log_service
 
     # pylint: disable=too-many-locals,too-many-statements
     async def execute(self, session: BaseSession, params: TileScheduledJobParameters) -> None:
@@ -104,31 +107,19 @@ class TileTaskExecutor:
                 tile_start_ts_str = registry_last_tile_start_ts.strftime(date_format)
 
         session_id = f"{tile_id}|{datetime.now()}"
-        audit_insert_sql = f"""INSERT INTO TILE_JOB_MONITOR
-        (
-            TILE_ID,
-            AGGREGATION_ID,
-            TILE_TYPE,
-            SESSION_ID,
-            STATUS,
-            MESSAGE,
-            CREATED_AT
-        )
-            VALUES
-        (
-            '{tile_id}',
-            '{params.aggregation_id}',
-            '{tile_type}',
-            '{session_id}',
-            '<STATUS>',
-            '<MESSAGE>',
-            current_timestamp()
-        )"""
-        logger.debug(audit_insert_sql)
 
-        insert_sql = audit_insert_sql.replace("<STATUS>", "STARTED").replace("<MESSAGE>", "")
-        logger.debug(insert_sql)
-        await retry_sql(session, insert_sql)
+        async def _add_log_entry(log_status: str, log_message: str) -> None:
+            document = TileJobLogModel(
+                tile_id=tile_id,
+                aggregation_id=params.aggregation_id,
+                tile_type=TileType[tile_type],  # TODO: tile_type to be passed as enum
+                session_id=session_id,
+                status=log_status,
+                message=log_message,
+            )
+            await self.tile_job_log_service.create_document(document)
+
+        await _add_log_entry("STARTED", "")
 
         monitor_end_ts = tile_end_ts - timedelta(minutes=params.frequency_minute)
         monitor_tile_end_ts_str = monitor_end_ts.strftime(date_format)
@@ -233,16 +224,12 @@ class TileTaskExecutor:
                 message = str(exception).replace("'", "")
                 fail_code = spec["status"]["fail"]
 
-                ex_insert_sql = audit_insert_sql.replace("<STATUS>", fail_code).replace(
-                    "<MESSAGE>", message
-                )
                 logger.error(f"fail_insert_sql exception: {exception}")
-                await retry_sql(session, ex_insert_sql)
+                await _add_log_entry(fail_code, message)
                 raise exception
 
             success_code = spec["status"]["success"]
-            insert_sql = audit_insert_sql.replace("<STATUS>", success_code).replace("<MESSAGE>", "")
-            await retry_sql(session, insert_sql)
+            await _add_log_entry(success_code, "")
 
     def _derive_correct_job_ts(
         self, input_dt: datetime, frequency_minutes: int, time_modulo_frequency_seconds: int

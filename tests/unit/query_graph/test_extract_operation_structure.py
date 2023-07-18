@@ -471,6 +471,7 @@ def test_extract_operation__join_node(
             }
             other_params = {
                 "columns": [
+                    {"name": "order_id", "dtype": "INT", **common_column_params, **input_2_params},
                     {"name": "order_id", "dtype": "INT", **common_column_params, **input_1_params},
                     {
                         "name": column_name,
@@ -478,7 +479,6 @@ def test_extract_operation__join_node(
                         **common_column_params,
                         **input_1_params,
                     },
-                    {"name": "order_id", "dtype": "INT", **common_column_params, **input_2_params},
                 ],
                 "filter": False,
                 "node_name": "join_1",

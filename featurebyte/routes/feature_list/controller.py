@@ -48,8 +48,8 @@ from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_preview import FeaturePreviewService
 from featurebyte.service.feature_readiness import FeatureReadinessService
-from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
+from featurebyte.service.tile_job_log import TileJobLogService
 from featurebyte.service.version import VersionService
 
 
@@ -73,7 +73,7 @@ class FeatureListController(
         deploy_service: DeployService,
         feature_preview_service: FeaturePreviewService,
         version_service: VersionService,
-        feature_store_warehouse_service: FeatureStoreWarehouseService,
+        tile_job_log_service: TileJobLogService,
         task_controller: TaskController,
     ):
         super().__init__(feature_list_service)
@@ -83,7 +83,7 @@ class FeatureListController(
         self.deploy_service = deploy_service
         self.feature_preview_service = feature_preview_service
         self.version_service = version_service
-        self.feature_store_warehouse_service = feature_store_warehouse_service
+        self.tile_job_log_service = tile_job_log_service
         self.task_controller = task_controller
 
     async def submit_feature_list_create_with_batch_feature_create_task(
@@ -422,7 +422,7 @@ class FeatureListController(
             ) from exc
 
     async def get_feature_job_logs(
-        self, feature_list_id: ObjectId, hour_limit: int, get_credential: Any
+        self, feature_list_id: ObjectId, hour_limit: int
     ) -> dict[str, Any]:
         """
         Retrieve data preview for query graph node
@@ -433,8 +433,6 @@ class FeatureListController(
             FeatureList Id
         hour_limit: int
             Limit in hours on the job history to fetch
-        get_credential: Any
-            Get credential handler function
 
         Returns
         -------
@@ -451,9 +449,7 @@ class FeatureListController(
         ):
             features.append(ExtendedFeatureModel(**doc))
 
-        return await self.feature_store_warehouse_service.get_feature_job_logs(
-            feature_store_id=feature_list.feature_clusters[0].feature_store_id,
+        return await self.tile_job_log_service.get_feature_job_logs(
             features=features,
             hour_limit=hour_limit,
-            get_credential=get_credential,
         )

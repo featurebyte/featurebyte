@@ -176,7 +176,6 @@ EXPECTED_FUNCTIONS = [
 EXPECTED_TABLES = [
     "METADATA_SCHEMA",
     "TILE_MONITOR_SUMMARY",
-    "TILE_JOB_MONITOR",
 ]
 
 METADATA_QUERY = "SELECT WORKING_SCHEMA_VERSION, FEATURE_STORE_ID FROM METADATA_SCHEMA"
@@ -328,11 +327,6 @@ def test_schema_initializer__sql_objects(
         {
             "filename": "T_TILE_MONITOR_SUMMARY.sql",
             "identifier": "TILE_MONITOR_SUMMARY",
-            "type": "table",
-        },
-        {
-            "filename": "T_TILE_JOB_MONITOR.sql",
-            "identifier": "TILE_JOB_MONITOR",
             "type": "table",
         },
     ]

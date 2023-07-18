@@ -10,6 +10,7 @@ from bson import ObjectId
 from featurebyte.enum import InternalName
 from featurebyte.models.tile import TileScheduledJobParameters
 from featurebyte.service.tile.tile_task_executor import TileTaskExecutor
+from featurebyte.service.tile_job_log import TileJobLogService
 from featurebyte.sql.common import construct_create_table_query
 
 
@@ -21,6 +22,14 @@ def tile_task_executor_fixture(app_container) -> TileTaskExecutor:
     return app_container.tile_task_executor
 
 
+@pytest.fixture(name="tile_job_log_service")
+def tile_job_log_service_fixture(app_container) -> TileJobLogService:
+    """
+    Fixture for tile job log service
+    """
+    return app_container.tile_job_log_service
+
+
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_schedule_generate_tile_online(
@@ -28,6 +37,7 @@ async def test_schedule_generate_tile_online(
     tile_task_prep_spark,
     base_sql_model,
     tile_task_executor,
+    tile_job_log_service,
 ):
     """
     Test the stored procedure of generating tiles
@@ -77,21 +87,20 @@ async def test_schedule_generate_tile_online(
     result = await session.execute_query(sql)
     assert result["COUNT"].iloc[0] == 2
 
-    # verify tile job monitor using sql
-    sql = f"SELECT * FROM TILE_JOB_MONITOR WHERE TILE_ID = '{tile_id}' ORDER BY CREATED_AT"
-    result = await session.execute_query(sql)
-    assert len(result) == 4
-    assert result["STATUS"].iloc[0] == "STARTED"
-    assert result["STATUS"].iloc[1] == "MONITORED"
-    assert result["STATUS"].iloc[2] == "GENERATED"
-    assert result["STATUS"].iloc[3] == "COMPLETED"
+    # verify tile job logs
+    result = []
+    async for doc in tile_job_log_service.list_documents_as_dict_iterator(
+        query_filter={"tile_id": tile_id}
+    ):
+        result.append(doc)
+    result = sorted(result, key=lambda x: x["created_at"])
+    assert [res["status"] for res in result] == ["STARTED", "MONITORED", "GENERATED", "COMPLETED"]
 
-    session_id = result["SESSION_ID"].iloc[0]
+    session_id = result[0]["session_id"]
     assert "|" in session_id
-    assert result["SESSION_ID"].iloc[0] == session_id
-    assert result["CREATED_AT"].iloc[1] > result["CREATED_AT"].iloc[0]
-    assert result["CREATED_AT"].iloc[2] > result["CREATED_AT"].iloc[1]
-    assert result["CREATED_AT"].iloc[3] > result["CREATED_AT"].iloc[2]
+    assert result[1]["created_at"] > result[0]["created_at"]
+    assert result[2]["created_at"] > result[1]["created_at"]
+    assert result[3]["created_at"] > result[2]["created_at"]
 
 
 @pytest.mark.usefixtures("enable_tile_monitoring")

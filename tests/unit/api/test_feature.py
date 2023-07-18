@@ -995,11 +995,8 @@ def test_list_versions(saved_feature):
     )
 
 
-@patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
 @freeze_time("2023-01-20 03:20:00")
-def test_get_feature_jobs_status(
-    mock_execute_query, saved_feature, feature_job_logs, update_fixtures
-):
+def test_get_feature_jobs_status(saved_feature, feature_job_logs, update_fixtures):
     """
     Test get_feature_jobs_status
     """
@@ -1020,10 +1017,13 @@ def test_get_feature_jobs_status(
         )
         feature_job_logs.to_csv(log_fixture_path, index=False)
 
-    mock_execute_query.return_value = feature_job_logs
-    job_status_result = saved_feature.get_feature_jobs_status(
-        job_history_window=24, job_duration_tolerance=1700
-    )
+    with patch(
+        "featurebyte.service.tile_job_log.TileJobLogService.get_logs_dataframe"
+    ) as mock_get_jobs_dataframe:
+        mock_get_jobs_dataframe.return_value = feature_job_logs
+        job_status_result = saved_feature.get_feature_jobs_status(
+            job_history_window=24, job_duration_tolerance=1700
+        )
 
     fixture_path = "tests/fixtures/feature_job_status/expected_session_logs.parquet"
     if update_fixtures:
@@ -1034,16 +1034,16 @@ def test_get_feature_jobs_status(
         assert_frame_equal(job_status_result.job_session_logs, expected_session_logs)
 
 
-@patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
 @freeze_time("2023-01-20 03:20:00")
-def test_get_feature_jobs_status_incomplete_logs(
-    mock_execute_query, saved_feature, feature_job_logs
-):
+def test_get_feature_jobs_status_incomplete_logs(saved_feature, feature_job_logs):
     """
     Test get_feature_jobs_status incomplete logs found
     """
-    mock_execute_query.return_value = feature_job_logs[:1]
-    job_status_result = saved_feature.get_feature_jobs_status(job_history_window=24)
+    with patch(
+        "featurebyte.service.tile_job_log.TileJobLogService.get_logs_dataframe"
+    ) as mock_get_jobs_dataframe:
+        mock_get_jobs_dataframe.return_value = feature_job_logs[:1]
+        job_status_result = saved_feature.get_feature_jobs_status(job_history_window=24)
     assert job_status_result.job_session_logs.shape == (1, 12)
     expected_feature_job_summary = pd.DataFrame(
         {
@@ -1064,14 +1064,16 @@ def test_get_feature_jobs_status_incomplete_logs(
     )
 
 
-@patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
 @freeze_time("2023-01-20 03:20:00")
-def test_get_feature_jobs_status_empty_logs(mock_execute_query, saved_feature, feature_job_logs):
+def test_get_feature_jobs_status_empty_logs(saved_feature, feature_job_logs):
     """
     Test get_feature_jobs_status incomplete logs found
     """
-    mock_execute_query.return_value = feature_job_logs[:0]
-    job_status_result = saved_feature.get_feature_jobs_status(job_history_window=24)
+    with patch(
+        "featurebyte.service.tile_job_log.TileJobLogService.get_logs_dataframe"
+    ) as mock_get_jobs_dataframe:
+        mock_get_jobs_dataframe.return_value = feature_job_logs[:0]
+        job_status_result = saved_feature.get_feature_jobs_status(job_history_window=24)
     assert job_status_result.job_session_logs.shape == (0, 12)
     expected_feature_job_summary = pd.DataFrame(
         {
