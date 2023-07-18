@@ -115,12 +115,12 @@ class TileGenerate(TileCommon):
                 extra={"last_tile_start_str": self.last_tile_start_str, "ind_value": ind_value},
             )
 
-            await self.tile_registry_service.update_last_tile_metadata(
+            await self.tile_registry_service.update_last_run_metadata(
                 tile_id=self.tile_id,
                 aggregation_id=self.aggregation_id,
                 tile_type=self.tile_type,
                 tile_index=ind_value,
-                tile_start_date=dateutil.parser.isoparse(self.last_tile_start_str),
+                tile_end_date=dateutil.parser.isoparse(self.last_tile_start_str),
             )
 
     def _construct_tile_sql_with_index(self) -> str:

@@ -94,8 +94,8 @@ class TileTaskExecutor:
         tile_model = await self.tile_registry_service.get_tile_model(
             params.tile_id, params.aggregation_id
         )
-        if tile_model is not None and tile_model.last_tile_metadata_online is not None:
-            registry_last_tile_start_ts = tile_model.last_tile_metadata_online.start_date
+        if tile_model is not None and tile_model.last_run_metadata_online is not None:
+            registry_last_tile_start_ts = tile_model.last_run_metadata_online.tile_end_date
             logger.info(f"Last tile start date from registry - {registry_last_tile_start_ts}")
 
             if registry_last_tile_start_ts.strftime(date_format) < tile_start_ts.strftime(

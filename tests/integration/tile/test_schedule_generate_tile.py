@@ -237,12 +237,12 @@ async def test_schedule_generate_tile__with_registry(
 
     tile_model = await tile_registry_service.get_tile_model(tile_id, agg_id)
     assert (
-        tile_model.last_tile_metadata_online.start_date.strftime("%Y-%m-%d %H:%M:%S")
+        tile_model.last_run_metadata_online.tile_end_date.strftime("%Y-%m-%d %H:%M:%S")
         == "2022-06-05 23:58:00"
     )
 
     # test for LAST_TILE_START_DATE_ONLINE earlier than tile_start_date
-    await tile_registry_service.update_last_tile_metadata(
+    await tile_registry_service.update_last_run_metadata(
         tile_id, agg_id, "ONLINE", 123, dateutil.parser.isoparse("2022-06-05 23:33:00")
     )
     await tile_task_executor.execute(session, tile_schedule_ins)
@@ -252,7 +252,7 @@ async def test_schedule_generate_tile__with_registry(
 
     result = await tile_registry_service.get_tile_model(tile_id, agg_id)
     assert (
-        result.last_tile_metadata_online.start_date.strftime("%Y-%m-%d %H:%M:%S")
+        result.last_run_metadata_online.tile_end_date.strftime("%Y-%m-%d %H:%M:%S")
         == "2022-06-05 23:58:00"
     )
 
@@ -308,7 +308,7 @@ async def test_schedule_generate_tile__no_default_job_ts(
     await tile_task_executor.execute(session, tile_schedule_ins)
     tile_model = await tile_registry_service.get_tile_model(tile_id, agg_id)
     assert (
-        tile_model.last_tile_metadata_online.start_date.strftime(date_format)
+        tile_model.last_run_metadata_online.tile_end_date.strftime(date_format)
         == "2023-05-04 14:33:00"
     )
 
@@ -333,6 +333,6 @@ async def test_schedule_generate_tile__no_default_job_ts(
     await tile_task_executor.execute(session, tile_schedule_ins)
     tile_model = await tile_registry_service.get_tile_model(tile_id, agg_id)
     assert (
-        tile_model.last_tile_metadata_online.start_date.strftime(date_format)
+        tile_model.last_run_metadata_online.tile_end_date.strftime(date_format)
         == "2023-05-04 14:33:00"
     )

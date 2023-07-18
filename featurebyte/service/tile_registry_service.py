@@ -9,7 +9,7 @@ from datetime import datetime
 
 from featurebyte.exception import DocumentNotFoundError
 from featurebyte.models.tile import TileType
-from featurebyte.models.tile_registry import LastTileMetadata, TileModel, TileUpdate
+from featurebyte.models.tile_registry import LastRunMetadata, TileModel, TileUpdate
 from featurebyte.service.base_document import BaseDocumentService
 
 
@@ -44,16 +44,16 @@ class TileRegistryService(BaseDocumentService[TileModel, TileModel, TileUpdate])
             return tile
         return None
 
-    async def update_last_tile_metadata(
+    async def update_last_run_metadata(
         self,
         tile_id: str,
         aggregation_id: str,
         tile_type: TileType,
         tile_index: int,
-        tile_start_date: datetime,
+        tile_end_date: datetime,
     ) -> None:
         """
-        Update information about the last tile
+        Update information about the latest run of tile generation
 
         Parameters
         ----------
@@ -64,9 +64,9 @@ class TileRegistryService(BaseDocumentService[TileModel, TileModel, TileUpdate])
         tile_type: TileType
             Tile type (online or offline)
         tile_index: int
-            Index of the last tile
-        tile_start_date: datetime
-            Start date of the last tile
+            Tile index corresponding to tile_end_date
+        tile_end_date: datetime
+            Tile end date of the latest tile generation run
 
         Raises
         ------
@@ -78,9 +78,9 @@ class TileRegistryService(BaseDocumentService[TileModel, TileModel, TileUpdate])
             raise DocumentNotFoundError(
                 f"TileRegistryService: TileModel with tile_id={tile_id} and aggregation_id={aggregation_id} not found"
             )
-        metadata_model = LastTileMetadata(index=tile_index, start_date=tile_start_date)
+        metadata_model = LastRunMetadata(index=tile_index, tile_end_date=tile_end_date)
         if tile_type == TileType.ONLINE:
-            update_model = TileUpdate(last_tile_metadata_online=metadata_model)
+            update_model = TileUpdate(last_run_metadata_online=metadata_model)
         else:
-            update_model = TileUpdate(last_tile_metadata_offline=metadata_model)
+            update_model = TileUpdate(last_run_metadata_offline=metadata_model)
         await self.update_document(document.id, update_model, document=document)
