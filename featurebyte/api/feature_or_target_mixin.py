@@ -1,7 +1,7 @@
 """
 Mixin class containing common methods for feature or target classes
 """
-from typing import Sequence, cast
+from typing import List, Sequence, cast
 
 import time
 from http import HTTPStatus
@@ -10,6 +10,7 @@ import pandas as pd
 from bson import ObjectId
 from pydantic import Field
 
+from featurebyte import Entity
 from featurebyte.api.api_object import ApiObject
 from featurebyte.common.formatting_util import CodeStr
 from featurebyte.common.utils import dataframe_from_json
@@ -92,3 +93,18 @@ class FeatureOrTargetMixin(QueryObject, ApiObject):
         elapsed = time.time() - tic
         logger.debug(f"Preview took {elapsed:.2f}s")
         return dataframe_from_json(result)  # pylint: disable=no-member
+
+    def _primary_entity(self) -> List[Entity]:
+        """
+        Returns the primary entity of the Feature object.
+
+        Returns
+        -------
+        List[Entity]
+            Primary entity
+        """
+        entities = []
+        for entity_id in self._get_entity_ids():
+            entities.append(Entity.get_by_id(entity_id))
+        primary_entity = derive_primary_entity(entities)  # type: ignore
+        return primary_entity

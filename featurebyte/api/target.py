@@ -23,6 +23,7 @@ from featurebyte.api.templates.feature_or_target_doc import (
     DEFINITION_DOC,
     ENTITY_IDS_DOC,
     PREVIEW_DOC,
+    PRIMARY_ENTITY_DOC,
     TABLE_IDS_DOC,
     VERSION_DOC,
 )
@@ -117,6 +118,11 @@ class Target(
     @substitute_docstring(doc_template=ENTITY_IDS_DOC, format_kwargs={"class_name": "Target"})
     def entity_ids(self) -> Sequence[ObjectId]:  # pylint: disable=missing-function-docstring
         return self._get_entity_ids()
+
+    @property
+    @substitute_docstring(doc_template=PRIMARY_ENTITY_DOC, format_kwargs={"class_name": "Target"})
+    def primary_entity(self) -> List[Entity]:
+        return self._primary_entity()
 
     @property  # type: ignore
     @substitute_docstring(doc_template=TABLE_IDS_DOC, format_kwargs={"class_name": "Target"})
