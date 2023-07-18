@@ -574,6 +574,40 @@ class OperationStructure:
 
         return list(input_column_map.values()), list(derived_column_map)
 
+    def iterate_source_columns(self) -> Iterator[SourceDataColumn]:
+        """
+        Iterate source columns in the operation structure.
+
+        Yields
+        ------
+        SourceDataColumn
+            Source column that directly contributes to the output
+        """
+        for column in self.columns:
+            if isinstance(column, SourceDataColumn):
+                yield column
+            else:
+                assert isinstance(column, DerivedDataColumn)
+                for source_col in column.columns:
+                    yield source_col
+
+    def iterate_aggregations(self) -> Iterator[AggregationColumn]:
+        """
+        Iterate aggregations in the operation structure.
+
+        Yields
+        ------
+        AggregationColumn
+            Aggregation that directly contributes to the output
+        """
+        for aggregation in self.aggregations:
+            if isinstance(aggregation, AggregationColumn):
+                yield aggregation
+            else:
+                assert isinstance(aggregation, PostAggregationColumn)
+                for source_agg in aggregation.columns:
+                    yield source_agg
+
     def iterate_source_columns_or_aggregations(
         self,
     ) -> Iterator[Union[SourceDataColumn, AggregationColumn]]:
@@ -587,21 +621,11 @@ class OperationStructure:
             Column/Aggregation that directly contributes to the output
         """
         if self.output_category == NodeOutputCategory.VIEW:
-            for column in self.columns:
-                if isinstance(column, SourceDataColumn):
-                    yield column
-                else:
-                    assert isinstance(column, DerivedDataColumn)
-                    for source_col in column.columns:
-                        yield source_col
+            for column in self.iterate_source_columns():
+                yield column
         else:
-            for aggregation in self.aggregations:
-                if isinstance(aggregation, AggregationColumn):
-                    yield aggregation
-                else:
-                    assert isinstance(aggregation, PostAggregationColumn)
-                    for source_agg in aggregation.columns:
-                        yield source_agg
+            for aggregation in self.iterate_aggregations():
+                yield aggregation
 
     def to_group_operation_structure(self) -> GroupOperationStructure:
         """

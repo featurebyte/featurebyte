@@ -34,7 +34,6 @@ from featurebyte.query_graph.node.metadata.operation import (
     DerivedDataColumn,
     OperationStructure,
     SourceDataColumn,
-    ViewDataColumnType,
 )
 from featurebyte.query_graph.node.mixin import BaseGroupbyParameters
 from featurebyte.query_graph.transform.entity_extractor import EntityExtractor
@@ -328,18 +327,9 @@ class QueryGraph(QueryGraphModel):
         operation_structure = self.extract_operation_structure(node, keep_all_source_columns=True)
         # prepare table ID to source column names mapping, use this mapping to prune the view graph node parameters
         table_id_to_source_column_names: Dict[ObjectId, Set[str]] = defaultdict(set)
-        for col in operation_structure.columns:
-            if col.type == ViewDataColumnType.SOURCE:
-                assert isinstance(col, SourceDataColumn)
-                assert col.table_id is not None, "Source table ID is missing."
-                table_id_to_source_column_names[col.table_id].add(col.name)
-            else:
-                assert isinstance(col, DerivedDataColumn)
-                for derived_source_col in col.columns:
-                    assert derived_source_col.table_id is not None, "Source table ID is missing."
-                    table_id_to_source_column_names[derived_source_col.table_id].add(
-                        derived_source_col.name
-                    )
+        for src_col in operation_structure.iterate_source_columns():
+            assert src_col.table_id is not None, "Source table ID is missing."
+            table_id_to_source_column_names[src_col.table_id].add(src_col.name)
         return table_id_to_source_column_names
 
     def prune(self, target_node: Node) -> GraphNodeNameMap:
