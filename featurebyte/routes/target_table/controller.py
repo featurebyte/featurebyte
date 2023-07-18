@@ -3,20 +3,19 @@ Target API route controller
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional
 
-from http import HTTPStatus
+import pandas as pd
 
-from bson import ObjectId
-from fastapi import HTTPException, UploadFile
-
-from featurebyte.common.utils import dataframe_from_arrow_stream
 from featurebyte.models.target_table import TargetTableModel
-from featurebyte.routes.common.base_materialized_table import BaseMaterializedTableController
+from featurebyte.routes.common.feature_or_target_table import (
+    FeatureOrTargetTableController,
+    ValidationParameters,
+)
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.info import TargetTableInfo
 from featurebyte.schema.target_table import TargetTableCreate, TargetTableList
-from featurebyte.schema.task import Task
+from featurebyte.schema.worker.task.target_table import TargetTableTaskPayload
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.observation_table import ObservationTableService
@@ -26,13 +25,21 @@ from featurebyte.service.target_table import TargetTableService
 
 
 class TargetTableController(
-    BaseMaterializedTableController[TargetTableModel, TargetTableService, TargetTableList],
+    FeatureOrTargetTableController[
+        TargetTableModel,
+        TargetTableService,
+        TargetTableList,
+        TargetTableInfo,
+        TargetTableTaskPayload,
+        TargetTableCreate,
+    ],
 ):
     """
     TargetTable Controller
     """
 
     paginated_document_class = TargetTableList
+    info_class = TargetTableInfo
 
     def __init__(
         self,
@@ -44,104 +51,36 @@ class TargetTableController(
         task_controller: TaskController,
         target_service: TargetService,
     ):
-        super().__init__(service=target_table_service, preview_service=preview_service)
+        super().__init__(
+            service=target_table_service,
+            preview_service=preview_service,
+            observation_table_service=observation_table_service,
+            entity_validation_service=entity_validation_service,
+            task_controller=task_controller,
+        )
         self.feature_store_service = feature_store_service
-        self.observation_table_service = observation_table_service
-        self.entity_validation_service = entity_validation_service
-        self.task_controller = task_controller
         self.target_service = target_service
 
-    async def create_target_table(
-        self,
-        data: TargetTableCreate,
-        observation_set: Optional[UploadFile],
-    ) -> Task:
-        """
-        Create TargetTable by submitting an async historical feature request task
+    async def get_payload(
+        self, table_create: TargetTableCreate, observation_set_dataframe: Optional[pd.DataFrame]
+    ) -> TargetTableTaskPayload:
+        return await self.service.get_target_table_task_payload(
+            data=table_create, observation_set_dataframe=observation_set_dataframe
+        )
 
-        Parameters
-        ----------
-        data: TargetTableCreate
-            TargetTable creation payload
-        observation_set: Optional[UploadFile]
-            Observation set file
-
-        Returns
-        -------
-        Task
-
-        Raises
-        ------
-        HTTPException
-            If both observation_set and observation_table_id are set
-        """
-        if data.observation_table_id is not None and observation_set is not None:
-            raise HTTPException(
-                status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
-                detail="Only one of observation_set file and observation_table_id can be set",
-            )
-
-        # Validate the observation_table_id
-        if data.observation_table_id is not None:
-            observation_table = await self.observation_table_service.get_document(
-                document_id=data.observation_table_id
-            )
-            observation_set_dataframe = None
-            request_column_names = {col.name for col in observation_table.columns_info}
-        else:
-            assert observation_set is not None
-            observation_set_dataframe = dataframe_from_arrow_stream(observation_set.file)
-            request_column_names = set(observation_set_dataframe.columns)
-
-        # feature cluster group feature graph by feature store ID, only single feature store is
-        # supported
+    async def get_validation_parameters(
+        self, table_create: TargetTableCreate
+    ) -> ValidationParameters:
         feature_store = await self.feature_store_service.get_document(
-            document_id=data.feature_store_id
+            document_id=table_create.feature_store_id
         )
-        await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
-            graph=data.graph,
-            nodes=data.nodes,
-            request_column_names=request_column_names,
+        return ValidationParameters(
+            graph=table_create.graph,
+            nodes=table_create.nodes,
             feature_store=feature_store,
-            serving_names_mapping=data.serving_names_mapping,
+            serving_names_mapping=table_create.serving_names_mapping,
         )
 
-        # prepare task payload and submit task
-        payload = await self.service.get_target_table_task_payload(
-            data=data, observation_set_dataframe=observation_set_dataframe
-        )
-        task_id = await self.task_controller.task_manager.submit(payload=payload)
-        return await self.task_controller.get_task(task_id=str(task_id))
-
-    async def get_info(self, document_id: ObjectId, verbose: bool) -> TargetTableInfo:
-        """
-        Get TargetTable info
-
-        Parameters
-        ----------
-        document_id: ObjectId
-            TargetTable ID
-        verbose: bool
-            Whether to return verbose info
-
-        Returns
-        -------
-        TargetTableInfo
-        """
-        _ = verbose
-        target_table = await self.service.get_document(document_id=document_id)
-        if target_table.observation_table_id is not None:
-            observation_table = await self.observation_table_service.get_document(
-                document_id=target_table.observation_table_id
-            )
-        else:
-            observation_table = None
-        target = await self.target_service.get_document(target_table.target_id)
-        return TargetTableInfo(
-            name=target_table.name,
-            target_name=target.name,
-            observation_table_name=observation_table.name if observation_table else None,
-            table_details=target_table.location.table_details,
-            created_at=target_table.created_at,
-            updated_at=target_table.updated_at,
-        )
+    async def get_additional_info_params(self, document: TargetTableModel) -> dict[str, Any]:
+        target = await self.target_service.get_document(document.target_id)
+        return {"target_name": target.name}

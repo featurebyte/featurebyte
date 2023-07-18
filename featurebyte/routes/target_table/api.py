@@ -42,7 +42,7 @@ async def create_target_table(
     """
     data = TargetTableCreate(**json.loads(payload))
     controller = request.state.app_container.target_table_controller
-    task_submit: Task = await controller.create_target_table(
+    task_submit: Task = await controller.create_table(
         data=data,
         observation_set=observation_set,
     )
