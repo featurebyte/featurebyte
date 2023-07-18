@@ -78,7 +78,7 @@ class TargetDatetimeAccessor(DatetimeAccessor):
         Compute the year component of a timestamp column:
 
         >>> target = catalog.get_target("target_latest_invoice_timestamp")
-        >>> target["TimestampYear"] = target.dt.year
+        >>> target_timestamp_year = target.dt.year
         """
         return super().year  # type: ignore[return-value]
 
@@ -97,7 +97,7 @@ class TargetDatetimeAccessor(DatetimeAccessor):
         Compute the quarter component of a timestamp column:
 
         >>> target = catalog.get_target("target_latest_invoice_timestamp")
-        >>> target["TimestampQuarter"] = target.dt.quarter
+        >>> target_timestamp_quarter = target.dt.quarter
         """
         return super().quarter  # type: ignore[return-value]
 
@@ -116,7 +116,7 @@ class TargetDatetimeAccessor(DatetimeAccessor):
         Compute the month component of a timestamp column:
 
         >>> target = catalog.get_target("target_latest_invoice_timestamp")
-        >>> target["TimestampMonth"] = target.dt.month
+        >>> target_timestamp_month = target.dt.month
         """
         return super().month  # type: ignore[return-value]
 
@@ -135,7 +135,7 @@ class TargetDatetimeAccessor(DatetimeAccessor):
         Compute the week component of a timestamp column:
 
         >>> target = catalog.get_target("target_latest_invoice_timestamp")
-        >>> target["TimestampWeek"] = target.dt.week
+        >>> target_timestamp_week = target.dt.week
         """
         return super().week  # type: ignore[return-value]
 
@@ -157,7 +157,7 @@ class TargetDatetimeAccessor(DatetimeAccessor):
         Compute the day component of a timestamp column:
 
         >>> target = catalog.get_target("target_latest_invoice_timestamp")
-        >>> target["TimestampDay"] = target.dt.day
+        >>> target_timestamp_day = target.dt.day
         """
         return super().day  # type: ignore[return-value]
 
@@ -176,7 +176,7 @@ class TargetDatetimeAccessor(DatetimeAccessor):
         Examples
         --------
         >>> target = catalog.get_target("target_latest_invoice_timestamp")
-        >>> target["TimestampDayOfWeek"] = target.dt.day_of_week
+        >>> target_timestamp_day_of_week = target.dt.day_of_week
         """
         return super().day_of_week  # type: ignore[return-value]
 
@@ -198,7 +198,7 @@ class TargetDatetimeAccessor(DatetimeAccessor):
         Compute the hour component of a timestamp column:
 
         >>> target = catalog.get_target("target_latest_invoice_timestamp")
-        >>> target["TimestampHour"] = target.dt.hour
+        >>> target_timestamp_hour = target.dt.hour
         """
         return super().hour  # type: ignore[return-value]
 
@@ -220,7 +220,7 @@ class TargetDatetimeAccessor(DatetimeAccessor):
         Compute the minute component of a timestamp column:
 
         >>> target = catalog.get_target("target_latest_invoice_timestamp")
-        >>> target["TimestampMinute"] = target.dt.minute
+        >>> target_timestamp_minute = target.dt.minute
         """
         return super().minute  # type: ignore[return-value]
 
@@ -243,7 +243,7 @@ class TargetDatetimeAccessor(DatetimeAccessor):
         Compute the second component of a timestamp column:
 
         >>> target = catalog.get_target("target_latest_invoice_timestamp")
-        >>> target["TimestampSecond"] = target.dt.second
+        >>> target_timestamp_second = target.dt.second
         """
         return super().second  # type: ignore[return-value]
 
@@ -266,7 +266,7 @@ class TargetDatetimeAccessor(DatetimeAccessor):
         Compute the millisecond component of a timestamp column:
 
         >>> target = catalog.get_target("target_latest_invoice_timestamp")
-        >>> target["TimestampMillisecond"] = target.dt.millisecond
+        >>> target_timestamp_millisecond = target.dt.millisecond  # doctest: +SKIP
         """
         return super().millisecond  # type: ignore[return-value]
 
@@ -289,7 +289,7 @@ class TargetDatetimeAccessor(DatetimeAccessor):
         Compute the millisecond component of a timestamp column:
 
         >>> target = catalog.get_target("target_latest_invoice_timestamp")
-        >>> target["TimestampMicrosecond"] = target.dt.microsecond
+        >>> target_timestamp_microsecond = target.dt.microsecond
         """
         return super().microsecond  # type: ignore[return-value]
 
@@ -314,6 +314,6 @@ class TargetDatetimeAccessor(DatetimeAccessor):
         Examples
         --------
         >>> target = catalog.get_target("target_latest_invoice_timestamp")
-        >>> target["TimestampWithOffset"] = target.dt.tz_offset("+08:00").hour
+        >>> target_tz_with_offset = target.dt.tz_offset("+08:00").hour
         """
         return super().tz_offset(timezone_offset)
