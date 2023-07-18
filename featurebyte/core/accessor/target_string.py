@@ -1,5 +1,5 @@
 """
-Feature string accessor module.
+Target string accessor module.
 """
 from __future__ import annotations
 
@@ -10,18 +10,18 @@ from featurebyte.core.accessor.string import StringAccessor
 from featurebyte.query_graph.node.string import Side
 
 if TYPE_CHECKING:
-    from featurebyte.api.feature import Feature
+    from featurebyte.api.target import Target
 else:
-    Feature = TypeVar("Feature")
+    Target = TypeVar("Target")
 
 
-class FeatureStrAccessorMixin:
+class TargetStrAccessorMixin:
     """
-    FeatureStrAccessorMixin class
+    TargetStrAccessorMixin class
     """
 
     @property
-    def str(self: Feature) -> StringAccessor:  # type: ignore # pylint: disable=invalid-name
+    def str(self: Target) -> StringAccessor:  # type: ignore # pylint: disable=invalid-name
         """
         str accessor object
 
@@ -29,75 +29,72 @@ class FeatureStrAccessorMixin:
         -------
         StringAccessor
         """
-        return FeatureStringAccessor(self)
+        return TargetStringAccessor(self)
 
 
-class FeatureStringAccessor(StringAccessor):
+class TargetStringAccessor(StringAccessor):
     """
-    FeatureStringAccessor class used to manipulate string type Feature objects
+    TargetStringAccessor class used to manipulate string type Target objects
     """
 
     # documentation metadata
     __fbautodoc__ = FBAutoDoc()
 
-    def len(self) -> Feature:
+    def len(self) -> Target:
         """
         Computes length of each string element.
 
         Returns
         -------
-        Feature
-            A new Feature object.
+        Target
+            A new Target object.
 
         Examples
         --------
-        Compute the length of each string element in the ProductGroupLookup feature:
+        Compute the length of each string element in the ProductGroupLookup target:
 
-        >>> feature = catalog.get_feature("ProductGroupLookup")
-        >>> feature_group = fb.FeatureGroup([feature])
-        >>> feature_group["ProductGroupLength"] = feature.str.len()
+        >>> target = catalog.get_target("ProductGroupLookup")  # doctest: +SKIP
+        >>> target["ProductGroupLength"] = target.str.len()  # doctest: +SKIP
         """
         return super().len()  # type: ignore[return-value]
 
-    def lower(self) -> Feature:
+    def lower(self) -> Target:
         """
         Converts each string element to lower case.
 
         Returns
         -------
-        Feature
-            A new Feature object.
+        Target
+            A new Target object.
 
         Examples
         --------
-        Convert the ProductGroupLookup feature to lower case:
+        Convert the ProductGroupLookup target to lower case:
 
-        >>> feature = catalog.get_feature("ProductGroupLookup")
-        >>> feature_group = fb.FeatureGroup([feature])
-        >>> feature_group["ProductGroupLower"] = feature.str.lower()
+        >>> target = catalog.get_target("ProductGroupLookup")  # doctest: +SKIP
+        >>> target["ProductGroupLower"] = target.str.lower()  # doctest: +SKIP
         """
         return super().lower()  # type: ignore[return-value]
 
-    def upper(self) -> Feature:
+    def upper(self) -> Target:
         """
         Converts each string element to upper case.
 
         Returns
         -------
-        Feature
-            A new Feature object.
+        Target
+            A new Target object.
 
         Examples
         --------
-        Convert the ProductGroupLookup feature to upper case:
+        Convert the ProductGroupLookup target to upper case:
 
-        >>> feature = catalog.get_feature("ProductGroupLookup")
-        >>> feature_group = fb.FeatureGroup([feature])
-        >>> feature_group["ProductGroupUpper"] = feature.str.upper()
+        >>> target = catalog.get_target("ProductGroupLookup")  # doctest: +SKIP
+        >>> target["ProductGroupUpper"] = target.str.upper()  # doctest: +SKIP
         """
         return super().upper()  # type: ignore[return-value]
 
-    def strip(self, to_strip: Optional[str] = None) -> Feature:
+    def strip(self, to_strip: Optional[str] = None) -> Target:
         """
         Removes leading and trailing characters (whitespaces by default) from each string element.
 
@@ -108,20 +105,19 @@ class FeatureStringAccessor(StringAccessor):
 
         Returns
         -------
-        Feature
-            A new Feature object.
+        Target
+            A new Target object.
 
         Examples
         --------
-        Remove leading and trailing "M" characters from the ProductGroupLookup feature:
+        Remove leading and trailing "M" characters from the ProductGroupLookup target:
 
-        >>> feature = catalog.get_feature("ProductGroupLookup")
-        >>> feature_group = fb.FeatureGroup([feature])
-        >>> feature_group["ProductGroupStrip"] = feature.str.strip("M")
+        >>> target = catalog.get_target("ProductGroupLookup")  # doctest: +SKIP
+        >>> target["ProductGroupStrip"] = target.str.strip("M")  # doctest: +SKIP
         """
         return super().strip(to_strip=to_strip)  # type: ignore[return-value]
 
-    def lstrip(self, to_strip: Optional[str] = None) -> Feature:
+    def lstrip(self, to_strip: Optional[str] = None) -> Target:
         """
         Removes leading characters (whitespaces by default) from each string element.
 
@@ -132,20 +128,19 @@ class FeatureStringAccessor(StringAccessor):
 
         Returns
         -------
-        Feature
-            A new Feature object.
+        Target
+            A new Target object.
 
         Examples
         --------
-        Remove leading "M" characters from the ProductGroupLookup feature:
+        Remove leading "M" characters from the ProductGroupLookup target:
 
-        >>> feature = catalog.get_feature("ProductGroupLookup")
-        >>> feature_group = fb.FeatureGroup([feature])
-        >>> feature_group["ProductGroupStrip"] = feature.str.lstrip("M")
+        >>> target = catalog.get_target("ProductGroupLookup")  # doctest: +SKIP
+        >>> target["ProductGroupStrip"] = target.str.lstrip("M")  # doctest: +SKIP
         """
         return super().lstrip(to_strip=to_strip)  # type: ignore[return-value]
 
-    def rstrip(self, to_strip: Optional[str] = None) -> Feature:
+    def rstrip(self, to_strip: Optional[str] = None) -> Target:
         """
         Removes leading characters (whitespaces by default) from each string element.
 
@@ -156,20 +151,19 @@ class FeatureStringAccessor(StringAccessor):
 
         Returns
         -------
-        Feature
-            A new Feature object.
+        Target
+            A new Target object.
 
         Examples
         --------
-        Remove trailing "M" characters from the ProductGroupLookup feature:
+        Remove trailing "M" characters from the ProductGroupLookup target:
 
-        >>> feature = catalog.get_feature("ProductGroupLookup")
-        >>> feature_group = fb.FeatureGroup([feature])
-        >>> feature_group["ProductGroupStrip"] = feature.str.rstrip(".")
+        >>> target = catalog.get_target("ProductGroupLookup")  # doctest: +SKIP
+        >>> target["ProductGroupStrip"] = target.str.rstrip(".")  # doctest: +SKIP
         """
         return super().rstrip(to_strip=to_strip)  # type: ignore[return-value]
 
-    def replace(self, pat: str, repl: str) -> Feature:
+    def replace(self, pat: str, repl: str) -> Target:
         """
         Replaces the substring within each string element.
 
@@ -182,20 +176,19 @@ class FeatureStringAccessor(StringAccessor):
 
         Returns
         -------
-        Feature
-            A new Feature object.
+        Target
+            A new Target object.
 
         Examples
         --------
-        Replace "Windows" with "Win" in the ProductGroupLookup feature:
+        Replace "Windows" with "Win" in the ProductGroupLookup target:
 
-        >>> feature = catalog.get_feature("ProductGroupLookup")
-        >>> feature_group = fb.FeatureGroup([feature])
-        >>> feature_group["ProductGroupNew"] = feature.str.replace("Windows", "Win")
+        >>> target = catalog.get_target("ProductGroupLookup")  # doctest: +SKIP
+        >>> target["ProductGroupNew"] = target.str.replace("Windows", "Win")  # doctest: +SKIP
         """
         return super().replace(pat=pat, repl=repl)  # type: ignore[return-value]
 
-    def pad(self, width: int, side: Side = "left", fillchar: str = " ") -> Feature:
+    def pad(self, width: int, side: Side = "left", fillchar: str = " ") -> Target:
         """
         Pads each string element up to the specified width.
 
@@ -210,20 +203,19 @@ class FeatureStringAccessor(StringAccessor):
 
         Returns
         -------
-        Feature
-            A new Feature object.
+        Target
+            A new Target object.
 
         Examples
         --------
-        Pad the ProductGroupLookup feature to 10 characters:
+        Pad the ProductGroupLookup target to 10 characters:
 
-        >>> feature = catalog.get_feature("ProductGroupLookup")
-        >>> feature_group = fb.FeatureGroup([feature])
-        >>> feature_group["ProductGroupLookupPadded"] = feature.str.pad(10, fillchar="0")
+        >>> target = catalog.get_target("ProductGroupLookup")  # doctest: +SKIP
+        >>> target["ProductGroupLookupPadded"] = target.str.pad(10, fillchar="0")  # doctest: +SKIP
         """
         return super().pad(width=width, side=side, fillchar=fillchar)  # type: ignore[return-value]
 
-    def contains(self, pat: str, case: bool = True) -> Feature:
+    def contains(self, pat: str, case: bool = True) -> Target:
         """
         Checks whether each string element contains the provided substring pattern.
 
@@ -236,23 +228,22 @@ class FeatureStringAccessor(StringAccessor):
 
         Returns
         -------
-        Feature
-            A new Feature object.
+        Target
+            A new Target object.
 
         Examples
         --------
 
-        Check whether the ProductGroupLookup feature contains "x64":
+        Check whether the ProductGroupLookup target contains "x64":
 
-        >>> feature = catalog.get_feature("ProductGroupLookup")
-        >>> feature_group = fb.FeatureGroup([feature])
-        >>> feature_group["ProductGroup_x64"] = feature.str.contains("x64")
+        >>> target = catalog.get_target("ProductGroupLookup")  # doctest: +SKIP
+        >>> target["ProductGroup_x64"] = target.str.contains("x64")  # doctest: +SKIP
         """
         return super().contains(pat=pat, case=case)  # type: ignore[return-value]
 
     def slice(
         self, start: Optional[int] = None, stop: Optional[int] = None, step: Optional[int] = None
-    ) -> Feature:
+    ) -> Target:
         """
         Slices substring from each string element.
 
@@ -267,8 +258,8 @@ class FeatureStringAccessor(StringAccessor):
 
         Returns
         -------
-        Feature
-            A new Feature object.
+        Target
+            A new Target object.
 
         Raises
         ------
@@ -277,11 +268,10 @@ class FeatureStringAccessor(StringAccessor):
 
         Examples
         --------
-        Slice the first 10 characters from the ProductGroupLookup feature:
+        Slice the first 10 characters from the ProductGroupLookup target:
 
-        >>> feature = catalog.get_feature("ProductGroupLookup")
-        >>> feature_group = fb.FeatureGroup([feature])
-        >>> feature_group["ProductGroupSlice"] = feature.str.slice(0, 10)
+        >>> target = catalog.get_target("ProductGroupLookup")  # doctest: +SKIP
+        >>> target["ProductGroupSlice"] = target.str.slice(0, 10)  # doctest: +SKIP
 
         # noqa: DAR402
         """

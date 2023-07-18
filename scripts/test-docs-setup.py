@@ -198,6 +198,17 @@ def setup() -> None:
         is_global=True,
     )
 
+    # Target - latest invoice timestamp
+    target_latest_invoice_timestamp = grocery_invoice_view.groupby(
+        "GroceryCustomerGuid"
+    ).forward_aggregate(
+        value_column="Timestamp",
+        method="latest",
+        window="7d",
+        target_name="target_latest_invoice_timestamp",
+    )
+    target_latest_invoice_timestamp.save(conflict_resolution="retrieve")
+
 
 if __name__ == "__main__":
     setup()
