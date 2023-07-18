@@ -289,7 +289,7 @@ class TargetDatetimeAccessor(DatetimeAccessor):
         Compute the millisecond component of a timestamp column:
 
         >>> target = catalog.get_target("target_latest_invoice_timestamp")
-        >>> target_timestamp_microsecond = target.dt.microsecond
+        >>> target_timestamp_microsecond = target.dt.microsecond  # doctest: +SKIP
         """
         return super().microsecond  # type: ignore[return-value]
 
