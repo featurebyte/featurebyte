@@ -97,4 +97,5 @@ class CatalogController(
             name=catalog.name,
             created_at=catalog.created_at,
             updated_at=catalog.updated_at,
+            description=catalog.description,
         )

@@ -20,6 +20,7 @@ from featurebyte.routes.common.schema import (
     SortByQuery,
     SortDirQuery,
 )
+from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.deployment import (
     AllDeploymentList,
     DeploymentCreate,
@@ -188,3 +189,20 @@ async def get_deployment_summary(
     controller = request.state.app_container.all_deployment_controller
     deployment_summary: DeploymentSummary = await controller.get_deployment_summary()
     return deployment_summary
+
+
+@router.patch("/{deployment_id}/description", response_model=DeploymentModel)
+async def update_deployment_description(
+    request: Request,
+    deployment_id: PydanticObjectId,
+    data: DescriptionUpdate,
+) -> DeploymentModel:
+    """
+    Update deployment description
+    """
+    controller = request.state.app_container.deployment_controller
+    deployment: DeploymentModel = await controller.update_description(
+        document_id=deployment_id,
+        description=data.description,
+    )
+    return deployment

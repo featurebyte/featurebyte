@@ -130,4 +130,5 @@ class CredentialController(
             else None,
             created_at=credential.created_at,
             updated_at=credential.updated_at,
+            description=credential.description,
         )

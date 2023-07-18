@@ -23,6 +23,7 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
     VerboseQuery,
 )
+from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.info import StaticSourceTableInfo
 from featurebyte.schema.static_source_table import StaticSourceTableCreate, StaticSourceTableList
 from featurebyte.schema.task import Task
@@ -146,3 +147,20 @@ async def download_table_as_pyarrow_table(
         get_credential=request.state.get_credential,
     )
     return result
+
+
+@router.patch("/{static_source_table_id}/description", response_model=StaticSourceTableModel)
+async def update_static_source_table_description(
+    request: Request,
+    static_source_table_id: PydanticObjectId,
+    data: DescriptionUpdate,
+) -> StaticSourceTableModel:
+    """
+    Update static_source_table description
+    """
+    controller = request.state.app_container.static_source_table_controller
+    static_source_table: StaticSourceTableModel = await controller.update_description(
+        document_id=static_source_table_id,
+        description=data.description,
+    )
+    return static_source_table

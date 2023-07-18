@@ -301,4 +301,5 @@ class TestUserDefinedFunctionApi(BaseCatalogApiTestSuite):
             "used_by_features": [],
             "created_at": response_dict["created_at"],
             "updated_at": None,
+            "description": None,
         }

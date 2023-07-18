@@ -3,10 +3,7 @@ Unit tests for HistoricalFeatureTable class
 """
 from typing import Any, Dict
 
-import pytest
-
 from featurebyte.api.historical_feature_table import HistoricalFeatureTable
-from featurebyte.exception import RecordRetrievalException
 from tests.unit.api.base_materialize_table_test import BaseMaterializedTableApiTest
 
 
@@ -32,4 +29,5 @@ class TestHistoricalFeatureTable(BaseMaterializedTableApiTest[HistoricalFeatureT
             },
             "created_at": info_dict["created_at"],
             "updated_at": None,
+            "description": None,
         }

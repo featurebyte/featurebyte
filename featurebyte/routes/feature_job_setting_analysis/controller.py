@@ -93,6 +93,7 @@ class FeatureJobSettingAnalysisController(
                 frequency=f"{recommended_setting.frequency}s",
             ),
             catalog_name=catalog.name,
+            description=catalog.description,
         )
 
     async def create_feature_job_setting_analysis(

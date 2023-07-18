@@ -101,6 +101,7 @@ def test_event_table_model(snowflake_feature_store, feature_job_setting):
         "event_timestamp_timezone_offset": None,
         "event_timestamp_timezone_offset_column": None,
         "block_modification_by": [],
+        "description": None,
     }
     assert event_table.dict() == expected_event_table_dict
     event_table_json = event_table.json(by_alias=True)

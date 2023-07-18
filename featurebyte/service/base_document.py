@@ -1,6 +1,7 @@
 """
 BaseService class
 """
+# pylint: disable=too-many-lines
 from __future__ import annotations
 
 from typing import Any, AsyncIterator, Dict, Generic, Iterator, List, Optional, Type, TypeVar, Union
@@ -837,6 +838,45 @@ class BaseDocumentService(
                 f"Document {document.id} is blocked from modification by {block_modification_by}"
             )
 
+    async def _update_document(
+        self,
+        document: Document,
+        update_dict: Dict[str, Any],
+        update_document_class: Optional[Type[DocumentUpdateSchema]],
+    ) -> None:
+        """
+        Update document to persistent
+
+        Parameters
+        ----------
+        document: Document
+            Document
+        update_dict: Dict[str, Any]
+            Update dictionary
+        update_document_class: Optional[DocumentUpdateSchema]
+            Document update schema class
+        """
+        # check if document is modifiable
+        self._check_document_modifiable(document=document)
+
+        # check any conflict with existing documents
+        updated_document = self.document_class(**{**document.dict(by_alias=True), **update_dict})
+        await self._check_document_unique_constraints(
+            document=updated_document,
+            document_class=update_document_class,
+            original_document=document,
+        )
+
+        if document != updated_document:
+            # only update if change is detected
+            await self.persistent.update_one(
+                collection_name=self.collection_name,
+                query_filter=self._construct_get_query_filter(document_id=document.id),
+                update={"$set": update_dict},
+                user_id=self.user.id,
+                disable_audit=self.should_disable_audit,
+            )
+
     async def update_document(
         self,
         document_id: ObjectId,
@@ -868,27 +908,13 @@ class BaseDocumentService(
         if document is None:
             document = await self.get_document(document_id=document_id)
 
-        # check if document is modifiable
-        self._check_document_modifiable(document=document)
-
         # perform validation first before actual update
         update_dict = data.dict(exclude_none=exclude_none)
-        updated_document = self.document_class(**{**document.dict(by_alias=True), **update_dict})
 
-        # check any conflict with existing documents
-        await self._check_document_unique_constraints(
-            document=updated_document, document_class=type(data), original_document=document
+        # update document to persistent
+        await self._update_document(
+            document=document, update_dict=update_dict, update_document_class=type(data)
         )
-
-        if document != updated_document:
-            # only update if change is detected
-            await self.persistent.update_one(
-                collection_name=self.collection_name,
-                query_filter=self._construct_get_query_filter(document_id=document_id),
-                update={"$set": update_dict},
-                user_id=self.user.id,
-                disable_audit=self.should_disable_audit,
-            )
 
         if return_document:
             return await self.get_document(document_id=document_id)
@@ -991,4 +1017,24 @@ class BaseDocumentService(
             },
             user_id=self.user.id,
             disable_audit=self.should_disable_audit,
+        )
+
+    async def update_document_description(
+        self,
+        document_id: ObjectId,
+        description: Optional[str],
+    ) -> None:
+        """
+        Update document at persistent
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+        description: Optional[str]
+            Document description
+        """
+        document = await self.get_document(document_id=document_id)
+        await self._update_document(
+            document=document, update_dict={"description": description}, update_document_class=None
         )

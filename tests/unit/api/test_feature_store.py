@@ -205,6 +205,7 @@ def test_get(saved_snowflake_feature_store):
         [
             ("block_modification_by", []),
             ("created_at", loaded_feature_store.created_at.isoformat()),
+            ("description", None),
             ("details.account", "sf_account"),
             ("details.database", "sf_database"),
             ("details.sf_schema", "sf_schema"),
@@ -292,3 +293,14 @@ async def test_feature_store_create(
             "updated_at": None,
         }.items()
     )
+
+
+def test_update_description(saved_snowflake_feature_store):
+    """Test update description"""
+    assert saved_snowflake_feature_store.description is None
+    saved_snowflake_feature_store.update_description("new description")
+    assert saved_snowflake_feature_store.description == "new description"
+    assert saved_snowflake_feature_store.info()["description"] == "new description"
+    saved_snowflake_feature_store.update_description(None)
+    assert saved_snowflake_feature_store.description is None
+    assert saved_snowflake_feature_store.info()["description"] is None

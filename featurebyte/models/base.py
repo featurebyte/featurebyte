@@ -274,6 +274,7 @@ class FeatureByteBaseDocumentModel(FeatureByteBaseModel):
         allow_mutation=False,
         description="List of reference information that blocks modifications to the document",
     )
+    description: Optional[StrictStr] = Field(default=None, description="Record description")
 
     @validator("id", pre=True)
     @classmethod

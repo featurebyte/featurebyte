@@ -99,4 +99,5 @@ class TestTargetApi(BaseCatalogApiTestSuite):
             "updated_at": None,
             "user_id": str(user_id),
             "block_modification_by": [],
+            "description": None,
         }

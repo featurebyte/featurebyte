@@ -19,6 +19,7 @@ from featurebyte.routes.common.schema import (
     SortByQuery,
     SortDirQuery,
 )
+from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.relationship_info import (
     RelationshipInfoInfo,
     RelationshipInfoList,
@@ -121,3 +122,20 @@ async def list_relationship_info_audit_logs(
         search=search,
     )
     return audit_doc_list
+
+
+@router.patch("/{relationship_info_id}/description", response_model=RelationshipInfoModel)
+async def update_relationship_info_description(
+    request: Request,
+    relationship_info_id: PydanticObjectId,
+    data: DescriptionUpdate,
+) -> RelationshipInfoModel:
+    """
+    Update relationship_info description
+    """
+    controller = request.state.app_container.relationship_info_controller
+    relationship_info: RelationshipInfoModel = await controller.update_description(
+        document_id=relationship_info_id,
+        description=data.description,
+    )
+    return relationship_info

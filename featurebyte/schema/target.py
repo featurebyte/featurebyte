@@ -85,6 +85,7 @@ class TargetInfo(FeatureByteBaseModel):
     updated_at: Optional[datetime]
     input_data: InputData
     metadata: Any
+    description: Optional[str]
 
 
 class ComputeTargetRequest(ComputeRequest):

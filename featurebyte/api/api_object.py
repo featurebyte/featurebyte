@@ -401,6 +401,8 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
         update_payload: Dict[str, Any],
         allow_update_local: bool,
         add_internal_prefix: bool = False,
+        url: Optional[str] = None,
+        skip_update_schema_check: bool = False,
     ) -> None:
         """
         Update object in the persistent
@@ -415,6 +417,10 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
             Whether to add internal prefix (`internal_`) to the update key (used when the attribute to be updated
             starts with `internal_`). This flag only affects local update behavior (no effect if `allow_update_local`
             is disabled).
+        url: Optional[str]
+            URL to update the object
+        skip_update_schema_check: bool
+            Whether to skip update schema check
 
         Raises
         ------
@@ -425,14 +431,18 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
         RecordUpdateException
             When unexpected record update failure
         """
-        if self._update_schema_class is None:
-            raise NotImplementedError
+        if skip_update_schema_check:
+            data = update_payload
+        else:
+            if self._update_schema_class is None:
+                raise NotImplementedError
+            data = self._update_schema_class(  # pylint: disable=not-callable
+                **{**self.dict(by_alias=True), **update_payload}
+            ).json_dict()
 
-        data = self._update_schema_class(  # pylint: disable=not-callable
-            **{**self.dict(by_alias=True), **update_payload}
-        )
+        url = url or f"{self._route}/{self.id}"
         client = Configurations().get_client()
-        response = client.patch(url=f"{self._route}/{self.id}", json=data.json_dict())
+        response = client.patch(url=url, json=data)
         if response.status_code == HTTPStatus.OK:
             object_dict = response.json()
             self._update_cache(object_dict)  # update object cache
@@ -544,3 +554,19 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
             info["class_name"] = self.__class__.__name__
             return InfoDict(info)
         raise RecordRetrievalException(response, "Failed to retrieve object info.")
+
+    def update_description(self, description: str) -> None:
+        """
+        Update description of an object
+
+        Parameters
+        ----------
+        description: str
+            Description of the object
+        """
+        self.update(
+            update_payload={"description": description},
+            allow_update_local=False,
+            url=f"{self._route}/{self.id}/description",
+            skip_update_schema_check=True,
+        )

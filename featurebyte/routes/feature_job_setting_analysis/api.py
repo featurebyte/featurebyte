@@ -23,6 +23,7 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
     VerboseQuery,
 )
+from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.feature_job_setting_analysis import (
     FeatureJobSettingAnalysisBacktest,
     FeatureJobSettingAnalysisCreate,
@@ -171,3 +172,24 @@ async def run_backtest(
         data=data,
     )
     return task_submit
+
+
+@router.patch(
+    "/{feature_job_setting_analysis_id}/description", response_model=FeatureJobSettingAnalysisModel
+)
+async def update_feature_job_setting_analysis_description(
+    request: Request,
+    feature_job_setting_analysis_id: PydanticObjectId,
+    data: DescriptionUpdate,
+) -> FeatureJobSettingAnalysisModel:
+    """
+    Update feature_job_setting_analysis description
+    """
+    controller = request.state.app_container.feature_job_setting_analysis_controller
+    feature_job_setting_analysis: FeatureJobSettingAnalysisModel = (
+        await controller.update_description(
+            document_id=feature_job_setting_analysis_id,
+            description=data.description,
+        )
+    )
+    return feature_job_setting_analysis

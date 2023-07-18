@@ -275,6 +275,7 @@ class TestFeatureListNamespaceApi(BaseCatalogApiTestSuite):
             "feature_count": 2,
             "status": "DRAFT",
             "catalog_name": "grocery",
+            "description": None,
         }
 
         verbose_response = test_api_client.get(

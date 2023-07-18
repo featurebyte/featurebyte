@@ -122,6 +122,7 @@ def get_base_expected_scd_table_model(scd_table_model, scd_columns_info):
         "current_flag_column": "enabled",
         "catalog_id": DEFAULT_CATALOG_ID,
         "block_modification_by": [],
+        "description": None,
     }
 
 

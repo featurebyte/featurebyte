@@ -33,6 +33,7 @@ def feature_list_model_dict_fixture():
         "catalog_id": DEFAULT_CATALOG_ID,
         "relationships_info": None,
         "block_modification_by": [],
+        "description": None,
     }
 
 
@@ -63,6 +64,7 @@ def feature_list_namespace_model_dict_fixture():
         "table_ids": table_ids,
         "catalog_id": DEFAULT_CATALOG_ID,
         "block_modification_by": [],
+        "description": None,
     }
 
 

@@ -224,6 +224,7 @@ class TestFeatureNamespaceApi(BaseCatalogApiTestSuite):
             "dtype": "FLOAT",
             "version_count": 1,
             "catalog_name": "grocery",
+            "description": None,
         }
 
         verbose_response = test_api_client.get(

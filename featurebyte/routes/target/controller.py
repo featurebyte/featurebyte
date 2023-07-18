@@ -160,6 +160,7 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
             updated_at=target_doc.updated_at,
             input_data=input_data,
             metadata=target_metadata,
+            description=target_doc.description,
         )
 
     async def preview(

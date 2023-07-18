@@ -522,8 +522,12 @@ class FeatureController(
 
         op_struct = feature.extract_operation_structure()
         metadata = await self.feature_or_target_metadata_extractor.extract(op_struct=op_struct)
+
+        namespace_info_dict = namespace_info.dict()
+        # use feature list description instead of namespace description
+        namespace_info_dict.pop("description", None)
         return FeatureInfo(
-            **namespace_info.dict(),
+            **namespace_info_dict,
             version={"this": feature.version.to_str(), "default": default_feature.version.to_str()},
             readiness={"this": feature.readiness, "default": default_feature.readiness},
             table_feature_job_setting={
@@ -544,6 +548,7 @@ class FeatureController(
             },
             versions_info=versions_info,
             metadata=metadata,
+            description=feature.description,
         )
 
     async def sql(self, feature_sql: FeatureSQL) -> str:

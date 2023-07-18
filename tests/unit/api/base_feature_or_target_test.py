@@ -90,3 +90,13 @@ class FeatureOrTargetBaseTestSuite:
         assert info["entities"] == [
             {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "catalog"}
         ]
+
+    def test_update_description(self, saved_item_under_test):
+        """Test update description"""
+        assert saved_item_under_test.description is None
+        saved_item_under_test.update_description("new description")
+        assert saved_item_under_test.description == "new description"
+        assert saved_item_under_test.info()["description"] == "new description"
+        saved_item_under_test.update_description(None)
+        assert saved_item_under_test.description is None
+        assert saved_item_under_test.info()["description"] is None

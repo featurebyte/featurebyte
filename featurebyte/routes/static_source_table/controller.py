@@ -96,4 +96,5 @@ class StaticSourceTableController(
             table_details=static_source_table.location.table_details,
             created_at=static_source_table.created_at,
             updated_at=static_source_table.updated_at,
+            description=static_source_table.description,
         )

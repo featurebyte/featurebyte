@@ -21,7 +21,7 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
     VerboseQuery,
 )
-from featurebyte.schema.common.base import DeleteResponse
+from featurebyte.schema.common.base import DeleteResponse, DescriptionUpdate
 from featurebyte.schema.credential import (
     CredentialCreate,
     CredentialList,
@@ -173,3 +173,20 @@ async def delete_credential(
         credential_id=credential_id,
     )
     return DeleteResponse()
+
+
+@router.patch("/{credential_id}/description", response_model=CredentialRead)
+async def update_credential_description(
+    request: Request,
+    credential_id: PydanticObjectId,
+    data: DescriptionUpdate,
+) -> CredentialRead:
+    """
+    Update credential description
+    """
+    controller = request.state.app_container.credential_controller
+    credential: CredentialRead = await controller.update_description(
+        document_id=credential_id,
+        description=data.description,
+    )
+    return credential

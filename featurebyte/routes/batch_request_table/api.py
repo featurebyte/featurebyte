@@ -24,6 +24,7 @@ from featurebyte.routes.common.schema import (
     VerboseQuery,
 )
 from featurebyte.schema.batch_request_table import BatchRequestTableCreate, BatchRequestTableList
+from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.info import BatchRequestTableInfo
 from featurebyte.schema.task import Task
 
@@ -148,3 +149,20 @@ async def download_table_as_pyarrow_table(
         get_credential=request.state.get_credential,
     )
     return result
+
+
+@router.patch("/{batch_request_table_id}/description", response_model=BatchRequestTableModel)
+async def update_batch_request_table_description(
+    request: Request,
+    batch_request_table_id: PydanticObjectId,
+    data: DescriptionUpdate,
+) -> BatchRequestTableModel:
+    """
+    Update batch_request_table description
+    """
+    controller = request.state.app_container.batch_request_table_controller
+    batch_request_table: BatchRequestTableModel = await controller.update_description(
+        document_id=batch_request_table_id,
+        description=data.description,
+    )
+    return batch_request_table

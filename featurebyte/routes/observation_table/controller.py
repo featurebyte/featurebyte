@@ -93,4 +93,5 @@ class ObservationTableController(
             table_details=observation_table.location.table_details,
             created_at=observation_table.created_at,
             updated_at=observation_table.updated_at,
+            description=observation_table.description,
         )

@@ -106,4 +106,5 @@ class EntityController(BaseDocumentController[EntityModel, EntityService, Entity
             updated_at=entity.updated_at,
             serving_names=entity.serving_names,
             catalog_name=catalog.name,
+            description=catalog.description,
         )

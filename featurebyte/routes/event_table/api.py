@@ -22,6 +22,7 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
     VerboseQuery,
 )
+from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.event_table import EventTableCreate, EventTableList, EventTableUpdate
 from featurebyte.schema.info import EventTableInfo
 
@@ -158,3 +159,20 @@ async def get_event_table_info(
         verbose=verbose,
     )
     return cast(EventTableInfo, info)
+
+
+@router.patch("/{event_table_id}/description", response_model=EventTableModel)
+async def update_event_table_description(
+    request: Request,
+    event_table_id: PydanticObjectId,
+    data: DescriptionUpdate,
+) -> EventTableModel:
+    """
+    Update event_table description
+    """
+    controller = request.state.app_container.event_table_controller
+    event_table: EventTableModel = await controller.update_description(
+        document_id=event_table_id,
+        description=data.description,
+    )
+    return event_table

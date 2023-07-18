@@ -102,6 +102,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
                     "created_at": response_dict["data"][0]["created_at"],
                     "updated_at": response_dict["data"][0]["updated_at"],
                     "block_modification_by": [],
+                    "description": None,
                 },
                 {
                     "_id": response_dict["data"][1]["_id"],
@@ -113,6 +114,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
                     "created_at": response_dict["data"][1]["created_at"],
                     "updated_at": response_dict["data"][1]["updated_at"],
                     "block_modification_by": [],
+                    "description": None,
                 },
                 {
                     "_id": response_dict["data"][2]["_id"],
@@ -124,6 +126,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
                     "created_at": response_dict["data"][2]["created_at"],
                     "updated_at": response_dict["data"][2]["updated_at"],
                     "block_modification_by": [],
+                    "description": None,
                 },
             ],
             "page": 1,
@@ -292,6 +295,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
             "serving_endpoint": None,
             "created_at": response_dict["created_at"],
             "updated_at": None,
+            "description": None,
         }
 
     def test_get_online_features__200(
