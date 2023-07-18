@@ -10,7 +10,6 @@ import pandas as pd
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
 from featurebyte.routes.common.feature_or_target_table import (
     FeatureOrTargetTableController,
-    MaterializedTableDocumentT,
     PayloadT,
     TableCreateT,
     ValidationParameters,
@@ -90,9 +89,8 @@ class HistoricalFeatureTableController(
         )
 
     async def get_additional_info_params(
-        self, document: MaterializedTableDocumentT
+        self, document: HistoricalFeatureTableModel
     ) -> dict[str, Any]:
-        assert isinstance(document, HistoricalFeatureTableModel)
         feature_list = await self.feature_list_service.get_document(
             document_id=document.feature_list_id
         )
