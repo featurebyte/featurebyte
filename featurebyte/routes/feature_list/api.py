@@ -243,6 +243,5 @@ async def get_feature_job_logs(
     result = await controller.get_feature_job_logs(
         feature_list_id=feature_list_id,
         hour_limit=hour_limit,
-        get_credential=request.state.get_credential,
     )
     return cast(Dict[str, Any], result)
