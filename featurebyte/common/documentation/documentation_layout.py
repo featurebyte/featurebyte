@@ -282,6 +282,8 @@ def _get_feature_or_target_items(section: str) -> List[DocLayoutItem]:
         DocLayoutItem([section, INFO, f"{section}.updated_at"]),
         DocLayoutItem([section, INFO, f"{section}.saved"]),
         DocLayoutItem([section, INFO, f"{section}.version"]),
+        DocLayoutItem([section, INFO, f"{section}.is_datetime"]),
+        DocLayoutItem([section, INFO, f"{section}.is_numeric"]),
         DocLayoutItem([section, LINEAGE, f"{section}.entity_ids"]),
         DocLayoutItem([section, LINEAGE, f"{section}.feature_store"]),
         DocLayoutItem([section, LINEAGE, f"{section}.id"]),
@@ -307,8 +309,6 @@ def _get_feature_layout() -> List[DocLayoutItem]:
     return [
         *_get_feature_or_target_items(FEATURE),
         DocLayoutItem([FEATURE, INFO, "Feature.readiness"]),
-        DocLayoutItem([FEATURE, INFO, "Feature.is_datetime"]),
-        DocLayoutItem([FEATURE, INFO, "Feature.is_numeric"]),
         DocLayoutItem([FEATURE, INFO, "Feature.is_default"]),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.feature_list_ids"]),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.sql"]),
