@@ -1,13 +1,16 @@
 """
 Unit tests for BatchFeatureTable class
 """
+from typing import Any, Dict
+
 from unittest.mock import patch
 
 import pandas as pd
 import pytest
 
 from featurebyte.api.batch_feature_table import BatchFeatureTable
-from featurebyte.exception import RecordRetrievalException
+from featurebyte.models.base import CAMEL_CASE_TO_SNAKE_CASE_PATTERN
+from tests.unit.api.base_materialize_table_test import BaseMaterializedTableApiTest
 
 
 @pytest.fixture(autouse=True)
@@ -29,64 +32,40 @@ def batch_feature_table_fixture(
     return batch_feature_table
 
 
-def test_get(batch_feature_table):
-    """Test get method"""
-    retrieved_batch_feature_table = BatchFeatureTable.get(batch_feature_table.name)
-    assert retrieved_batch_feature_table == batch_feature_table
+class TestBatchFeatureTable(BaseMaterializedTableApiTest[BatchFeatureTable]):
+    """
+    Test batch feature table
+    """
 
+    table_type = BatchFeatureTable
 
-def test_list(batch_feature_table):
-    """Test list method"""
-    df = BatchFeatureTable.list()
-    expected = pd.DataFrame(
-        [
-            {
-                "id": batch_feature_table.id,
-                "name": "my_batch_feature_table",
-                "feature_store_name": "sf_featurestore",
-                "batch_request_table_name": "batch_request_table_from_event_view",
-                "shape": (500, 1),
-                "created_at": batch_feature_table.created_at,
-            }
+    def assert_info_dict(self, info_dict: Dict[str, Any]) -> None:
+        assert info_dict["deployment_name"].startswith("Deployment with my_feature_list_V")
+        assert info_dict["table_details"]["table_name"].startswith("BATCH_FEATURE_TABLE_")
+        assert info_dict == {
+            "name": "my_batch_feature_table",
+            "deployment_name": info_dict["deployment_name"],
+            "batch_request_table_name": "batch_request_table_from_event_view",
+            "table_details": {
+                "database_name": "sf_database",
+                "schema_name": "sf_schema",
+                "table_name": info_dict["table_details"]["table_name"],
+            },
+            "created_at": info_dict["created_at"],
+            "updated_at": None,
+        }
+
+    def assert_list_df(self, df: pd.DataFrame) -> None:
+        assert df.columns.tolist() == [
+            "id",
+            "name",
+            "feature_store_name",
+            "batch_request_table_name",
+            "shape",
+            "created_at",
         ]
-    )
-    pd.testing.assert_frame_equal(df, expected)
-
-
-def test_delete(batch_feature_table):
-    """
-    Test delete method
-    """
-    # check table can be retrieved before deletion
-    _ = BatchFeatureTable.get(batch_feature_table.name)
-
-    batch_feature_table.delete()
-
-    # check the deleted batch feature table is not found anymore
-    with pytest.raises(RecordRetrievalException) as exc:
-        BatchFeatureTable.get(batch_feature_table.name)
-
-    expected_msg = (
-        f'BatchFeatureTable (name: "{batch_feature_table.name}") not found. '
-        f"Please save the BatchFeatureTable object first."
-    )
-    assert expected_msg in str(exc.value)
-
-
-def test_info(batch_feature_table):
-    """Test info method"""
-    info_dict = batch_feature_table.info()
-    assert info_dict["deployment_name"].startswith("Deployment with my_feature_list_V")
-    assert info_dict["table_details"]["table_name"].startswith("BATCH_FEATURE_TABLE_")
-    assert info_dict == {
-        "name": "my_batch_feature_table",
-        "deployment_name": info_dict["deployment_name"],
-        "batch_request_table_name": "batch_request_table_from_event_view",
-        "table_details": {
-            "database_name": "sf_database",
-            "schema_name": "sf_schema",
-            "table_name": info_dict["table_details"]["table_name"],
-        },
-        "created_at": info_dict["created_at"],
-        "updated_at": None,
-    }
+        expected_name = CAMEL_CASE_TO_SNAKE_CASE_PATTERN.sub(r"_\1", self.table_type_name).lower()
+        assert df["name"].tolist() == [f"my_{expected_name}"]
+        assert df["feature_store_name"].tolist() == ["sf_featurestore"]
+        assert df["batch_request_table_name"].tolist() == ["batch_request_table_from_event_view"]
+        assert (df["shape"] == (500, 1)).all()

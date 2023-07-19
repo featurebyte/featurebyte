@@ -1,19 +1,40 @@
 """
 Unit tests for BatchRequestTable class
 """
+from typing import Any, Dict
+
 import pandas as pd
 import pytest
 
-from featurebyte import RecordRetrievalException
 from featurebyte.api.batch_request_table import BatchRequestTable
+from tests.unit.api.base_materialize_table_test import BaseMaterializedTableApiTest
 
 
-def test_get(batch_request_table_from_source):
+class TestBatchRequestTable(BaseMaterializedTableApiTest[BatchRequestTable]):
     """
-    Test retrieving an BatchRequestTable object by name
+    Test batch request table
     """
-    batch_request_table = BatchRequestTable.get(batch_request_table_from_source.name)
-    assert batch_request_table == batch_request_table_from_source
+
+    table_type = BatchRequestTable
+
+    def assert_info_dict(self, info_dict: Dict[str, Any]) -> None:
+        assert info_dict["table_details"]["table_name"].startswith("BATCH_REQUEST_TABLE_")
+        assert info_dict == {
+            "name": "batch_request_table_from_source_table",
+            "type": "source_table",
+            "feature_store_name": "sf_featurestore",
+            "table_details": {
+                "database_name": "sf_database",
+                "schema_name": "sf_schema",
+                "table_name": info_dict["table_details"]["table_name"],
+            },
+            "created_at": info_dict["created_at"],
+            "updated_at": None,
+        }
+
+    @pytest.mark.skip(reason="use other test due to testing of more fixtures")
+    def test_list(self, table_under_test):
+        ...
 
 
 def test_list(batch_request_table_from_source, batch_request_table_from_view):
@@ -43,43 +64,3 @@ def test_list(batch_request_table_from_source, batch_request_table_from_view):
         ]
     )
     pd.testing.assert_frame_equal(df, expected)
-
-
-def test_delete(batch_request_table_from_source):
-    """
-    Test delete method
-    """
-    # check table can be retrieved before deletion
-    _ = BatchRequestTable.get(batch_request_table_from_source.name)
-
-    batch_request_table_from_source.delete()
-
-    # check the deleted batch feature table is not found anymore
-    with pytest.raises(RecordRetrievalException) as exc:
-        BatchRequestTable.get(batch_request_table_from_source.name)
-
-    expected_msg = (
-        f'BatchRequestTable (name: "{batch_request_table_from_source.name}") not found. '
-        f"Please save the BatchRequestTable object first."
-    )
-    assert expected_msg in str(exc.value)
-
-
-def test_info(batch_request_table_from_view):
-    """
-    Test get request table info
-    """
-    info_dict = batch_request_table_from_view.info()
-    assert info_dict["table_details"]["table_name"].startswith("BATCH_REQUEST_TABLE_")
-    assert info_dict == {
-        "name": "batch_request_table_from_event_view",
-        "type": "view",
-        "feature_store_name": "sf_featurestore",
-        "table_details": {
-            "database_name": "sf_database",
-            "schema_name": "sf_schema",
-            "table_name": info_dict["table_details"]["table_name"],
-        },
-        "created_at": info_dict["created_at"],
-        "updated_at": None,
-    }
