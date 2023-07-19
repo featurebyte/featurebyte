@@ -86,7 +86,13 @@ class TargetInfo(FeatureByteBaseModel):
     metadata: Any
 
 
-class ComputeTargetRequest(FeatureByteBaseModel):
+class ComputeRequest(FeatureByteBaseModel):
+    """
+    Compute request
+    """
+
+
+class ComputeTargetRequest(ComputeRequest):
     """
     Compute target request schema
     """

@@ -97,7 +97,7 @@ from featurebyte.service.table_columns_info import TableColumnsInfoService
 from featurebyte.service.table_info import TableInfoService
 from featurebyte.service.table_status import TableStatusService
 from featurebyte.service.target import TargetService
-from featurebyte.service.target_helper.compute_target import TargetComputer
+from featurebyte.service.target_helper.compute_target import TargetComputer, TargetExecutor
 from featurebyte.service.target_namespace import TargetNamespaceService
 from featurebyte.service.target_table import TargetTableService
 from featurebyte.service.task_manager import TaskManager
@@ -218,10 +218,13 @@ app_container_config.register_class(
 app_container_config.register_class(TableInfoService)
 app_container_config.register_class(TableService)
 app_container_config.register_class(TableStatusService)
-app_container_config.register_class(TargetComputer)
+app_container_config.register_class(
+    TargetComputer, dependency_override={"query_executor": "target_executor"}
+)
 app_container_config.register_class(
     TargetController, dependency_override={"service": "target_service"}
 )
+app_container_config.register_class(TargetExecutor)
 app_container_config.register_class(TargetService)
 app_container_config.register_class(
     TargetNamespaceController, dependency_override={"service": "target_namespace_service"}

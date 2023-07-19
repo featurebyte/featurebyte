@@ -48,9 +48,9 @@ class TargetTableTask(DataWarehouseMixin, BaseTask):
             db_session=db_session, table_details=location.table_details
         ):
             target_computer: TargetComputer = self.app_container.target_computer
-            await target_computer.compute_targets(
+            await target_computer.compute(
                 observation_set=observation_set,
-                compute_target_request=ComputeTargetRequest(
+                compute_request=ComputeTargetRequest(
                     feature_store_id=payload.feature_store_id,
                     graph=payload.graph,
                     node_names=payload.node_names,
