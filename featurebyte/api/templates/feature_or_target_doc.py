@@ -42,6 +42,15 @@ Returns
 Sequence[ObjectId]
 """
 
+PRIMARY_ENTITY_DOC = """
+Returns the primary entity of the {class_name} object.
+
+Returns
+-------
+List[Entity]
+    Primary entity
+"""
+
 DEFINITION_DOC = """
 Displays the {object_type} definition file of the {object_type}.
 

@@ -1,7 +1,7 @@
 """
 Mixin class containing common methods for feature or target classes
 """
-from typing import Sequence, cast
+from typing import List, Sequence, cast
 
 import time
 from http import HTTPStatus
@@ -11,6 +11,7 @@ from bson import ObjectId
 from pydantic import Field
 
 from featurebyte.api.api_object import ApiObject
+from featurebyte.api.entity import Entity
 from featurebyte.common.formatting_util import CodeStr
 from featurebyte.common.utils import dataframe_from_json
 from featurebyte.config import Configurations
@@ -19,6 +20,7 @@ from featurebyte.exception import RecordRetrievalException
 from featurebyte.logging import get_logger
 from featurebyte.models.base import PydanticObjectId, get_active_catalog_id
 from featurebyte.models.feature import BaseFeatureModel
+from featurebyte.models.relationship_analysis import derive_primary_entity
 from featurebyte.schema.preview import FeatureOrTargetPreview
 
 logger = get_logger(__name__)
@@ -92,3 +94,18 @@ class FeatureOrTargetMixin(QueryObject, ApiObject):
         elapsed = time.time() - tic
         logger.debug(f"Preview took {elapsed:.2f}s")
         return dataframe_from_json(result)  # pylint: disable=no-member
+
+    def _primary_entity(self) -> List[Entity]:
+        """
+        Returns the primary entity of the Feature object.
+
+        Returns
+        -------
+        List[Entity]
+            Primary entity
+        """
+        entities = []
+        for entity_id in self._get_entity_ids():
+            entities.append(Entity.get_by_id(entity_id))
+        primary_entity = derive_primary_entity(entities)  # type: ignore
+        return primary_entity

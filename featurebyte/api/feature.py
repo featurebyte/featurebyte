@@ -30,6 +30,7 @@ from featurebyte.api.templates.feature_or_target_doc import (
     DEFINITION_DOC,
     ENTITY_IDS_DOC,
     PREVIEW_DOC,
+    PRIMARY_ENTITY_DOC,
     TABLE_IDS_DOC,
     VERSION_DOC,
 )
@@ -50,7 +51,6 @@ from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_namespace import DefaultVersionMode, FeatureReadiness
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.models.relationship_analysis import derive_primary_entity
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
@@ -162,21 +162,10 @@ class Feature(
     def table_ids(self) -> Sequence[ObjectId]:  # pylint: disable=missing-function-docstring
         return self._get_table_ids()
 
-    @property
-    def primary_entity(self) -> List[Entity]:
-        """
-        Returns the primary entity of the Feature object.
-
-        Returns
-        -------
-        list[Entity]
-            Primary entity
-        """
-        entities = []
-        for entity_id in self.entity_ids:
-            entities.append(Entity.get_by_id(entity_id))
-        primary_entity = derive_primary_entity(entities)  # type: ignore
-        return primary_entity
+    @property  # type: ignore
+    @substitute_docstring(doc_template=PRIMARY_ENTITY_DOC, format_kwargs={"class_name": "Feature"})
+    def primary_entity(self) -> List[Entity]:  # pylint: disable=missing-function-docstring
+        return self._primary_entity()
 
     @property
     def feature_list_ids(self) -> Sequence[ObjectId]:
