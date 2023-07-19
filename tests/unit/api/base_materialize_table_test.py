@@ -16,6 +16,10 @@ BaseFeatureOrTargetTableT = TypeVar("BaseFeatureOrTargetTableT", bound=ApiObject
 
 
 class BaseMaterializedTableApiTest(Generic[BaseFeatureOrTargetTableT]):
+    """
+    Base materialized table api tests
+    """
+
     table_type: Type[BaseFeatureOrTargetTableT]
 
     @abstractmethod
