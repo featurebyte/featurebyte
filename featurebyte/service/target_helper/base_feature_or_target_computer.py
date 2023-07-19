@@ -10,14 +10,14 @@ from dataclasses import dataclass
 
 import pandas as pd
 
-from featurebyte.models import FeatureStoreModel
+from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.parent_serving import ParentServingPreparation
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.routes.common.feature_or_target_table import ValidationParameters
-from featurebyte.schema.target import ComputeRequest
+from featurebyte.schema.common.feature_or_target import ComputeRequest
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
@@ -146,7 +146,7 @@ class Computer(Generic[ComputeRequestT, ExecutorParamsT]):
         get_credential: Any,
         output_table_details: TableDetails,
         progress_callback: Optional[Callable[[int, str], None]] = None,
-    ):
+    ) -> None:
         """
         Compute targets or features
 
