@@ -34,6 +34,7 @@ from featurebyte.api.templates.feature_or_target_doc import (
     TABLE_IDS_DOC,
     VERSION_DOC,
 )
+from featurebyte.api.templates.series_doc import ISNULL_DOC, NOTNULL_DOC
 from featurebyte.common.descriptor import ClassInstanceMethodDescriptor
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.typing import Scalar, ScalarSequence
@@ -1123,36 +1124,30 @@ class Feature(
         """
         assert_is_lookup_feature(self.node_types_lineage)
 
-    def isnull(self) -> Feature:
-        """
-        Returns a boolean Feature indicating whether each element is missing.
-
-        Returns
-        -------
-        Feature
-            Feature with boolean values
-
-        Examples
-        --------
-        >>> feature = catalog.get_feature("InvoiceCount_60days")
-        >>> new_feature = feature.isnull()
-        """
+    @substitute_docstring(
+        doc_template=ISNULL_DOC,
+        format_kwargs={"class_name": "Feature"},
+        examples=(
+            """
+            >>> feature = catalog.get_feature("InvoiceCount_60days")
+            >>> new_feature = feature.isnull()
+            """
+        ),
+    )
+    def isnull(self) -> Feature:  # pylint: disable=missing-function-docstring
         return super().isnull()
 
-    def notnull(self) -> Feature:
-        """
-        Returns a boolean Feature indicating whether each element is not null.
-
-        Returns
-        -------
-        Feature
-            Feature with boolean values
-
-        Examples
-        --------
-        >>> feature = catalog.get_feature("InvoiceCount_60days")
-        >>> new_feature = feature.notnull()
-        """
+    @substitute_docstring(
+        doc_template=NOTNULL_DOC,
+        format_kwargs={"class_name": "Feature"},
+        examples=(
+            """
+                >>> feature = catalog.get_feature("InvoiceCount_60days")
+                >>> new_feature = feature.notnull()
+                """
+        ),
+    )
+    def notnull(self) -> Feature:  # pylint: disable=missing-function-docstring
         return super().notnull()
 
     # descriptors

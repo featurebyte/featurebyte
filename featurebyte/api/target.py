@@ -27,6 +27,7 @@ from featurebyte.api.templates.feature_or_target_doc import (
     TABLE_IDS_DOC,
     VERSION_DOC,
 )
+from featurebyte.api.templates.series_doc import ISNULL_DOC, NOTNULL_DOC
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.utils import dataframe_to_arrow_bytes, enforce_observation_set_row_order
 from featurebyte.core.accessor.target_datetime import TargetDtAccessorMixin
@@ -38,6 +39,8 @@ from featurebyte.models.target import TargetModel
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.schema.target import TargetUpdate
 from featurebyte.schema.target_table import TargetTableCreate
+
+DOCSTRING_FORMAT_PARAMS = {"class_name": "Target"}
 
 
 class Target(
@@ -104,30 +107,56 @@ class Target(
             'V230323'
             """
         ),
-        format_kwargs={"class_name": "Feature"},
+        format_kwargs=DOCSTRING_FORMAT_PARAMS,
     )
     def version(self) -> str:  # pylint: disable=missing-function-docstring
         return self._get_version()
 
     @property  # type: ignore
-    @substitute_docstring(doc_template=CATALOG_ID_DOC, format_kwargs={"class_name": "Target"})
+    @substitute_docstring(doc_template=CATALOG_ID_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
     def catalog_id(self) -> ObjectId:  # pylint: disable=missing-function-docstring
         return self._get_catalog_id()
 
     @property  # type: ignore
-    @substitute_docstring(doc_template=ENTITY_IDS_DOC, format_kwargs={"class_name": "Target"})
+    @substitute_docstring(doc_template=ENTITY_IDS_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
     def entity_ids(self) -> Sequence[ObjectId]:  # pylint: disable=missing-function-docstring
         return self._get_entity_ids()
 
     @property  # type: ignore
-    @substitute_docstring(doc_template=PRIMARY_ENTITY_DOC, format_kwargs={"class_name": "Target"})
+    @substitute_docstring(doc_template=PRIMARY_ENTITY_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
     def primary_entity(self) -> List[Entity]:  # pylint: disable=missing-function-docstring
         return self._primary_entity()
 
     @property  # type: ignore
-    @substitute_docstring(doc_template=TABLE_IDS_DOC, format_kwargs={"class_name": "Target"})
+    @substitute_docstring(doc_template=TABLE_IDS_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
     def table_ids(self) -> Sequence[ObjectId]:  # pylint: disable=missing-function-docstring
         return self._get_table_ids()
+
+    @substitute_docstring(
+        doc_template=ISNULL_DOC,
+        format_kwargs=DOCSTRING_FORMAT_PARAMS,
+        examples=(
+            """
+            >>> target = catalog.get_target("target_latest_invoice_timestamp")
+            >>> new_target = target.isnull()
+            """
+        ),
+    )
+    def isnull(self) -> Target:  # pylint: disable=missing-function-docstring
+        return super().isnull()
+
+    @substitute_docstring(
+        doc_template=NOTNULL_DOC,
+        format_kwargs=DOCSTRING_FORMAT_PARAMS,
+        examples=(
+            """
+            >>> target = catalog.get_target("target_latest_invoice_timestamp")
+            >>> new_target = target.notnull()
+            """
+        ),
+    )
+    def notnull(self) -> Target:  # pylint: disable=missing-function-docstring
+        return super().notnull()
 
     @property
     def entities(self) -> List[Entity]:
