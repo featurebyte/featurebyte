@@ -1,7 +1,7 @@
 from typing import cast
 
 import pytest
-from sqlglot import parse_one
+from sqlglot import parse_one, select
 from sqlglot.expressions import Select
 
 from featurebyte.enum import DBVarType, SourceType
@@ -106,3 +106,24 @@ def test_will_pivoted_column_name_be_quoted(column_name, will_be_quoted):
     Test will_pivoted_column_name_be_quoted for SnowflakeAdapter
     """
     assert SnowflakeAdapter.will_pivoted_column_name_be_quoted(column_name) is will_be_quoted
+
+
+@pytest.mark.parametrize(
+    "percent, expected_format",
+    [
+        (10.01, "10.01"),
+        (10.0, "10"),
+        (10, "10"),
+        (0.1, "0.1"),
+        (0.000001, "0.000001"),
+        (0.000000001, "0.000000001"),
+    ],
+)
+def test_tablesample_percentage_formatting(percent, expected_format):
+    """
+    Test the percentage in TABLESAMPLE is not formatted using scientific notation because that is
+    not supported in some engines like Spark
+    """
+    out = SnowflakeAdapter.tablesample(select("*").from_("A"), percent).sql()
+    expected = f"SELECT * FROM (SELECT * FROM A) TABLESAMPLE({expected_format})"
+    assert out == expected
