@@ -9,7 +9,7 @@ from featurebyte.logging import get_logger
 from featurebyte.models.target_table import TargetTableModel
 from featurebyte.schema.target import ComputeTargetRequest
 from featurebyte.schema.worker.task.target_table import TargetTableTaskPayload
-from featurebyte.service.target import TargetService
+from featurebyte.service.target_helper.compute_target import TargetComputer
 from featurebyte.service.target_table import TargetTableService
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin
@@ -47,8 +47,8 @@ class TargetTableTask(DataWarehouseMixin, BaseTask):
         async with self.drop_table_on_error(
             db_session=db_session, table_details=location.table_details
         ):
-            target_service: TargetService = self.app_container.target_service
-            await target_service.compute_targets(
+            target_computer: TargetComputer = self.app_container.target_computer
+            await target_computer.compute_targets(
                 observation_set=observation_set,
                 compute_target_request=ComputeTargetRequest(
                     feature_store_id=payload.feature_store_id,

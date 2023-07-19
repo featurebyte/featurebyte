@@ -3,7 +3,7 @@ Get targets module
 """
 from __future__ import annotations
 
-from typing import Callable, List, Optional, Union
+from typing import Any, Callable, List, Optional, Union
 
 import time
 
@@ -26,9 +26,89 @@ from featurebyte.query_graph.sql.feature_historical import (
     get_internal_observation_set,
     validate_request_schema,
 )
+from featurebyte.schema.target import ComputeTargetRequest
+from featurebyte.service.entity_validation import EntityValidationService
+from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.session.base import BaseSession
 
 logger = get_logger(__name__)
+
+
+class TargetComputer:
+    """
+    Target computer
+    """
+
+    def __init__(
+        self,
+        feature_store_service: FeatureStoreService,
+        entity_validation_service: EntityValidationService,
+        session_manager_service: SessionManagerService,
+    ):
+        self.feature_store_service = feature_store_service
+        self.entity_validation_service = entity_validation_service
+        self.session_manager_service = session_manager_service
+
+    async def compute_targets(
+        self,
+        observation_set: Union[pd.DataFrame, ObservationTableModel],
+        compute_target_request: ComputeTargetRequest,
+        get_credential: Any,
+        output_table_details: TableDetails,
+        progress_callback: Optional[Callable[[int, str], None]] = None,
+    ) -> None:
+        """
+        Get target values for a target
+
+        Parameters
+        ----------
+        observation_set: pd.DataFrame
+            Observation set data
+        compute_target_request: ComputeTargetRequest
+            Compute target request
+        get_credential: Any
+            Get credential handler function
+        output_table_details: TableDetails
+            Table details to write the results to
+        progress_callback: Optional[Callable[[int, str], None]]
+            Optional progress callback function
+        """
+        feature_store = await self.feature_store_service.get_document(
+            document_id=compute_target_request.feature_store_id
+        )
+
+        if isinstance(observation_set, pd.DataFrame):
+            request_column_names = set(observation_set.columns)
+        else:
+            request_column_names = {col.name for col in observation_set.columns_info}
+
+        parent_serving_preparation = (
+            await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
+                graph=compute_target_request.graph,
+                nodes=compute_target_request.nodes,
+                request_column_names=request_column_names,
+                feature_store=feature_store,
+                serving_names_mapping=compute_target_request.serving_names_mapping,
+            )
+        )
+
+        db_session = await self.session_manager_service.get_feature_store_session(
+            feature_store=feature_store,
+            get_credential=get_credential,
+        )
+
+        await get_targets(
+            session=db_session,
+            graph=compute_target_request.graph,
+            nodes=compute_target_request.nodes,
+            observation_set=observation_set,
+            serving_names_mapping=compute_target_request.serving_names_mapping,
+            feature_store=feature_store,
+            parent_serving_preparation=parent_serving_preparation,
+            output_table_details=output_table_details,
+            progress_callback=progress_callback,
+        )
 
 
 async def get_targets(  # pylint: disable=too-many-locals, too-many-arguments
