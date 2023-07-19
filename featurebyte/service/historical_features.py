@@ -3,7 +3,7 @@ HistoricalFeaturesService
 """
 from __future__ import annotations
 
-from typing import Any, Callable, Optional, Union
+from typing import Callable, Optional, Union
 
 import time
 from dataclasses import dataclass
