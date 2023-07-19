@@ -773,6 +773,10 @@ def _get_utility_classes_layout() -> List[DocLayoutItem]:
             [UTILITY_CLASSES, GROUPBY, "view.GroupBy.aggregate_over"],
             doc_path_override="api.groupby.GroupBy.aggregate_over.md",
         ),
+        DocLayoutItem(
+            [UTILITY_CLASSES, GROUPBY, "view.GroupBy.forward_aggregate"],
+            doc_path_override="api.groupby.GroupBy.forward_aggregate.md",
+        ),
         DocLayoutItem([UTILITY_CLASSES, FEATURE, "FeatureVersionInfo"]),
         DocLayoutItem([UTILITY_CLASSES, WAREHOUSE, "DatabricksDetails"]),
         DocLayoutItem([UTILITY_CLASSES, WAREHOUSE, "SnowflakeDetails"]),
