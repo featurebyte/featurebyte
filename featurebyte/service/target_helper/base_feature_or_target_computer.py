@@ -154,7 +154,7 @@ class Computer(Generic[ComputeRequestT, ExecutorParamsT]):
         ----------
         observation_set: pd.DataFrame
             Observation set data
-        compute_request: ComputeRequest
+        compute_request: ComputeRequestT
             Compute request
         get_credential: Any
             Get credential handler function
