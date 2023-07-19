@@ -18,3 +18,9 @@ class FeatureOrTargetTableCreate(FeatureByteBaseModel):
     name: StrictStr
     feature_store_id: PydanticObjectId
     observation_table_id: Optional[PydanticObjectId]
+
+
+class ComputeRequest(FeatureByteBaseModel):
+    """
+    Compute request
+    """

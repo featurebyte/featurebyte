@@ -68,7 +68,7 @@ async def test_get_historical_features__feature_list_not_deployed(
     )
     training_events = pd.DataFrame({"cust_id": [1], "POINT_IN_TIME": ["2022-01-01"]})
 
-    await historical_features_service.compute_historical_features(
+    await historical_features_service.compute(
         training_events,
         featurelist_get_historical_features,
         get_credential,
@@ -99,7 +99,7 @@ async def test_get_historical_features__feature_list_not_saved(
     )
     training_events = pd.DataFrame({"cust_id": [1], "POINT_IN_TIME": ["2022-01-01"]})
 
-    await historical_features_service.compute_historical_features(
+    await historical_features_service.compute(
         training_events,
         featurelist_get_historical_features,
         get_credential,
@@ -127,7 +127,7 @@ async def test_get_historical_features__feature_list_deployed(
     )
     training_events = pd.DataFrame({"cust_id": [1], "POINT_IN_TIME": ["2022-01-01"]})
 
-    await historical_features_service.compute_historical_features(
+    await historical_features_service.compute(
         training_events,
         featurelist_get_historical_features,
         get_credential,

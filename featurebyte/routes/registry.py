@@ -74,7 +74,10 @@ from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
-from featurebyte.service.historical_features import HistoricalFeaturesService
+from featurebyte.service.historical_features import (
+    HistoricalFeatureExecutor,
+    HistoricalFeaturesService,
+)
 from featurebyte.service.item_table import ItemTableService
 from featurebyte.service.namespace_handler import NamespaceHandler
 from featurebyte.service.observation_table import ObservationTableService
@@ -174,9 +177,12 @@ app_container_config.register_class(FeatureReadinessService)
 app_container_config.register_class(FeatureStoreController)
 app_container_config.register_class(FeatureStoreService)
 app_container_config.register_class(FeatureStoreWarehouseService)
+app_container_config.register_class(HistoricalFeatureExecutor)
 app_container_config.register_class(HistoricalFeatureTableController)
 app_container_config.register_class(HistoricalFeatureTableService)
-app_container_config.register_class(HistoricalFeaturesService)
+app_container_config.register_class(
+    HistoricalFeaturesService, dependency_override={"query_executor": "historical_feature_executor"}
+)
 app_container_config.register_class(ItemTableController)
 app_container_config.register_class(ItemTableService)
 app_container_config.register_class(MongoBackedCredentialProvider)

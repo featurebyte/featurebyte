@@ -115,6 +115,7 @@ class Computer(Generic[ComputeRequestT, ExecutorParamsT]):
     @abstractmethod
     async def get_executor_params(
         self,
+        request: ComputeRequestT,
         basic_executor_params: BasicExecutorParams,
         validation_parameters: ValidationParameters,
     ) -> ExecutorParamsT:
@@ -123,6 +124,8 @@ class Computer(Generic[ComputeRequestT, ExecutorParamsT]):
 
         Parameters
         ----------
+        request: ComputeRequestT
+            Compute request
         basic_executor_params: BasicExecutorParams
             Basic executor parameters
         validation_parameters: ValidationParameters
@@ -179,6 +182,7 @@ class Computer(Generic[ComputeRequestT, ExecutorParamsT]):
             get_credential=get_credential,
         )
         params = await self.get_executor_params(
+            request=compute_request,
             basic_executor_params=BasicExecutorParams(
                 session=db_session,
                 output_table_details=output_table_details,

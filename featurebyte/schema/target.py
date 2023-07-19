@@ -21,6 +21,7 @@ from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node import Node
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
+from featurebyte.schema.common.feature_or_target import ComputeRequest
 from featurebyte.schema.info import EntityBriefInfoList
 
 
@@ -84,12 +85,6 @@ class TargetInfo(FeatureByteBaseModel):
     updated_at: Optional[datetime]
     input_data: InputData
     metadata: Any
-
-
-class ComputeRequest(FeatureByteBaseModel):
-    """
-    Compute request
-    """
 
 
 class ComputeTargetRequest(ComputeRequest):

@@ -33,18 +33,6 @@ from featurebyte.service.target_helper.base_feature_or_target_computer import (
 logger = get_logger(__name__)
 
 
-@dataclass
-class HistoricalFeatureExecutorParams(ExecutorParams):
-    """
-    Historical feature executor params
-    """
-
-    # Whether the feature list that triggered this historical request is deployed. If so, tile
-    # tables would have already been back-filled and there is no need to check and calculate tiles
-    # on demand.
-    is_feature_list_deployed: bool = False
-
-
 class TargetExecutor(QueryExecutor[ExecutorParams]):
     """
     Target Executor
@@ -137,12 +125,13 @@ class TargetComputer(Computer[ComputeTargetRequest, ExecutorParams]):
             serving_names_mapping=request.serving_names_mapping,
         )
 
-    @abstractmethod
     async def get_executor_params(
         self,
+        request: ComputeTargetRequest,
         basic_executor_params: BasicExecutorParams,
         validation_parameters: ValidationParameters,
     ) -> ExecutorParams:
+        _ = request
         return ExecutorParams(
             session=basic_executor_params.session,
             output_table_details=basic_executor_params.output_table_details,
