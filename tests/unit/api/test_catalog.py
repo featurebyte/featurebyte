@@ -154,6 +154,7 @@ def catalog_get_by_id_list():
         MethodMetadata("get_static_source_table_by_id", StaticSourceTable, "get_by_id"),
         MethodMetadata("get_user_defined_function_by_id", UserDefinedFunction, "get_by_id"),
         MethodMetadata("get_target_table_by_id", TargetTable, "get_by_id"),
+        MethodMetadata("get_target_by_id", Target, "get_by_id"),
     ]
 
 
