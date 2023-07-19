@@ -7,6 +7,7 @@ from typing import Literal, Optional
 
 from abc import abstractmethod
 
+from numpy import format_float_positional
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, alias_, select
 
@@ -468,7 +469,11 @@ class BaseAdapter:  # pylint: disable=too-many-public-methods
         # Need to perform syntax tree surgery this way since TABLESAMPLE needs to be attached to the
         # FROM clause so that the result is still a SELECT expression. This way we can do things
         # like limit(), subquery() etc on the result.
-        params = {cls.TABLESAMPLE_PERCENT_KEY: make_literal_value(sample_percent)}
+        params = {
+            cls.TABLESAMPLE_PERCENT_KEY: expressions.Literal(
+                this=format_float_positional(sample_percent, trim="-"), is_string=False
+            )
+        }
         tablesample_expr = expressions.TableSample(
             this=nested_select_expr.args["from"].expressions[0], **params
         )
