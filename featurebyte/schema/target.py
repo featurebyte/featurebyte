@@ -3,7 +3,7 @@ Target API payload schema
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 from datetime import datetime
 
@@ -95,7 +95,6 @@ class ComputeTargetRequest(ComputeRequest):
     feature_store_id: PydanticObjectId
     graph: QueryGraph
     node_names: List[StrictStr]
-    serving_names_mapping: Optional[Dict[str, str]]
     target_id: Optional[PydanticObjectId]
 
     @property

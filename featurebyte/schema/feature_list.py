@@ -165,7 +165,6 @@ class FeatureListGetHistoricalFeatures(ComputeRequest):
     """
 
     feature_clusters: List[FeatureCluster]
-    serving_names_mapping: Optional[Dict[str, str]]
     feature_list_id: Optional[PydanticObjectId]
 
 
