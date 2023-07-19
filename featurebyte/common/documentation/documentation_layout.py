@@ -669,6 +669,8 @@ def _get_catalog_layout() -> List[DocLayoutItem]:
         DocLayoutItem([CATALOG, GET, "Catalog.get_view"]),
         DocLayoutItem([CATALOG, GET, "Catalog.get_table"]),
         DocLayoutItem([CATALOG, GET, "Catalog.get_table_by_id"]),
+        DocLayoutItem([CATALOG, GET, "Catalog.get_target"]),
+        DocLayoutItem([CATALOG, GET, "Catalog.get_target_by_id"]),
         DocLayoutItem([CATALOG, GET, "Catalog.get_feature"]),
         DocLayoutItem([CATALOG, GET, "Catalog.get_entity"]),
         DocLayoutItem([CATALOG, GET, "Catalog.get_entity_by_id"]),
@@ -695,6 +697,7 @@ def _get_catalog_layout() -> List[DocLayoutItem]:
         DocLayoutItem([CATALOG, LIST, "Catalog.list_entities"]),
         DocLayoutItem([CATALOG, LIST, "Catalog.list_features"]),
         DocLayoutItem([CATALOG, LIST, "Catalog.list_tables"]),
+        DocLayoutItem([CATALOG, LIST, "Catalog.list_targets"]),
         DocLayoutItem([CATALOG, LIST, "Catalog.list_observation_tables"]),
         DocLayoutItem([CATALOG, LIST, "Catalog.list_historical_feature_tables"]),
         DocLayoutItem([CATALOG, LIST, "Catalog.list_batch_request_tables"]),
@@ -769,6 +772,10 @@ def _get_utility_classes_layout() -> List[DocLayoutItem]:
         DocLayoutItem(
             [UTILITY_CLASSES, GROUPBY, "view.GroupBy.aggregate_over"],
             doc_path_override="api.groupby.GroupBy.aggregate_over.md",
+        ),
+        DocLayoutItem(
+            [UTILITY_CLASSES, GROUPBY, "view.GroupBy.forward_aggregate"],
+            doc_path_override="api.groupby.GroupBy.forward_aggregate.md",
         ),
         DocLayoutItem([UTILITY_CLASSES, FEATURE, "FeatureVersionInfo"]),
         DocLayoutItem([UTILITY_CLASSES, WAREHOUSE, "DatabricksDetails"]),

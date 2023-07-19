@@ -448,6 +448,19 @@ class GroupBy:
         Returns
         -------
         Target
+
+        Examples
+        --------
+        >>> items_view = catalog.get_view("INVOICEITEMS")
+        >>> # Group items by the column GroceryInvoiceGuid that references the customer entity
+        >>> items_by_invoice = items_view.groupby("GroceryInvoiceGuid")
+        >>> # Get the number of items in each invoice
+        >>> invoice_item_count = items_by_invoice.forward_aggregate(  # doctest: +SKIP
+        ...   "TotalCost",
+        ...   method=fb.AggFunc.SUM,
+        ...   target_name="TargetCustomerInventory_28d",
+        ...   window='28d'
+        ... )
         """
         return ForwardAggregator(
             self.view_obj, self.category, self.entity_ids, self.keys, self.serving_names
