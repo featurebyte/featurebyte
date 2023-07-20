@@ -1,21 +1,42 @@
 """
 Unit tests for ObservationTable class
 """
+from typing import Any, Dict
+
 from unittest.mock import Mock, call, patch
 
 import pytest
 
-from featurebyte import RecordRetrievalException
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.source_table import SourceTable
+from tests.unit.api.base_materialize_table_test import BaseMaterializedTableApiTest
 
 
-def test_get(observation_table_from_source):
+class TestObservationTable(BaseMaterializedTableApiTest[ObservationTable]):
     """
-    Test retrieving an ObservationTable object by name
+    Test observation table
     """
-    observation_table = ObservationTable.get(observation_table_from_source.name)
-    assert observation_table == observation_table_from_source
+
+    table_type = ObservationTable
+
+    def assert_info_dict(self, info_dict: Dict[str, Any]) -> None:
+        assert info_dict["table_details"]["table_name"].startswith("OBSERVATION_TABLE_")
+        assert info_dict == {
+            "name": "observation_table_from_source_table",
+            "type": "source_table",
+            "feature_store_name": "sf_featurestore",
+            "table_details": {
+                "database_name": "sf_database",
+                "schema_name": "sf_schema",
+                "table_name": info_dict["table_details"]["table_name"],
+            },
+            "created_at": info_dict["created_at"],
+            "updated_at": None,
+        }
+
+    @pytest.mark.skip(reason="use other test due to testing of more fixtures")
+    def test_list(self, table_under_test):
+        ...
 
 
 @pytest.mark.usefixtures("observation_table_from_source", "observation_table_from_view")
@@ -40,44 +61,6 @@ def test_list(catalog):
     assert (df["feature_store_name"] == "sf_featurestore").all()
     assert df["type"].tolist() == ["view", "source_table"]
     assert (df["shape"] == (100, 2)).all()
-
-
-def test_delete(observation_table_from_view):
-    """
-    Test delete method
-    """
-    # check table can be retrieved before deletion
-    _ = ObservationTable.get(observation_table_from_view.name)
-
-    observation_table_from_view.delete()
-
-    # check the deleted batch feature table is not found anymore
-    with pytest.raises(RecordRetrievalException) as exc:
-        ObservationTable.get(observation_table_from_view.name)
-
-    expected_msg = (
-        f'ObservationTable (name: "{observation_table_from_view.name}") not found. '
-        f"Please save the ObservationTable object first."
-    )
-    assert expected_msg in str(exc.value)
-
-
-def test_info(observation_table_from_source):
-    """Test get observation table info"""
-    info_dict = observation_table_from_source.info()
-    assert info_dict["table_details"]["table_name"].startswith("OBSERVATION_TABLE_")
-    assert info_dict == {
-        "name": "observation_table_from_source_table",
-        "type": "source_table",
-        "feature_store_name": "sf_featurestore",
-        "table_details": {
-            "database_name": "sf_database",
-            "schema_name": "sf_schema",
-            "table_name": info_dict["table_details"]["table_name"],
-        },
-        "created_at": info_dict["created_at"],
-        "updated_at": None,
-    }
 
 
 def test_shape(observation_table_from_source):
