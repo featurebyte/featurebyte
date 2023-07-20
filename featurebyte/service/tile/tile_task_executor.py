@@ -1,8 +1,9 @@
 """
 Tile Generate Schedule script
 """
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
+import traceback
 from datetime import datetime, timedelta
 
 import dateutil.parser
@@ -108,7 +109,9 @@ class TileTaskExecutor:
 
         session_id = f"{tile_id}|{datetime.now()}"
 
-        async def _add_log_entry(log_status: str, log_message: str) -> None:
+        async def _add_log_entry(
+            log_status: str, log_message: str, formatted_traceback: Optional[str] = None
+        ) -> None:
             document = TileJobLogModel(
                 tile_id=tile_id,
                 aggregation_id=params.aggregation_id,
@@ -116,6 +119,7 @@ class TileTaskExecutor:
                 session_id=session_id,
                 status=log_status,
                 message=log_message,
+                traceback=formatted_traceback,
             )
             await self.tile_job_log_service.create_document(document)
 
@@ -223,9 +227,10 @@ class TileTaskExecutor:
             except Exception as exception:
                 message = str(exception).replace("'", "")
                 fail_code = spec["status"]["fail"]
+                formatted_traceback = traceback.format_exc()
 
                 logger.error(f"fail_insert_sql exception: {exception}")
-                await _add_log_entry(fail_code, message)
+                await _add_log_entry(fail_code, message, formatted_traceback)
                 raise exception
 
             success_code = spec["status"]["success"]
