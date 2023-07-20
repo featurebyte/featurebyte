@@ -211,6 +211,26 @@ def _get_table_layout() -> List[DocLayoutItem]:
     ]
 
 
+def _get_sample_mixin_layout(object_type: str) -> List[DocLayoutItem]:
+    """
+    Returns the layout for the sample mixin documentation.
+
+    Parameters
+    ----------
+    object_type: str
+        The object type to use in the layout
+
+    Returns
+    -------
+    List[DocLayoutItem]
+        The layout for the sample mixin documentation
+    """
+    return [
+        DocLayoutItem([object_type, EXPLORE, f"{object_type}.{field}"])
+        for field in ["describe", "preview", "sample"]
+    ]
+
+
 def _get_table_column_layout() -> List[DocLayoutItem]:
     """
     Returns the layout for the table column documentation
@@ -224,9 +244,7 @@ def _get_table_column_layout() -> List[DocLayoutItem]:
         DocLayoutItem([TABLE_COLUMN]),
         DocLayoutItem([TABLE_COLUMN, ADD_METADATA, "TableColumn.as_entity"]),
         DocLayoutItem([TABLE_COLUMN, ADD_METADATA, "TableColumn.update_critical_data_info"]),
-        DocLayoutItem([TABLE_COLUMN, EXPLORE, "TableColumn.describe"]),
-        DocLayoutItem([TABLE_COLUMN, EXPLORE, "TableColumn.preview"]),
-        DocLayoutItem([TABLE_COLUMN, EXPLORE, "TableColumn.sample"]),
+        *_get_sample_mixin_layout(TABLE_COLUMN),
         DocLayoutItem([TABLE_COLUMN, INFO, "TableColumn.name"]),
         DocLayoutItem([TABLE_COLUMN, INFO, "TableColumn.cleaning_operations"]),
         DocLayoutItem([TABLE_COLUMN, LINEAGE, "TableColumn.preview_sql"]),
@@ -486,9 +504,7 @@ def _get_view_layout() -> List[DocLayoutItem]:
         DocLayoutItem([VIEW, JOIN, "EventView.add_feature"]),
         DocLayoutItem([VIEW, JOIN, "ItemView.join_event_table_attributes"]),
         DocLayoutItem([VIEW, JOIN, "View.join"]),
-        DocLayoutItem([VIEW, EXPLORE, "View.describe"]),
-        DocLayoutItem([VIEW, EXPLORE, "View.preview"]),
-        DocLayoutItem([VIEW, EXPLORE, "View.sample"]),
+        *_get_sample_mixin_layout(VIEW),
         DocLayoutItem([VIEW, INFO, "ChangeView.default_feature_job_setting"]),
         DocLayoutItem([VIEW, INFO, "ChangeView.get_default_feature_job_setting"]),
         DocLayoutItem([VIEW, INFO, "DimensionView.dimension_id_column"]),
@@ -629,9 +645,7 @@ def _get_view_column_layout() -> List[DocLayoutItem]:
     return [
         DocLayoutItem([VIEW_COLUMN]),
         DocLayoutItem([VIEW_COLUMN, CREATE_FEATURE, "ViewColumn.as_feature"]),
-        DocLayoutItem([VIEW_COLUMN, EXPLORE, "ViewColumn.describe"]),
-        DocLayoutItem([VIEW_COLUMN, EXPLORE, "ViewColumn.preview"]),
-        DocLayoutItem([VIEW_COLUMN, EXPLORE, "ViewColumn.sample"]),
+        *_get_sample_mixin_layout(VIEW_COLUMN),
         DocLayoutItem([VIEW_COLUMN, INFO, "ViewColumn.dtype"]),
         DocLayoutItem([VIEW_COLUMN, INFO, "ViewColumn.is_datetime"]),
         DocLayoutItem([VIEW_COLUMN, INFO, "ViewColumn.is_numeric"]),
@@ -809,9 +823,7 @@ def _get_source_table_layout() -> List[DocLayoutItem]:
         DocLayoutItem([SOURCE_TABLE, CREATE_TABLE, "SourceTable.create_scd_table"]),
         DocLayoutItem([SOURCE_TABLE, CREATE_TABLE, "SourceTable.create_observation_table"]),
         DocLayoutItem([SOURCE_TABLE, CREATE_TABLE, "SourceTable.create_batch_request_table"]),
-        DocLayoutItem([SOURCE_TABLE, EXPLORE, "SourceTable.describe"]),
-        DocLayoutItem([SOURCE_TABLE, EXPLORE, "SourceTable.preview"]),
-        DocLayoutItem([SOURCE_TABLE, EXPLORE, "SourceTable.sample"]),
+        *_get_sample_mixin_layout(SOURCE_TABLE),
     ]
 
 
@@ -872,6 +884,32 @@ def _get_deployment_layout() -> List[DocLayoutItem]:
     ]
 
 
+def _get_materialized_table_layout(table_type: str) -> List[DocLayoutItem]:
+    """
+    The common layout for MaterializedTable modules.
+
+    Parameters
+    ----------
+    table_type: str
+        The type of table to generate the layout for.
+
+    Returns
+    -------
+    List[DocLayoutItem]
+        The layout for the MaterializedTable module.
+    """
+    return [
+        DocLayoutItem([table_type]),
+        *_get_sample_mixin_layout(table_type),
+        DocLayoutItem([table_type, INFO, f"{table_type}.name"]),
+        DocLayoutItem([table_type, INFO, f"{table_type}.created_at"]),
+        DocLayoutItem([table_type, INFO, f"{table_type}.updated_at"]),
+        DocLayoutItem([table_type, LINEAGE, f"{table_type}.id"]),
+        DocLayoutItem([table_type, MANAGE, f"{table_type}.download"]),
+        DocLayoutItem([table_type, MANAGE, f"{table_type}.delete"]),
+    ]
+
+
 def _get_batch_feature_table_layout() -> List[DocLayoutItem]:
     """
     The layout for the BatchFeatureTable module.
@@ -882,20 +920,9 @@ def _get_batch_feature_table_layout() -> List[DocLayoutItem]:
         The layout for the BatchFeatureTable module.
     """
     return [
-        DocLayoutItem([BATCH_FEATURE_TABLE]),
-        DocLayoutItem([BATCH_FEATURE_TABLE, EXPLORE, "BatchFeatureTable.describe"]),
-        DocLayoutItem([BATCH_FEATURE_TABLE, EXPLORE, "BatchFeatureTable.preview"]),
-        DocLayoutItem([BATCH_FEATURE_TABLE, EXPLORE, "BatchFeatureTable.sample"]),
-        # DocLayoutItem([BATCH_FEATURE_TABLE, INFO, "BatchFeatureTable.feature_store_name"]),
-        # DocLayoutItem([BATCH_FEATURE_TABLE, INFO, "BatchFeatureTable.batch_request_table_name"]),
-        DocLayoutItem([BATCH_FEATURE_TABLE, INFO, "BatchFeatureTable.name"]),
-        DocLayoutItem([BATCH_FEATURE_TABLE, INFO, "BatchFeatureTable.created_at"]),
-        DocLayoutItem([BATCH_FEATURE_TABLE, INFO, "BatchFeatureTable.updated_at"]),
+        *_get_materialized_table_layout(BATCH_FEATURE_TABLE),
         DocLayoutItem([BATCH_FEATURE_TABLE, LINEAGE, "BatchFeatureTable.batch_request_table_id"]),
         DocLayoutItem([BATCH_FEATURE_TABLE, LINEAGE, "BatchFeatureTable.deployment_id"]),
-        DocLayoutItem([BATCH_FEATURE_TABLE, LINEAGE, "BatchFeatureTable.id"]),
-        DocLayoutItem([BATCH_FEATURE_TABLE, MANAGE, "BatchFeatureTable.download"]),
-        DocLayoutItem([BATCH_FEATURE_TABLE, MANAGE, "BatchFeatureTable.delete"]),
     ]
 
 
@@ -909,19 +936,8 @@ def _get_observation_table_layout() -> List[DocLayoutItem]:
         The layout for the ObservationTable module.
     """
     return [
-        DocLayoutItem([OBSERVATION_TABLE]),
-        DocLayoutItem([OBSERVATION_TABLE, EXPLORE, "ObservationTable.describe"]),
-        DocLayoutItem([OBSERVATION_TABLE, EXPLORE, "ObservationTable.preview"]),
-        DocLayoutItem([OBSERVATION_TABLE, EXPLORE, "ObservationTable.sample"]),
-        DocLayoutItem([OBSERVATION_TABLE, INFO, "ObservationTable.name"]),
+        *_get_materialized_table_layout(OBSERVATION_TABLE),
         DocLayoutItem([OBSERVATION_TABLE, INFO, "ObservationTable.context_id"]),
-        # DocLayoutItem([OBSERVATION_TABLE, INFO, "ObservationTable.type"]),
-        # DocLayoutItem([OBSERVATION_TABLE, INFO, "ObservationTable.feature_store_name"]),
-        DocLayoutItem([OBSERVATION_TABLE, INFO, "ObservationTable.created_at"]),
-        DocLayoutItem([OBSERVATION_TABLE, INFO, "ObservationTable.updated_at"]),
-        DocLayoutItem([OBSERVATION_TABLE, LINEAGE, "ObservationTable.id"]),
-        DocLayoutItem([OBSERVATION_TABLE, MANAGE, "ObservationTable.download"]),
-        DocLayoutItem([OBSERVATION_TABLE, MANAGE, "ObservationTable.delete"]),
         DocLayoutItem([OBSERVATION_TABLE, MANAGE, "ObservationTable.to_pandas"]),
     ]
 
@@ -936,19 +952,8 @@ def _get_batch_request_table_layout() -> List[DocLayoutItem]:
         The layout for the BatchRequestTable module.
     """
     return [
-        DocLayoutItem([BATCH_REQUEST_TABLE]),
-        DocLayoutItem([BATCH_REQUEST_TABLE, EXPLORE, "BatchRequestTable.describe"]),
-        DocLayoutItem([BATCH_REQUEST_TABLE, EXPLORE, "BatchRequestTable.preview"]),
-        DocLayoutItem([BATCH_REQUEST_TABLE, EXPLORE, "BatchRequestTable.sample"]),
+        *_get_materialized_table_layout(BATCH_REQUEST_TABLE),
         DocLayoutItem([BATCH_REQUEST_TABLE, INFO, "BatchRequestTable.context_id"]),
-        # DocLayoutItem([BATCH_REQUEST_TABLE, INFO, "BatchRequestTable.type"]),
-        # DocLayoutItem([BATCH_REQUEST_TABLE, INFO, "BatchRequestTable.feature_store_name"]),
-        DocLayoutItem([BATCH_REQUEST_TABLE, INFO, "BatchRequestTable.name"]),
-        DocLayoutItem([BATCH_REQUEST_TABLE, INFO, "BatchRequestTable.created_at"]),
-        DocLayoutItem([BATCH_REQUEST_TABLE, INFO, "BatchRequestTable.updated_at"]),
-        DocLayoutItem([BATCH_REQUEST_TABLE, LINEAGE, "BatchRequestTable.id"]),
-        DocLayoutItem([BATCH_REQUEST_TABLE, MANAGE, "BatchRequestTable.download"]),
-        DocLayoutItem([BATCH_REQUEST_TABLE, MANAGE, "BatchRequestTable.delete"]),
         DocLayoutItem([BATCH_REQUEST_TABLE, MANAGE, "BatchRequestTable.to_pandas"]),
     ]
 
@@ -963,21 +968,10 @@ def _get_historical_feature_table_layout() -> List[DocLayoutItem]:
         The layout for the HistoricalFeatureTable module.
     """
     return [
-        DocLayoutItem([HISTORICAL_FEATURE_TABLE]),
-        DocLayoutItem([HISTORICAL_FEATURE_TABLE, EXPLORE, "HistoricalFeatureTable.describe"]),
-        DocLayoutItem([HISTORICAL_FEATURE_TABLE, EXPLORE, "HistoricalFeatureTable.preview"]),
-        DocLayoutItem([HISTORICAL_FEATURE_TABLE, EXPLORE, "HistoricalFeatureTable.sample"]),
-        DocLayoutItem([HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.name"]),
-        # DocLayoutItem([HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.feature_store_name"]),
-        # DocLayoutItem([HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.observation_table_name"]),
-        DocLayoutItem([HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.created_at"]),
-        DocLayoutItem([HISTORICAL_FEATURE_TABLE, INFO, "HistoricalFeatureTable.updated_at"]),
-        DocLayoutItem([HISTORICAL_FEATURE_TABLE, MANAGE, "HistoricalFeatureTable.download"]),
-        DocLayoutItem([HISTORICAL_FEATURE_TABLE, MANAGE, "HistoricalFeatureTable.delete"]),
+        *_get_materialized_table_layout(HISTORICAL_FEATURE_TABLE),
         DocLayoutItem(
             [HISTORICAL_FEATURE_TABLE, LINEAGE, "HistoricalFeatureTable.feature_list_id"]
         ),
-        DocLayoutItem([HISTORICAL_FEATURE_TABLE, LINEAGE, "HistoricalFeatureTable.id"]),
         DocLayoutItem(
             [HISTORICAL_FEATURE_TABLE, LINEAGE, "HistoricalFeatureTable.observation_table_id"]
         ),
