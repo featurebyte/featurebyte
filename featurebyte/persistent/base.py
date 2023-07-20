@@ -58,7 +58,7 @@ class Persistent(ABC):
         collection_name: str,
         document: Document,
         user_id: Optional[ObjectId],  # pylint: disable=unused-argument
-        disable_audit: bool = False,
+        disable_audit: bool = False,  # pylint: disable=unused-argument
     ) -> ObjectId:
         """
         Insert record into collection. Note that when using this method inside a non BaseDocumentService,
@@ -72,6 +72,8 @@ class Persistent(ABC):
             Document to insert
         user_id: Optional[ObjectId]
             ID of user who performed this operation
+        disable_audit: bool
+            Whether to disable creating an audit record for this operation
 
         Returns
         -------
@@ -87,7 +89,7 @@ class Persistent(ABC):
         collection_name: str,
         documents: Iterable[Document],
         user_id: Optional[ObjectId],  # pylint: disable=unused-argument
-        disable_audit: bool = False,
+        disable_audit: bool = False,  # pylint: disable=unused-argument
     ) -> List[ObjectId]:
         """
         Insert records into collection. Note that when using this method inside a non BaseDocumentService,
@@ -101,6 +103,8 @@ class Persistent(ABC):
             Documents to insert
         user_id: Optional[ObjectId]
             ID of user who performed this operation
+        disable_audit: bool
+            Whether to disable creating an audit record for this operation
 
         Returns
         -------
@@ -118,7 +122,7 @@ class Persistent(ABC):
         collection_name: str,
         query_filter: QueryFilter,
         user_id: Optional[ObjectId] = None,  # pylint: disable=unused-argument
-    ) -> Optional[Document]:
+    ) -> Optional[Document]:  # pylint: disable=unused-argument
         """
         Find one record from collection. Note that when using this method inside a non BaseDocumentService,
         please use with caution as it does not inject catalog_id into the query filter automatically.
@@ -191,7 +195,7 @@ class Persistent(ABC):
         query_filter: QueryFilter,
         update: DocumentUpdate,
         user_id: Optional[ObjectId],  # pylint: disable=unused-argument
-        disable_audit: bool = False,
+        disable_audit: bool = False,  # pylint: disable=unused-argument
     ) -> int:
         """
         Update one record in collection. Note that when using this method inside a non BaseDocumentService,
@@ -208,6 +212,8 @@ class Persistent(ABC):
             Conditions to filter on
         update: DocumentUpdate
             Values to update
+        disable_audit: bool
+            Whether to disable creating an audit record for this operation
 
         Returns
         -------
@@ -238,7 +244,7 @@ class Persistent(ABC):
         query_filter: QueryFilter,
         update: DocumentUpdate,
         user_id: Optional[ObjectId],  # pylint: disable=unused-argument
-        disable_audit: bool = False,
+        disable_audit: bool = False,  # pylint: disable=unused-argument
     ) -> int:
         """
         Update many records in collection. Note that when using this method inside a non BaseDocumentService,
@@ -255,6 +261,8 @@ class Persistent(ABC):
             Values to update
         user_id: Optional[ObjectId]
             ID of user who performed this operation
+        disable_audit: bool
+            Whether to disable creating an audit record for this operation
 
         Returns
         -------
@@ -285,7 +293,7 @@ class Persistent(ABC):
         query_filter: QueryFilter,
         replacement: Document,
         user_id: Optional[ObjectId],  # pylint: disable=unused-argument
-        disable_audit: bool = False,
+        disable_audit: bool = False,  # pylint: disable=unused-argument
     ) -> int:
         """
         Replace one record in collection. Note that when using this method inside a non BaseDocumentService,
@@ -302,6 +310,8 @@ class Persistent(ABC):
             New document to replace existing one
         user_id: Optional[ObjectId]
             ID of user who performed this operation
+        disable_audit: bool
+            Whether to disable creating an audit record for this operation
 
         Returns
         -------
@@ -321,7 +331,7 @@ class Persistent(ABC):
         collection_name: str,
         query_filter: QueryFilter,
         user_id: Optional[ObjectId],  # pylint: disable=unused-argument
-        disable_audit: bool = False,
+        disable_audit: bool = False,  # pylint: disable=unused-argument
     ) -> int:
         """
         Delete one record from collection. Note that when using this method inside a non BaseDocumentService,
@@ -335,6 +345,8 @@ class Persistent(ABC):
             Conditions to filter on
         user_id: Optional[ObjectId]
             ID of user who performed this operation
+        disable_audit: bool
+            Whether to disable creating an audit record for this operation
 
         Returns
         -------
@@ -349,7 +361,7 @@ class Persistent(ABC):
         collection_name: str,
         query_filter: QueryFilter,
         user_id: Optional[ObjectId],  # pylint: disable=unused-argument
-        disable_audit: bool = False,
+        disable_audit: bool = False,  # pylint: disable=unused-argument
     ) -> int:
         """
         Delete many records from collection. Note that when using this method inside a non BaseDocumentService,
@@ -363,6 +375,8 @@ class Persistent(ABC):
             Conditions to filter on
         user_id: Optional[ObjectId]
             ID of user who performed this operation
+        disable_audit: bool
+            Whether to disable creating an audit record for this operation
 
         Returns
         -------
