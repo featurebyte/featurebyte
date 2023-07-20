@@ -3,7 +3,7 @@ Target API payload schema
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 from datetime import datetime
 
@@ -21,6 +21,7 @@ from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node import Node
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
+from featurebyte.schema.common.feature_or_target import ComputeRequest
 from featurebyte.schema.info import EntityBriefInfoList
 
 
@@ -86,7 +87,7 @@ class TargetInfo(FeatureByteBaseModel):
     metadata: Any
 
 
-class ComputeTargetRequest(FeatureByteBaseModel):
+class ComputeTargetRequest(ComputeRequest):
     """
     Compute target request schema
     """
@@ -94,7 +95,6 @@ class ComputeTargetRequest(FeatureByteBaseModel):
     feature_store_id: PydanticObjectId
     graph: QueryGraph
     node_names: List[StrictStr]
-    serving_names_mapping: Optional[Dict[str, str]]
     target_id: Optional[PydanticObjectId]
 
     @property

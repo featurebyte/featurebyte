@@ -1,7 +1,7 @@
 """
 Feature or target schema
 """
-from typing import Optional
+from typing import Dict, Optional
 
 from bson import ObjectId
 from pydantic import Field, StrictStr
@@ -18,3 +18,11 @@ class FeatureOrTargetTableCreate(FeatureByteBaseModel):
     name: StrictStr
     feature_store_id: PydanticObjectId
     observation_table_id: Optional[PydanticObjectId]
+
+
+class ComputeRequest(FeatureByteBaseModel):
+    """
+    Compute request
+    """
+
+    serving_names_mapping: Optional[Dict[str, str]]

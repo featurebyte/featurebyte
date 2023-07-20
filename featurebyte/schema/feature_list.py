@@ -19,6 +19,7 @@ from featurebyte.models.feature_list import (
 )
 from featurebyte.query_graph.node.validator import construct_unique_name_validator
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
+from featurebyte.schema.common.feature_or_target import ComputeRequest
 from featurebyte.schema.feature import BatchFeatureCreate, BatchFeatureCreatePayload
 
 
@@ -158,13 +159,12 @@ class FeatureListPreview(FeatureListSQL):
     point_in_time_and_serving_name_list: List[Dict[str, Any]] = Field(min_items=1, max_items=50)
 
 
-class FeatureListGetHistoricalFeatures(FeatureByteBaseModel):
+class FeatureListGetHistoricalFeatures(ComputeRequest):
     """
     FeatureList get historical features schema
     """
 
     feature_clusters: List[FeatureCluster]
-    serving_names_mapping: Optional[Dict[str, str]]
     feature_list_id: Optional[PydanticObjectId]
 
 

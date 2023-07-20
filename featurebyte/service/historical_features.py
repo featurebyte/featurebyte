@@ -3,9 +3,10 @@ HistoricalFeaturesService
 """
 from __future__ import annotations
 
-from typing import Any, Callable, Optional, Union
+from typing import Callable, Optional, Union
 
 import time
+from dataclasses import dataclass
 
 import pandas as pd
 from bson import ObjectId
@@ -32,11 +33,18 @@ from featurebyte.query_graph.sql.feature_historical import (
     validate_request_schema,
 )
 from featurebyte.query_graph.sql.parent_serving import construct_request_table_with_parent_entities
+from featurebyte.routes.common.feature_or_target_table import ValidationParameters
 from featurebyte.schema.feature_list import FeatureListGetHistoricalFeatures
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
+from featurebyte.service.target_helper.base_feature_or_target_computer import (
+    BasicExecutorParams,
+    Computer,
+    ExecutorParams,
+    QueryExecutor,
+)
 from featurebyte.service.tile_cache import TileCacheService
 from featurebyte.session.base import BaseSession
 
@@ -245,7 +253,45 @@ async def get_historical_features(  # pylint: disable=too-many-locals, too-many-
     logger.debug(f"compute_historical_features in total took {time.time() - tic_:.2f}s")
 
 
-class HistoricalFeaturesService:
+@dataclass
+class HistoricalFeatureExecutorParams(ExecutorParams):
+    """
+    Historical feature executor params
+    """
+
+    # Whether the feature list that triggered this historical request is deployed. If so, tile
+    # tables would have already been back-filled and there is no need to check and calculate tiles
+    # on demand.
+    is_feature_list_deployed: bool = False
+
+
+class HistoricalFeatureExecutor(QueryExecutor[HistoricalFeatureExecutorParams]):
+    """
+    Historical feature Executor
+    """
+
+    def __init__(self, tile_cache_service: TileCacheService):
+        self.tile_cache_service = tile_cache_service
+
+    async def execute(self, executor_params: HistoricalFeatureExecutorParams) -> None:
+        await get_historical_features(
+            session=executor_params.session,
+            tile_cache_service=self.tile_cache_service,
+            graph=executor_params.graph,
+            nodes=executor_params.nodes,
+            observation_set=executor_params.observation_set,
+            serving_names_mapping=executor_params.serving_names_mapping,
+            feature_store=executor_params.feature_store,
+            is_feature_list_deployed=executor_params.is_feature_list_deployed,
+            parent_serving_preparation=executor_params.parent_serving_preparation,
+            output_table_details=executor_params.output_table_details,
+            progress_callback=executor_params.progress_callback,
+        )
+
+
+class HistoricalFeaturesService(
+    Computer[FeatureListGetHistoricalFeatures, HistoricalFeatureExecutorParams]
+):
     """
     HistoricalFeaturesService is responsible for requesting for historical features for a Feature List.
     """
@@ -255,69 +301,42 @@ class HistoricalFeaturesService:
         feature_store_service: FeatureStoreService,
         entity_validation_service: EntityValidationService,
         session_manager_service: SessionManagerService,
+        query_executor: QueryExecutor[HistoricalFeatureExecutorParams],
         feature_list_service: FeatureListService,
-        tile_cache_service: TileCacheService,
     ):
-        self.feature_store_service = feature_store_service
-        self.entity_validation_service = entity_validation_service
-        self.session_manager_service = session_manager_service
+        super().__init__(
+            feature_store_service,
+            entity_validation_service,
+            session_manager_service,
+            query_executor,
+        )
         self.feature_list_service = feature_list_service
-        self.tile_cache_service = tile_cache_service
 
-    async def compute_historical_features(
-        self,
-        observation_set: Union[pd.DataFrame, ObservationTableModel],
-        featurelist_get_historical_features: FeatureListGetHistoricalFeatures,
-        get_credential: Any,
-        output_table_details: TableDetails,
-        progress_callback: Optional[Callable[[int, str], None]] = None,
-    ) -> None:
-        """
-        Get historical features for Feature List
-
-        Parameters
-        ----------
-        observation_set: pd.DataFrame
-            Observation set data
-        featurelist_get_historical_features: FeatureListGetHistoricalFeatures
-            FeatureListGetHistoricalFeatures object
-        get_credential: Any
-            Get credential handler function
-        output_table_details: TableDetails
-            Table details to write the results to
-        progress_callback: Optional[Callable[[int, str], None]]
-            Optional progress callback function
-        """
+    async def get_validation_parameters(
+        self, request: FeatureListGetHistoricalFeatures
+    ) -> ValidationParameters:
         # multiple feature stores not supported
-        feature_clusters = featurelist_get_historical_features.feature_clusters
+        feature_clusters = request.feature_clusters
         assert len(feature_clusters) == 1
 
         feature_cluster = feature_clusters[0]
         feature_store = await self.feature_store_service.get_document(
             document_id=feature_cluster.feature_store_id
         )
-
-        if isinstance(observation_set, pd.DataFrame):
-            request_column_names = set(observation_set.columns)
-        else:
-            request_column_names = {col.name for col in observation_set.columns_info}
-
-        parent_serving_preparation = (
-            await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
-                graph=feature_cluster.graph,
-                nodes=feature_cluster.nodes,
-                request_column_names=request_column_names,
-                feature_store=feature_store,
-                serving_names_mapping=featurelist_get_historical_features.serving_names_mapping,
-            )
-        )
-
-        db_session = await self.session_manager_service.get_feature_store_session(
+        return ValidationParameters(
+            graph=feature_cluster.graph,
+            nodes=feature_cluster.nodes,
             feature_store=feature_store,
-            get_credential=get_credential,
+            serving_names_mapping=request.serving_names_mapping,
         )
 
-        feature_list_id = featurelist_get_historical_features.feature_list_id
+    async def get_executor_params(
+        self,
+        request: FeatureListGetHistoricalFeatures,
+        basic_executor_params: BasicExecutorParams,
+        validation_parameters: ValidationParameters,
+    ) -> HistoricalFeatureExecutorParams:
+        feature_list_id = request.feature_list_id
         try:
             if feature_list_id is None:
                 is_feature_list_deployed = False
@@ -327,16 +346,15 @@ class HistoricalFeaturesService:
         except DocumentNotFoundError:
             is_feature_list_deployed = False
 
-        await get_historical_features(
-            session=db_session,
-            tile_cache_service=self.tile_cache_service,
-            graph=feature_cluster.graph,
-            nodes=feature_cluster.nodes,
-            observation_set=observation_set,
-            serving_names_mapping=featurelist_get_historical_features.serving_names_mapping,
-            feature_store=feature_store,
+        return HistoricalFeatureExecutorParams(
+            session=basic_executor_params.session,
+            output_table_details=basic_executor_params.output_table_details,
+            parent_serving_preparation=basic_executor_params.parent_serving_preparation,
+            progress_callback=basic_executor_params.progress_callback,
+            observation_set=basic_executor_params.observation_set,
+            graph=validation_parameters.graph,
+            nodes=validation_parameters.nodes,
+            serving_names_mapping=validation_parameters.serving_names_mapping,
+            feature_store=validation_parameters.feature_store,
             is_feature_list_deployed=is_feature_list_deployed,
-            parent_serving_preparation=parent_serving_preparation,
-            output_table_details=output_table_details,
-            progress_callback=progress_callback,
         )

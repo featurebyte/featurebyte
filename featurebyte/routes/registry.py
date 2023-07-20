@@ -74,7 +74,10 @@ from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
-from featurebyte.service.historical_features import HistoricalFeaturesService
+from featurebyte.service.historical_features import (
+    HistoricalFeatureExecutor,
+    HistoricalFeaturesService,
+)
 from featurebyte.service.item_table import ItemTableService
 from featurebyte.service.namespace_handler import NamespaceHandler
 from featurebyte.service.observation_table import ObservationTableService
@@ -97,6 +100,7 @@ from featurebyte.service.table_columns_info import TableColumnsInfoService
 from featurebyte.service.table_info import TableInfoService
 from featurebyte.service.table_status import TableStatusService
 from featurebyte.service.target import TargetService
+from featurebyte.service.target_helper.compute_target import TargetComputer, TargetExecutor
 from featurebyte.service.target_namespace import TargetNamespaceService
 from featurebyte.service.target_table import TargetTableService
 from featurebyte.service.task_manager import TaskManager
@@ -173,9 +177,12 @@ app_container_config.register_class(FeatureReadinessService)
 app_container_config.register_class(FeatureStoreController)
 app_container_config.register_class(FeatureStoreService)
 app_container_config.register_class(FeatureStoreWarehouseService)
+app_container_config.register_class(HistoricalFeatureExecutor)
 app_container_config.register_class(HistoricalFeatureTableController)
 app_container_config.register_class(HistoricalFeatureTableService)
-app_container_config.register_class(HistoricalFeaturesService)
+app_container_config.register_class(
+    HistoricalFeaturesService, dependency_override={"query_executor": "historical_feature_executor"}
+)
 app_container_config.register_class(ItemTableController)
 app_container_config.register_class(ItemTableService)
 app_container_config.register_class(MongoBackedCredentialProvider)
@@ -218,8 +225,12 @@ app_container_config.register_class(TableInfoService)
 app_container_config.register_class(TableService)
 app_container_config.register_class(TableStatusService)
 app_container_config.register_class(
+    TargetComputer, dependency_override={"query_executor": "target_executor"}
+)
+app_container_config.register_class(
     TargetController, dependency_override={"service": "target_service"}
 )
+app_container_config.register_class(TargetExecutor)
 app_container_config.register_class(TargetService)
 app_container_config.register_class(
     TargetNamespaceController, dependency_override={"service": "target_namespace_service"}
