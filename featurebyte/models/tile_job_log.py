@@ -3,7 +3,7 @@ TileJobStatus model
 """
 from __future__ import annotations
 
-from typing import List
+from typing import List, Optional
 
 import pymongo
 from pydantic import StrictStr
@@ -25,6 +25,7 @@ class TileJobLogModel(FeatureByteCatalogBaseDocumentModel):
     session_id: StrictStr
     status: StrictStr
     message: StrictStr
+    traceback: Optional[StrictStr]
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
