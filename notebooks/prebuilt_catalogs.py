@@ -1686,6 +1686,15 @@ def create_quick_start_model_training_catalog():
     # save the feature list to the catalog
     feature_list.save(conflict_resolution="retrieve")
 
+    # Create a Target and save it.
+    next_customer_sales_14d = grocery_invoice_view.groupby("GroceryCustomerGuid").forward_aggregate(
+        value_column="Amount",
+        method=fb.AggFunc.SUM,
+        window="14d",
+        target_name="next_customer_sales_14d",
+    )
+    next_customer_sales_14d.save()
+
     print("Catalog created and pre-populated with data and features")
 
     return catalog

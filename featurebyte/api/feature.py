@@ -1142,9 +1142,9 @@ class Feature(
         format_kwargs={"class_name": "Feature"},
         examples=(
             """
-                >>> feature = catalog.get_feature("InvoiceCount_60days")
-                >>> new_feature = feature.notnull()
-                """
+            >>> feature = catalog.get_feature("InvoiceCount_60days")
+            >>> new_feature = feature.notnull()
+            """
         ),
     )
     def notnull(self) -> Feature:  # pylint: disable=missing-function-docstring
