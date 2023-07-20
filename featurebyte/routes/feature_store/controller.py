@@ -114,10 +114,29 @@ class FeatureStoreController(
             logger.debug("End validate_feature_store_id_not_used_in_warehouse")
 
             # Retrieve a session for initializing
+            async def _temp_get_credential(user_id: str, feature_store_name: str) -> Any:
+                """
+                Use the temporary credential to try to initialize the session.
+
+                Parameters
+                ----------
+                user_id: str
+                    user id
+                feature_store_name: str
+                    feature store name
+
+                Returns
+                -------
+                Any
+                    credentials
+                """
+                return credential
+
             session = await self.session_manager_service.get_feature_store_session(
                 feature_store=FeatureStoreModel(
                     name=data.name, type=data.type, details=data.details
                 ),
+                get_credential=_temp_get_credential,
             )
             # Try to persist credential
             credential_doc = await self.credential_service.create_document(
