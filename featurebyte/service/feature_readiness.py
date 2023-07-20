@@ -206,7 +206,9 @@ class FeatureReadinessService(OpsServiceMixin):
         ):
             if default_feature is None:
                 default_feature = feature
-            elif feature.readiness > default_feature.readiness:
+            elif FeatureReadiness(feature.readiness) > FeatureReadiness(default_feature.readiness):
+                # when doing non-equality comparison, must cast it explicitly to FeatureReadiness
+                # otherwise, it will become normal string comparison
                 default_feature = feature
             elif (
                 feature.readiness == default_feature.readiness
