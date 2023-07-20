@@ -91,6 +91,7 @@ class TileModel(FeatureByteCatalogBaseDocumentModel):
             pymongo.operations.IndexModel("tile_id"),
             pymongo.operations.IndexModel("aggregation_id"),
         ]
+        auditable = False
 
 
 class TileUpdate(BaseDocumentServiceUpdateSchema):

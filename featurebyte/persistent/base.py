@@ -58,6 +58,7 @@ class Persistent(ABC):
         collection_name: str,
         document: Document,
         user_id: Optional[ObjectId],  # pylint: disable=unused-argument
+        disable_audit: bool = False,
     ) -> ObjectId:
         """
         Insert record into collection. Note that when using this method inside a non BaseDocumentService,
@@ -86,6 +87,7 @@ class Persistent(ABC):
         collection_name: str,
         documents: Iterable[Document],
         user_id: Optional[ObjectId],  # pylint: disable=unused-argument
+        disable_audit: bool = False,
     ) -> List[ObjectId]:
         """
         Insert records into collection. Note that when using this method inside a non BaseDocumentService,
@@ -189,6 +191,7 @@ class Persistent(ABC):
         query_filter: QueryFilter,
         update: DocumentUpdate,
         user_id: Optional[ObjectId],  # pylint: disable=unused-argument
+        disable_audit: bool = False,
     ) -> int:
         """
         Update one record in collection. Note that when using this method inside a non BaseDocumentService,
@@ -235,6 +238,7 @@ class Persistent(ABC):
         query_filter: QueryFilter,
         update: DocumentUpdate,
         user_id: Optional[ObjectId],  # pylint: disable=unused-argument
+        disable_audit: bool = False,
     ) -> int:
         """
         Update many records in collection. Note that when using this method inside a non BaseDocumentService,
@@ -281,6 +285,7 @@ class Persistent(ABC):
         query_filter: QueryFilter,
         replacement: Document,
         user_id: Optional[ObjectId],  # pylint: disable=unused-argument
+        disable_audit: bool = False,
     ) -> int:
         """
         Replace one record in collection. Note that when using this method inside a non BaseDocumentService,
@@ -316,6 +321,7 @@ class Persistent(ABC):
         collection_name: str,
         query_filter: QueryFilter,
         user_id: Optional[ObjectId],  # pylint: disable=unused-argument
+        disable_audit: bool = False,
     ) -> int:
         """
         Delete one record from collection. Note that when using this method inside a non BaseDocumentService,
@@ -343,6 +349,7 @@ class Persistent(ABC):
         collection_name: str,
         query_filter: QueryFilter,
         user_id: Optional[ObjectId],  # pylint: disable=unused-argument
+        disable_audit: bool = False,
     ) -> int:
         """
         Delete many records from collection. Note that when using this method inside a non BaseDocumentService,
