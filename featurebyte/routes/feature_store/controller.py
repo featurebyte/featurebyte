@@ -130,6 +130,7 @@ class FeatureStoreController(
                 Any
                     credentials
                 """
+                _ = user_id, feature_store_name
                 return credential
 
             session = await self.session_manager_service.get_feature_store_session(
