@@ -45,10 +45,35 @@ class DocumentService(BaseDocumentService):
     document_class = Document
 
 
+class NonAuditableDocument(FeatureByteBaseDocumentModel):
+    """NonAuditableDocument class"""
+
+    class Settings(FeatureByteBaseDocumentModel.Settings):
+        """Settings class"""
+
+        collection_name = "non_auditable_col"
+        unique_constraints: List[UniqueValuesConstraint] = []
+        auditable = False
+
+
+class NonAuditableDocumentService(BaseDocumentService):
+    """NonAuditableDocumentService class for testing"""
+
+    # pylint: disable=abstract-method
+
+    document_class = NonAuditableDocument
+
+
 @pytest.fixture(name="document_service")
 def document_service_fixture(user, persistent):
     """Fixture for DocumentService"""
     return DocumentService(user=user, persistent=persistent, catalog_id=None)
+
+
+@pytest.fixture(name="non_auditable_document_service")
+def non_auditable_document_service_fixture(user, persistent):
+    """Fixture for NonAuditableDocumentService"""
+    return NonAuditableDocumentService(user=user, persistent=persistent, catalog_id=None)
 
 
 @pytest.mark.asyncio
@@ -510,3 +535,19 @@ def test_catalog_specific_service_requires_catalog_id(user, persistent):
             mock_is_catalog_specific.return_value = True
             DocumentService(user=user, persistent=persistent, catalog_id=None)
         assert str(exc.value) == "No active catalog specified for service: DocumentService"
+
+
+@pytest.mark.asyncio
+async def test_non_auditable_document_service(non_auditable_document_service):
+    """Test modifying non-auditable documents"""
+    document = NonAuditableDocument()
+    service = non_auditable_document_service
+
+    await service.create_document(data=document)
+    await service.update_document(
+        document_id=document.id, data=NonAuditableDocument(name="new_name")
+    )
+    await service.delete_document(document_id=document.id)
+
+    audits = await service.list_document_audits(document_id=document.id)
+    assert audits["total"] == 0
