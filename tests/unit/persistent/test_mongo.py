@@ -16,15 +16,16 @@ from featurebyte.persistent import DuplicateDocumentError
 from featurebyte.utils.persistent import get_persistent
 
 
+@pytest.mark.parametrize("disable_audit", [False, True])
 @pytest.mark.asyncio
-async def test_insert_one(mongo_persistent, test_document):
+async def test_insert_one(mongo_persistent, test_document, disable_audit):
     """
     Test inserting one document
     """
     user_id = ObjectId()
     persistent, client = mongo_persistent
     inserted_id = await persistent.insert_one(
-        collection_name="data", document=test_document, user_id=user_id
+        collection_name="data", document=test_document, user_id=user_id, disable_audit=disable_audit
     )
 
     # check document is inserted
@@ -34,6 +35,9 @@ async def test_insert_one(mongo_persistent, test_document):
 
     # check audit record is inserted
     results = await client["test"]["__audit__data"].find({"document_id": inserted_id}).to_list()
+    if disable_audit:
+        assert len(results) == 0
+        return
     assert len(results) == 1
     assert isinstance(results[0]["action_at"], datetime)
     assert results[0]["user_id"] == user_id
@@ -71,15 +75,19 @@ async def test_insert_one__duplicate_key__(mongo_persistent, test_document):
             )
 
 
+@pytest.mark.parametrize("disable_audit", [False, True])
 @pytest.mark.asyncio
-async def test_insert_many(mongo_persistent, test_documents):
+async def test_insert_many(mongo_persistent, test_documents, disable_audit):
     """
     Test inserting many documents
     """
     user_id = ObjectId()
     persistent, client = mongo_persistent
     inserted_ids = await persistent.insert_many(
-        collection_name="data", documents=test_documents, user_id=user_id
+        collection_name="data",
+        documents=test_documents,
+        user_id=user_id,
+        disable_audit=disable_audit,
     )
 
     # check documents are inserted
@@ -89,6 +97,9 @@ async def test_insert_many(mongo_persistent, test_documents):
     # check audit records are inserted
     for doc in test_documents:
         results = await client["test"]["__audit__data"].find({"document_id": doc["_id"]}).to_list()
+        if disable_audit:
+            assert len(results) == 0
+            continue
         assert len(results) == 1
         assert isinstance(results[0]["action_at"], datetime)
         assert results[0]["user_id"] == user_id
@@ -157,8 +168,9 @@ async def test_find_many(mongo_persistent, test_documents):
     assert total == 3
 
 
+@pytest.mark.parametrize("disable_audit", [False, True])
 @pytest.mark.asyncio
-async def test_update_one(mongo_persistent, test_document, test_documents):
+async def test_update_one(mongo_persistent, test_document, test_documents, disable_audit):
     """
     Test updating one document
     """
@@ -167,7 +179,11 @@ async def test_update_one(mongo_persistent, test_document, test_documents):
     test_documents = [{**test_document, **{"_id": ObjectId()}} for _ in range(3)]
     await persistent.insert_many(collection_name="data", documents=test_documents, user_id=user_id)
     result = await persistent.update_one(
-        collection_name="data", query_filter={}, update={"$set": {"value": 1}}, user_id=user_id
+        collection_name="data",
+        query_filter={},
+        update={"$set": {"value": 1}},
+        user_id=user_id,
+        disable_audit=disable_audit,
     )
 
     assert result == 1
@@ -180,6 +196,9 @@ async def test_update_one(mongo_persistent, test_document, test_documents):
 
     # check audit record is inserted
     audit_docs = await client["test"]["__audit__data"].find({"action_type": "UPDATE"}).to_list()
+    if disable_audit:
+        assert len(audit_docs) == 0
+        return
     assert len(audit_docs) == 1
     assert isinstance(audit_docs[0]["action_at"], datetime)
     assert audit_docs[0]["user_id"] == user_id
@@ -204,8 +223,9 @@ async def test_update_one(mongo_persistent, test_document, test_documents):
     assert before == after
 
 
+@pytest.mark.parametrize("disable_audit", [False, True])
 @pytest.mark.asyncio
-async def test_update_many(mongo_persistent, test_documents):
+async def test_update_many(mongo_persistent, test_documents, disable_audit):
     """
     Test updating one document
     """
@@ -213,7 +233,11 @@ async def test_update_many(mongo_persistent, test_documents):
     persistent, client = mongo_persistent
     await client["test"]["data"].insert_many(test_documents)
     result = await persistent.update_many(
-        collection_name="data", query_filter={}, update={"$set": {"value": 1}}, user_id=user_id
+        collection_name="data",
+        query_filter={},
+        update={"$set": {"value": 1}},
+        user_id=user_id,
+        disable_audit=disable_audit,
     )
     # expect all documents to be updated
     assert result == 3
@@ -221,6 +245,9 @@ async def test_update_many(mongo_persistent, test_documents):
 
     # check audit records are inserted
     audit_docs = await client["test"]["__audit__data"].find({}).to_list()
+    if disable_audit:
+        assert len(audit_docs) == 0
+        return
     assert len(audit_docs) == 3
 
     for result, audit_doc in zip(results, audit_docs):
@@ -231,20 +258,30 @@ async def test_update_many(mongo_persistent, test_documents):
         assert audit_doc["previous_values"] == {"value": [{"key1": "value1", "key2": "value2"}]}
 
 
+@pytest.mark.parametrize("disable_audit", [False, True])
 @pytest.mark.asyncio
-async def test_replace_one(mongo_persistent, test_document, test_documents):
+async def test_replace_one(mongo_persistent, test_document, test_documents, disable_audit):
     """
     Test replacing one document
     """
     user_id = ObjectId()
     persistent, client = mongo_persistent
     test_documents = [{**test_document, **{"_id": ObjectId()}} for _ in range(3)]
-    await persistent.insert_many(collection_name="data", documents=test_documents, user_id=user_id)
+    await persistent.insert_many(
+        collection_name="data",
+        documents=test_documents,
+        user_id=user_id,
+        disable_audit=disable_audit,
+    )
 
     time.sleep(0.01)  # wait for a while to make sure replace & create time are different
     before = await client["test"]["data"].find({}).to_list()
     result = await persistent.replace_one(
-        user_id=user_id, collection_name="data", query_filter={}, replacement={"value": 1}
+        user_id=user_id,
+        collection_name="data",
+        query_filter={},
+        replacement={"value": 1},
+        disable_audit=disable_audit,
     )
 
     assert result == 1
@@ -257,6 +294,9 @@ async def test_replace_one(mongo_persistent, test_document, test_documents):
 
     # check audit record is inserted
     audit_docs = await client["test"]["__audit__data"].find({"action_type": "REPLACE"}).to_list()
+    if disable_audit:
+        assert len(audit_docs) == 0
+        return
     assert len(audit_docs) == 1
     assert isinstance(audit_docs[0]["action_at"], datetime)
     assert audit_docs[0]["user_id"] == user_id
@@ -294,15 +334,23 @@ async def test_replace_one(mongo_persistent, test_document, test_documents):
     assert before == after
 
 
+@pytest.mark.parametrize("disable_audit", [False, True])
 @pytest.mark.asyncio
-async def test_delete_one(mongo_persistent, test_documents):
+async def test_delete_one(mongo_persistent, test_documents, disable_audit):
     """
     Test deleting one document
     """
     user_id = ObjectId()
     persistent, client = mongo_persistent
-    await persistent.insert_many(collection_name="data", documents=test_documents, user_id=user_id)
-    result = await persistent.delete_one(user_id=user_id, collection_name="data", query_filter={})
+    await persistent.insert_many(
+        collection_name="data",
+        documents=test_documents,
+        user_id=user_id,
+        disable_audit=disable_audit,
+    )
+    result = await persistent.delete_one(
+        user_id=user_id, collection_name="data", query_filter={}, disable_audit=disable_audit
+    )
     # expect only one document to be deleted
     assert result == 1
     results = await client["test"]["data"].find({}).to_list()
@@ -310,6 +358,9 @@ async def test_delete_one(mongo_persistent, test_documents):
 
     # check audit record is inserted
     audit_docs = await client["test"]["__audit__data"].find({"action_type": "DELETE"}).to_list()
+    if disable_audit:
+        assert len(audit_docs) == 0
+        return
     assert len(audit_docs) == 1
     assert isinstance(audit_docs[0]["action_at"], datetime)
     assert audit_docs[0]["user_id"] == user_id
@@ -337,15 +388,18 @@ async def test_delete_one(mongo_persistent, test_documents):
     assert before == after
 
 
+@pytest.mark.parametrize("disable_audit", [False, True])
 @pytest.mark.asyncio
-async def test_delete_many(mongo_persistent, test_documents):
+async def test_delete_many(mongo_persistent, test_documents, disable_audit):
     """
     Test deleting many documents
     """
     user_id = ObjectId()
     persistent, client = mongo_persistent
     await client["test"]["data"].insert_many(test_documents)
-    result = await persistent.delete_many(user_id=user_id, collection_name="data", query_filter={})
+    result = await persistent.delete_many(
+        user_id=user_id, collection_name="data", query_filter={}, disable_audit=disable_audit
+    )
     # expect all documents to be deleted
     assert result == 3
     results = await client["test"]["data"].find({}).to_list()
@@ -353,6 +407,9 @@ async def test_delete_many(mongo_persistent, test_documents):
 
     # check audit records are inserted
     audit_docs = await client["test"]["__audit__data"].find({}).to_list()
+    if disable_audit:
+        assert len(audit_docs) == 0
+        return
     assert len(audit_docs) == 3
 
     for doc, audit_doc in zip(test_documents, audit_docs):
