@@ -6,7 +6,7 @@ import pytest
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.common.model_util import get_version
 from featurebyte.exception import RecordUpdateException
-from featurebyte.models.feature_namespace import DefaultVersionMode
+from featurebyte.models.feature_namespace import DefaultVersionMode, FeatureReadiness
 from featurebyte.query_graph.model.feature_job_setting import (
     FeatureJobSetting,
     TableFeatureJobSetting,
@@ -212,3 +212,72 @@ def test_create_new_version_on_item_view_aggregate_over_feature(
             },
         }
     ]
+
+
+def test_feature__default_feature_version_selection(
+    feature_group, snowflake_event_table_with_entity
+):
+    """Test default feature version selection based on feature readiness level"""
+    # set default feature job setting so that we can create new feature versions
+    snowflake_event_table_with_entity.update_default_feature_job_setting(
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="10m", frequency="30m", time_modulo_frequency="5m"
+        )
+    )
+
+    # create features with different readiness levels
+    feature = feature_group["amt_sum_30m"]
+    feature.save()
+    payloads = []
+    for blind_spot in ["7m", "8m", "9m"]:
+        payloads.append(
+            TableFeatureJobSetting(
+                table_name=snowflake_event_table_with_entity.name,
+                feature_job_setting=FeatureJobSetting(
+                    blind_spot=blind_spot, frequency="30m", time_modulo_frequency="5m"
+                ),
+            )
+        )
+
+    prod_ready_feat = feature
+    deprecated_feat = feature.create_new_version(table_feature_job_settings=[payloads[0]])
+    draft_feat = feature.create_new_version(table_feature_job_settings=[payloads[1]])
+    public_draft_feat = feature.create_new_version(table_feature_job_settings=[payloads[2]])
+
+    # update feature readiness
+    features_in_order = []
+    feat_readiness_expected_triples = [
+        (
+            deprecated_feat,
+            FeatureReadiness.PUBLIC_DRAFT,
+            deprecated_feat.id,
+        ),  # to public draft first
+        (draft_feat, FeatureReadiness.DRAFT, deprecated_feat.id),
+        (public_draft_feat, FeatureReadiness.PUBLIC_DRAFT, public_draft_feat.id),
+        (prod_ready_feat, FeatureReadiness.PRODUCTION_READY, prod_ready_feat.id),
+    ]
+    for feat, readiness, expected_default_id in feat_readiness_expected_triples:
+        if feat.readiness != readiness:
+            feat.update_readiness(readiness)
+            assert feat.readiness == readiness
+        features_in_order.append(feat)
+
+        # check default feature ID
+        assert feat.feature_namespace.default_feature_id == expected_default_id
+
+    # deprecate another feature
+    features_in_order[0].update_readiness(FeatureReadiness.DEPRECATED)
+
+    # make sure prod ready feature is still the default
+    assert prod_ready_feat.is_default
+
+    # deprecate other features one by one & check default feature ID
+    # note: cannot deprecate draft (as current behavior is to promote delete draft over deprecate draft)
+    to_deprecate_expected_default_pairs = [
+        (prod_ready_feat, public_draft_feat.id),
+        (public_draft_feat, draft_feat.id),
+    ]
+    for to_deprecate_feat, expected_default_id in to_deprecate_expected_default_pairs:
+        to_deprecate_feat.update_readiness(FeatureReadiness.DEPRECATED)
+        assert to_deprecate_feat.readiness == FeatureReadiness.DEPRECATED
+        assert to_deprecate_feat.feature_namespace.default_feature_id == expected_default_id
