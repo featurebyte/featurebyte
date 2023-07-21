@@ -381,16 +381,22 @@ class Configurations:
         if logging_settings:
             # parse logging settings
             self.logging = LoggingSettings(**logging_settings)
+        else:
+            self.logging = LoggingSettings()
 
         storage_settings = self.settings.pop("storage", None)
         if storage_settings:
             # parse storage settings
             self.storage = LocalStorageSettings(**storage_settings)
+        else:
+            self.storage = LocalStorageSettings()
 
         profile_settings = self.settings.pop("profile", None)
         if profile_settings:
             # parse profile settings
             self.profiles = ProfileList(profiles=profile_settings).profiles
+        else:
+            self.profiles = None
 
         if self.profiles:
             profile_map = {profile.name: profile for profile in self.profiles}
