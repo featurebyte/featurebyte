@@ -333,6 +333,8 @@ class FeatureByteBaseDocumentModel(FeatureByteBaseModel):
             IndexModel("updated_at"),
         ]
 
+        auditable: bool = True
+
 
 class VersionIdentifier(BaseModel):
     """

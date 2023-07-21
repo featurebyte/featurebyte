@@ -279,6 +279,9 @@ def audit_transaction(mode: AuditTransactionMode, action_type: AuditActionType) 
             Any
                 Return value from execution of the function
             """
+            if kwargs.pop("disable_audit", False):
+                return await func(persistent, collection_name=collection_name, *args, **kwargs)
+
             async with persistent.start_transaction() as session:
                 return_value, num_updated, original_docs = await _execute_transaction(
                     persistent=session,

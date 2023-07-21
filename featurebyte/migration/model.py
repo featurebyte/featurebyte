@@ -19,7 +19,7 @@ class BaseMigrationMetadataModel(FeatureByteBaseDocumentModel):
     BaseMigrationMetadata model
     """
 
-    class Settings:
+    class Settings(FeatureByteBaseDocumentModel.Settings):
         """
         MongoDB settings
         """

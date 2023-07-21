@@ -56,3 +56,4 @@ class OnlineStoreComputeQueryModel(FeatureByteCatalogBaseDocumentModel):
             pymongo.operations.IndexModel("aggregation_id"),
             pymongo.operations.IndexModel("result_name"),
         ]
+        auditable = False

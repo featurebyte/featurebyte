@@ -32,10 +32,10 @@ class OnlineStoreTableVersion(FeatureByteCatalogBaseDocumentModel):
                 resolution_signature=None,
             ),
         ]
-
         indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
             pymongo.operations.IndexModel("aggregation_result_name"),
         ]
+        auditable = False
 
 
 class OnlineStoreTableVersionUpdate(BaseDocumentServiceUpdateSchema):

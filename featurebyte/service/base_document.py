@@ -147,6 +147,19 @@ class BaseDocumentService(
         """
         return issubclass(self.document_class, FeatureByteCatalogBaseDocumentModel)
 
+    @property
+    def should_disable_audit(self) -> bool:
+        """
+        Whether service operates on a collection that should not be audited on write operations.
+        This is typically the case for internally used collections that are not directly user
+        facing.
+
+        Returns
+        -------
+        bool
+        """
+        return not self.document_class.Settings.auditable
+
     @staticmethod
     def _extract_additional_creation_kwargs(data: DocumentCreateSchema) -> dict[str, Any]:
         """
@@ -198,6 +211,7 @@ class BaseDocumentService(
             collection_name=self.collection_name,
             document=document.dict(by_alias=True),
             user_id=self.user.id,
+            disable_audit=self.should_disable_audit,
         )
         assert insert_id == document.id
         return await self.get_document(document_id=insert_id)
@@ -312,6 +326,7 @@ class BaseDocumentService(
             document_id=document_id,
             exception_detail=exception_detail,
             use_raw_query_filter=use_raw_query_filter,
+            disable_audit=self.should_disable_audit,
             **kwargs,
         )
 
@@ -325,6 +340,7 @@ class BaseDocumentService(
             collection_name=self.collection_name,
             query_filter=query_filter,
             user_id=self.user.id,
+            disable_audit=self.should_disable_audit,
         )
         return int(num_of_records_deleted)
 
@@ -871,6 +887,7 @@ class BaseDocumentService(
                 query_filter=self._construct_get_query_filter(document_id=document_id),
                 update={"$set": update_dict},
                 user_id=self.user.id,
+                disable_audit=self.should_disable_audit,
             )
 
         if return_document:
@@ -902,6 +919,7 @@ class BaseDocumentService(
             query_filter=query_filter,
             update=update,
             user_id=self.user.id,
+            disable_audit=self.should_disable_audit,
         )
         return int(updated_count)
 
@@ -949,6 +967,7 @@ class BaseDocumentService(
                 "$addToSet": {"block_modification_by": reference_info.dict(by_alias=True)},
             },
             user_id=self.user.id,
+            disable_audit=self.should_disable_audit,
         )
 
     async def remove_block_modification_by(
@@ -971,4 +990,5 @@ class BaseDocumentService(
                 "$pull": {"block_modification_by": reference_info.dict(by_alias=True)},
             },
             user_id=self.user.id,
+            disable_audit=self.should_disable_audit,
         )
