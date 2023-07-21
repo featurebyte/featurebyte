@@ -48,4 +48,5 @@ class FeatureStoreService(
             updated_at=feature_store.updated_at,
             source=feature_store.type,
             database_details=feature_store.details,
+            description=feature_store.description,
         )

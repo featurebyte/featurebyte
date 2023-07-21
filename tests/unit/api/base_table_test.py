@@ -180,3 +180,13 @@ class BaseTableTestSuite:
         other_col = next(col for col in imputed_table_under_test.columns if col != self.col)
         table_col = imputed_table_under_test[other_col]
         assert table_col.cleaning_operations == []
+
+    def test_update_description(self, table_under_test):
+        """Test table update description"""
+        assert table_under_test.description is None
+        table_under_test.update_description("new description")
+        assert table_under_test.description == "new description"
+        assert table_under_test.info()["description"] == "new description"
+        table_under_test.update_description(None)
+        assert table_under_test.description is None
+        assert table_under_test.info()["description"] is None

@@ -23,6 +23,7 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
     VerboseQuery,
 )
+from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.feature_store import (
     FeatureStoreCreate,
     FeatureStoreList,
@@ -271,3 +272,20 @@ async def get_data_description(
             sample=sample, size=size, seed=seed, get_credential=request.state.get_credential
         ),
     )
+
+
+@router.patch("/{feature_store_id}/description", response_model=FeatureStoreModel)
+async def update_feature_store_description(
+    request: Request,
+    feature_store_id: PydanticObjectId,
+    data: DescriptionUpdate,
+) -> FeatureStoreModel:
+    """
+    Update feature_store description
+    """
+    controller = request.state.app_container.feature_store_controller
+    feature_store: FeatureStoreModel = await controller.update_description(
+        document_id=feature_store_id,
+        description=data.description,
+    )
+    return feature_store

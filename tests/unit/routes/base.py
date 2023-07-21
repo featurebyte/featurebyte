@@ -473,6 +473,31 @@ class BaseApiTestSuite:
             }
         ]
 
+    def test_update_description_200(self, test_api_client_persistent, create_success_response):
+        """
+        Test update description
+        """
+        test_api_client, _ = test_api_client_persistent
+        doc_id = create_success_response.json()["_id"]
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}/description",
+            json={
+                "description": "new description",
+            },
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json()["description"] == "new description"
+
+        # setting description to None should clear it
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}/description",
+            json={
+                "description": None,
+            },
+        )
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["description"] is None
+
 
 class BaseAsyncApiTestSuite(BaseApiTestSuite):
     """

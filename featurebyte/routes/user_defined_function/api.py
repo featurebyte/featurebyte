@@ -20,7 +20,7 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
     VerboseQuery,
 )
-from featurebyte.schema.common.base import DeleteResponse
+from featurebyte.schema.common.base import DeleteResponse, DescriptionUpdate
 from featurebyte.schema.info import UserDefinedFunctionInfo
 from featurebyte.schema.user_defined_function import (
     UserDefinedFunctionCreate,
@@ -147,3 +147,20 @@ async def get_user_defined_function_info(
     controller = request.state.app_container.user_defined_function_controller
     info = await controller.get_info(document_id=user_defined_function_id, verbose=verbose)
     return cast(UserDefinedFunctionInfo, info)
+
+
+@router.patch("/{user_defined_function_id}/description", response_model=UserDefinedFunctionModel)
+async def update_user_defined_function_description(
+    request: Request,
+    user_defined_function_id: PydanticObjectId,
+    data: DescriptionUpdate,
+) -> UserDefinedFunctionModel:
+    """
+    Update user_defined_function description
+    """
+    controller = request.state.app_container.user_defined_function_controller
+    user_defined_function: UserDefinedFunctionModel = await controller.update_description(
+        document_id=user_defined_function_id,
+        description=data.description,
+    )
+    return user_defined_function

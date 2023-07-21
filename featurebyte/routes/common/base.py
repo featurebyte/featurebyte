@@ -226,6 +226,32 @@ class BaseDocumentController(Generic[Document, DocumentServiceT, PaginatedDocume
         )
         return document_data
 
+    async def update_description(
+        self,
+        document_id: ObjectId,
+        description: Optional[str],
+    ) -> Document:
+        """
+        Update document description
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+        description: Optional[str]
+            Document description
+
+        Returns
+        -------
+        Document
+            Document model with updated description
+        """
+        await self.service.update_document_description(
+            document_id=document_id,
+            description=description,
+        )
+        return await self.get(document_id=document_id)
+
 
 class RelationshipMixin(Generic[Document, ParentT]):
     """

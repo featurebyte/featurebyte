@@ -157,6 +157,7 @@ class DeploymentController(
             ),
             created_at=deployment.created_at,
             updated_at=deployment.updated_at,
+            description=deployment.description,
         )
 
     async def compute_online_features(

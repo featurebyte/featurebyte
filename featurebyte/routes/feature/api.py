@@ -22,7 +22,7 @@ from featurebyte.routes.common.schema import (
     VerboseQuery,
     VersionQuery,
 )
-from featurebyte.schema.common.base import DeleteResponse
+from featurebyte.schema.common.base import DeleteResponse, DescriptionUpdate
 from featurebyte.schema.feature import (
     BatchFeatureCreate,
     FeatureCreate,
@@ -216,3 +216,20 @@ async def get_feature_job_logs(
         hour_limit=hour_limit,
     )
     return cast(Dict[str, Any], result)
+
+
+@router.patch("/{feature_id}/description", response_model=FeatureModelResponse)
+async def update_feature_description(
+    request: Request,
+    feature_id: PydanticObjectId,
+    data: DescriptionUpdate,
+) -> FeatureModelResponse:
+    """
+    Update feature description
+    """
+    controller = request.state.app_container.feature_controller
+    feature: FeatureModelResponse = await controller.update_description(
+        document_id=feature_id,
+        description=data.description,
+    )
+    return feature

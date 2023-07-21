@@ -73,6 +73,7 @@ def test_feature_list_creation__success(
         "user_id": None,
         "catalog_id": catalog.id,
         "block_modification_by": [],
+        "description": None,
     }
     for obj in flist.feature_objects.values():
         assert isinstance(obj, Feature)
@@ -137,6 +138,7 @@ def test_feature_list_creation__feature_and_group(production_ready_feature, feat
         "name": "my_feature_list",
         "catalog_id": catalog.id,
         "block_modification_by": [],
+        "description": None,
     }
     for obj in flist.feature_objects.values():
         assert isinstance(obj, Feature)
@@ -434,6 +436,7 @@ def test_info(saved_feature_list):
         "version": info_dict["version"],
         "updated_at": info_dict["updated_at"],
         "versions_info": None,
+        "description": None,
     }
     assert info_dict == expected_info, info_dict
 
@@ -487,13 +490,14 @@ def test_get_feature_list(saved_feature_list, catalog):
             ("catalog_id", str(catalog.id)),
             ("created_at", saved_feature_list.created_at.isoformat()),
             ("deployed", False),
-            ("feature_clusters", audit_history.new_value.iloc[4]),
+            ("description", None),
+            ("feature_clusters", audit_history.new_value.iloc[5]),
             ("feature_ids", [str(saved_feature_list.feature_ids[0])]),
             ("feature_list_namespace_id", str(saved_feature_list.feature_list_namespace.id)),
             ("name", "my_feature_list"),
             ("online_enabled_feature_ids", []),
             ("readiness_distribution", [{"readiness": "DRAFT", "count": 1}]),
-            ("relationships_info", audit_history.new_value.iloc[10]),
+            ("relationships_info", audit_history.new_value.iloc[11]),
             ("updated_at", None),
             ("user_id", None),
             ("version.name", saved_feature_list.version),
@@ -1335,3 +1339,14 @@ def test_feature_list_save__check_feature_list_ids_correctly_set(float_feature):
 
     # check feature_list_ids are correctly set
     assert float_feature.feature_list_ids == []
+
+
+def test_update_description(saved_feature_list):
+    """Test update description"""
+    assert saved_feature_list.description is None
+    saved_feature_list.update_description("new description")
+    assert saved_feature_list.description == "new description"
+    assert saved_feature_list.info()["description"] == "new description"
+    saved_feature_list.update_description(None)
+    assert saved_feature_list.description is None
+    assert saved_feature_list.info()["description"] is None

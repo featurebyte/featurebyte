@@ -22,6 +22,7 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
     VerboseQuery,
 )
+from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.info import SCDTableInfo
 from featurebyte.schema.scd_table import SCDTableCreate, SCDTableList, SCDTableUpdate
 
@@ -132,3 +133,20 @@ async def get_scd_table_info(
         verbose=verbose,
     )
     return cast(SCDTableInfo, info)
+
+
+@router.patch("/{scd_table_id}/description", response_model=SCDTableModel)
+async def update_scd_table_description(
+    request: Request,
+    scd_table_id: PydanticObjectId,
+    data: DescriptionUpdate,
+) -> SCDTableModel:
+    """
+    Update scd_table description
+    """
+    controller = request.state.app_container.scd_table_controller
+    scd_table: SCDTableModel = await controller.update_description(
+        document_id=scd_table_id,
+        description=data.description,
+    )
+    return scd_table

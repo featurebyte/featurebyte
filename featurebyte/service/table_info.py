@@ -83,4 +83,5 @@ class TableInfoService:
             "column_count": len(data_document.columns_info),
             "columns_info": columns_info,
             "catalog_name": catalog_name,
+            "description": data_document.description,
         }

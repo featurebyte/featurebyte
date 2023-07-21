@@ -27,6 +27,7 @@ class BaseInfo(BaseBriefInfo):
 
     created_at: datetime
     updated_at: Optional[datetime]
+    description: Optional[str]
 
 
 class BaseDocumentServiceUpdateSchema(FeatureByteBaseModel):
@@ -57,3 +58,11 @@ class DeleteResponse(FeatureByteBaseModel):
     """
     Delete response
     """
+
+
+class DescriptionUpdate(FeatureByteBaseModel):
+    """
+    Description update schema
+    """
+
+    description: Optional[str]

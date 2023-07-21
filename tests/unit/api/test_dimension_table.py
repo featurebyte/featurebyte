@@ -186,6 +186,7 @@ def test_create_dimension_table(snowflake_database_table, dimension_table_dict):
     dimension_table_dict["_id"] = dimension_table.id
     dimension_table_dict["created_at"] = dimension_table.created_at
     dimension_table_dict["updated_at"] = dimension_table.updated_at
+    dimension_table_dict["description"] = None
     dimension_table_dict["block_modification_by"] = []
     dimension_table_dict["columns_info"][0]["semantic_id"] = dimension_table.columns_info[
         0

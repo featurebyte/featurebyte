@@ -22,6 +22,7 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
     VerboseQuery,
 )
+from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.entity import EntityCreate, EntityList, EntityUpdate
 from featurebyte.schema.info import EntityInfo
 
@@ -156,3 +157,20 @@ async def get_entity_info(
         verbose=verbose,
     )
     return cast(EntityInfo, info)
+
+
+@router.patch("/{entity_id}/description", response_model=EntityModel)
+async def update_entity_description(
+    request: Request,
+    entity_id: PydanticObjectId,
+    data: DescriptionUpdate,
+) -> EntityModel:
+    """
+    Update entity description
+    """
+    controller = request.state.app_container.entity_controller
+    entity: EntityModel = await controller.update_description(
+        document_id=entity_id,
+        description=data.description,
+    )
+    return entity

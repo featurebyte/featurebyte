@@ -184,6 +184,13 @@ async def test_credential_update(credential, snowflake_feature_store, persistent
             (
                 "INSERT",
                 'insert: "sf_featurestore"',
+                "description",
+                np.nan,
+                None,
+            ),
+            (
+                "INSERT",
+                'insert: "sf_featurestore"',
                 "feature_store_id",
                 np.nan,
                 str(snowflake_feature_store.id),
@@ -261,6 +268,7 @@ def test_get_credentials(credential):
         "database_credential",
         "storage_credential",
         "block_modification_by",
+        "description",
     }
 
 
@@ -284,3 +292,14 @@ async def test_get_credential_user_access(credential, persistent):
 
     credentials = Credential.list()
     assert credentials.shape[0] == 0
+
+
+def test_update_description(credential):
+    """Test update description"""
+    assert credential.description is None
+    credential.update_description("new description")
+    assert credential.description == "new description"
+    assert credential.info()["description"] == "new description"
+    credential.update_description(None)
+    assert credential.description is None
+    assert credential.info()["description"] is None

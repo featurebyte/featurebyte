@@ -32,6 +32,7 @@ class TestObservationTable(BaseMaterializedTableApiTest[ObservationTable]):
             },
             "created_at": info_dict["created_at"],
             "updated_at": None,
+            "description": None,
         }
 
     @pytest.mark.skip(reason="use other test due to testing of more fixtures")

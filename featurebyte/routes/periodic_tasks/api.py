@@ -17,6 +17,7 @@ from featurebyte.routes.common.schema import (
     SortByQuery,
     SortDirQuery,
 )
+from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.periodic_task import PeriodicTaskList
 
 router = APIRouter(prefix="/periodic_task")
@@ -55,3 +56,20 @@ async def list_periodic_tasks(
         name=name,
     )
     return periodic_task_list
+
+
+@router.patch("/{periodic_task_id}/description", response_model=PeriodicTask)
+async def update_periodic_task_description(
+    request: Request,
+    periodic_task_id: PydanticObjectId,
+    data: DescriptionUpdate,
+) -> PeriodicTask:
+    """
+    Update periodic_task description
+    """
+    controller = request.state.app_container.periodic_task_controller
+    periodic_task: PeriodicTask = await controller.update_description(
+        document_id=periodic_task_id,
+        description=data.description,
+    )
+    return periodic_task

@@ -118,3 +118,13 @@ class BaseMaterializedTableApiTest(Generic[BaseFeatureOrTargetTableT]):
         """
         info_dict = table_under_test.info()
         self.assert_info_dict(info_dict)
+
+    def test_update_description(self, table_under_test):
+        """Test update description"""
+        assert table_under_test.description is None
+        table_under_test.update_description("new description")
+        assert table_under_test.description == "new description"
+        assert table_under_test.info()["description"] == "new description"
+        table_under_test.update_description(None)
+        assert table_under_test.description is None
+        assert table_under_test.info()["description"] is None

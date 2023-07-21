@@ -35,6 +35,7 @@ def feature_name_space_dict_fixture():
         "user_id": None,
         "catalog_id": DEFAULT_CATALOG_ID,
         "block_modification_by": [],
+        "description": None,
     }
 
 
@@ -94,6 +95,7 @@ def test_feature_model(feature_model_dict, api_object_to_id):
             "_fb_internal_window_w7200_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481",
             "_fb_internal_window_w86400_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481",
         ],
+        "description": None,
     }
 
 

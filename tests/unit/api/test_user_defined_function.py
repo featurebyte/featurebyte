@@ -359,3 +359,14 @@ def test_create_feature_with_deleted_user_defined_function(cos_udf, float_featur
 
     expected_error = "Please save the UserDefinedFunction object first."
     assert expected_error in str(exc.value)
+
+
+def test_update_description(cos_udf):
+    """Test update description"""
+    assert cos_udf.description is None
+    cos_udf.update_description("new description")
+    assert cos_udf.description == "new description"
+    assert cos_udf.info()["description"] == "new description"
+    cos_udf.update_description(None)
+    assert cos_udf.description is None
+    assert cos_udf.info()["description"] is None

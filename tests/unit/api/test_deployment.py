@@ -55,6 +55,7 @@ def test_info(deployment):
         "serving_endpoint": None,
         "created_at": info_dict["created_at"],
         "updated_at": None,
+        "description": None,
     }
 
 

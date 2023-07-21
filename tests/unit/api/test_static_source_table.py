@@ -77,6 +77,7 @@ def test_info(static_source_table_from_source):
         },
         "created_at": info_dict["created_at"],
         "updated_at": None,
+        "description": None,
     }
 
 
@@ -147,3 +148,14 @@ def test_describe(static_source_table_from_source, mock_source_table):
     result = static_source_table_from_source.describe(size=123, seed=456)
     assert mock_source_table.describe.call_args == call(size=123, seed=456)
     assert result is mock_source_table.describe.return_value
+
+
+def test_update_description(static_source_table_from_source):
+    """Test update description"""
+    assert static_source_table_from_source.description is None
+    static_source_table_from_source.update_description("new description")
+    assert static_source_table_from_source.description == "new description"
+    assert static_source_table_from_source.info()["description"] == "new description"
+    static_source_table_from_source.update_description(None)
+    assert static_source_table_from_source.description is None
+    assert static_source_table_from_source.info()["description"] is None

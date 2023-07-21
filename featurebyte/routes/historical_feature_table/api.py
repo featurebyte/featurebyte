@@ -24,6 +24,7 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
     VerboseQuery,
 )
+from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.historical_feature_table import (
     HistoricalFeatureTableCreate,
     HistoricalFeatureTableList,
@@ -155,3 +156,22 @@ async def download_table_as_pyarrow_table(
         get_credential=request.state.get_credential,
     )
     return result
+
+
+@router.patch(
+    "/{historical_feature_table_id}/description", response_model=HistoricalFeatureTableModel
+)
+async def update_historical_feature_table_description(
+    request: Request,
+    historical_feature_table_id: PydanticObjectId,
+    data: DescriptionUpdate,
+) -> HistoricalFeatureTableModel:
+    """
+    Update historical_feature_table description
+    """
+    controller = request.state.app_container.historical_feature_table_controller
+    historical_feature_table: HistoricalFeatureTableModel = await controller.update_description(
+        document_id=historical_feature_table_id,
+        description=data.description,
+    )
+    return historical_feature_table

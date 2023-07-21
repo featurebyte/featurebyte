@@ -96,4 +96,5 @@ class BatchRequestTableController(
             table_details=batch_request_table.location.table_details,
             created_at=batch_request_table.created_at,
             updated_at=batch_request_table.updated_at,
+            description=batch_request_table.description,
         )

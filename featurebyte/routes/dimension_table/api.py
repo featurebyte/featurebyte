@@ -22,6 +22,7 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
     VerboseQuery,
 )
+from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.dimension_table import (
     DimensionTableCreate,
     DimensionTableList,
@@ -140,3 +141,20 @@ async def get_dimension_table_info(
         verbose=verbose,
     )
     return cast(DimensionTableInfo, info)
+
+
+@router.patch("/{dimension_table_id}/description", response_model=DimensionTableModel)
+async def update_dimension_table_description(
+    request: Request,
+    dimension_table_id: PydanticObjectId,
+    data: DescriptionUpdate,
+) -> DimensionTableModel:
+    """
+    Update dimension_table description
+    """
+    controller = request.state.app_container.dimension_table_controller
+    dimension_table: DimensionTableModel = await controller.update_description(
+        document_id=dimension_table_id,
+        description=data.description,
+    )
+    return dimension_table

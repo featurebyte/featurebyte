@@ -24,6 +24,7 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
     VerboseQuery,
 )
+from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.info import TargetTableInfo
 from featurebyte.schema.target_table import TargetTableCreate, TargetTableList
 from featurebyte.schema.task import Task
@@ -144,3 +145,20 @@ async def download_table_as_pyarrow_table(
         get_credential=request.state.get_credential,
     )
     return result
+
+
+@router.patch("/{target_table_id}/description", response_model=TargetTableModel)
+async def update_target_table_description(
+    request: Request,
+    target_table_id: PydanticObjectId,
+    data: DescriptionUpdate,
+) -> TargetTableModel:
+    """
+    Update target_table description
+    """
+    controller = request.state.app_container.target_table_controller
+    target_table: TargetTableModel = await controller.update_description(
+        document_id=target_table_id,
+        description=data.description,
+    )
+    return target_table

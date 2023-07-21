@@ -21,6 +21,7 @@ from featurebyte.routes.common.schema import (
     SortByQuery,
     SortDirQuery,
 )
+from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.context import ContextCreate, ContextList, ContextUpdate
 
 router = APIRouter(prefix="/context")
@@ -106,3 +107,20 @@ async def list_context_audit_logs(
         search=search,
     )
     return audit_doc_list
+
+
+@router.patch("/{context_id}/description", response_model=ContextModel)
+async def update_context_description(
+    request: Request,
+    context_id: PydanticObjectId,
+    data: DescriptionUpdate,
+) -> ContextModel:
+    """
+    Update context description
+    """
+    controller = request.state.app_container.context_controller
+    context: ContextModel = await controller.update_description(
+        document_id=context_id,
+        description=data.description,
+    )
+    return context

@@ -23,6 +23,7 @@ from featurebyte.routes.common.schema import (
     VerboseQuery,
 )
 from featurebyte.schema.catalog import CatalogCreate, CatalogList, CatalogUpdate
+from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.info import CatalogInfo
 
 router = APIRouter(prefix="/catalog")
@@ -156,3 +157,20 @@ async def get_catalog_info(
         verbose=verbose,
     )
     return cast(CatalogInfo, info)
+
+
+@router.patch("/{catalog_id}/description", response_model=CatalogModel)
+async def update_catalog_description(
+    request: Request,
+    catalog_id: PydanticObjectId,
+    data: DescriptionUpdate,
+) -> CatalogModel:
+    """
+    Update catalog description
+    """
+    controller = request.state.app_container.catalog_controller
+    catalog: CatalogModel = await controller.update_description(
+        document_id=catalog_id,
+        description=data.description,
+    )
+    return catalog

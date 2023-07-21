@@ -173,6 +173,7 @@ class TestTargetTableApi(BaseMaterializedTableTestSuite):
             },
             "created_at": response_dict["created_at"],
             "updated_at": None,
+            "description": None,
         }
 
     def test_provide_both_observation_table_id_and_dataframe_not_allowed(

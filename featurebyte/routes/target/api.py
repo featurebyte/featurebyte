@@ -21,6 +21,7 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
     VerboseQuery,
 )
+from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.preview import FeatureOrTargetPreview
 from featurebyte.schema.target import TargetCreate, TargetInfo, TargetList, TargetUpdate
 
@@ -140,3 +141,20 @@ async def get_feature_preview(
             target_preview=target_preview, get_credential=request.state.get_credential
         ),
     )
+
+
+@router.patch("/{target_id}/description", response_model=TargetModel)
+async def update_target_description(
+    request: Request,
+    target_id: PydanticObjectId,
+    data: DescriptionUpdate,
+) -> TargetModel:
+    """
+    Update target description
+    """
+    controller = request.state.app_container.target_controller
+    target: TargetModel = await controller.update_description(
+        document_id=target_id,
+        description=data.description,
+    )
+    return target

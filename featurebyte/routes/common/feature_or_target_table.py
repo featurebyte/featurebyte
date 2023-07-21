@@ -246,6 +246,7 @@ class FeatureOrTargetTableController(
             table_details=document.location.table_details,
             created_at=document.created_at,
             updated_at=document.updated_at,
+            description=document.description,
         )
 
     async def get_info(self, document_id: ObjectId, verbose: bool) -> InfoTypeT:

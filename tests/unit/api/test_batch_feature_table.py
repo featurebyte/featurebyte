@@ -53,6 +53,7 @@ class TestBatchFeatureTable(BaseMaterializedTableApiTest[BatchFeatureTable]):
             },
             "created_at": info_dict["created_at"],
             "updated_at": None,
+            "description": None,
         }
 
     def assert_list_df(self, df: pd.DataFrame) -> None:

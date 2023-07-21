@@ -447,6 +447,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         contains the following keys:
 
         - `name`: The name of the FeatureList object.
+        - `description`: The description of the FeatureList object.
         - `created_at`: The timestamp indicating when the FeatureList object was created.
         - `updated_at`: The timestamp indicating when the FeatureList object was last updated.
         - `primary_entity`: Details about the primary entity of the FeatureList object.
@@ -489,6 +490,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         >>> info  # doctest: +ELLIPSIS
         {
           'name': 'invoice_feature_list',
+          'description': None,
           'entities': [
             {
               'name': 'grocerycustomer',

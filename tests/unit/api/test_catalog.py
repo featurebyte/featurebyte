@@ -454,6 +454,7 @@ def test_catalog_update_name(new_catalog):
                 new_catalog.created_at.isoformat(),
             ),
             ("INSERT", 'insert: "grocery"', "default_feature_store_ids", np.nan, []),
+            ("INSERT", 'insert: "grocery"', "description", np.nan, None),
             ("INSERT", 'insert: "grocery"', "name", np.nan, "grocery"),
             ("INSERT", 'insert: "grocery"', "updated_at", np.nan, None),
             ("INSERT", 'insert: "grocery"', "user_id", np.nan, None),
@@ -665,3 +666,14 @@ def test_catalog_name_synchronization_issue(snowflake_feature_store):
 
     cloned_catalog.update_name("random_catalog")
     assert catalog.name == "random_catalog"
+
+
+def test_update_description(catalog):
+    """Test update description"""
+    assert catalog.description is None
+    catalog.update_description("new description")
+    assert catalog.description == "new description"
+    assert catalog.info()["description"] == "new description"
+    catalog.update_description(None)
+    assert catalog.description is None
+    assert catalog.info()["description"] is None

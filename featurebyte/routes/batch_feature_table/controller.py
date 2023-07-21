@@ -123,4 +123,5 @@ class BatchFeatureTableController(
             table_details=batch_feature_table.location.table_details,
             created_at=batch_feature_table.created_at,
             updated_at=batch_feature_table.updated_at,
+            description=batch_feature_table.description,
         )

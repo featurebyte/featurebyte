@@ -149,6 +149,7 @@ def test_create_event_table(snowflake_database_table, event_table_dict, catalog)
     event_table_dict["_id"] = event_table.id
     event_table_dict["created_at"] = event_table.created_at
     event_table_dict["updated_at"] = event_table.updated_at
+    event_table_dict["description"] = None
     event_table_dict["block_modification_by"] = []
     event_table_dict["columns_info"][0]["semantic_id"] = event_table.columns_info[0].semantic_id
     event_table_dict["columns_info"][6]["semantic_id"] = event_table.columns_info[6].semantic_id
@@ -825,6 +826,7 @@ def test_default_feature_job_setting_history(saved_event_table):
         "columns_info",
         "created_at",
         "default_feature_job_setting",
+        "description",
         "event_id_column",
         "event_timestamp_column",
         "name",

@@ -22,6 +22,7 @@ from featurebyte.routes.common.schema import (
     SortByQuery,
     SortDirQuery,
 )
+from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.semantic import SemanticCreate, SemanticList
 
 router = APIRouter(prefix="/semantic")
@@ -121,3 +122,20 @@ async def list_semantic_audit_logs(
         search=search,
     )
     return audit_doc_list
+
+
+@router.patch("/{semantic_id}/description", response_model=SemanticModel)
+async def update_semantic_description(
+    request: Request,
+    semantic_id: PydanticObjectId,
+    data: DescriptionUpdate,
+) -> SemanticModel:
+    """
+    Update semantic description
+    """
+    controller = request.state.app_container.semantic_controller
+    semantic: SemanticModel = await controller.update_description(
+        document_id=semantic_id,
+        description=data.description,
+    )
+    return semantic

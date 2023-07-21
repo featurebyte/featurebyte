@@ -22,6 +22,7 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
     VerboseQuery,
 )
+from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.target_namespace import (
     TargetNamespaceCreate,
     TargetNamespaceInfo,
@@ -140,3 +141,20 @@ async def get_target_namespace_info(
         verbose=verbose,
     )
     return cast(TargetNamespaceInfo, info)
+
+
+@router.patch("/{target_namespace_id}/description", response_model=TargetNamespaceModel)
+async def update_target_namespace_description(
+    request: Request,
+    target_namespace_id: PydanticObjectId,
+    data: DescriptionUpdate,
+) -> TargetNamespaceModel:
+    """
+    Update target_namespace description
+    """
+    controller = request.state.app_container.target_namespace_controller
+    target_namespace: TargetNamespaceModel = await controller.update_description(
+        document_id=target_namespace_id,
+        description=data.description,
+    )
+    return target_namespace

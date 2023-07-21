@@ -23,6 +23,7 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
     VerboseQuery,
 )
+from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.info import ObservationTableInfo
 from featurebyte.schema.observation_table import ObservationTableCreate, ObservationTableList
 from featurebyte.schema.task import Task
@@ -146,3 +147,20 @@ async def download_table_as_pyarrow_table(
         get_credential=request.state.get_credential,
     )
     return result
+
+
+@router.patch("/{observation_table_id}/description", response_model=ObservationTableModel)
+async def update_observation_table_description(
+    request: Request,
+    observation_table_id: PydanticObjectId,
+    data: DescriptionUpdate,
+) -> ObservationTableModel:
+    """
+    Update observation_table description
+    """
+    controller = request.state.app_container.observation_table_controller
+    observation_table: ObservationTableModel = await controller.update_description(
+        document_id=observation_table_id,
+        description=data.description,
+    )
+    return observation_table

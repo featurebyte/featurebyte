@@ -49,7 +49,7 @@ class CatalogServiceUpdate(BaseDocumentServiceUpdateSchema):
     Catalog service update schema
     """
 
-    name: Optional[str]
+    name: Optional[StrictStr]
 
     class Settings(BaseDocumentServiceUpdateSchema.Settings):
         """

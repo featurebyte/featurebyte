@@ -22,6 +22,7 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
     VerboseQuery,
 )
+from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.info import ItemTableInfo
 from featurebyte.schema.item_table import ItemTableCreate, ItemTableList, ItemTableUpdate
 
@@ -132,3 +133,20 @@ async def get_item_table_info(
         verbose=verbose,
     )
     return cast(ItemTableInfo, info)
+
+
+@router.patch("/{item_table_id}/description", response_model=ItemTableModel)
+async def update_item_table_description(
+    request: Request,
+    item_table_id: PydanticObjectId,
+    data: DescriptionUpdate,
+) -> ItemTableModel:
+    """
+    Update item_table description
+    """
+    controller = request.state.app_container.item_table_controller
+    item_table: ItemTableModel = await controller.update_description(
+        document_id=item_table_id,
+        description=data.description,
+    )
+    return item_table
