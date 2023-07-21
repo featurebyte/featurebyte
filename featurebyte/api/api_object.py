@@ -555,6 +555,7 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
             return InfoDict(info)
         raise RecordRetrievalException(response, "Failed to retrieve object info.")
 
+    @typechecked
     def update_description(self, description: Optional[str]) -> None:
         """
         Update description of an object

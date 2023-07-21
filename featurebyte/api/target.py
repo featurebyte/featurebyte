@@ -357,13 +357,14 @@ class Target(
         target_namespace_id = cast(TargetModel, self.cached_model).target_namespace_id
         return TargetNamespace.get_by_id(id=target_namespace_id)
 
-    def update_namespace_description(self, description: str) -> None:
+    @typechecked
+    def update_namespace_description(self, description: Optional[str]) -> None:
         """
         Update description of object namespace
 
         Parameters
         ----------
-        description: str
+        description: Optional[str]
             Description of the object namespace
         """
         self.target_namespace.update_description(description=description)
