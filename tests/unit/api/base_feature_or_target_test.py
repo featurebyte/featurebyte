@@ -100,3 +100,11 @@ class FeatureOrTargetBaseTestSuite:
         saved_item_under_test.update_description(None)
         assert saved_item_under_test.description is None
         assert saved_item_under_test.info()["description"] is None
+
+    def test_update_namespace_description(self, saved_item_under_test):
+        """Test update namespace description"""
+        assert saved_item_under_test.info()["namespace_description"] is None
+        saved_item_under_test.update_namespace_description("new description")
+        assert saved_item_under_test.info()["namespace_description"] == "new description"
+        saved_item_under_test.update_namespace_description(None)
+        assert saved_item_under_test.info()["namespace_description"] is None

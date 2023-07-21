@@ -85,6 +85,7 @@ class TargetInfo(FeatureByteBaseModel):
     updated_at: Optional[datetime]
     input_data: InputData
     metadata: Any
+    namespace_description: Optional[str]
     description: Optional[str]
 
 

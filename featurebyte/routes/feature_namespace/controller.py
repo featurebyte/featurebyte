@@ -258,4 +258,5 @@ class FeatureNamespaceController(
             dtype=namespace.dtype,
             version_count=len(namespace.feature_ids),
             catalog_name=catalog_name,
+            description=namespace.description,
         )

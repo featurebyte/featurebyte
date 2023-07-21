@@ -254,6 +254,7 @@ class FeatureInfo(FeatureNamespaceInfo):
     table_cleaning_operation: TableCleaningOperationComparison
     versions_info: Optional[FeatureBriefInfoList]
     metadata: Any
+    namespace_description: Optional[str]
 
 
 class FeatureListBriefInfo(FeatureByteBaseModel):
@@ -342,6 +343,7 @@ class FeatureListInfo(BaseFeatureListNamespaceInfo):
     default_feature_fraction: DefaultFeatureFractionComparison
     versions_info: Optional[FeatureListBriefInfoList]
     deployed: bool
+    namespace_description: Optional[str]
 
 
 class FeatureJobSettingAnalysisInfo(FeatureByteBaseModel):

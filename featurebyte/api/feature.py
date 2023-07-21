@@ -1155,3 +1155,14 @@ class Feature(
         class_method=_list_versions,
         instance_method=_list_versions_with_same_name,
     )
+
+    def update_namespace_description(self, description: str) -> None:
+        """
+        Update description of object namespace
+
+        Parameters
+        ----------
+        description: str
+            Description of the object namespace
+        """
+        self.feature_namespace.update_description(description=description)

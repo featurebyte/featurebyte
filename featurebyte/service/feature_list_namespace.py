@@ -111,4 +111,5 @@ class FeatureListNamespaceService(
                 feat_namespace_to_default_id[feat_namespace_id]
                 for feat_namespace_id in namespace.feature_namespace_ids
             ],
+            description=namespace.description,
         )
