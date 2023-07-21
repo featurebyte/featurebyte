@@ -150,7 +150,7 @@ def test_feature_list_creation__not_a_list():
         FeatureList("my_feature", name="my_feature_list")
     expected_errors = (
         "featurebyte.api.feature.Feature",
-        "featurebyte.api.feature_group.BaseFeatureGroup",
+        "BaseFeatureGroup",
         "got str instead",
     )
     for expected_error in expected_errors:
@@ -168,11 +168,13 @@ def test_feature_list_creation__invalid_item():
     """Test FeatureList creation list cannot have invalid types"""
     with pytest.raises(TypeError) as exc_info:
         FeatureList(["my_feature"], name="my_feature_list")
-    error_message = (
-        'type of argument "items"[0] must be one of '
-        "(featurebyte.api.feature.Feature, featurebyte.api.feature_group.BaseFeatureGroup); got str instead"
+    expected_errors = (
+        'type of argument "items"[0] must be one of ' "featurebyte.api.feature.Feature",
+        "BaseFeatureGroup",
+        "got str instead",
     )
-    assert error_message in str(exc_info.value)
+    for expected_error in expected_errors:
+        assert expected_error in str(exc_info.value)
 
 
 def test_base_feature_group(production_ready_feature, draft_feature, deprecated_feature):

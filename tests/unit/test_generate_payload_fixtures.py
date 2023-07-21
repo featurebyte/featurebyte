@@ -47,7 +47,17 @@ def replace_obj_id(obj: Any, obj_id: ObjectId) -> Any:
     return type(obj)(**params)
 
 
+@pytest.fixture(name="reset_configurations")
+def reset_configurations_fixture():
+    """
+    This is required becuase test_config.py sets a global state
+    """
+    config = Configurations(force=True)
+    config.use_profile("local")
+
+
 def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
+    reset_configurations,
     update_fixtures,
     request_payload_dir,
     snowflake_feature_store,
@@ -65,8 +75,6 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
     """
     Write request payload for testing api route
     """
-    config = Configurations()
-    config.reload()
     # pylint: disable=too-many-locals
     feature_sum_30m = feature_group["sum_30m"]
     feature_sum_30m = replace_obj_id(feature_sum_30m, ObjectId("646f6c1b0ed28a5271fb02c4"))
