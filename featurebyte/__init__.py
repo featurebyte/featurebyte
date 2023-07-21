@@ -226,6 +226,9 @@ def register_tutorial_api_token(api_token: str) -> None:
         with open(config_file_path, "w", encoding="utf-8") as file_obj:
             file_obj.write(yaml_str)
 
+        # Reload configuration with new entry
+        Configurations().reload()
+
     # Use the tutorial profile
     use_profile(tutorial_profile_name)
 
