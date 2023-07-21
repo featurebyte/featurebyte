@@ -76,6 +76,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
     Write request payload for testing api route
     """
     # pylint: disable=too-many-locals
+    _ = reset_configurations
     feature_sum_30m = feature_group["sum_30m"]
     feature_sum_30m = replace_obj_id(feature_sum_30m, ObjectId("646f6c1b0ed28a5271fb02c4"))
     feature_sum_2h = feature_group["sum_2h"]

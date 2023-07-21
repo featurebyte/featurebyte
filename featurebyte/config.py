@@ -310,6 +310,15 @@ class Configurations:
         """
         Creates a default configuration file if it does not exist
         Then loads and parses the configuration file into the Configurations object
+
+        Parameters
+        ----------
+        config_file_path: str | None
+            Path to read configurations from
+
+        Returns
+        -------
+        Configurations
         """
         self._config_file_path = (
             Path(config_file_path) if config_file_path else get_home_path().joinpath("config.yaml")
@@ -469,7 +478,7 @@ class Configurations:
         try:
             self._profile = new_profile
             self.check_sdk_versions()
-        except InvalidSettingsError as e:
+        except InvalidSettingsError:
             # restore previous profile
             self._profile = old_profile
             raise
