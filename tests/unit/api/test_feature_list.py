@@ -169,7 +169,8 @@ def test_feature_list_creation__invalid_item():
     with pytest.raises(TypeError) as exc_info:
         FeatureList(["my_feature"], name="my_feature_list")
     expected_errors = (
-        'type of argument "items"[0] must be one of ' "featurebyte.api.feature.Feature",
+        'type of argument "items"[0] must be one of ',
+        "featurebyte.api.feature.Feature",
         "BaseFeatureGroup",
         "got str instead",
     )

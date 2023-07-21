@@ -16,7 +16,7 @@ import gevent
 from celery import Task
 from celery.exceptions import SoftTimeLimitExceeded
 
-from featurebyte.config import get_home_path
+from featurebyte.config import Configurations, get_home_path
 from featurebyte.enum import WorkerCommand
 from featurebyte.logging import get_logger
 from featurebyte.models.base import User
@@ -130,6 +130,8 @@ class TaskExecutor:
             "default_profile: worker\n\n",
             encoding="utf-8",
         )
+        # Reload worker
+        Configurations(force=True).use_profile("worker")
 
     async def execute(self) -> Any:
         """
