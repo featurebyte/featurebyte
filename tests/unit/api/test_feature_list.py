@@ -436,6 +436,7 @@ def test_info(saved_feature_list):
         "version": info_dict["version"],
         "updated_at": info_dict["updated_at"],
         "versions_info": None,
+        "namespace_description": None,
         "description": None,
     }
     assert info_dict == expected_info, info_dict
@@ -1350,3 +1351,12 @@ def test_update_description(saved_feature_list):
     saved_feature_list.update_description(None)
     assert saved_feature_list.description is None
     assert saved_feature_list.info()["description"] is None
+
+
+def test_update_namespace_description(saved_feature_list):
+    """Test update namespace description"""
+    assert saved_feature_list.info()["namespace_description"] is None
+    saved_feature_list.update_namespace_description("new description")
+    assert saved_feature_list.info()["namespace_description"] == "new description"
+    saved_feature_list.update_namespace_description(None)
+    assert saved_feature_list.info()["namespace_description"] is None

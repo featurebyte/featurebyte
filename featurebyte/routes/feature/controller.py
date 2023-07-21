@@ -525,7 +525,7 @@ class FeatureController(
 
         namespace_info_dict = namespace_info.dict()
         # use feature list description instead of namespace description
-        namespace_info_dict.pop("description", None)
+        namespace_description = namespace_info_dict.pop("description", None)
         return FeatureInfo(
             **namespace_info_dict,
             version={"this": feature.version.to_str(), "default": default_feature.version.to_str()},
@@ -548,6 +548,7 @@ class FeatureController(
             },
             versions_info=versions_info,
             metadata=metadata,
+            namespace_description=namespace_description,
             description=feature.description,
         )
 

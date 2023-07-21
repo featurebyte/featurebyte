@@ -3,7 +3,7 @@ Target API object
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Any, Dict, List, Optional, Sequence, Union, cast
 
 import pandas as pd
 from bson import ObjectId
@@ -16,6 +16,7 @@ from featurebyte.api.feature_or_target_mixin import FeatureOrTargetMixin
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.savable_api_object import SavableApiObject
+from featurebyte.api.target_namespace import TargetNamespace
 from featurebyte.api.target_table import TargetTable
 from featurebyte.api.templates.doc_util import substitute_docstring
 from featurebyte.api.templates.feature_or_target_doc import (
@@ -343,3 +344,27 @@ class Target(
             files=files,
         )
         return TargetTable.get_by_id(target_table_doc["_id"])
+
+    @property
+    def target_namespace(self) -> TargetNamespace:
+        """
+        TargetNamespace object of current target
+
+        Returns
+        -------
+        TargetNamespace
+        """
+        target_namespace_id = cast(TargetModel, self.cached_model).target_namespace_id
+        return TargetNamespace.get_by_id(id=target_namespace_id)
+
+    @typechecked
+    def update_namespace_description(self, description: Optional[str]) -> None:
+        """
+        Update description of object namespace
+
+        Parameters
+        ----------
+        description: Optional[str]
+            Description of the object namespace
+        """
+        self.target_namespace.update_description(description=description)

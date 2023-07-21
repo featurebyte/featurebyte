@@ -377,7 +377,7 @@ class FeatureListService(
 
         namespace_info_dict = namespace_info.dict()
         # use feature list description instead of namespace description
-        namespace_info_dict.pop("description", None)
+        namespace_description = namespace_info_dict.pop("description", None)
         return FeatureListInfo(
             **namespace_info_dict,
             version={
@@ -395,6 +395,7 @@ class FeatureListService(
             ),
             versions_info=versions_info,
             deployed=feature_list.deployed,
+            namespace_description=namespace_description,
             description=feature_list.description,
         )
 

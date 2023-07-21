@@ -341,6 +341,8 @@ def test_info(saved_feature):
         "default_feature_id": str(saved_feature.id),
         "readiness": {"this": "DRAFT", "default": "DRAFT"},
         "catalog_name": "catalog",
+        "namespace_description": None,
+        "description": None,
     }
     assert info_dict.items() > expected_info.items(), info_dict
     assert "created_at" in info_dict, info_dict

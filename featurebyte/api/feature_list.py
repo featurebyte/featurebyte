@@ -448,6 +448,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
 
         - `name`: The name of the FeatureList object.
         - `description`: The description of the FeatureList object.
+        - `namespace_description`: The namespace description of the FeatureList object.
         - `created_at`: The timestamp indicating when the FeatureList object was created.
         - `updated_at`: The timestamp indicating when the FeatureList object was last updated.
         - `primary_entity`: Details about the primary entity of the FeatureList object.
@@ -541,7 +542,8 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
             'default': 1.0
           },
           'versions_info': None,
-          'deployed': False
+          'deployed': False,
+          'namespace_description': None
         }
         """
         return super().info(verbose)
@@ -1538,3 +1540,15 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         class_method=_list_versions,
         instance_method=_list_versions_with_same_name,
     )
+
+    @typechecked
+    def update_namespace_description(self, description: Optional[str]) -> None:
+        """
+        Update description of object namespace
+
+        Parameters
+        ----------
+        description: Optional[str]
+            Description of the object namespace
+        """
+        self.feature_list_namespace.update_description(description=description)
