@@ -60,7 +60,6 @@ class FeatureStoreController(
     async def create_feature_store(
         self,
         data: FeatureStoreCreate,
-        get_credential: Any,
     ) -> FeatureStoreModel:
         """
         Create Feature Store at persistent
@@ -69,8 +68,6 @@ class FeatureStoreController(
         ----------
         data: FeatureStoreCreate
             FeatureStore creation payload
-        get_credential: Any
-            credential handler function
 
         Returns
         -------
@@ -108,12 +105,9 @@ class FeatureStoreController(
                 storage_credential=data.storage_credential,
             )
 
-            async def _updated_get_credential(user_id: str, feature_store_name: str) -> Any:
+            async def _temp_get_credential(user_id: str, feature_store_name: str) -> Any:
                 """
-                Updated get_credential will try to look up the credentials from config.
-
-                If there are credentials in the config, we will ignore whatever is passed in here.
-                If not, we will use the params that are passed in.
+                Use the temporary credential to try to initialize the session.
 
                 Parameters
                 ----------
@@ -127,27 +121,23 @@ class FeatureStoreController(
                 Any
                     credentials
                 """
-                cred = await get_credential(user_id, feature_store_name)
-                if cred is not None:
-                    return cred
+                _ = user_id, feature_store_name
                 return credential
 
-            get_credential_to_use = _updated_get_credential
             await self.session_validator_service.validate_feature_store_id_not_used_in_warehouse(
                 feature_store_name=data.name,
                 session_type=data.type,
                 details=data.details,
-                get_credential=get_credential_to_use,
                 users_feature_store_id=document.id,
+                get_credential=_temp_get_credential,
             )
             logger.debug("End validate_feature_store_id_not_used_in_warehouse")
 
-            # Retrieve a session for initializing
             session = await self.session_manager_service.get_feature_store_session(
                 feature_store=FeatureStoreModel(
                     name=data.name, type=data.type, details=data.details
                 ),
-                get_credential=get_credential_to_use,
+                get_credential=_temp_get_credential,
             )
             # Try to persist credential
             credential_doc = await self.credential_service.create_document(

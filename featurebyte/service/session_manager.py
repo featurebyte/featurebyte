@@ -32,7 +32,7 @@ class SessionManagerService:
     async def get_feature_store_session(
         self,
         feature_store: FeatureStoreModel,
-        get_credential: Any,
+        get_credential: Any = None,
         user_override: Optional[User] = None,
     ) -> BaseSession:
         """
