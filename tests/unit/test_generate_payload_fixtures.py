@@ -8,7 +8,7 @@ import json
 import pytest
 from bson import ObjectId
 
-from featurebyte import AggFunc, FeatureJobSetting, FeatureList
+from featurebyte import AggFunc, Configurations, FeatureJobSetting, FeatureList
 from featurebyte.enum import DBVarType
 from featurebyte.models.credential import UsernamePasswordCredential
 from featurebyte.models.relationship import RelationshipType
@@ -65,6 +65,8 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
     """
     Write request payload for testing api route
     """
+    config = Configurations()
+    config.reload()
     # pylint: disable=too-many-locals
     feature_sum_30m = feature_group["sum_30m"]
     feature_sum_30m = replace_obj_id(feature_sum_30m, ObjectId("646f6c1b0ed28a5271fb02c4"))

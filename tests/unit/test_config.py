@@ -68,8 +68,9 @@ def test_get_client_no_persistence_settings():
     """
     Test getting client with no persistent settings
     """
+    config = Configurations("tests/fixtures/config/config_no_profile.yaml")
     with pytest.raises(InvalidSettingsError) as exc_info:
-        Configurations("tests/fixtures/config/invalid_config.yaml").get_client()
+        config.get_client()
     assert (
         str(exc_info.value)
         == 'No valid profile specified. Update config file or specify valid profile name with "use_profile".'
@@ -119,9 +120,7 @@ def test_default_local_storage():
     """
     config = Configurations("tests/fixtures/config/config_no_profile.yaml")
     assert config.storage.local_path == Path(
-        os.environ["FEATUREBYTE_HOME"]
-        if "FEATUREBYTE_HOME" in os.environ
-        else str(DEFAULT_HOME_PATH)
+        os.environ.get("FEATUREBYTE_HOME", str(DEFAULT_HOME_PATH))
     ).joinpath("data/files")
 
 

@@ -395,13 +395,14 @@ class Configurations:
         if profile_settings:
             # parse profile settings
             self.profiles = ProfileList(profiles=profile_settings).profiles
-        else:
-            self.profiles = None
 
-        if self.profiles:
+            # Set default _profile if specified
             profile_map = {profile.name: profile for profile in self.profiles}
             default_profile = self.settings.pop("default_profile", None)
             self._profile = profile_map.get(default_profile)
+        else:
+            self.profiles = None
+            self._profile = None
 
     @classmethod
     def check_sdk_versions(cls) -> Dict[str, str]:
