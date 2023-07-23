@@ -1,9 +1,12 @@
 """
 Test module for generating payload fixtures for testing api route
 """
+from typing import Any
+
 import json
 
 import pytest
+from bson import ObjectId
 
 from featurebyte import AggFunc, FeatureJobSetting, FeatureList
 from featurebyte.enum import DBVarType
@@ -11,6 +14,7 @@ from featurebyte.models.credential import UsernamePasswordCredential
 from featurebyte.models.relationship import RelationshipType
 from featurebyte.models.request_input import SourceTableRequestInput
 from featurebyte.models.user_defined_function import FunctionParameter
+from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.schema.batch_feature_table import BatchFeatureTableCreate
 from featurebyte.schema.batch_request_table import BatchRequestTableCreate
 from featurebyte.schema.catalog import CatalogCreate
@@ -35,10 +39,45 @@ def request_payload_dir_fixture():
     return "tests/fixtures/request_payloads"
 
 
+@pytest.fixture(name="snowflake_feature_store_id")
+def snowflake_feature_store_id_fixture():
+    """
+    Snowflake feature store id
+    """
+    return ObjectId("646f6c190ed28a5271fb02a1")
+
+
+def replace_obj_id(obj: Any, obj_id: ObjectId) -> Any:
+    """
+    Helper function to replace the object ID of the type
+    """
+    params = obj.dict()
+    params["_id"] = obj_id
+    return type(obj)(**params)
+
+
+@pytest.fixture(name="replace_tabular_source_feature_store_id")
+def replace_tabular_source_with_feature_store_id_fixture(snowflake_feature_store_id):
+    """
+    Get a helper function that will replace the feature store ID to a fixed feature store id.
+    """
+
+    def replace_tabular_source(tabular_source: TabularSource) -> TabularSource:
+        """
+        Helper function to replace tabular source
+        """
+        tabular_source_params = tabular_source.dict()
+        tabular_source_params["feature_store_id"] = snowflake_feature_store_id
+        return TabularSource(**tabular_source_params)
+
+    return replace_tabular_source
+
+
 def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
     update_fixtures,
     request_payload_dir,
     snowflake_feature_store,
+    snowflake_feature_store_id,
     snowflake_event_table,
     snowflake_item_table,
     snowflake_dimension_table,
@@ -49,13 +88,16 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
     non_time_based_feature,
     cust_id_entity,
     transaction_entity,
+    replace_tabular_source_feature_store_id,
 ):
     """
     Write request payload for testing api route
     """
     # pylint: disable=too-many-locals
     feature_sum_30m = feature_group["sum_30m"]
+    feature_sum_30m = replace_obj_id(feature_sum_30m, ObjectId("646f6c1b0ed28a5271fb02c4"))
     feature_sum_2h = feature_group["sum_2h"]
+    feature_sum_2h = replace_obj_id(feature_sum_2h, ObjectId("646f6c1b0ed28a5271fb02c5"))
     feature_iet = iet_entropy(
         view=snowflake_event_view_with_entity,
         group_by_col="cust_id",
@@ -67,6 +109,10 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
             blind_spot="3h",
         ),
     )
+    feature_iet = replace_obj_id(feature_iet, ObjectId("646f6c1c0ed28a5271fb02d0"))
+    float_target = replace_obj_id(float_target, ObjectId("64a80107d667dd0c2b13d8cd"))
+    snowflake_feature_store = replace_obj_id(snowflake_feature_store, snowflake_feature_store_id)
+
     snowflake_item_table.event_id_col.as_entity(transaction_entity.name)
     item_view = snowflake_item_table.get_view(event_suffix="_event_table")
     feature_item_event = item_view.groupby("event_id_col").aggregate(
@@ -74,10 +120,15 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         method=AggFunc.SUM,
         feature_name="item_event_sum_cust_id_feature",
     )
+    feature_item_event = replace_obj_id(feature_item_event, ObjectId("646f6c1c0ed28a5271fb02d1"))
 
-    feature_list = FeatureList([feature_sum_30m], name="sf_feature_list")
+    feature_list = FeatureList(
+        [feature_sum_30m], name="sf_feature_list", _id="646f6c1c0ed28a5271fb02d2"
+    )
     feature_list_multiple = FeatureList(
-        [feature_sum_30m, feature_sum_2h], name="sf_feature_list_multiple"
+        [feature_sum_30m, feature_sum_2h],
+        name="sf_feature_list_multiple",
+        _id="646f6c1c0ed28a5271fb02d3",
     )
     feature_job_setting_analysis = FeatureJobSettingAnalysisCreate(
         _id="62f301e841b73757c9ff879a",
@@ -92,8 +143,12 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         job_time_buffer_setting="auto",
         late_data_allowance=5e-05,
     )
-    context = ContextCreate(name="transaction_context", entity_ids=[cust_id_entity.id])
-    deployment = DeploymentCreate(name="my_deployment", feature_list_id=feature_list.id)
+    context = ContextCreate(
+        _id="646f6c1c0ed28a5271fb02d5", name="transaction_context", entity_ids=[cust_id_entity.id]
+    )
+    deployment = DeploymentCreate(
+        _id="646f6c1c0ed28a5271fb02d6", name="my_deployment", feature_list_id=feature_list.id
+    )
     relationship_info = RelationshipInfoCreate(
         _id="63f6a145e549df8ccf123456",
         name="child_parent_relationship",
@@ -105,14 +160,16 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         updated_by="63f6a145e549df8ccf123444",
     )
     observation_table = ObservationTableCreate(
+        _id="646f6c1c0ed28a5271fb02d7",
         name="observation_table",
         feature_store_id=snowflake_feature_store.id,
         request_input=SourceTableRequestInput(
-            source=snowflake_event_table.tabular_source,
+            source=replace_tabular_source_feature_store_id(snowflake_event_table.tabular_source),
         ),
         context_id=context.id,
     )
     historical_feature_table = HistoricalFeatureTableCreate(
+        _id="646f6c1c0ed28a5271fb02d8",
         name="historical_feature_table",
         feature_store_id=snowflake_feature_store.id,
         observation_table_id=observation_table.id,
@@ -122,6 +179,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         ),
     )
     target_namespace = TargetNamespaceCreate(
+        _id="64ae4be43a93459ede8c383b",
         name="target_namespace",
         target_ids=[float_target.id],
         default_target_id=float_target.id,
@@ -129,6 +187,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         window="7d",
     )
     target_table = TargetTableCreate(
+        _id="64ab959914e12c405c1b23a2",
         name="target_table",
         feature_store_id=snowflake_feature_store.id,
         observation_table_id=observation_table.id,
@@ -137,31 +196,38 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         node_names=feature_list._get_feature_clusters()[0].node_names,
     )
     batch_request_table = BatchRequestTableCreate(
+        _id="646f6c1c0ed28a5271fb02d9",
         name="batch_request_table",
         feature_store_id=snowflake_feature_store.id,
         request_input=SourceTableRequestInput(
-            source=snowflake_dimension_table.tabular_source,
+            source=replace_tabular_source_feature_store_id(
+                snowflake_dimension_table.tabular_source
+            ),
         ),
         context_id=context.id,
     )
     batch_feature_table = BatchFeatureTableCreate(
+        _id="646f6c1c0ed28a5271fb02da",
         name="batch_feature_table",
         feature_store_id=snowflake_feature_store.id,
         batch_request_table_id=batch_request_table.id,
         deployment_id=deployment.id,
     )
     static_source_table = StaticSourceTableCreate(
+        _id="647b5ba9875a4313db21a1e0",
         name="static_source_table",
         feature_store_id=snowflake_feature_store.id,
         request_input=SourceTableRequestInput(
-            source=snowflake_event_table.tabular_source,
+            source=replace_tabular_source_feature_store_id(snowflake_event_table.tabular_source),
         ),
     )
     catalog = CatalogCreate(
+        _id="646f6c1c0ed28a5271fb02db",
         name="grocery",
         default_feature_store_ids=[snowflake_feature_store.id],
     )
     credential = CredentialCreate(
+        _id="646f6c1c0ed28a5271fb02dc",
         name="grocery",
         feature_store_id=snowflake_feature_store.id,
         database_credential=UsernamePasswordCredential(
@@ -226,22 +292,21 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
             output_filenames.append(filename)
 
 
-def test_generate_user_defined_function(update_fixtures, request_payload_dir):
+def test_generate_user_defined_function(
+    update_fixtures, request_payload_dir, snowflake_feature_store_id
+):
     """
     Write request payload for user defined function route
 
     Note: Run this after test_generate_payload_fixtures
     """
-    with open(f"{request_payload_dir}/feature_store.json", "r") as fhandle:
-        feature_store_payload = json.load(fhandle)
-
     user_defined_function = UserDefinedFunctionCreate(
         _id="64928868668f720c5bebbbd4",
         name="udf_test",
         sql_function_name="cos",
         function_parameters=[FunctionParameter(name="x", dtype=DBVarType.FLOAT)],
         output_dtype=DBVarType.FLOAT,
-        feature_store_id=feature_store_payload["_id"],
+        feature_store_id=snowflake_feature_store_id,
     )
     if update_fixtures:
         filename = f"{request_payload_dir}/user_defined_function.json"
