@@ -357,13 +357,15 @@ def snowflake_feature_store_params_fixture():
 
 
 @pytest.fixture(name="snowflake_feature_store")
-def snowflake_feature_store_fixture(snowflake_feature_store_params, snowflake_execute_query):
+def snowflake_feature_store_fixture(
+    snowflake_feature_store_params, snowflake_execute_query, snowflake_feature_store_id
+):
     """
     Snowflake database source fixture
     """
     _ = snowflake_execute_query
     try:
-        snowflake_feature_store_params["_id"] = "646f6c190ed28a5271fb02a1"
+        snowflake_feature_store_params["_id"] = snowflake_feature_store_id
         snowflake_feature_store_params["type"] = "snowflake"
         feature_store = FeatureStore(**snowflake_feature_store_params)
         feature_store.save()
@@ -475,6 +477,12 @@ def snowflake_database_table_item_table_same_event_id_fixture(snowflake_data_sou
         schema_name="sf_schema",
         table_name="items_table_same_event_id",
     )
+
+
+@pytest.fixture(name="snowflake_feature_store_id")
+def snowflake_feature_store_id_fixture():
+    """Snowflake feature store id"""
+    return ObjectId("646f6c190ed28a5271fb02a1")
 
 
 @pytest.fixture(name="snowflake_dimension_table_id")
