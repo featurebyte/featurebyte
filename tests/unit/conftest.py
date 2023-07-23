@@ -363,7 +363,11 @@ def snowflake_feature_store_fixture(snowflake_feature_store_params, snowflake_ex
     """
     _ = snowflake_execute_query
     try:
-        return FeatureStore.create(**snowflake_feature_store_params)
+        snowflake_feature_store_params["_id"] = "646f6c190ed28a5271fb02a1"
+        snowflake_feature_store_params["type"] = "snowflake"
+        feature_store = FeatureStore(**snowflake_feature_store_params)
+        feature_store.save()
+        return feature_store
     except DuplicatedRecordException:
         return FeatureStore.get(snowflake_feature_store_params["name"])
 

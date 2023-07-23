@@ -56,23 +56,6 @@ def replace_obj_id(obj: Any, obj_id: ObjectId) -> Any:
     return type(obj)(**params)
 
 
-@pytest.fixture(name="replace_tabular_source_feature_store_id")
-def replace_tabular_source_with_feature_store_id_fixture(snowflake_feature_store_id):
-    """
-    Get a helper function that will replace the feature store ID to a fixed feature store id.
-    """
-
-    def replace_tabular_source(tabular_source: TabularSource) -> TabularSource:
-        """
-        Helper function to replace tabular source
-        """
-        tabular_source_params = tabular_source.dict()
-        tabular_source_params["feature_store_id"] = snowflake_feature_store_id
-        return TabularSource(**tabular_source_params)
-
-    return replace_tabular_source
-
-
 def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
     update_fixtures,
     request_payload_dir,
@@ -88,7 +71,6 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
     non_time_based_feature,
     cust_id_entity,
     transaction_entity,
-    replace_tabular_source_feature_store_id,
 ):
     """
     Write request payload for testing api route
@@ -111,7 +93,6 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
     )
     feature_iet = replace_obj_id(feature_iet, ObjectId("646f6c1c0ed28a5271fb02d0"))
     float_target = replace_obj_id(float_target, ObjectId("64a80107d667dd0c2b13d8cd"))
-    snowflake_feature_store = replace_obj_id(snowflake_feature_store, snowflake_feature_store_id)
 
     snowflake_item_table.event_id_col.as_entity(transaction_entity.name)
     item_view = snowflake_item_table.get_view(event_suffix="_event_table")
@@ -164,7 +145,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         name="observation_table",
         feature_store_id=snowflake_feature_store.id,
         request_input=SourceTableRequestInput(
-            source=replace_tabular_source_feature_store_id(snowflake_event_table.tabular_source),
+            source=snowflake_event_table.tabular_source,
         ),
         context_id=context.id,
     )
@@ -200,9 +181,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         name="batch_request_table",
         feature_store_id=snowflake_feature_store.id,
         request_input=SourceTableRequestInput(
-            source=replace_tabular_source_feature_store_id(
-                snowflake_dimension_table.tabular_source
-            ),
+            source=snowflake_dimension_table.tabular_source,
         ),
         context_id=context.id,
     )
@@ -218,7 +197,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         name="static_source_table",
         feature_store_id=snowflake_feature_store.id,
         request_input=SourceTableRequestInput(
-            source=replace_tabular_source_feature_store_id(snowflake_event_table.tabular_source),
+            source=snowflake_event_table.tabular_source,
         ),
     )
     catalog = CatalogCreate(
