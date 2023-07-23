@@ -34,7 +34,7 @@ from featurebyte.api.groupby import GroupBy
 from featurebyte.api.item_table import ItemTable
 from featurebyte.app import User, app, get_celery
 from featurebyte.enum import AggFunc, InternalName
-from featurebyte.exception import DuplicatedRecordException
+from featurebyte.exception import DuplicatedRecordException, ObjectHasBeenSavedError
 from featurebyte.models.credential import CredentialModel
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.models.task import Task as TaskModel
@@ -368,7 +368,7 @@ def snowflake_feature_store_fixture(snowflake_feature_store_params, snowflake_ex
         feature_store = FeatureStore(**snowflake_feature_store_params)
         feature_store.save()
         return feature_store
-    except DuplicatedRecordException:
+    except (DuplicatedRecordException, ObjectHasBeenSavedError):
         return FeatureStore.get(snowflake_feature_store_params["name"])
 
 

@@ -13,6 +13,7 @@ from pandas.testing import assert_frame_equal
 from featurebyte.exception import DocumentNotFoundError
 from featurebyte.models.event_table import EventTableModel
 from featurebyte.models.feature_store import FeatureStoreModel
+from featurebyte.persistent import DuplicateDocumentError
 from featurebyte.worker.task.feature_job_setting_analysis import (
     FeatureJobSettingAnalysisBacktestTask,
     FeatureJobSettingAnalysisTask,
@@ -35,12 +36,16 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
         Setup for post route
         """
         # save feature store
-        payload = self.load_payload("tests/fixtures/request_payloads/feature_store.json")
-        await persistent.insert_one(
-            collection_name=FeatureStoreModel.collection_name(),
-            document=FeatureStoreModel(**payload).dict(by_alias=True),
-            user_id=None,
-        )
+        try:
+            payload = self.load_payload("tests/fixtures/request_payloads/feature_store.json")
+            await persistent.insert_one(
+                collection_name=FeatureStoreModel.collection_name(),
+                document=FeatureStoreModel(**payload).dict(by_alias=True),
+                user_id=None,
+            )
+        except DuplicateDocumentError:
+            # do nothing as it means this has been created before
+            pass
 
         # save event table
         payload = self.load_payload("tests/fixtures/request_payloads/event_table.json")
