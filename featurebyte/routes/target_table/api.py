@@ -36,6 +36,8 @@ class TargetTableRouter(BaseMaterializedTableRouter[TargetTableModel]):
     Target table router
     """
 
+    # pylint: disable=arguments-renamed
+
     table_model = TargetTableModel
     controller = "target_table_controller"
 
