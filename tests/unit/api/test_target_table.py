@@ -27,6 +27,5 @@ class TestTargetTable(BaseMaterializedTableApiTest[TargetTable]):
             },
             "created_at": info_dict["created_at"],
             "updated_at": None,
-            "catalog_description": None,
             "description": None,
         }
