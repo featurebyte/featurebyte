@@ -5,10 +5,6 @@
         "Run `pytest --update-fixtures` to update it."
     ],
     "_id": "64a80107d667dd0c2b13d8cd",
-    "dtype": "FLOAT",
-    "entity_ids": [
-        "63f94ed6ea1f050131379214"
-    ],
     "graph": {
         "edges": [
             {
@@ -150,7 +146,6 @@
                     "entity_ids": [
                         "63f94ed6ea1f050131379214"
                     ],
-                    "window": "1d",
                     "keys": [
                         "cust_id"
                     ],
@@ -159,13 +154,9 @@
                     "serving_names": [
                         "cust_id"
                     ],
-                    "table_details": {
-                        "database_name": "sf_database",
-                        "schema_name": "sf_schema",
-                        "table_name": "sf_table"
-                    },
                     "timestamp_col": "event_timestamp",
-                    "value_by": null
+                    "value_by": null,
+                    "window": "1d"
                 },
                 "type": "forward_aggregate"
             },
@@ -184,7 +175,7 @@
     "name": "float_target",
     "node_name": "project_1",
     "tabular_source": {
-        "feature_store_id": "64a80106d667dd0c2b13d8ab",
+        "feature_store_id": "646f6c190ed28a5271fb02a1",
         "table_details": {
             "database_name": "sf_database",
             "schema_name": "sf_schema",

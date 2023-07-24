@@ -8,11 +8,11 @@
     "graph": {
         "edges": [
             {
-                "source": "input_2",
+                "source": "input_1",
                 "target": "graph_1"
             },
             {
-                "source": "input_1",
+                "source": "input_2",
                 "target": "graph_2"
             },
             {
@@ -31,58 +31,6 @@
         "nodes": [
             {
                 "name": "input_1",
-                "output_type": "frame",
-                "parameters": {
-                    "columns": [
-                        {
-                            "dtype": "INT",
-                            "name": "event_id_col"
-                        },
-                        {
-                            "dtype": "VARCHAR",
-                            "name": "item_id_col"
-                        },
-                        {
-                            "dtype": "VARCHAR",
-                            "name": "item_type"
-                        },
-                        {
-                            "dtype": "FLOAT",
-                            "name": "item_amount"
-                        },
-                        {
-                            "dtype": "TIMESTAMP_TZ",
-                            "name": "created_at"
-                        },
-                        {
-                            "dtype": "TIMESTAMP_TZ",
-                            "name": "event_timestamp"
-                        }
-                    ],
-                    "event_id_column": "event_id_col",
-                    "event_table_id": "6337f9651050ee7d5980660d",
-                    "feature_store_details": {
-                        "details": {
-                            "account": "sf_account",
-                            "database": "sf_database",
-                            "sf_schema": "sf_schema",
-                            "warehouse": "sf_warehouse"
-                        },
-                        "type": "snowflake"
-                    },
-                    "id": "6337f9651050ee7d5980662d",
-                    "id_column": "item_id_col",
-                    "table_details": {
-                        "database_name": "sf_database",
-                        "schema_name": "sf_schema",
-                        "table_name": "items_table"
-                    },
-                    "type": "item_table"
-                },
-                "type": "input"
-            },
-            {
-                "name": "input_2",
                 "output_type": "frame",
                 "parameters": {
                     "columns": [
@@ -197,6 +145,58 @@
                     "type": "event_view"
                 },
                 "type": "graph"
+            },
+            {
+                "name": "input_2",
+                "output_type": "frame",
+                "parameters": {
+                    "columns": [
+                        {
+                            "dtype": "INT",
+                            "name": "event_id_col"
+                        },
+                        {
+                            "dtype": "VARCHAR",
+                            "name": "item_id_col"
+                        },
+                        {
+                            "dtype": "VARCHAR",
+                            "name": "item_type"
+                        },
+                        {
+                            "dtype": "FLOAT",
+                            "name": "item_amount"
+                        },
+                        {
+                            "dtype": "TIMESTAMP_TZ",
+                            "name": "created_at"
+                        },
+                        {
+                            "dtype": "TIMESTAMP_TZ",
+                            "name": "event_timestamp"
+                        }
+                    ],
+                    "event_id_column": "event_id_col",
+                    "event_table_id": "6337f9651050ee7d5980660d",
+                    "feature_store_details": {
+                        "details": {
+                            "account": "sf_account",
+                            "database": "sf_database",
+                            "sf_schema": "sf_schema",
+                            "warehouse": "sf_warehouse"
+                        },
+                        "type": "snowflake"
+                    },
+                    "id": "6337f9651050ee7d5980662d",
+                    "id_column": "item_id_col",
+                    "table_details": {
+                        "database_name": "sf_database",
+                        "schema_name": "sf_schema",
+                        "table_name": "items_table"
+                    },
+                    "type": "item_table"
+                },
+                "type": "input"
             },
             {
                 "name": "graph_2",

@@ -10,64 +10,55 @@
             "critical_data_info": null,
             "dtype": "INT",
             "entity_id": null,
-            "name": "col_int",
-            "semantic_id": "646f6c1a0ed28a5271fb02b1"
+            "name": "col_int"
         },
         {
             "critical_data_info": null,
             "dtype": "FLOAT",
             "entity_id": null,
-            "name": "col_float",
-            "semantic_id": null
+            "name": "col_float"
         },
         {
             "critical_data_info": null,
             "dtype": "CHAR",
             "entity_id": null,
-            "name": "col_char",
-            "semantic_id": null
+            "name": "col_char"
         },
         {
             "critical_data_info": null,
             "dtype": "VARCHAR",
             "entity_id": null,
-            "name": "col_text",
-            "semantic_id": null
+            "name": "col_text"
         },
         {
             "critical_data_info": null,
             "dtype": "BINARY",
             "entity_id": null,
-            "name": "col_binary",
-            "semantic_id": null
+            "name": "col_binary"
         },
         {
             "critical_data_info": null,
             "dtype": "BOOL",
             "entity_id": null,
-            "name": "col_boolean",
-            "semantic_id": null
+            "name": "col_boolean"
         },
         {
             "critical_data_info": null,
             "dtype": "TIMESTAMP_TZ",
             "entity_id": null,
-            "name": "event_timestamp",
-            "semantic_id": null
+            "name": "event_timestamp"
         },
         {
             "critical_data_info": null,
             "dtype": "TIMESTAMP_TZ",
             "entity_id": null,
-            "name": "created_at",
-            "semantic_id": null
+            "name": "created_at"
         },
         {
             "critical_data_info": null,
             "dtype": "INT",
             "entity_id": null,
-            "name": "cust_id",
-            "semantic_id": null
+            "name": "cust_id"
         }
     ],
     "dimension_id_column": "col_int",

@@ -62,6 +62,7 @@ from featurebyte.query_graph.node.generic import AliasNode, ProjectNode
 from featurebyte.schema.feature import (
     BatchFeatureCreatePayload,
     BatchFeatureItem,
+    FeatureCreate,
     FeatureModelResponse,
     FeatureSQL,
     FeatureUpdate,
@@ -115,6 +116,10 @@ class Feature(
         "is_default",
     ]
     _list_foreign_keys = FEATURE_LIST_FOREIGN_KEYS
+
+    def _get_create_payload(self) -> dict[str, Any]:
+        data = FeatureCreate(**self.dict(by_alias=True))
+        return data.json_dict()
 
     def _get_init_params_from_object(self) -> dict[str, Any]:
         return {"feature_store": self.feature_store}

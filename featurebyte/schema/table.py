@@ -12,7 +12,7 @@ from featurebyte.common.validator import columns_info_validator
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.feature_store import TableStatus
 from featurebyte.models.proxy_table import ProxyTableModel
-from featurebyte.query_graph.model.column_info import ColumnInfo
+from featurebyte.query_graph.model.column_info import ColumnInfo, ColumnInfoWithoutSemanticId
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 
@@ -25,7 +25,7 @@ class TableCreate(FeatureByteBaseModel):
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
     tabular_source: TabularSource
-    columns_info: List[ColumnInfo]
+    columns_info: List[ColumnInfoWithoutSemanticId]
     record_creation_timestamp_column: Optional[StrictStr]
 
     # pydantic validators

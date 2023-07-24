@@ -10,43 +10,37 @@
             "critical_data_info": null,
             "dtype": "INT",
             "entity_id": "63f94ed6ea1f050131379204",
-            "name": "event_id_col",
-            "semantic_id": null
+            "name": "event_id_col"
         },
         {
             "critical_data_info": null,
             "dtype": "VARCHAR",
             "entity_id": null,
-            "name": "item_id_col",
-            "semantic_id": "646f6c1a0ed28a5271fb02ad"
+            "name": "item_id_col"
         },
         {
             "critical_data_info": null,
             "dtype": "VARCHAR",
             "entity_id": null,
-            "name": "item_type",
-            "semantic_id": null
+            "name": "item_type"
         },
         {
             "critical_data_info": null,
             "dtype": "FLOAT",
             "entity_id": null,
-            "name": "item_amount",
-            "semantic_id": null
+            "name": "item_amount"
         },
         {
             "critical_data_info": null,
             "dtype": "TIMESTAMP_TZ",
             "entity_id": null,
-            "name": "created_at",
-            "semantic_id": null
+            "name": "created_at"
         },
         {
             "critical_data_info": null,
             "dtype": "TIMESTAMP_TZ",
             "entity_id": null,
-            "name": "event_timestamp",
-            "semantic_id": null
+            "name": "event_timestamp"
         }
     ],
     "event_id_column": "event_id_col",
