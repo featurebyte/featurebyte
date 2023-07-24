@@ -13,6 +13,7 @@ from starlette.responses import StreamingResponse
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.models.static_source_table import StaticSourceTableModel
+from featurebyte.routes.base_materialized_table_router import BaseMaterializedTableRouter
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
     NameQuery,
@@ -27,6 +28,24 @@ from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.info import StaticSourceTableInfo
 from featurebyte.schema.static_source_table import StaticSourceTableCreate, StaticSourceTableList
 from featurebyte.schema.task import Task
+
+
+class StaticSourceTableRouter(BaseMaterializedTableRouter[StaticSourceTableModel]):
+    """
+    Static source table router
+    """
+
+    table_model = StaticSourceTableModel
+    controller = "static_source_table_controller"
+
+    def __init__(self, prefix: str):
+        super().__init__(prefix=prefix)
+
+    async def get_table(
+        self, request: Request, static_source_table_id: PydanticObjectId
+    ) -> StaticSourceTableModel:
+        return await super().get_table(request, static_source_table_id)
+
 
 router = APIRouter(prefix="/static_source_table")
 
@@ -44,20 +63,6 @@ async def create_static_source_table(
         data=data,
     )
     return task_submit
-
-
-@router.get("/{static_source_table_id}", response_model=StaticSourceTableModel)
-async def get_static_source_table(
-    request: Request, static_source_table_id: PydanticObjectId
-) -> StaticSourceTableModel:
-    """
-    Get StaticSourceTable
-    """
-    controller = request.state.app_container.static_source_table_controller
-    static_source_table: StaticSourceTableModel = await controller.get(
-        document_id=static_source_table_id
-    )
-    return static_source_table
 
 
 @router.delete("/{static_source_table_id}", response_model=Task, status_code=HTTPStatus.ACCEPTED)

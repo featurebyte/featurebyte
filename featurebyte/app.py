@@ -152,6 +152,10 @@ def get_app() -> FastAPI:
         )
 
     # register routes that are catalog-specific
+    target_table_router = target_table_api.TargetTableRouter(prefix="/target_table")
+    static_source_table_router = static_source_table_api.StaticSourceTableRouter(
+        prefix="/static_source_table"
+    )
     resource_apis = [
         context_api,
         deployment_api,
@@ -176,8 +180,9 @@ def get_app() -> FastAPI:
         target_namespace_api,
         periodic_tasks_api,
         user_defined_function_api,
-        target_table_api,
         use_case_api,
+        target_table_router,
+        static_source_table_router,
     ]
     dependencies = _get_api_deps_with_catalog()
     for resource_api in resource_apis:
