@@ -38,7 +38,7 @@ from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.target import TargetModel
 from featurebyte.query_graph.model.common_table import TabularSource
-from featurebyte.schema.target import TargetUpdate
+from featurebyte.schema.target import TargetCreate, TargetUpdate
 from featurebyte.schema.target_table import TargetTableCreate
 
 DOCSTRING_FORMAT_PARAMS = {"class_name": "Target"}
@@ -69,6 +69,10 @@ class Target(
     _list_foreign_keys = [
         ForeignKeyMapping("entity_ids", Entity, "entities"),
     ]
+
+    def _get_create_payload(self) -> dict[str, Any]:
+        data = TargetCreate(**self.dict(by_alias=True))
+        return data.json_dict()
 
     def _get_init_params_from_object(self) -> dict[str, Any]:
         return {"feature_store": self.feature_store}
