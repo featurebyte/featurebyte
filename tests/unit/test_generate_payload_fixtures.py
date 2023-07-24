@@ -14,7 +14,6 @@ from featurebyte.models.credential import UsernamePasswordCredential
 from featurebyte.models.relationship import RelationshipType
 from featurebyte.models.request_input import SourceTableRequestInput
 from featurebyte.models.user_defined_function import FunctionParameter
-from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.schema.batch_feature_table import BatchFeatureTableCreate
 from featurebyte.schema.batch_request_table import BatchRequestTableCreate
 from featurebyte.schema.catalog import CatalogCreate
@@ -37,14 +36,6 @@ from tests.util.helper import iet_entropy
 def request_payload_dir_fixture():
     """Request payload directory fixture"""
     return "tests/fixtures/request_payloads"
-
-
-@pytest.fixture(name="snowflake_feature_store_id")
-def snowflake_feature_store_id_fixture():
-    """
-    Snowflake feature store id
-    """
-    return ObjectId("646f6c190ed28a5271fb02a1")
 
 
 def replace_obj_id(obj: Any, obj_id: ObjectId) -> Any:
