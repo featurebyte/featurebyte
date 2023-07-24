@@ -131,7 +131,7 @@ class OnlineEnableService(OpsServiceMixin):
 
     @staticmethod
     async def update_data_warehouse_with_session(
-        session: BaseSession,
+        session: Optional[BaseSession],
         feature_manager_service: FeatureManagerService,
         feature: FeatureModel,
         is_recreating_schema: bool = False,
@@ -142,7 +142,7 @@ class OnlineEnableService(OpsServiceMixin):
 
         Parameters
         ----------
-        session: BaseSession
+        session: Optional[BaseSession]
             Session object
         feature_manager_service: FeatureManagerService
             An instance of FeatureManagerService to handle materialization of features and tiles
@@ -159,6 +159,7 @@ class OnlineEnableService(OpsServiceMixin):
             return
 
         if feature.online_enabled:
+            assert session is not None
             await feature_manager_service.online_enable(
                 session, online_feature_spec, is_recreating_schema=is_recreating_schema
             )
@@ -186,12 +187,16 @@ class OnlineEnableService(OpsServiceMixin):
             # no need to update
             return
 
-        feature_store_model = await self.feature_store_service.get_document(
-            document_id=updated_feature.tabular_source.feature_store_id
-        )
-        session = await self.session_manager_service.get_feature_store_session(
-            feature_store_model, get_credential
-        )
+        if updated_feature.online_enabled:
+            feature_store_model = await self.feature_store_service.get_document(
+                document_id=updated_feature.tabular_source.feature_store_id
+            )
+            session = await self.session_manager_service.get_feature_store_session(
+                feature_store_model, get_credential
+            )
+        else:
+            session = None
+
         await self.update_data_warehouse_with_session(
             session=session,
             feature_manager_service=self.feature_manager_service,
