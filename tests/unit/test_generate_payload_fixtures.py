@@ -38,6 +38,15 @@ def request_payload_dir_fixture():
     return "tests/fixtures/request_payloads"
 
 
+@pytest.fixture(name="reset_configurations")
+def reset_configurations_fixture():
+    """
+    This is required becuase test_config.py sets a global state
+    """
+    config = Configurations(force=True)
+    config.use_profile("local")
+
+
 def replace_obj_id(obj: Any, obj_id: ObjectId) -> Any:
     """
     Helper function to replace the object ID of the type
