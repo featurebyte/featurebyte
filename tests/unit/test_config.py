@@ -45,9 +45,6 @@ def test_configurations():
     # storage settings
     assert config.storage == LocalStorageSettings(local_path="~/.featurebyte_custom/data")
 
-    # other settings
-    assert config.settings == {}
-
     # featurebyte settings
     assert config.profiles == [
         Profile(
@@ -183,7 +180,7 @@ def test_client_redirection(mock_check_sdk_versions, mock_get_home_path):
     mock_check_sdk_versions.return_value = {"remote sdk": 0.1, "local sdk": 0.1}
     mock_get_home_path.return_value = Path("tests/fixtures/config")
 
-    Configurations().use_profile("featurebyte1")
+    Configurations(force=True).use_profile("featurebyte1")
     # expect 30x response to be returned as is instead of following redirection
     client = Configurations().get_client()
     assert isinstance(client, APIClient)

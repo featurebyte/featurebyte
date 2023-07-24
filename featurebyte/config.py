@@ -294,51 +294,30 @@ class Configurations:
         # force is set
         # config_file_path is set
         if not hasattr(self, "_config_file_path") or force or config_file_path is not None:
-            self._default()
-            self.reload(config_file_path)
+            # Default values set
+            self._config_file_path: Path = (
+                Path(config_file_path)
+                if config_file_path
+                else get_home_path().joinpath("config.yaml")
+            )
+            self.storage: LocalStorageSettings = LocalStorageSettings()
+            self._profile: Optional[Profile] = None
+            self.profiles: List[Profile] = []
+            self.logging: LoggingSettings = LoggingSettings()
+
+            # create config file if it does not exist
+            if not self._config_file_path.exists():
+                self._config_file_path.parent.mkdir(parents=True, exist_ok=True)
+                self._config_file_path.write_text(
+                    "# featurebyte configuration\n\n"
+                    "profile:\n"
+                    "  - name: local\n"
+                    "    api_url: http://127.0.0.1:8088\n\n"
+                    "default_profile: local\n\n"
+                )
+            self._parse_config(self._config_file_path)
         else:
             pass  # do nothing
-
-    def _default(self):
-        """
-        Set default values before initializing with configuration file=
-        """
-        self._config_file_path: Path = Path()
-        self.storage: LocalStorageSettings = LocalStorageSettings()
-        self._profile: Optional[Profile] = None
-        self.profiles: List[Profile] = []
-        self.settings: Dict[str, Any] = {}
-        self.logging: LoggingSettings = LoggingSettings()
-
-    def reload(self, config_file_path: Optional[str] = None) -> "Configurations":
-        """
-        Creates a default configuration file if it does not exist
-        Then loads and parses the configuration file into the Configurations object
-
-        Parameters
-        ----------
-        config_file_path: str | None
-            Path to read configurations from
-
-        Returns
-        -------
-        Configurations
-        """
-        self._config_file_path = (
-            Path(config_file_path) if config_file_path else get_home_path().joinpath("config.yaml")
-        )
-        # create config file if it does not exist
-        if not self._config_file_path.exists():
-            self._config_file_path.parent.mkdir(parents=True, exist_ok=True)
-            self._config_file_path.write_text(
-                "# featurebyte configuration\n\n"
-                "profile:\n"
-                "  - name: local\n"
-                "    api_url: http://127.0.0.1:8088\n\n"
-                "default_profile: local\n\n"
-            )
-        self._parse_config(self._config_file_path)
-        return self
 
     @property
     def profile(self) -> Profile:
@@ -386,36 +365,27 @@ class Configurations:
             return
 
         with open(path, encoding="utf-8") as file_obj:
-            self.settings = yaml.safe_load(file_obj)
-            if not self.settings:
-                return
+            settings = yaml.safe_load(file_obj) or {}
 
-        logging_settings = self.settings.pop("logging", None)
+        logging_settings = settings.pop("logging", None)
         if logging_settings:
             # parse logging settings
             self.logging = LoggingSettings(**logging_settings)
-        else:
-            self.logging = LoggingSettings()
 
-        storage_settings = self.settings.pop("storage", None)
+        storage_settings = settings.pop("storage", None)
         if storage_settings:
             # parse storage settings
             self.storage = LocalStorageSettings(**storage_settings)
-        else:
-            self.storage = LocalStorageSettings()
 
-        profile_settings = self.settings.pop("profile", None)
+        profile_settings = settings.pop("profile", None)
         if profile_settings:
             # parse profile settings
             self.profiles = ProfileList(profiles=profile_settings).profiles
 
             # Set default _profile if specified
             profile_map = {profile.name: profile for profile in self.profiles}
-            default_profile = self.settings.pop("default_profile", None)
+            default_profile = settings.pop("default_profile", None)
             self._profile = profile_map.get(default_profile)
-        else:
-            self.profiles = []
-            self._profile = None
 
     @classmethod
     def check_sdk_versions(cls) -> Dict[str, str]:

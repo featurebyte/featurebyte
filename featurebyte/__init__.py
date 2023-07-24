@@ -227,7 +227,7 @@ def register_tutorial_api_token(api_token: str) -> None:
             file_obj.write(yaml_str)
 
         # Reload configuration with new entry
-        Configurations().reload()
+        Configurations(force=True)
 
     # Use the tutorial profile
     use_profile(tutorial_profile_name)
