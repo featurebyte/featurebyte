@@ -300,4 +300,5 @@ class FeatureModel(BaseFeatureModel):
             pymongo.operations.IndexModel("deployed_feature_list_ids"),
             pymongo.operations.IndexModel("aggregation_ids"),
             pymongo.operations.IndexModel("aggregation_result_names"),
+            pymongo.operations.IndexModel("online_store_table_names"),
         ]
