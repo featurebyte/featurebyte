@@ -188,7 +188,7 @@ def get_app() -> FastAPI:
         target_table_router,
         static_source_table_router,
     ]
-    resource_apis.extend(routers)
+    resource_apis.extend(routers)  # type: ignore[arg-type]
     dependencies = _get_api_deps_with_catalog()
     for resource_api in resource_apis:
         _app.include_router(
