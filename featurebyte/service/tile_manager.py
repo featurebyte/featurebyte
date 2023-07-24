@@ -8,7 +8,6 @@ from typing import Callable, List, Optional, Tuple
 import time
 
 import numpy as np
-import pandas as pd
 
 from featurebyte.enum import InternalName
 from featurebyte.logging import get_logger

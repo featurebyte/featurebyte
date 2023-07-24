@@ -1,0 +1,83 @@
+"""
+OnlineStoreCleanupService class
+"""
+from __future__ import annotations
+
+from bson import ObjectId
+from sqlglot import expressions
+from sqlglot.expressions import alias_, select
+
+from featurebyte.enum import InternalName
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
+from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
+from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.session_manager import SessionManagerService
+
+NUM_VERSIONS_TO_RETAIN = 2
+
+
+class OnlineStoreCleanupService:
+    """
+    OnlineStoreCleanupService is responsible for cleaning up old versions of data in the online
+    store tables
+    """
+
+    def __init__(
+        self,
+        feature_store_service: FeatureStoreService,
+        session_manager_service: SessionManagerService,
+    ):
+        self.feature_store_service = feature_store_service
+        self.session_manager_service = session_manager_service
+
+    async def run_cleanup(self, feature_store_id: ObjectId, online_store_table_name: str) -> None:
+        feature_store = await self.feature_store_service.get_document(document_id=feature_store_id)
+        db_session = await self.session_manager_service.get_feature_store_session(feature_store)
+        query = sql_to_string(
+            self._get_cleanup_query(online_store_table_name), db_session.source_type
+        )
+        await db_session.execute_query_long_running(query)
+
+    @staticmethod
+    def _get_cleanup_query(online_store_table_name: str) -> expressions.Merge:
+        max_version_by_aggregation_result_name = (
+            select(
+                alias_(
+                    quoted_identifier(InternalName.ONLINE_STORE_RESULT_NAME_COLUMN),
+                    "max_result_name",
+                    quoted=True,
+                ),
+                alias_(
+                    expressions.Max(
+                        this=quoted_identifier(InternalName.ONLINE_STORE_VERSION_COLUMN)
+                    ),
+                    "max_version",
+                    quoted=True,
+                ),
+            )
+            .from_(online_store_table_name)
+            .group_by(quoted_identifier(InternalName.ONLINE_STORE_RESULT_NAME_COLUMN))
+        )
+        merge_expr = expressions.Merge(
+            this=online_store_table_name,
+            using=max_version_by_aggregation_result_name.subquery(),
+            on=expressions.and_(
+                expressions.EQ(
+                    this=quoted_identifier(InternalName.ONLINE_STORE_RESULT_NAME_COLUMN),
+                    expression=quoted_identifier("max_result_name"),
+                ),
+                expressions.LTE(
+                    this=quoted_identifier(InternalName.ONLINE_STORE_VERSION_COLUMN),
+                    expression=expressions.Sub(
+                        this=quoted_identifier("max_version"),
+                        expression=make_literal_value(NUM_VERSIONS_TO_RETAIN),
+                    ),
+                ),
+            ),
+            expressions=[
+                expressions.When(
+                    this=expressions.Identifier(this="MATCHED"), then=expressions.Var(this="DELETE")
+                )
+            ],
+        )
+        return merge_expr

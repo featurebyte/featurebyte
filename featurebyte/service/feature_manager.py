@@ -18,6 +18,7 @@ from featurebyte.models.online_store import OnlineFeatureSpec
 from featurebyte.models.online_store_compute_query import OnlineStoreComputeQueryModel
 from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.service.feature import FeatureService
+from featurebyte.service.online_store_cleanup_scheduler import OnlineStoreCleanupSchedulerService
 from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
 from featurebyte.service.tile_manager import TileManagerService
 from featurebyte.service.tile_registry_service import TileRegistryService
@@ -37,11 +38,13 @@ class FeatureManagerService:
         tile_manager_service: TileManagerService,
         tile_registry_service: TileRegistryService,
         online_store_compute_query_service: OnlineStoreComputeQueryService,
+        online_store_cleanup_scheduler_service: OnlineStoreCleanupSchedulerService,
         feature_service: FeatureService,
     ):
         self.tile_manager_service = tile_manager_service
         self.tile_registry_service = tile_registry_service
         self.online_store_compute_query_service = online_store_compute_query_service
+        self.online_store_cleanup_scheduler_service = online_store_cleanup_scheduler_service
         self.feature_service = feature_service
 
     async def online_enable(
@@ -118,6 +121,11 @@ class FeatureManagerService:
                 tile_spec=aggregation_id_to_tile_spec[query.aggregation_id],
                 schedule_time=schedule_time,
                 aggregation_result_name=query.result_name,
+            )
+            assert query.feature_store_id is not None
+            await self.online_store_cleanup_scheduler_service.start_job_if_not_exist(
+                feature_store_id=query.feature_store_id,
+                online_store_table_name=query.table_name,
             )
 
     async def _get_unscheduled_aggregation_result_names(
