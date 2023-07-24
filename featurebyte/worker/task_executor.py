@@ -16,6 +16,7 @@ import gevent
 from celery import Task
 from celery.exceptions import SoftTimeLimitExceeded
 
+from featurebyte import InvalidSettingsError
 from featurebyte.config import Configurations, get_home_path
 from featurebyte.enum import WorkerCommand
 from featurebyte.logging import get_logger
@@ -130,8 +131,12 @@ class TaskExecutor:
             "default_profile: worker\n\n",
             encoding="utf-8",
         )
-        # Reload worker
-        Configurations(force=True).use_profile("worker")
+        # NOTE: Unable to remove this try-except block
+        # due to test_task_manager expecting a server listening on 127.0.0.1:8080/status endpoint
+        try:
+            Configurations(force=True).use_profile("worker")
+        except InvalidSettingsError as exc:
+            logger.error("Failed to reload worker config", extra={"error": exc})
 
     async def execute(self) -> Any:
         """

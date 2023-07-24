@@ -273,7 +273,7 @@ class Configurations:
 
     _instance = None
 
-    def __new__(cls, *args: Any, **kwargs: Any):
+    def __new__(cls, *args: Any, **kwargs: Any) -> "Configurations":
         if Configurations._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
@@ -469,7 +469,11 @@ class Configurations:
 
         >>> fb.Configurations().use_profile("local")
         """
-        new_profile = next(filter(lambda x: x.name == profile_name, self.profiles), None)
+        new_profile: Optional[Profile] = None
+        for profile in self.profiles:
+            if profile.name == profile_name:
+                new_profile = profile
+                break
         if new_profile is None:
             raise InvalidSettingsError(f"Profile not found: {profile_name}")
 
