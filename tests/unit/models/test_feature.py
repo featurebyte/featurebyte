@@ -96,6 +96,7 @@ def test_feature_model(feature_model_dict, api_object_to_id):
             "_fb_internal_window_w86400_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481",
         ],
         "description": None,
+        "online_store_table_names": ["online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c"],
     }
 
 

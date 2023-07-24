@@ -489,6 +489,7 @@ def test_get_feature(saved_feature):
         "aggregation_ids",
         "aggregation_result_names",
         "description",
+        "online_store_table_names",
     }
 
     with pytest.raises(RecordRetrievalException) as exc:

@@ -276,12 +276,13 @@ class FeatureModel(BaseFeatureModel):
         values["aggregation_ids"] = aggregation_ids
 
         values["aggregation_result_names"] = []
-        values["online_store_table_names"] = []
+        online_store_table_names = set()
         for query in get_online_store_precompute_queries(
             graph, graph.get_node_by_name(node_name), feature_store_type
         ):
             values["aggregation_result_names"].append(query.result_name)
-            values["online_store_table_names"].append(query.table_name)
+            online_store_table_names.add(query.table_name)
+        values["online_store_table_names"] = sorted(online_store_table_names)
 
         return values
 
