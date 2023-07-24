@@ -1134,8 +1134,8 @@ def feature_with_cleaning_operations_fixture(
     yield feature_group["sum_30m"]
 
 
-@pytest.fixture(name="non_time_based_feature")
-def get_non_time_based_feature_fixture(snowflake_item_table, transaction_entity):
+@pytest.fixture(name="non_time_based_features")
+def get_non_time_based_features_fixture(snowflake_item_table, transaction_entity):
     """
     Get a non-time-based feature.
 
@@ -1144,11 +1144,25 @@ def get_non_time_based_feature_fixture(snowflake_item_table, transaction_entity)
     snowflake_item_table.event_id_col.as_entity(transaction_entity.name)
     item_table = ItemTable(**{**snowflake_item_table.json_dict(), "item_id_column": "item_id_col"})
     item_view = item_table.get_view(event_suffix="_event_table")
-    return item_view.groupby("event_id_col").aggregate(
+    feature_1 = item_view.groupby("event_id_col").aggregate(
         value_column="item_amount",
         method=AggFunc.SUM,
         feature_name="non_time_time_sum_amount_feature",
     )
+    feature_2 = item_view.groupby("event_id_col").aggregate(
+        value_column="item_amount",
+        method=AggFunc.MAX,
+        feature_name="non_time_time_max_amount_feature",
+    )
+    return [feature_1, feature_2]
+
+
+@pytest.fixture(name="non_time_based_feature")
+def get_non_time_based_feature_fixture(non_time_based_features):
+    """
+    Get a non-time-based feature.
+    """
+    return non_time_based_features[0]
 
 
 @pytest.fixture(name="float_feature")
