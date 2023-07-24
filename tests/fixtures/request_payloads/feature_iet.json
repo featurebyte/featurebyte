@@ -20,10 +20,6 @@
                 "target": "project_2"
             },
             {
-                "source": "project_1",
-                "target": "lag_1"
-            },
-            {
                 "source": "project_2",
                 "target": "lag_1"
             },
@@ -32,7 +28,11 @@
                 "target": "lag_1"
             },
             {
-                "source": "project_1",
+                "source": "project_2",
+                "target": "lag_1"
+            },
+            {
+                "source": "project_2",
                 "target": "date_diff_1"
             },
             {
@@ -52,20 +52,20 @@
                 "target": "log_1"
             },
             {
-                "source": "timedelta_extract_1",
-                "target": "mul_1"
-            },
-            {
-                "source": "log_1",
-                "target": "mul_1"
-            },
-            {
                 "source": "graph_1",
                 "target": "assign_1"
             },
             {
                 "source": "timedelta_extract_1",
                 "target": "assign_1"
+            },
+            {
+                "source": "timedelta_extract_1",
+                "target": "mul_1"
+            },
+            {
+                "source": "log_1",
+                "target": "mul_1"
             },
             {
                 "source": "assign_1",
@@ -85,11 +85,7 @@
             },
             {
                 "source": "project_3",
-                "target": "add_2"
-            },
-            {
-                "source": "add_2",
-                "target": "log_2"
+                "target": "mul_2"
             },
             {
                 "source": "assign_2",
@@ -100,16 +96,20 @@
                 "target": "project_4"
             },
             {
-                "source": "project_4",
-                "target": "mul_2"
-            },
-            {
                 "source": "mul_2",
                 "target": "div_1"
             },
             {
-                "source": "project_3",
+                "source": "project_4",
                 "target": "div_1"
+            },
+            {
+                "source": "project_4",
+                "target": "add_2"
+            },
+            {
+                "source": "add_2",
+                "target": "log_2"
             },
             {
                 "source": "div_1",
@@ -247,7 +247,7 @@
                 "output_type": "series",
                 "parameters": {
                     "columns": [
-                        "event_timestamp"
+                        "cust_id"
                     ]
                 },
                 "type": "project"
@@ -257,7 +257,7 @@
                 "output_type": "series",
                 "parameters": {
                     "columns": [
-                        "cust_id"
+                        "event_timestamp"
                     ]
                 },
                 "type": "project"
@@ -304,15 +304,6 @@
                 "type": "log"
             },
             {
-                "name": "mul_1",
-                "output_type": "series",
-                "parameters": {
-                    "right_op": false,
-                    "value": null
-                },
-                "type": "mul"
-            },
-            {
                 "name": "assign_1",
                 "output_type": "frame",
                 "parameters": {
@@ -320,6 +311,15 @@
                     "value": null
                 },
                 "type": "assign"
+            },
+            {
+                "name": "mul_1",
+                "output_type": "series",
+                "parameters": {
+                    "right_op": false,
+                    "value": null
+                },
+                "type": "mul"
             },
             {
                 "name": "assign_2",
@@ -332,62 +332,6 @@
             },
             {
                 "name": "groupby_1",
-                "output_type": "frame",
-                "parameters": {
-                    "agg_func": "sum",
-                    "aggregation_id": "sum_7ace41ba592a7ba79754b1b612470aaf95e9cdc8",
-                    "blind_spot": 10800,
-                    "entity_ids": [
-                        "63f94ed6ea1f050131379214"
-                    ],
-                    "frequency": 21600,
-                    "keys": [
-                        "cust_id"
-                    ],
-                    "names": [
-                        "sum(a) (24h)"
-                    ],
-                    "parent": "a",
-                    "serving_names": [
-                        "cust_id"
-                    ],
-                    "tile_id": "TILE_F21600_M10800_B10800_B32DAB803F3C21C339BF36DFFD659BE906FE9DCA",
-                    "time_modulo_frequency": 10800,
-                    "timestamp": "event_timestamp",
-                    "value_by": null,
-                    "windows": [
-                        "24h"
-                    ]
-                },
-                "type": "groupby"
-            },
-            {
-                "name": "project_3",
-                "output_type": "series",
-                "parameters": {
-                    "columns": [
-                        "sum(a) (24h)"
-                    ]
-                },
-                "type": "project"
-            },
-            {
-                "name": "add_2",
-                "output_type": "series",
-                "parameters": {
-                    "right_op": false,
-                    "value": 0.1
-                },
-                "type": "add"
-            },
-            {
-                "name": "log_2",
-                "output_type": "series",
-                "parameters": {},
-                "type": "log"
-            },
-            {
-                "name": "groupby_2",
                 "output_type": "frame",
                 "parameters": {
                     "agg_func": "sum",
@@ -418,7 +362,7 @@
                 "type": "groupby"
             },
             {
-                "name": "project_4",
+                "name": "project_3",
                 "output_type": "series",
                 "parameters": {
                     "columns": [
@@ -437,6 +381,47 @@
                 "type": "mul"
             },
             {
+                "name": "groupby_2",
+                "output_type": "frame",
+                "parameters": {
+                    "agg_func": "sum",
+                    "aggregation_id": "sum_7ace41ba592a7ba79754b1b612470aaf95e9cdc8",
+                    "blind_spot": 10800,
+                    "entity_ids": [
+                        "63f94ed6ea1f050131379214"
+                    ],
+                    "frequency": 21600,
+                    "keys": [
+                        "cust_id"
+                    ],
+                    "names": [
+                        "sum(a) (24h)"
+                    ],
+                    "parent": "a",
+                    "serving_names": [
+                        "cust_id"
+                    ],
+                    "tile_id": "TILE_F21600_M10800_B10800_B32DAB803F3C21C339BF36DFFD659BE906FE9DCA",
+                    "time_modulo_frequency": 10800,
+                    "timestamp": "event_timestamp",
+                    "value_by": null,
+                    "windows": [
+                        "24h"
+                    ]
+                },
+                "type": "groupby"
+            },
+            {
+                "name": "project_4",
+                "output_type": "series",
+                "parameters": {
+                    "columns": [
+                        "sum(a) (24h)"
+                    ]
+                },
+                "type": "project"
+            },
+            {
                 "name": "div_1",
                 "output_type": "series",
                 "parameters": {
@@ -444,6 +429,21 @@
                     "value": null
                 },
                 "type": "div"
+            },
+            {
+                "name": "add_2",
+                "output_type": "series",
+                "parameters": {
+                    "right_op": false,
+                    "value": 0.1
+                },
+                "type": "add"
+            },
+            {
+                "name": "log_2",
+                "output_type": "series",
+                "parameters": {},
+                "type": "log"
             },
             {
                 "name": "add_3",
