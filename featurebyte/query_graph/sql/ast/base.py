@@ -66,7 +66,7 @@ class SQLNodeContext:
         return get_sql_adapter(self.source_type)
 
 
-@dataclass  # type: ignore
+@dataclass
 class SQLNode(ABC):
     """Base class of a node in the SQL operations tree
 
@@ -384,7 +384,7 @@ class TableNode(SQLNode, ABC):
         return new_table
 
 
-@dataclass  # type: ignore
+@dataclass
 class ExpressionNode(SQLNode, ABC):
     """Base class for all expression nodes (non-table)"""
 

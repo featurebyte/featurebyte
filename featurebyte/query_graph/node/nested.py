@@ -477,7 +477,7 @@ class BaseGraphNode(BasePrunableNode):
         return ""
 
     @property
-    def output_node(self) -> NodeT:
+    def output_node(self) -> NodeT:  # type: ignore[type-var]
         """
         Output node of the graph (in the graph node)
 

@@ -295,7 +295,7 @@ class Configurations:
             self._config_file_path: Path = Path()
             self.storage: LocalStorageSettings = LocalStorageSettings()
             self._profile: Optional[Profile] = None
-            self.profiles: Optional[List[Profile]] = None
+            self.profiles: List[Profile] = []
             self.settings: Dict[str, Any] = {}
             self.logging: LoggingSettings = LoggingSettings()
             self.reload(config_file_path)
@@ -410,7 +410,7 @@ class Configurations:
             default_profile = self.settings.pop("default_profile", None)
             self._profile = profile_map.get(default_profile)
         else:
-            self.profiles = None
+            self.profiles = []
             self._profile = None
 
     @classmethod
@@ -470,9 +470,9 @@ class Configurations:
         >>> fb.Configurations().use_profile("local")
         """
         new_profile: Optional[Profile] = None
-        for profile in self.profiles:
-            if profile.name == profile_name:
-                new_profile = profile
+        for prof in self.profiles:
+            if prof.name == profile_name:
+                new_profile = prof
                 break
         if new_profile is None:
             raise InvalidSettingsError(f"Profile not found: {profile_name}")

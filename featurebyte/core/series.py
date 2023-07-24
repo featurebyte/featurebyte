@@ -40,7 +40,7 @@ def numeric_only(func: FuncT) -> FuncT:
     callable
     """
 
-    @wraps(func)
+    @wraps(func)  # type: ignore[arg-type]
     def wrapped(self: FrozenSeriesT, *args: Any, **kwargs: Any) -> FrozenSeriesT:
         op_name = func.__name__
         if not self.is_numeric:

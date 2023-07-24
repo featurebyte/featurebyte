@@ -518,6 +518,8 @@ __all__ = [
     # utility
     "list_unsaved_features",
     "UDF",
+    # errors
+    "InvalidSettingsError",
 ]
 
 

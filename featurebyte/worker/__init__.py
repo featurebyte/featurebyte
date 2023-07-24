@@ -3,6 +3,7 @@ Celery worker
 """
 from celery import Celery
 
+from featurebyte import InvalidSettingsError
 from featurebyte.models.periodic_task import PeriodicTask
 from featurebyte.models.task import Task
 from featurebyte.utils.messaging import REDIS_URI

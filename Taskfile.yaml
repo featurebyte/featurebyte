@@ -19,6 +19,7 @@ tasks:
 
   install:
     desc: "Install the project dependencies"
+    run: once
     sources:
       - pyproject.toml
       - poetry.lock
