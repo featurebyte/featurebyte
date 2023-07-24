@@ -34,7 +34,6 @@ import featurebyte.routes.static_source_table.api as static_source_table_api
 import featurebyte.routes.table.api as table_api
 import featurebyte.routes.target.api as target_api
 import featurebyte.routes.target_namespace.api as target_namespace_api
-import featurebyte.routes.target_table.api as target_table_api
 import featurebyte.routes.task.api as task_api
 import featurebyte.routes.temp_data.api as temp_data_api
 import featurebyte.routes.use_case.api as use_case_api
@@ -45,6 +44,7 @@ from featurebyte.middleware import ExceptionMiddleware
 from featurebyte.models.base import PydanticObjectId, User
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
+from featurebyte.routes.target_table.api import TargetTableRouter
 from featurebyte.schema import APIServiceStatus
 from featurebyte.schema.task import TaskId
 from featurebyte.utils.credential import MongoBackedCredentialProvider
@@ -153,7 +153,7 @@ def get_app() -> FastAPI:
 
     # register routes that are catalog-specific
     routers = [
-        target_table_api.TargetTableRouter(prefix="/target_table"),
+        TargetTableRouter(prefix="/target_table"),
         static_source_table_api.StaticSourceTableRouter(prefix="/static_source_table"),
     ]
     resource_apis = [
