@@ -436,7 +436,6 @@ class EventView(View, GroupByMixin, RawMixin):
             ColumnInfo(
                 name=new_column_name,
                 dtype=feature.dtype,
-                entity_id=EventView._get_feature_entity_id(feature),
             )
         )
 
