@@ -273,6 +273,8 @@ class FeatureManagerService:
         for tile_spec in feature_spec.feature.tile_specs:
             await self.tile_manager_service.remove_tile_jobs(tile_spec)
 
+        await self.remove_online_store_cleanup_jobs(feature_spec)
+
     async def remove_online_store_compute_queries(self, feature_spec: OnlineFeatureSpec) -> None:
         """
         Update the list of currently active online store compute queries
@@ -302,6 +304,31 @@ class FeatureManagerService:
                     # Backward compatibility for features created before the queries are managed by
                     # OnlineStoreComputeQueryService
                     pass
+
+    async def remove_online_store_cleanup_jobs(self, feature_spec: OnlineFeatureSpec) -> None:
+        """
+        Stop online store cleanup jobs if no longer referenced by other online enabled features
+
+        Parameters
+        ----------
+        feature_spec: OnlineFeatureSpec
+            Specification of the feature that is currently being online disabled
+        """
+        online_store_table_names = {query.table_name for query in feature_spec.precompute_queries}
+        query_filter = {
+            "online_enabled": True,
+            "online_store_table_names": {
+                "$in": list(online_store_table_names),
+            },
+        }
+        online_store_table_names_still_in_use = set()
+        async for feature_model in self.feature_service.list_documents_as_dict_iterator(
+            query_filter=query_filter
+        ):
+            online_store_table_names_still_in_use.update(feature_model["online_store_table_names"])
+        for table_name in online_store_table_names:
+            if table_name not in online_store_table_names_still_in_use:
+                await self.online_store_cleanup_scheduler_service.stop_job(table_name)
 
     @staticmethod
     async def retrieve_feature_tile_inconsistency_data(
