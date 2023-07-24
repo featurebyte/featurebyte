@@ -125,6 +125,10 @@ class FeatureManagerService:
                 schedule_time=schedule_time,
                 aggregation_result_name=query.result_name,
             )
+            if is_recreating_schema:
+                # If re-creating schema, the cleanup job would have been already scheduled, and this
+                # part can be skipped
+                continue
             assert query.feature_store_id is not None
             await self.online_store_cleanup_scheduler_service.start_job_if_not_exist(
                 catalog_id=self.catalog_id,
