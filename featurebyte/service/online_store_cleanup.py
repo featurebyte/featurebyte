@@ -8,17 +8,20 @@ from sqlglot import expressions
 from sqlglot.expressions import alias_, select
 
 from featurebyte.enum import InternalName
+from featurebyte.logging import get_logger
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
+
+logger = get_logger(__name__)
 
 NUM_VERSIONS_TO_RETAIN = 2
 
 
 class OnlineStoreCleanupService:
     """
-    OnlineStoreCleanupService is responsible for cleaning up old versions of data in the online
+    OnlineStoreCleanupService is responsible for cleaning up stale versions of data in the online
     store tables
     """
 
@@ -31,8 +34,19 @@ class OnlineStoreCleanupService:
         self.session_manager_service = session_manager_service
 
     async def run_cleanup(self, feature_store_id: ObjectId, online_store_table_name: str) -> None:
+        """
+        Run cleanup on the online store table
+
+        Parameters
+        ----------
+        feature_store_id: ObjectId
+            Feature store id
+        online_store_table_name: str
+            Name of the online store table to be cleaned up
+        """
         feature_store = await self.feature_store_service.get_document(document_id=feature_store_id)
         db_session = await self.session_manager_service.get_feature_store_session(feature_store)
+        logger.info("Cleaning up online store table", extra={"table_name": online_store_table_name})
         query = sql_to_string(
             self._get_cleanup_query(online_store_table_name), db_session.source_type
         )

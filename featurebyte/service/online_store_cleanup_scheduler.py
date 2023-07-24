@@ -20,7 +20,7 @@ CLEANUP_INTERVAL_SECONDS = 60 * 60 * 24  # Once per day
 class OnlineStoreCleanupSchedulerService:
     """
     OnlineStoreCleanupSchedulerService is responsible for scheduling tasks to periodically clean up
-    old versions in online store tables
+    stale versions in online store tables. Each task will clean up a single online store table.
     """
 
     def __init__(
@@ -36,10 +36,24 @@ class OnlineStoreCleanupSchedulerService:
         self.task_manager = task_manager
 
     async def start_job_if_not_exist(
-        self, feature_store_id: ObjectId, online_store_table_name: str
+        self, catalog_id: ObjectId, feature_store_id: ObjectId, online_store_table_name: str
     ) -> None:
+        """
+        Schedule the cleanup job if not already scheduled
+
+        Parameters
+        ----------
+        catalog_id: ObjectId
+            Catalog id
+        feature_store_id: ObjectId
+            Feature store id
+        online_store_table_name: str
+            Name of the online store table to be cleaned up in the scheduled task.
+        """
         payload = OnlineStoreCleanupTaskPayload(
-            feature_store_id=feature_store_id, online_store_table_name=online_store_table_name
+            catalog_id=catalog_id,
+            feature_store_id=feature_store_id,
+            online_store_table_name=online_store_table_name,
         )
         if await self.get_periodic_task(online_store_table_name) is None:
             logger.info(
@@ -52,7 +66,10 @@ class OnlineStoreCleanupSchedulerService:
                 interval=Interval(every=CLEANUP_INTERVAL_SECONDS, period="seconds"),
             )
         else:
-            logger.debug("Online store cleanup job already exists")
+            logger.debug(
+                "Online store cleanup job already exists",
+                extra={"online_store_table_name": online_store_table_name},
+            )
 
     async def stop_job(self, online_store_table_name: str) -> None:
         """
@@ -60,8 +77,8 @@ class OnlineStoreCleanupSchedulerService:
 
         Parameters
         ----------
-        feature_store_id: ObjectId
-            Feature store id
+        online_store_table_name: str
+            Online store table name
         """
         job_id = self._get_job_id(online_store_table_name)
         await self.task_manager.delete_periodic_task_by_name(job_id)

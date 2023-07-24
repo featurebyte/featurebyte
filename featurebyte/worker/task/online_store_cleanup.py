@@ -14,7 +14,7 @@ logger = get_logger(__name__)
 
 class OnlineStoreCleanupTask(BaseTask):
     """
-    Test Task
+    OnlineStoreCleanupTask class
     """
 
     payload_class = OnlineStoreCleanupTaskPayload

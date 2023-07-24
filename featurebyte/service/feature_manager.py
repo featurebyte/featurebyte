@@ -8,6 +8,7 @@ from typing import List, Optional, Set
 from datetime import datetime, timedelta, timezone
 
 import pandas as pd
+from bson import ObjectId
 
 from featurebyte.common import date_util
 from featurebyte.common.date_util import get_next_job_datetime
@@ -35,12 +36,14 @@ class FeatureManagerService:
 
     def __init__(
         self,
+        catalog_id: ObjectId,
         tile_manager_service: TileManagerService,
         tile_registry_service: TileRegistryService,
         online_store_compute_query_service: OnlineStoreComputeQueryService,
         online_store_cleanup_scheduler_service: OnlineStoreCleanupSchedulerService,
         feature_service: FeatureService,
     ):
+        self.catalog_id = catalog_id
         self.tile_manager_service = tile_manager_service
         self.tile_registry_service = tile_registry_service
         self.online_store_compute_query_service = online_store_compute_query_service
@@ -124,6 +127,7 @@ class FeatureManagerService:
             )
             assert query.feature_store_id is not None
             await self.online_store_cleanup_scheduler_service.start_job_if_not_exist(
+                catalog_id=self.catalog_id,
                 feature_store_id=query.feature_store_id,
                 online_store_table_name=query.table_name,
             )
