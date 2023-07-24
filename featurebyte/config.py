@@ -291,20 +291,24 @@ class Configurations:
             Force reload configurations
         """
         # Singleton initialization
-        if not hasattr(self, "_config_file_path"):
-            self._config_file_path: Path = Path()
-            self.storage: LocalStorageSettings = LocalStorageSettings()
-            self._profile: Optional[Profile] = None
-            self.profiles: List[Profile] = []
-            self.settings: Dict[str, Any] = {}
-            self.logging: LoggingSettings = LoggingSettings()
-            self.reload(config_file_path)
-
-        # Force specified or config file path specified
-        elif force or config_file_path is not None:
+        # force is set
+        # config_file_path is set
+        if not hasattr(self, "_config_file_path") or force or config_file_path is not None:
+            self._default()
             self.reload(config_file_path)
         else:
             pass  # do nothing
+
+    def _default(self):
+        """
+        Set default values before initializing with configuration file=
+        """
+        self._config_file_path: Path = Path()
+        self.storage: LocalStorageSettings = LocalStorageSettings()
+        self._profile: Optional[Profile] = None
+        self.profiles: List[Profile] = []
+        self.settings: Dict[str, Any] = {}
+        self.logging: LoggingSettings = LoggingSettings()
 
     def reload(self, config_file_path: Optional[str] = None) -> "Configurations":
         """
