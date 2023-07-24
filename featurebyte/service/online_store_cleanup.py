@@ -56,6 +56,24 @@ class OnlineStoreCleanupService:
 
     @staticmethod
     def _get_cleanup_query(online_store_table_name: str) -> expressions.Merge:
+        """
+        Get the cleanup query
+
+        For each aggregation result name, keep the latest NUM_VERSIONS_TO_RETAIN versions of the
+        data. The version number is a running integer determined by OnlineStoreTableVersionService
+        when the computed results are written to the online store tables, but for clean up purpose
+        we can also determine the current maximum versions here in a single query.
+
+        Parameters
+        ----------
+        online_store_table_name: str
+            Name of the online store table to be cleaned up
+
+        Returns
+        -------
+        expressions.Merge
+            The query that will clean up the online store table
+        """
         max_version_by_aggregation_result_name = (
             select(
                 alias_(
