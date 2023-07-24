@@ -156,6 +156,10 @@ def get_app() -> FastAPI:
     static_source_table_router = static_source_table_api.StaticSourceTableRouter(
         prefix="/static_source_table"
     )
+    routers = [
+        target_table_router,
+        static_source_table_router,
+    ]
     resource_apis = [
         context_api,
         deployment_api,
@@ -184,6 +188,7 @@ def get_app() -> FastAPI:
         target_table_router,
         static_source_table_router,
     ]
+    resource_apis.extend(routers)
     dependencies = _get_api_deps_with_catalog()
     for resource_api in resource_apis:
         _app.include_router(
