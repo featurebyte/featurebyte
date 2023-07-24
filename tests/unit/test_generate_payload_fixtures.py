@@ -51,7 +51,6 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
     update_fixtures,
     request_payload_dir,
     snowflake_feature_store,
-    snowflake_feature_store_id,
     snowflake_event_table,
     snowflake_item_table,
     snowflake_dimension_table,
