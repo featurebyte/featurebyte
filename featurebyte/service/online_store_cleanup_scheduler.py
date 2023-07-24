@@ -51,6 +51,7 @@ class OnlineStoreCleanupSchedulerService:
             Name of the online store table to be cleaned up in the scheduled task.
         """
         payload = OnlineStoreCleanupTaskPayload(
+            user_id=self.user.id,
             catalog_id=catalog_id,
             feature_store_id=feature_store_id,
             online_store_table_name=online_store_table_name,
