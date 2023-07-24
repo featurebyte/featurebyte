@@ -6,7 +6,6 @@ from __future__ import annotations
 from typing import Callable, List, Optional, Tuple
 
 import time
-from datetime import datetime
 
 import numpy as np
 import pandas as pd
@@ -23,7 +22,6 @@ from featurebyte.session.base import BaseSession
 from featurebyte.sql.tile_generate import TileGenerate
 from featurebyte.sql.tile_generate_entity_tracking import TileGenerateEntityTracking
 from featurebyte.sql.tile_schedule_online_store import TileScheduleOnlineStore
-from featurebyte.tile.sql_template import tm_retrieve_tile_job_audit_logs
 
 logger = get_logger(__name__)
 
@@ -380,39 +378,3 @@ class TileManagerService:
                 await self.tile_scheduler_service.stop_job(
                     job_id=f"{t_type}_{tile_spec.aggregation_id}"
                 )
-
-    @staticmethod
-    async def retrieve_tile_job_audit_logs(
-        session: BaseSession,
-        start_date: datetime,
-        end_date: Optional[datetime] = None,
-        tile_id: Optional[str] = None,
-    ) -> pd.DataFrame:
-        """
-        Retrieve audit logs of tile job executions
-
-        Parameters
-        ----------
-        session: BaseSession
-            Instance of BaseSession to interact with the data warehouse
-        start_date: datetime
-            start date of retrieval
-        end_date: Optional[datetime]
-            end date of retrieval, optional
-        tile_id: Optional[str]
-            targeted tile id of retrieval, optional
-
-        Returns
-        -------
-            dataframe of tile job execution information
-        """
-        date_format = "%Y-%m-%dT%H:%M:%S.%fZ"
-        start_date_str = start_date.strftime(date_format)
-        end_date_str = end_date.strftime(date_format) if end_date else ""
-        tile_id = tile_id if tile_id else ""
-
-        sql = tm_retrieve_tile_job_audit_logs.render(
-            start_date_str=start_date_str, end_date_str=end_date_str, tile_id=tile_id
-        )
-        result = await session.execute_query(sql)
-        return result
