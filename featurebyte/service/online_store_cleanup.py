@@ -13,6 +13,7 @@ from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
+from featurebyte.sql.base import BaseSqlModel
 
 logger = get_logger(__name__)
 
@@ -47,10 +48,11 @@ class OnlineStoreCleanupService:
         feature_store = await self.feature_store_service.get_document(document_id=feature_store_id)
         db_session = await self.session_manager_service.get_feature_store_session(feature_store)
         logger.info("Cleaning up online store table", extra={"table_name": online_store_table_name})
-        query = sql_to_string(
-            self._get_cleanup_query(online_store_table_name), db_session.source_type
-        )
-        await db_session.execute_query_long_running(query)
+        if await BaseSqlModel(session=db_session).table_exists(online_store_table_name):
+            query = sql_to_string(
+                self._get_cleanup_query(online_store_table_name), db_session.source_type
+            )
+            await db_session.execute_query_long_running(query)
 
     @staticmethod
     def _get_cleanup_query(online_store_table_name: str) -> expressions.Merge:
