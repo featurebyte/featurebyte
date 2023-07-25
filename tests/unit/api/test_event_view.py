@@ -594,7 +594,6 @@ def test_add_feature(
         ColumnInfo(
             name="new_col",
             dtype=DBVarType.FLOAT,
-            entity_id=non_time_based_feature.entity_ids[0],
         ),
     ]
 
@@ -646,6 +645,35 @@ def test_add_feature(
             },
         },
     )
+
+
+def test_add_feature__inferred_entity_multiple_times(
+    snowflake_event_table,
+    snowflake_item_table,
+    non_time_based_features,
+    transaction_entity,
+):
+    """
+    Test calling add_feature() multiple times without specifying entity columns
+    """
+    snowflake_event_table[snowflake_event_table.event_id_column].as_entity(transaction_entity.name)
+    event_view = snowflake_event_table.get_view()
+    original_column_info = copy.deepcopy(event_view.columns_info)
+
+    event_view = event_view.add_feature("new_col", non_time_based_features[0])
+    event_view = event_view.add_feature("new_col_1", non_time_based_features[1])
+
+    assert event_view.columns_info == [
+        *original_column_info,
+        ColumnInfo(
+            name="new_col",
+            dtype=DBVarType.FLOAT,
+        ),
+        ColumnInfo(
+            name="new_col_1",
+            dtype=DBVarType.FLOAT,
+        ),
+    ]
 
 
 def test_add_feature__wrong_type(snowflake_event_view):
