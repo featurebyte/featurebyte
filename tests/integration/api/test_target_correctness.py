@@ -199,7 +199,7 @@ def test_forward_aggregate(
         fb_assert_frame_equal(results, preview_expected_values)
 
         # Build full materialized Target
-        df_targets = target.compute_target(
+        df_targets = target.compute_targets(
             observation_set, serving_names_mapping={"üser id": "ÜSER ID"}
         )
         expected_values["POINT_IN_TIME"] = pd.to_datetime(

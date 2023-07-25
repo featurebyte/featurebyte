@@ -259,7 +259,7 @@ class Target(
 
     @enforce_observation_set_row_order
     @typechecked
-    def compute_target(
+    def compute_targets(
         self,
         observation_table: Union[ObservationTable, pd.DataFrame],
         serving_names_mapping: Optional[Dict[str, str]] = None,

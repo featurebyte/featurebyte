@@ -1020,7 +1020,7 @@ def _get_target_layout() -> List[DocLayoutItem]:
     """
     return [
         *_get_feature_or_target_items(TARGET),
-        DocLayoutItem([TARGET, SERVE, "Target.compute_target"]),
+        DocLayoutItem([TARGET, SERVE, "Target.compute_targets"]),
         DocLayoutItem([TARGET, SERVE, "Target.compute_target_table"]),
     ]
 
