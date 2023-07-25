@@ -255,9 +255,9 @@ class Target(
 
     @enforce_observation_set_row_order
     @typechecked
-    def compute_target(
+    def compute_targets(
         self,
-        observation_set: pd.DataFrame,
+        observation_table: Union[ObservationTable, pd.DataFrame],
         serving_names_mapping: Optional[Dict[str, str]] = None,
     ) -> pd.DataFrame:
         """
@@ -269,7 +269,7 @@ class Target(
 
         Parameters
         ----------
-        observation_set : pd.DataFrame
+        observation_table : Union[ObservationTable, pd.DataFrame]
             Observation set DataFrame or ObservationTable object, which combines points-in-time and values
             of the target primary entity or its descendant (serving entities). The column containing the point-in-time
             values should be named `POINT_IN_TIME`, while the columns representing entity values should be named using
@@ -284,10 +284,15 @@ class Target(
             Materialized target.
 
             **Note**: `POINT_IN_TIME` values will be converted to UTC time.
+
+        Examples
+        --------
+        >>> target = catalog.get_target("target")  # doctest: +SKIP
+        >>> target.compute_targets(observation_table)  # doctest: +SKIP
         """
         temp_target_table_name = f"__TEMPORARY_TARGET_TABLE_{ObjectId()}"
         temp_target_table = self.compute_target_table(
-            observation_table=observation_set,
+            observation_table=observation_table,
             target_table_name=temp_target_table_name,
             serving_names_mapping=serving_names_mapping,
         )
@@ -320,6 +325,11 @@ class Target(
         Returns
         -------
         TargetTable
+
+        Examples
+        --------
+        >>> target = catalog.get_target("target")  # doctest: +SKIP
+        >>> target.compute_target_table(observation_table, "target_table")  # doctest: +SKIP
         """
         target_table_create_params = TargetTableCreate(
             name=target_table_name,
