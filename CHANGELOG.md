@@ -99,6 +99,7 @@
 + `data-warehouse` Fix metadata schema update for Spark and Databricks and bump working version
 + `service` Fix TABLESAMPLE syntax error in Spark for very small sample percentage
 + `feature` fix view join operation bug which causes improper query graph pruning
++ `service` Fix a bug in add_feature() where entity_id was incorrectly attached to the derived column
 
 ## v0.3.1
 
