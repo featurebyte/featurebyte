@@ -288,6 +288,11 @@ class Target(
             Materialized target.
 
             **Note**: `POINT_IN_TIME` values will be converted to UTC time.
+
+        Examples
+        --------
+        >>> target = catalog.get_target("target")  # doctest: +SKIP
+        >>> target.compute_targets(observation_table)  # doctest: +SKIP
         """
         temp_target_table_name = f"__TEMPORARY_TARGET_TABLE_{ObjectId()}"
         temp_target_table = self.compute_target_table(
@@ -324,6 +329,11 @@ class Target(
         Returns
         -------
         TargetTable
+
+        Examples
+        --------
+        >>> target = catalog.get_target("target")  # doctest: +SKIP
+        >>> target.compute_target_table(observation_table, "target_table")  # doctest: +SKIP
         """
         target_table_create_params = TargetTableCreate(
             name=target_table_name,
