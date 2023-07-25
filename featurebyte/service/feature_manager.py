@@ -8,6 +8,7 @@ from typing import List, Optional, Set
 from datetime import datetime, timedelta, timezone
 
 import pandas as pd
+from bson import ObjectId
 
 from featurebyte.common import date_util
 from featurebyte.common.date_util import get_next_job_datetime
@@ -18,6 +19,7 @@ from featurebyte.models.online_store import OnlineFeatureSpec
 from featurebyte.models.online_store_compute_query import OnlineStoreComputeQueryModel
 from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.service.feature import FeatureService
+from featurebyte.service.online_store_cleanup_scheduler import OnlineStoreCleanupSchedulerService
 from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
 from featurebyte.service.tile_manager import TileManagerService
 from featurebyte.service.tile_registry_service import TileRegistryService
@@ -34,14 +36,18 @@ class FeatureManagerService:
 
     def __init__(
         self,
+        catalog_id: ObjectId,
         tile_manager_service: TileManagerService,
         tile_registry_service: TileRegistryService,
         online_store_compute_query_service: OnlineStoreComputeQueryService,
+        online_store_cleanup_scheduler_service: OnlineStoreCleanupSchedulerService,
         feature_service: FeatureService,
     ):
+        self.catalog_id = catalog_id
         self.tile_manager_service = tile_manager_service
         self.tile_registry_service = tile_registry_service
         self.online_store_compute_query_service = online_store_compute_query_service
+        self.online_store_cleanup_scheduler_service = online_store_cleanup_scheduler_service
         self.feature_service = feature_service
 
     async def online_enable(
@@ -118,6 +124,16 @@ class FeatureManagerService:
                 tile_spec=aggregation_id_to_tile_spec[query.aggregation_id],
                 schedule_time=schedule_time,
                 aggregation_result_name=query.result_name,
+            )
+            if is_recreating_schema:
+                # If re-creating schema, the cleanup job would have been already scheduled, and this
+                # part can be skipped
+                continue
+            assert query.feature_store_id is not None
+            await self.online_store_cleanup_scheduler_service.start_job_if_not_exist(
+                catalog_id=self.catalog_id,
+                feature_store_id=query.feature_store_id,
+                online_store_table_name=query.table_name,
             )
 
     async def _get_unscheduled_aggregation_result_names(
@@ -261,6 +277,8 @@ class FeatureManagerService:
         for tile_spec in feature_spec.feature.tile_specs:
             await self.tile_manager_service.remove_tile_jobs(tile_spec)
 
+        await self.remove_online_store_cleanup_jobs(feature_spec)
+
     async def remove_online_store_compute_queries(self, feature_spec: OnlineFeatureSpec) -> None:
         """
         Update the list of currently active online store compute queries
@@ -290,6 +308,31 @@ class FeatureManagerService:
                     # Backward compatibility for features created before the queries are managed by
                     # OnlineStoreComputeQueryService
                     pass
+
+    async def remove_online_store_cleanup_jobs(self, feature_spec: OnlineFeatureSpec) -> None:
+        """
+        Stop online store cleanup jobs if no longer referenced by other online enabled features
+
+        Parameters
+        ----------
+        feature_spec: OnlineFeatureSpec
+            Specification of the feature that is currently being online disabled
+        """
+        online_store_table_names = {query.table_name for query in feature_spec.precompute_queries}
+        query_filter = {
+            "online_enabled": True,
+            "online_store_table_names": {
+                "$in": list(online_store_table_names),
+            },
+        }
+        online_store_table_names_still_in_use = set()
+        async for feature_model in self.feature_service.list_documents_as_dict_iterator(
+            query_filter=query_filter
+        ):
+            online_store_table_names_still_in_use.update(feature_model["online_store_table_names"])
+        for table_name in online_store_table_names:
+            if table_name not in online_store_table_names_still_in_use:
+                await self.online_store_cleanup_scheduler_service.stop_job(table_name)
 
     @staticmethod
     async def retrieve_feature_tile_inconsistency_data(

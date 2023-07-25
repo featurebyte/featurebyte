@@ -11,6 +11,14 @@ from featurebyte.models.online_store_compute_query import OnlineStoreComputeQuer
 from featurebyte.sql.tile_schedule_online_store import TileScheduleOnlineStore
 
 
+@pytest.fixture
+def online_store_cleanup_service(app_container):
+    """
+    Fixture to cleanup online store table
+    """
+    return app_container.online_store_cleanup_service
+
+
 async def retrieve_online_store_content(session, feature_store_table_name, aggregation_result_name):
     """
     Helper function to retrieve online store content
@@ -235,3 +243,52 @@ async def test_schedule_online_feature_store__change_entity_universe(
         [100, 100],
     )
     assert result["PRODUCT_ACTION"].tolist() == ["action", "action"]
+
+
+@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
+@pytest.mark.asyncio
+async def test_online_store_table_cleanup(
+    session,
+    persistent,
+    tile_task_prep_spark,
+    online_store_table_version_service,
+    online_store_compute_query_service,
+    online_store_cleanup_service,
+    feature_store,
+):
+    """
+    Test cleaning up of online store tables
+    """
+
+    tile_id, agg_id, feature_store_table_name, feature_name, entity_col_names = tile_task_prep_spark
+    date_ts_str = datetime.now().isoformat()[:-3] + "Z"
+
+    # Populate the online store table multiple times to get different versions
+    tile_online_store_ins = TileScheduleOnlineStore(
+        session=session,
+        aggregation_id=agg_id,
+        job_schedule_ts_str=date_ts_str,
+        online_store_table_version_service=online_store_table_version_service,
+        online_store_compute_query_service=online_store_compute_query_service,
+    )
+    await tile_online_store_ins.execute()
+    await tile_online_store_ins.execute()
+    await tile_online_store_ins.execute()
+
+    result = await retrieve_online_store_content(session, feature_store_table_name, feature_name)
+    assert len(result) == 6
+    assert result[InternalName.ONLINE_STORE_VALUE_COLUMN].tolist() == [3, 6, 3, 6, 3, 6]
+    assert result[InternalName.ONLINE_STORE_VERSION_COLUMN].tolist() == [0, 0, 1, 1, 2, 2]
+    assert result["PRODUCT_ACTION"].tolist() == ["view"] * 6
+
+    # Run clean up
+    await online_store_cleanup_service.run_cleanup(
+        feature_store_id=feature_store.id, online_store_table_name=feature_store_table_name
+    )
+
+    # Check that the latest two versions are kept
+    result = await retrieve_online_store_content(session, feature_store_table_name, feature_name)
+    assert len(result) == 4
+    assert result[InternalName.ONLINE_STORE_VALUE_COLUMN].tolist() == [3, 6, 3, 6]
+    assert result[InternalName.ONLINE_STORE_VERSION_COLUMN].tolist() == [1, 1, 2, 2]
+    assert result["PRODUCT_ACTION"].tolist() == ["view"] * 4

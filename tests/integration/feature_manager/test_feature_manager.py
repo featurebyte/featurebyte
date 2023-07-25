@@ -79,6 +79,14 @@ def periodic_task_service_fixture(app_container):
     return app_container.periodic_task_service
 
 
+@pytest.fixture(name="online_store_cleanup_scheduler_service")
+def online_store_cleanup_scheduler_service_fixture(app_container):
+    """
+    Online store cleanup scheduler service fixture
+    """
+    return app_container.online_store_cleanup_scheduler_service
+
+
 async def list_scheduled_tasks(periodic_task_service, feature_service, saved_feature):
     """
     List scheduled tasks for the given feature
@@ -106,6 +114,22 @@ async def list_online_store_compute_queries(
     out = []
     async for query in online_store_compute_query_service.list_by_aggregation_id(agg_id):
         out.append(query)
+    return out
+
+
+async def list_online_store_cleanup_tasks(
+    online_store_cleanup_scheduler_service, feature_service, saved_feature
+):
+    """
+    List online store cleanup tasks for the given feature
+    """
+    feature_model = await feature_service.get_document(saved_feature.id)
+    feature_spec = OnlineFeatureSpec(feature=feature_model.dict(by_alias=True))
+    out = []
+    for query in feature_spec.precompute_queries:
+        task = await online_store_cleanup_scheduler_service.get_periodic_task(query.table_name)
+        if task is not None:
+            out.append(task)
     return out
 
 
@@ -299,6 +323,7 @@ async def test_online_disable(
     periodic_task_service,
     feature_service,
     online_store_compute_query_service,
+    online_store_cleanup_scheduler_service,
 ):
     """
     Test online_disable behaves correctly
@@ -321,6 +346,12 @@ async def test_online_disable(
             )
             assert len(online_store_compute_queries) == 1
 
+            # Check clean up task
+            cleanup_tasks = await list_online_store_cleanup_tasks(
+                online_store_cleanup_scheduler_service, feature_service, feature_sum_30h
+            )
+            assert len(cleanup_tasks) == 1
+
             # 2. Disable the first feature. Since the tile is still used by the second feature, the
             # tile tasks should not be removed.
             deployment1.disable()
@@ -335,6 +366,12 @@ async def test_online_disable(
             )
             assert len(online_store_compute_queries) == 1
 
+            # Clean up task still required
+            cleanup_tasks = await list_online_store_cleanup_tasks(
+                online_store_cleanup_scheduler_service, feature_service, feature_sum_30h_transformed
+            )
+            assert len(cleanup_tasks) == 1
+
             # 3. Disable the second feature. Since the tile is no longer used by any feature, the
             # tile tasks should be removed.
             deployment2.disable()
@@ -348,6 +385,12 @@ async def test_online_disable(
                 online_store_compute_query_service, feature_service, feature_sum_30h_transformed
             )
             assert len(online_store_compute_queries) == 0
+
+            # Clean up task should be removed
+            cleanup_tasks = await list_online_store_cleanup_tasks(
+                online_store_cleanup_scheduler_service, feature_service, feature_sum_30h_transformed
+            )
+            assert len(cleanup_tasks) == 0
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)

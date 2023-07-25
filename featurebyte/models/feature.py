@@ -247,6 +247,7 @@ class FeatureModel(BaseFeatureModel):
     )
     aggregation_ids: List[str] = Field(allow_mutation=False, default_factory=list)
     aggregation_result_names: List[str] = Field(allow_mutation=False, default_factory=list)
+    online_store_table_names: List[str] = Field(allow_mutation=False, default_factory=list)
 
     @root_validator
     @classmethod
@@ -274,12 +275,15 @@ class FeatureModel(BaseFeatureModel):
 
         values["aggregation_ids"] = aggregation_ids
 
-        values["aggregation_result_names"] = [
-            query.result_name
-            for query in get_online_store_precompute_queries(
-                graph, graph.get_node_by_name(node_name), feature_store_type
-            )
-        ]
+        values["aggregation_result_names"] = []
+        online_store_table_names = set()
+        for query in get_online_store_precompute_queries(
+            graph, graph.get_node_by_name(node_name), feature_store_type
+        ):
+            values["aggregation_result_names"].append(query.result_name)
+            online_store_table_names.add(query.table_name)
+        values["online_store_table_names"] = sorted(online_store_table_names)
+
         return values
 
     class Settings(BaseFeatureModel.Settings):
@@ -296,4 +300,5 @@ class FeatureModel(BaseFeatureModel):
             pymongo.operations.IndexModel("deployed_feature_list_ids"),
             pymongo.operations.IndexModel("aggregation_ids"),
             pymongo.operations.IndexModel("aggregation_result_names"),
+            pymongo.operations.IndexModel("online_store_table_names"),
         ]

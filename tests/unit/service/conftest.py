@@ -288,6 +288,18 @@ def online_store_table_version_service_fixture(app_container):
     return app_container.online_store_table_version_service
 
 
+@pytest.fixture(name="online_store_cleanup_scheduler_service")
+def online_store_cleanup_scheduler_service_fixture(app_container):
+    """OnlineStoreCleanupSchedulerService fixture"""
+    return app_container.online_store_cleanup_scheduler_service
+
+
+@pytest.fixture(name="periodic_task_service")
+def periodic_task_service_fixture(app_container):
+    """PeriodicTaskService fixture"""
+    return app_container.periodic_task_service
+
+
 @pytest.fixture(name="version_service")
 def version_service_fixture(app_container):
     """VersionService fixture"""
