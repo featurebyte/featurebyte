@@ -15,6 +15,7 @@ from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.materialized_table import MaterializedTableMixin
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.common.doc_util import FBAutoDoc
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.target_table import TargetTableModel
 from featurebyte.schema.target_table import TargetTableListRecord
 
@@ -40,6 +41,30 @@ class TargetTable(ApiObject, MaterializedTableMixin):
         ForeignKeyMapping("feature_store_id", FeatureStore, "feature_store_name"),
         ForeignKeyMapping("observation_table_id", ObservationTable, "observation_table_name"),
     ]
+
+    @property
+    def observation_table_id(self) -> Optional[PydanticObjectId]:
+        """
+        Observation table ID.
+
+        Returns
+        -------
+        Optional[PydanticObjectId]
+            Observation table ID
+        """
+        return self.cached_model.observation_table_id
+
+    @property
+    def target_id(self) -> PydanticObjectId:
+        """
+        Get the target ID.
+
+        Returns
+        -------
+        PydanticObjectId
+            Target ID
+        """
+        return self.cached_model.target_id
 
     def preview(self, limit: int = 10) -> pd.DataFrame:
         """
