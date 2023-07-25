@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.4.0
+## v0.4.1 (2023-07-25)
 
 ### 🛑 Breaking Changes
 
@@ -101,14 +101,16 @@
 + `feature` fix view join operation bug which causes improper query graph pruning
 + `service` Fix a bug in add_feature() where entity_id was incorrectly attached to the derived column
 
-## v0.3.1
+## 0.4.0 yanked (2023-07-25)
+
+## v0.3.1 (2023-06-08)
 
 ### 🐛 Bug Fixes
 
 + `websocket` make websocket client more resilient connection lost
 + `websocket` fix client failure when starting secure websocket connection
 
-## v0.3.0
+## v0.3.0 (2023-06-05)
 
 ### 💡 Enhancements
 
@@ -166,7 +168,7 @@
 + `mongodb` update `get_persistent()` by removing global persistent object (which is not thread safe)
 + `feature-definition` fixed bug in `feature.definition` so that it is consistent with the underlying query graph
 
-## v0.2.2
+## v0.2.2 (2023-05-10)
 
 ### 💡 Enhancements
 
@@ -178,14 +180,14 @@
 + Added `dependencies` workflow to repo to check for dependency changes in PRs
 + Fixed taskfile `java` tasks to properly cache the downloaded jar files.
 
-## v0.2.1
+## v0.2.1 (2023-05-10)
 
 ### 🐛 Bug Fixes
 
 + Removed additional dependencies specified in featurebyte client
 
 
-## v0.2.0
+## v0.2.0 (2023-05-08)
 
 ### 🛑 Breaking changes
 
