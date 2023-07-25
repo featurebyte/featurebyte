@@ -261,7 +261,7 @@ class Target(
     @typechecked
     def compute_target(
         self,
-        observation_set: pd.DataFrame,
+        observation_table: Union[ObservationTable, pd.DataFrame],
         serving_names_mapping: Optional[Dict[str, str]] = None,
     ) -> pd.DataFrame:
         """
@@ -273,7 +273,7 @@ class Target(
 
         Parameters
         ----------
-        observation_set : pd.DataFrame
+        observation_table : Union[ObservationTable, pd.DataFrame]
             Observation set DataFrame or ObservationTable object, which combines points-in-time and values
             of the target primary entity or its descendant (serving entities). The column containing the point-in-time
             values should be named `POINT_IN_TIME`, while the columns representing entity values should be named using
@@ -291,7 +291,7 @@ class Target(
         """
         temp_target_table_name = f"__TEMPORARY_TARGET_TABLE_{ObjectId()}"
         temp_target_table = self.compute_target_table(
-            observation_table=observation_set,
+            observation_table=observation_table,
             target_table_name=temp_target_table_name,
             serving_names_mapping=serving_names_mapping,
         )
