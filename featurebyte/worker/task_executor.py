@@ -16,7 +16,6 @@ import gevent
 from celery import Task
 from celery.exceptions import SoftTimeLimitExceeded
 
-from featurebyte import InvalidSettingsError
 from featurebyte.config import Configurations, get_home_path
 from featurebyte.enum import WorkerCommand
 from featurebyte.logging import get_logger

@@ -5,7 +5,6 @@ import os
 import shutil
 import sys
 from http import HTTPStatus
-from pathlib import Path
 
 import pandas as pd
 import yaml
@@ -518,8 +517,6 @@ __all__ = [
     # utility
     "list_unsaved_features",
     "UDF",
-    # errors
-    "InvalidSettingsError",
 ]
 
 

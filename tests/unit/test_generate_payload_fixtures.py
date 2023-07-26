@@ -56,15 +56,6 @@ def replace_obj_id(obj: Any, obj_id: ObjectId) -> Any:
     return type(obj)(**params)
 
 
-@pytest.fixture(name="reset_configurations")
-def reset_configurations_fixture():
-    """
-    This is required becuase test_config.py sets a global state
-    """
-    config = Configurations(force=True)
-    config.use_profile("local")
-
-
 def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
     reset_configurations,
     update_fixtures,
