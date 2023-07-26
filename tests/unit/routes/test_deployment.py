@@ -161,6 +161,59 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json()["detail"] == "The deployment is being updated."
 
+    @pytest.mark.asyncio
+    async def test_update_deployment_enabled__when_there_exists_matched_running_task(
+        self,
+        test_api_client_persistent,
+        create_success_response,
+        default_catalog_id,
+        mock_redis_lock,
+        user_id,
+    ):
+        """Test update deployment get back the same task id when the task is the same"""
+        deployment_id = create_success_response.json()["_id"]
+        test_api_client, persistent = test_api_client_persistent
+
+        # insert a task to the persistent storage to simulate the case when the task is submitted &
+        # being processed by other worker
+        task_id = "64c0ddcbcfe3d8e8e06c1be0"
+        await persistent.insert_one(
+            collection_name="celery_taskmeta",
+            document={
+                "_id": task_id,
+                "status": "PENDING",
+                "kwargs": {
+                    "command": "DEPLOYMENT_CREATE_UPDATE",
+                    "output_document_id": deployment_id,
+                    "deployment_payload": {"enabled": True, "type": "update"},
+                },
+            },
+            user_id=user_id,
+            disable_audit=True,
+        )
+
+        # check that the same task id is returned
+        mock_redis_lock.return_value.acquire.return_value = True
+        response = test_api_client.patch(
+            f"/deployment/{deployment_id}",
+            headers={"active-catalog-id": str(default_catalog_id)},
+            json={"enabled": True},
+        )
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["id"] == task_id
+
+        # check that a conflicting task is submitted
+        response = test_api_client.patch(
+            f"/deployment/{deployment_id}",
+            headers={"active-catalog-id": str(default_catalog_id)},
+            json={"enabled": False},
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert (
+            response.json()["detail"]
+            == "There is an existing task to update deployment (enabled: True)."
+        )
+
     def test_deployment_summary_200(
         self, test_api_client_persistent, create_success_response, default_catalog_id
     ):
