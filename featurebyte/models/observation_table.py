@@ -4,16 +4,20 @@ ObservationTableModel models
 from __future__ import annotations
 
 from typing import Optional, Union
-from typing_extensions import Annotated
+from typing_extensions import Annotated, Literal
 
 from datetime import datetime  # pylint: disable=wrong-import-order
 
 import pymongo
 from pydantic import Field, StrictStr, validator
 
-from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.materialized_table import MaterializedTableModel
-from featurebyte.models.request_input import SourceTableRequestInput, ViewRequestInput
+from featurebyte.models.request_input import (
+    RequestInputType,
+    SourceTableRequestInput,
+    ViewRequestInput,
+)
 
 
 class ViewObservationInput(ViewRequestInput):
@@ -28,8 +32,19 @@ class SourceTableObservationInput(SourceTableRequestInput):
     """
 
 
+class TargetInput(FeatureByteBaseModel):
+    """
+    TargetInput is an input from a target that can eb used to create an ObservationTableModel
+    """
+
+    target_id: PydanticObjectId
+    observation_table_id: Optional[PydanticObjectId]
+    type: Literal[RequestInputType.OBSERVATION_TABLE, RequestInputType.DATAFRAME]
+
+
 ObservationInput = Annotated[
-    Union[ViewObservationInput, SourceTableObservationInput], Field(discriminator="type")
+    Union[ViewObservationInput, SourceTableObservationInput, TargetInput],
+    Field(discriminator="type"),
 ]
 
 
