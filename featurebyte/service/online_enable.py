@@ -7,6 +7,7 @@ from typing import Any, Optional
 
 from bson.objectid import ObjectId
 
+from featurebyte.exception import CredentialsError
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureListModel
@@ -164,7 +165,7 @@ class OnlineEnableService(OpsServiceMixin):
                 session, online_feature_spec, is_recreating_schema=is_recreating_schema
             )
         else:
-            await feature_manager_service.online_disable(online_feature_spec)
+            await feature_manager_service.online_disable(session, online_feature_spec)
 
     async def update_data_warehouse(
         self, updated_feature: FeatureModel, online_enabled_before_update: bool, get_credential: Any
@@ -181,20 +182,30 @@ class OnlineEnableService(OpsServiceMixin):
             Online enabled status
         get_credential: Any
             Get credential handler function
+
+        Raises
+        ------
+        CredentialsError
+            If data warehouse session cannot be created
         """
         if updated_feature.online_enabled == online_enabled_before_update:
             # updated_feature has the same online_enabled status as the original one
             # no need to update
             return
 
-        if updated_feature.online_enabled:
-            feature_store_model = await self.feature_store_service.get_document(
-                document_id=updated_feature.tabular_source.feature_store_id
-            )
+        feature_store_model = await self.feature_store_service.get_document(
+            document_id=updated_feature.tabular_source.feature_store_id
+        )
+        try:
             session = await self.session_manager_service.get_feature_store_session(
                 feature_store_model, get_credential
             )
-        else:
+        except CredentialsError as exc:
+            if updated_feature.online_enabled:
+                raise exc
+            # This could happen if the data warehouse is defunct and no session can be established.
+            # In case of disabling a feature, we still want to be able to proceed and disable the
+            # associated periodic tasks.
             session = None
 
         await self.update_data_warehouse_with_session(

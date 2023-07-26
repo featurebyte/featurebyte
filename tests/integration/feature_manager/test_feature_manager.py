@@ -133,6 +133,20 @@ async def list_online_store_cleanup_tasks(
     return out
 
 
+async def online_store_table_exists(session, feature_service, saved_feature):
+    """
+    Check if the online store table exists for the given feature
+    """
+    feature_model = await feature_service.get_document(saved_feature.id)
+    assert len(feature_model.online_store_table_names) == 1
+    table_name = feature_model.online_store_table_names[0]
+    try:
+        await session.execute_query(f"select * from {table_name} limit 1")
+    except:
+        return False
+    return True
+
+
 @pytest.fixture(name="feature_sql")
 def feature_sql_fixture():
     """
@@ -318,6 +332,7 @@ async def test_online_enabled_feature_spec(
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_online_disable(
+    session,
     feature_sum_30h,
     feature_sum_30h_transformed,
     periodic_task_service,
@@ -351,6 +366,7 @@ async def test_online_disable(
                 online_store_cleanup_scheduler_service, feature_service, feature_sum_30h
             )
             assert len(cleanup_tasks) == 1
+            assert await online_store_table_exists(session, feature_service, feature_sum_30h)
 
             # 2. Disable the first feature. Since the tile is still used by the second feature, the
             # tile tasks should not be removed.
@@ -371,6 +387,7 @@ async def test_online_disable(
                 online_store_cleanup_scheduler_service, feature_service, feature_sum_30h_transformed
             )
             assert len(cleanup_tasks) == 1
+            assert await online_store_table_exists(session, feature_service, feature_sum_30h)
 
             # 3. Disable the second feature. Since the tile is no longer used by any feature, the
             # tile tasks should be removed.
@@ -391,6 +408,7 @@ async def test_online_disable(
                 online_store_cleanup_scheduler_service, feature_service, feature_sum_30h_transformed
             )
             assert len(cleanup_tasks) == 0
+            assert not await online_store_table_exists(session, feature_service, feature_sum_30h)
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
