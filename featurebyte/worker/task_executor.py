@@ -131,12 +131,8 @@ class TaskExecutor:
             "default_profile: worker\n\n",
             encoding="utf-8",
         )
-        # NOTE: Unable to remove this try-except block
-        # due to test_task_manager expecting a server listening on 127.0.0.1:8080/status endpoint
-        try:
-            Configurations(force=True).use_profile("worker")
-        except InvalidSettingsError as exc:
-            logger.error("Failed to reload worker config", extra={"error": exc})
+        # Reload newly written configuration
+        Configurations(force=True)
 
     async def execute(self) -> Any:
         """
