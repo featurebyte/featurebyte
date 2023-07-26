@@ -5,12 +5,15 @@ from __future__ import annotations
 
 from typing import Any, Literal, Optional
 
+import time
 from http import HTTPStatus
 
 from bson import ObjectId
 from fastapi import HTTPException
+from redis import Redis
+from redis.lock import Lock
 
-from featurebyte.exception import FeatureListNotOnlineEnabledError
+from featurebyte.exception import DocumentUpdateError, FeatureListNotOnlineEnabledError
 from featurebyte.models.deployment import DeploymentModel
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.routes.common.base import BaseDocumentController
@@ -38,6 +41,10 @@ from featurebyte.service.deployment import AllDeploymentService, DeploymentServi
 from featurebyte.service.feature_list import AllFeatureListService, FeatureListService
 from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
 from featurebyte.service.online_serving import OnlineServingService
+from featurebyte.utils.messaging import REDIS_URI
+
+REDIS_LOCK_EXPIRE_TIME = 30
+MAX_MONGO_TASK_UPDATE_WAIT_TIME = 10
 
 
 class DeploymentController(
@@ -115,16 +122,63 @@ class DeploymentController(
         """
         # check if deployment exists
         deployment = await self.service.get_document(document_id=document_id)
-        if data.enabled is not None and data.enabled != deployment.enabled:
-            payload = DeploymentCreateUpdateTaskPayload(
-                deployment_payload=UpdateDeploymentPayload(enabled=data.enabled),
-                user_id=self.service.user.id,
-                catalog_id=self.service.catalog_id,
-                output_document_id=document_id,
-            )
-            task_id = await self.task_controller.task_manager.submit(payload=payload)
-            return await self.task_controller.get_task(task_id=str(task_id))
-        return None
+
+        # create a lock that maximum live for REDIS_LOCK_EXPIRE_TIME seconds
+        redis_conn = Redis.from_url(REDIS_URI)
+        lock = Lock(
+            redis_conn, f"deployment:{deployment.id}:update", timeout=REDIS_LOCK_EXPIRE_TIME
+        )
+
+        # set blocking to False to prevent waiting for the lock
+        if lock.acquire(blocking=False):
+            task_manager = self.task_controller.task_manager
+            try:
+                # check whether there are existing task
+                tasks, total = await task_manager.list_tasks(
+                    query_filter={
+                        "kwargs.command": "DEPLOYMENT_CREATE_UPDATE",
+                        "kwargs.output_document_id": str(document_id),
+                        "status": {"$in": ["STARTED", "PENDING"]},
+                    }
+                )
+                if total > 0:
+                    task = tasks[0]
+                    task_enabled = task.payload["deployment_payload"]["enabled"]
+                    if task_enabled == data.enabled:
+                        return task
+                    raise DocumentUpdateError(
+                        f"There is an existing task to update deployment (enabled: {task_enabled})."
+                    )
+
+                if data.enabled is None or data.enabled == deployment.enabled:
+                    return None
+
+                payload = DeploymentCreateUpdateTaskPayload(
+                    deployment_payload=UpdateDeploymentPayload(enabled=data.enabled),
+                    user_id=self.service.user.id,
+                    catalog_id=self.service.catalog_id,
+                    output_document_id=document_id,
+                )
+                task_id = await task_manager.submit(payload=payload)
+
+                # check whether the mongo is updated, if not, wait for the mongo to be updated
+                start = time.time()
+                while time.time() - start < MAX_MONGO_TASK_UPDATE_WAIT_TIME:
+                    _, total = await task_manager.list_tasks(query_filter={"_id": str(task_id)})
+                    if total > 0:
+                        break
+                    time.sleep(0.1)
+
+                # retrieve and return the task
+                output = await self.task_controller.get_task(task_id=str(task_id))
+                return output
+            finally:
+                # if the lock is owned, release it
+                # if the lock is expired, it will be released automatically
+                if lock.owned():
+                    lock.release()
+        else:
+            raise DocumentUpdateError("The deployment is being updated.")
 
     async def get_info(self, document_id: ObjectId, verbose: bool) -> DeploymentInfo:
         """

@@ -105,6 +105,7 @@ class TaskManager:
         page: int = 1,
         page_size: int = DEFAULT_PAGE_SIZE,
         ascending: bool = True,
+        query_filter: Optional[dict[str, Any]] = None,
     ) -> tuple[list[Task], int]:
         """
         List tasks.
@@ -117,6 +118,8 @@ class TaskManager:
             Page size
         ascending: bool
             Sort direction
+        query_filter: Optional[dict[str, Any]]
+            Query filter
 
         Returns
         -------
@@ -125,7 +128,7 @@ class TaskManager:
         # Perform the query
         results, total = await self.persistent.find(
             collection_name=TaskModel.collection_name(),
-            query_filter={},
+            query_filter=query_filter or {},
             page=page,
             page_size=page_size,
             sort_by="date_done",

@@ -31,6 +31,12 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         with patch("featurebyte.service.deploy.OnlineEnableService.update_data_warehouse"):
             yield
 
+    @pytest.fixture(name="mock_redis_lock")
+    def mock_redis_lock_fixture(self):
+        """Mock redis lock"""
+        with patch("featurebyte.routes.deployment.controller.Lock") as mock_redis_lock:
+            yield mock_redis_lock
+
     def setup_creation_route(self, api_client):
         """Setup for post route"""
         catalog_id = api_client.get("/catalog").json()["data"][0]["_id"]
@@ -133,6 +139,27 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
             "page_size": 10,
             "total": 3,
         }
+
+    def test_update_deployment_enabled__lock_by_other_task(
+        self,
+        test_api_client_persistent,
+        create_success_response,
+        default_catalog_id,
+        mock_redis_lock,
+    ):
+        """Test update deployment enabled prevent making conflicting deployment enabled task"""
+        deployment_id = create_success_response.json()["_id"]
+        test_api_client, _ = test_api_client_persistent
+
+        # test the case when the lock is held by other task
+        mock_redis_lock.return_value.acquire.return_value = False
+        response = test_api_client.patch(
+            f"/deployment/{deployment_id}",
+            headers={"active-catalog-id": str(default_catalog_id)},
+            json={"enabled": True},
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.json()["detail"] == "The deployment is being updated."
 
     def test_deployment_summary_200(
         self, test_api_client_persistent, create_success_response, default_catalog_id
