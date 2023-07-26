@@ -243,7 +243,7 @@ async def test_online_disable(
         with mock.patch(
             "featurebyte.service.online_store_compute_query_service.OnlineStoreComputeQueryService.delete_by_result_name"
         ) as mock_delete_by_result_name:
-            await feature_manager_service.online_disable(feature_spec)
+            await feature_manager_service.online_disable(mock_snowflake_session, feature_spec)
 
     mock_delete_by_result_name.assert_called_once()
 
