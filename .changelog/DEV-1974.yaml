@@ -16,7 +16,7 @@ component: service
 issues: []
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Implement scheduled task to clean up stale versions in online store tables"
+note: "Implement scheduled task to clean up stale versions and drop online store tables when possible"
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
