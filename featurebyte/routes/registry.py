@@ -63,6 +63,7 @@ from featurebyte.service.entity import EntityService
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.event_table import EventTableService
 from featurebyte.service.feature import FeatureService
+from featurebyte.service.feature_facade import FeatureFacadeService
 from featurebyte.service.feature_job_setting_analysis import FeatureJobSettingAnalysisService
 from featurebyte.service.feature_list import AllFeatureListService, FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
@@ -163,6 +164,7 @@ app_container_config.register_class(EventTableController)
 app_container_config.register_class(EventTableService)
 app_container_config.register_class(FeatureController)
 app_container_config.register_class(FeatureService)
+app_container_config.register_class(FeatureFacadeService)
 app_container_config.register_class(FeatureJobSettingAnalysisController)
 app_container_config.register_class(FeatureJobSettingAnalysisService)
 app_container_config.register_class(FeatureListController)
