@@ -133,6 +133,20 @@ async def list_online_store_cleanup_tasks(
     return out
 
 
+async def online_store_table_exists(session, feature_service, saved_feature):
+    """
+    Check if the online store table exists for the given feature
+    """
+    feature_model = await feature_service.get_document(saved_feature.id)
+    assert len(feature_model.online_store_table_names) == 1
+    table_name = feature_model.online_store_table_names[0]
+    try:
+        await session.execute_query(f"select * from {table_name} limit 1")
+    except:
+        return False
+    return True
+
+
 @pytest.fixture(name="feature_sql")
 def feature_sql_fixture():
     """
@@ -208,7 +222,7 @@ async def test_online_enabled__without_snowflake_scheduling(
             assert len(tasks) == 0
 
         finally:
-            await feature_manager_service.online_disable(online_feature_spec)
+            await feature_manager_service.online_disable(None, online_feature_spec)
             await session.execute_query(
                 f"DELETE FROM {feature_store_table_name} WHERE {InternalName.ONLINE_STORE_RESULT_NAME_COLUMN} = 'sum_30h'"
             )
@@ -252,7 +266,7 @@ async def online_enabled_feature_spec_fixture(
 
         yield online_feature_spec, schedule_time
 
-        await feature_manager_service.online_disable(online_feature_spec)
+        await feature_manager_service.online_disable(session, online_feature_spec)
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
@@ -318,6 +332,7 @@ async def test_online_enabled_feature_spec(
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_online_disable(
+    session,
     feature_sum_30h,
     feature_sum_30h_transformed,
     periodic_task_service,
@@ -351,6 +366,7 @@ async def test_online_disable(
                 online_store_cleanup_scheduler_service, feature_service, feature_sum_30h
             )
             assert len(cleanup_tasks) == 1
+            assert await online_store_table_exists(session, feature_service, feature_sum_30h)
 
             # 2. Disable the first feature. Since the tile is still used by the second feature, the
             # tile tasks should not be removed.
@@ -371,6 +387,7 @@ async def test_online_disable(
                 online_store_cleanup_scheduler_service, feature_service, feature_sum_30h_transformed
             )
             assert len(cleanup_tasks) == 1
+            assert await online_store_table_exists(session, feature_service, feature_sum_30h)
 
             # 3. Disable the second feature. Since the tile is no longer used by any feature, the
             # tile tasks should be removed.
@@ -391,6 +408,7 @@ async def test_online_disable(
                 online_store_cleanup_scheduler_service, feature_service, feature_sum_30h_transformed
             )
             assert len(cleanup_tasks) == 0
+            assert not await online_store_table_exists(session, feature_service, feature_sum_30h)
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
@@ -416,7 +434,7 @@ async def test_online_enable__re_deploy_from_latest_tile_start(
     last_tile_start_ts = tile_model.last_run_metadata_offline.tile_end_date
 
     # disable/un-deploy
-    await feature_manager_service.online_disable(online_feature_spec)
+    await feature_manager_service.online_disable(session, online_feature_spec)
 
     # re-deploy and verify that the tile start ts is the same as the last tile start ts
     with patch(

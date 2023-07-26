@@ -262,12 +262,16 @@ class FeatureManagerService:
             query.feature_store_id = feature_spec.feature.tabular_source.feature_store_id
             await self.online_store_compute_query_service.create_document(query)
 
-    async def online_disable(self, feature_spec: OnlineFeatureSpec) -> None:
+    async def online_disable(
+        self, session: Optional[BaseSession], feature_spec: OnlineFeatureSpec
+    ) -> None:
         """
         Schedule both online and offline tile jobs
 
         Parameters
         ----------
+        session: Optional[BaseSession]
+            Instance of BaseSession to interact with the data warehouse
         feature_spec: OnlineFeatureSpec
             input feature instance
         """
@@ -277,7 +281,7 @@ class FeatureManagerService:
         for tile_spec in feature_spec.feature.tile_specs:
             await self.tile_manager_service.remove_tile_jobs(tile_spec)
 
-        await self.remove_online_store_cleanup_jobs(feature_spec)
+        await self.remove_online_store_cleanup_jobs(session, feature_spec)
 
     async def remove_online_store_compute_queries(self, feature_spec: OnlineFeatureSpec) -> None:
         """
@@ -309,12 +313,16 @@ class FeatureManagerService:
                     # OnlineStoreComputeQueryService
                     pass
 
-    async def remove_online_store_cleanup_jobs(self, feature_spec: OnlineFeatureSpec) -> None:
+    async def remove_online_store_cleanup_jobs(
+        self, session: Optional[BaseSession], feature_spec: OnlineFeatureSpec
+    ) -> None:
         """
         Stop online store cleanup jobs if no longer referenced by other online enabled features
 
         Parameters
         ----------
+        session: Optional[BaseSession]
+            Instance of BaseSession to interact with the data warehouse
         feature_spec: OnlineFeatureSpec
             Specification of the feature that is currently being online disabled
         """
@@ -333,6 +341,8 @@ class FeatureManagerService:
         for table_name in online_store_table_names:
             if table_name not in online_store_table_names_still_in_use:
                 await self.online_store_cleanup_scheduler_service.stop_job(table_name)
+                if session is not None:
+                    await session.execute_query(f"DROP TABLE IF EXISTS {table_name}")
 
     @staticmethod
     async def retrieve_feature_tile_inconsistency_data(
