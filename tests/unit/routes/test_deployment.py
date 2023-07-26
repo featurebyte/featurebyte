@@ -31,12 +31,6 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         with patch("featurebyte.service.deploy.OnlineEnableService.update_data_warehouse"):
             yield
 
-    @pytest.fixture(name="mock_redis_lock")
-    def mock_redis_lock_fixture(self):
-        """Mock redis lock"""
-        with patch("featurebyte.routes.deployment.controller.Lock") as mock_redis_lock:
-            yield mock_redis_lock
-
     def setup_creation_route(self, api_client):
         """Setup for post route"""
         catalog_id = api_client.get("/catalog").json()["data"][0]["_id"]

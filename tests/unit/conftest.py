@@ -128,6 +128,13 @@ def mock_get_persistent_function(mongo_persistent):
         yield mock_persistent
 
 
+@pytest.fixture(name="mock_redis_lock", autouse=True)
+def mock_redis_lock_fixture():
+    """Mock redis lock"""
+    with patch("featurebyte.routes.deployment.controller.Lock") as mock_redis_lock:
+        yield mock_redis_lock
+
+
 @pytest.fixture(autouse=True)
 def mock_settings_env_vars(mock_config_path_env, mock_get_persistent):
     """Use these fixtures for all tests"""
