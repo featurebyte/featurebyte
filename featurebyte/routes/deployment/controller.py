@@ -119,6 +119,12 @@ class DeploymentController(
         -------
         Optional[Task]
             Task to create deployment.
+
+        Raises
+        ------
+        DocumentUpdateError
+            If there is an existing task to update deployment that is conflicting with the current request.
+            If the task submission lock is not acquired.
         """
         # check if deployment exists
         deployment = await self.service.get_document(document_id=document_id)
