@@ -13,7 +13,7 @@ from sqlglot import expressions
 from sqlglot.expressions import select
 
 from featurebyte.common.utils import prepare_dataframe_for_json
-from featurebyte.enum import SourceType, SpecialColumnName
+from featurebyte.enum import InternalName, SourceType, SpecialColumnName
 from featurebyte.logging import get_logger
 from featurebyte.models.batch_request_table import BatchRequestTableModel
 from featurebyte.models.parent_serving import ParentServingPreparation
@@ -213,6 +213,7 @@ async def get_online_features(
     tic = time.time()
 
     if isinstance(request_data, pd.DataFrame):
+        request_data[InternalName.ROW_INDEX] = range(request_data.shape[0])
         request_table_expr = construct_dataframe_sql_expr(request_data, date_cols=[])
         request_table_columns = request_data.columns.tolist()
     else:
@@ -240,6 +241,12 @@ async def get_online_features(
         retrieval_sql = sql_to_string(retrieval_expr, source_type=source_type)
         df_features = await session.execute_query(retrieval_sql)
         assert df_features is not None
+        assert isinstance(request_data, pd.DataFrame)
+
+        df_features = df_features.sort_values(InternalName.ROW_INDEX).drop(
+            InternalName.ROW_INDEX, axis=1
+        )
+        df_features.index = request_data.index
 
         features = []
         prepare_dataframe_for_json(df_features)
