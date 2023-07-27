@@ -9,6 +9,7 @@ import asyncio
 import os
 from abc import abstractmethod
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
 from threading import Thread
 from uuid import UUID
 
@@ -20,6 +21,7 @@ from featurebyte.config import Configurations, get_home_path
 from featurebyte.enum import WorkerCommand
 from featurebyte.logging import get_logger
 from featurebyte.models.base import User
+from featurebyte.models.task import Task as TaskModel
 from featurebyte.utils.credential import MongoBackedCredentialProvider
 from featurebyte.utils.messaging import Progress
 from featurebyte.utils.persistent import get_persistent
@@ -96,10 +98,12 @@ class TaskExecutor:
 
     command_type = WorkerCommand
 
-    def __init__(self, payload: dict[str, Any], progress: Any = None) -> None:
+    def __init__(self, payload: dict[str, Any], task_id: UUID, progress: Any = None) -> None:
+        self.task_id = task_id
         command = self.command_type(payload["command"])
         credential_provider = MongoBackedCredentialProvider(persistent=get_persistent())
         self.task = TASK_MAP[command](
+            task_id=task_id,
             user=User(id=payload.get("user_id")),
             payload=payload,
             progress=progress,
@@ -111,6 +115,18 @@ class TaskExecutor:
             get_redis=get_redis,
         )
         self._setup_worker_config()
+
+    async def _update_task_start_time(self, persistent: Any) -> None:
+        """
+        Update task start time
+        """
+        await persistent.update_one(
+            collection_name=TaskModel.collection_name(),
+            query_filter={"_id": str(self.task_id)},
+            update={"$set": {"start_time": datetime.utcnow()}},
+            disable_audit=True,
+            user_id=self.task.user.id,
+        )
 
     def _setup_worker_config(self) -> None:
         """
@@ -138,6 +154,7 @@ class TaskExecutor:
         """
         Execute the task
         """
+        await self._update_task_start_time(self.task.get_persistent())
         await self.task.execute()
 
 
@@ -166,13 +183,13 @@ class BaseCeleryTask(Task):
         Any
         """
         progress = self.progress_class(user_id=payload.get("user_id"), task_id=request_id)
-        executor = self.executor_class(payload=payload, progress=progress)
+        executor = self.executor_class(payload=payload, task_id=request_id, progress=progress)
         # send initial progress to indicate task is started
-        progress.put({"percent": 0})
+        await executor.task.update_progress(percent=0)
         try:
             return_val = await executor.execute()
             # send final progress to indicate task is completed
-            progress.put({"percent": 100})
+            await executor.task.update_progress(percent=100)
             return return_val
         finally:
             # indicate stream is closed

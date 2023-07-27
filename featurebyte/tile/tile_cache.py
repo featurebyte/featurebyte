@@ -3,7 +3,7 @@ Module for TileCache and its implementors
 """
 from __future__ import annotations
 
-from typing import Callable, Optional, cast
+from typing import Any, Callable, Coroutine, Optional, cast
 
 import time
 from dataclasses import dataclass
@@ -129,7 +129,7 @@ class TileCache:
         request_id: str,
         request_table_name: str,
         serving_names_mapping: dict[str, str] | None = None,
-        progress_callback: Optional[Callable[[int, str], None]] = None,
+        progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
     ) -> None:
         """Check tile status for the provided features and compute missing tiles if required
 
@@ -145,13 +145,13 @@ class TileCache:
             Request table name to use
         serving_names_mapping : dict[str, str] | None
             Optional mapping from original serving name to new serving name
-        progress_callback: Optional[Callable[[int, str], None]]
+        progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
             Optional progress callback function
         """
         tic = time.time()
 
         if progress_callback is not None:
-            progress_callback(0, "Checking tile status")
+            await progress_callback(0, "Checking tile status")
 
         required_requests = await self.get_required_computation(
             request_id=request_id,
@@ -178,7 +178,7 @@ class TileCache:
     async def invoke_tile_manager(
         self,
         required_requests: list[OnDemandTileComputeRequest],
-        progress_callback: Optional[Callable[[int, str], None]] = None,
+        progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
     ) -> None:
         """Interacts with FeatureListManager to compute tiles and update cache
 
@@ -186,7 +186,7 @@ class TileCache:
         ----------
         required_requests : list[OnDemandTileComputeRequest]
             List of required compute requests (where entity table is non-empty)
-        progress_callback: Optional[Callable[[int, str], None]]
+        progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
             Optional progress callback function
         """
         tile_inputs = []

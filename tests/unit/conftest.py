@@ -8,7 +8,7 @@ import traceback
 from datetime import datetime
 from unittest import mock
 from unittest.mock import Mock, PropertyMock, patch
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pandas as pd
 import pytest
@@ -1512,7 +1512,9 @@ def mock_task_manager(request, persistent, storage, temp_storage, get_credential
             async def submit(payload: BaseTaskPayload):
                 kwargs = payload.json_dict()
                 kwargs["task_output_path"] = payload.task_output_path
+                task_id = str(uuid4())
                 task = TASK_MAP[payload.command](
+                    task_id=UUID(task_id),
                     payload=kwargs,
                     progress=Mock(),
                     user=User(id=kwargs.get("user_id")),
@@ -1531,7 +1533,6 @@ def mock_task_manager(request, persistent, storage, temp_storage, get_credential
                     status = TaskStatus.FAILURE
                     traceback_info = traceback.format_exc()
 
-                task_id = str(uuid4())
                 task_status[task_id] = status
 
                 # insert task into db manually since we are mocking celery

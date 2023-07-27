@@ -3,7 +3,7 @@ Historical features SQL generation
 """
 from __future__ import annotations
 
-from typing import Callable, List, Optional, Tuple, cast
+from typing import Any, Callable, Coroutine, List, Optional, Tuple, cast
 
 import datetime
 from abc import ABC, abstractmethod
@@ -177,7 +177,7 @@ class HistoricalFeatureQuerySet:
     async def execute(
         self,
         session: BaseSession,
-        progress_callback: Optional[Callable[[int, str], None]] = None,
+        progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
     ) -> None:
         """
         Execute the feature queries to materialize historical features
@@ -186,7 +186,7 @@ class HistoricalFeatureQuerySet:
         ----------
         session: BaseSession
             Session object
-        progress_callback: Optional[Callable[[int, str], None]]
+        progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
             Optional progress callback function
         """
         total_num_queries = len(self.feature_queries) + 1
@@ -196,14 +196,14 @@ class HistoricalFeatureQuerySet:
                 await session.execute_query_long_running(feature_query.sql)
                 materialized_feature_table.append(feature_query.table_name)
                 if progress_callback:
-                    progress_callback(
+                    await progress_callback(
                         int(100 * (i + 1) / total_num_queries),
                         PROGRESS_MESSAGE_COMPUTING_FEATURES,
                     )
 
             await session.execute_query_long_running(self.output_query)
             if progress_callback:
-                progress_callback(100, PROGRESS_MESSAGE_COMPUTING_FEATURES)
+                await progress_callback(100, PROGRESS_MESSAGE_COMPUTING_FEATURES)
 
         finally:
             for table_name in materialized_feature_table:

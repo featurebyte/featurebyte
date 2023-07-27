@@ -3,7 +3,7 @@ HistoricalFeaturesService
 """
 from __future__ import annotations
 
-from typing import Callable, Optional, Union
+from typing import Any, Callable, Coroutine, Optional, Union
 
 import time
 from dataclasses import dataclass
@@ -62,7 +62,7 @@ async def compute_tiles_on_demand(  # pylint: disable=too-many-arguments
     feature_store_id: ObjectId,
     serving_names_mapping: Optional[dict[str, str]],
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
-    progress_callback: Optional[Callable[[int, str], None]] = None,
+    progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
 ) -> None:
     """
     Compute tiles on demand
@@ -90,7 +90,7 @@ async def compute_tiles_on_demand(  # pylint: disable=too-many-arguments
         columns than those defined in Entities
     parent_serving_preparation: Optional[ParentServingPreparation]
         Preparation required for serving parent features
-    progress_callback: Optional[Callable[[int, str], None]]
+    progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
         Optional progress callback function
     """
     if parent_serving_preparation is None:
@@ -134,7 +134,7 @@ async def get_historical_features(  # pylint: disable=too-many-locals, too-many-
     serving_names_mapping: dict[str, str] | None = None,
     is_feature_list_deployed: bool = False,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
-    progress_callback: Optional[Callable[[int, str], None]] = None,
+    progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
 ) -> None:
     """Get historical features
 
@@ -163,7 +163,7 @@ async def get_historical_features(  # pylint: disable=too-many-locals, too-many-
         Preparation required for serving parent features
     output_table_details: TableDetails
         Output table details to write the results to
-    progress_callback: Optional[Callable[[int, str], None]]
+    progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
         Optional progress callback function
     """
     tic_ = time.time()
@@ -226,7 +226,9 @@ async def get_historical_features(  # pylint: disable=too-many-locals, too-many-
         logger.debug("Done checking and computing tiles on demand", extra={"duration": elapsed})
 
     if progress_callback:
-        progress_callback(TILE_COMPUTE_PROGRESS_MAX_PERCENT, PROGRESS_MESSAGE_COMPUTING_FEATURES)
+        await progress_callback(
+            TILE_COMPUTE_PROGRESS_MAX_PERCENT, PROGRESS_MESSAGE_COMPUTING_FEATURES
+        )
 
     # Generate SQL code that computes the features
     historical_feature_query_set = get_historical_features_query_set(

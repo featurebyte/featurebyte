@@ -8,6 +8,7 @@ from typing import Any, Dict, Optional
 import json
 from abc import abstractmethod
 from unittest.mock import Mock
+from uuid import uuid4
 
 import pytest
 import pytest_asyncio
@@ -79,7 +80,8 @@ class BaseTaskTestSuite:
         """
         # pylint: disable=not-callable
         task = task_class(
-            payload,
+            task_id=uuid4(),
+            payload=payload,
             progress=progress,
             user=User(id=payload.get("user_id")),
             get_persistent=lambda: persistent,

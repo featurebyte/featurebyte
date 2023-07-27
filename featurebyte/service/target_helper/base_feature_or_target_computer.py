@@ -3,7 +3,7 @@ Base class for feature or target computer
 """
 from __future__ import annotations
 
-from typing import Any, Callable, Generic, List, Optional, TypeVar, Union
+from typing import Any, Callable, Coroutine, Generic, List, Optional, TypeVar, Union
 
 from abc import abstractmethod
 from dataclasses import dataclass
@@ -41,7 +41,7 @@ class BasicExecutorParams:
     # Preparation required for serving parent features
     parent_serving_preparation: Optional[ParentServingPreparation]
     # Optional progress callback function)
-    progress_callback: Optional[Callable[[int, str], None]]
+    progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
 
 
 @dataclass
@@ -145,7 +145,7 @@ class Computer(Generic[ComputeRequestT, ExecutorParamsT]):
         compute_request: ComputeRequestT,
         get_credential: Any,
         output_table_details: TableDetails,
-        progress_callback: Optional[Callable[[int, str], None]] = None,
+        progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
     ) -> None:
         """
         Compute targets or features
@@ -160,7 +160,7 @@ class Computer(Generic[ComputeRequestT, ExecutorParamsT]):
             Get credential handler function
         output_table_details: TableDetails
             Table details to write the results to
-        progress_callback: Optional[Callable[[int, str], None]]
+        progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
             Optional progress callback function
         """
         validation_parameters = await self.get_validation_parameters(compute_request)

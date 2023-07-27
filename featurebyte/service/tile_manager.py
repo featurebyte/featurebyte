@@ -3,7 +3,7 @@ TileManagerService class
 """
 from __future__ import annotations
 
-from typing import Callable, List, Optional, Tuple
+from typing import Any, Callable, Coroutine, List, Optional, Tuple
 
 import time
 
@@ -47,7 +47,7 @@ class TileManagerService:
         self,
         session: BaseSession,
         tile_inputs: List[Tuple[TileSpec, str]],
-        progress_callback: Optional[Callable[[int, str], None]] = None,
+        progress_callback: Optional[Callable[[int, str], Coroutine[Any, Any, None]]] = None,
     ) -> None:
         """
         Generate Tiles and update tile entity checking table
@@ -58,12 +58,12 @@ class TileManagerService:
             Instance of BaseSession to interact with the data warehouse
         tile_inputs: List[Tuple[TileSpec, str]]
             list of TileSpec, temp_entity_table to update the feature store
-        progress_callback: Optional[Callable[[int, str], None]]
+        progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
             Optional progress callback function
         """
         num_jobs = len(tile_inputs)
         if progress_callback:
-            progress_callback(0, f"0/{num_jobs} completed")
+            await progress_callback(0, f"0/{num_jobs} completed")
 
         for index, (tile_spec, entity_table) in enumerate(tile_inputs):
             tic = time.time()
@@ -89,7 +89,7 @@ class TileManagerService:
             )
 
             if progress_callback:
-                progress_callback(
+                await progress_callback(
                     int(100 * (index + 1) / num_jobs),
                     f"{index+1}/{num_jobs} completed",
                 )

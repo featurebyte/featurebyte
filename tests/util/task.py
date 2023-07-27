@@ -41,7 +41,7 @@ class LongRunningTask(BaseTask):
         for i in range(step):
             time.sleep(1.0 / step)
             percent = int((i + 1) * (100.0 / step))
-            self.update_progress(percent=percent)
+            await self.update_progress(percent=percent)
 
 
 class ErrorTaskPayload(BaseTaskPayload):

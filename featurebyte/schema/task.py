@@ -3,6 +3,7 @@ TaskStatus API payload schema
 """
 from typing import Any, Dict, List, Optional, Union
 
+import datetime
 from uuid import UUID
 
 from pydantic import Field
@@ -40,6 +41,9 @@ class Task(FeatureByteBaseModel):
     output_path: Optional[str]
     payload: Dict[str, Any]
     traceback: Optional[str]
+    start_time: Optional[datetime.datetime]
+    date_done: Optional[datetime.datetime]
+    progress: Optional[Dict[str, Any]] = Field(default=None)
 
 
 class TaskList(PaginationMixin):
