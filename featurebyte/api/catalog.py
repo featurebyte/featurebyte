@@ -16,7 +16,7 @@ from featurebyte.api.api_handler.catalog import CatalogListHandler
 from featurebyte.api.api_object_util import NameAttributeUpdatableMixin
 from featurebyte.api.batch_feature_table import BatchFeatureTable
 from featurebyte.api.batch_request_table import BatchRequestTable
-from featurebyte.api.catalog_decorator import update_and_reset_catalog
+from featurebyte.api.catalog_decorator import json_serializable_dataframe, update_and_reset_catalog
 from featurebyte.api.catalog_get_by_id_mixin import CatalogGetByIdMixin
 from featurebyte.api.data_source import DataSource
 from featurebyte.api.deployment import Deployment
@@ -411,6 +411,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return Entity.create(name=name, serving_names=serving_names)
 
     @update_and_reset_catalog
+    @json_serializable_dataframe
     def list_features(
         self,
         include_id: Optional[bool] = True,
@@ -459,6 +460,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         )
 
     @update_and_reset_catalog
+    @json_serializable_dataframe
     def list_feature_lists(
         self,
         include_id: Optional[bool] = True,
@@ -501,6 +503,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         )
 
     @update_and_reset_catalog
+    @json_serializable_dataframe
     def list_tables(
         self, include_id: Optional[bool] = True, entity: Optional[str] = None
     ) -> pd.DataFrame:
@@ -529,6 +532,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return Table.list(include_id=include_id, entity=entity)
 
     @update_and_reset_catalog
+    @json_serializable_dataframe
     def list_targets(self, include_id: Optional[bool] = True) -> pd.DataFrame:
         """
         Returns a DataFrame that contains various attributes of the registered targets in the catalog
@@ -550,6 +554,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return Target.list(include_id=include_id)
 
     @update_and_reset_catalog
+    @json_serializable_dataframe
     def list_relationships(
         self, include_id: Optional[bool] = True, relationship_type: Optional[Literal[tuple(RelationshipType)]] = None  # type: ignore
     ) -> pd.DataFrame:
@@ -596,6 +601,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return Relationship.list(include_id=include_id, relationship_type=relationship_type)
 
     @update_and_reset_catalog
+    @json_serializable_dataframe
     def list_feature_job_setting_analyses(
         self,
         include_id: Optional[bool] = True,
@@ -625,6 +631,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return FeatureJobSettingAnalysis.list(include_id=include_id, event_table_id=event_table_id)
 
     @update_and_reset_catalog
+    @json_serializable_dataframe
     def list_feature_stores(self, include_id: Optional[bool] = True) -> pd.DataFrame:
         """
         List saved feature stores.
@@ -648,6 +655,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return FeatureStore.list(include_id=include_id)
 
     @update_and_reset_catalog
+    @json_serializable_dataframe
     def list_entities(self, include_id: Optional[bool] = True) -> pd.DataFrame:
         """
         Returns a DataFrame that contains various attributes of the entities registered in the catalog, such as
@@ -670,6 +678,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return Entity.list(include_id=include_id)
 
     @update_and_reset_catalog
+    @json_serializable_dataframe
     def list_periodic_tasks(self, include_id: Optional[bool] = True) -> pd.DataFrame:
         """
         List saved periodic tasks.
@@ -693,6 +702,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return PeriodicTask.list(include_id=include_id)
 
     @update_and_reset_catalog
+    @json_serializable_dataframe
     def list_observation_tables(self, include_id: Optional[bool] = True) -> pd.DataFrame:
         """
         List saved observation tables.
@@ -716,6 +726,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return ObservationTable.list(include_id=include_id)
 
     @update_and_reset_catalog
+    @json_serializable_dataframe
     def list_historical_feature_tables(self, include_id: Optional[bool] = True) -> pd.DataFrame:
         """
         List saved historical feature tables.
@@ -739,6 +750,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return HistoricalFeatureTable.list(include_id=include_id)
 
     @update_and_reset_catalog
+    @json_serializable_dataframe
     def list_batch_request_tables(self, include_id: Optional[bool] = True) -> pd.DataFrame:
         """
         List saved batch request tables.
@@ -762,6 +774,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return BatchRequestTable.list(include_id=include_id)
 
     @update_and_reset_catalog
+    @json_serializable_dataframe
     def list_batch_feature_tables(self, include_id: Optional[bool] = True) -> pd.DataFrame:
         """
         List saved batch feature tables.
@@ -785,6 +798,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return BatchFeatureTable.list(include_id=include_id)
 
     @update_and_reset_catalog
+    @json_serializable_dataframe
     def list_static_source_tables(self, include_id: Optional[bool] = True) -> pd.DataFrame:
         """
         List saved static source tables.
@@ -808,6 +822,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return StaticSourceTable.list(include_id=include_id)
 
     @update_and_reset_catalog
+    @json_serializable_dataframe
     def list_deployments(self, include_id: Optional[bool] = True) -> pd.DataFrame:
         """
         List saved deployments.
@@ -831,6 +846,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return Deployment.list(include_id=include_id)
 
     @update_and_reset_catalog
+    @json_serializable_dataframe
     def list_user_defined_functions(self, include_id: Optional[bool] = True) -> pd.DataFrame:
         """
         List saved user defined functions.
@@ -854,6 +870,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return UserDefinedFunction.list(include_id=include_id)
 
     @update_and_reset_catalog
+    @json_serializable_dataframe
     def list_target_tables(self, include_id: Optional[bool] = True) -> pd.DataFrame:
         """
         List saved target tables.
