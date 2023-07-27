@@ -1,11 +1,9 @@
 """
 Catalog decorator.
 """
-from typing import Any, Callable
+from typing import Any
 
 from functools import wraps
-
-import pandas as pd
 
 from featurebyte.models.base import activate_catalog, get_active_catalog_id
 
