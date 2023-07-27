@@ -67,7 +67,7 @@ def mock_session_for_online_serving_fixture():
 
     async def mock_execute_query(query):
         _ = query
-        return pd.DataFrame({"cust_id": [1], "feature_value": [123.0]})
+        return pd.DataFrame({"cust_id": [1], "feature_value": [123.0], "__FB_ROW_INDEX": [0]})
 
     return Mock(
         name="mock_session_for_online_serving",
@@ -86,14 +86,17 @@ def expected_online_feature_query_fixture():
         WITH ONLINE_REQUEST_TABLE AS (
           SELECT
             REQ."cust_id",
+            REQ."__FB_ROW_INDEX",
             SYSDATE() AS POINT_IN_TIME
           FROM (
             SELECT
-              1 AS "cust_id"
+              1 AS "cust_id",
+              0 AS "__FB_ROW_INDEX"
           ) AS REQ
         ), _FB_AGGREGATED AS (
           SELECT
             REQ."cust_id",
+            REQ."__FB_ROW_INDEX",
             REQ."POINT_IN_TIME",
             "T0"."_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481" AS "_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481"
           FROM ONLINE_REQUEST_TABLE AS REQ
@@ -133,6 +136,7 @@ def expected_online_feature_query_fixture():
         )
         SELECT
           AGG."cust_id",
+          AGG."__FB_ROW_INDEX",
           "_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481" AS "sum_30m"
         FROM _FB_AGGREGATED AS AGG
         '''
@@ -246,14 +250,18 @@ async def test_feature_list_deployed_with_batch_request_table(
             feature_list=deployed_feature_list,
             request_data=batch_request_table,
             get_credential=Mock(),
+            output_table_details=TableDetails(
+                database_name="some_database", schema_name="some_schema", table_name="some_table"
+            ),
         )
 
-    assert len(mock_session_for_online_serving.execute_query.call_args_list) == 1
-    args, _ = mock_session_for_online_serving.execute_query.call_args
+    assert len(mock_session_for_online_serving.execute_query_long_running.call_args_list) == 1
+    args, _ = mock_session_for_online_serving.execute_query_long_running.call_args
 
     # pylint: disable=line-too-long
     expected = textwrap.dedent(
         '''
+        CREATE TABLE "some_database"."some_schema"."some_table" AS
         WITH ONLINE_REQUEST_TABLE AS (
           SELECT
             REQ."cust_id",
