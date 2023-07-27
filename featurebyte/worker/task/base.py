@@ -114,23 +114,31 @@ class BaseLockTask(BaseTask):
     async def execute(self) -> Any:
         """
         Execute the task
+
+        Returns
+        -------
+        Any
         """
         lock = self.app_container.redis.lock(self.lock_key)
         if lock.acquire(blocking=False):
             return await self._execute()
 
         # handle the case when the lock is not acquired
-        self.handle_lock_not_acquired()
+        return self.handle_lock_not_acquired()
 
     @property
     @abstractmethod
     def lock_key(self) -> str:
         """
         Key to lock the task
+
+        Returns
+        -------
+        str
         """
 
     @abstractmethod
-    def handle_lock_not_acquired(self) -> None:
+    def handle_lock_not_acquired(self) -> Any:
         """
         Handle the case when the lock is not acquired
         """

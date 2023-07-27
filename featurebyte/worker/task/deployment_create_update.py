@@ -24,9 +24,6 @@ class DeploymentCreateUpdateTask(BaseLockTask):
 
     @property
     def lock_key(self) -> str:
-        """
-        Get lock key
-        """
         payload = cast(DeploymentCreateUpdateTaskPayload, self.payload)
         return f"deployment:{payload.output_document_id}:create_update"
 
