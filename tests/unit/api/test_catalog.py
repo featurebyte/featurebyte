@@ -68,20 +68,6 @@ def reset_catalog(catalog):
     activate_catalog(catalog.id)
 
 
-@pytest.fixture(name="mock_json_serializable_dataframe")
-def mock_json_serializable_dataframe_fixture():
-    """
-    Mock json serializable dataframe.
-    """
-
-    def mock_decorator(func):
-        return func
-
-    with patch("featurebyte.api.catalog_decorator._to_json_serializable_dataframe") as mock_decor:
-        mock_decor.side_effect = mock_decorator
-        yield mock_decor
-
-
 @dataclass
 class MethodMetadata:
     """
@@ -330,25 +316,23 @@ def _invoke_method(catalog: Catalog, method_item: MethodMetadata):
     """
     catalog_method_to_call = getattr(catalog, method_item.catalog_method_name)
     if method_item.class_method_delegated == "get":
-        return catalog_method_to_call("random_name")
+        catalog_method_to_call("random_name")
     elif method_item.class_method_delegated == "create":
-        return catalog_method_to_call("random_name", [])
+        catalog_method_to_call("random_name", [])
     elif method_item.class_method_delegated == "get_by_id":
-        return catalog_method_to_call(ObjectId())
+        catalog_method_to_call(ObjectId())
     else:
-        return catalog_method_to_call()
+        catalog_method_to_call()
 
 
 @pytest.mark.parametrize(
     "method_item",
     catalog_methods_to_test(),
 )
-def test_methods_call_the_correct_delegated_method(method_item, mock_json_serializable_dataframe):
+def test_methods_call_the_correct_delegated_method(method_item):
     """
     Test catalog methods call the correct delegated method.
     """
-    _ = mock_json_serializable_dataframe
-
     # Assert that the delegated list method is called
     method_name = method_item.class_method_delegated
     catalog = Catalog.get_active()
@@ -609,9 +593,7 @@ def test_activate(snowflake_feature_store, catalog):
     "method_item",
     catalog_methods_to_test(),
 )
-def test_functions_are_called_from_active_catalog(
-    method_item, snowflake_feature_store, mock_json_serializable_dataframe
-):
+def test_functions_are_called_from_active_catalog(method_item, snowflake_feature_store):
     """
     Test that catalog_obj.(list|get)_<x> functions are able to be called from the active, or inactive catalog.
     """
@@ -695,14 +677,3 @@ def test_update_description(catalog):
     catalog.update_description(None)
     assert catalog.description is None
     assert catalog.info()["description"] is None
-
-
-@pytest.mark.parametrize("method_list", catalog_list_methods_to_test_list())
-def test_catalog_list_method_json_serializable(method_list):
-    """Test that catalog list methods are json serializable."""
-    catalog = Catalog.get_active()
-    output = _invoke_method(catalog, method_list)
-    assert isinstance(output, pd.DataFrame)
-
-    # check that the output is json serializable
-    _ = output.to_json()

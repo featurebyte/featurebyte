@@ -47,32 +47,3 @@ def update_and_reset_catalog(func: Any) -> Any:
             activate_catalog(active_catalog_id)
 
     return wrapper
-
-
-def _to_json_serializable_dataframe(df: pd.DataFrame) -> pd.DataFrame:
-    # convert dataframe to json and then back to dataframe to ensure that
-    # the dataframe is JSON serializable
-    output_json = df.to_json(default_handler=str)
-    return pd.read_json(output_json)
-
-
-def json_serializable_dataframe(func: Callable[..., pd.DataFrame]) -> Callable[..., pd.DataFrame]:
-    """
-    Decorator to convert the return dataframe of a function to a JSON serializable dataframe.
-
-    Parameters
-    ----------
-    func: Callable[..., pd.DataFrame]
-        Function to decorate
-
-    Returns
-    -------
-    Callable[..., pd.DataFrame]
-    """
-
-    @wraps(func)
-    def wrapper(*args: Any, **kwargs: Any) -> pd.DataFrame:
-        output = func(*args, **kwargs)
-        return _to_json_serializable_dataframe(output)
-
-    return wrapper
