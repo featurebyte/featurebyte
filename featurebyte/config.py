@@ -271,7 +271,14 @@ class Configurations:
         skipped_members=["get_client"],
     )
 
-    def __init__(self, config_file_path: Optional[str] = None) -> None:
+    _instance = None
+
+    def __new__(cls, *args: Any, **kwargs: Any) -> "Configurations":
+        if Configurations._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def __init__(self, config_file_path: Optional[str] = None, force: bool = False) -> None:
         """
         Load and parse configurations
 
@@ -279,29 +286,38 @@ class Configurations:
         ----------
         config_file_path: str | None
             Path to read configurations from
+            this will force a reload of configuration if specified
+        force: bool
+            Force reload configurations
         """
-        home_path = get_home_path()
-        self._config_file_path = (
-            Path(config_file_path) if config_file_path else home_path.joinpath("config.yaml")
-        )
-
-        # create config file if it does not exist
-        if not self._config_file_path.exists():
-            self._config_file_path.parent.mkdir(parents=True, exist_ok=True)
-            self._config_file_path.write_text(
-                "# featurebyte configuration\n\n"
-                "profile:\n"
-                "  - name: local\n"
-                "    api_url: http://127.0.0.1:8088\n\n"
-                "default_profile: local\n\n"
+        # Singleton initialization
+        # force is set
+        # config_file_path is set
+        if not hasattr(self, "_config_file_path") or force or config_file_path is not None:
+            # Default values set
+            self._config_file_path: Path = (
+                Path(config_file_path)
+                if config_file_path
+                else get_home_path().joinpath("config.yaml")
             )
+            self.storage: LocalStorageSettings = LocalStorageSettings()
+            self._profile: Optional[Profile] = None
+            self.profiles: List[Profile] = []
+            self.logging: LoggingSettings = LoggingSettings()
 
-        self.storage: LocalStorageSettings = LocalStorageSettings()
-        self._profile: Optional[Profile] = None
-        self.profiles: Optional[List[Profile]] = None
-        self.settings: Dict[str, Any] = {}
-        self.logging: LoggingSettings = LoggingSettings()
-        self._parse_config(self._config_file_path)
+            # create config file if it does not exist
+            if not self._config_file_path.exists():
+                self._config_file_path.parent.mkdir(parents=True, exist_ok=True)
+                self._config_file_path.write_text(
+                    "# featurebyte configuration\n\n"
+                    "profile:\n"
+                    "  - name: local\n"
+                    "    api_url: http://127.0.0.1:8088\n\n"
+                    "default_profile: local\n\n"
+                )
+            self._parse_config(self._config_file_path)
+        else:
+            pass  # do nothing
 
     @property
     def profile(self) -> Profile:
@@ -349,33 +365,27 @@ class Configurations:
             return
 
         with open(path, encoding="utf-8") as file_obj:
-            self.settings = yaml.safe_load(file_obj)
-            if not self.settings:
-                return
+            settings = yaml.safe_load(file_obj) or {}
 
-        logging_settings = self.settings.pop("logging", None)
+        logging_settings = settings.pop("logging", None)
         if logging_settings:
             # parse logging settings
             self.logging = LoggingSettings(**logging_settings)
 
-        storage_settings = self.settings.pop("storage", None)
+        storage_settings = settings.pop("storage", None)
         if storage_settings:
             # parse storage settings
             self.storage = LocalStorageSettings(**storage_settings)
 
-        profile_settings = self.settings.pop("profile", None)
+        profile_settings = settings.pop("profile", None)
         if profile_settings:
             # parse profile settings
             self.profiles = ProfileList(profiles=profile_settings).profiles
 
-        if self.profiles:
+            # Set default _profile if specified
             profile_map = {profile.name: profile for profile in self.profiles}
-            default_profile = self.settings.pop("default_profile", None)
-            selected_profile_name = os.environ.get("FEATUREBYTE_PROFILE")
-            if selected_profile_name:
-                self._profile = profile_map.get(selected_profile_name)
-            else:
-                self._profile = profile_map.get(default_profile)
+            default_profile = settings.pop("default_profile", None)
+            self._profile = profile_map.get(default_profile)
 
     @classmethod
     def check_sdk_versions(cls) -> Dict[str, str]:
@@ -404,8 +414,7 @@ class Configurations:
         sdk_version = response.json()["sdk_version"]
         return {"remote sdk": sdk_version, "local sdk": get_version()}
 
-    @classmethod
-    def use_profile(cls, profile_name: str) -> None:
+    def use_profile(self, profile_name: str) -> None:
         """
         Use a service profile specified in the configuration file.
 
@@ -434,21 +443,22 @@ class Configurations:
 
         >>> fb.Configurations().use_profile("local")
         """
-        profile_names = [profile.name for profile in Configurations().profiles or []]
-        if profile_name not in profile_names:
+        new_profile: Optional[Profile] = None
+        for prof in self.profiles:
+            if prof.name == profile_name:
+                new_profile = prof
+                break
+        if new_profile is None:
             raise InvalidSettingsError(f"Profile not found: {profile_name}")
 
         # test connection
-        current_profile_name = os.environ.get("FEATUREBYTE_PROFILE")
+        old_profile = self._profile
         try:
-            os.environ["FEATUREBYTE_PROFILE"] = profile_name
-            cls.check_sdk_versions()
+            self._profile = new_profile
+            self.check_sdk_versions()
         except InvalidSettingsError:
             # restore previous profile
-            if current_profile_name:
-                os.environ["FEATUREBYTE_PROFILE"] = current_profile_name
-            else:
-                os.environ.pop("FEATUREBYTE_PROFILE", None)
+            self._profile = old_profile
             raise
 
     def get_client(self) -> APIClient:

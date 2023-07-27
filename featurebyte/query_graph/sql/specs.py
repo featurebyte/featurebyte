@@ -58,7 +58,7 @@ class AggregationType(StrEnum):
     FORWARD = "forward"
 
 
-@dataclass  # type: ignore[misc]
+@dataclass
 class AggregationSpec(ABC):
     """
     Base class of all aggregation specifications
@@ -297,7 +297,7 @@ class AggregationSource:
     is_scd_filtered_by_current_flag: Optional[bool] = None
 
 
-@dataclass  # type: ignore[misc]
+@dataclass
 class NonTileBasedAggregationSpec(AggregationSpec):
     """
     Represents an aggregation that is performed directly on the source without tile based
