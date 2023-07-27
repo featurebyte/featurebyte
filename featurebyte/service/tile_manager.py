@@ -7,8 +7,6 @@ from typing import Callable, List, Optional, Tuple
 
 import time
 
-import numpy as np
-
 from featurebyte.enum import InternalName
 from featurebyte.logging import get_logger
 from featurebyte.models.tile import TileScheduledJobParameters, TileSpec, TileType
@@ -92,7 +90,7 @@ class TileManagerService:
 
             if progress_callback:
                 progress_callback(
-                    int(100 * np.floor((index + 1) / num_jobs)),
+                    int(100 * (index + 1) / num_jobs),
                     f"{index+1}/{num_jobs} completed",
                 )
 
