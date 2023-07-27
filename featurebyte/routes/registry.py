@@ -66,6 +66,7 @@ from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_facade import FeatureFacadeService
 from featurebyte.service.feature_job_setting_analysis import FeatureJobSettingAnalysisService
 from featurebyte.service.feature_list import AllFeatureListService, FeatureListService
+from featurebyte.service.feature_list_facade import FeatureListFacadeService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_list_status import FeatureListStatusService
 from featurebyte.service.feature_manager import FeatureManagerService
@@ -168,6 +169,7 @@ app_container_config.register_class(FeatureFacadeService)
 app_container_config.register_class(FeatureJobSettingAnalysisController)
 app_container_config.register_class(FeatureJobSettingAnalysisService)
 app_container_config.register_class(FeatureListController)
+app_container_config.register_class(FeatureListFacadeService)
 app_container_config.register_class(FeatureListService)
 app_container_config.register_class(FeatureListNamespaceController)
 app_container_config.register_class(FeatureListNamespaceService)
