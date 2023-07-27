@@ -163,7 +163,7 @@ class FeatureListController(
             FeatureList object with updated attribute(s)
         """
         if data.make_production_ready:
-            await self.feature_list_facade_service.make_feature_production_ready(
+            await self.feature_list_facade_service.make_features_production_ready(
                 feature_list_id=feature_list_id,
                 ignore_guardrails=bool(data.ignore_guardrails),
             )

@@ -84,7 +84,7 @@ class FeatureListFacadeService:
         output = await self.feature_list_service.get_document(document_id=document.id)
         return output
 
-    async def make_feature_production_ready(
+    async def make_features_production_ready(
         self, feature_list_id: ObjectId, ignore_guardrails: bool = False
     ) -> None:
         """
