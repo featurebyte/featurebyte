@@ -39,7 +39,7 @@ def config_file_fixture():
             yield config_file_path
 
 
-@pytest.fixture(name="config")
+@pytest.fixture(name="config", autouse=True)
 def config_fixture(config_file):
     """
     Config object for unit testing
@@ -71,7 +71,6 @@ def mock_config_path_env_fixture(config_file):
     Mock FEATUREBYTE_HOME in featurebyte/config.py
     """
     real_os_environ_get = os.environ.get
-    os.environ.pop("FEATUREBYTE_PROFILE", None)
 
     def mock_env_side_effect(*args, **kwargs):
         if args[0] == "FEATUREBYTE_HOME":

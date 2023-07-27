@@ -8,7 +8,7 @@ import json
 import pytest
 from bson import ObjectId
 
-from featurebyte import AggFunc, FeatureJobSetting, FeatureList
+from featurebyte import AggFunc, Configurations, FeatureJobSetting, FeatureList
 from featurebyte.enum import DBVarType
 from featurebyte.models.credential import UsernamePasswordCredential
 from featurebyte.models.relationship import RelationshipType
@@ -38,6 +38,15 @@ def request_payload_dir_fixture():
     return "tests/fixtures/request_payloads"
 
 
+@pytest.fixture(name="reset_configurations")
+def reset_configurations_fixture():
+    """
+    This is required becuase test_config.py sets a global state
+    """
+    config = Configurations(force=True)
+    config.use_profile("local")
+
+
 def replace_obj_id(obj: Any, obj_id: ObjectId) -> Any:
     """
     Helper function to replace the object ID of the type
@@ -48,6 +57,7 @@ def replace_obj_id(obj: Any, obj_id: ObjectId) -> Any:
 
 
 def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
+    reset_configurations,
     update_fixtures,
     request_payload_dir,
     snowflake_feature_store,
@@ -66,6 +76,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
     Write request payload for testing api route
     """
     # pylint: disable=too-many-locals
+    _ = reset_configurations
     feature_sum_30m = feature_group["sum_30m"]
     feature_sum_30m = replace_obj_id(feature_sum_30m, ObjectId("646f6c1b0ed28a5271fb02c4"))
     feature_sum_2h = feature_group["sum_2h"]

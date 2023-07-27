@@ -81,7 +81,7 @@ class QueryObject(FeatureByteBaseModel):
         """
         return self.graph.get_node_by_name(self.node_name)
 
-    @property  # type: ignore[misc]
+    @property
     @cachedmethod(
         cache=operator.attrgetter("_operation_structure_cache"),
         key=get_operation_structure_cache_key,

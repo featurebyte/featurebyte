@@ -103,11 +103,14 @@ def test_list_deployment(deployment, snowflake_feature_store):
 
 
 @patch("featurebyte.core.mixin.SampleMixin.preview")
-def test_get_online_serving_code(mock_preview, deployment, catalog):
+def test_get_online_serving_code(mock_preview, deployment, catalog, config_file):
     """Test feature get_online_serving_code"""
     mock_preview.return_value = pd.DataFrame(
         {"col_int": ["sample_col_int"], "cust_id": ["sample_cust_id"]}
     )
+    # Use config
+    Configurations(config_file, force=True)
+
     deployment.enable()
     assert deployment.enabled is True
     url = f"http://localhost:8080/deployment/{deployment.id}/online_features"

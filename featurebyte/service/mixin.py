@@ -45,7 +45,7 @@ class OpsServiceMixin:
         -------
         List of sorted document_ids
         """
-        return sorted(set(document_ids + [document_id]))  # type: ignore
+        return sorted(set(document_ids + [document_id]))
 
     @staticmethod
     def exclude_object_id(

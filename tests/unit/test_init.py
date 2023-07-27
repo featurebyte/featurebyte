@@ -45,12 +45,11 @@ def patch_log_env_summary_fixture():
         yield
 
 
-def test_register_tutorial_api_token(noop_check_sdk_versions, noop_log_env_summary):
+def test_register_tutorial_api_token(noop_check_sdk_versions, noop_log_env_summary, config):
     """
     Test register_tutorial_api_token function
     """
     _ = noop_check_sdk_versions, noop_log_env_summary
-    config = Configurations()
     tutorial_profile_name = "tutorial"
     # Verify that there's no profile with tutorial
     for profile in config.profiles:

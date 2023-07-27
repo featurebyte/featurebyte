@@ -22,7 +22,7 @@ from featurebyte.query_graph.sql.specs import (
 )
 
 
-@dataclass  # type: ignore[misc]
+@dataclass
 class Aggregate(TableNode):
     """
     Aggregate SQLNode
