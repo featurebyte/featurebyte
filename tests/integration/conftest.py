@@ -1350,6 +1350,7 @@ def mock_task_manager(request, persistent, storage, temp_storage, get_cred, mock
                     get_storage=lambda: storage,
                     get_temp_storage=lambda: temp_storage,
                     get_celery=lambda: None,
+                    get_redis=lambda: None,
                 )
                 try:
                     await task.execute()
