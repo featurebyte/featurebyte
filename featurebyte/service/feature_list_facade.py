@@ -207,6 +207,10 @@ class FeatureListFacadeService:
         feature_list_id: ObjectId
             Feature list id to delete
 
+        Raises
+        ------
+        DocumentDeletionError
+            If feature list is not in DRAFT status or is the default feature list of the feature list namespace
         """
         feature_list = await self.feature_list_service.get_document(document_id=feature_list_id)
         feature_list_namespace = await self.feature_list_namespace_service.get_document(

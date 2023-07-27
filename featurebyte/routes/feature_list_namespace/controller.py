@@ -116,11 +116,6 @@ class FeatureListNamespaceController(
         -------
         FeatureListNamespaceModel
             FeatureListNamespace object with updated attribute(s)
-
-        Raises
-        ------
-        DocumentUpdateError
-            When the new feature list version creation fails
         """
         if data.default_version_mode:
             await self.feature_list_facade_service.update_default_version_mode(

@@ -174,11 +174,6 @@ class FeatureListController(
         """
         Delete FeatureList at persistent
 
-        Raises
-        ------
-        DocumentDeletionError
-            If feature list is not in DRAFT status or is the default feature list of the feature list namespace
-
         Parameters
         ----------
         feature_list_id: ObjectId
