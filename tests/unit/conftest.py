@@ -100,6 +100,13 @@ def mock_websocket_client_fixture(request):
             yield mock_get_websocket_client
 
 
+@pytest.fixture(name="mock_get_redis", autouse=True)
+def mock_get_redis_fixture():
+    """Mock get_redis in featurebyte.worker"""
+    with patch("featurebyte.worker.Redis") as mock_get_redis:
+        yield mock_get_redis
+
+
 @pytest.fixture(name="storage")
 def storage_fixture():
     """
