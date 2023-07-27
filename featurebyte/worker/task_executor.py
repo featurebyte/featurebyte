@@ -24,7 +24,7 @@ from featurebyte.utils.credential import MongoBackedCredentialProvider
 from featurebyte.utils.messaging import Progress
 from featurebyte.utils.persistent import get_persistent
 from featurebyte.utils.storage import get_storage, get_temp_storage
-from featurebyte.worker import get_celery
+from featurebyte.worker import get_celery, get_redis
 from featurebyte.worker.task.base import TASK_MAP
 
 logger = get_logger(__name__)
@@ -108,6 +108,7 @@ class TaskExecutor:
             get_storage=get_storage,
             get_temp_storage=get_temp_storage,
             get_celery=get_celery,
+            get_redis=get_redis,
         )
         self._setup_worker_config()
 

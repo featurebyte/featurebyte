@@ -1,10 +1,13 @@
 """
 Lazy app container functions the same as the app_container, but only initializes dependencies when needed.
 """
+from __future__ import annotations
+
 from typing import Any, Dict, List, Optional
 
 from bson import ObjectId
 from celery import Celery
+from redis.client import Redis
 
 from featurebyte.persistent import Persistent
 from featurebyte.routes.app_container_config import AppContainerConfig, ClassDefinition
@@ -146,6 +149,7 @@ class LazyAppContainer:
         persistent: Persistent,
         temp_storage: Storage,
         celery: Celery,
+        redis: Redis[Any],
         storage: Storage,
         catalog_id: Optional[ObjectId],
         app_container_config: AppContainerConfig,
@@ -157,6 +161,7 @@ class LazyAppContainer:
         self.instance_map: Dict[str, Any] = {
             "catalog_id": catalog_id,
             "celery": celery,
+            "redis": redis,
             "persistent": persistent,
             "storage": storage,
             "temp_storage": temp_storage,

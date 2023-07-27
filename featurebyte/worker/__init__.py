@@ -1,12 +1,33 @@
 """
 Celery worker
 """
+from __future__ import annotations
+
+from typing import Any
+
 from celery import Celery
+from redis.client import Redis
 
 from featurebyte.models.periodic_task import PeriodicTask
 from featurebyte.models.task import Task
 from featurebyte.utils.messaging import REDIS_URI
 from featurebyte.utils.persistent import DATABASE_NAME, MONGO_URI
+
+
+def get_redis(redis_uri: str = REDIS_URI) -> Redis[Any]:
+    """
+    Get Redis instance
+
+    Parameters
+    ----------
+    redis_uri: str
+        Redis URI
+
+    Returns
+    -------
+    Redis[Any]
+    """
+    return Redis.from_url(redis_uri)
 
 
 def get_celery(

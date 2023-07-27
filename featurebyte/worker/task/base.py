@@ -33,6 +33,7 @@ class BaseTask:  # pylint: disable=too-many-instance-attributes
         get_temp_storage: Any,
         get_credential: Any,
         get_celery: Any,
+        get_redis: Any,
     ):
         if self.payload_class == BaseTaskPayload:
             raise NotImplementedError
@@ -43,6 +44,7 @@ class BaseTask:  # pylint: disable=too-many-instance-attributes
         self.get_temp_storage = get_temp_storage
         self.get_credential = get_credential
         self.get_celery = get_celery
+        self.get_redis = get_redis
         self.progress = progress
         self._app_container: Optional[LazyAppContainer] = None
 
@@ -85,6 +87,7 @@ class BaseTask:  # pylint: disable=too-many-instance-attributes
                 persistent=self.get_persistent(),
                 temp_storage=self.get_temp_storage(),
                 celery=self.get_celery(),
+                redis=self.get_redis(),
                 storage=self.get_storage(),
                 catalog_id=self.payload.catalog_id,
                 app_container_config=app_container_config,

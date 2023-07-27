@@ -50,7 +50,7 @@ from featurebyte.utils.credential import MongoBackedCredentialProvider
 from featurebyte.utils.messaging import REDIS_URI
 from featurebyte.utils.persistent import get_persistent
 from featurebyte.utils.storage import get_storage, get_temp_storage
-from featurebyte.worker import get_celery
+from featurebyte.worker import get_celery, get_redis
 
 logger = get_logger(__name__)
 
@@ -78,6 +78,7 @@ def _dep_injection_func(
         persistent=request.state.persistent,
         temp_storage=get_temp_storage(),
         celery=get_celery(),
+        redis=get_redis(),
         storage=get_storage(),
         catalog_id=active_catalog_id,
         app_container_config=app_container_config,
