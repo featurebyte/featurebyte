@@ -150,6 +150,38 @@ def test_feature__cond_assign_unnamed(float_feature, bool_feature):
     ]
 
 
+def test_feature__cond_assign_different_groupby_operations(
+    snowflake_event_view_with_entity, feature_group_feature_job_setting
+):
+    """
+    Test conditional assignment of features not limited by Column's row index lineage
+    """
+    view = snowflake_event_view_with_entity
+    feature_1 = view.groupby("cust_id").aggregate_over(
+        value_column="col_float",
+        method="sum",
+        windows=["12h"],
+        feature_job_setting=feature_group_feature_job_setting,
+        feature_names=["feature_1"],
+    )["feature_1"]
+    feature_2 = view.groupby("cust_id").aggregate_over(
+        value_column="col_float",
+        method="min",
+        windows=["12h"],
+        feature_job_setting=feature_group_feature_job_setting,
+        feature_names=["feature_2"],
+    )["feature_2"]
+    feature_1[feature_2 < 0] = 100
+    feature_dict = feature_1.dict()
+    cond_node = get_node(feature_dict["graph"], "conditional_1")
+    assert cond_node == {
+        "name": "conditional_1",
+        "type": "conditional",
+        "parameters": {"value": 100},
+        "output_type": "series",
+    }
+
+
 def test_feature__preview_missing_point_in_time(float_feature):
     """
     Test feature preview validation missing point in time

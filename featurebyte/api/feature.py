@@ -128,6 +128,10 @@ class Feature(
         tile_specs = ExtendedFeatureModel(**self.dict(by_alias=True)).tile_specs
         return [(str(self.name), tile_specs)] if tile_specs else []
 
+    @property
+    def row_index_lineage(self) -> Tuple[str, ...]:
+        return tuple()
+
     @root_validator(pre=True)
     @classmethod
     def _set_feature_store(cls, values: dict[str, Any]) -> dict[str, Any]:
