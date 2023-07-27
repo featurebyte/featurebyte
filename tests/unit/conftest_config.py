@@ -39,7 +39,7 @@ def config_file_fixture():
             yield config_file_path
 
 
-@pytest.fixture(name="config")
+@pytest.fixture(name="config", autouse=True)
 def config_fixture(config_file):
     """
     Config object for unit testing

@@ -39,7 +39,6 @@ def test_configurations():
     # logging settings
     assert config.logging == LoggingSettings(
         level="INFO",
-        serialize=True,
     )
 
     # storage settings
@@ -170,17 +169,15 @@ def test_empty_configuration_file():
         Configurations(file_handle.name)
 
 
-@patch("featurebyte.config.get_home_path")
 @patch("featurebyte.config.Configurations.check_sdk_versions")
-def test_client_redirection(mock_check_sdk_versions, mock_get_home_path):
+def test_client_redirection(mock_check_sdk_versions):
     """
     Test client disallows redirection.
     Redirection can fail for some endpoints as POST requests gets redirected to GET.
     """
     mock_check_sdk_versions.return_value = {"remote sdk": 0.1, "local sdk": 0.1}
-    mock_get_home_path.return_value = Path("tests/fixtures/config")
 
-    Configurations(force=True).use_profile("featurebyte1")
+    Configurations("tests/fixtures/config/config.yaml").use_profile("featurebyte1")
     # expect 30x response to be returned as is instead of following redirection
     client = Configurations().get_client()
     assert isinstance(client, APIClient)
