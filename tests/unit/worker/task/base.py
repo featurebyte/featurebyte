@@ -14,6 +14,7 @@ import pytest_asyncio
 
 from featurebyte.app import get_celery
 from featurebyte.models.base import User
+from featurebyte.worker import get_redis
 from featurebyte.worker.task.base import BaseTask
 
 
@@ -86,6 +87,7 @@ class BaseTaskTestSuite:
             get_storage=lambda: storage,
             get_temp_storage=lambda: temp_storage,
             get_celery=get_celery,
+            get_redis=get_redis,
         )
 
         await task.execute()

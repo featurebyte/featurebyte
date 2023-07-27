@@ -10,7 +10,7 @@ from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.routes.app_container_config import AppContainerConfig, ClassDefinition
 from featurebyte.routes.lazy_app_container import LazyAppContainer, get_all_deps_for_key
 from featurebyte.utils.storage import get_storage, get_temp_storage
-from featurebyte.worker import get_celery
+from featurebyte.worker import get_celery, get_redis
 
 
 class NoDeps:
@@ -66,6 +66,7 @@ def app_container_constructor_params_fixture(persistent):
         "temp_storage": get_temp_storage(),
         "storage": get_storage(),
         "celery": get_celery(),
+        "redis": get_redis(),
         "catalog_id": DEFAULT_CATALOG_ID,
     }
 

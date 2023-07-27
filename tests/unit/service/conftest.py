@@ -35,7 +35,7 @@ from featurebyte.schema.scd_table import SCDTableCreate
 from featurebyte.schema.target import TargetCreate
 from featurebyte.service.catalog import CatalogService
 from featurebyte.storage import LocalTempStorage
-from featurebyte.worker import get_celery
+from featurebyte.worker import get_celery, get_redis
 
 
 @pytest.fixture(name="get_credential")
@@ -61,6 +61,7 @@ def app_container_fixture(persistent, user, catalog):
         persistent=persistent,
         temp_storage=LocalTempStorage(),
         celery=get_celery(),
+        redis=get_redis(),
         storage=LocalTempStorage(),
         catalog_id=catalog.id,
         app_container_config=app_container_config,

@@ -48,6 +48,7 @@ from featurebyte.session.base import DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS
 from featurebyte.session.manager import SessionManager, session_cache
 from featurebyte.storage import LocalTempStorage
 from featurebyte.storage.local import LocalStorage
+from featurebyte.worker import get_redis
 from featurebyte.worker.task.base import TASK_MAP
 from tests.unit.conftest_config import (
     config_file_fixture,
@@ -1470,6 +1471,7 @@ def app_container_fixture(persistent, user, catalog):
         persistent=persistent,
         temp_storage=LocalTempStorage(),
         celery=get_celery(),
+        redis=get_redis(),
         storage=LocalTempStorage(),
         catalog_id=catalog.id,
         app_container_config=app_container_config,
@@ -1512,6 +1514,7 @@ def mock_task_manager(request, persistent, storage, temp_storage, get_credential
                     get_storage=lambda: storage,
                     get_temp_storage=lambda: temp_storage,
                     get_celery=get_celery,
+                    get_redis=get_redis,
                 )
                 try:
                     await task.execute()

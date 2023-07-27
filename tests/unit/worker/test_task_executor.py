@@ -157,6 +157,7 @@ def test_task_has_been_implemented(random_task_class, command_class):
             get_temp_storage=None,
             get_credential=None,
             get_celery=None,
+            get_redis=None,
         )
 
 
