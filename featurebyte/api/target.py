@@ -102,7 +102,7 @@ class Target(
                 values["feature_store"] = FeatureStore.get_by_id(id=feature_store_id)
         return values
 
-    @property  # type: ignore
+    @property
     @substitute_docstring(
         doc_template=VERSION_DOC,
         examples=(
@@ -117,22 +117,22 @@ class Target(
     def version(self) -> str:  # pylint: disable=missing-function-docstring
         return self._get_version()
 
-    @property  # type: ignore
+    @property
     @substitute_docstring(doc_template=CATALOG_ID_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
     def catalog_id(self) -> ObjectId:  # pylint: disable=missing-function-docstring
         return self._get_catalog_id()
 
-    @property  # type: ignore
+    @property
     @substitute_docstring(doc_template=ENTITY_IDS_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
     def entity_ids(self) -> Sequence[ObjectId]:  # pylint: disable=missing-function-docstring
         return self._get_entity_ids()
 
-    @property  # type: ignore
+    @property
     @substitute_docstring(doc_template=PRIMARY_ENTITY_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
     def primary_entity(self) -> List[Entity]:  # pylint: disable=missing-function-docstring
         return self._primary_entity()
 
-    @property  # type: ignore
+    @property
     @substitute_docstring(doc_template=TABLE_IDS_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
     def table_ids(self) -> Sequence[ObjectId]:  # pylint: disable=missing-function-docstring
         return self._get_table_ids()
@@ -197,7 +197,7 @@ class Target(
             raise ValueError("Target does not have a window")
         return window
 
-    @property  # type: ignore
+    @property
     @substitute_docstring(
         doc_template=DEFINITION_DOC,
         examples=(

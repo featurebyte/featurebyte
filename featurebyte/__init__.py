@@ -5,7 +5,6 @@ import os
 import shutil
 import sys
 from http import HTTPStatus
-from pathlib import Path
 
 import pandas as pd
 import yaml
@@ -225,6 +224,9 @@ def register_tutorial_api_token(api_token: str) -> None:
         shutil.copyfile(config_file_path, backup_file_path)
         with open(config_file_path, "w", encoding="utf-8") as file_obj:
             file_obj.write(yaml_str)
+
+        # Reload configuration with new entry
+        Configurations(force=True)
 
     # Use the tutorial profile
     use_profile(tutorial_profile_name)

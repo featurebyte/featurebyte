@@ -138,7 +138,7 @@ class Feature(
                 values["feature_store"] = FeatureStore.get_by_id(id=feature_store_id)
         return values
 
-    @property  # type: ignore
+    @property
     @substitute_docstring(
         doc_template=VERSION_DOC,
         examples=(
@@ -153,22 +153,22 @@ class Feature(
     def version(self) -> str:  # pylint: disable=missing-function-docstring
         return self._get_version()
 
-    @property  # type: ignore
+    @property
     @substitute_docstring(doc_template=CATALOG_ID_DOC, format_kwargs={"class_name": "Feature"})
     def catalog_id(self) -> ObjectId:  # pylint: disable=missing-function-docstring
         return self._get_catalog_id()
 
-    @property  # type: ignore
+    @property
     @substitute_docstring(doc_template=ENTITY_IDS_DOC, format_kwargs={"class_name": "Feature"})
     def entity_ids(self) -> Sequence[ObjectId]:  # pylint: disable=missing-function-docstring
         return self._get_entity_ids()
 
-    @property  # type: ignore
+    @property
     @substitute_docstring(doc_template=TABLE_IDS_DOC, format_kwargs={"class_name": "Feature"})
     def table_ids(self) -> Sequence[ObjectId]:  # pylint: disable=missing-function-docstring
         return self._get_table_ids()
 
-    @property  # type: ignore
+    @property
     @substitute_docstring(doc_template=PRIMARY_ENTITY_DOC, format_kwargs={"class_name": "Feature"})
     def primary_entity(self) -> List[Entity]:  # pylint: disable=missing-function-docstring
         return self._primary_entity()
@@ -184,7 +184,7 @@ class Feature(
         """
         return cast(FeatureModel, self.cached_model).feature_list_ids
 
-    @property  # type: ignore
+    @property
     @substitute_docstring(
         doc_template=DEFINITION_DOC,
         examples=(

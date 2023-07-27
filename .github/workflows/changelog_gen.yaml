@@ -57,6 +57,5 @@ jobs:
       with:
         message: |-
           **Changelog entries**
-          ```
+
           ${{ env.CHANGELOG }}
-          ```
