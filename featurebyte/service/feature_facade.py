@@ -90,7 +90,7 @@ class FeatureFacadeService:
         return output
 
     async def update_readiness(
-        self, feature_id: ObjectId, readiness: FeatureReadiness, ignore_guardrails: bool
+        self, feature_id: ObjectId, readiness: FeatureReadiness, ignore_guardrails: bool = False
     ) -> FeatureModel:
         """
         Update the readiness of a feature

@@ -13,16 +13,13 @@ from fastapi.exceptions import HTTPException
 
 from featurebyte.common.utils import dataframe_from_arrow_stream
 from featurebyte.exception import (
-    DocumentDeletionError,
-    DocumentNotFoundError,
     MissingPointInTimeColumnError,
     RequiredEntityNotProvidedError,
     TooRecentPointInTimeError,
 )
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.base import VersionIdentifier
-from featurebyte.models.feature_list import FeatureListModel, FeatureListStatus
-from featurebyte.models.feature_namespace import DefaultVersionMode, FeatureReadiness
+from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.feature_list import (
@@ -42,15 +39,13 @@ from featurebyte.schema.task import Task
 from featurebyte.schema.worker.task.feature_list_batch_feature_create import (
     FeatureListCreateWithBatchFeatureCreationTaskPayload,
 )
-from featurebyte.service.deploy import DeployService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
+from featurebyte.service.feature_list_facade import FeatureListFacadeService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_preview import FeaturePreviewService
-from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
 from featurebyte.service.tile_job_log import TileJobLogService
-from featurebyte.service.version import VersionService
 
 
 # pylint: disable=too-many-instance-attributes
@@ -67,22 +62,18 @@ class FeatureListController(
     def __init__(
         self,
         feature_list_service: FeatureListService,
+        feature_list_facade_service: FeatureListFacadeService,
         feature_list_namespace_service: FeatureListNamespaceService,
         feature_service: FeatureService,
-        feature_readiness_service: FeatureReadinessService,
-        deploy_service: DeployService,
         feature_preview_service: FeaturePreviewService,
-        version_service: VersionService,
         tile_job_log_service: TileJobLogService,
         task_controller: TaskController,
     ):
         super().__init__(feature_list_service)
+        self.feature_list_facade_service = feature_list_facade_service
         self.feature_list_namespace_service = feature_list_namespace_service
         self.feature_service = feature_service
-        self.feature_readiness_service = feature_readiness_service
-        self.deploy_service = deploy_service
         self.feature_preview_service = feature_preview_service
-        self.version_service = version_service
         self.tile_job_log_service = tile_job_log_service
         self.task_controller = task_controller
 
@@ -129,17 +120,10 @@ class FeatureListController(
             Newly created feature list object
         """
         if isinstance(data, FeatureListCreate):
-            document = await self.service.create_document(
-                data=FeatureListServiceCreate(**data.dict(by_alias=True))
-            )
+            create_data = FeatureListServiceCreate(**data.dict(by_alias=True))
+            document = await self.feature_list_facade_service.create_feature_list(data=create_data)
         else:
-            document = await self.version_service.create_new_feature_list_version(data=data)
-
-        # update feature namespace readiness due to introduction of new feature list
-        await self.feature_readiness_service.update_feature_list_namespace(
-            feature_list_namespace_id=document.feature_list_namespace_id,
-            return_document=False,
-        )
+            document = await self.feature_list_facade_service.create_new_version(data=data)
         return await self.get(document_id=document.id)
 
     async def get(
@@ -179,14 +163,11 @@ class FeatureListController(
             FeatureList object with updated attribute(s)
         """
         if data.make_production_ready:
-            feature_list = await self.get(document_id=feature_list_id)
-            for feature_id in feature_list.feature_ids:
-                await self.feature_readiness_service.update_feature(
-                    feature_id=feature_id,
-                    readiness=FeatureReadiness.PRODUCTION_READY,
-                    ignore_guardrails=bool(data.ignore_guardrails),
-                    return_document=False,
-                )
+            await self.feature_list_facade_service.make_feature_production_ready(
+                feature_list_id=feature_list_id,
+                ignore_guardrails=bool(data.ignore_guardrails),
+            )
+
         return await self.get(document_id=feature_list_id)
 
     async def delete_feature_list(self, feature_list_id: ObjectId) -> None:
@@ -203,33 +184,7 @@ class FeatureListController(
         feature_list_id: ObjectId
             FeatureList ID
         """
-        feature_list = await self.service.get_document(document_id=feature_list_id)
-        feature_list_namespace = await self.feature_list_namespace_service.get_document(
-            document_id=feature_list.feature_list_namespace_id
-        )
-        if feature_list_namespace.status != FeatureListStatus.DRAFT:
-            raise DocumentDeletionError("Only feature list with DRAFT status can be deleted.")
-
-        if (
-            feature_list_namespace.default_feature_list_id == feature_list_id
-            and feature_list_namespace.default_version_mode == DefaultVersionMode.MANUAL
-        ):
-            raise DocumentDeletionError(
-                "Feature list is the default feature list of the feature list namespace and the "
-                "default version mode is manual. Please set another feature list as the default feature list "
-                "or change the default version mode to auto."
-            )
-
-        await self.service.delete_document(document_id=feature_list_id)
-        try:
-            await self.feature_readiness_service.update_feature_list_namespace(
-                feature_list_namespace_id=feature_list.feature_list_namespace_id,
-                deleted_feature_list_ids=[feature_list_id],
-                return_document=False,
-            )
-        except DocumentNotFoundError:
-            # if feature list namespace is deleted, do nothing
-            pass
+        await self.feature_list_facade_service.delete_feature_list(feature_list_id=feature_list_id)
 
     async def list_feature_lists(
         self,
