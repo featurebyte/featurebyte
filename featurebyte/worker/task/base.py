@@ -120,7 +120,7 @@ class BaseLockTask(BaseTask):
         Any
         """
         lock = self.app_container.redis.lock(self.lock_key)
-        if lock.acquire(blocking=False):
+        if lock.acquire(blocking=self.lock_blocking):
             return await self._execute()
 
         # handle the case when the lock is not acquired
@@ -130,21 +130,36 @@ class BaseLockTask(BaseTask):
     @abstractmethod
     def lock_key(self) -> str:
         """
-        Key to lock the task
+        Key to lock the task. This is used to prevent multiple tasks with the same
+        lock_key running at the same time.
 
         Returns
         -------
         str
         """
 
+    @property
+    @abstractmethod
+    def lock_blocking(self) -> bool:
+        """
+        Whether to block when acquiring the lock. If set to False, the task will be
+        skipped if the lock is not acquired. Otherwise, the task will wait until the
+        lock is acquired.
+
+        Returns
+        -------
+        bool
+        """
+
     @abstractmethod
     def handle_lock_not_acquired(self) -> Any:
         """
-        Handle the case when the lock is not acquired
+        Handle the case when the lock is not acquired. This method will be called when
+        the lock is not acquired.
         """
 
     @abstractmethod
     async def _execute(self) -> Any:
         """
-        Execute the task
+        Execute the task when the lock is acquired
         """

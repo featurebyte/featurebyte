@@ -24,8 +24,15 @@ class DeploymentCreateUpdateTask(BaseLockTask):
 
     @property
     def lock_key(self) -> str:
+        # each deployment can only be created or updated once at a time
         payload = cast(DeploymentCreateUpdateTaskPayload, self.payload)
         return f"deployment:{payload.output_document_id}:create_update"
+
+    @property
+    def lock_blocking(self) -> bool:
+        # if the deployment is being created or updated by another task,
+        # fail the current task immediately without waiting
+        return False
 
     def handle_lock_not_acquired(self) -> None:
         payload = cast(DeploymentCreateUpdateTaskPayload, self.payload)
