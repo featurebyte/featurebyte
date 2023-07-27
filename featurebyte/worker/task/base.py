@@ -51,6 +51,10 @@ class BaseTask:  # pylint: disable=too-many-instance-attributes
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
 
+        if cls.payload_class.command is None:
+            # handle the case where the command is not defined (e.g. abstract class)
+            return
+
         assert isinstance(cls.payload_class.command, Enum)
         command = cls.payload_class.command
         if command in TASK_MAP:
@@ -96,6 +100,43 @@ class BaseTask:  # pylint: disable=too-many-instance-attributes
 
     @abstractmethod
     async def execute(self) -> Any:
+        """
+        Execute the task
+        """
+
+
+class BaseLockTask(BaseTask):
+    """
+    BaseLockTask is used to run a task with a lock. At most one task with the same lock
+    can be executed at the same time. The lock is released when the task is finished.
+    """
+
+    async def execute(self) -> Any:
+        """
+        Execute the task
+        """
+        lock = self.app_container.redis.lock(self.lock_key)
+        if lock.acquire(blocking=False):
+            return await self._execute()
+
+        # handle the case when the lock is not acquired
+        self.handle_lock_not_acquired()
+
+    @property
+    @abstractmethod
+    def lock_key(self) -> str:
+        """
+        Key to lock the task
+        """
+
+    @abstractmethod
+    def handle_lock_not_acquired(self) -> None:
+        """
+        Handle the case when the lock is not acquired
+        """
+
+    @abstractmethod
+    async def _execute(self) -> Any:
         """
         Execute the task
         """
