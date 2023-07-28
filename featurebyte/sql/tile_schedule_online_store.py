@@ -106,7 +106,8 @@ class TileScheduleOnlineStore(BaseSqlModel):
                     f"""
                     SELECT
                       {column_names},
-                      CAST({next_version} AS INT) AS {quoted_version_column}
+                      CAST({next_version} AS INT) AS {quoted_version_column},
+                      to_timestamp('{current_ts}') AS UPDATED_AT
                     FROM ({f_sql})
                     """
                 ).strip()
@@ -122,15 +123,6 @@ class TileScheduleOnlineStore(BaseSqlModel):
                     await self.retry_sql(
                         f"ALTER TABLE {fs_table} ALTER {quoted_result_name_column} SET DATA TYPE STRING",
                     )
-
-                await self.retry_sql(
-                    f"ALTER TABLE {fs_table} ADD COLUMN UPDATED_AT TIMESTAMP",
-                )
-
-                await self.retry_sql(
-                    sql=f"UPDATE {fs_table} SET UPDATED_AT = to_timestamp('{current_ts}')",
-                )
-
             else:
                 # feature store table already exists, insert records with the input feature sql
 
