@@ -1,0 +1,12 @@
+profile:
+  - name: cert_check
+    api_url: https://app1.featurebyte.com/api/v1
+    api_token: API_TOKEN_VALUE1
+    ssl_verify: true
+  - name: cert_no_check
+    api_url: https://app1.featurebyte.com/api/v1
+    api_token: API_TOKEN_VALUE1
+    ssl_verify: false
+  - name: cert_default
+    api_url: https://app1.featurebyte.com/api/v1
+    api_token: API_TOKEN_VALUE1
