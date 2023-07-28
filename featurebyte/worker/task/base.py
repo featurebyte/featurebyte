@@ -120,11 +120,15 @@ class BaseLockTask(BaseTask):
         Any
         """
         lock = self.app_container.redis.lock(self.lock_key)
-        if lock.acquire(blocking=self.lock_blocking):
-            return await self._execute()
+        try:
+            if lock.acquire(blocking=self.lock_blocking):
+                return await self._execute()
 
-        # handle the case when the lock is not acquired
-        return self.handle_lock_not_acquired()
+            # handle the case when the lock is not acquired
+            return self.handle_lock_not_acquired()
+        finally:
+            if lock.owned():
+                lock.release()
 
     @property
     @abstractmethod
