@@ -51,6 +51,10 @@ class BaseTask:  # pylint: disable=too-many-instance-attributes
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
 
+        if cls.payload_class.command is None:
+            # handle the case where the command is not defined (e.g. abstract class)
+            return
+
         assert isinstance(cls.payload_class.command, Enum)
         command = cls.payload_class.command
         if command in TASK_MAP:
@@ -98,4 +102,79 @@ class BaseTask:  # pylint: disable=too-many-instance-attributes
     async def execute(self) -> Any:
         """
         Execute the task
+        """
+
+
+class BaseLockTask(BaseTask):
+    """
+    BaseLockTask is used to run a task with a lock. At most one task with the same lock
+    can be executed at the same time. The lock is released when the task is finished.
+    """
+
+    async def execute(self) -> Any:
+        """
+        Execute the task
+
+        Returns
+        -------
+        Any
+        """
+        lock = self.app_container.redis.lock(self.lock_key, timeout=self.lock_timeout)
+        try:
+            if lock.acquire(blocking=self.lock_blocking):
+                return await self._execute()
+
+            # handle the case when the lock is not acquired
+            return self.handle_lock_not_acquired()
+        finally:
+            if lock.owned():
+                lock.release()
+
+    @property
+    @abstractmethod
+    def lock_key(self) -> str:
+        """
+        Key to lock the task. This is used to prevent multiple tasks with the same
+        lock_key running at the same time.
+
+        Returns
+        -------
+        str
+        """
+
+    @property
+    @abstractmethod
+    def lock_timeout(self) -> Optional[int]:
+        """
+        Lock timeout in seconds (optional). The lock will be released after the timeout.
+
+        Returns
+        -------
+        Optional[int]
+        """
+
+    @property
+    @abstractmethod
+    def lock_blocking(self) -> bool:
+        """
+        Whether to block when acquiring the lock. If set to False, the task will be
+        skipped if the lock is not acquired. Otherwise, the task will wait until the
+        lock is acquired.
+
+        Returns
+        -------
+        bool
+        """
+
+    @abstractmethod
+    def handle_lock_not_acquired(self) -> Any:
+        """
+        Handle the case when the lock is not acquired. This method will be called when
+        the lock is not acquired.
+        """
+
+    @abstractmethod
+    async def _execute(self) -> Any:
+        """
+        Execute the task when the lock is acquired
         """
