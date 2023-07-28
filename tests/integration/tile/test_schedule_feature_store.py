@@ -68,7 +68,7 @@ async def test_schedule_update_feature_store__update_feature_value(
     new_sql_query = f"""
         select
           {entity_col_names},
-          '{feature_name}' as {InternalName.ONLINE_STORE_RESULT_NAME_COLUMN},
+          CAST('{feature_name}' AS STRING) as {InternalName.ONLINE_STORE_RESULT_NAME_COLUMN},
           {quote_feature_name} as {InternalName.ONLINE_STORE_VALUE_COLUMN}
         FROM (
           select {entity_col_names}, 100.0 as {quote_feature_name} from TEMP_TABLE limit {number_records}
@@ -133,7 +133,7 @@ async def test_schedule_update_feature_store__insert_with_new_feature_column(
     new_sql_query = f"""
         select
           {entity_col_names},
-          '{new_feature_name}' as {InternalName.ONLINE_STORE_RESULT_NAME_COLUMN},
+          CAST('{new_feature_name}' AS STRING) as {InternalName.ONLINE_STORE_RESULT_NAME_COLUMN},
           {quote_feature_name} as {InternalName.ONLINE_STORE_VALUE_COLUMN}
         FROM (
           select {entity_col_names}, cast(value_2 as float) as {quote_feature_name} from TEMP_TABLE limit 2
@@ -213,7 +213,7 @@ async def test_schedule_online_feature_store__change_entity_universe(
     new_select_sql = f"""
         select
           {entity_col_names},
-          '{feature_name}' as {InternalName.ONLINE_STORE_RESULT_NAME_COLUMN},
+          CAST('{feature_name}' AS STRING) as {InternalName.ONLINE_STORE_RESULT_NAME_COLUMN},
           {quote_feature_name} as {InternalName.ONLINE_STORE_VALUE_COLUMN}
         FROM (
           select {entity_col_names}, 100.0 as {quote_feature_name} from TEMP_TABLE ORDER BY __FB_TILE_START_DATE_COLUMN ASC limit 2

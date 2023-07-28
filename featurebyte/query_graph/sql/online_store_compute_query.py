@@ -195,7 +195,10 @@ class OnlineStorePrecomputePlan:
 
         output_expr = output_expr.select(
             alias_(
-                make_literal_value(result_name),
+                expressions.Cast(
+                    this=make_literal_value(result_name),
+                    to=expressions.DataType.build("VARCHAR"),
+                ),
                 alias=InternalName.ONLINE_STORE_RESULT_NAME_COLUMN,
                 quoted=True,
             ),

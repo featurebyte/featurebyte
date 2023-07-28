@@ -40,7 +40,7 @@ async def tile_task_online_store_prep(
     sql_query = f"""
         select
           {entity_col_names},
-          '{feature_name}' as {InternalName.ONLINE_STORE_RESULT_NAME_COLUMN},
+          CAST('{feature_name}' AS STRING) as {InternalName.ONLINE_STORE_RESULT_NAME_COLUMN},
           {quote_feature_name} as {InternalName.ONLINE_STORE_VALUE_COLUMN}
         FROM (
           select {entity_col_names}, cast(value_2 as float) as {quote_feature_name} from {table_name} limit {number_records}
