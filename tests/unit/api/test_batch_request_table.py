@@ -47,20 +47,20 @@ def test_list(batch_request_table_from_source, batch_request_table_from_view):
     expected = pd.DataFrame(
         [
             {
-                "id": batch_request_table_from_view.id,
+                "id": str(batch_request_table_from_view.id),
                 "name": "batch_request_table_from_event_view",
                 "type": "view",
                 "shape": (500, 1),
                 "feature_store_name": "sf_featurestore",
-                "created_at": batch_request_table_from_view.created_at,
+                "created_at": batch_request_table_from_view.created_at.isoformat(),
             },
             {
-                "id": batch_request_table_from_source.id,
+                "id": str(batch_request_table_from_source.id),
                 "name": "batch_request_table_from_source_table",
                 "type": "source_table",
                 "shape": (500, 1),
                 "feature_store_name": "sf_featurestore",
-                "created_at": batch_request_table_from_source.created_at,
+                "created_at": batch_request_table_from_source.created_at.isoformat(),
             },
         ]
     )

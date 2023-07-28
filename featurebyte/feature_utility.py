@@ -71,7 +71,7 @@ def list_unsaved_features() -> pd.DataFrame:
                         "object_id": str(var_obj.id),
                         "variable_name": var_name,
                         "name": var_obj.name,
-                        "catalog_id": var_obj.catalog_id,
+                        "catalog_id": str(var_obj.catalog_id),
                     }
                 )
             elif isinstance(var_obj, BaseFeatureGroup):
@@ -82,7 +82,7 @@ def list_unsaved_features() -> pd.DataFrame:
                                 "object_id": str(feature.id),
                                 "variable_name": f'{var_name}["{name}"]',
                                 "name": feature.name,
-                                "catalog_id": feature.catalog_id,
+                                "catalog_id": str(feature.catalog_id),
                             }
                         )
             processed_variables.add(var_name)

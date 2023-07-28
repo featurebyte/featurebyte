@@ -991,7 +991,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         """
         output = self._list(include_id=True, params={"name": self.name})
         default_feature_list_id = self.feature_list_namespace.default_feature_list_id
-        output["is_default"] = output["id"] == default_feature_list_id
+        output["is_default"] = output["id"] == str(default_feature_list_id)
         exclude_cols = {"num_feature"}
         if not include_id:
             exclude_cols.add("id")

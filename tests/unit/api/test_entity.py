@@ -187,10 +187,12 @@ def test_entity_update_name(entity, catalog):
             entity.update_name("hello")
 
 
-def test_get_entity():
+def test_get_entity(catalog):
     """
     Test Entity.get function
     """
+    _ = catalog
+
     # create entities & save to persistent
     cust_entity = Entity(name="customer", serving_names=["cust_id"])
     prod_entity = Entity(name="product", serving_names=["prod_id"])
@@ -226,9 +228,9 @@ def test_get_entity():
                 cust_entity.serving_names,
             ],
             "created_at": [
-                region_entity.created_at,
-                prod_entity.created_at,
-                cust_entity.created_at,
+                region_entity.created_at.isoformat(),
+                prod_entity.created_at.isoformat(),
+                cust_entity.created_at.isoformat(),
             ],
         }
     )
@@ -236,7 +238,7 @@ def test_get_entity():
 
     # test list with include_id=True
     entity_list = Entity.list()
-    expected_entity_list["id"] = [region_entity.id, prod_entity.id, cust_entity.id]
+    expected_entity_list["id"] = [str(region_entity.id), str(prod_entity.id), str(cust_entity.id)]
     assert_frame_equal(entity_list, expected_entity_list[entity_list.columns])
 
     # test unexpected retrieval exception for Entity.list
