@@ -528,7 +528,7 @@ def test_list(saved_feature_list):
         feature_lists,
         pd.DataFrame(
             {
-                "id": [saved_feature_list.id],
+                "id": [str(saved_feature_list.id)],
                 "name": [saved_feature_list_namespace.name],
                 "num_feature": 1,
                 "status": [saved_feature_list_namespace.status],
@@ -538,7 +538,7 @@ def test_list(saved_feature_list):
                 "tables": [["sf_event_table"]],
                 "entities": [["customer"]],
                 "primary_entities": [["customer"]],
-                "created_at": [saved_feature_list_namespace.created_at],
+                "created_at": [saved_feature_list_namespace.created_at.isoformat()],
             }
         ),
     )
@@ -562,7 +562,7 @@ def test_list_versions(saved_feature_list):
         FeatureList.list_versions(),
         pd.DataFrame(
             {
-                "id": [flist_2.id, flist_1.id, saved_feature_list.id],
+                "id": [str(flist_2.id), str(flist_1.id), str(saved_feature_list.id)],
                 "name": [flist_2.name, flist_1.name, saved_feature_list.name],
                 "version": [
                     flist_2.version,
@@ -573,9 +573,9 @@ def test_list_versions(saved_feature_list):
                 "online_frac": [0.0] * 3,
                 "deployed": [False, False, saved_feature_list.deployed],
                 "created_at": [
-                    flist_2.created_at,
-                    flist_1.created_at,
-                    saved_feature_list.created_at,
+                    flist_2.created_at.isoformat(),
+                    flist_1.created_at.isoformat(),
+                    saved_feature_list.created_at.isoformat(),
                 ],
                 "is_default": [True] * 3,
             }
@@ -586,12 +586,12 @@ def test_list_versions(saved_feature_list):
         saved_feature_list.list_versions(),
         pd.DataFrame(
             {
-                "id": [saved_feature_list.id],
+                "id": [str(saved_feature_list.id)],
                 "name": [saved_feature_list.name],
                 "version": [saved_feature_list.version],
                 "online_frac": 0.0,
                 "deployed": [saved_feature_list.deployed],
-                "created_at": [saved_feature_list.created_at],
+                "created_at": [saved_feature_list.created_at.isoformat()],
                 "is_default": [True],
             }
         ),
@@ -1006,7 +1006,7 @@ def test_list_features(saved_feature_list, float_feature):
         feature_version_list,
         pd.DataFrame(
             {
-                "id": [float_feature.id],
+                "id": [str(float_feature.id)],
                 "name": [float_feature.name],
                 "version": [float_feature.version],
                 "dtype": [float_feature.dtype],
@@ -1016,7 +1016,7 @@ def test_list_features(saved_feature_list, float_feature):
                 "primary_tables": [["sf_event_table"]],
                 "entities": [["customer"]],
                 "primary_entities": [["customer"]],
-                "created_at": [float_feature.created_at],
+                "created_at": [float_feature.created_at.isoformat()],
                 "is_default": [True],
             }
         ),

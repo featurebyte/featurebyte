@@ -521,10 +521,10 @@ def test_get_catalog(catalog):
     expected_catalog_list = pd.DataFrame(
         {
             "id": [
-                healthcare_catalog.id,
-                creditcard_catalog.id,
-                grocery_catalog.id,
-                default_catalog.id,
+                str(healthcare_catalog.id),
+                str(creditcard_catalog.id),
+                str(grocery_catalog.id),
+                str(default_catalog.id),
             ],
             "name": [
                 healthcare_catalog.name,
@@ -533,10 +533,10 @@ def test_get_catalog(catalog):
                 default_catalog.name,
             ],
             "created_at": [
-                healthcare_catalog.created_at,
-                creditcard_catalog.created_at,
-                grocery_catalog.created_at,
-                default_catalog.created_at,
+                healthcare_catalog.created_at.isoformat(),
+                creditcard_catalog.created_at.isoformat(),
+                grocery_catalog.created_at.isoformat(),
+                default_catalog.created_at.isoformat(),
             ],
             "active": [False, False, False, True],
         }
@@ -546,10 +546,10 @@ def test_get_catalog(catalog):
     # test list with include_id=True
     catalog_list = Catalog.list(include_id=True)
     expected_catalog_list["id"] = [
-        healthcare_catalog.id,
-        creditcard_catalog.id,
-        grocery_catalog.id,
-        default_catalog.id,
+        str(healthcare_catalog.id),
+        str(creditcard_catalog.id),
+        str(grocery_catalog.id),
+        str(default_catalog.id),
     ]
     assert_frame_equal(catalog_list, expected_catalog_list[catalog_list.columns])
 

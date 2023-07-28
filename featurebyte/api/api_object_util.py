@@ -162,16 +162,16 @@ def is_server_mode() -> bool:
 
 
 def map_object_id_to_name(
-    object_map: Dict[Optional[ObjectId], str], object_id: Union[ObjectId, List[ObjectId]]
+    object_map: Dict[Optional[str], str], object_id: Union[str, List[str]]
 ) -> Union[Optional[str], List[Optional[str]]]:
     """
     Map list of object ids object names
 
     Parameters
     ----------
-    object_map: Dict[Optional[ObjectId], str],
-        Dict that maps ObjectId to name
-    object_id: Union[ObjectId, List[ObjectId]]
+    object_map: Dict[Optional[str], str],
+        Dict that maps ObjectId string to name
+    object_id: Union[str, List[str]]
         List of object ids to map, or object id to map
 
     Returns
@@ -184,20 +184,20 @@ def map_object_id_to_name(
 
 
 def map_dict_list_to_name(
-    object_map: Dict[Optional[ObjectId], str],
+    object_map: Dict[Optional[str], str],
     object_id_field: str,
-    object_dict: Union[Dict[str, ObjectId], List[Dict[str, ObjectId]]],
+    object_dict: Union[Dict[str, str], List[Dict[str, str]]],
 ) -> Union[Optional[str], List[Optional[str]]]:
     """
     Map list of object dict to object names
 
     Parameters
     ----------
-    object_map: Dict[Optional[ObjectId], str],
+    object_map: Dict[Optional[str], str],
         Dict that maps ObjectId to name
     object_id_field: str
         Name of field in object dict to get object id from
-    object_dict: Union[Dict[str, ObjectId], List[Dict[str, ObjectId]]]
+    object_dict: Union[Dict[str, str], List[Dict[str, str]]]
         List of dict to map
 
     Returns
