@@ -130,6 +130,10 @@ class Feature(
 
     @property
     def row_index_lineage(self) -> Tuple[str, ...]:
+        # Override the row_index_lineage property to return a constant value. This is so that the
+        # check for row_lineage_index alignment for Feature objects always passes. The check is not
+        # applicable to Feature objects because they can freely interact with each other regardless
+        # of their lineage.
         return tuple()
 
     @root_validator(pre=True)
