@@ -141,7 +141,7 @@ class TileScheduleOnlineStore(BaseSqlModel):
                     FROM ({f_sql})
                     """
                 )
-                await self._session.execute_query(insert_query)
+                await self._session.execute_query_long_running(insert_query)
                 logger.debug(
                     "Done inserting to online store",
                     extra={"fs_table": fs_table, "result_name": f_name, "version": next_version},
