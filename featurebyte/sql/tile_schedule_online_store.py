@@ -1,12 +1,11 @@
 """
 Tile Generate online store Job Script
 """
-from typing import List, Optional, Union
+from typing import List, Optional
 
 import textwrap
 from datetime import datetime
 
-import pandas as pd
 from pydantic import Field
 
 from featurebyte.enum import InternalName
@@ -16,7 +15,7 @@ from featurebyte.models.online_store_table_version import OnlineStoreTableVersio
 from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.sql.base import BaseSqlModel
-from featurebyte.sql.common import construct_create_table_query, retry_sql
+from featurebyte.sql.common import construct_create_table_query
 
 logger = get_logger(__name__)
 
@@ -28,7 +27,6 @@ class TileScheduleOnlineStore(BaseSqlModel):
 
     aggregation_id: str
     job_schedule_ts_str: str
-    retry_num: int = Field(default=10)
     aggregation_result_name: Optional[str] = Field(default=None)
     online_store_table_version_service: OnlineStoreTableVersionService
     online_store_compute_query_service: OnlineStoreComputeQueryService
@@ -39,21 +37,6 @@ class TileScheduleOnlineStore(BaseSqlModel):
         """
 
         arbitrary_types_allowed = True
-
-    async def retry_sql(self, sql: str) -> Union[pd.DataFrame, None]:
-        """
-        Execute sql query with retry
-
-        Parameters
-        ----------
-        sql: str
-            SQL query
-
-        Returns
-        -------
-        pd.DataFrame | None
-        """
-        return await retry_sql(self._session, sql, retry_num=self.retry_num)
 
     async def execute(self) -> None:
         """
@@ -117,7 +100,7 @@ class TileScheduleOnlineStore(BaseSqlModel):
                     session=self._session,
                     partition_keys=quoted_result_name_column,
                 )
-                await self.retry_sql(create_sql)
+                await self._session.execute_query_long_running(create_sql)
 
             else:
                 # feature store table already exists, insert records with the input feature sql
