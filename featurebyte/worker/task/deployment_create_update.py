@@ -3,7 +3,7 @@ Deployment Create & Update Task
 """
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import Any, Optional, cast
 
 from featurebyte.exception import DocumentCreationError, DocumentUpdateError
 from featurebyte.schema.worker.task.deployment_create_update import (
@@ -29,7 +29,7 @@ class DeploymentCreateUpdateTask(BaseLockTask):
         return f"deployment:{payload.output_document_id}:create_update"
 
     @property
-    def lock_timeout(self) -> int:
+    def lock_timeout(self) -> Optional[int]:
         # set lock timeout to 24 hours
         return 24 * 60 * 60
 

@@ -144,13 +144,13 @@ class BaseLockTask(BaseTask):
 
     @property
     @abstractmethod
-    def lock_timeout(self) -> int:
+    def lock_timeout(self) -> Optional[int]:
         """
-        Lock timeout in seconds
+        Lock timeout in seconds (optional). The lock will be released after the timeout.
 
         Returns
         -------
-        int
+        Optional[int]
         """
 
     @property
