@@ -47,3 +47,4 @@ class ColumnInfo(ColumnInfoWithoutSemanticId):
     entity_id: Optional[PydanticObjectId] = Field(default=None)
     semantic_id: Optional[PydanticObjectId] = Field(default=None)
     critical_data_info: Optional[CriticalDataInfo] = Field(default=None)
+    description: Optional[str] = Field(default=None)

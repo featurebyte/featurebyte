@@ -114,6 +114,7 @@ def _check_event_table_with_critical_data_info(event_table):
         "entity_id": None,
         "semantic_id": None,
         "critical_data_info": {"cleaning_operations": []},
+        "description": None,
     }
     assert event_table.frame.node.type == NodeType.INPUT
 
