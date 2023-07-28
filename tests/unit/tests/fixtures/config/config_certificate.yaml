@@ -1,8 +1,0 @@
-# featurebyte configuration
-
-profile:
-  - name: local
-    ssl_verify: true
-    api_url: http://127.0.0.1:8088
-
-default_profile: local
