@@ -9,7 +9,7 @@ from datetime import datetime
 import pandas as pd
 from pydantic import Field
 
-from featurebyte.enum import InternalName, SourceType
+from featurebyte.enum import InternalName
 from featurebyte.logging import get_logger
 from featurebyte.models.online_store_compute_query import OnlineStoreComputeQueryModel
 from featurebyte.models.online_store_table_version import OnlineStoreTableVersion
@@ -119,10 +119,6 @@ class TileScheduleOnlineStore(BaseSqlModel):
                 )
                 await self.retry_sql(create_sql)
 
-                if self._session.source_type == SourceType.SNOWFLAKE:
-                    await self.retry_sql(
-                        f"ALTER TABLE {fs_table} ALTER {quoted_result_name_column} SET DATA TYPE STRING",
-                    )
             else:
                 # feature store table already exists, insert records with the input feature sql
 
