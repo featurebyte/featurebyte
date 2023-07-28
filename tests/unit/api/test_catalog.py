@@ -545,12 +545,6 @@ def test_get_catalog(catalog):
 
     # test list with include_id=True
     catalog_list = Catalog.list(include_id=True)
-    expected_catalog_list["id"] = [
-        str(healthcare_catalog.id),
-        str(creditcard_catalog.id),
-        str(grocery_catalog.id),
-        str(default_catalog.id),
-    ]
     assert_frame_equal(catalog_list, expected_catalog_list[catalog_list.columns])
 
     # test unexpected retrieval exception for Catalog.list
