@@ -340,20 +340,3 @@ def get_status() -> None:
             )
             table.add_row(container.name, app_status, app_health)
     console.print(table)
-
-
-if __name__ == '__main__':
-    feature_store = FeatureStore.get_or_create(
-        name="playground",
-        source_type=SourceType.SPARK,
-        details=SparkDetails(
-            host="spark-thrift",
-            http_path="cliservice",
-            port=10000,
-            storage_type="file",
-            storage_url="/data/staging/playground",
-            storage_spark_url="file:///opt/spark/data/staging/playground",
-            featurebyte_catalog="spark_catalog",
-            featurebyte_schema="playground",
-        ),
-    )

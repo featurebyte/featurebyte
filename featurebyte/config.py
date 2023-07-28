@@ -129,6 +129,8 @@ class APIClient(BaseAPIClient):
             URL of FeatureByte API service
         api_token: Optional[str]
             Access token to used for authentication
+        ssl_verify: bool
+            Flag to specify whether to verify SSL certificates
         """
         super().__init__()
         self.base_url = api_url
@@ -207,6 +209,8 @@ class WebsocketClient:
             URL of FeatureByte websocket service
         access_token: Optional[str]
             Access token to used for authentication
+        ssl_verify: bool
+            Flag to specify whether to verify SSL certificates
         """
         if access_token:
             self._url = f"{url}?token={access_token}"
@@ -220,7 +224,7 @@ class WebsocketClient:
         Reconnect websocket connection
         """
         self._ws = websocket.create_connection(
-            self._url, enable_multithread=True, sslopt=self.get_sslopt()
+            self._url, enable_multithread=True, sslopt=self._get_sslopt()
         )
 
     def close(self) -> None:
@@ -267,14 +271,18 @@ class WebsocketClient:
             return cast(Dict[str, Any], json.loads(message_bytes.decode("utf8")))
         return None
 
-    def get_sslopt(self) -> Dict[str, Any]:
+    def _get_sslopt(self) -> Dict[str, Any]:
         """
         Return ssl options for websocket connection
+
+        Returns
+        -------
+        Dict[str, Any]
+            SSL options
         """
         if self.verify:
             return {}
-        else:
-            return {"cert_reqs": ssl.CERT_NONE}
+        return {"cert_reqs": ssl.CERT_NONE}
 
 
 class Configurations:

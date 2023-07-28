@@ -62,6 +62,9 @@ def test_configurations():
 
 @patch("httpx._client.Client.send")
 def test_tls_verify_configurations(mock_requests_get):
+    """
+    Test certification verification from configuration files
+    """
     # Mock return status code 200
     mock_requests_get.return_value.status_code = 200
 

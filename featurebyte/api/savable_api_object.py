@@ -13,7 +13,7 @@ from typeguard import typechecked
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.api_object_util import delete_api_object_by_id
 from featurebyte.config import Configurations
-from featurebyte.enum import ConflictResolution, SourceType
+from featurebyte.enum import ConflictResolution
 from featurebyte.exception import (
     DuplicatedRecordException,
     ObjectHasBeenSavedError,
