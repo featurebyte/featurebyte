@@ -163,7 +163,7 @@ def test_list(cos_udf, power_udf, date_sub_udf):
         udf_list,
         pd.DataFrame(
             {
-                "id": [date_sub_udf.id, power_udf.id, cos_udf.id],
+                "id": [str(date_sub_udf.id), str(power_udf.id), str(cos_udf.id)],
                 "signature": [date_sub_udf.signature, power_udf.signature, cos_udf.signature],
                 "sql_function_name": [
                     date_sub_udf.sql_function_name,

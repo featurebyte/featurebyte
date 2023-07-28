@@ -428,7 +428,7 @@ class Feature(
         """
         output = self._list(include_id=True, params={"name": self.name})
         default_feature_id = self.feature_namespace.default_feature_id
-        output["is_default"] = output["id"] == default_feature_id
+        output["is_default"] = output["id"] == str(default_feature_id)
         columns = output.columns
         if not include_id:
             columns = [column for column in columns if column != "id"]

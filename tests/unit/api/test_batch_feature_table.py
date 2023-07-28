@@ -69,4 +69,4 @@ class TestBatchFeatureTable(BaseMaterializedTableApiTest[BatchFeatureTable]):
         assert df["name"].tolist() == [f"my_{expected_name}"]
         assert df["feature_store_name"].tolist() == ["sf_featurestore"]
         assert df["batch_request_table_name"].tolist() == ["batch_request_table_from_event_view"]
-        assert (df["shape"] == (500, 1)).all()
+        assert df["shape"].tolist() == [[500, 1]]
