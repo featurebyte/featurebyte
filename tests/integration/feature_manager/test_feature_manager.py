@@ -155,7 +155,7 @@ def feature_sql_fixture():
     return f"""
         SELECT
           row_number() over (order by CUST_ID desc) as "cust_id",
-          CAST('sum_30h' AS VARCHAR) AS {InternalName.ONLINE_STORE_RESULT_NAME_COLUMN},
+          CAST('sum_30h' AS STRING) AS {InternalName.ONLINE_STORE_RESULT_NAME_COLUMN},
           1 AS {InternalName.ONLINE_STORE_VALUE_COLUMN},
           'test_quote'
         FROM TEMP_TABLE
