@@ -119,7 +119,7 @@ class BaseLockTask(BaseTask):
         -------
         Any
         """
-        lock = self.app_container.redis.lock(self.lock_key)
+        lock = self.app_container.redis.lock(self.lock_key, timeout=self.lock_timeout)
         try:
             if lock.acquire(blocking=self.lock_blocking):
                 return await self._execute()
@@ -140,6 +140,17 @@ class BaseLockTask(BaseTask):
         Returns
         -------
         str
+        """
+
+    @property
+    @abstractmethod
+    def lock_timeout(self) -> int:
+        """
+        Lock timeout in seconds
+
+        Returns
+        -------
+        int
         """
 
     @property

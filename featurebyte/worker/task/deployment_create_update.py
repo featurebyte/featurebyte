@@ -29,6 +29,11 @@ class DeploymentCreateUpdateTask(BaseLockTask):
         return f"deployment:{payload.output_document_id}:create_update"
 
     @property
+    def lock_timeout(self) -> int:
+        # set lock timeout to 24 hours
+        return 24 * 60 * 60
+
+    @property
     def lock_blocking(self) -> bool:
         # if the deployment is being created or updated by another task,
         # fail the current task immediately without waiting
