@@ -770,7 +770,7 @@ class BaseCatalogRelationshipApiTestSuite(BaseRelationshipApiTestSuite, BaseCata
     """
 
 
-class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
+class BaseTableApiTestSuite(BaseCatalogApiTestSuite):  # pylint: disable=too-many-public-methods
     """
     BaseTableApiTestSuite contains tests related to table service
     """
@@ -1063,7 +1063,7 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
         }
 
     def test_update_column_description_404__column_not_found(
-        self, test_api_client_persistent, data_response, columns_info
+        self, test_api_client_persistent, data_response
     ):
         """Test update column description"""
         test_api_client, _ = test_api_client_persistent
@@ -1080,7 +1080,7 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
         )
         assert update_response.status_code == HTTPStatus.NOT_FOUND
         assert update_response.json()["detail"] == (
-            f'Column: non_existent_column not found in EventTable (id: "{document_id}")'
+            f'Column: non_existent_column not found in {self.class_name_to_save} (id: "{document_id}")'
         )
 
     def test_update_column_description(
