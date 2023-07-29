@@ -13,6 +13,7 @@ from starlette.responses import JSONResponse
 
 from featurebyte.exception import (
     CatalogNotSpecifiedError,
+    ColumnNotFoundError,
     CredentialsError,
     DatabaseNotFoundError,
     DocumentConflictError,
@@ -163,6 +164,13 @@ ExecutionContext.register(DocumentConflictError, handle_status_code=HTTPStatus.C
 
 ExecutionContext.register(
     DocumentNotFoundError,
+    handle_status_code=lambda req, exc: HTTPStatus.UNPROCESSABLE_ENTITY
+    if req.method == "POST"
+    else HTTPStatus.NOT_FOUND,
+)
+
+ExecutionContext.register(
+    ColumnNotFoundError,
     handle_status_code=lambda req, exc: HTTPStatus.UNPROCESSABLE_ENTITY
     if req.method == "POST"
     else HTTPStatus.NOT_FOUND,

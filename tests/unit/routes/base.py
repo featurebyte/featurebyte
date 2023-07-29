@@ -1062,6 +1062,27 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
             "cleaning_operations": [{"type": "missing", "imputed_value": 0}]
         }
 
+    def test_update_column_description_404__column_not_found(
+        self, test_api_client_persistent, data_response, columns_info
+    ):
+        """Test update column description"""
+        test_api_client, _ = test_api_client_persistent
+        response_dict = data_response.json()
+        document_id = response_dict["_id"]
+
+        # update description in a column that does not exist
+        update_response = test_api_client.patch(
+            f"{self.base_route}/{document_id}/column_description",
+            json={
+                "column_name": "non_existent_column",
+                "description": "new description",
+            },
+        )
+        assert update_response.status_code == HTTPStatus.NOT_FOUND
+        assert update_response.json()["detail"] == (
+            f'Column: non_existent_column not found in EventTable (id: "{document_id}")'
+        )
+
     def test_update_column_description(
         self, test_api_client_persistent, data_response, columns_info
     ):

@@ -9,6 +9,7 @@ from abc import abstractmethod
 
 from bson.objectid import ObjectId
 
+from featurebyte.exception import ColumnNotFoundError
 from featurebyte.models.dimension_table import DimensionTableModel
 from featurebyte.models.event_table import EventTableModel
 from featurebyte.models.item_table import ItemTableModel
@@ -177,10 +178,17 @@ class BaseTableDocumentController(
         """
         document = await self.service.get_document(document_id=document_id)
         columns_info = document.columns_info
+        column_exists = False
         for col_info in columns_info:
             if col_info.name == column_name:
                 setattr(col_info, field, data)
+                column_exists = True
                 break
+
+        if not column_exists:
+            raise ColumnNotFoundError(
+                f'Column: {column_name} not found in {self.service.class_name} (id: "{document_id}")'
+            )
 
         await self.table_column_info_service.update_columns_info(
             service=self.service,
