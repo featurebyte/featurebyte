@@ -770,7 +770,7 @@ class BaseCatalogRelationshipApiTestSuite(BaseRelationshipApiTestSuite, BaseCata
     """
 
 
-class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
+class BaseTableApiTestSuite(BaseCatalogApiTestSuite):  # pylint: disable=too-many-public-methods
     """
     BaseTableApiTestSuite contains tests related to table service
     """
@@ -990,25 +990,24 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
             }
         ]
 
-    def test_update_422__entity_id_not_found(
-        self, test_api_client_persistent, data_response, columns_info
+    def test_update_column_entity_422__entity_id_not_found(
+        self, test_api_client_persistent, data_response
     ):
-        """Test update (unprocessable) - entity ID not found"""
+        """Test update column entity (unprocessable) - entity ID not found"""
         test_api_client, _ = test_api_client_persistent
         data_response_dict = data_response.json()
 
         unknown_entity_id = str(ObjectId())
-        column = "item_id"
-        column_to_update = columns_info[-1]
-        assert column_to_update["name"] == column
-        column_to_update["entity_id"] = unknown_entity_id
         response = test_api_client.patch(
-            f"{self.base_route}/{data_response_dict['_id']}",
-            json={"columns_info": columns_info},
+            f"{self.base_route}/{data_response_dict['_id']}/column_entity",
+            json={
+                "column_name": "item_id",
+                "entity_id": unknown_entity_id,
+            },
         )
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json()["detail"] == (
-            f"Entity IDs ['{unknown_entity_id}'] not found for columns ['{column}']."
+            f"Entity IDs ['{unknown_entity_id}'] not found for columns ['item_id']."
         )
 
     def test_update_record_creation_date(
@@ -1035,41 +1034,115 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
         assert update_response_dict.items() > expected_response.items()
         assert update_response_dict["updated_at"] is not None
 
-    def test_upate_columns_info_422__duplicated_column_name(
+    def test_update_column_critical_data_info(
         self, test_api_client_persistent, data_response, columns_info
     ):
-        """Test update columns unprocessible due to duplicated colum name in columns info"""
-        test_api_client, _ = test_api_client_persistent
-        response_dict = data_response.json()
-        duplicated_col_info = columns_info[0]
-        update_response = test_api_client.patch(
-            f"{self.base_route}/{response_dict['_id']}",
-            json={"columns_info": columns_info + [duplicated_col_info]},
-        )
-        assert update_response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-        duplicated_col_name = duplicated_col_info["name"]
-        error_msg = update_response.json()["detail"][0]["msg"]
-        assert f'Column name "{duplicated_col_name}" is duplicated.' in error_msg
-
-    def test_update_columns_info(self, test_api_client_persistent, data_response, columns_info):
-        """Test update columns info"""
+        """Test update column critical_data_info"""
         test_api_client, _ = test_api_client_persistent
         response_dict = data_response.json()
 
         # modify current_value's critical data info
         current_value_info = columns_info[-2]
         assert current_value_info["name"] == "current_value"
-        current_value_info["critical_data_info"] = {
-            "cleaning_operations": [{"type": "missing", "imputed_value": 0}]
-        }
-        columns_info[-2] = current_value_info
+        assert current_value_info.get("critical_data_info") is None
 
         # update critical data info
         update_response = test_api_client.patch(
-            f"{self.base_route}/{response_dict['_id']}",
-            json={"columns_info": columns_info},
+            f"{self.base_route}/{response_dict['_id']}/column_critical_data_info",
+            json={
+                "column_name": "current_value",
+                "critical_data_info": {
+                    "cleaning_operations": [{"type": "missing", "imputed_value": 0}]
+                },
+            },
         )
         assert update_response.status_code == HTTPStatus.OK
+        output_dict = update_response.json()
+        assert output_dict["columns_info"][-2].get("critical_data_info") == {
+            "cleaning_operations": [{"type": "missing", "imputed_value": 0}]
+        }
+
+    def test_update_column_description_404__column_not_found(
+        self, test_api_client_persistent, data_response
+    ):
+        """Test update column description"""
+        test_api_client, _ = test_api_client_persistent
+        response_dict = data_response.json()
+        document_id = response_dict["_id"]
+
+        # update description in a column that does not exist
+        update_response = test_api_client.patch(
+            f"{self.base_route}/{document_id}/column_description",
+            json={
+                "column_name": "non_existent_column",
+                "description": "new description",
+            },
+        )
+        assert update_response.status_code == HTTPStatus.NOT_FOUND
+        assert update_response.json()["detail"] == (
+            f'Column: non_existent_column not found in {self.class_name_to_save} (id: "{document_id}")'
+        )
+
+    def test_update_column_description(
+        self, test_api_client_persistent, data_response, columns_info
+    ):
+        """Test update column description"""
+        test_api_client, _ = test_api_client_persistent
+        response_dict = data_response.json()
+
+        # modify current_value's description
+        current_value_info = columns_info[-2]
+        assert current_value_info["name"] == "current_value"
+        assert current_value_info.get("description") is None
+
+        # update description
+        update_response = test_api_client.patch(
+            f"{self.base_route}/{response_dict['_id']}/column_description",
+            json={
+                "column_name": "current_value",
+                "description": "new description",
+            },
+        )
+        assert update_response.status_code == HTTPStatus.OK, update_response.json()
+        output_dict = update_response.json()
+        assert output_dict["columns_info"][-2].get("description") == "new description"
+
+        update_response = test_api_client.patch(
+            f"{self.base_route}/{response_dict['_id']}/column_description",
+            json={
+                "column_name": "current_value",
+                "description": None,
+            },
+        )
+        assert update_response.status_code == HTTPStatus.OK
+        output_dict = update_response.json()
+        assert output_dict["columns_info"][-2].get("description") is None
+
+    def test_update_column_semantic_422__semantic_id_not_found(
+        self, test_api_client_persistent, data_response, columns_info
+    ):
+        """Test update column semantic (unprocessable) - semantic ID not found"""
+        test_api_client, _ = test_api_client_persistent
+        response_dict = data_response.json()
+
+        # modify current_value's semantic
+        current_value_info = columns_info[-2]
+        assert current_value_info["name"] == "current_value"
+        assert current_value_info.get("semantic_id") is None
+
+        # update semantic
+        semantic_id = ObjectId()
+        response = test_api_client.patch(
+            f"{self.base_route}/{response_dict['_id']}/column_semantic",
+            json={
+                "column_name": "current_value",
+                "semantic_id": str(semantic_id),
+            },
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.json()["detail"] == (
+            f"Semantic IDs ['{semantic_id}'] not found for columns ['current_value']."
+        )
 
     def test_update_422(
         self,

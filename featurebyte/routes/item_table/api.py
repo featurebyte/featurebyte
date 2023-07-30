@@ -25,6 +25,12 @@ from featurebyte.routes.common.schema import (
 from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.info import ItemTableInfo
 from featurebyte.schema.item_table import ItemTableCreate, ItemTableList, ItemTableUpdate
+from featurebyte.schema.table import (
+    ColumnCriticalDataInfoUpdate,
+    ColumnDescriptionUpdate,
+    ColumnEntityUpdate,
+    ColumnSemanticUpdate,
+)
 
 router = APIRouter(prefix="/item_table")
 
@@ -148,5 +154,77 @@ async def update_item_table_description(
     item_table: ItemTableModel = await controller.update_description(
         document_id=item_table_id,
         description=data.description,
+    )
+    return item_table
+
+
+@router.patch("/{item_table_id}/column_entity", response_model=ItemTableModel)
+async def update_column_entity(
+    request: Request,
+    item_table_id: PydanticObjectId,
+    data: ColumnEntityUpdate,
+) -> ItemTableModel:
+    """
+    Update column entity
+    """
+    controller = request.state.app_container.item_table_controller
+    item_table: ItemTableModel = await controller.update_column_entity(
+        document_id=item_table_id,
+        column_name=data.column_name,
+        entity_id=data.entity_id,
+    )
+    return item_table
+
+
+@router.patch("/{item_table_id}/column_critical_data_info", response_model=ItemTableModel)
+async def update_column_critical_data_info(
+    request: Request,
+    item_table_id: PydanticObjectId,
+    data: ColumnCriticalDataInfoUpdate,
+) -> ItemTableModel:
+    """
+    Update column critical data info
+    """
+    controller = request.state.app_container.item_table_controller
+    item_table: ItemTableModel = await controller.update_column_critical_data_info(
+        document_id=item_table_id,
+        column_name=data.column_name,
+        critical_data_info=data.critical_data_info,
+    )
+    return item_table
+
+
+@router.patch("/{item_table_id}/column_description", response_model=ItemTableModel)
+async def update_column_description(
+    request: Request,
+    item_table_id: PydanticObjectId,
+    data: ColumnDescriptionUpdate,
+) -> ItemTableModel:
+    """
+    Update column description
+    """
+    controller = request.state.app_container.item_table_controller
+    item_table: ItemTableModel = await controller.update_column_description(
+        document_id=item_table_id,
+        column_name=data.column_name,
+        description=data.description,
+    )
+    return item_table
+
+
+@router.patch("/{item_table_id}/column_semantic", response_model=ItemTableModel)
+async def update_column_semantic(
+    request: Request,
+    item_table_id: PydanticObjectId,
+    data: ColumnSemanticUpdate,
+) -> ItemTableModel:
+    """
+    Update column semantic
+    """
+    controller = request.state.app_container.item_table_controller
+    item_table: ItemTableModel = await controller.update_column_semantic(
+        document_id=item_table_id,
+        column_name=data.column_name,
+        semantic_id=data.semantic_id,
     )
     return item_table

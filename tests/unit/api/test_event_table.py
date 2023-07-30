@@ -54,6 +54,7 @@ def event_table_dict_fixture(snowflake_database_table):
                 "dtype": "INT",
                 "semantic_id": None,
                 "critical_data_info": None,
+                "description": None,
             },
             {
                 "entity_id": None,
@@ -61,6 +62,7 @@ def event_table_dict_fixture(snowflake_database_table):
                 "dtype": "FLOAT",
                 "semantic_id": None,
                 "critical_data_info": None,
+                "description": None,
             },
             {
                 "entity_id": None,
@@ -68,6 +70,7 @@ def event_table_dict_fixture(snowflake_database_table):
                 "dtype": "CHAR",
                 "semantic_id": None,
                 "critical_data_info": None,
+                "description": None,
             },
             {
                 "entity_id": None,
@@ -75,6 +78,7 @@ def event_table_dict_fixture(snowflake_database_table):
                 "dtype": "VARCHAR",
                 "semantic_id": None,
                 "critical_data_info": None,
+                "description": None,
             },
             {
                 "entity_id": None,
@@ -82,6 +86,7 @@ def event_table_dict_fixture(snowflake_database_table):
                 "dtype": "BINARY",
                 "semantic_id": None,
                 "critical_data_info": None,
+                "description": None,
             },
             {
                 "entity_id": None,
@@ -89,6 +94,7 @@ def event_table_dict_fixture(snowflake_database_table):
                 "dtype": "BOOL",
                 "semantic_id": None,
                 "critical_data_info": None,
+                "description": None,
             },
             {
                 "entity_id": None,
@@ -96,6 +102,7 @@ def event_table_dict_fixture(snowflake_database_table):
                 "dtype": "TIMESTAMP_TZ",
                 "semantic_id": None,
                 "critical_data_info": None,
+                "description": None,
             },
             {
                 "entity_id": None,
@@ -103,6 +110,7 @@ def event_table_dict_fixture(snowflake_database_table):
                 "dtype": "TIMESTAMP_TZ",
                 "semantic_id": None,
                 "critical_data_info": None,
+                "description": None,
             },
             {
                 "entity_id": None,
@@ -110,6 +118,7 @@ def event_table_dict_fixture(snowflake_database_table):
                 "dtype": "INT",
                 "semantic_id": None,
                 "critical_data_info": None,
+                "description": None,
             },
         ],
         "event_timestamp_column": "event_timestamp",
@@ -342,6 +351,9 @@ def test_info(saved_event_table, cust_id_entity):
         cleaning_operations=[MissingValueImputation(imputed_value=0)]
     )
 
+    # update column description
+    saved_event_table.col_int.update_description("new description")
+
     verbose_info_dict = saved_event_table.info(verbose=True)
     assert verbose_info_dict.items() > expected_info.items(), info_dict
     assert verbose_info_dict["updated_at"] is not None, verbose_info_dict["updated_at"]
@@ -355,6 +367,7 @@ def test_info(saved_event_table, cust_id_entity):
             "critical_data_info": {
                 "cleaning_operations": [{"type": "missing", "imputed_value": 0}]
             },
+            "description": "new description",
         },
         {
             "name": "col_float",
@@ -362,6 +375,7 @@ def test_info(saved_event_table, cust_id_entity):
             "entity": None,
             "semantic": None,
             "critical_data_info": None,
+            "description": None,
         },
         {
             "name": "col_char",
@@ -369,6 +383,7 @@ def test_info(saved_event_table, cust_id_entity):
             "entity": None,
             "semantic": None,
             "critical_data_info": None,
+            "description": None,
         },
         {
             "name": "col_text",
@@ -376,6 +391,7 @@ def test_info(saved_event_table, cust_id_entity):
             "entity": None,
             "semantic": None,
             "critical_data_info": None,
+            "description": None,
         },
         {
             "name": "col_binary",
@@ -383,6 +399,7 @@ def test_info(saved_event_table, cust_id_entity):
             "entity": None,
             "semantic": None,
             "critical_data_info": None,
+            "description": None,
         },
         {
             "name": "col_boolean",
@@ -390,6 +407,7 @@ def test_info(saved_event_table, cust_id_entity):
             "entity": None,
             "semantic": None,
             "critical_data_info": None,
+            "description": None,
         },
         {
             "name": "event_timestamp",
@@ -397,6 +415,7 @@ def test_info(saved_event_table, cust_id_entity):
             "entity": None,
             "semantic": "event_timestamp",
             "critical_data_info": None,
+            "description": None,
         },
         {
             "name": "created_at",
@@ -404,6 +423,7 @@ def test_info(saved_event_table, cust_id_entity):
             "entity": None,
             "semantic": None,
             "critical_data_info": None,
+            "description": None,
         },
         {
             "name": "cust_id",
@@ -411,6 +431,7 @@ def test_info(saved_event_table, cust_id_entity):
             "entity": "customer",
             "semantic": None,
             "critical_data_info": None,
+            "description": None,
         },
     ]
 

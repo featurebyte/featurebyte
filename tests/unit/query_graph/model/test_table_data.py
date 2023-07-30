@@ -358,6 +358,7 @@ def test_event_view_graph_node(event_table_data, event_input_node):
             "semantic_id": None,
             "entity_id": None,
             "critical_data_info": None,
+            "description": None,
         },
         {
             "name": "amount",
@@ -370,6 +371,7 @@ def test_event_view_graph_node(event_table_data, event_input_node):
                     {"type": "less_than", "end_point": 0, "imputed_value": None},
                 ]
             },
+            "description": None,
         },
     ]
 

@@ -25,6 +25,12 @@ from featurebyte.routes.common.schema import (
 from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.event_table import EventTableCreate, EventTableList, EventTableUpdate
 from featurebyte.schema.info import EventTableInfo
+from featurebyte.schema.table import (
+    ColumnCriticalDataInfoUpdate,
+    ColumnDescriptionUpdate,
+    ColumnEntityUpdate,
+    ColumnSemanticUpdate,
+)
 
 router = APIRouter(prefix="/event_table")
 
@@ -174,5 +180,77 @@ async def update_event_table_description(
     event_table: EventTableModel = await controller.update_description(
         document_id=event_table_id,
         description=data.description,
+    )
+    return event_table
+
+
+@router.patch("/{event_table_id}/column_entity", response_model=EventTableModel)
+async def update_column_entity(
+    request: Request,
+    event_table_id: PydanticObjectId,
+    data: ColumnEntityUpdate,
+) -> EventTableModel:
+    """
+    Update column entity
+    """
+    controller = request.state.app_container.event_table_controller
+    event_table: EventTableModel = await controller.update_column_entity(
+        document_id=event_table_id,
+        column_name=data.column_name,
+        entity_id=data.entity_id,
+    )
+    return event_table
+
+
+@router.patch("/{event_table_id}/column_critical_data_info", response_model=EventTableModel)
+async def update_column_critical_data_info(
+    request: Request,
+    event_table_id: PydanticObjectId,
+    data: ColumnCriticalDataInfoUpdate,
+) -> EventTableModel:
+    """
+    Update column critical data info
+    """
+    controller = request.state.app_container.event_table_controller
+    event_table: EventTableModel = await controller.update_column_critical_data_info(
+        document_id=event_table_id,
+        column_name=data.column_name,
+        critical_data_info=data.critical_data_info,
+    )
+    return event_table
+
+
+@router.patch("/{event_table_id}/column_description", response_model=EventTableModel)
+async def update_column_description(
+    request: Request,
+    event_table_id: PydanticObjectId,
+    data: ColumnDescriptionUpdate,
+) -> EventTableModel:
+    """
+    Update column description
+    """
+    controller = request.state.app_container.event_table_controller
+    event_table: EventTableModel = await controller.update_column_description(
+        document_id=event_table_id,
+        column_name=data.column_name,
+        description=data.description,
+    )
+    return event_table
+
+
+@router.patch("/{event_table_id}/column_semantic", response_model=EventTableModel)
+async def update_column_semantic(
+    request: Request,
+    event_table_id: PydanticObjectId,
+    data: ColumnSemanticUpdate,
+) -> EventTableModel:
+    """
+    Update column semantic
+    """
+    controller = request.state.app_container.event_table_controller
+    event_table: EventTableModel = await controller.update_column_semantic(
+        document_id=event_table_id,
+        column_name=data.column_name,
+        semantic_id=data.semantic_id,
     )
     return event_table
