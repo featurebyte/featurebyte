@@ -50,7 +50,6 @@ class ExtendedMongoBackend(MongoBackend):
         request: Any = None,
         **kwargs: Any,
     ) -> Any:
-        """Store return value and state of an executed task."""
         meta = self._get_result_meta(
             result=self.encode(result), state=state, traceback=traceback, request=request
         )

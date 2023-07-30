@@ -2,6 +2,7 @@
 This module contains integration tests for TileManager scheduler
 """
 from unittest import mock
+from uuid import uuid4
 
 import pytest
 import pytest_asyncio
@@ -43,7 +44,7 @@ async def test_generate_tiles_with_scheduler__verify_scheduling_and_execution(
     assert job_details.time_modulo_frequency_second == tile_spec.time_modulo_frequency_second
     assert job_details.interval == Interval(every=tile_spec.frequency_minute * 60, period="seconds")
 
-    task_executor = TaskExecutor(payload=job_details.kwargs)
+    task_executor = TaskExecutor(payload=job_details.kwargs, task_id=uuid4())
     with mock.patch(
         "featurebyte.service.feature_store.FeatureStoreService.get_document"
     ) as mock_feature_store_service:

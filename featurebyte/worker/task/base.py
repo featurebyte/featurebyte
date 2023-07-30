@@ -25,7 +25,7 @@ class BaseTask:  # pylint: disable=too-many-instance-attributes
 
     payload_class: type[BaseTaskPayload] = BaseTaskPayload
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         task_id: UUID,
         payload: dict[str, Any],

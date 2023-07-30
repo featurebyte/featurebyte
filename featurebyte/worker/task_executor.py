@@ -119,6 +119,11 @@ class TaskExecutor:
     async def _update_task_start_time(self, persistent: Any) -> None:
         """
         Update task start time
+
+        Parameters
+        ----------
+        persistent: Any
+            Persistent object
         """
         await persistent.update_one(
             collection_name=TaskModel.collection_name(),
