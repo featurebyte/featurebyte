@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional
 from pydantic import StrictStr, root_validator
 
 from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.observation_table import ObservationInput
 from featurebyte.models.target_table import TargetTableModel
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
@@ -25,11 +26,13 @@ class TargetTableCreate(FeatureOrTargetTableCreate):
     target_id: Optional[PydanticObjectId]
     graph: QueryGraph
     node_names: List[StrictStr]
+    request_input: ObservationInput
+    context_id: Optional[PydanticObjectId]
 
     @property
     def nodes(self) -> List[Node]:
         """
-        Get feature nodes
+        Get target nodes
 
         Returns
         -------
