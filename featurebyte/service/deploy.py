@@ -67,8 +67,7 @@ class DeployService(OpsServiceMixin):
         self,
         feature_id: ObjectId,
         feature_list: FeatureListModel,
-        return_document: bool = True,
-    ) -> Optional[FeatureModel]:
+    ) -> FeatureModel:
         """
         Update deployed_feature_list_ids in feature. For each update, trigger online service to update
         online enabled status at feature level.
@@ -79,12 +78,10 @@ class DeployService(OpsServiceMixin):
             Target Feature ID
         feature_list: FeatureListModel
             Updated FeatureList object (deployed status)
-        return_document: bool
-            Whether to return updated document
 
         Returns
         -------
-        Optional[FeatureModel]:
+        FeatureModel:
         """
         document = await self.feature_service.get_document(document_id=feature_id)
         deployed_feature_list_ids = self._extract_deployed_feature_list_ids(
@@ -97,21 +94,21 @@ class DeployService(OpsServiceMixin):
                 online_enabled=online_enabled,
             )
 
-        return await self.feature_service.update_document(
+        await self.feature_service.update_document(
             document_id=feature_id,
             data=FeatureServiceUpdate(
                 deployed_feature_list_ids=deployed_feature_list_ids,
             ),
             document=document,
-            return_document=return_document,
+            return_document=False,
         )
+        return await self.feature_service.get_document(document_id=feature_id)
 
     async def _update_feature_list_namespace(
         self,
         feature_list_namespace_id: ObjectId,
         feature_list: FeatureListModel,
-        return_document: bool = True,
-    ) -> Optional[FeatureListNamespaceModel]:
+    ) -> None:
         """
         Update deployed_feature_list_ids in feature list namespace
 
@@ -121,12 +118,6 @@ class DeployService(OpsServiceMixin):
             Target FeatureListNamespace ID
         feature_list: FeatureListModel
             Updated FeatureList object (deployed status)
-        return_document: bool
-            Whether to return updated document
-
-        Returns
-        -------
-        Optional[FeatureListNamespaceModel]
         """
         document = await self.feature_list_namespace_service.get_document(
             document_id=feature_list_namespace_id
@@ -160,12 +151,6 @@ class DeployService(OpsServiceMixin):
                 feature_list_namespace_id=feature_list_namespace_id,
                 target_feature_list_status=feature_list_status,
             )
-
-        if return_document:
-            return await self.feature_list_namespace_service.get_document(
-                document_id=feature_list_namespace_id
-            )
-        return None
 
     async def _validate_deployed_operation(
         self, feature_list: FeatureListModel, deployed: bool
@@ -221,7 +206,6 @@ class DeployService(OpsServiceMixin):
         await self._update_feature_list_namespace(
             feature_list_namespace_id=feature_list.feature_list_namespace_id,
             feature_list=feature_list,
-            return_document=False,
         )
 
     async def _update_feature_list(
@@ -229,8 +213,7 @@ class DeployService(OpsServiceMixin):
         feature_list_id: ObjectId,
         get_credential: Any,
         update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
-        return_document: bool = True,
-    ) -> Optional[FeatureListModel]:
+    ) -> FeatureListModel:
         """
         Update deployed status in feature list
 
@@ -242,8 +225,6 @@ class DeployService(OpsServiceMixin):
             Get credential handler function
         update_progress: Callable[[int, str | None], Coroutine[Any, Any, None]]
             Update progress handler function
-        return_document: bool
-            Whether to return updated document
 
         Returns
         -------
@@ -290,7 +271,6 @@ class DeployService(OpsServiceMixin):
                         updated_feature = await self._update_feature(
                             feature_id=feature_id,
                             feature_list=feature_list,
-                            return_document=True,
                         )
 
                     if updated_feature:
@@ -312,15 +292,10 @@ class DeployService(OpsServiceMixin):
                     await self._update_feature_list_namespace(
                         feature_list_namespace_id=feature_list.feature_list_namespace_id,
                         feature_list=feature_list,
-                        return_document=False,
                     )
-                    if return_document:
-                        return await self.feature_list_service.get_document(
-                            document_id=feature_list_id
-                        )
 
-                if update_progress:
-                    await update_progress(100, "Updated feature list")
+                    if update_progress:
+                        await update_progress(100, "Updated feature list")
 
             except Exception as exc:
                 try:
@@ -333,7 +308,8 @@ class DeployService(OpsServiceMixin):
                 except Exception as revert_exc:
                     raise revert_exc from exc
                 raise exc
-        return self.conditional_return(document=document, condition=return_document)
+
+        return await self.feature_list_service.get_document(document_id=feature_list_id)
 
     async def create_deployment(
         self,

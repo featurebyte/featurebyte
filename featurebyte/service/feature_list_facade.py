@@ -54,7 +54,6 @@ class FeatureListFacadeService:
         document = await self.feature_list_service.create_document(data=data)
         await self.feature_readiness_service.update_feature_list_namespace(
             feature_list_namespace_id=document.feature_list_namespace_id,
-            return_document=False,
         )
         output = await self.feature_list_service.get_document(document_id=document.id)
         return output
@@ -75,7 +74,6 @@ class FeatureListFacadeService:
         document = await self.version_service.create_new_feature_list_version(data=data)
         await self.feature_readiness_service.update_feature_list_namespace(
             feature_list_namespace_id=document.feature_list_namespace_id,
-            return_document=False,
         )
         output = await self.feature_list_service.get_document(document_id=document.id)
         return output
@@ -99,7 +97,6 @@ class FeatureListFacadeService:
                 feature_id=feature_id,
                 readiness=FeatureReadiness.PRODUCTION_READY,
                 ignore_guardrails=ignore_guardrails,
-                return_document=False,
             )
         await self.feature_list_service.get_document(document_id=feature_list_id)
 
@@ -164,7 +161,6 @@ class FeatureListFacadeService:
             await self.feature_readiness_service.update_feature_list_namespace(
                 feature_list_namespace_id=feature_list.feature_list_namespace_id,
                 deleted_feature_list_ids=[feature_list_id],
-                return_document=False,
             )
         except DocumentNotFoundError:
             # if feature list namespace is deleted, do nothing

@@ -60,7 +60,6 @@ class FeatureFacadeService:
         document = await self.feature_service.create_document(data=data)
         await self.feature_readiness_service.update_feature_namespace(
             feature_namespace_id=document.feature_namespace_id,
-            return_document=False,
         )
         output = await self.feature_service.get_document(document_id=document.id)
         return output
@@ -81,7 +80,6 @@ class FeatureFacadeService:
         document = await self.version_service.create_new_feature_version(data=data)
         await self.feature_readiness_service.update_feature_namespace(
             feature_namespace_id=document.feature_namespace_id,
-            return_document=False,
         )
         output = await self.feature_service.get_document(document_id=document.id)
         return output
@@ -109,7 +107,6 @@ class FeatureFacadeService:
             feature_id=feature_id,
             readiness=FeatureReadiness(readiness),
             ignore_guardrails=ignore_guardrails,
-            return_document=False,
         )
         output = await self.feature_service.get_document(document_id=feature_id)
         return output
@@ -143,7 +140,6 @@ class FeatureFacadeService:
             )
             await self.feature_readiness_service.update_feature_namespace(
                 feature_namespace_id=feature_namespace_id,
-                return_document=False,
             )
             feature_namespace = await self.feature_namespace_service.get_document(
                 document_id=feature_namespace_id
@@ -264,7 +260,6 @@ class FeatureFacadeService:
             await self.feature_readiness_service.update_feature_namespace(
                 feature_namespace_id=feature.feature_namespace_id,
                 deleted_feature_ids=[feature_id],
-                return_document=False,
             )
             feature_namespace = await self.feature_namespace_service.get_document(
                 document_id=feature.feature_namespace_id

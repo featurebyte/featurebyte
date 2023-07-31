@@ -335,7 +335,6 @@ async def test_feature_readiness__update_feature_namespace_with_deletion__auto_m
     updated_feature_namespace = await feature_readiness_service.update_feature_namespace(
         feature_namespace_id=feature.feature_namespace_id,
         deleted_feature_ids=[feature.id],
-        return_document=True,
     )
     assert updated_feature_namespace.feature_ids == [new_feature_id]
     assert updated_feature_namespace.default_feature_id == new_feature_id
@@ -344,7 +343,6 @@ async def test_feature_readiness__update_feature_namespace_with_deletion__auto_m
     updated_feature_namespace = await feature_readiness_service.update_feature_namespace(
         feature_namespace_id=feature.feature_namespace_id,
         deleted_feature_ids=[new_feature_id],
-        return_document=True,
     )
     assert updated_feature_namespace.feature_ids == []
 
@@ -368,7 +366,6 @@ async def test_feature_readiness__update_feature_namespace_with_deletion__manual
     updated_feature_namespace = await feature_readiness_service.update_feature_namespace(
         feature_namespace_id=feature.feature_namespace_id,
         deleted_feature_ids=[new_feature_id],
-        return_document=True,
     )
     assert updated_feature_namespace.feature_ids == [feature.id]
     assert updated_feature_namespace.default_feature_id == feature.id
