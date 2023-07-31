@@ -875,7 +875,7 @@ class BaseLookupNode(AggregationOpStructMixin, BaseNode):
                 window=None,
                 category=None,
                 column=name_to_column[input_column_name],
-                aggregation_type=self.type,
+                aggregation_type=self.type,  # type: ignore[arg-type]
                 node_names={node_name}.union(other_node_names),
                 node_name=node_name,
                 filter=any(col.filter for col in columns),
