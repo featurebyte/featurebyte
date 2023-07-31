@@ -67,6 +67,7 @@ class TargetInput(FeatureByteBaseModel):
         Raises
         ------
         NotImplementedError
+            If this method is called
         """
         raise NotImplementedError
 
