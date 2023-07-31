@@ -6,7 +6,6 @@ import pytest
 
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.feature_namespace import FeatureReadiness
-from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
 
 
@@ -155,7 +154,7 @@ async def test_update_document__auto_default_version_mode(
 
 
 @pytest.mark.asyncio
-async def test_update_document__manual_default_version_mode__non_default_feature_readiness_change(
+async def test_update_document__non_default_feature_readiness_change(
     setup_for_feature_readiness,
     feature_namespace_service,
     feature_list_service,
@@ -175,11 +174,9 @@ async def test_update_document__manual_default_version_mode__non_default_feature
     )
     assert feat_namespace.default_version_mode == "MANUAL"
     assert feat_namespace.default_feature_id == feature.id
-    flist_namespace = await feature_list_namespace_service.update_document(
+    flist_namespace = await feature_list_namespace_service.get_document(
         document_id=feature_list.feature_list_namespace_id,
-        data=FeatureListNamespaceServiceUpdate(default_version_mode="MANUAL"),
     )
-    assert flist_namespace.default_version_mode == "MANUAL"
     assert flist_namespace.default_feature_list_id == feature_list.id
 
     # upgrade new feature's readiness level to production
@@ -196,8 +193,10 @@ async def test_update_document__manual_default_version_mode__non_default_feature
         expected_feature_list_readiness_distribution=[
             {"readiness": "PRODUCTION_READY", "count": 1}
         ],
-        expected_default_feature_list_id=feature_list.id,
-        expected_default_feature_list_readiness_distribution=[{"readiness": "DRAFT", "count": 1}],
+        expected_default_feature_list_id=new_feature_list_id,
+        expected_default_feature_list_readiness_distribution=[
+            {"readiness": "PRODUCTION_READY", "count": 1}
+        ],
     )
 
     # downgrade new feature's readiness level to deprecated
@@ -218,7 +217,7 @@ async def test_update_document__manual_default_version_mode__non_default_feature
 
 
 @pytest.mark.asyncio
-async def test_update_document__manual_default_version_mode__default_feature_readiness_change(
+async def test_update_document__default_feature_readiness_change(
     setup_for_feature_readiness,
     feature_namespace_service,
     feature_list_service,
@@ -241,11 +240,9 @@ async def test_update_document__manual_default_version_mode__default_feature_rea
     )
     assert feat_namespace.default_version_mode == "MANUAL"
     assert feat_namespace.default_feature_id == new_feature_id
-    flist_namespace = await feature_list_namespace_service.update_document(
+    flist_namespace = await feature_list_namespace_service.get_document(
         document_id=feature_list.feature_list_namespace_id,
-        data=FeatureListNamespaceServiceUpdate(default_version_mode="MANUAL"),
     )
-    assert flist_namespace.default_version_mode == "MANUAL"
     assert flist_namespace.default_feature_list_id == new_feature_list_id
 
     # downgrade new feature's readiness level to deprecated
@@ -260,10 +257,8 @@ async def test_update_document__manual_default_version_mode__default_feature_rea
         expected_default_feature_id=new_feature_id,
         expected_default_readiness=FeatureReadiness.DEPRECATED,
         expected_feature_list_readiness_distribution=[{"readiness": "DEPRECATED", "count": 1}],
-        expected_default_feature_list_id=new_feature_list_id,
-        expected_default_feature_list_readiness_distribution=[
-            {"readiness": "DEPRECATED", "count": 1}
-        ],
+        expected_default_feature_list_id=feature_list.id,
+        expected_default_feature_list_readiness_distribution=[{"readiness": "DRAFT", "count": 1}],
     )
 
     # upgrade new feature's readiness level to production ready

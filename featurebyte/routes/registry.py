@@ -55,7 +55,6 @@ from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.service.catalog import AllCatalogService, CatalogService
 from featurebyte.service.context import ContextService
 from featurebyte.service.credential import CredentialService
-from featurebyte.service.default_version_mode import DefaultVersionModeService
 from featurebyte.service.deploy import DeployService
 from featurebyte.service.deployment import AllDeploymentService, DeploymentService
 from featurebyte.service.dimension_table import DimensionTableService
@@ -150,7 +149,6 @@ app_container_config.register_class(ContextService)
 app_container_config.register_class(DataWarehouseMigrationMixin)
 app_container_config.register_class(DataWarehouseMigrationServiceV6)
 app_container_config.register_class(DataWarehouseMigrationServiceV8)
-app_container_config.register_class(DefaultVersionModeService)
 app_container_config.register_class(DeployService)
 app_container_config.register_class(DeploymentController)
 app_container_config.register_class(DeploymentService)

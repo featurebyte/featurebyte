@@ -117,17 +117,6 @@ class FeatureListNamespaceController(
         FeatureListNamespaceModel
             FeatureListNamespace object with updated attribute(s)
         """
-        if data.default_version_mode:
-            await self.feature_list_facade_service.update_default_version_mode(
-                feature_list_namespace_id=feature_list_namespace_id,
-                default_version_mode=data.default_version_mode,
-            )
-
-        if data.default_feature_list_id:
-            await self.feature_list_facade_service.update_default_feature_list(
-                feature_list_id=data.default_feature_list_id,
-            )
-
         if data.status:
             await self.feature_list_facade_service.update_status(
                 feature_list_namespace_id=feature_list_namespace_id,

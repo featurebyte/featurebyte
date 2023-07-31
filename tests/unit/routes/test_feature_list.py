@@ -579,39 +579,6 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         response = test_api_client.get(f"{self.base_route}/{doc_id}")
         assert response.status_code == HTTPStatus.OK
 
-    def test_delete_422__manual_mode_default_feature_list(
-        self, test_api_client_persistent, create_success_response
-    ):
-        """Test delete (unprocessible entity)"""
-        test_api_client, _ = test_api_client_persistent
-        create_response_dict = create_success_response.json()
-        doc_id = create_response_dict["_id"]
-        namespace_id = create_response_dict["feature_list_namespace_id"]
-
-        # set feature list namespace default version mode to manual first
-        response = test_api_client.patch(
-            f"/feature_list_namespace/{namespace_id}", json={"default_version_mode": "MANUAL"}
-        )
-        response_dict = response.json()
-        assert response.status_code == HTTPStatus.OK
-        assert response_dict["default_version_mode"] == "MANUAL"
-        assert response_dict["default_feature_list_id"] == doc_id
-
-        # check that the feature list cannot be deleted
-        response = test_api_client.delete(f"{self.base_route}/{doc_id}")
-        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-
-        expected_error = (
-            "Feature list is the default feature list of the feature list namespace and the default version "
-            "mode is manual. Please set another feature list as the default feature list or "
-            "change the default version mode to auto."
-        )
-        assert response.json()["detail"] == expected_error
-
-        # check that the feature list is not deleted
-        response = test_api_client.get(f"{self.base_route}/{doc_id}")
-        assert response.status_code == HTTPStatus.OK
-
     @pytest.mark.asyncio
     async def test_get_info_200(self, test_api_client_persistent, create_success_response):
         """Test retrieve info"""

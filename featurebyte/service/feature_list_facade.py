@@ -3,7 +3,7 @@ Feature List Facade Service which is responsible for handling high level feature
 """
 from bson import ObjectId
 
-from featurebyte.exception import DocumentDeletionError, DocumentNotFoundError, DocumentUpdateError
+from featurebyte.exception import DocumentDeletionError, DocumentNotFoundError
 from featurebyte.models.feature_list import (
     FeatureListModel,
     FeatureListNamespaceModel,
@@ -11,8 +11,6 @@ from featurebyte.models.feature_list import (
 )
 from featurebyte.models.feature_namespace import DefaultVersionMode, FeatureReadiness
 from featurebyte.schema.feature_list import FeatureListNewVersionCreate, FeatureListServiceCreate
-from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
-from featurebyte.service.default_version_mode import DefaultVersionModeService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_list_status import FeatureListStatusService
@@ -33,14 +31,12 @@ class FeatureListFacadeService:
         feature_list_status_service: FeatureListStatusService,
         feature_readiness_service: FeatureReadinessService,
         version_service: VersionService,
-        default_version_mode_service: DefaultVersionModeService,
     ):
         self.feature_list_service = feature_list_service
         self.feature_list_namespace_service = feature_list_namespace_service
         self.feature_list_status_service = feature_list_status_service
         self.feature_readiness_service = feature_readiness_service
         self.version_service = version_service
-        self.default_version_mode_service = default_version_mode_service
 
     async def create_feature_list(self, data: FeatureListServiceCreate) -> FeatureListModel:
         """
@@ -131,72 +127,6 @@ class FeatureListFacadeService:
         return await self.feature_list_namespace_service.get_document(
             document_id=feature_list_namespace_id
         )
-
-    async def update_default_version_mode(
-        self, feature_list_namespace_id: ObjectId, default_version_mode: DefaultVersionMode
-    ) -> FeatureListNamespaceModel:
-        """
-        Update default version mode of a feature list namespace
-
-        Parameters
-        ----------
-        feature_list_namespace_id: ObjectId
-            Feature list namespace id to update
-        default_version_mode: DefaultVersionMode
-            Default version mode
-
-        Returns
-        -------
-        FeatureListNamespaceModel
-        """
-        await self.default_version_mode_service.update_feature_list_namespace(
-            feature_list_namespace_id=feature_list_namespace_id,
-            default_version_mode=default_version_mode,
-            return_document=False,
-        )
-        return await self.feature_list_namespace_service.get_document(
-            document_id=feature_list_namespace_id
-        )
-
-    async def update_default_feature_list(
-        self, feature_list_id: ObjectId
-    ) -> FeatureListNamespaceModel:
-        """
-        Update default feature list of a feature list namespace
-
-        Parameters
-        ----------
-        feature_list_id: ObjectId
-            Feature list id to update
-
-        Returns
-        -------
-        FeatureListNamespaceModel
-
-        Raises
-        ------
-        DocumentUpdateError
-            If the default feature cannot be updated
-        """
-        new_default_fl = await self.feature_list_service.get_document(document_id=feature_list_id)
-        namespace_id = new_default_fl.feature_list_namespace_id
-        feature_list_namespace = await self.feature_list_namespace_service.get_document(
-            document_id=namespace_id
-        )
-        if feature_list_namespace.default_version_mode != DefaultVersionMode.MANUAL:
-            raise DocumentUpdateError(
-                "Cannot set default feature list ID when default version mode is not MANUAL."
-            )
-
-        # update feature list namespace default feature list ID and update feature readiness
-        await self.feature_list_namespace_service.update_document(
-            document_id=namespace_id,
-            data=FeatureListNamespaceServiceUpdate(default_feature_list_id=feature_list_id),
-        )
-        await self.feature_readiness_service.update_feature_list_namespace(
-            feature_list_namespace_id=namespace_id
-        )
-        return await self.feature_list_namespace_service.get_document(document_id=namespace_id)
 
     async def delete_feature_list(self, feature_list_id: ObjectId) -> None:
         """
