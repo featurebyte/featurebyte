@@ -3,7 +3,7 @@ DeployService class
 """
 from __future__ import annotations
 
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Coroutine, Optional
 
 from bson.objectid import ObjectId
 
@@ -228,7 +228,7 @@ class DeployService(OpsServiceMixin):
         self,
         feature_list_id: ObjectId,
         get_credential: Any,
-        update_progress: Optional[Callable[[int, str], None]] = None,
+        update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
         return_document: bool = True,
     ) -> Optional[FeatureListModel]:
         """
@@ -240,7 +240,7 @@ class DeployService(OpsServiceMixin):
             Target feature list ID
         get_credential: Any
             Get credential handler function
-        update_progress: Callable[[int, str], None]
+        update_progress: Callable[[int, str | None], Coroutine[Any, Any, None]]
             Update progress handler function
         return_document: bool
             Whether to return updated document
@@ -255,7 +255,7 @@ class DeployService(OpsServiceMixin):
             When there is an unexpected error during feature online_enabled status update
         """
         if update_progress:
-            update_progress(0, "Start updating feature list")
+            await update_progress(0, "Start updating feature list")
 
         list_deployment_results = await self.deployment_service.list_documents_as_dict(
             query_filter={"feature_list_id": feature_list_id, "enabled": True}
@@ -280,7 +280,7 @@ class DeployService(OpsServiceMixin):
                 assert isinstance(feature_list, FeatureListModel)
 
                 if update_progress:
-                    update_progress(20, "Update features")
+                    await update_progress(20, "Update features")
 
                 # make each feature online enabled first
                 for ind, feature_id in enumerate(document.feature_ids):
@@ -303,10 +303,10 @@ class DeployService(OpsServiceMixin):
 
                     if update_progress:
                         percent = 20 + int(60 / len(document.feature_ids) * (ind + 1))
-                        update_progress(percent, f"Updated {feature.name}")
+                        await update_progress(percent, f"Updated {feature.name}")
 
                 if update_progress:
-                    update_progress(80, "Update feature list")
+                    await update_progress(80, "Update feature list")
 
                 async with self.persistent.start_transaction():
                     await self._update_feature_list_namespace(
@@ -320,7 +320,7 @@ class DeployService(OpsServiceMixin):
                         )
 
                 if update_progress:
-                    update_progress(100, "Updated feature list")
+                    await update_progress(100, "Updated feature list")
 
             except Exception as exc:
                 try:
@@ -342,7 +342,7 @@ class DeployService(OpsServiceMixin):
         deployment_name: Optional[str],
         to_enable_deployment: bool,
         get_credential: Any,
-        update_progress: Optional[Callable[[int, str], None]] = None,
+        update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
     ) -> None:
         """
         Create deployment for the given feature list feature list
@@ -359,7 +359,7 @@ class DeployService(OpsServiceMixin):
             Whether to enable deployment
         get_credential: Any
             Get credential handler function
-        update_progress: Callable[[int, str], None]
+        update_progress: Callable[[int, str | None], Coroutine[Any, Any, None]]
             Update progress handler function
 
         Raises
@@ -399,7 +399,7 @@ class DeployService(OpsServiceMixin):
         deployment_id: ObjectId,
         enabled: bool,
         get_credential: Any,
-        update_progress: Optional[Callable[[int, str], None]] = None,
+        update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
     ) -> None:
         """
         Update deployment enabled status
@@ -412,7 +412,7 @@ class DeployService(OpsServiceMixin):
             Enabled status
         get_credential: Any
             Get credential handler function
-        update_progress: Callable[[int, str], None]
+        update_progress: Callable[[int, str | None], Coroutine[Any, Any, None]]
             Update progress handler function
 
         Raises

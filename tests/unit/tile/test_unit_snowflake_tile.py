@@ -2,7 +2,7 @@
 Unit test for snowflake tile
 """
 from unittest import mock
-from unittest.mock import Mock, call
+from unittest.mock import AsyncMock, Mock, call
 
 import pytest
 from bson import ObjectId
@@ -164,7 +164,7 @@ async def test_generate_tiles_on_demand__progress_update(
     """
     mock_generate_tiles.size_effect = None
     mock_update_tile_entity_tracker.size_effect = None
-    mock_progress_callback = Mock()
+    mock_progress_callback = AsyncMock()
 
     await tile_manager_service.generate_tiles_on_demand(
         mock_snowflake_session,

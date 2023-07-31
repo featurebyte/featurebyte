@@ -39,7 +39,7 @@ class FeatureJobSettingAnalysisTask(BaseTask):
         """
         Execute the task
         """
-        self.update_progress(percent=0, message="Preparing data")
+        await self.update_progress(percent=0, message="Preparing data")
         payload = cast(FeatureJobSettingAnalysisTaskPayload, self.payload)
         persistent = self.get_persistent()
 
@@ -74,7 +74,7 @@ class FeatureJobSettingAnalysisTask(BaseTask):
             sql_query_func=db_session.execute_query,
         )
 
-        self.update_progress(percent=5, message="Running Analysis")
+        await self.update_progress(percent=5, message="Running Analysis")
         analysis = await create_feature_job_settings_analysis(
             event_dataset=event_dataset,
             **payload.dict(by_alias=True),
@@ -92,7 +92,7 @@ class FeatureJobSettingAnalysisTask(BaseTask):
             analysis_report=analysis.to_html(),
         )
 
-        self.update_progress(percent=95, message="Saving Analysis")
+        await self.update_progress(percent=95, message="Saving Analysis")
         feature_job_settings_analysis_service = (
             self.app_container.feature_job_setting_analysis_service
         )
@@ -111,7 +111,7 @@ class FeatureJobSettingAnalysisTask(BaseTask):
             "Completed feature job setting analysis",
             extra={"document_id": payload.output_document_id},
         )
-        self.update_progress(percent=100, message="Analysis Completed")
+        await self.update_progress(percent=100, message="Analysis Completed")
 
 
 class FeatureJobSettingAnalysisBacktestTask(BaseTask):
@@ -125,7 +125,7 @@ class FeatureJobSettingAnalysisBacktestTask(BaseTask):
         """
         Execute the task
         """
-        self.update_progress(percent=0, message="Preparing table")
+        await self.update_progress(percent=0, message="Preparing table")
         payload = cast(FeatureJobSettingAnalysisBackTestTaskPayload, self.payload)
 
         # retrieve analysis doc from persistent
@@ -151,7 +151,7 @@ class FeatureJobSettingAnalysisBacktestTask(BaseTask):
         analysis = FeatureJobSettingsAnalysisResult.from_dict(document)
 
         # run backtest
-        self.update_progress(percent=5, message="Running Analysis")
+        await self.update_progress(percent=5, message="Running Analysis")
         backtest_result, backtest_report = analysis.backtest(
             FeatureJobSetting(
                 frequency=payload.frequency,
@@ -162,7 +162,7 @@ class FeatureJobSettingAnalysisBacktestTask(BaseTask):
         )
 
         # store results in temp storage
-        self.update_progress(percent=95, message="Saving Analysis")
+        await self.update_progress(percent=95, message="Saving Analysis")
         temp_storage = self.get_temp_storage()
         prefix = f"feature_job_setting_analysis/backtest/{payload.output_document_id}"
         await temp_storage.put_text(backtest_report, f"{prefix}.html")
@@ -172,4 +172,4 @@ class FeatureJobSettingAnalysisBacktestTask(BaseTask):
             "Completed feature job setting analysis backtest",
             extra={"document_id": payload.output_document_id},
         )
-        self.update_progress(percent=100, message="Analysis Completed")
+        await self.update_progress(percent=100, message="Analysis Completed")

@@ -7,7 +7,9 @@ from typing import Any, Dict, Optional
 
 from abc import abstractmethod
 from enum import Enum
+from uuid import UUID
 
+from featurebyte.models.task import Task
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
 from featurebyte.schema.worker.progress import ProgressModel
@@ -23,8 +25,9 @@ class BaseTask:  # pylint: disable=too-many-instance-attributes
 
     payload_class: type[BaseTaskPayload] = BaseTaskPayload
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
+        task_id: UUID,
         payload: dict[str, Any],
         progress: Any,
         user: Any,
@@ -37,6 +40,7 @@ class BaseTask:  # pylint: disable=too-many-instance-attributes
     ):
         if self.payload_class == BaseTaskPayload:
             raise NotImplementedError
+        self.task_id = task_id
         self.payload = self.payload_class(**payload)
         self.user = user
         self.get_persistent = get_persistent
@@ -46,6 +50,7 @@ class BaseTask:  # pylint: disable=too-many-instance-attributes
         self.get_celery = get_celery
         self.get_redis = get_redis
         self.progress = progress
+        self.persistent = get_persistent()
         self._app_container: Optional[LazyAppContainer] = None
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
@@ -61,7 +66,7 @@ class BaseTask:  # pylint: disable=too-many-instance-attributes
             raise ValueError(f'Command "{command}" has been implemented.')
         TASK_MAP[command] = cls
 
-    def update_progress(self, percent: int, message: str | None = None) -> None:
+    async def update_progress(self, percent: int, message: str | None = None) -> None:
         """
         Update progress
 
@@ -72,9 +77,21 @@ class BaseTask:  # pylint: disable=too-many-instance-attributes
         message: str | None
             Optional message
         """
+        progress = ProgressModel(percent=percent, message=message)
+        progress_dict = progress.dict(exclude_none=True)
+
+        # write to persistent
+        await self.persistent.update_one(
+            collection_name=Task.collection_name(),
+            query_filter={"_id": str(self.task_id)},
+            update={"$set": {"progress": progress_dict}},
+            disable_audit=True,
+            user_id=self.user.id,
+        )
+
         if self.progress:
-            progress = ProgressModel(percent=percent, message=message)
-            self.progress.put(progress.dict(exclude_none=True))
+            # publish to redis
+            self.progress.put(progress_dict)
 
     @property
     def app_container(self) -> LazyAppContainer:

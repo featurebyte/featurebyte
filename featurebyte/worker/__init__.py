@@ -5,7 +5,10 @@ from __future__ import annotations
 
 from typing import Any
 
+from bson.errors import InvalidDocument
 from celery import Celery
+from celery.backends.mongodb import MongoBackend
+from kombu.exceptions import EncodeError
 from redis.client import Redis
 
 from featurebyte.models.periodic_task import PeriodicTask
@@ -28,6 +31,37 @@ def get_redis(redis_uri: str = REDIS_URI) -> Redis[Any]:
     Redis[Any]
     """
     return Redis.from_url(redis_uri)
+
+
+class ExtendedMongoBackend(MongoBackend):
+    """
+    Extend MongoBackend class to update mongodb document instead of replacing it
+    """
+
+    def add_to_chord(self, chord_id: Any, result: Any) -> Any:
+        raise NotImplementedError("Backend does not support add_to_chord")
+
+    def _store_result(
+        self,
+        task_id: str,
+        result: Any,
+        state: str,
+        traceback: Any = None,
+        request: Any = None,
+        **kwargs: Any,
+    ) -> Any:
+        meta = self._get_result_meta(
+            result=self.encode(result), state=state, traceback=traceback, request=request
+        )
+        # Add the _id for mongodb
+        meta["_id"] = task_id
+
+        try:
+            self.collection.update_one({"_id": task_id}, {"$set": meta}, upsert=True)
+        except InvalidDocument as exc:
+            raise EncodeError(exc) from exc
+
+        return result
 
 
 def get_celery(
@@ -64,6 +98,8 @@ def get_celery(
 
     # celery behavior
     celery_app.conf.task_track_started = True
+    celery_app.conf.result_backend = f"featurebyte.worker:ExtendedMongoBackend+{mongo_uri}"
+    celery_app.conf.broker_connection_retry_on_startup = True
 
     # task queues and routing
     celery_app.conf.task_routes = {

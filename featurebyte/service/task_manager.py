@@ -3,7 +3,7 @@ TaskManager service is responsible to submit task message
 """
 from __future__ import annotations
 
-from typing import Any, Optional, Union, cast
+from typing import Any, Optional
 
 import datetime
 from uuid import UUID
@@ -19,9 +19,6 @@ from featurebyte.schema.task import Task
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
 from featurebyte.service.periodic_task import PeriodicTaskService
-
-TaskId = Union[ObjectId, UUID]
-
 
 logger = get_logger(__name__)
 
@@ -39,7 +36,7 @@ class TaskManager:
         self.celery = celery
         self.catalog_id = catalog_id
 
-    async def submit(self, payload: BaseTaskPayload) -> TaskId:
+    async def submit(self, payload: BaseTaskPayload) -> str:
         """
         Submit task to celery
 
@@ -50,14 +47,14 @@ class TaskManager:
 
         Returns
         -------
-        TaskId
+        str
             Task ID
         """
         assert self.user.id == payload.user_id
         kwargs = payload.json_dict()
         kwargs["task_output_path"] = payload.task_output_path
         task = self.celery.send_task(payload.task, kwargs=kwargs)
-        return cast(TaskId, task.id)
+        return str(task.id)
 
     async def get_task(self, task_id: str) -> Task | None:
         """
@@ -85,10 +82,16 @@ class TaskManager:
             query_filter={"_id": task_id},
         )
 
+        start_time = None
+        date_done = None
+        progress = None
         if document:
             output_path = document.get("kwargs", {}).get("task_output_path")
             payload = document.get("kwargs", {})
             traceback = document.get("traceback")
+            start_time = document.get("start_time")
+            date_done = document.get("date_done")
+            progress = document.get("progress")
         elif not task_result:
             return None
 
@@ -98,6 +101,9 @@ class TaskManager:
             output_path=output_path,
             payload=payload,
             traceback=traceback,
+            start_time=start_time,
+            date_done=date_done,
+            progress=progress,
         )
 
     async def list_tasks(

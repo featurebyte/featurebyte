@@ -1,8 +1,11 @@
 """
 Tests for task executor
 """
+import datetime
 from enum import Enum
 from multiprocessing import Array, Process, Value
+from unittest.mock import patch
+from uuid import uuid4
 
 import greenlet
 import pytest
@@ -96,18 +99,27 @@ async def test_task_executor(random_task_class, persistent):
     assert "random_command" in TASK_MAP
     assert TASK_MAP["random_command"] == random_task_class
 
+    # add task record
+    task_id = uuid4()
+    await persistent._db["celery_taskmeta"].insert_one(
+        document={"_id": str(task_id)},
+    )
+
     # run executor
     user_id = ObjectId()
     document_id = ObjectId()
-    await TaskExecutor(
-        payload={
-            "command": "random_command",
-            "user_id": user_id,
-            "catalog_id": DEFAULT_CATALOG_ID,
-            "output_document_id": document_id,
-        },
-        progress=None,
-    ).execute()
+    with patch("featurebyte.worker.task_executor.get_persistent") as mock_get_persistent:
+        mock_get_persistent.return_value = persistent
+        await TaskExecutor(
+            payload={
+                "command": "random_command",
+                "user_id": user_id,
+                "catalog_id": DEFAULT_CATALOG_ID,
+                "output_document_id": document_id,
+            },
+            task_id=task_id,
+            progress=None,
+        ).execute()
 
     # check store
     document = await persistent.find_one("random_collection", {"user_id": user_id}, user_id=user_id)
@@ -117,6 +129,12 @@ async def test_task_executor(random_task_class, persistent):
         "user_id": user_id,
         "output_document_id": document_id,
     }
+
+    # check task start time is updated
+    document = await persistent.find_one(
+        collection_name="celery_taskmeta", query_filter={"_id": str(task_id)}, user_id=user_id
+    )
+    assert isinstance(document["start_time"], datetime.datetime)
 
 
 def test_task_has_been_implemented(random_task_class, command_class):
@@ -149,6 +167,7 @@ def test_task_has_been_implemented(random_task_class, command_class):
     # initiate BaseTask without override payload_class will trigger NotImplementedError
     with pytest.raises(NotImplementedError):
         BaseTask(
+            task_id=uuid4(),
             payload={},
             progress=None,
             user=None,

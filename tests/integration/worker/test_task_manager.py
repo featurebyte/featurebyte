@@ -2,6 +2,7 @@
 Tests for process store
 """
 import asyncio
+import datetime
 import time
 
 import pytest
@@ -52,6 +53,14 @@ async def test_submit_task(task_manager):
     task_id = await task_manager.submit(payload=payload)
     task = await wait_for_async_task(task_manager, task_id)
     assert task.status == "SUCCESS"
+    assert task.progress == {"percent": 100}
+    assert isinstance(task.start_time, datetime.datetime)
+    assert isinstance(task.date_done, datetime.datetime)
+
+    # ensure task is in the tasks list
+    tasks, total = await task_manager.list_tasks()
+    assert total == 1
+    assert str(tasks[0].id) == task_id
 
 
 @pytest.mark.asyncio
