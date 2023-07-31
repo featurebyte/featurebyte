@@ -56,7 +56,6 @@ from featurebyte.models.feature_list import (
     FeatureReadinessDistribution,
     FrozenFeatureListNamespaceModel,
 )
-from featurebyte.models.feature_namespace import DefaultVersionMode
 from featurebyte.models.tile import TileSpec
 from featurebyte.schema.deployment import DeploymentCreate
 from featurebyte.schema.feature_list import (
@@ -886,17 +885,6 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         bool
         """
         return self.id == self.feature_list_namespace.default_feature_list_id
-
-    @property
-    def default_version_mode(self) -> DefaultVersionMode:
-        """
-        Retrieve default version mode of current feature list namespace
-
-        Returns
-        -------
-        DefaultVersionMode
-        """
-        return self.feature_list_namespace.default_version_mode
 
     @property
     def status(self) -> FeatureListStatus:
