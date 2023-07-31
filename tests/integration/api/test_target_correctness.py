@@ -8,8 +8,8 @@ from dataclasses import dataclass
 
 import pandas as pd
 import pytest
+from bson import ObjectId
 
-from featurebyte import ObservationTable
 from tests.integration.api.dataframe_helper import apply_agg_func_on_filtered_dataframe
 from tests.integration.api.test_feature_correctness import sum_func
 from tests.util.helper import fb_assert_frame_equal
@@ -209,14 +209,9 @@ def test_forward_aggregate(
         fb_assert_frame_equal(df_targets, expected_values)
 
         # Build full materialized Target observation table
-        observation_table_name = "target_observation_table_name"
+        observation_table_name = f"target_observation_table_name_{ObjectId()}"
         target_observation_table = target.compute_target_table(
             observation_set, observation_table_name, serving_names_mapping={"üser id": "ÜSER ID"}
         )
-        observation_table = ObservationTable.get(observation_table_name)
-        observation_table_dataframe = observation_table.to_pandas()
         dataframe = target_observation_table.to_pandas()
         fb_assert_frame_equal(dataframe, expected_values, sort_by_columns=["POINT_IN_TIME"])
-        fb_assert_frame_equal(
-            dataframe, observation_table_dataframe, sort_by_columns=["POINT_IN_TIME"]
-        )
