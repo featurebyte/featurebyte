@@ -50,7 +50,10 @@ class TargetInput(FeatureByteBaseModel):
         sample_rows: Optional[int],
     ) -> None:
         """
-        No-op materialize.
+        No-op materialize. This method isn't needed for TargetInput since we materialize the target separately.
+        As such, we can add a no-op version that throws an error if it is called. This is needed to satisfy the
+        linter since some of the other classes under the `ObservationInput` union type have a materialize method.
+        Will consider refactoring this in the future.
 
         Parameters
         ----------
@@ -60,7 +63,12 @@ class TargetInput(FeatureByteBaseModel):
             The destination table to materialize the target input to
         sample_rows: Optional[int]
             The number of rows to sample from the target input
+
+        Raises
+        ------
+        NotImplementedError
         """
+        raise NotImplementedError
 
 
 ObservationInput = Annotated[
