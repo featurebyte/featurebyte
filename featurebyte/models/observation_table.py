@@ -18,6 +18,8 @@ from featurebyte.models.request_input import (
     SourceTableRequestInput,
     ViewRequestInput,
 )
+from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.session.base import BaseSession
 
 
 class ViewObservationInput(ViewRequestInput):
@@ -40,6 +42,27 @@ class TargetInput(FeatureByteBaseModel):
     target_id: PydanticObjectId
     observation_table_id: Optional[PydanticObjectId]
     type: Literal[RequestInputType.OBSERVATION_TABLE, RequestInputType.DATAFRAME]
+
+    async def materialize(
+        self,
+        session: BaseSession,
+        destination: TableDetails,
+        sample_rows: Optional[int],
+    ) -> None:
+        """
+        No-op materialize.
+
+        Parameters
+        ----------
+        session: BaseSession
+            The session to use to materialize the target input
+        destination: TableDetails
+            The destination table to materialize the target input to
+        sample_rows: Optional[int]
+            The number of rows to sample from the target input
+        """
+        pass
+
 
 
 ObservationInput = Annotated[
