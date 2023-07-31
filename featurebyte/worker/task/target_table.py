@@ -7,12 +7,10 @@ from typing import Any, cast
 
 from featurebyte.logging import get_logger
 from featurebyte.models.observation_table import ObservationTableModel
-from featurebyte.models.target_table import TargetTableModel
 from featurebyte.schema.target import ComputeTargetRequest
 from featurebyte.schema.worker.task.target_table import TargetTableTaskPayload
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.target_helper.compute_target import TargetComputer
-from featurebyte.service.target_table import TargetTableService
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin
 from featurebyte.worker.util.observation_set_helper import ObservationSetHelper
