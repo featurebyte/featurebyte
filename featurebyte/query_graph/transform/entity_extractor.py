@@ -44,7 +44,7 @@ class EntityExtractor(
             if node.parameters.entity_ids:
                 global_state.entity_ids.update(node.parameters.entity_ids)
             skip_input_nodes = True
-        elif isinstance(node, LookupNode) or isinstance(node, LookupTargetNode):
+        elif isinstance(node, (LookupNode, LookupTargetNode)):
             global_state.entity_ids.add(node.parameters.entity_id)
         return [] if skip_input_nodes else input_node_names, False
 

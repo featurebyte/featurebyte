@@ -209,7 +209,7 @@ class QueryGraph(QueryGraphModel):
             if isinstance(node.parameters, BaseGroupbyParameters):
                 if node.parameters.entity_ids:
                     output.extend(node.parameters.keys)
-            elif isinstance(node, LookupNode) or isinstance(node, LookupTargetNode):
+            elif isinstance(node, (LookupNode, LookupTargetNode)):
                 output.append(node.parameters.entity_column)
         return sorted(set(output))
 
