@@ -17,7 +17,6 @@ from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.savable_api_object import SavableApiObject
 from featurebyte.api.target_namespace import TargetNamespace
-from featurebyte.api.target_table import TargetTable
 from featurebyte.api.templates.doc_util import substitute_docstring
 from featurebyte.api.templates.feature_or_target_doc import (
     CATALOG_ID_DOC,
@@ -36,6 +35,8 @@ from featurebyte.core.accessor.target_string import TargetStrAccessorMixin
 from featurebyte.core.series import Series
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.feature_store import FeatureStoreModel
+from featurebyte.models.observation_table import TargetInput
+from featurebyte.models.request_input import RequestInputType
 from featurebyte.models.target import TargetModel
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.schema.target import TargetUpdate
@@ -293,7 +294,7 @@ class Target(
         temp_target_table_name = f"__TEMPORARY_TARGET_TABLE_{ObjectId()}"
         temp_target_table = self.compute_target_table(
             observation_table=observation_table,
-            target_table_name=temp_target_table_name,
+            observation_table_name=temp_target_table_name,
             serving_names_mapping=serving_names_mapping,
         )
         try:
@@ -305,9 +306,9 @@ class Target(
     def compute_target_table(
         self,
         observation_table: Union[ObservationTable, pd.DataFrame],
-        target_table_name: str,
+        observation_table_name: str,
         serving_names_mapping: Optional[Dict[str, str]] = None,
-    ) -> TargetTable:
+    ) -> ObservationTable:
         """
         Materialize feature list using an observation table asynchronously. The targets
         will be materialized into a target table.
@@ -317,43 +318,53 @@ class Target(
         observation_table: Union[ObservationTable, pd.DataFrame]
             Observation set with `POINT_IN_TIME` and serving names columns. This can be either an
             ObservationTable of a pandas DataFrame.
-        target_table_name: str
-            Name of the target table to be created
+        observation_table_name: str
+            Name of the observation table to be created with the target values
         serving_names_mapping : Optional[Dict[str, str]]
             Optional serving names mapping if the training events table has different serving name
 
         Returns
         -------
-        TargetTable
+        ObservationTable
 
         Examples
         --------
         >>> target = catalog.get_target("target")  # doctest: +SKIP
         >>> target.compute_target_table(observation_table, "target_table")  # doctest: +SKIP
         """
+        is_input_observation_table = isinstance(observation_table, ObservationTable)
+        observation_table_id = observation_table.id if is_input_observation_table else None
+        input_type = (
+            RequestInputType.OBSERVATION_TABLE
+            if is_input_observation_table
+            else RequestInputType.DATAFRAME
+        )
         target_table_create_params = TargetTableCreate(
-            name=target_table_name,
-            observation_table_id=(
-                observation_table.id if isinstance(observation_table, ObservationTable) else None
-            ),
+            name=observation_table_name,
+            observation_table_id=observation_table_id,
             feature_store_id=self.feature_store.id,
             serving_names_mapping=serving_names_mapping,
             target_id=self.id,
             graph=self.graph,
             node_names=[self.node.name],
+            request_input=TargetInput(
+                target_id=self.id,
+                observation_table_id=observation_table_id,
+                type=input_type,
+            ),
         )
-        if isinstance(observation_table, ObservationTable):
+        if is_input_observation_table:
             files = None
         else:
             assert isinstance(observation_table, pd.DataFrame)
             files = {"observation_set": dataframe_to_arrow_bytes(observation_table)}
-        target_table_doc = self.post_async_task(
+        observation_table_doc = self.post_async_task(
             route="/target_table",
             payload={"payload": target_table_create_params.json()},
             is_payload_json=False,
             files=files,
         )
-        return TargetTable.get_by_id(target_table_doc["_id"])
+        return ObservationTable.get_by_id(observation_table_doc["_id"])
 
     @property
     def target_namespace(self) -> TargetNamespace:

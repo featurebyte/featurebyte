@@ -50,7 +50,6 @@ from featurebyte.common.documentation.constants import (
     TABLE_COLUMN,
     TARGET,
     TARGET_NAMESPACE,
-    TARGET_TABLE,
     TRANSFORM,
     TYPE,
     USER_DEFINED_FUNCTION,
@@ -979,22 +978,6 @@ def _get_historical_feature_table_layout() -> List[DocLayoutItem]:
     ]
 
 
-def _get_target_table_layout() -> List[DocLayoutItem]:
-    """
-    The layout for the TargetTable module.
-
-    Returns
-    -------
-    List[DocLayoutItem]
-        The layout for the TargetTable module.
-    """
-    return [
-        *_get_materialized_table_layout(TARGET_TABLE),
-        DocLayoutItem([TARGET_TABLE, LINEAGE, "TargetTable.observation_table_id"]),
-        DocLayoutItem([TARGET_TABLE, LINEAGE, "TargetTable.target_id"]),
-    ]
-
-
 def _get_user_defined_function_layout() -> List[DocLayoutItem]:
     """
     The layout for the UserDefinedFunction module.
@@ -1091,5 +1074,4 @@ def get_overall_layout() -> List[DocLayoutItem]:
         *_get_user_defined_function_layout(),
         *_get_target_layout(),
         *_get_target_namespace_layout(),
-        *_get_target_table_layout(),
     ]
