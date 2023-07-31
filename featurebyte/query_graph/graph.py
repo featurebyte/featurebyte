@@ -28,7 +28,12 @@ from featurebyte.query_graph.model.graph import Edge, GraphNodeNameMap, QueryGra
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.base import NodeT
 from featurebyte.query_graph.node.function import GenericFunctionNode
-from featurebyte.query_graph.node.generic import ForwardAggregateNode, GroupByNode, LookupNode
+from featurebyte.query_graph.node.generic import (
+    ForwardAggregateNode,
+    GroupByNode,
+    LookupNode,
+    LookupTargetNode,
+)
 from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.metadata.operation import (
     DerivedDataColumn,
@@ -204,7 +209,7 @@ class QueryGraph(QueryGraphModel):
             if isinstance(node.parameters, BaseGroupbyParameters):
                 if node.parameters.entity_ids:
                     output.extend(node.parameters.keys)
-            elif isinstance(node, LookupNode):
+            elif isinstance(node, LookupNode) or isinstance(node, LookupTargetNode):
                 output.append(node.parameters.entity_column)
         return sorted(set(output))
 

@@ -28,6 +28,7 @@ from featurebyte.query_graph.node.generic import (
     ItemGroupbyNode,
     ItemGroupbyParameters,
     LookupNode,
+    LookupTargetNode,
     SCDLookupParameters,
 )
 from featurebyte.query_graph.node.mixin import BaseGroupbyParameters
@@ -649,7 +650,7 @@ class LookupSpec(NonTileBasedAggregationSpec):
 
     @classmethod
     def should_filter_scd_by_current_flag(cls, graph: QueryGraphModel, node: Node) -> bool:
-        assert isinstance(node, LookupNode)
+        assert isinstance(node, LookupNode) or isinstance(node, LookupTargetNode)
         scd_parameters = node.parameters.scd_parameters
         if scd_parameters is not None:
             return cls.get_scd_filter_flag_from_scd_parameters(scd_parameters)
@@ -682,7 +683,7 @@ class LookupSpec(NonTileBasedAggregationSpec):
         aggregation_source: AggregationSource,
         serving_names_mapping: Optional[dict[str, str]],
     ) -> list[LookupSpec]:
-        assert isinstance(node, LookupNode)
+        assert isinstance(node, LookupNode) or isinstance(node, LookupTargetNode)
         params = node.parameters
         specs = []
         for input_column_name, feature_name in zip(params.input_column_names, params.feature_names):
