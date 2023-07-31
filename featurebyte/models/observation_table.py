@@ -61,7 +61,6 @@ class TargetInput(FeatureByteBaseModel):
         sample_rows: Optional[int]
             The number of rows to sample from the target input
         """
-        pass
 
 
 ObservationInput = Annotated[
