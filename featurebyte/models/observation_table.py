@@ -64,7 +64,6 @@ class TargetInput(FeatureByteBaseModel):
         pass
 
 
-
 ObservationInput = Annotated[
     Union[ViewObservationInput, SourceTableObservationInput, TargetInput],
     Field(discriminator="type"),
