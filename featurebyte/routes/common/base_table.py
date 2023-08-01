@@ -136,6 +136,9 @@ class BaseTableDocumentController(
         TableDocumentT
             Table object with updated attribute(s)
         """
+
+        # Update of columns info is deprecated and will be removed in release 0.5.0
+        # See https://featurebyte.atlassian.net/browse/DEV-2000
         if data.columns_info:
             await self.table_column_info_service.update_columns_info(
                 service=self.service,

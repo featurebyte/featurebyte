@@ -40,6 +40,9 @@ class TableUpdate(FeatureByteBaseModel):
 
     status: Optional[TableStatus]
     record_creation_timestamp_column: Optional[StrictStr]
+
+    # Update of columns info is deprecated and will be removed in release 0.5.0
+    # See https://featurebyte.atlassian.net/browse/DEV-2000
     columns_info: Optional[List[ColumnInfo]]
 
 

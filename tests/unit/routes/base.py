@@ -1037,7 +1037,12 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):  # pylint: disable=too-man
     def test_update_column_critical_data_info_old(
         self, test_api_client_persistent, data_response, columns_info
     ):
-        """Test update columns info using update route"""
+        """
+        Test update columns info using column update route (DEPRECATED).
+
+        Update of columns info is deprecated and will be removed in release 0.5.0
+        See https://featurebyte.atlassian.net/browse/DEV-2000
+        """
 
         test_api_client, _ = test_api_client_persistent
         response_dict = data_response.json()
@@ -1051,7 +1056,6 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):  # pylint: disable=too-man
         columns_info[-2] = current_value_info
 
         # update critical data info
-        # update description
         update_response = test_api_client.patch(
             f"{self.base_route}/{response_dict['_id']}",
             json={"columns_info": columns_info},
