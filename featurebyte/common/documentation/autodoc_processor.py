@@ -165,13 +165,6 @@ class FBAutoDocProcessor(AutoDocProcessor):
             qualifier_elem.text = "async "
 
         name_elem = etree.SubElement(signature_elem, "span")
-        if resource_details.type == "method":
-            # add reference link for methods
-            name_elem = etree.SubElement(name_elem, "a")
-            name_elem.set(
-                "href",
-                f'javascript:window.location=new URL("../{resource_details.path}.{resource_details.realname}/", window.location.href.split("#")[0]).href',
-            )
 
         main_name_elem = etree.SubElement(name_elem, "strong")
         main_name_elem.text = resource_details.name
