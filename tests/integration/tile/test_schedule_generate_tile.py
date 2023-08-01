@@ -4,6 +4,7 @@ This module contains integration tests for scheduled tile generation
 from datetime import datetime
 
 import dateutil.parser
+import pandas as pd
 import pytest
 from bson import ObjectId
 
@@ -98,9 +99,10 @@ async def test_schedule_generate_tile_online(
 
     session_id = result[0]["session_id"]
     assert "|" in session_id
-    assert result[1]["created_at"] > result[0]["created_at"]
-    assert result[2]["created_at"] > result[1]["created_at"]
-    assert result[3]["created_at"] > result[2]["created_at"]
+
+    df = pd.DataFrame(result)
+    assert (df["created_at"].diff().iloc[1:].dt.total_seconds() > 0).all()
+    assert (df["duration"].iloc[1:] > 0).all()
 
 
 @pytest.mark.usefixtures("enable_tile_monitoring")

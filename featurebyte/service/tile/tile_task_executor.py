@@ -3,6 +3,7 @@ Tile Generate Schedule script
 """
 from typing import Any, Dict, List, Optional
 
+import time
 import traceback
 from datetime import datetime, timedelta
 
@@ -110,7 +111,10 @@ class TileTaskExecutor:
         session_id = f"{tile_id}|{datetime.now()}"
 
         async def _add_log_entry(
-            log_status: str, log_message: str, formatted_traceback: Optional[str] = None
+            log_status: str,
+            log_message: str,
+            formatted_traceback: Optional[str] = None,
+            duration: Optional[float] = None,
         ) -> None:
             document = TileJobLogModel(
                 tile_id=tile_id,
@@ -120,6 +124,7 @@ class TileTaskExecutor:
                 status=log_status,
                 message=log_message,
                 traceback=formatted_traceback,
+                duration=duration,
             )
             await self.tile_job_log_service.create_document(document)
 
@@ -222,7 +227,9 @@ class TileTaskExecutor:
             try:
                 logger.info(f"Calling {spec['name']}")
                 tile_ins: TileCommon = spec["trigger"]
+                tic = time.time()
                 await tile_ins.execute()
+                duration = time.time() - tic
                 logger.info(f"End of calling {spec['name']}")
             except Exception as exception:
                 message = str(exception).replace("'", "")
@@ -234,7 +241,7 @@ class TileTaskExecutor:
                 raise exception
 
             success_code = spec["status"]["success"]
-            await _add_log_entry(success_code, "")
+            await _add_log_entry(success_code, "", duration=duration)
 
     def _derive_correct_job_ts(
         self, input_dt: datetime, frequency_minutes: int, time_modulo_frequency_seconds: int
