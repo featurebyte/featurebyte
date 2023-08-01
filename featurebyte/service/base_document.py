@@ -4,7 +4,19 @@ BaseService class
 # pylint: disable=too-many-lines
 from __future__ import annotations
 
-from typing import Any, AsyncIterator, Dict, Generic, Iterator, List, Optional, Type, TypeVar, Union
+from typing import (
+    Any,
+    AsyncIterator,
+    Callable,
+    Dict,
+    Generic,
+    Iterator,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+)
 
 import copy
 from contextlib import contextmanager
@@ -93,7 +105,7 @@ class BaseDocumentService(
         self.persistent = persistent
         self.catalog_id = catalog_id
         self._allow_to_use_raw_query_filter = False
-        self._to_check_block_modification = True
+        self._check_block_modification_func: Optional[Callable[[], bool]] = None
         if self.is_catalog_specific and not catalog_id:
             raise CatalogNotSpecifiedError(
                 f"No active catalog specified for service: {self.__class__.__name__}"
@@ -118,24 +130,16 @@ class BaseDocumentService(
         finally:
             self._allow_to_use_raw_query_filter = False
 
-    @contextmanager
-    def disable_block_modification_check(
-        self,
-    ) -> Iterator[BaseDocumentService[Document, DocumentCreateSchema, DocumentUpdateSchema]]:
+    def set_block_modification_check_callback(self, func: Callable[[], bool]) -> None:
         """
-        Disable block modification check for the service.
+        Set callback function to check whether to block modification
 
-        Yields
-        -------
-        BaseDocumentService[Document, DocumentCreateSchema, DocumentUpdateSchema]
-            Disable block modification check
+        Parameters
+        ----------
+        func: Callable[[], bool]
+            Callback function to check whether to block modification
         """
-        try:
-            logger.warning("Disabling block modification check")
-            self._to_check_block_modification = False
-            yield self
-        finally:
-            self._to_check_block_modification = True
+        self._check_block_modification_func = func
 
     @property
     def collection_name(self) -> str:
@@ -850,7 +854,11 @@ class BaseDocumentService(
             )
 
     def _check_document_modifiable(self, document: Document) -> None:
-        if self._to_check_block_modification and document.block_modification_by:
+        check_block_modification = True
+        if self._check_block_modification_func:
+            check_block_modification = self._check_block_modification_func()
+
+        if check_block_modification and document.block_modification_by:
             block_modification_by = [
                 f"{item.asset_name}(id: {item.document_id})"
                 for item in document.block_modification_by

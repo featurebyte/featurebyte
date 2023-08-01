@@ -24,6 +24,7 @@ from featurebyte.models.base import (
     UniqueValuesConstraint,
 )
 from featurebyte.models.persistent import AuditActionType
+from featurebyte.schema.entity import EntityServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService
 
 
@@ -538,11 +539,12 @@ async def test_document_disable_block_modification_check(
     expected_error = f"Document {document.id} is blocked from modification by "
     assert expected_error in str(exc.value)
 
-    with document_service.disable_block_modification_check() as service:
-        document = await service.update_document(
-            document_id=document.id, data=Document(name="new_name")
-        )
-        assert document.name == "new_name"
+    # try to update document - expect no error
+    document_service.set_block_modification_check_callback(lambda: False)
+    document = await document_service.update_document(
+        document_id=document.id, data=Document(name="new_name")
+    )
+    assert document.name == "new_name"
 
 
 def test_catalog_specific_service_requires_catalog_id(user, persistent):
@@ -572,3 +574,49 @@ async def test_non_auditable_document_service(non_auditable_document_service):
 
     audits = await service.list_document_audits(document_id=document.id)
     assert audits["total"] == 0
+
+
+@pytest.mark.asyncio
+async def test_app_container__disable_block_modification_check(app_container, entity):
+    """
+    Test app_container's disable_block_modification_check
+    """
+    # add block modification by to entity object
+    await app_container.entity_service.add_block_modification_by(
+        query_filter={"_id": entity.id},
+        reference_info=ReferenceInfo(asset_name="Asset", document_id=ObjectId()),
+    )
+
+    # check that entity is blocked from modification
+    with pytest.raises(DocumentModificationBlockedError):
+        await app_container.entity_service.update_document(
+            document_id=entity.id, data=EntityServiceUpdate(name="new_name")
+        )
+
+    # case 1: use context manager without using the yielded app_container
+    with app_container.disable_block_modification_check():
+        service = app_container.entity_service
+        updated_entity = await app_container.entity_service.update_document(
+            document_id=entity.id, data=EntityServiceUpdate(name="new_name")
+        )
+        assert updated_entity.name == "new_name"
+
+        # inside the context manager, check that block modification check is disabled
+        assert service._check_block_modification_func() is False
+
+    # outside the context manager, check that block modification check is enabled
+    assert service._check_block_modification_func() is True
+
+    # case 2: use context manager with using the yielded app_container
+    with app_container.disable_block_modification_check() as updated_app_container:
+        service = updated_app_container.entity_service
+        updated_entity = await updated_app_container.entity_service.update_document(
+            document_id=entity.id, data=EntityServiceUpdate(name="another_name")
+        )
+        assert updated_entity.name == "another_name"
+
+        # inside the context manager, check that block modification check is disabled
+        assert service._check_block_modification_func() is False
+
+    # outside the context manager, check that block modification check is enabled
+    assert service._check_block_modification_func() is True
