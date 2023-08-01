@@ -4,6 +4,7 @@ from collections import defaultdict
 import numpy as np
 import pandas as pd
 import pytest
+from bson import ObjectId
 
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.common.model_util import validate_job_setting_parameters
@@ -249,6 +250,46 @@ def feature_parameters_fixture(source_type):
     if source_type == "spark":
         parameters = [param for param in parameters if param[1] in ["max", "std", "latest"]]
     return parameters
+
+
+def test_feature_with_target(event_table, observation_set, catalog):
+    """
+    Test that feature with target works
+    """
+    # Common values
+    _ = catalog
+    entity_column_name = "ÜSER ID"
+    value_column = "ÀMOUNT"
+
+    # Generate feature
+    event_view = event_table.get_view()
+    feature_group = event_view.groupby(entity_column_name).aggregate_over(
+        method="sum",
+        value_column=value_column,
+        windows=["2h"],
+        feature_names=["amount_2h"],
+    )
+    feature_amount_2h = feature_group["amount_2h"]
+    feature_list = FeatureList([feature_amount_2h], name="feature_list")
+
+    # Generate target table
+    target = event_view.groupby(entity_column_name).forward_aggregate(
+        method="sum",
+        value_column=value_column,
+        window="2h",
+        target_name="target_next_amount_2h",
+    )
+    observation_table_name = f"target_observation_table_name_{ObjectId()}"
+    target_observation_table = target.compute_target_table(
+        observation_set, observation_table_name, serving_names_mapping={"üser id": "ÜSER ID"}
+    )
+
+    # Compute historical feature table
+    df_historical_features = feature_list.compute_historical_feature_table(
+        target_observation_table,
+        historical_feature_table_name=f"historical_feature_table_name_{ObjectId()}",
+        serving_names_mapping={"üser id": "ÜSER ID"},
+    )
 
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
