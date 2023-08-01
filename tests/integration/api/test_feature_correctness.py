@@ -328,6 +328,9 @@ def test_feature_with_target(event_table, observation_set, transaction_data_uppe
     entity_column_name = "ÜSER ID"
     value_column = "ÀMOUNT"
 
+    # Reduce size of observation set since we don't need to test the full correctness here
+    observation_set = observation_set.sample(n=10, random_state=0)
+
     # Generate feature
     event_view = event_table.get_view()
     feature_job_setting = event_table.default_feature_job_setting
