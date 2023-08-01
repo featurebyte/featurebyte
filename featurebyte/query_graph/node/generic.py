@@ -930,10 +930,17 @@ class LookupNode(BaseLookupNode):
         return statements, out_var_name
 
 
+class LookupTargetParameters(LookupParameters):
+    """LookupTargetParameters"""
+
+    offset: str
+
+
 class LookupTargetNode(BaseLookupNode):
     """LookupTargetNode class"""
 
     type: Literal[NodeType.LOOKUP_TARGET] = Field(NodeType.LOOKUP_TARGET, const=True)
+    parameters: LookupTargetParameters
 
 
 class JoinMetadata(BaseModel):
