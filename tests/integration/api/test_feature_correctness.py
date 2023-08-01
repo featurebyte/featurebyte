@@ -27,9 +27,9 @@ class ExpectedFeatureValueParams:
     """
 
     df: pd.DataFrame
-    entity_column_name: Optional[Any]
-    variable_column_name: Optional[Any]
-    agg_func: Optional[Any]
+    entity_column_name: str
+    variable_column_name: str
+    agg_func: callable
     category: Optional[Any]
 
 
@@ -40,10 +40,10 @@ class ExpectedEventFeatureValueParams(ExpectedFeatureValueParams):
     """
 
     utc_event_timestamps: Optional[Any]
-    window_size: Optional[Any]
-    frequency: Optional[Any]
-    time_modulo_frequency: Optional[Any]
-    blind_spot: Optional[Any]
+    window_size_secs: Optional[int]
+    frequency: Optional[int]
+    time_modulo_frequency: Optional[int]
+    blind_spot: Optional[int]
 
 
 @dataclass
@@ -81,9 +81,9 @@ def calculate_aggregate_over_ground_truth(
     window_end_epoch_seconds = last_job_epoch_seconds - expected_feature_value_params.blind_spot
     window_end = epoch_seconds_to_timestamp(window_end_epoch_seconds)
 
-    if expected_feature_value_params.window_size is not None:
+    if expected_feature_value_params.window_size_secs is not None:
         window_start_epoch_seconds = (
-            window_end_epoch_seconds - expected_feature_value_params.window_size
+            window_end_epoch_seconds - expected_feature_value_params.window_size_secs
         )
         window_start = epoch_seconds_to_timestamp(window_start_epoch_seconds)
     else:
@@ -319,18 +319,49 @@ def feature_parameters_fixture(source_type):
     return parameters
 
 
+@pytest.fixture(name="transaction_event_dataframe")
+def transaction_event_dataframe_fixture(transaction_data_upper_case, event_table):
+    """
+    Fixture for transaction event dataframe
+    """
+    event_view = event_table.get_view()
+    event_timestamp_column_name = "ËVENT_TIMESTAMP"
+
+    # Apply a filter condition
+    def _get_filtered_data(event_view_or_dataframe):
+        cond1 = event_view_or_dataframe["ÀMOUNT"] > 20
+        cond2 = event_view_or_dataframe["ÀMOUNT"].isnull()
+        mask = cond1 | cond2
+        return event_view_or_dataframe[mask]
+
+    event_view = _get_filtered_data(event_view)
+    transaction_data_upper_case = _get_filtered_data(transaction_data_upper_case)
+
+    # Add inter-event derived columns
+    transaction_data_upper_case = add_inter_events_derived_columns(
+        transaction_data_upper_case, event_view
+    )
+
+    return transaction_data_upper_case.sort_values(event_timestamp_column_name)
+
+
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
-def test_feature_with_target(event_table, observation_set, catalog):
+def test_feature_with_target(event_table, observation_set, transaction_event_dataframe):
     """
     Test that feature with target works
     """
     # Common values
-    _ = catalog
     entity_column_name = "ÜSER ID"
     value_column = "ÀMOUNT"
 
     # Generate feature
     event_view = event_table.get_view()
+    feature_job_setting = event_table.default_feature_job_setting
+    frequency, time_modulo_frequency, blind_spot = validate_job_setting_parameters(
+        frequency=feature_job_setting.frequency,
+        time_modulo_frequency=feature_job_setting.time_modulo_frequency,
+        blind_spot=feature_job_setting.blind_spot,
+    )
     feature_group = event_view.groupby(entity_column_name).aggregate_over(
         method="sum",
         value_column=value_column,
@@ -363,10 +394,43 @@ def test_feature_with_target(event_table, observation_set, catalog):
     assert "target_next_amount_2h" in df_historical_features
     assert "amount_2h" in df_historical_features
 
+    # Calculate expected feature values
+    event_timestamp_column_name = "ËVENT_TIMESTAMP"
+    utc_event_timestamps = pd.to_datetime(
+        transaction_event_dataframe[event_timestamp_column_name], utc=True
+    ).dt.tz_localize(None)
+    df_expected_feature_values = get_expected_feature_values(
+        FeatureKind.AGGREGATE_OVER,
+        observation_set,
+        "amount_2h",
+        ExpectedEventFeatureValueParams(
+            df=transaction_event_dataframe,
+            entity_column_name=entity_column_name,
+            variable_column_name=value_column,
+            agg_func=sum_func,
+            category=None,
+            utc_event_timestamps=utc_event_timestamps,
+            window_size_secs=int(pd.Timedelta("2h").total_seconds()),
+            frequency=frequency,
+            time_modulo_frequency=time_modulo_frequency,
+            blind_spot=blind_spot,
+        ),
+    )
+    df_expected_feature_values["POINT_IN_TIME"] = pd.to_datetime(
+        df_expected_feature_values["POINT_IN_TIME"], utc=True
+    ).dt.tz_localize(None)
+
+    actual_feature_values_df = df_historical_features[["POINT_IN_TIME", "ÜSER ID", "amount_2h"]]
+    fb_assert_frame_equal(
+        actual_feature_values_df,
+        df_expected_feature_values,
+        sort_by_columns=["POINT_IN_TIME"],
+    )
+
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_aggregate_over(
-    transaction_data_upper_case,
+    transaction_event_dataframe,
     observation_set,
     event_table,
     config,
@@ -387,22 +451,7 @@ def test_aggregate_over(
     entity_column_name = "ÜSER ID"
     event_timestamp_column_name = "ËVENT_TIMESTAMP"
 
-    # Apply a filter condition
-    def _get_filtered_data(event_view_or_dataframe):
-        cond1 = event_view_or_dataframe["ÀMOUNT"] > 20
-        cond2 = event_view_or_dataframe["ÀMOUNT"].isnull()
-        mask = cond1 | cond2
-        return event_view_or_dataframe[mask]
-
-    event_view = _get_filtered_data(event_view)
-    transaction_data_upper_case = _get_filtered_data(transaction_data_upper_case)
-
-    # Add inter-event derived columns
-    transaction_data_upper_case = add_inter_events_derived_columns(
-        transaction_data_upper_case, event_view
-    )
-
-    df = transaction_data_upper_case.sort_values(event_timestamp_column_name)
+    df = transaction_event_dataframe
 
     common_args = (
         df,
@@ -471,7 +520,7 @@ def check_aggregate_over(
                 utc_event_timestamps=utc_event_timestamps,
                 variable_column_name=variable_column_name,
                 agg_func=agg_func_callable,
-                window_size=window_size,
+                window_size_secs=window_size,
                 frequency=frequency,
                 time_modulo_frequency=time_modulo_frequency,
                 blind_spot=blind_spot,
@@ -575,12 +624,9 @@ def test_aggregate_asat(
         scd_observation_set,
         serving_names_mapping={"user_status": "User Status"},
     )
-
-    df_expected = df_expected.sort_values(["POINT_IN_TIME", entity_column_name]).reset_index(
-        drop=True
+    fb_assert_frame_equal(
+        df_historical_features,
+        df_expected,
+        ["asat_count_by_day_of_month"],
+        sort_by_columns=["POINT_IN_TIME", entity_column_name],
     )
-    df_historical_features = df_historical_features.sort_values(
-        ["POINT_IN_TIME", entity_column_name]
-    ).reset_index(drop=True)
-
-    fb_assert_frame_equal(df_historical_features, df_expected, ["asat_count_by_day_of_month"])
