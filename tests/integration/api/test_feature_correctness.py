@@ -452,7 +452,7 @@ def test_aggregate_over(
     entity_column_name = "ÜSER ID"
     event_timestamp_column_name = "ËVENT_TIMESTAMP"
 
-    df = transaction_event_dataframe
+    df = transaction_event_dataframe.copy()
 
     common_args = (
         df,
