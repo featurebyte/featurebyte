@@ -18,8 +18,7 @@ def is_notebook() -> bool:
     """
     try:
         shell = get_ipython().__class__.__name__  # type: ignore
-        if shell == "ZMQInteractiveShell" or shell == "Shell":
-            return True
+        return bool(shell in ["ZMQInteractiveShell", "Shell"])
     except NameError:
         return False
 
