@@ -40,6 +40,7 @@ class TableUpdate(FeatureByteBaseModel):
 
     status: Optional[TableStatus]
     record_creation_timestamp_column: Optional[StrictStr]
+    columns_info: Optional[List[ColumnInfo]]
 
 
 class TableServiceUpdate(TableUpdate, BaseDocumentServiceUpdateSchema):

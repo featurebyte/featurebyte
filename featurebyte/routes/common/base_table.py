@@ -136,6 +136,13 @@ class BaseTableDocumentController(
         TableDocumentT
             Table object with updated attribute(s)
         """
+        if data.columns_info:
+            await self.table_column_info_service.update_columns_info(
+                service=self.service,
+                document_id=document_id,
+                columns_info=data.columns_info,
+            )
+
         if data.status:
             await self.table_status_service.update_status(
                 service=self.service,
