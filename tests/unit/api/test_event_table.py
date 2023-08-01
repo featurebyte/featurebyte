@@ -645,8 +645,10 @@ async def test_update_default_job_setting__feature_job_setting_analysis_failure(
     assert "ValueError: Event Data not found" in str(exc.value)
 
 
-def test_update_record_creation_timestamp_column__unsaved_object(snowflake_database_table):
+def test_update_record_creation_timestamp_column__unsaved_object(snowflake_database_table, catalog):
     """Test update record creation timestamp column (unsaved event table)"""
+    _ = catalog
+
     event_table = snowflake_database_table.create_event_table(
         name="event_table",
         event_id_column="col_int",
