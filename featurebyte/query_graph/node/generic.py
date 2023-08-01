@@ -933,7 +933,7 @@ class LookupNode(BaseLookupNode):
 class LookupTargetParameters(LookupParameters):
     """LookupTargetParameters"""
 
-    offset: str
+    offset: Optional[str]
 
 
 class LookupTargetNode(BaseLookupNode):
