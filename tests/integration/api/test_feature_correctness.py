@@ -1,5 +1,8 @@
+from typing import Any, Optional
+
 import time
 from collections import defaultdict
+from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
@@ -8,6 +11,7 @@ from bson import ObjectId
 
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.common.model_util import validate_job_setting_parameters
+from featurebyte.enum import StrEnum
 from featurebyte.logging import get_logger
 from featurebyte.query_graph.sql.tile_compute import epoch_seconds_to_timestamp, get_epoch_seconds
 from tests.integration.api.dataframe_helper import apply_agg_func_on_filtered_dataframe
@@ -16,84 +20,131 @@ from tests.util.helper import fb_assert_frame_equal, get_lagged_series_pandas
 logger = get_logger(__name__)
 
 
+@dataclass
+class ExpectedFeatureValueParams:
+    """
+    Base parameters for calculating the expected feature value.
+    """
+
+    df: pd.DataFrame
+    entity_column_name: Optional[Any]
+    variable_column_name: Optional[Any]
+    agg_func: Optional[Any]
+    category: Optional[Any]
+
+
+@dataclass
+class ExpectedEventFeatureValueParams(ExpectedFeatureValueParams):
+    """
+    Parameters for calculating the expected feature value for event features.
+    """
+
+    utc_event_timestamps: Optional[Any]
+    window_size: Optional[Any]
+    frequency: Optional[Any]
+    time_modulo_frequency: Optional[Any]
+    blind_spot: Optional[Any]
+
+
+@dataclass
+class ExpectedSCDFeatureValueParams(ExpectedFeatureValueParams):
+    """
+    Parameters for calculating the expected feature value for scd features.
+    """
+
+    effective_timestamp_column: Optional[Any]
+    natural_key_column_name: str
+
+
 def calculate_aggregate_over_ground_truth(
-    df,
     point_in_time,
-    utc_event_timestamps,
-    entity_column_name,
     entity_value,
-    variable_column_name,
-    agg_func,
-    window_size,
-    frequency,
-    time_modulo_frequency,
-    blind_spot,
-    category=None,
+    expected_feature_value_params: ExpectedEventFeatureValueParams,
 ):
     """
     Reference implementation for aggregate_over that is as simple as possible
     """
-    if variable_column_name is None:
+    df = expected_feature_value_params.df
+    variable_column_name = expected_feature_value_params.variable_column_name
+    if expected_feature_value_params.variable_column_name is None:
         # take any column because it doesn't matter
         variable_column_name = df.columns[0]
 
-    last_job_index = (get_epoch_seconds(point_in_time) - time_modulo_frequency) // frequency
-    last_job_epoch_seconds = last_job_index * frequency + time_modulo_frequency
+    last_job_index = (
+        get_epoch_seconds(point_in_time) - expected_feature_value_params.time_modulo_frequency
+    ) // expected_feature_value_params.frequency
+    last_job_epoch_seconds = (
+        last_job_index * expected_feature_value_params.frequency
+        + expected_feature_value_params.time_modulo_frequency
+    )
 
-    window_end_epoch_seconds = last_job_epoch_seconds - blind_spot
+    window_end_epoch_seconds = last_job_epoch_seconds - expected_feature_value_params.blind_spot
     window_end = epoch_seconds_to_timestamp(window_end_epoch_seconds)
 
-    if window_size is not None:
-        window_start_epoch_seconds = window_end_epoch_seconds - window_size
+    if expected_feature_value_params.window_size is not None:
+        window_start_epoch_seconds = (
+            window_end_epoch_seconds - expected_feature_value_params.window_size
+        )
         window_start = epoch_seconds_to_timestamp(window_start_epoch_seconds)
     else:
         window_start = None
 
-    mask = df[entity_column_name] == entity_value
-    mask &= utc_event_timestamps < window_end
+    mask = df[expected_feature_value_params.entity_column_name] == entity_value
+    mask &= expected_feature_value_params.utc_event_timestamps < window_end
     if window_start is not None:
-        mask &= utc_event_timestamps >= window_start
+        mask &= expected_feature_value_params.utc_event_timestamps >= window_start
     df_filtered = df[mask]
 
     return apply_agg_func_on_filtered_dataframe(
-        agg_func, category, df_filtered, variable_column_name
+        expected_feature_value_params.agg_func,
+        expected_feature_value_params.category,
+        df_filtered,
+        variable_column_name,
     )
 
 
 def calculate_aggregate_asat_ground_truth(
-    df,
     point_in_time,
-    effective_timestamp_column,
-    natural_key_column_name,
-    entity_column_name,
     entity_value,
-    variable_column_name,
-    agg_func,
-    category=None,
+    expected_feature_value_params: ExpectedSCDFeatureValueParams,
 ):
     """
     Reference implementation for aggregate_asat
     """
-    if variable_column_name is None:
+    df = expected_feature_value_params.df
+    variable_column_name = expected_feature_value_params.variable_column_name
+    if expected_feature_value_params.variable_column_name is None:
         # take any column because it doesn't matter
         variable_column_name = df.columns[0]
 
-    df = df[df[effective_timestamp_column] <= point_in_time]
+    df = df[df[expected_feature_value_params.effective_timestamp_column] <= point_in_time]
 
     def _extract_current_record(sub_df):
-        latest_effective_timestamp = sub_df[effective_timestamp_column].max()
-        latest_sub_df = sub_df[sub_df[effective_timestamp_column] == latest_effective_timestamp]
+        latest_effective_timestamp = sub_df[
+            expected_feature_value_params.effective_timestamp_column
+        ].max()
+        latest_sub_df = sub_df[
+            sub_df[expected_feature_value_params.effective_timestamp_column]
+            == latest_effective_timestamp
+        ]
         if latest_sub_df.shape[0] == 0:
             return None
         assert latest_sub_df.shape[0] == 1
         return latest_sub_df.iloc[0]
 
-    df_current = df.groupby(natural_key_column_name).apply(_extract_current_record)
+    df_current = df.groupby(expected_feature_value_params.natural_key_column_name).apply(
+        _extract_current_record
+    )
 
-    df_filtered = df_current[df_current[entity_column_name] == entity_value]
+    df_filtered = df_current[
+        df_current[expected_feature_value_params.entity_column_name] == entity_value
+    ]
 
     return apply_agg_func_on_filtered_dataframe(
-        agg_func, category, df_filtered, variable_column_name
+        expected_feature_value_params.agg_func,
+        expected_feature_value_params.category,
+        df_filtered,
+        variable_column_name,
     )
 
 
@@ -118,31 +169,47 @@ def scd_observation_set(scd_dataframe):
     return df
 
 
-def get_expected_feature_values(kind, observation_set, feature_name, **kwargs):
+class FeatureKind(StrEnum):
+    """
+    Feature kind enum
+    """
+
+    AGGREGATE_OVER = "aggregate_over"
+    AGGREGATE_AS_AT = "aggregate_as_at"
+
+
+def get_expected_feature_values(
+    kind: FeatureKind,
+    observation_set: pd.DataFrame,
+    feature_name: str,
+    expected_feature_value_params: ExpectedFeatureValueParams,
+):
     """
     Calculate the expected feature values given observation_set and feature parameters
     """
-    assert kind in {"aggregate_over", "aggregate_asat"}
-
     expected_output = defaultdict(list)
 
     for _, row in observation_set.iterrows():
-        entity_value = row[kwargs["entity_column_name"]]
+        entity_value = row[expected_feature_value_params.entity_column_name]
         point_in_time = row["POINT_IN_TIME"]
-        if kind == "aggregate_over":
+        if kind == FeatureKind.AGGREGATE_OVER:
+            assert isinstance(expected_feature_value_params, ExpectedEventFeatureValueParams)
             val = calculate_aggregate_over_ground_truth(
                 point_in_time=point_in_time,
                 entity_value=entity_value,
-                **kwargs,
+                expected_feature_value_params=expected_feature_value_params,
             )
-        else:
+        elif kind == FeatureKind.AGGREGATE_AS_AT:
+            assert isinstance(expected_feature_value_params, ExpectedSCDFeatureValueParams)
             val = calculate_aggregate_asat_ground_truth(
                 point_in_time=point_in_time,
                 entity_value=entity_value,
-                **kwargs,
+                expected_feature_value_params=expected_feature_value_params,
             )
+        else:
+            raise ValueError(f"Unknown kind {kind}")
         expected_output["POINT_IN_TIME"].append(point_in_time)
-        expected_output[kwargs["entity_column_name"]].append(entity_value)
+        expected_output[expected_feature_value_params.entity_column_name].append(entity_value)
         expected_output[feature_name].append(val)
 
     df_expected = pd.DataFrame(expected_output, index=observation_set.index)
@@ -252,6 +319,7 @@ def feature_parameters_fixture(source_type):
     return parameters
 
 
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_feature_with_target(event_table, observation_set, catalog):
     """
     Test that feature with target works
@@ -291,7 +359,9 @@ def test_feature_with_target(event_table, observation_set, catalog):
         serving_names_mapping={"üser id": "ÜSER ID"},
     )
     df_historical_features = historical_features_table.to_pandas()
+    # Verify that the target and amount columns are present
     assert "target_next_amount_2h" in df_historical_features
+    assert "amount_2h" in df_historical_features
 
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
@@ -392,19 +462,21 @@ def check_aggregate_over(
         else:
             window_size = None
         df_expected = get_expected_feature_values(
-            "aggregate_over",
+            FeatureKind.AGGREGATE_OVER,
             observation_set,
             feature_name,
-            df=df,
-            entity_column_name=entity_column_name,
-            utc_event_timestamps=utc_event_timestamps,
-            variable_column_name=variable_column_name,
-            agg_func=agg_func_callable,
-            window_size=window_size,
-            frequency=frequency,
-            time_modulo_frequency=time_modulo_frequency,
-            blind_spot=blind_spot,
-            category=category,
+            ExpectedEventFeatureValueParams(
+                df=df,
+                entity_column_name=entity_column_name,
+                utc_event_timestamps=utc_event_timestamps,
+                variable_column_name=variable_column_name,
+                agg_func=agg_func_callable,
+                window_size=window_size,
+                frequency=frequency,
+                time_modulo_frequency=time_modulo_frequency,
+                blind_spot=blind_spot,
+                category=category,
+            ),
         )[[feature_name]]
         elapsed_time_ref += time.time() - tic
         df_expected_all.append(df_expected)
@@ -479,16 +551,18 @@ def test_aggregate_asat(
         features.append(feature)
 
         df_expected = get_expected_feature_values(
-            "aggregate_asat",
+            FeatureKind.AGGREGATE_AS_AT,
             scd_observation_set,
             feature_name,
-            df=scd_dataframe,
-            effective_timestamp_column=effective_timestamp_column,
-            natural_key_column_name="User ID",
-            entity_column_name=entity_column_name,
-            variable_column_name=variable_column_name,
-            agg_func=agg_func_callable,
-            category=category,
+            ExpectedSCDFeatureValueParams(
+                df=scd_dataframe,
+                effective_timestamp_column=effective_timestamp_column,
+                natural_key_column_name="User ID",
+                entity_column_name=entity_column_name,
+                variable_column_name=variable_column_name,
+                agg_func=agg_func_callable,
+                category=category,
+            ),
         )[[feature_name]]
 
         df_expected_all.append(df_expected)
