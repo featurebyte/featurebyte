@@ -319,32 +319,6 @@ def feature_parameters_fixture(source_type):
     return parameters
 
 
-@pytest.fixture(name="transaction_event_dataframe")
-def transaction_event_dataframe_fixture(transaction_data_upper_case, event_table):
-    """
-    Fixture for transaction event dataframe
-    """
-    event_view = event_table.get_view()
-    event_timestamp_column_name = "ËVENT_TIMESTAMP"
-
-    # Apply a filter condition
-    def _get_filtered_data(event_view_or_dataframe):
-        cond1 = event_view_or_dataframe["ÀMOUNT"] > 20
-        cond2 = event_view_or_dataframe["ÀMOUNT"].isnull()
-        mask = cond1 | cond2
-        return event_view_or_dataframe[mask]
-
-    event_view = _get_filtered_data(event_view)
-    transaction_data_upper_case = _get_filtered_data(transaction_data_upper_case)
-
-    # Add inter-event derived columns
-    transaction_data_upper_case = add_inter_events_derived_columns(
-        transaction_data_upper_case, event_view
-    )
-
-    return transaction_data_upper_case.sort_values(event_timestamp_column_name)
-
-
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_feature_with_target(event_table, observation_set, transaction_data_upper_case):
     """
@@ -431,7 +405,7 @@ def test_feature_with_target(event_table, observation_set, transaction_data_uppe
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_aggregate_over(
-    transaction_event_dataframe,
+    transaction_data_upper_case,
     observation_set,
     event_table,
     config,
@@ -452,7 +426,22 @@ def test_aggregate_over(
     entity_column_name = "ÜSER ID"
     event_timestamp_column_name = "ËVENT_TIMESTAMP"
 
-    df = transaction_event_dataframe.copy()
+    # Apply a filter condition
+    def _get_filtered_data(event_view_or_dataframe):
+        cond1 = event_view_or_dataframe["ÀMOUNT"] > 20
+        cond2 = event_view_or_dataframe["ÀMOUNT"].isnull()
+        mask = cond1 | cond2
+        return event_view_or_dataframe[mask]
+
+    event_view = _get_filtered_data(event_view)
+    transaction_data_upper_case = _get_filtered_data(transaction_data_upper_case)
+
+    # Add inter-event derived columns
+    transaction_data_upper_case = add_inter_events_derived_columns(
+        transaction_data_upper_case, event_view
+    )
+
+    df = transaction_data_upper_case.sort_values(event_timestamp_column_name)
 
     common_args = (
         df,
