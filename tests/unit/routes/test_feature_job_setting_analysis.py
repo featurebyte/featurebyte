@@ -358,3 +358,47 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
             "missing_jobs_count": 5,
         }
         assert warehouse_record == expected_warehouse_record
+
+    @pytest.mark.asyncio
+    async def test_create_no_event_table_id(self, test_api_client_persistent):
+        """
+        Create request for event table with no event_table_id
+        """
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        payload = self.payload.copy()
+        payload.pop("event_table_id", None)
+        response = test_api_client.post(f"{self.base_route}", json=payload)
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.json()["detail"] == [
+            {
+                "loc": ["body", "__root__"],
+                "msg": "Either event_table_id or event_table_candidate is required",
+                "type": "value_error",
+            }
+        ]
+
+    @pytest.mark.asyncio
+    async def test_create_event_table_candidate(self, test_api_client_persistent):
+        """
+        Create request for event table with event_table_candidate
+        """
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        event_table_payload = BaseAsyncApiTestSuite.load_payload(
+            "tests/fixtures/request_payloads/event_table.json"
+        )
+        payload = self.payload.copy()
+        payload.pop("event_table_id", None)
+        payload["event_table_candidate"] = {
+            "name": event_table_payload["name"],
+            "tabular_source": event_table_payload["tabular_source"],
+            "event_timestamp_column": event_table_payload["event_timestamp_column"],
+            "record_creation_timestamp_column": event_table_payload[
+                "record_creation_timestamp_column"
+            ],
+        }
+        response = test_api_client.post(f"{self.base_route}", json=payload)
+        assert response.status_code == HTTPStatus.CREATED

@@ -18,6 +18,7 @@ from featurebyte.models.base import (
 from featurebyte.schema.feature_job_setting_analysis import (
     AnalysisOptions,
     AnalysisParameters,
+    EventTableCandidate,
     FeatureJobSetting,
 )
 
@@ -60,7 +61,8 @@ class FeatureJobSettingAnalysisModel(FeatureByteCatalogBaseDocumentModel):
     FeatureJobSettingAnalysis persistent model
     """
 
-    event_table_id: PydanticObjectId
+    event_table_id: Optional[PydanticObjectId]
+    event_table_candidate: Optional[EventTableCandidate]
     analysis_options: AnalysisOptions
     analysis_parameters: AnalysisParameters
     analysis_result: AnalysisResult

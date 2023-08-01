@@ -14,7 +14,19 @@ from featurebyte.models.base import (
     FeatureByteBaseModel,
     PydanticObjectId,
 )
+from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.schema.common.base import PaginationMixin
+
+
+class EventTableCandidate(FeatureByteBaseModel):
+    """
+    Event Table Candidate Schema
+    """
+
+    name: StrictStr
+    tabular_source: TabularSource
+    event_timestamp_column: StrictStr
+    record_creation_timestamp_column: StrictStr
 
 
 class FeatureJobSettingAnalysisCreate(FeatureByteBaseModel):
@@ -24,7 +36,8 @@ class FeatureJobSettingAnalysisCreate(FeatureByteBaseModel):
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: Optional[StrictStr]
-    event_table_id: PydanticObjectId
+    event_table_id: Optional[PydanticObjectId]
+    event_table_candidate: Optional[EventTableCandidate]
     analysis_date: Optional[datetime] = Field(default=None)
     analysis_length: int = Field(ge=3600, le=3600 * 24 * 28 * 6, default=3600 * 24 * 28)
     min_featurejob_period: int = Field(ge=60, le=3600 * 24 * 28, default=60)
@@ -32,6 +45,18 @@ class FeatureJobSettingAnalysisCreate(FeatureByteBaseModel):
     blind_spot_buffer_setting: int = Field(ge=5, le=3600 * 24 * 28, default=5)
     job_time_buffer_setting: Union[int, Literal["auto"]] = Field(default="auto")
     late_data_allowance: float = Field(gt=0, le=0.5, default=0.005 / 100)
+
+    @root_validator(pre=True)
+    @classmethod
+    def validate_event_table_parameters(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Validate Event Table parameters are provided
+        """
+        event_table_id = values.get("event_table_id")
+        event_table_candidate = values.get("event_table_candidate")
+        if not (event_table_id or event_table_candidate):
+            raise ValueError("Either event_table_id or event_table_candidate is required")
+        return values
 
 
 class AnalysisOptions(FeatureByteBaseModel):

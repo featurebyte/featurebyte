@@ -17,6 +17,7 @@ from featurebyte.models.feature_job_setting_analysis import (
     FeatureJobSettingAnalysisData,
     FeatureJobSettingAnalysisModel,
 )
+from featurebyte.schema.feature_job_setting_analysis import EventTableCandidate
 from featurebyte.schema.worker.task.feature_job_setting_analysis import (
     FeatureJobSettingAnalysisBackTestTaskPayload,
     FeatureJobSettingAnalysisTaskPayload,
@@ -44,8 +45,21 @@ class FeatureJobSettingAnalysisTask(BaseTask):
         persistent = self.get_persistent()
 
         # retrieve event data
-        event_table_service = self.app_container.event_table_service
-        event_table = await event_table_service.get_document(document_id=payload.event_table_id)
+        if payload.event_table_id:
+            event_table_service = self.app_container.event_table_service
+            event_table_document = await event_table_service.get_document(
+                document_id=payload.event_table_id
+            )
+            event_table = EventTableCandidate(
+                name=event_table_document.name,
+                tabular_source=event_table_document.tabular_source,
+                record_creation_timestamp_column=event_table_document.record_creation_timestamp_column,
+                event_timestamp_column=event_table_document.event_timestamp_column,
+            )
+        else:
+            # event table candidate should be provided if event table is not
+            assert payload.event_table_candidate
+            event_table = payload.event_table_candidate
 
         # retrieve feature store
         feature_store_service = FeatureStoreService(
