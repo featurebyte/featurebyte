@@ -346,7 +346,7 @@ def transaction_event_dataframe_fixture(transaction_data_upper_case, event_table
 
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
-def test_feature_with_target(event_table, observation_set, transaction_event_dataframe):
+def test_feature_with_target(event_table, observation_set, transaction_data_upper_case):
     """
     Test that feature with target works
     """
@@ -396,6 +396,7 @@ def test_feature_with_target(event_table, observation_set, transaction_event_dat
 
     # Calculate expected feature values
     event_timestamp_column_name = "ËVENT_TIMESTAMP"
+    transaction_event_dataframe = transaction_data_upper_case.copy()
     utc_event_timestamps = pd.to_datetime(
         transaction_event_dataframe[event_timestamp_column_name], utc=True
     ).dt.tz_localize(None)
