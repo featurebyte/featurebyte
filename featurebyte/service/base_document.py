@@ -84,6 +84,8 @@ class BaseDocumentService(
     reading from the persistent.
     """
 
+    # pylint: disable=too-many-public-methods
+
     document_class: Type[Document]
 
     def __init__(self, user: Any, persistent: Persistent, catalog_id: Optional[ObjectId]):
@@ -91,6 +93,7 @@ class BaseDocumentService(
         self.persistent = persistent
         self.catalog_id = catalog_id
         self._allow_to_use_raw_query_filter = False
+        self._to_check_block_modification = True
         if self.is_catalog_specific and not catalog_id:
             raise CatalogNotSpecifiedError(
                 f"No active catalog specified for service: {self.__class__.__name__}"
@@ -114,6 +117,25 @@ class BaseDocumentService(
             yield
         finally:
             self._allow_to_use_raw_query_filter = False
+
+    @contextmanager
+    def disable_block_modification_check(
+        self,
+    ) -> Iterator[BaseDocumentService[Document, DocumentCreateSchema, DocumentUpdateSchema]]:
+        """
+        Disable block modification check for the service.
+
+        Yields
+        -------
+        BaseDocumentService[Document, DocumentCreateSchema, DocumentUpdateSchema]
+            Disable block modification check
+        """
+        try:
+            logger.warning("Disabling block modification check")
+            self._to_check_block_modification = False
+            yield self
+        finally:
+            self._to_check_block_modification = True
 
     @property
     def collection_name(self) -> str:
@@ -827,9 +849,8 @@ class BaseDocumentService(
                 resolution_signature=resolution_signature,
             )
 
-    @staticmethod
-    def _check_document_modifiable(document: Document) -> None:
-        if document.block_modification_by:
+    def _check_document_modifiable(self, document: Document) -> None:
+        if self._to_check_block_modification and document.block_modification_by:
             block_modification_by = [
                 f"{item.asset_name}(id: {item.document_id})"
                 for item in document.block_modification_by

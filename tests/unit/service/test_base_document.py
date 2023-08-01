@@ -504,6 +504,7 @@ async def test_document_not_modifiable_if_block_modification_by_not_empty(
     # try to delete document - expect an error
     with pytest.raises(DocumentModificationBlockedError) as exc:
         await document_service.delete_document(document_id=document.id)
+    assert expected_error in str(exc.value)
 
     # remove block by modification
     await document_service.remove_block_modification_by(
@@ -522,6 +523,26 @@ async def test_document_not_modifiable_if_block_modification_by_not_empty(
     await document_service.delete_document(document_id=document.id)
     with pytest.raises(DocumentNotFoundError):
         await document_service.get_document(document_id=document.id)
+
+
+@pytest.mark.asyncio
+async def test_document_disable_block_modification_check(
+    document_service, document_with_block_modification
+):
+    """Test document not modifiable if block_modification_by not empty"""
+    document = document_with_block_modification
+    with pytest.raises(DocumentModificationBlockedError) as exc:
+        await document_service.update_document(
+            document_id=document.id, data=Document(name="new_name")
+        )
+    expected_error = f"Document {document.id} is blocked from modification by "
+    assert expected_error in str(exc.value)
+
+    with document_service.disable_block_modification_check() as service:
+        document = await service.update_document(
+            document_id=document.id, data=Document(name="new_name")
+        )
+        assert document.name == "new_name"
 
 
 def test_catalog_specific_service_requires_catalog_id(user, persistent):
