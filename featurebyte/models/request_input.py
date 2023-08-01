@@ -35,6 +35,8 @@ class RequestInputType(StrEnum):
 
     VIEW = "view"
     SOURCE_TABLE = "source_table"
+    OBSERVATION_TABLE = "observation_table"
+    DATAFRAME = "dataframe"
 
 
 class BaseRequestInput(FeatureByteBaseModel):
