@@ -15,6 +15,7 @@ from featurebyte.models.feature_job_setting_analysis import FeatureJobSettingAna
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.feature_job_setting_analysis import (
+    EventTableCandidate,
     FeatureJobSettingAnalysisBacktest,
     FeatureJobSettingAnalysisCreate,
     FeatureJobSettingAnalysisList,
@@ -75,9 +76,19 @@ class FeatureJobSettingAnalysisController(
         recommended_setting = (
             feature_job_setting_analysis.analysis_result.recommended_feature_job_setting
         )
-        event_table = await self.event_table_service.get_document(
-            document_id=feature_job_setting_analysis.event_table_id
-        )
+        if feature_job_setting_analysis.event_table_id:
+            event_table_doc = await self.event_table_service.get_document(
+                document_id=feature_job_setting_analysis.event_table_id
+            )
+            event_table = EventTableCandidate(
+                name=event_table_doc.name,
+                tabular_source=event_table_doc.tabular_source,
+                record_creation_timestamp_column=event_table_doc.record_creation_timestamp_column,
+                event_timestamp_column=event_table_doc.event_timestamp_column,
+            )
+        else:
+            assert feature_job_setting_analysis.event_table_candidate is not None
+            event_table = feature_job_setting_analysis.event_table_candidate
 
         # get catalog info
         catalog = await self.catalog_service.get_document(feature_job_setting_analysis.catalog_id)

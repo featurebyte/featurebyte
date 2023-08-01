@@ -36,8 +36,8 @@ class FeatureJobSettingAnalysisCreate(FeatureByteBaseModel):
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: Optional[StrictStr]
-    event_table_id: Optional[PydanticObjectId]
-    event_table_candidate: Optional[EventTableCandidate]
+    event_table_id: Optional[PydanticObjectId] = Field(default=None)
+    event_table_candidate: Optional[EventTableCandidate] = Field(default=None)
     analysis_date: Optional[datetime] = Field(default=None)
     analysis_length: int = Field(ge=3600, le=3600 * 24 * 28 * 6, default=3600 * 24 * 28)
     min_featurejob_period: int = Field(ge=60, le=3600 * 24 * 28, default=60)
@@ -51,6 +51,21 @@ class FeatureJobSettingAnalysisCreate(FeatureByteBaseModel):
     def validate_event_table_parameters(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """
         Validate Event Table parameters are provided
+
+        Parameters
+        ----------
+        values : Dict[str, Any]
+            Values to validate
+
+        Returns
+        -------
+        Dict[str, Any]
+            Validated values
+
+        Raises
+        ------
+        ValueError
+            If neither event_table_id or event_table_candidate is provided
         """
         event_table_id = values.get("event_table_id")
         event_table_candidate = values.get("event_table_candidate")
