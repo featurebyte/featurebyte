@@ -285,11 +285,13 @@ def test_feature_with_target(event_table, observation_set, catalog):
     )
 
     # Compute historical feature table
-    df_historical_features = feature_list.compute_historical_feature_table(
+    historical_features_table = feature_list.compute_historical_feature_table(
         target_observation_table,
         historical_feature_table_name=f"historical_feature_table_name_{ObjectId()}",
         serving_names_mapping={"üser id": "ÜSER ID"},
     )
+    df_historical_features = historical_features_table.to_pandas()
+    assert "target_next_amount_2h" in df_historical_features
 
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
