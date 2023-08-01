@@ -812,33 +812,33 @@ class EventLookupParameters(BaseModel):
     event_timestamp_column: InColumnStr
 
 
-class LookupNode(AggregationOpStructMixin, BaseNode):
-    """LookupNode class"""
+class LookupParameters(BaseModel):
+    """Lookup NOde Parameters"""
 
-    class Parameters(BaseModel):
-        """Parameters"""
+    input_column_names: List[InColumnStr]
+    feature_names: List[OutColumnStr]
+    entity_column: InColumnStr
+    serving_name: str
+    entity_id: PydanticObjectId
+    scd_parameters: Optional[SCDLookupParameters]
+    event_parameters: Optional[EventLookupParameters]
 
-        input_column_names: List[InColumnStr]
-        feature_names: List[OutColumnStr]
-        entity_column: InColumnStr
-        serving_name: str
-        entity_id: PydanticObjectId
-        scd_parameters: Optional[SCDLookupParameters]
-        event_parameters: Optional[EventLookupParameters]
+    @root_validator(skip_on_failure=True)
+    @classmethod
+    def _validate_input_column_names_feature_names_same_length(
+        cls, values: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        input_column_names = values["input_column_names"]
+        feature_names = values["feature_names"]
+        assert len(input_column_names) == len(feature_names)
+        return values
 
-        @root_validator(skip_on_failure=True)
-        @classmethod
-        def _validate_input_column_names_feature_names_same_length(
-            cls, values: Dict[str, Any]
-        ) -> Dict[str, Any]:
-            input_column_names = values["input_column_names"]
-            feature_names = values["feature_names"]
-            assert len(input_column_names) == len(feature_names)
-            return values
 
-    type: Literal[NodeType.LOOKUP] = Field(NodeType.LOOKUP, const=True)
+class BaseLookupNode(AggregationOpStructMixin, BaseNode):
+    """BaseLookupNode class"""
+
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
-    parameters: Parameters
+    parameters: LookupParameters
 
     @property
     def max_input_count(self) -> int:
@@ -875,7 +875,7 @@ class LookupNode(AggregationOpStructMixin, BaseNode):
                 window=None,
                 category=None,
                 column=name_to_column[input_column_name],
-                aggregation_type=self.type,
+                aggregation_type=self.type,  # type: ignore[arg-type]
                 node_names={node_name}.union(other_node_names),
                 node_name=node_name,
                 filter=any(col.filter for col in columns),
@@ -888,6 +888,12 @@ class LookupNode(AggregationOpStructMixin, BaseNode):
 
     def _exclude_source_columns(self) -> List[str]:
         return [self.parameters.entity_column]
+
+
+class LookupNode(BaseLookupNode):
+    """LookupNode class"""
+
+    type: Literal[NodeType.LOOKUP] = Field(NodeType.LOOKUP, const=True)
 
     def _derive_sdk_code(
         self,
@@ -922,6 +928,19 @@ class LookupNode(AggregationOpStructMixin, BaseNode):
         )
         statements.append((out_var_name, ExpressionStr(grouped)))
         return statements, out_var_name
+
+
+class LookupTargetParameters(LookupParameters):
+    """LookupTargetParameters"""
+
+    offset: Optional[str]
+
+
+class LookupTargetNode(BaseLookupNode):
+    """LookupTargetNode class"""
+
+    type: Literal[NodeType.LOOKUP_TARGET] = Field(NodeType.LOOKUP_TARGET, const=True)
+    parameters: LookupTargetParameters
 
 
 class JoinMetadata(BaseModel):

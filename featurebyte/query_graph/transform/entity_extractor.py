@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from bson import ObjectId
 
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.generic import LookupNode
+from featurebyte.query_graph.node.generic import LookupNode, LookupTargetNode
 from featurebyte.query_graph.node.mixin import BaseGroupbyParameters
 from featurebyte.query_graph.transform.base import BaseGraphExtractor
 
@@ -44,7 +44,7 @@ class EntityExtractor(
             if node.parameters.entity_ids:
                 global_state.entity_ids.update(node.parameters.entity_ids)
             skip_input_nodes = True
-        elif isinstance(node, LookupNode):
+        elif isinstance(node, (LookupNode, LookupTargetNode)):
             global_state.entity_ids.add(node.parameters.entity_id)
         return [] if skip_input_nodes else input_node_names, False
 
