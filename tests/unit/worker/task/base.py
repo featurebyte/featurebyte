@@ -15,6 +15,8 @@ import pytest_asyncio
 
 from featurebyte.app import get_celery
 from featurebyte.models.base import User
+from featurebyte.routes.lazy_app_container import LazyAppContainer
+from featurebyte.routes.registry import app_container_config
 from featurebyte.worker import get_redis
 from featurebyte.worker.task.base import BaseTask
 
@@ -79,17 +81,22 @@ class BaseTaskTestSuite:
         Execute task with payload
         """
         # pylint: disable=not-callable
+        user = User(id=payload.get("user_id"))
         task = task_class(
             task_id=uuid4(),
             payload=payload,
             progress=progress,
-            user=User(id=payload.get("user_id")),
-            get_persistent=lambda: persistent,
             get_credential=get_credential,
-            get_storage=lambda: storage,
-            get_temp_storage=lambda: temp_storage,
-            get_celery=get_celery,
-            get_redis=get_redis,
+            app_container=LazyAppContainer(
+                user=user,
+                persistent=persistent,
+                temp_storage=temp_storage,
+                celery=get_celery(),
+                redis=get_redis(),
+                storage=storage,
+                catalog_id=payload.get("catalog_id"),
+                app_container_config=app_container_config,
+            ),
         )
 
         await task.execute()

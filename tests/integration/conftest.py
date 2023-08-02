@@ -1342,17 +1342,22 @@ def mock_task_manager(request, persistent, storage, temp_storage, get_cred, mock
                 kwargs = payload.json_dict()
                 kwargs["task_output_path"] = payload.task_output_path
                 task_id = str(uuid4())
+                user = User(id=kwargs.get("user_id"))
                 task = TASK_MAP[payload.command](
                     task_id=UUID(task_id),
                     payload=kwargs,
                     progress=Mock(),
-                    user=User(id=kwargs.get("user_id")),
                     get_credential=get_cred,
-                    get_persistent=lambda: persistent,
-                    get_storage=lambda: storage,
-                    get_temp_storage=lambda: temp_storage,
-                    get_celery=lambda: None,
-                    get_redis=Mock(),
+                    app_container=LazyAppContainer(
+                        user=user,
+                        persistent=persistent,
+                        temp_storage=temp_storage,
+                        celery=Mock(),
+                        redis=Mock(),
+                        storage=storage,
+                        catalog_id=payload.catalog_id,
+                        app_container_config=app_container_config,
+                    ),
                 )
                 try:
                     await task.execute()

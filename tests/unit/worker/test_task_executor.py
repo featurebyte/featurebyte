@@ -137,7 +137,7 @@ async def test_task_executor(random_task_class, persistent):
     assert isinstance(document["start_time"], datetime.datetime)
 
 
-def test_task_has_been_implemented(random_task_class, command_class):
+def test_task_has_been_implemented(app_container, random_task_class, command_class):
     """
     Test implement a task whose command has been implemented before
     """
@@ -170,13 +170,8 @@ def test_task_has_been_implemented(random_task_class, command_class):
             task_id=uuid4(),
             payload={},
             progress=None,
-            user=None,
-            get_persistent=None,
-            get_storage=None,
-            get_temp_storage=None,
             get_credential=None,
-            get_celery=None,
-            get_redis=None,
+            app_container=app_container,
         )
 
 
