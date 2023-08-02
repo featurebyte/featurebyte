@@ -232,7 +232,7 @@ def test_datetime_property_extraction__event_timestamp_in_item_view(
             "event_timestamp" AS "event_timestamp"
           FROM "sf_database"."sf_schema"."items_table"
         ) AS L
-        LEFT JOIN (
+        INNER JOIN (
           SELECT
             "event_timestamp" AS "event_timestamp",
             "col_int" AS "col_int",
