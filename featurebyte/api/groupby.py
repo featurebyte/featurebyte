@@ -427,6 +427,8 @@ class GroupBy:
         method: str,
         window: Optional[str] = None,
         target_name: Optional[str] = None,
+        fill_value: OptionalScalar = None,
+        skip_fill_na: bool = False,
     ) -> Target:
         """
         The forward_aggregate method of a GroupBy class instance returns a Forward Aggregated Target object. This object
@@ -444,6 +446,10 @@ class GroupBy:
             Optional window to apply to the point in time column in the target request.
         target_name: Optional[str]
             Output target name
+        fill_value: OptionalScalar
+            Value to fill if the value in the column is empty
+        skip_fill_na: bool
+            Whether to skip filling NaN values
 
         Returns
         -------
@@ -469,4 +475,6 @@ class GroupBy:
             method=method,
             window=window,
             target_name=target_name,
+            fill_value=fill_value,
+            skip_fill_na=skip_fill_na,
         )
