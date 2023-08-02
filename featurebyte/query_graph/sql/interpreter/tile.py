@@ -13,6 +13,7 @@ from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupByNode
+from featurebyte.query_graph.node.metadata.operation import ViewDataColumnType
 from featurebyte.query_graph.sql.ast.base import EventTableTimestampFilter
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import SQLType
@@ -123,11 +124,15 @@ class TileSQLGenerator:
         pruned_graph, node_name_map, _ = prune_query_graph(
             graph=self.query_graph, node=groupby_node
         )
+
+        # Check there is no lag operation, otherwise cannot apply timestamp filter directly
         pruned_node = pruned_graph.get_node_by_name(node_name_map[groupby_node.name])
         for node in dfs_traversal(pruned_graph, pruned_node):
             if node.type == NodeType.LAG:
                 return None
 
+        # Identify which EventTable can be filtered. This is based on the timestamp column used in
+        # the groupby node.
         groupby_input_node = pruned_graph.get_node_by_name(
             pruned_graph.get_input_node_names(pruned_node)[0]
         )
@@ -135,8 +140,12 @@ class TileSQLGenerator:
             groupby_input_node
         )
         op_struct = op_struct_info.operation_structure_map[groupby_input_node.name]
-        for column in op_struct.iterate_source_columns():
-            if column.name == groupby_node.parameters.timestamp and column.table_id is not None:
+        for column in op_struct.columns:
+            if (
+                column.name == groupby_node.parameters.timestamp
+                and column.type == ViewDataColumnType.SOURCE
+                and column.table_id is not None
+            ):
                 return EventTableTimestampFilter(
                     timestamp_column_name=column.name,
                     event_table_id=column.table_id,
