@@ -983,6 +983,7 @@ def create_deep_dive_materializing_features_catalog():
         method=fb.AggFunc.SUM,
         target_name="next_customer_sales_14d",
         window="14d",
+        fill_value=0,
     )
     next_customer_sales_14d.save(conflict_resolution="retrieve")
 
@@ -1670,6 +1671,7 @@ def create_quick_start_model_training_catalog():
         method=fb.AggFunc.SUM,
         window="14d",
         target_name="next_customer_sales_14d",
+        fill_value=0,
     )
     next_customer_sales_14d.save()
 
