@@ -13,7 +13,7 @@ from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupByNode
-from featurebyte.query_graph.node.metadata.operation import ViewDataColumnType
+from featurebyte.query_graph.node.metadata.operation import SourceDataColumn
 from featurebyte.query_graph.sql.ast.base import EventTableTimestampFilter
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import SQLType
@@ -143,9 +143,10 @@ class TileSQLGenerator:
         for column in op_struct.columns:
             if (
                 column.name == groupby_node.parameters.timestamp
-                and column.type == ViewDataColumnType.SOURCE
+                and isinstance(column, SourceDataColumn)
                 and column.table_id is not None
             ):
+                assert isinstance(column, SourceDataColumn)
                 return EventTableTimestampFilter(
                     timestamp_column_name=column.name,
                     event_table_id=column.table_id,
