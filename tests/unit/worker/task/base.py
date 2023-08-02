@@ -86,7 +86,6 @@ class BaseTaskTestSuite:
             task_id=uuid4(),
             payload=payload,
             progress=progress,
-            user=user,
             get_credential=get_credential,
             app_container=LazyAppContainer(
                 user=user,

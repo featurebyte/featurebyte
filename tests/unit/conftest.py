@@ -1518,7 +1518,6 @@ def mock_task_manager(request, persistent, storage, temp_storage, get_credential
                     task_id=UUID(task_id),
                     payload=kwargs,
                     progress=Mock(),
-                    user=user,
                     get_credential=get_credential,
                     app_container=LazyAppContainer(
                         user=user,

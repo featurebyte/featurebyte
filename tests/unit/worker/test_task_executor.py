@@ -170,7 +170,6 @@ def test_task_has_been_implemented(app_container, random_task_class, command_cla
             task_id=uuid4(),
             payload={},
             progress=None,
-            user=None,
             get_credential=None,
             app_container=app_container,
         )

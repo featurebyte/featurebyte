@@ -9,6 +9,7 @@ from abc import abstractmethod
 from enum import Enum
 from uuid import UUID
 
+from featurebyte.models.base import User
 from featurebyte.models.task import Task
 from featurebyte.persistent import Persistent
 from featurebyte.routes.lazy_app_container import LazyAppContainer
@@ -31,7 +32,6 @@ class BaseTask:  # pylint: disable=too-many-instance-attributes
         task_id: UUID,
         payload: dict[str, Any],
         progress: Any,
-        user: Any,
         get_credential: Any,
         app_container: LazyAppContainer,
     ):
@@ -39,7 +39,6 @@ class BaseTask:  # pylint: disable=too-many-instance-attributes
             raise NotImplementedError
         self.task_id = task_id
         self.payload = self.payload_class(**payload)
-        self.user = user
         self.get_credential = get_credential
         self.progress = progress
         self.app_container = app_container
@@ -56,6 +55,17 @@ class BaseTask:  # pylint: disable=too-many-instance-attributes
         if command in TASK_MAP:
             raise ValueError(f'Command "{command}" has been implemented.')
         TASK_MAP[command] = cls
+
+    @property
+    def user(self) -> User:
+        """
+        Get user instance
+
+        Returns
+        -------
+        User
+        """
+        return self.app_container.user  # type: ignore
 
     @property
     def persistent(self) -> Persistent:

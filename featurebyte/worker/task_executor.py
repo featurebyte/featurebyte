@@ -121,7 +121,6 @@ class TaskExecutor:
             task_id=task_id,
             payload=payload,
             progress=progress,
-            user=user,
             get_credential=credential_provider.get_credential,
             app_container=app_container,
         )
