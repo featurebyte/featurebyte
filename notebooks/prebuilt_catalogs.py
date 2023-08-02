@@ -1690,10 +1690,6 @@ def create_quick_start_model_training_catalog():
     customer_sales_14d.save()
     customer_sales_14d["Target"].update_readiness("PRODUCTION_READY")
 
-    # create a feature list for the target
-    target_list = fb.FeatureList([customer_sales_14d], name="TargetFeature")
-    target_list.save(conflict_resolution="retrieve")
-
     # save the feature list to the catalog
     feature_list.save(conflict_resolution="retrieve")
 
