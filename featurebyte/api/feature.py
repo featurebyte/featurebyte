@@ -53,12 +53,10 @@ from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_namespace import DefaultVersionMode, FeatureReadiness
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.tile import TileSpec
-from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.feature_job_setting import TableFeatureJobSetting
 from featurebyte.query_graph.node.cleaning_operation import TableCleaningOperation
-from featurebyte.query_graph.node.generic import AliasNode, ProjectNode
 from featurebyte.schema.feature import (
     BatchFeatureCreatePayload,
     BatchFeatureItem,
@@ -455,59 +453,6 @@ class Feature(
         - [Feature.update_default_version_mode](/reference/featurebyte.api.feature.Feature.update_default_version_mode/)
         """
         self._delete()
-
-    @typechecked
-    def __setattr__(self, key: str, value: Any) -> Any:
-        """
-        Custom __setattr__ to handle setting of special attributes such as name
-
-        Parameters
-        ----------
-        key : str
-            Key
-        value : Any
-            Value
-
-        Raises
-        ------
-        ValueError
-            if the name parameter is invalid
-
-        Returns
-        -------
-        Any
-        """
-        if key != "name":
-            return super().__setattr__(key, value)
-
-        if value is None:
-            raise ValueError("None is not a valid feature name")
-
-        # For now, only allow updating name if the feature is unnamed (i.e. created on-the-fly by
-        # combining different features)
-        name = value
-        node = self.node
-        if node.type in {NodeType.PROJECT, NodeType.ALIAS}:
-            if isinstance(node, ProjectNode):
-                existing_name = node.parameters.columns[0]
-            else:
-                assert isinstance(node, AliasNode)
-                existing_name = node.parameters.name  # type: ignore
-            if name != existing_name:
-                raise ValueError(f'Feature "{existing_name}" cannot be renamed to "{name}"')
-            # FeatureGroup sets name unconditionally, so we allow this here
-            return super().__setattr__(key, value)
-
-        # Here, node could be any node resulting from series operations, e.g. DIV. This
-        # validation was triggered by setting the name attribute of a Feature object
-        new_node = self.graph.add_operation(
-            node_type=NodeType.ALIAS,
-            node_params={"name": name},
-            node_output_type=NodeOutputType.SERIES,
-            input_nodes=[node],
-        )
-        self.node_name = new_node.name
-        return super().__setattr__(key, value)
 
     @property
     def feature_namespace(self) -> FeatureNamespace:

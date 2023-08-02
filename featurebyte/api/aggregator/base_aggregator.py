@@ -3,7 +3,7 @@ This module contains base aggregator related class
 """
 from __future__ import annotations
 
-from typing import List, Optional, Type
+from typing import List, Optional, Type, Union
 
 from abc import ABC, abstractmethod
 
@@ -150,27 +150,27 @@ class BaseAggregator(ABC):
             feature_dtype=var_type,
         )
         if not skip_fill_na:
-            self._fill_feature(feature, method, feature_name, fill_value)
+            self._fill_feature_or_target(feature, method, feature_name, fill_value)
         return feature
 
-    def _fill_feature(
+    def _fill_feature_or_target(
         self,
-        feature: Feature,
+        feature_or_target: Union[Feature, Target],
         method: str,
-        feature_name: str,
+        feature_or_target_name: str,
         fill_value: OptionalScalar,
-    ) -> Feature:
+    ) -> Union[Feature, Target]:
         """
-        Fill feature values as needed.
+        Fill feature or target values as needed.
 
         Parameters
         ----------
-        feature: Feature
-            feature
+        feature_or_target: Union[Feature, Target]
+            feature or target
         method: str
             aggregation method
-        feature_name: str
-            feature name
+        feature_or_target_name: str
+            feature or target name
         fill_value: OptionalScalar
             value to fill
 
@@ -189,49 +189,10 @@ class BaseAggregator(ABC):
         if method in {AggFunc.COUNT, AggFunc.NA_COUNT} and self.category is None:
             # Count features should be 0 instead of NaN when there are no records
             value_to_fill = get_or_default(fill_value, 0)
-            feature.fillna(value_to_fill)
-            feature.name = feature_name
+            feature_or_target.fillna(value_to_fill)
+            feature_or_target.name = feature_or_target_name
         elif fill_value is not None:
-            feature.fillna(fill_value)
-            feature.name = feature_name
+            feature_or_target.fillna(fill_value)
+            feature_or_target.name = feature_or_target_name
 
-        return feature
-
-    def _fill_target(
-        self,
-        target: Target,
-        method: str,
-        fill_value: OptionalScalar,
-    ) -> Target:
-        """
-        Fill target values as needed.
-
-        Parameters
-        ----------
-        target: Target
-            target
-        method: str
-            aggregation method
-        fill_value: OptionalScalar
-            value to fill
-
-        Returns
-        -------
-        Target
-
-        Raises
-        ------
-        ValueError
-            If both fill_value and category parameters are specified
-        """
-        if fill_value is not None and self.category is not None:
-            raise ValueError("fill_value is not supported for aggregation per category")
-
-        if method in {AggFunc.COUNT, AggFunc.NA_COUNT} and self.category is None:
-            # Count features should be 0 instead of NaN when there are no records
-            value_to_fill = get_or_default(fill_value, 0)
-            target.fillna(value_to_fill)
-        elif fill_value is not None:
-            target.fillna(fill_value)
-
-        return target
+        return feature_or_target
