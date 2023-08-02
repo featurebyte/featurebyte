@@ -556,6 +556,7 @@ class ForwardAggregateNode(AggregationOpStructMixin, BaseNode):
             method=self.parameters.agg_func,
             window=self.parameters.window,
             target_name=self.parameters.name,
+            skip_fill_na=True,
         )
         statements.append((out_var_name, expression))
         return statements, out_var_name
