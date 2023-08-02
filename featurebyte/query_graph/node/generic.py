@@ -1117,7 +1117,11 @@ class JoinNode(BasePrunableNode):
                         node_name=self.name,
                     )
 
-        if self.parameters.join_type == "left":
+        is_event_item_join = (
+            self.parameters.metadata is not None
+            and self.parameters.metadata.type == "join_event_table_attributes"
+        )
+        if self.parameters.join_type == "left" or is_event_item_join:
             row_index_lineage = inputs[0].row_index_lineage
         else:
             row_index_lineage = append_to_lineage(inputs[0].row_index_lineage, self.name)

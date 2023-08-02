@@ -45,7 +45,9 @@ grouped = joined_view_1.groupby(
     skip_fill_na=True,
 )
 feat = grouped["count_a_24h_per_col_int"]
-feat_1 = (feat.cd.entropy()) * (feat.cd.most_frequent()).str.len()
+feat_1 = feat.cd.unique_count(include_missing=True)
+feat_2 = feat.cd.unique_count(include_missing=False)
+feat_3 = (feat.cd.entropy()) * (feat.cd.most_frequent()).str.len()
 grouped_1 = joined_view_1.groupby(
     by_keys=["cust_id"], category=None
 ).aggregate_over(
@@ -58,7 +60,5 @@ grouped_1 = joined_view_1.groupby(
     ),
     skip_fill_na=True,
 )
-feat_2 = grouped_1["sum_a_24h"]
-feat_3 = feat.cd.unique_count(include_missing=False)
-feat_4 = feat.cd.unique_count(include_missing=True)
-output = (feat_2 + feat_1) - (feat_3 / feat_4)
+feat_4 = grouped_1["sum_a_24h"]
+output = (feat_4 + feat_3) - (feat_2 / feat_1)
