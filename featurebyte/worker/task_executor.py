@@ -22,6 +22,8 @@ from featurebyte.enum import WorkerCommand
 from featurebyte.logging import get_logger
 from featurebyte.models.base import User
 from featurebyte.models.task import Task as TaskModel
+from featurebyte.routes.lazy_app_container import LazyAppContainer
+from featurebyte.routes.registry import app_container_config
 from featurebyte.utils.credential import MongoBackedCredentialProvider
 from featurebyte.utils.messaging import Progress
 from featurebyte.utils.persistent import get_persistent
@@ -102,17 +104,26 @@ class TaskExecutor:
         self.task_id = task_id
         command = self.command_type(payload["command"])
         credential_provider = MongoBackedCredentialProvider(persistent=get_persistent())
-        self.task = TASK_MAP[command](
+        user = User(id=payload.get("user_id"))
+        task_class = TASK_MAP[command]
+        payload_object = task_class.payload_class(**payload)
+        app_container = LazyAppContainer(
+            user=user,
+            persistent=get_persistent(),
+            temp_storage=get_temp_storage(),
+            celery=get_celery(),
+            redis=get_redis(),
+            storage=get_storage(),
+            catalog_id=payload_object.catalog_id,
+            app_container_config=app_container_config,
+        )
+        self.task = task_class(
             task_id=task_id,
-            user=User(id=payload.get("user_id")),
             payload=payload,
             progress=progress,
-            get_persistent=get_persistent,
+            user=user,
             get_credential=credential_provider.get_credential,
-            get_storage=get_storage,
-            get_temp_storage=get_temp_storage,
-            get_celery=get_celery,
-            get_redis=get_redis,
+            app_container=app_container,
         )
         self._setup_worker_config()
 
@@ -159,7 +170,7 @@ class TaskExecutor:
         """
         Execute the task
         """
-        await self._update_task_start_time(self.task.get_persistent())
+        await self._update_task_start_time(self.task.persistent)
         await self.task.execute()
 
 

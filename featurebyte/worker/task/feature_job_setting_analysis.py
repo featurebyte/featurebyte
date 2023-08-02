@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import Any, cast
 
+from pathlib import Path
+
 from featurebyte_freeware.feature_job_analysis.analysis import (
     FeatureJobSettingsAnalysisResult,
     create_feature_job_settings_analysis,
@@ -42,7 +44,6 @@ class FeatureJobSettingAnalysisTask(BaseTask):
         """
         await self.update_progress(percent=0, message="Preparing data")
         payload = cast(FeatureJobSettingAnalysisTaskPayload, self.payload)
-        persistent = self.get_persistent()
 
         # retrieve event data
         if payload.event_table_id:
@@ -63,7 +64,7 @@ class FeatureJobSettingAnalysisTask(BaseTask):
 
         # retrieve feature store
         feature_store_service = FeatureStoreService(
-            user=self.user, persistent=persistent, catalog_id=self.payload.catalog_id
+            user=self.user, persistent=self.persistent, catalog_id=self.payload.catalog_id
         )
         feature_store = await feature_store_service.get_document(
             document_id=event_table.tabular_source.feature_store_id
@@ -117,8 +118,9 @@ class FeatureJobSettingAnalysisTask(BaseTask):
 
         # store analysis data in storage
         analysis_data = FeatureJobSettingAnalysisData(**analysis.dict())
-        await self.get_storage().put_object(
-            analysis_data, f"feature_job_setting_analysis/{payload.output_document_id}/data.json"
+        await self.storage.put_object(
+            analysis_data,
+            Path(f"feature_job_setting_analysis/{payload.output_document_id}/data.json"),
         )
 
         logger.debug(
@@ -143,19 +145,18 @@ class FeatureJobSettingAnalysisBacktestTask(BaseTask):
         payload = cast(FeatureJobSettingAnalysisBackTestTaskPayload, self.payload)
 
         # retrieve analysis doc from persistent
+        document_id = payload.feature_job_setting_analysis_id
         feature_job_settings_analysis_service = (
             self.app_container.feature_job_setting_analysis_service
         )
         analysis_doc = await feature_job_settings_analysis_service.get_document(
-            document_id=payload.feature_job_setting_analysis_id
+            document_id=document_id
         )
         document = analysis_doc.dict(by_alias=True)
 
         # retrieve analysis data from storage
-        storage = self.get_storage()
-        analysis_data_raw = await storage.get_object(
-            f"feature_job_setting_analysis/{payload.feature_job_setting_analysis_id}/data.json",
-        )
+        remote_path = Path(f"feature_job_setting_analysis/{document_id}/data.json")
+        analysis_data_raw = await self.storage.get_object(remote_path=remote_path)
         analysis_data = FeatureJobSettingAnalysisData(**analysis_data_raw).dict()
 
         # reconstruct analysis object
@@ -177,10 +178,9 @@ class FeatureJobSettingAnalysisBacktestTask(BaseTask):
 
         # store results in temp storage
         await self.update_progress(percent=95, message="Saving Analysis")
-        temp_storage = self.get_temp_storage()
         prefix = f"feature_job_setting_analysis/backtest/{payload.output_document_id}"
-        await temp_storage.put_text(backtest_report, f"{prefix}.html")
-        await temp_storage.put_dataframe(backtest_result.results, f"{prefix}.parquet")
+        await self.temp_storage.put_text(backtest_report, Path(f"{prefix}.html"))
+        await self.temp_storage.put_dataframe(backtest_result.results, Path(f"{prefix}.parquet"))
 
         logger.debug(
             "Completed feature job setting analysis backtest",

@@ -32,7 +32,7 @@ class TileTask(BaseTask):
         # get feature store
         feature_store_service = FeatureStoreService(
             user=self.user,
-            persistent=self.get_persistent(),
+            persistent=self.persistent,
             catalog_id=payload.catalog_id,
         )
         feature_store = await feature_store_service.get_document(

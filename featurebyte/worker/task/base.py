@@ -10,10 +10,11 @@ from enum import Enum
 from uuid import UUID
 
 from featurebyte.models.task import Task
+from featurebyte.persistent import Persistent
 from featurebyte.routes.lazy_app_container import LazyAppContainer
-from featurebyte.routes.registry import app_container_config
 from featurebyte.schema.worker.progress import ProgressModel
 from featurebyte.schema.worker.task.base import BaseTaskPayload
+from featurebyte.storage import Storage
 
 TASK_MAP: Dict[Enum, type[BaseTask]] = {}
 
@@ -31,27 +32,17 @@ class BaseTask:  # pylint: disable=too-many-instance-attributes
         payload: dict[str, Any],
         progress: Any,
         user: Any,
-        get_persistent: Any,
-        get_storage: Any,
-        get_temp_storage: Any,
         get_credential: Any,
-        get_celery: Any,
-        get_redis: Any,
+        app_container: LazyAppContainer,
     ):
         if self.payload_class == BaseTaskPayload:
             raise NotImplementedError
         self.task_id = task_id
         self.payload = self.payload_class(**payload)
         self.user = user
-        self.get_persistent = get_persistent
-        self.get_storage = get_storage
-        self.get_temp_storage = get_temp_storage
         self.get_credential = get_credential
-        self.get_celery = get_celery
-        self.get_redis = get_redis
         self.progress = progress
-        self.persistent = get_persistent()
-        self._app_container: Optional[LazyAppContainer] = None
+        self.app_container = app_container
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
@@ -65,6 +56,39 @@ class BaseTask:  # pylint: disable=too-many-instance-attributes
         if command in TASK_MAP:
             raise ValueError(f'Command "{command}" has been implemented.')
         TASK_MAP[command] = cls
+
+    @property
+    def persistent(self) -> Persistent:
+        """
+        Get persistent instance
+
+        Returns
+        -------
+        Persistent
+        """
+        return self.app_container.persistent  # type: ignore
+
+    @property
+    def storage(self) -> Storage:
+        """
+        Get storage instance
+
+        Returns
+        -------
+        Storage
+        """
+        return self.app_container.storage  # type: ignore
+
+    @property
+    def temp_storage(self) -> Storage:
+        """
+        Get temp storage instance
+
+        Returns
+        -------
+        Storage
+        """
+        return self.app_container.temp_storage  # type: ignore
 
     async def update_progress(self, percent: int, message: str | None = None) -> None:
         """
@@ -92,28 +116,6 @@ class BaseTask:  # pylint: disable=too-many-instance-attributes
         if self.progress:
             # publish to redis
             self.progress.put(progress_dict)
-
-    @property
-    def app_container(self) -> LazyAppContainer:
-        """
-        Get an AppContainer instance
-
-        Returns
-        -------
-        LazyAppContainer
-        """
-        if self._app_container is None:
-            self._app_container = LazyAppContainer(
-                user=self.user,
-                persistent=self.get_persistent(),
-                temp_storage=self.get_temp_storage(),
-                celery=self.get_celery(),
-                redis=self.get_redis(),
-                storage=self.get_storage(),
-                catalog_id=self.payload.catalog_id,
-                app_container_config=app_container_config,
-            )
-        return self._app_container
 
     @abstractmethod
     async def execute(self) -> Any:
