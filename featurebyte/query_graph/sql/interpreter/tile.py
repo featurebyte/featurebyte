@@ -107,44 +107,42 @@ class TileSQLGenerator:
         for groupby_node in self.query_graph.iterate_nodes(starting_node, NodeType.GROUPBY):
             assert isinstance(groupby_node, GroupByNode)
 
-            pruned_graph, node_name_map, _ = prune_query_graph(
-                graph=self.query_graph, node=groupby_node
-            )
-
             if self.is_on_demand:
                 event_table_timestamp_filter = None
             else:
-                pruned_node = pruned_graph.get_node_by_name(node_name_map[groupby_node.name])
-                can_push_down_event_table_date_filter = True
-                for node in dfs_traversal(pruned_graph, pruned_node):
-                    if node.type == NodeType.LAG:
-                        can_push_down_event_table_date_filter = False
-                        break
-
-                event_table_timestamp_filter = None
-                if can_push_down_event_table_date_filter:
-                    groupby_input_node = pruned_graph.get_node_by_name(
-                        pruned_graph.get_input_node_names(pruned_node)[0]
-                    )
-                    op_struct_info = OperationStructureExtractor(graph=self.query_graph).extract(
-                        groupby_input_node
-                    )
-                    op_struct = op_struct_info.operation_structure_map[groupby_input_node.name]
-                    for column in op_struct.iterate_source_columns():
-                        if (
-                            column.name == groupby_node.parameters.timestamp
-                            and column.table_id is not None
-                        ):
-                            event_table_timestamp_filter = EventTableTimestampFilter(
-                                timestamp_column_name=column.name,
-                                event_table_id=column.table_id,
-                            )
-                            break
+                event_table_timestamp_filter = self._get_event_table_timestamp_filter(groupby_node)
 
             info = self.make_one_tile_sql(groupby_node, event_table_timestamp_filter)
             sqls.append(info)
 
         return sqls
+
+    def _get_event_table_timestamp_filter(
+        self, groupby_node: GroupByNode
+    ) -> Optional[EventTableTimestampFilter]:
+        pruned_graph, node_name_map, _ = prune_query_graph(
+            graph=self.query_graph, node=groupby_node
+        )
+        pruned_node = pruned_graph.get_node_by_name(node_name_map[groupby_node.name])
+        for node in dfs_traversal(pruned_graph, pruned_node):
+            if node.type == NodeType.LAG:
+                return None
+
+        groupby_input_node = pruned_graph.get_node_by_name(
+            pruned_graph.get_input_node_names(pruned_node)[0]
+        )
+        op_struct_info = OperationStructureExtractor(graph=self.query_graph).extract(
+            groupby_input_node
+        )
+        op_struct = op_struct_info.operation_structure_map[groupby_input_node.name]
+        for column in op_struct.iterate_source_columns():
+            if column.name == groupby_node.parameters.timestamp and column.table_id is not None:
+                return EventTableTimestampFilter(
+                    timestamp_column_name=column.name,
+                    event_table_id=column.table_id,
+                )
+
+        return None
 
     def make_one_tile_sql(
         self,
