@@ -3,19 +3,23 @@ This module contains the Query Graph Interpreter
 """
 from __future__ import annotations
 
-from typing import cast
+from typing import Optional, cast
 
 from dataclasses import dataclass
 
 from featurebyte.enum import SourceType
+from featurebyte.query_graph.algorithm import dfs_traversal
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupByNode
+from featurebyte.query_graph.sql.ast.base import EventTableTimestampFilter
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import SQLType
 from featurebyte.query_graph.sql.interpreter.base import BaseGraphInterpreter
 from featurebyte.query_graph.sql.template import SqlExpressionTemplate
+from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
+from featurebyte.query_graph.transform.pruning import prune_query_graph
 
 
 @dataclass
@@ -99,25 +103,62 @@ class TileSQLGenerator:
         list[TileGenSql]
         """
         # Groupby operations requires building tiles (assuming the aggregation type supports tiling)
-        tile_generating_nodes = {}
-        for node in self.query_graph.iterate_nodes(starting_node, NodeType.GROUPBY):
-            assert isinstance(node, GroupByNode)
-            tile_generating_nodes[node.name] = node
-
         sqls = []
-        for node in tile_generating_nodes.values():
-            info = self.make_one_tile_sql(node)
+        for groupby_node in self.query_graph.iterate_nodes(starting_node, NodeType.GROUPBY):
+            assert isinstance(groupby_node, GroupByNode)
+
+            pruned_graph, node_name_map, _ = prune_query_graph(
+                graph=self.query_graph, node=groupby_node
+            )
+
+            if self.is_on_demand:
+                event_table_timestamp_filter = None
+            else:
+                pruned_node = pruned_graph.get_node_by_name(node_name_map[groupby_node.name])
+                can_push_down_event_table_date_filter = True
+                for node in dfs_traversal(pruned_graph, pruned_node):
+                    if node.type == NodeType.LAG:
+                        can_push_down_event_table_date_filter = False
+                        break
+
+                event_table_timestamp_filter = None
+                if can_push_down_event_table_date_filter:
+                    groupby_input_node = pruned_graph.get_node_by_name(
+                        pruned_graph.get_input_node_names(pruned_node)[0]
+                    )
+                    op_struct_info = OperationStructureExtractor(graph=self.query_graph).extract(
+                        groupby_input_node
+                    )
+                    op_struct = op_struct_info.operation_structure_map[groupby_input_node.name]
+                    for column in op_struct.iterate_source_columns():
+                        if (
+                            column.name == groupby_node.parameters.timestamp
+                            and column.table_id is not None
+                        ):
+                            event_table_timestamp_filter = EventTableTimestampFilter(
+                                timestamp_column_name=column.name,
+                                event_table_id=column.table_id,
+                            )
+                            break
+
+            info = self.make_one_tile_sql(groupby_node, event_table_timestamp_filter)
             sqls.append(info)
 
         return sqls
 
-    def make_one_tile_sql(self, groupby_node: GroupByNode) -> TileGenSql:
+    def make_one_tile_sql(
+        self,
+        groupby_node: GroupByNode,
+        event_table_timestamp_filter: Optional[EventTableTimestampFilter],
+    ) -> TileGenSql:
         """Construct tile building SQL for a specific groupby query graph node
 
         Parameters
         ----------
         groupby_node: GroupByNode
             Groupby query graph node
+        event_table_timestamp_filter: Optional[EventTableTimestampFilter]
+            Event table timestamp filter to apply if applicable
 
         Returns
         -------
@@ -128,7 +169,10 @@ class TileSQLGenerator:
         else:
             sql_type = SQLType.BUILD_TILE
         groupby_sql_node = SQLOperationGraph(
-            query_graph=self.query_graph, sql_type=sql_type, source_type=self.source_type
+            query_graph=self.query_graph,
+            sql_type=sql_type,
+            source_type=self.source_type,
+            event_table_timestamp_filter=event_table_timestamp_filter,
         ).build(groupby_node)
         sql = groupby_sql_node.sql
         tile_table_id = groupby_node.parameters.tile_id

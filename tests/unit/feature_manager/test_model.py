@@ -36,6 +36,9 @@ def test_extended_feature_model__float_feature(float_feature, snowflake_feature_
                 "event_timestamp" AS "event_timestamp",
                 "cust_id" AS "cust_id"
               FROM "sf_database"."sf_schema"."sf_table"
+              WHERE
+                "event_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMPNTZ)
+                AND "event_timestamp" < CAST(__FB_END_DATE AS TIMESTAMPNTZ)
             )
             WHERE
               "event_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMPNTZ)
@@ -98,6 +101,9 @@ def test_extended_feature_model__agg_per_category_feature(
                 "event_timestamp" AS "event_timestamp",
                 "cust_id" AS "cust_id"
               FROM "sf_database"."sf_schema"."sf_table"
+              WHERE
+                "event_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMPNTZ)
+                AND "event_timestamp" < CAST(__FB_END_DATE AS TIMESTAMPNTZ)
             )
             WHERE
               "event_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMPNTZ)

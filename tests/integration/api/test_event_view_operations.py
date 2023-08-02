@@ -1110,6 +1110,16 @@ def test_add_feature(event_view, non_time_based_feature, scd_table, source_type)
         "transaction_count_sum_24h": 56,
     }
 
+    feature_list = FeatureList([transaction_counts], name="temp_list")
+    df_historical = feature_list.compute_historical_features(
+        pd.DataFrame([{"POINT_IN_TIME": timestamp_str, "PRODUCT_ACTION": "purchase"}]),
+    )
+    assert df_historical.iloc[0].to_dict() == {
+        "POINT_IN_TIME": pd.Timestamp(timestamp_str),
+        "PRODUCT_ACTION": "purchase",
+        "transaction_count_sum_24h": 56,
+    }
+
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 def test_add_feature_on_view_with_join(event_view, scd_table, non_time_based_feature):

@@ -10,10 +10,10 @@ from dataclasses import dataclass
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select
 
-from featurebyte.enum import TableDataType
+from featurebyte.enum import InternalName, TableDataType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
-from featurebyte.query_graph.sql.common import get_fully_qualified_table_name
+from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, quoted_identifier
 
 
 @dataclass
@@ -42,6 +42,36 @@ class InputNode(TableNode):
                         expression=expressions.true(),
                     )
                 )
+
+        # When possible, push down timestamp filter to the input table. This is done only for event
+        # table in scheduled tile tasks.
+        push_down_filter = self.context.event_table_timestamp_filter
+        if (
+            push_down_filter is not None
+            and self.context.parameters["id"] == push_down_filter.event_table_id
+        ):
+            select_expr = select_expr.where(
+                expressions.and_(
+                    expressions.GTE(
+                        this=quoted_identifier(push_down_filter.timestamp_column_name),
+                        expression=expressions.Cast(
+                            this=expressions.Identifier(
+                                this=InternalName.TILE_START_DATE_SQL_PLACEHOLDER
+                            ),
+                            to=expressions.DataType.build("TIMESTAMP"),
+                        ),
+                    ),
+                    expressions.LT(
+                        this=quoted_identifier(push_down_filter.timestamp_column_name),
+                        expression=expressions.Cast(
+                            this=expressions.Identifier(
+                                this=InternalName.TILE_END_DATE_SQL_PLACEHOLDER
+                            ),
+                            to=expressions.DataType.build("TIMESTAMP"),
+                        ),
+                    ),
+                )
+            )
 
         return select_expr
 

@@ -843,6 +843,14 @@ def snowflake_event_view_entity_feature_job_fixture(
     yield event_view
 
 
+@pytest.fixture(name="snowflake_scd_view_with_entity")
+def snowflake_scd_view_with_entity_fixture(snowflake_scd_table_with_entity):
+    """
+    Fixture for an SCD view with entity
+    """
+    return snowflake_scd_table_with_entity.get_view()
+
+
 @pytest.fixture(name="patched_observation_table_service")
 def patched_observation_table_service_fixture():
     """
