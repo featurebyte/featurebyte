@@ -1694,17 +1694,6 @@ def create_quick_start_model_training_catalog():
     target_list = fb.FeatureList([customer_sales_14d], name="TargetFeature")
     target_list.save(conflict_resolution="retrieve")
 
-    # create a target that is the total sales for each customer over the next 2 weeks
-    customer_sales_next_14d = grocery_customer_view.groupby(
-        "GroceryCustomerGuid"
-    ).forward_aggregate(
-        value_column="Amount",
-        method=fb.AggFunc.SUM,
-        target_name="customer_sales_next_14d",
-        window="14d",
-    )
-    customer_sales_next_14d.save(conflict_resolution="retrieve")
-
     # save the feature list to the catalog
     feature_list.save(conflict_resolution="retrieve")
 
