@@ -7,6 +7,7 @@ from typing import List, Optional, Type
 
 from abc import ABC, abstractmethod
 
+from featurebyte import Target
 from featurebyte.api.feature import Feature
 from featurebyte.api.view import View
 from featurebyte.common.typing import OptionalScalar, get_or_default
@@ -195,3 +196,42 @@ class BaseAggregator(ABC):
             feature.name = feature_name
 
         return feature
+
+    def _fill_target(
+        self,
+        target: Target,
+        method: str,
+        fill_value: OptionalScalar,
+    ) -> Target:
+        """
+        Fill target values as needed.
+
+        Parameters
+        ----------
+        target: Target
+            target
+        method: str
+            aggregation method
+        fill_value: OptionalScalar
+            value to fill
+
+        Returns
+        -------
+        Target
+
+        Raises
+        ------
+        ValueError
+            If both fill_value and category parameters are specified
+        """
+        if fill_value is not None and self.category is not None:
+            raise ValueError("fill_value is not supported for aggregation per category")
+
+        if method in {AggFunc.COUNT, AggFunc.NA_COUNT} and self.category is None:
+            # Count features should be 0 instead of NaN when there are no records
+            value_to_fill = get_or_default(fill_value, 0)
+            target.fillna(value_to_fill)
+        elif fill_value is not None:
+            target.fillna(fill_value)
+
+        return target

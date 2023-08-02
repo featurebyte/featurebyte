@@ -27,6 +27,29 @@ def forward_aggregator_fixture(snowflake_event_view):
     )
 
 
+def test_forward_aggregate_fill_na(forward_aggregator):
+    """
+    Test forward_aggregate.
+    """
+    fill_value = 1
+    with pytest.raises(ValueError) as exc_info:
+        forward_aggregator.forward_aggregate(
+            "col_float", AggFunc.SUM, "7d", "target", fill_value, True
+        )
+    assert "Specifying both fill_value and skip_fill_na is not allowed" in str(exc_info.value)
+
+    # Verify that the fill value node is there
+    target = forward_aggregator.forward_aggregate(
+        "col_float", AggFunc.SUM, "7d", "target", fill_value
+    )
+    target_node = target.node
+    assert target_node.type == NodeType.CONDITIONAL
+    assert target_node.output_type == NodeOutputType.SERIES
+    assert target_node.parameters.dict() == {
+        "value": fill_value,
+    }
+
+
 def test_forward_aggregate(forward_aggregator):
     """
     Test forward_aggregate.

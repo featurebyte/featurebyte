@@ -10,6 +10,7 @@ from featurebyte.api.aggregator.base_aggregator import BaseAggregator
 from featurebyte.api.target import Target
 from featurebyte.api.view import View
 from featurebyte.common.model_util import parse_duration_string
+from featurebyte.common.typing import OptionalScalar
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.agg_func import construct_agg_func
 
@@ -33,6 +34,8 @@ class ForwardAggregator(BaseAggregator):
         method: str,
         window: Optional[str] = None,
         target_name: Optional[str] = None,
+        fill_value: OptionalScalar = None,
+        skip_fill_na: bool = False,
     ) -> Target:
         """
         Aggregate given value_column for each group specified in keys over a time window.
@@ -47,6 +50,10 @@ class ForwardAggregator(BaseAggregator):
             Window of the aggregation
         target_name: str
             Name of the target column
+        fill_value: OptionalScalar
+            Value to fill if the value in the column is empty
+        skip_fill_na: bool
+            Whether to skip filling NaN values
 
         Returns
         -------
@@ -59,6 +66,7 @@ class ForwardAggregator(BaseAggregator):
             window=window,
             target_name=target_name,
         )
+        self._validate_fill_value_and_skip_fill_na(fill_value=fill_value, skip_fill_na=skip_fill_na)
         # Create new node parameters
         assert value_column is not None
         node_params = self._prepare_node_parameters(
@@ -85,7 +93,7 @@ class ForwardAggregator(BaseAggregator):
         # Build and return Target
         agg_method = construct_agg_func(agg_func=cast(AggFunc, method))
         output_var_type = self.get_output_var_type(agg_method, method, value_column)
-        return Target(
+        target = Target(
             name=target_name,
             entity_ids=self.entity_ids,
             graph=self.view.graph,
@@ -94,6 +102,9 @@ class ForwardAggregator(BaseAggregator):
             feature_store=self.view.feature_store,
             dtype=output_var_type,
         )
+        if not skip_fill_na:
+            return self._fill_target(target, method, fill_value)
+        return target
 
     def _prepare_node_parameters(
         self,
