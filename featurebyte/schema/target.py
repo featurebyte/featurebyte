@@ -22,7 +22,7 @@ from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node import Node
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 from featurebyte.schema.common.feature_or_target import ComputeRequest
-from featurebyte.schema.info import EntityBriefInfoList
+from featurebyte.schema.info import EntityBriefInfoList, TableBriefInfoList
 
 
 class TargetCreate(FeatureByteBaseModel):
@@ -53,24 +53,6 @@ class TargetUpdate(FeatureByteBaseModel):
     name: StrictStr
 
 
-class TableMetadata(FeatureByteBaseModel):
-    """
-    Table metadata
-    """
-
-    name: StrictStr
-    data_type: StrictStr
-
-
-class InputData(FeatureByteBaseModel):
-    """
-    Input data
-    """
-
-    main_data: TableMetadata
-    other_data: Optional[List[TableMetadata]] = None
-
-
 class TargetInfo(FeatureByteBaseModel):
     """
     Target info
@@ -83,7 +65,7 @@ class TargetInfo(FeatureByteBaseModel):
     has_recipe: bool
     created_at: datetime
     updated_at: Optional[datetime]
-    input_data: InputData
+    primary_table: TableBriefInfoList
     metadata: Any
     namespace_description: Optional[str]
     description: Optional[str]

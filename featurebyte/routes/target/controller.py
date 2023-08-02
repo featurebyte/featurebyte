@@ -12,10 +12,11 @@ from fastapi import HTTPException
 
 from featurebyte.exception import MissingPointInTimeColumnError, RequiredEntityNotProvidedError
 from featurebyte.models.target import TargetModel
+from featurebyte.routes.catalog.catalog_name_injector import CatalogNameInjector
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.routes.common.feature_metadata_extractor import FeatureOrTargetMetadataExtractor
 from featurebyte.schema.preview import FeatureOrTargetPreview
-from featurebyte.schema.target import InputData, TableMetadata, TargetCreate, TargetInfo, TargetList
+from featurebyte.schema.target import TargetCreate, TargetInfo, TargetList
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature_preview import FeaturePreviewService
 from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
@@ -39,6 +40,7 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
         feature_preview_service: FeaturePreviewService,
         table_service: TableService,
         feature_or_target_metadata_extractor: FeatureOrTargetMetadataExtractor,
+        catalog_name_injector: CatalogNameInjector,
     ):
         super().__init__(target_service)
         self.target_namespace_service = target_namespace_service
@@ -46,6 +48,7 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
         self.feature_preview_service = feature_preview_service
         self.table_service = table_service
         self.feature_or_target_metadata_extractor = feature_or_target_metadata_extractor
+        self.catalog_name_injector = catalog_name_injector
 
     async def create_target(
         self,
@@ -128,21 +131,29 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
             document_id=target_doc.target_namespace_id
         )
         entity_ids = target_doc.entity_ids or []
+        entities = await self.entity_service.list_documents_as_dict(
+            page=1, page_size=0, query_filter={"_id": {"$in": namespace.entity_ids}}
+        )
         entity_brief_info_list = await self.entity_service.get_entity_brief_info_list(
             set(entity_ids)
         )
 
         # Get input table metadata
-        assert (
-            len(target_doc.table_ids) == 1
-        ), "Target should have only one table for now, until forward joins are supported."
-        table_doc = await self.table_service.get_document(document_id=target_doc.table_ids[0])
-        input_data = InputData(
-            main_data=TableMetadata(
-                name=table_doc.name,
-                data_type=str(table_doc.type),
-            ),
+        tables = await self.table_service.list_documents_as_dict(
+            page=1, page_size=0, query_filter={"_id": {"$in": target_doc.table_ids}}
         )
+        # Add catalog name to entities and tables
+        catalog_name, updated_docs = await self.catalog_name_injector.add_name(
+            namespace.catalog_id, [entities, tables]
+        )
+        entities, tables = updated_docs
+
+        # derive primary tables
+        table_id_to_doc = {table["_id"]: table for table in tables["data"]}
+        primary_input_nodes = target_doc.graph.get_primary_input_nodes(
+            node_name=target_doc.node_name
+        )
+        primary_tables = [table_id_to_doc[node.parameters.id] for node in primary_input_nodes]
 
         # Get metadata
         group_op_structure = target_doc.extract_operation_structure()
@@ -158,7 +169,7 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
             has_recipe=bool(target_doc.graph),
             created_at=target_doc.created_at,
             updated_at=target_doc.updated_at,
-            input_data=input_data,
+            primary_table=primary_tables,
             metadata=target_metadata,
             namespace_description=namespace.description,
             description=target_doc.description,
