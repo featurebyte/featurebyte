@@ -21,6 +21,7 @@ from featurebyte.routes.catalog.catalog_name_injector import CatalogNameInjector
 from featurebyte.routes.catalog.controller import CatalogController
 from featurebyte.routes.common.base import DerivePrimaryEntityHelper
 from featurebyte.routes.common.feature_metadata_extractor import FeatureOrTargetMetadataExtractor
+from featurebyte.routes.common.feature_or_target_helper import FeatureOrTargetHelper
 from featurebyte.routes.context.controller import ContextController
 from featurebyte.routes.credential.controller import CredentialController
 from featurebyte.routes.deployment.controller import AllDeploymentController, DeploymentController
@@ -169,6 +170,7 @@ app_container_config.register_class(FeatureListNamespaceController)
 app_container_config.register_class(FeatureListNamespaceService)
 app_container_config.register_class(FeatureListStatusService)
 app_container_config.register_class(FeatureManagerService)
+app_container_config.register_class(FeatureOrTargetHelper)
 app_container_config.register_class(FeatureOrTargetMetadataExtractor)
 app_container_config.register_class(FeatureNamespaceController)
 app_container_config.register_class(FeatureNamespaceService)

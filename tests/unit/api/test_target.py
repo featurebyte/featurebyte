@@ -31,6 +31,7 @@ class TestTargetTestSuite(FeatureOrTargetBaseTestSuite):
         method="sum",
         window="1d",
         target_name="float_target",
+        skip_fill_na=True,
     )
     feat = target["float_target"]
     output = feat
@@ -58,6 +59,7 @@ class TestTargetTestSuite(FeatureOrTargetBaseTestSuite):
         method="sum",
         window="1d",
         target_name="float_target",
+        skip_fill_na=True,
     )
     feat = target["float_target"]
     output = feat

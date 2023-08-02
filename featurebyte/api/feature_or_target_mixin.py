@@ -1,7 +1,7 @@
 """
 Mixin class containing common methods for feature or target classes
 """
-from typing import List, Sequence, cast
+from typing import Any, List, Sequence, cast
 
 import time
 from http import HTTPStatus
@@ -9,6 +9,7 @@ from http import HTTPStatus
 import pandas as pd
 from bson import ObjectId
 from pydantic import Field
+from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.entity import Entity
@@ -21,6 +22,8 @@ from featurebyte.logging import get_logger
 from featurebyte.models.base import PydanticObjectId, get_active_catalog_id
 from featurebyte.models.feature import BaseFeatureModel
 from featurebyte.models.relationship_analysis import derive_primary_entity
+from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.node.generic import AliasNode, ProjectNode
 from featurebyte.schema.preview import FeatureOrTargetPreview
 
 logger = get_logger(__name__)
@@ -109,3 +112,56 @@ class FeatureOrTargetMixin(QueryObject, ApiObject):
             entities.append(Entity.get_by_id(entity_id))
         primary_entity = derive_primary_entity(entities)  # type: ignore
         return primary_entity
+
+    @typechecked
+    def __setattr__(self, key: str, value: Any) -> Any:
+        """
+        Custom __setattr__ to handle setting of special attributes such as name
+
+        Parameters
+        ----------
+        key : str
+            Key
+        value : Any
+            Value
+
+        Raises
+        ------
+        ValueError
+            if the name parameter is invalid
+
+        Returns
+        -------
+        Any
+        """
+        if key != "name":
+            return super().__setattr__(key, value)
+
+        if value is None:
+            raise ValueError("None is not a valid feature name")
+
+        # For now, only allow updating name if the feature is unnamed (i.e. created on-the-fly by
+        # combining different features)
+        name = value
+        node = self.node
+        if node.type in {NodeType.PROJECT, NodeType.ALIAS}:
+            if isinstance(node, ProjectNode):
+                existing_name = node.parameters.columns[0]
+            else:
+                assert isinstance(node, AliasNode)
+                existing_name = node.parameters.name  # type: ignore
+            if name != existing_name:
+                raise ValueError(f'Feature "{existing_name}" cannot be renamed to "{name}"')
+            # FeatureGroup sets name unconditionally, so we allow this here
+            return super().__setattr__(key, value)
+
+        # Here, node could be any node resulting from series operations, e.g. DIV. This
+        # validation was triggered by setting the name attribute of a Feature object
+        new_node = self.graph.add_operation(
+            node_type=NodeType.ALIAS,
+            node_params={"name": name},
+            node_output_type=NodeOutputType.SERIES,
+            input_nodes=[node],
+        )
+        self.node_name = new_node.name
+        return super().__setattr__(key, value)
