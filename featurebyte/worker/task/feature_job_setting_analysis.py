@@ -24,7 +24,6 @@ from featurebyte.schema.worker.task.feature_job_setting_analysis import (
     FeatureJobSettingAnalysisBackTestTaskPayload,
     FeatureJobSettingAnalysisTaskPayload,
 )
-from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.session.manager import SessionManager
 from featurebyte.worker.task.base import BaseTask
 
@@ -63,10 +62,7 @@ class FeatureJobSettingAnalysisTask(BaseTask):
             event_table = payload.event_table_candidate
 
         # retrieve feature store
-        feature_store_service = FeatureStoreService(
-            user=self.user, persistent=self.persistent, catalog_id=self.payload.catalog_id
-        )
-        feature_store = await feature_store_service.get_document(
+        feature_store = await self.app_container.feature_store_service.get_document(
             document_id=event_table.tabular_source.feature_store_id
         )
 

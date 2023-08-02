@@ -7,7 +7,6 @@ from typing import Any, cast
 
 from featurebyte.logging import get_logger
 from featurebyte.schema.worker.task.tile import TileTaskPayload
-from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.session.manager import SessionManager
 from featurebyte.worker.task.base import BaseTask
 
@@ -30,12 +29,7 @@ class TileTask(BaseTask):
         payload = cast(TileTaskPayload, self.payload)
 
         # get feature store
-        feature_store_service = FeatureStoreService(
-            user=self.user,
-            persistent=self.persistent,
-            catalog_id=payload.catalog_id,
-        )
-        feature_store = await feature_store_service.get_document(
+        feature_store = await self.app_container.feature_store_service.get_document(
             document_id=payload.feature_store_id
         )
 
