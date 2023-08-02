@@ -102,8 +102,9 @@ class ForwardAggregator(BaseAggregator):
             feature_store=self.view.feature_store,
             dtype=output_var_type,
         )
+        assert target_name is not None
         if not skip_fill_na:
-            return self._fill_target(target, method, fill_value)
+            return self._fill_feature_or_target(target, method, target_name, fill_value)  # type: ignore[return-value]
         return target
 
     def _prepare_node_parameters(
