@@ -40,7 +40,7 @@ from featurebyte.schema.info import (
     TableColumnInfo,
 )
 from featurebyte.schema.relationship_info import RelationshipInfoCreate
-from featurebyte.schema.target import InputData, TableMetadata, TargetInfo
+from featurebyte.schema.target import TargetInfo
 
 
 @pytest.mark.asyncio
@@ -707,12 +707,9 @@ async def test_get_target_info(app_container, entity, target):
         has_recipe=bool(target.graph),
         created_at=target.created_at,
         updated_at=target.updated_at,
-        input_data=InputData(
-            main_data=TableMetadata(
-                name="sf_event_table",
-                data_type="event_table",
-            )
-        ),
+        primary_table=[
+            TableBriefInfo(name="sf_event_table", status="PUBLIC_DRAFT", catalog_name="grocery")
+        ],
         metadata=expected_metadata,
     )
     assert target_info == expected_info

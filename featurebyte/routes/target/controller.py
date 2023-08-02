@@ -14,12 +14,12 @@ from featurebyte.exception import MissingPointInTimeColumnError, RequiredEntityN
 from featurebyte.models.target import TargetModel
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.routes.common.feature_metadata_extractor import FeatureOrTargetMetadataExtractor
+from featurebyte.routes.common.feature_or_target_helper import FeatureOrTargetHelper
 from featurebyte.schema.preview import FeatureOrTargetPreview
-from featurebyte.schema.target import InputData, TableMetadata, TargetCreate, TargetInfo, TargetList
+from featurebyte.schema.target import TargetCreate, TargetInfo, TargetList
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature_preview import FeaturePreviewService
 from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
-from featurebyte.service.table import TableService
 from featurebyte.service.target import TargetService
 from featurebyte.service.target_namespace import TargetNamespaceService
 
@@ -37,15 +37,15 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
         target_namespace_service: TargetNamespaceService,
         entity_service: EntityService,
         feature_preview_service: FeaturePreviewService,
-        table_service: TableService,
         feature_or_target_metadata_extractor: FeatureOrTargetMetadataExtractor,
+        feature_or_target_helper: FeatureOrTargetHelper,
     ):
         super().__init__(target_service)
         self.target_namespace_service = target_namespace_service
         self.entity_service = entity_service
         self.feature_preview_service = feature_preview_service
-        self.table_service = table_service
         self.feature_or_target_metadata_extractor = feature_or_target_metadata_extractor
+        self.feature_or_target_helper = feature_or_target_helper
 
     async def create_target(
         self,
@@ -132,16 +132,11 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
             set(entity_ids)
         )
 
-        # Get input table metadata
-        assert (
-            len(target_doc.table_ids) == 1
-        ), "Target should have only one table for now, until forward joins are supported."
-        table_doc = await self.table_service.get_document(document_id=target_doc.table_ids[0])
-        input_data = InputData(
-            main_data=TableMetadata(
-                name=table_doc.name,
-                data_type=str(table_doc.type),
-            ),
+        primary_tables = await self.feature_or_target_helper.get_primary_tables(
+            target_doc.table_ids,
+            namespace.catalog_id,
+            target_doc.graph,
+            target_doc.node_name,
         )
 
         # Get metadata
@@ -158,7 +153,7 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
             has_recipe=bool(target_doc.graph),
             created_at=target_doc.created_at,
             updated_at=target_doc.updated_at,
-            input_data=input_data,
+            primary_table=primary_tables,
             metadata=target_metadata,
             namespace_description=namespace.description,
             description=target_doc.description,
