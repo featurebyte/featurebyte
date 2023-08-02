@@ -43,10 +43,24 @@ def test_forward_aggregate_fill_na(forward_aggregator):
         "col_float", AggFunc.SUM, "7d", "target", fill_value
     )
     target_node = target.node
-    assert target_node.type == NodeType.CONDITIONAL
+
+    # Check that we have the fill value
+    conditional_nodes = [
+        node
+        for node in forward_aggregator.view.graph.iterate_nodes(target_node, NodeType.CONDITIONAL)
+    ]
+    assert len(conditional_nodes) == 1
+    conditional_node = conditional_nodes[0]
+    assert conditional_node.type == NodeType.CONDITIONAL
+    assert conditional_node.parameters.dict() == {
+        "value": 1,
+    }
+
+    # Check that the final node is the alias node, and that it has the target name
+    assert target_node.type == NodeType.ALIAS
     assert target_node.output_type == NodeOutputType.SERIES
     assert target_node.parameters.dict() == {
-        "value": fill_value,
+        "name": "target",
     }
 
 

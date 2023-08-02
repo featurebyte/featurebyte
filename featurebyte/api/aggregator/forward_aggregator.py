@@ -103,7 +103,7 @@ class ForwardAggregator(BaseAggregator):
             dtype=output_var_type,
         )
         if not skip_fill_na:
-            return self._fill_target(target, method, fill_value)
+            return self._fill_feature_or_target(target, method, target_name, fill_value)
         return target
 
     def _prepare_node_parameters(
