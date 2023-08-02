@@ -16,7 +16,7 @@ component: target
 issues: []
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Add fill_value and skip_fill_na to forward_aggregate"
+note: "Add fill_value and skip_fill_na to forward_aggregate, and update name"
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
