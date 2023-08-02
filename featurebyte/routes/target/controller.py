@@ -11,6 +11,7 @@ from bson import ObjectId
 from fastapi import HTTPException
 
 from featurebyte.exception import MissingPointInTimeColumnError, RequiredEntityNotProvidedError
+from featurebyte.logging import get_logger
 from featurebyte.models.target import TargetModel
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.routes.common.feature_metadata_extractor import FeatureOrTargetMetadataExtractor
@@ -22,6 +23,8 @@ from featurebyte.service.feature_preview import FeaturePreviewService
 from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
 from featurebyte.service.target import TargetService
 from featurebyte.service.target_namespace import TargetNamespaceService
+
+logger = get_logger(__name__)
 
 
 class TargetController(BaseDocumentController[TargetModel, TargetService, TargetList]):
