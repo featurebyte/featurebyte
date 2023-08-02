@@ -66,7 +66,7 @@ def test_scheduled_tile_sql__can_push_down_date_filter(float_feature, update_fix
     """
     tile_sql = get_tile_sql_used_in_scheduled_tasks(float_feature)
     assert_equal_with_expected_fixture(
-        tile_sql, "fixtures/expected_tile_sql_feature_without_lag.sql", update_fixtures
+        tile_sql, "tests/fixtures/expected_tile_sql_feature_without_lag.sql", update_fixtures
     )
 
 
@@ -76,7 +76,7 @@ def test_scheduled_tile_sql__cannot_push_down_date_filter(feature_with_lag, upda
     """
     tile_sql = get_tile_sql_used_in_scheduled_tasks(feature_with_lag)
     assert_equal_with_expected_fixture(
-        tile_sql, "fixtures/expected_tile_sql_feature_with_lag.sql", update_fixtures
+        tile_sql, "tests/fixtures/expected_tile_sql_feature_with_lag.sql", update_fixtures
     )
 
 
@@ -88,6 +88,6 @@ def test_scheduled_tile_sql__complex(complex_feature_but_push_down_eligible, upd
     tile_sql = get_tile_sql_used_in_scheduled_tasks(complex_feature_but_push_down_eligible)
     assert_equal_with_expected_fixture(
         tile_sql,
-        "fixtures/expected_tile_sql_complex_feature_push_down_eligible.sql",
+        "tests/fixtures/expected_tile_sql_complex_feature_push_down_eligible.sql",
         update_fixtures,
     )
