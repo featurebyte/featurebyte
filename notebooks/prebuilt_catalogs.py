@@ -974,35 +974,17 @@ def create_deep_dive_materializing_features_catalog():
         [customer_inventory_entropy_4w, customer_inventory_most_frequent_4w, state_centroids],
         name="CustomerFeatures",
     )
-
-    # create a feature that is the total sales for each customer over the past 2 weeks
-    customer_sales_14d = grocery_invoice_view.groupby("GroceryCustomerGuid").aggregate_over(
-        value_column="Amount",
-        method=fb.AggFunc.SUM,
-        feature_names=["Target"],
-        windows=["14d"],
-        fill_value=0,
-    )
-
-    # create a target that is the total sales for each customer over the next 2 weeks
-    customer_sales_next_14d = grocery_customer_view.groupby(
-        "GroceryCustomerGuid"
-    ).forward_aggregate(
-        value_column="Amount",
-        method=fb.AggFunc.SUM,
-        target_name="customer_sales_next_14d",
-        window="14d",
-    )
-    customer_sales_next_14d.save(conflict_resolution="retrieve")
-
-    # create a feature list for the target
-    target_list = fb.FeatureList([customer_sales_14d], name="TargetFeature")
-
     # save the feature list to the catalog
     feature_list.save(conflict_resolution="retrieve")
 
-    # save the target list to the catalog
-    target_list.save(conflict_resolution="retrieve")
+    # create a target that is the total sales for each customer over the next 2 weeks
+    next_customer_sales_14d = grocery_invoice_view.groupby("GroceryCustomerGuid").forward_aggregate(
+        value_column="Amount",
+        method=fb.AggFunc.SUM,
+        target_name="next_customer_sales_14d",
+        window="14d",
+    )
+    next_customer_sales_14d.save(conflict_resolution="retrieve")
 
     print("Catalog created and pre-populated with data and features")
 
@@ -1678,17 +1660,6 @@ def create_quick_start_model_training_catalog():
         ],
         name="Features",
     )
-
-    # create a feature that is the total sales for each customer over the past 2 weeks
-    customer_sales_14d = grocery_invoice_view.groupby("GroceryCustomerGuid").aggregate_over(
-        value_column="Amount",
-        method=fb.AggFunc.SUM,
-        feature_names=["Target"],
-        windows=["14d"],
-        fill_value=0,
-    )
-    customer_sales_14d.save()
-    customer_sales_14d["Target"].update_readiness("PRODUCTION_READY")
 
     # save the feature list to the catalog
     feature_list.save(conflict_resolution="retrieve")
