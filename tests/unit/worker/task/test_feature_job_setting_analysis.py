@@ -60,17 +60,9 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         _ = mock_event_dataset
         yield
 
-    @pytest.mark.asyncio
-    async def test_execute_success(  # pylint: disable=too-many-locals
-        self, task_completed, mongo_persistent, progress, update_fixtures, storage
+    async def _check_execution_result(
+        self, payload, output_document_id, persistent, storage, progress, update_fixtures
     ):
-        """
-        Test successful task execution
-        """
-        _ = task_completed
-        persistent, _ = mongo_persistent
-        output_document_id = self.payload["output_document_id"]
-
         # check that analysis result is stored in persistent
         document = await persistent.find_one(
             collection_name=FeatureJobSettingAnalysisModel.collection_name(),
@@ -93,11 +85,16 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
 
         payload = FeatureJobSettingAnalysisTask.payload_class(**self.payload)
         assert result.user_id == payload.user_id
-        assert result.event_table_id == expected.event_table_id
         assert result.analysis_options == expected.analysis_options
         assert result.analysis_parameters == expected.analysis_parameters
         assert result.analysis_result == expected.analysis_result
         assert result.analysis_report == expected.analysis_report
+        if result.event_table_id:
+            assert result.event_table_id == expected.event_table_id
+            assert result.event_table_candidate is None
+        else:
+            assert result.event_table_id is None
+            assert result.event_table_candidate == payload.event_table_candidate
 
         # check storage of large objects
         analysis_data = await storage.get_object(
@@ -116,6 +113,25 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
             call({"percent": 95, "message": "Saving Analysis"}),
             call({"percent": 100, "message": "Analysis Completed"}),
         ]
+
+    @pytest.mark.asyncio
+    async def test_execute_success(  # pylint: disable=too-many-locals
+        self, task_completed, mongo_persistent, progress, update_fixtures, storage
+    ):
+        """
+        Test successful task execution
+        """
+        _ = task_completed
+        persistent, _ = mongo_persistent
+        output_document_id = self.payload["output_document_id"]
+        await self._check_execution_result(
+            payload=self.payload,
+            output_document_id=output_document_id,
+            persistent=persistent,
+            storage=storage,
+            progress=progress,
+            update_fixtures=update_fixtures,
+        )
 
     @pytest.mark.asyncio
     async def test_execute_fail(
@@ -149,3 +165,52 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         assert progress.put.call_args_list == [
             call({"percent": 0, "message": "Preparing data"}),
         ]
+
+    @pytest.mark.asyncio
+    async def test_execute_without_event_table_success(  # pylint: disable=too-many-locals
+        self,
+        catalog,
+        mongo_persistent,
+        progress,
+        update_fixtures,
+        storage,
+        temp_storage,
+        get_credential,
+    ):
+        """
+        Test successful task execution without using existing event table
+        """
+        persistent, _ = mongo_persistent
+        event_table_payload = self.load_payload("tests/fixtures/request_payloads/event_table.json")
+
+        # execute task
+        payload = copy.deepcopy(self.payload)
+        payload.pop("event_table_id", None)
+        payload["catalog_id"] = catalog.id
+        payload["event_table_candidate"] = {
+            "name": event_table_payload["name"],
+            "tabular_source": event_table_payload["tabular_source"],
+            "event_timestamp_column": event_table_payload["event_timestamp_column"],
+            "record_creation_timestamp_column": event_table_payload[
+                "record_creation_timestamp_column"
+            ],
+        }
+        await self.execute_task(
+            task_class=self.task_class,
+            payload=payload,
+            persistent=persistent,
+            progress=progress,
+            storage=storage,
+            temp_storage=temp_storage,
+            get_credential=get_credential,
+        )
+
+        output_document_id = payload["output_document_id"]
+        await self._check_execution_result(
+            payload=payload,
+            output_document_id=output_document_id,
+            persistent=persistent,
+            storage=storage,
+            progress=progress,
+            update_fixtures=update_fixtures,
+        )
