@@ -53,7 +53,7 @@ class FeatureOrTargetHelper:
             page=1, page_size=0, query_filter={"_id": {"$in": table_ids}}
         )
         # Add catalog name to entities and tables
-        catalog_name, updated_docs = await self.catalog_name_injector.add_name(catalog_id, [tables])
+        _, updated_docs = await self.catalog_name_injector.add_name(catalog_id, [tables])
         tables = updated_docs[0]
 
         # derive primary tables
