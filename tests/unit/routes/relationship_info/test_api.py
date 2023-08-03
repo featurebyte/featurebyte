@@ -12,7 +12,7 @@ from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
 from featurebyte.schema.relationship_info import RelationshipInfoCreate, RelationshipInfoUpdate
 from featurebyte.storage import LocalTempStorage
-from featurebyte.worker import get_celery
+from featurebyte.worker import get_celery, get_redis
 from tests.unit.routes.base import BaseCatalogApiTestSuite
 
 
@@ -76,6 +76,7 @@ class TestRelationshipInfoApi(BaseCatalogApiTestSuite):
             persistent=persistent,
             temp_storage=LocalTempStorage(),
             celery=get_celery(),
+            redis=get_redis(),
             storage=LocalTempStorage(),
             catalog_id=catalog_id,
             app_container_config=app_container_config,

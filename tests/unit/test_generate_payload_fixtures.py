@@ -8,7 +8,7 @@ import json
 import pytest
 from bson import ObjectId
 
-from featurebyte import AggFunc, FeatureJobSetting, FeatureList
+from featurebyte import AggFunc, Configurations, FeatureJobSetting, FeatureList
 from featurebyte.enum import DBVarType
 from featurebyte.models.credential import UsernamePasswordCredential
 from featurebyte.models.relationship import RelationshipType
@@ -27,7 +27,6 @@ from featurebyte.schema.observation_table import ObservationTableCreate
 from featurebyte.schema.relationship_info import RelationshipInfoCreate
 from featurebyte.schema.static_source_table import StaticSourceTableCreate
 from featurebyte.schema.target_namespace import TargetNamespaceCreate
-from featurebyte.schema.target_table import TargetTableCreate
 from featurebyte.schema.user_defined_function import UserDefinedFunctionCreate
 from tests.util.helper import iet_entropy
 
@@ -36,6 +35,15 @@ from tests.util.helper import iet_entropy
 def request_payload_dir_fixture():
     """Request payload directory fixture"""
     return "tests/fixtures/request_payloads"
+
+
+@pytest.fixture(name="reset_configurations")
+def reset_configurations_fixture():
+    """
+    This is required becuase test_config.py sets a global state
+    """
+    config = Configurations(force=True)
+    config.use_profile("local")
 
 
 def replace_obj_id(obj: Any, obj_id: ObjectId) -> Any:
@@ -48,6 +56,7 @@ def replace_obj_id(obj: Any, obj_id: ObjectId) -> Any:
 
 
 def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
+    reset_configurations,
     update_fixtures,
     request_payload_dir,
     snowflake_feature_store,
@@ -66,6 +75,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
     Write request payload for testing api route
     """
     # pylint: disable=too-many-locals
+    _ = reset_configurations
     feature_sum_30m = feature_group["sum_30m"]
     feature_sum_30m = replace_obj_id(feature_sum_30m, ObjectId("646f6c1b0ed28a5271fb02c4"))
     feature_sum_2h = feature_group["sum_2h"]
@@ -157,15 +167,6 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         entity_ids=[cust_id_entity.id],
         window="7d",
     )
-    target_table = TargetTableCreate(
-        _id="64ab959914e12c405c1b23a2",
-        name="target_table",
-        feature_store_id=snowflake_feature_store.id,
-        observation_table_id=observation_table.id,
-        target_id=float_target.id,
-        graph=feature_list._get_feature_clusters()[0].graph,
-        node_names=feature_list._get_feature_clusters()[0].node_names,
-    )
     batch_request_table = BatchRequestTableCreate(
         _id="646f6c1c0ed28a5271fb02d9",
         name="batch_request_table",
@@ -244,7 +245,6 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
             (relationship_info, "relationship_info"),
             (observation_table, "observation_table"),
             (historical_feature_table, "historical_feature_table"),
-            (target_table, "target_table"),
             (batch_request_table, "batch_request_table"),
             (batch_feature_table, "batch_feature_table"),
             (static_source_table, "static_source_table"),

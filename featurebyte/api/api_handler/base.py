@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Type
 
+import json
 from functools import partial
 from itertools import groupby
 
@@ -76,7 +77,7 @@ class ListHandler:
         for item_dict in iterate_api_object_using_paginated_routes(
             route=self.route, params={"page_size": PAGINATED_CALL_PAGE_SIZE, **params}
         ):
-            output.append(self.list_schema(**item_dict).dict())
+            output.append(json.loads(self.list_schema(**item_dict).json()))
 
         fields = self.list_fields
         if include_id:

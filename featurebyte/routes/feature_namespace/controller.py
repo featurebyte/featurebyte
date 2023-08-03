@@ -13,6 +13,7 @@ from featurebyte.routes.common.base import (
     DerivePrimaryEntityHelper,
     PaginatedDocument,
 )
+from featurebyte.routes.common.feature_or_target_helper import FeatureOrTargetHelper
 from featurebyte.schema.feature_namespace import (
     FeatureNamespaceList,
     FeatureNamespaceModelResponse,
@@ -47,6 +48,7 @@ class FeatureNamespaceController(
         table_service: TableService,
         derive_primary_entity_helper: DerivePrimaryEntityHelper,
         catalog_name_injector: CatalogNameInjector,
+        feature_or_target_helper: FeatureOrTargetHelper,
     ):
         super().__init__(feature_namespace_service)
         self.feature_facade_service = feature_facade_service
@@ -55,6 +57,7 @@ class FeatureNamespaceController(
         self.table_service = table_service
         self.derive_primary_entity_helper = derive_primary_entity_helper
         self.catalog_name_injector = catalog_name_injector
+        self.feature_or_target_helper = feature_or_target_helper
 
     async def get(
         self,
@@ -196,10 +199,13 @@ class FeatureNamespaceController(
         entities, tables = updated_docs
 
         # derive primary tables
-        table_id_to_doc = {table["_id"]: table for table in tables["data"]}
         feature = await self.feature_service.get_document(document_id=namespace.default_feature_id)
-        primary_input_nodes = feature.graph.get_primary_input_nodes(node_name=feature.node_name)
-        primary_tables = [table_id_to_doc[node.parameters.id] for node in primary_input_nodes]
+        primary_tables = await self.feature_or_target_helper.get_primary_tables(
+            namespace.table_ids,
+            namespace.catalog_id,
+            feature.graph,
+            feature.node_name,
+        )
 
         return FeatureNamespaceInfo(
             name=namespace.name,

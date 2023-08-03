@@ -1,6 +1,6 @@
 SELECT
   "CUSTOMER_ID",
-  '_fb_internal_window_w172800_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb' AS "AGGREGATION_RESULT_NAME",
+  CAST('_fb_internal_window_w172800_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb' AS VARCHAR) AS "AGGREGATION_RESULT_NAME",
   "_fb_internal_window_w172800_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb" AS "VALUE"
 FROM (
   WITH REQUEST_TABLE AS (

@@ -2,7 +2,7 @@
 Unit test for snowflake tile
 """
 from unittest import mock
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, Mock, call
 
 import pytest
 from bson import ObjectId
@@ -147,3 +147,40 @@ async def test_generate_tiles_on_demand(
 
     mock_generate_tiles.assert_called_once()
     mock_update_tile_entity_tracker.assert_called_once()
+
+
+@mock.patch("featurebyte.service.tile_manager.TileManagerService.generate_tiles")
+@mock.patch("featurebyte.service.tile_manager.TileManagerService.update_tile_entity_tracker")
+@pytest.mark.asyncio
+async def test_generate_tiles_on_demand__progress_update(
+    mock_generate_tiles,
+    mock_update_tile_entity_tracker,
+    mock_snowflake_tile,
+    tile_manager_service,
+    mock_snowflake_session,
+):
+    """
+    Test generate_tiles_on_demand
+    """
+    mock_generate_tiles.size_effect = None
+    mock_update_tile_entity_tracker.size_effect = None
+    mock_progress_callback = AsyncMock()
+
+    await tile_manager_service.generate_tiles_on_demand(
+        mock_snowflake_session,
+        [
+            (mock_snowflake_tile, "temp_entity_table"),
+            (mock_snowflake_tile, "temp_entity_table"),
+            (mock_snowflake_tile, "temp_entity_table"),
+            (mock_snowflake_tile, "temp_entity_table"),
+        ],
+        progress_callback=mock_progress_callback,
+    )
+
+    assert mock_progress_callback.call_args_list == [
+        call(0, "0/4 completed"),
+        call(25, "1/4 completed"),
+        call(50, "2/4 completed"),
+        call(75, "3/4 completed"),
+        call(100, "4/4 completed"),
+    ]

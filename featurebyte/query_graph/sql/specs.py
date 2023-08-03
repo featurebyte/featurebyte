@@ -28,10 +28,12 @@ from featurebyte.query_graph.node.generic import (
     ItemGroupbyNode,
     ItemGroupbyParameters,
     LookupNode,
+    LookupTargetNode,
     SCDLookupParameters,
 )
 from featurebyte.query_graph.node.mixin import BaseGroupbyParameters
 from featurebyte.query_graph.sql.adapter import BaseAdapter
+from featurebyte.query_graph.sql.ast.base import EventTableTimestampFilter
 from featurebyte.query_graph.sql.common import apply_serving_names_mapping
 from featurebyte.query_graph.sql.tiling import InputColumn, get_aggregator
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
@@ -58,7 +60,7 @@ class AggregationType(StrEnum):
     FORWARD = "forward"
 
 
-@dataclass  # type: ignore[misc]
+@dataclass
 class AggregationSpec(ABC):
     """
     Base class of all aggregation specifications
@@ -297,7 +299,7 @@ class AggregationSource:
     is_scd_filtered_by_current_flag: Optional[bool] = None
 
 
-@dataclass  # type: ignore[misc]
+@dataclass
 class NonTileBasedAggregationSpec(AggregationSpec):
     """
     Represents an aggregation that is performed directly on the source without tile based
@@ -313,6 +315,7 @@ class NonTileBasedAggregationSpec(AggregationSpec):
         node: Node,
         source_type: SourceType,
         to_filter_scd_by_current_flag: bool,
+        event_table_timestamp_filter: Optional[EventTableTimestampFilter],
     ) -> AggregationSource:
         """
         Get the expression of the input view to be aggregated
@@ -327,6 +330,8 @@ class NonTileBasedAggregationSpec(AggregationSpec):
             Source type information
         to_filter_scd_by_current_flag: bool
             Whether to filter SCD by current flag
+        event_table_timestamp_filter: EventTableTimestampFilter
+            Event table timestamp filter to apply if applicable
 
         Returns
         -------
@@ -343,6 +348,7 @@ class NonTileBasedAggregationSpec(AggregationSpec):
             sql_type=SQLType.AGGREGATION,
             source_type=source_type,
             to_filter_scd_by_current_flag=to_filter_scd_by_current_flag,
+            event_table_timestamp_filter=event_table_timestamp_filter,
         ).build(node)
 
         sql_node = cast(Aggregate, sql_node)
@@ -461,6 +467,7 @@ class NonTileBasedAggregationSpec(AggregationSpec):
         source_type: Optional[SourceType] = None,
         serving_names_mapping: Optional[dict[str, str]] = None,
         is_online_serving: Optional[bool] = None,
+        event_table_timestamp_filter: Optional[EventTableTimestampFilter] = None,
     ) -> list[NonTileBasedAggregationSpecT]:
         """Construct NonTileBasedAggregationSpec objects given a query graph node
 
@@ -478,6 +485,8 @@ class NonTileBasedAggregationSpec(AggregationSpec):
             Serving names mapping
         is_online_serving: bool
             Whether the query is for online serving
+        event_table_timestamp_filter: Optional[EventTableTimestampFilter]
+            Event table timestamp filter to apply if applicable
 
         Returns
         -------
@@ -495,6 +504,7 @@ class NonTileBasedAggregationSpec(AggregationSpec):
                 node=node,
                 source_type=source_type,
                 to_filter_scd_by_current_flag=to_filter_scd_by_current_flag,
+                event_table_timestamp_filter=event_table_timestamp_filter,
             )
 
         return cls.construct_specs(
@@ -649,7 +659,7 @@ class LookupSpec(NonTileBasedAggregationSpec):
 
     @classmethod
     def should_filter_scd_by_current_flag(cls, graph: QueryGraphModel, node: Node) -> bool:
-        assert isinstance(node, LookupNode)
+        assert isinstance(node, (LookupNode, LookupTargetNode))
         scd_parameters = node.parameters.scd_parameters
         if scd_parameters is not None:
             return cls.get_scd_filter_flag_from_scd_parameters(scd_parameters)
@@ -682,7 +692,7 @@ class LookupSpec(NonTileBasedAggregationSpec):
         aggregation_source: AggregationSource,
         serving_names_mapping: Optional[dict[str, str]],
     ) -> list[LookupSpec]:
-        assert isinstance(node, LookupNode)
+        assert isinstance(node, (LookupNode, LookupTargetNode))
         params = node.parameters
         specs = []
         for input_column_name, feature_name in zip(params.input_column_names, params.feature_names):

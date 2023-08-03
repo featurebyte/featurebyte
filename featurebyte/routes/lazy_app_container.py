@@ -1,13 +1,19 @@
 """
 Lazy app container functions the same as the app_container, but only initializes dependencies when needed.
 """
-from typing import Any, Dict, List, Optional
+from __future__ import annotations
+
+from typing import Any, Dict, Iterator, List, Optional
+
+from contextlib import contextmanager
 
 from bson import ObjectId
 from celery import Celery
+from redis.client import Redis
 
 from featurebyte.persistent import Persistent
 from featurebyte.routes.app_container_config import AppContainerConfig, ClassDefinition
+from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.storage import Storage
 
 
@@ -146,22 +152,40 @@ class LazyAppContainer:
         persistent: Persistent,
         temp_storage: Storage,
         celery: Celery,
+        redis: Redis[Any],
         storage: Storage,
         catalog_id: Optional[ObjectId],
         app_container_config: AppContainerConfig,
     ):
         self.app_container_config = app_container_config
+        self._enable_block_modification_check = True
 
         # Used to cache instances if they've already been built
         # Pre-load with some default deps
         self.instance_map: Dict[str, Any] = {
             "catalog_id": catalog_id,
             "celery": celery,
+            "redis": redis,
             "persistent": persistent,
             "storage": storage,
             "temp_storage": temp_storage,
             "user": user,
         }
+
+    @contextmanager
+    def disable_block_modification_check(self) -> Iterator[LazyAppContainer]:
+        """
+        Disable block modification check.
+
+        Yields
+        ------
+        LazyAppContainer
+        """
+        try:
+            self._enable_block_modification_check = False
+            yield self
+        finally:
+            self._enable_block_modification_check = True
 
     def _get_key(self, key: str) -> Any:
         """
@@ -193,6 +217,17 @@ class LazyAppContainer:
         self.instance_map.update(new_deps)
         return self.instance_map[key]
 
+    def _handle_block_modification_check(self, instance: Any) -> Any:
+        # construct a callback function that will be used to check if a block can be modified
+        def _check_block_modification() -> bool:
+            # point to the container's block modification check
+            return self._enable_block_modification_check
+
+        # If the instance is a BaseDocumentService, set the block modification check
+        if isinstance(instance, BaseDocumentService):
+            instance.set_block_modification_check_callback(_check_block_modification)
+        return instance
+
     def get(self, key: str) -> Any:
         """
         Get an instance from the container.
@@ -206,7 +241,7 @@ class LazyAppContainer:
         -------
         Any
         """
-        return self._get_key(key)
+        return self._handle_block_modification_check(self._get_key(key))
 
     def __getattr__(self, key: str) -> Any:
-        return self._get_key(key)
+        return self._handle_block_modification_check(self._get_key(key))

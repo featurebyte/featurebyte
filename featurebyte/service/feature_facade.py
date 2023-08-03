@@ -17,7 +17,6 @@ from featurebyte.models.feature_namespace import (
 )
 from featurebyte.schema.feature import FeatureNewVersionCreate, FeatureServiceCreate
 from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
-from featurebyte.service.default_version_mode import DefaultVersionModeService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
@@ -37,14 +36,12 @@ class FeatureFacadeService:
         feature_namespace_service: FeatureNamespaceService,
         feature_readiness_service: FeatureReadinessService,
         version_service: VersionService,
-        default_version_mode_service: DefaultVersionModeService,
         feature_list_service: FeatureListService,
     ):
         self.feature_service = feature_service
         self.feature_namespace_service = feature_namespace_service
         self.feature_readiness_service = feature_readiness_service
         self.version_service = version_service
-        self.default_version_mode_service = default_version_mode_service
         self.feature_list_service = feature_list_service
 
     async def create_feature(self, data: FeatureServiceCreate) -> FeatureModel:
@@ -63,7 +60,6 @@ class FeatureFacadeService:
         document = await self.feature_service.create_document(data=data)
         await self.feature_readiness_service.update_feature_namespace(
             feature_namespace_id=document.feature_namespace_id,
-            return_document=False,
         )
         output = await self.feature_service.get_document(document_id=document.id)
         return output
@@ -84,13 +80,12 @@ class FeatureFacadeService:
         document = await self.version_service.create_new_feature_version(data=data)
         await self.feature_readiness_service.update_feature_namespace(
             feature_namespace_id=document.feature_namespace_id,
-            return_document=False,
         )
         output = await self.feature_service.get_document(document_id=document.id)
         return output
 
     async def update_readiness(
-        self, feature_id: ObjectId, readiness: FeatureReadiness, ignore_guardrails: bool
+        self, feature_id: ObjectId, readiness: FeatureReadiness, ignore_guardrails: bool = False
     ) -> FeatureModel:
         """
         Update the readiness of a feature
@@ -112,7 +107,6 @@ class FeatureFacadeService:
             feature_id=feature_id,
             readiness=FeatureReadiness(readiness),
             ignore_guardrails=ignore_guardrails,
-            return_document=False,
         )
         output = await self.feature_service.get_document(document_id=feature_id)
         return output
@@ -134,12 +128,24 @@ class FeatureFacadeService:
         -------
         FeatureNamespaceModel
         """
-        await self.default_version_mode_service.update_feature_namespace(
-            feature_namespace_id=feature_namespace_id,
-            default_version_mode=default_version_mode,
-            return_document=False,
+        document = await self.feature_namespace_service.get_document(
+            document_id=feature_namespace_id
         )
-        return await self.feature_namespace_service.get_document(document_id=feature_namespace_id)
+        if document.default_version_mode != default_version_mode:
+            await self.feature_namespace_service.update_document(
+                document_id=feature_namespace_id,
+                data=FeatureNamespaceServiceUpdate(default_version_mode=default_version_mode),
+                document=document,
+                return_document=False,
+            )
+            await self.feature_readiness_service.update_feature_namespace(
+                feature_namespace_id=feature_namespace_id,
+            )
+            feature_namespace = await self.feature_namespace_service.get_document(
+                document_id=feature_namespace_id
+            )
+            return feature_namespace
+        return document
 
     async def update_default_feature(self, feature_id: ObjectId) -> FeatureNamespaceModel:
         """
@@ -254,7 +260,6 @@ class FeatureFacadeService:
             await self.feature_readiness_service.update_feature_namespace(
                 feature_namespace_id=feature.feature_namespace_id,
                 deleted_feature_ids=[feature_id],
-                return_document=False,
             )
             feature_namespace = await self.feature_namespace_service.get_document(
                 document_id=feature.feature_namespace_id

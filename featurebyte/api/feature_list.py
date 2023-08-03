@@ -56,7 +56,6 @@ from featurebyte.models.feature_list import (
     FeatureReadinessDistribution,
     FrozenFeatureListNamespaceModel,
 )
-from featurebyte.models.feature_namespace import DefaultVersionMode
 from featurebyte.models.tile import TileSpec
 from featurebyte.schema.deployment import DeploymentCreate
 from featurebyte.schema.feature_list import (
@@ -191,17 +190,6 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
         PydanticObjectId
         """
         return self.cached_model.default_feature_list_id
-
-    @property
-    def default_version_mode(self) -> DefaultVersionMode:
-        """
-        Default feature list version mode of this feature list namespace
-
-        Returns
-        -------
-        DefaultVersionMode
-        """
-        return self.cached_model.default_version_mode
 
     @property
     def status(self) -> FeatureListStatus:
@@ -899,17 +887,6 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         return self.id == self.feature_list_namespace.default_feature_list_id
 
     @property
-    def default_version_mode(self) -> DefaultVersionMode:
-        """
-        Retrieve default version mode of current feature list namespace
-
-        Returns
-        -------
-        DefaultVersionMode
-        """
-        return self.feature_list_namespace.default_version_mode
-
-    @property
     def status(self) -> FeatureListStatus:
         """
         Retrieve feature list status at persistent
@@ -991,7 +968,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         """
         output = self._list(include_id=True, params={"name": self.name})
         default_feature_list_id = self.feature_list_namespace.default_feature_list_id
-        output["is_default"] = output["id"] == default_feature_list_id
+        output["is_default"] = output["id"] == str(default_feature_list_id)
         exclude_cols = {"num_feature"}
         if not include_id:
             exclude_cols.add("id")
@@ -1410,69 +1387,6 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         self.feature_list_namespace.update(
             update_payload={"status": str(status)}, allow_update_local=False
         )
-
-    @typechecked
-    def update_default_version_mode(
-        self, default_version_mode: Literal[tuple(DefaultVersionMode)]  # type: ignore[misc]
-    ) -> None:
-        """
-        Sets the default version mode of a feature list.
-
-        By default, the feature list's default version mode is automatic, selecting the version with the highest
-        percentage of production ready features. If several versions share the same readiness level, the most recent
-        one becomes the default.
-
-        If the default version mode is set as manual, you can choose to manually set any version as the default
-        version for the feature list.
-
-        Parameters
-        ----------
-        default_version_mode: Literal[tuple(DefaultVersionMode)]
-            Feature list default version mode
-
-        Examples
-        --------
-        >>> feature_list = catalog.get_feature_list_by_id(<FeatureList_Object_ID>)  # doctest: +SKIP
-        >>> feature_list.update_default_version_mode(DefaultVersionMode.MANUAL)  # doctest: +SKIP
-
-        See Also
-        --------
-        - [FeatureList.create_new_version](/reference/featurebyte.api.feature_list.FeatureList.create_new_version/)
-        - [FeatureList.as_default_version](/reference/featurebyte.api.feature_list.FeatureList.as_default_version/)
-        """
-        self.feature_list_namespace.update(
-            update_payload={"default_version_mode": DefaultVersionMode(default_version_mode).value},
-            allow_update_local=False,
-        )
-
-    def as_default_version(self) -> None:
-        """
-        When a feature list has its default version mode set to manual, this method designates the FeatureList
-        object as the default version for that specific feature list.
-
-        Each feature list is recognized by its name and can possess numerous versions, though only a single default
-        version is allowed.
-
-        The default version streamlines feature list reuse by supplying the most suitable version when none is
-        explicitly indicated. By default, the feature list's default version mode is automatic, selecting the version
-        with the highest percentage of production ready features. If several versions share the same readiness level,
-        the most recent one becomes the default."
-
-        Examples
-        --------
-        >>> feature_list = catalog.get_feature_list_by_id(<FeatureList_Object_ID>)  # doctest: +SKIP
-        >>> feature_list.update_default_version_mode(DefaultVersionMode.MANUAL)  # doctest: +SKIP
-        >>> feature_list.as_default_version()  # doctest: +SKIP
-
-        See Also
-        --------
-        - [FeatureList.create_new_version](/reference/featurebyte.api.feature_list.FeatureList.create_new_version/)
-        - [FeatureList.update_default_version_mode](/reference/featurebyte.api.feature_list.FeatureList.update_default_version_mode/)
-        """
-        self.feature_list_namespace.update(
-            update_payload={"default_feature_list_id": self.id}, allow_update_local=False
-        )
-        assert self.feature_list_namespace.default_feature_list_id == self.id
 
     @typechecked
     def deploy(

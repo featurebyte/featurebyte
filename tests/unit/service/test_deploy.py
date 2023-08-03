@@ -317,23 +317,28 @@ async def test_update_feature_list_error__state_is_reverted_after_feature_list_n
     assert feature_list.deployed is False
     assert feature_list.online_enabled_feature_ids == []
 
-    class ReturnDocument:
-        """
-        ReturnDocument class to trigger error when attempting to convert it to boolean value
-        This is to simulate the case when the exception after feature_list_namespace get updated
-        """
+    # create a enabled deployment first so that feature_list.deployed != target_deployed
+    await app_container.deployment_service.create_document(
+        data=DeploymentModel(
+            name="some_deployment",
+            feature_list_id=feature_list.id,
+            enabled=True,
+        )
+    )
 
-        def __bool__(self):
-            raise ValueError("return_document throws error!!")
+    async def fake_update_progress(progress, message) -> None:
+        _ = message
+        if progress == 100:
+            raise ValueError("update_progress throws error!!")
 
     with pytest.raises(ValueError) as exc:
         _ = await deploy_service._update_feature_list(
             feature_list_id=feature_list.id,
-            return_document=ReturnDocument(),
             get_credential=AsyncMock(),
+            update_progress=fake_update_progress,
         )
 
-    assert "return_document throws error!!" in str(exc.value)
+    assert "update_progress throws error!!" in str(exc.value)
 
     # check feature's online_enabled status & feature list deployed status
     feature_list = await feature_list_service.get_document(document_id=feature_list.id)
@@ -345,14 +350,6 @@ async def test_update_feature_list_error__state_is_reverted_after_feature_list_n
     assert feature_list_namespace.deployed_feature_list_ids == []
 
     # test another exception raised during revert changes
-    # create a enabled deployment first so that feature_list.deployed != target_deployed
-    await app_container.deployment_service.create_document(
-        data=DeploymentModel(
-            name="test deployment",
-            feature_list_id=feature_list.id,
-            enabled=True,
-        )
-    )
     with pytest.raises(Exception) as exc:
         with patch.object(
             deploy_service, "_revert_changes", new_callable=AsyncMock
@@ -360,9 +357,9 @@ async def test_update_feature_list_error__state_is_reverted_after_feature_list_n
             mock_update_feature.side_effect = Exception("Error during revert changes")
             _ = await deploy_service._update_feature_list(
                 feature_list_id=feature_list.id,
-                return_document=ReturnDocument(),
                 get_credential=AsyncMock(),
+                update_progress=fake_update_progress,
             )
 
     assert "Error during revert changes" in str(exc.value)
-    assert "return_document throws error!!" in str(exc.value.__context__)
+    assert "update_progress throws error!!" in str(exc.value.__context__)

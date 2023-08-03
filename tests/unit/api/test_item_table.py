@@ -36,6 +36,7 @@ def item_table_dict_fixture(snowflake_database_table_item_table):
                 "name": "event_id_col",
                 "semantic_id": None,
                 "critical_data_info": None,
+                "description": None,
             },
             {
                 "dtype": "VARCHAR",
@@ -43,6 +44,7 @@ def item_table_dict_fixture(snowflake_database_table_item_table):
                 "name": "item_id_col",
                 "semantic_id": None,
                 "critical_data_info": None,
+                "description": None,
             },
             {
                 "dtype": "VARCHAR",
@@ -50,6 +52,7 @@ def item_table_dict_fixture(snowflake_database_table_item_table):
                 "name": "item_type",
                 "semantic_id": None,
                 "critical_data_info": None,
+                "description": None,
             },
             {
                 "dtype": "FLOAT",
@@ -57,6 +60,7 @@ def item_table_dict_fixture(snowflake_database_table_item_table):
                 "name": "item_amount",
                 "semantic_id": None,
                 "critical_data_info": None,
+                "description": None,
             },
             {
                 "dtype": "TIMESTAMP_TZ",
@@ -64,6 +68,7 @@ def item_table_dict_fixture(snowflake_database_table_item_table):
                 "name": "created_at",
                 "semantic_id": None,
                 "critical_data_info": None,
+                "description": None,
             },
             {
                 "dtype": "TIMESTAMP_TZ",
@@ -71,6 +76,7 @@ def item_table_dict_fixture(snowflake_database_table_item_table):
                 "name": "event_timestamp",
                 "semantic_id": None,
                 "critical_data_info": None,
+                "description": None,
             },
         ],
         "created_at": None,

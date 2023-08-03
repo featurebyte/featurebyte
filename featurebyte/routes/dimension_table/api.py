@@ -29,6 +29,12 @@ from featurebyte.schema.dimension_table import (
     DimensionTableUpdate,
 )
 from featurebyte.schema.info import DimensionTableInfo
+from featurebyte.schema.table import (
+    ColumnCriticalDataInfoUpdate,
+    ColumnDescriptionUpdate,
+    ColumnEntityUpdate,
+    ColumnSemanticUpdate,
+)
 
 router = APIRouter(prefix="/dimension_table")
 
@@ -156,5 +162,77 @@ async def update_dimension_table_description(
     dimension_table: DimensionTableModel = await controller.update_description(
         document_id=dimension_table_id,
         description=data.description,
+    )
+    return dimension_table
+
+
+@router.patch("/{dimension_table_id}/column_entity", response_model=DimensionTableModel)
+async def update_column_entity(
+    request: Request,
+    dimension_table_id: PydanticObjectId,
+    data: ColumnEntityUpdate,
+) -> DimensionTableModel:
+    """
+    Update column entity
+    """
+    controller = request.state.app_container.dimension_table_controller
+    dimension_table: DimensionTableModel = await controller.update_column_entity(
+        document_id=dimension_table_id,
+        column_name=data.column_name,
+        entity_id=data.entity_id,
+    )
+    return dimension_table
+
+
+@router.patch("/{dimension_table_id}/column_critical_data_info", response_model=DimensionTableModel)
+async def update_column_critical_data_info(
+    request: Request,
+    dimension_table_id: PydanticObjectId,
+    data: ColumnCriticalDataInfoUpdate,
+) -> DimensionTableModel:
+    """
+    Update column critical data info
+    """
+    controller = request.state.app_container.dimension_table_controller
+    dimension_table: DimensionTableModel = await controller.update_column_critical_data_info(
+        document_id=dimension_table_id,
+        column_name=data.column_name,
+        critical_data_info=data.critical_data_info,
+    )
+    return dimension_table
+
+
+@router.patch("/{dimension_table_id}/column_description", response_model=DimensionTableModel)
+async def update_column_description(
+    request: Request,
+    dimension_table_id: PydanticObjectId,
+    data: ColumnDescriptionUpdate,
+) -> DimensionTableModel:
+    """
+    Update column description
+    """
+    controller = request.state.app_container.dimension_table_controller
+    dimension_table: DimensionTableModel = await controller.update_column_description(
+        document_id=dimension_table_id,
+        column_name=data.column_name,
+        description=data.description,
+    )
+    return dimension_table
+
+
+@router.patch("/{dimension_table_id}/column_semantic", response_model=DimensionTableModel)
+async def update_column_semantic(
+    request: Request,
+    dimension_table_id: PydanticObjectId,
+    data: ColumnSemanticUpdate,
+) -> DimensionTableModel:
+    """
+    Update column semantic
+    """
+    controller = request.state.app_container.dimension_table_controller
+    dimension_table: DimensionTableModel = await controller.update_column_semantic(
+        document_id=dimension_table_id,
+        column_name=data.column_name,
+        semantic_id=data.semantic_id,
     )
     return dimension_table

@@ -38,4 +38,4 @@ class FeatureListCreateWithBatchFeatureCreationTask(BatchFeatureCreateTask):
         await self.app_container.feature_list_controller.create_feature_list(
             data=feature_list_create
         )
-        self.update_progress(percent=100, message="Completed feature list creation")
+        await self.update_progress(percent=100, message="Completed feature list creation")

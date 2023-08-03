@@ -25,6 +25,12 @@ from featurebyte.routes.common.schema import (
 from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.info import SCDTableInfo
 from featurebyte.schema.scd_table import SCDTableCreate, SCDTableList, SCDTableUpdate
+from featurebyte.schema.table import (
+    ColumnCriticalDataInfoUpdate,
+    ColumnDescriptionUpdate,
+    ColumnEntityUpdate,
+    ColumnSemanticUpdate,
+)
 
 router = APIRouter(prefix="/scd_table")
 
@@ -148,5 +154,77 @@ async def update_scd_table_description(
     scd_table: SCDTableModel = await controller.update_description(
         document_id=scd_table_id,
         description=data.description,
+    )
+    return scd_table
+
+
+@router.patch("/{scd_table_id}/column_entity", response_model=SCDTableModel)
+async def update_column_entity(
+    request: Request,
+    scd_table_id: PydanticObjectId,
+    data: ColumnEntityUpdate,
+) -> SCDTableModel:
+    """
+    Update column entity
+    """
+    controller = request.state.app_container.scd_table_controller
+    scd_table: SCDTableModel = await controller.update_column_entity(
+        document_id=scd_table_id,
+        column_name=data.column_name,
+        entity_id=data.entity_id,
+    )
+    return scd_table
+
+
+@router.patch("/{scd_table_id}/column_critical_data_info", response_model=SCDTableModel)
+async def update_column_critical_data_info(
+    request: Request,
+    scd_table_id: PydanticObjectId,
+    data: ColumnCriticalDataInfoUpdate,
+) -> SCDTableModel:
+    """
+    Update column critical data info
+    """
+    controller = request.state.app_container.scd_table_controller
+    scd_table: SCDTableModel = await controller.update_column_critical_data_info(
+        document_id=scd_table_id,
+        column_name=data.column_name,
+        critical_data_info=data.critical_data_info,
+    )
+    return scd_table
+
+
+@router.patch("/{scd_table_id}/column_description", response_model=SCDTableModel)
+async def update_column_description(
+    request: Request,
+    scd_table_id: PydanticObjectId,
+    data: ColumnDescriptionUpdate,
+) -> SCDTableModel:
+    """
+    Update column description
+    """
+    controller = request.state.app_container.scd_table_controller
+    scd_table: SCDTableModel = await controller.update_column_description(
+        document_id=scd_table_id,
+        column_name=data.column_name,
+        description=data.description,
+    )
+    return scd_table
+
+
+@router.patch("/{scd_table_id}/column_semantic", response_model=SCDTableModel)
+async def update_column_semantic(
+    request: Request,
+    scd_table_id: PydanticObjectId,
+    data: ColumnSemanticUpdate,
+) -> SCDTableModel:
+    """
+    Update column semantic
+    """
+    controller = request.state.app_container.scd_table_controller
+    scd_table: SCDTableModel = await controller.update_column_semantic(
+        document_id=scd_table_id,
+        column_name=data.column_name,
+        semantic_id=data.semantic_id,
     )
     return scd_table

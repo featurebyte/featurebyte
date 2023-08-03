@@ -74,9 +74,12 @@ class FeatureJobSettingAnalysisService(
         )
 
         # check that event table exists
-        event_table = await self.event_table_service.get_document(document_id=data.event_table_id)
-        if not event_table.record_creation_timestamp_column:
-            raise DocumentError("Creation date column is not available for the event table.")
+        if data.event_table_id:
+            event_table = await self.event_table_service.get_document(
+                document_id=data.event_table_id
+            )
+            if not event_table.record_creation_timestamp_column:
+                raise DocumentError("Creation date column is not available for the event table.")
 
         return FeatureJobSettingAnalysisTaskPayload(
             **data.dict(),

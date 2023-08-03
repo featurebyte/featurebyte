@@ -19,7 +19,7 @@ from datetime import datetime
 from pathlib import Path
 from unittest import mock
 from unittest.mock import Mock, patch
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import numpy as np
 import pandas as pd
@@ -65,7 +65,7 @@ from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.base_spark import BaseSparkSchemaInitializer
 from featurebyte.session.manager import SessionManager
 from featurebyte.storage import LocalStorage, LocalTempStorage
-from featurebyte.worker import get_celery
+from featurebyte.worker import get_celery, get_redis
 from featurebyte.worker.task.base import TASK_MAP
 
 # Static testing mongodb connection from docker/test/docker-compose.yml
@@ -1341,15 +1341,23 @@ def mock_task_manager(request, persistent, storage, temp_storage, get_cred, mock
             async def submit(payload: BaseTaskPayload):
                 kwargs = payload.json_dict()
                 kwargs["task_output_path"] = payload.task_output_path
+                task_id = str(uuid4())
+                user = User(id=kwargs.get("user_id"))
                 task = TASK_MAP[payload.command](
+                    task_id=UUID(task_id),
                     payload=kwargs,
                     progress=Mock(),
-                    user=User(id=kwargs.get("user_id")),
                     get_credential=get_cred,
-                    get_persistent=lambda: persistent,
-                    get_storage=lambda: storage,
-                    get_temp_storage=lambda: temp_storage,
-                    get_celery=lambda: None,
+                    app_container=LazyAppContainer(
+                        user=user,
+                        persistent=persistent,
+                        temp_storage=temp_storage,
+                        celery=Mock(),
+                        redis=Mock(),
+                        storage=storage,
+                        catalog_id=payload.catalog_id,
+                        app_container_config=app_container_config,
+                    ),
                 )
                 try:
                     await task.execute()
@@ -1359,7 +1367,6 @@ def mock_task_manager(request, persistent, storage, temp_storage, get_cred, mock
                     status = TaskStatus.FAILURE
                     traceback_info = traceback.format_exc()
 
-                task_id = str(uuid4())
                 task_status[task_id] = status
 
                 # insert task into db manually since we are mocking celery
@@ -1458,6 +1465,7 @@ def app_container_fixture(persistent, user, catalog):
         persistent=persistent,
         temp_storage=LocalTempStorage(),
         celery=get_celery(),
+        redis=get_redis(),
         storage=LocalTempStorage(),
         catalog_id=catalog.id,
         app_container_config=app_container_config,

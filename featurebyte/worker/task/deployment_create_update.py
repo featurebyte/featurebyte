@@ -3,25 +3,50 @@ Deployment Create & Update Task
 """
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import Any, Optional, cast
 
+from featurebyte.exception import DocumentCreationError, DocumentUpdateError
 from featurebyte.schema.worker.task.deployment_create_update import (
     CreateDeploymentPayload,
     DeploymentCreateUpdateTaskPayload,
     DeploymentPayloadType,
     UpdateDeploymentPayload,
 )
-from featurebyte.worker.task.base import BaseTask
+from featurebyte.worker.task.base import BaseLockTask
 
 
-class DeploymentCreateUpdateTask(BaseTask):
+class DeploymentCreateUpdateTask(BaseLockTask):
     """
     FeatureList Deploy Task
     """
 
     payload_class = DeploymentCreateUpdateTaskPayload
 
-    async def execute(self) -> Any:
+    @property
+    def lock_key(self) -> str:
+        # each deployment can only be created or updated once at a time
+        payload = cast(DeploymentCreateUpdateTaskPayload, self.payload)
+        return f"deployment:{payload.output_document_id}:create_update"
+
+    @property
+    def lock_timeout(self) -> Optional[int]:
+        # set lock timeout to 24 hours
+        return 24 * 60 * 60
+
+    @property
+    def lock_blocking(self) -> bool:
+        # if the deployment is being created or updated by another task,
+        # fail the current task immediately without waiting
+        return False
+
+    def handle_lock_not_acquired(self) -> None:
+        payload = cast(DeploymentCreateUpdateTaskPayload, self.payload)
+        error_msg = f"Deployment {payload.output_document_id} is currently being created or updated"
+        if payload.deployment_payload.type == DeploymentPayloadType.CREATE:
+            raise DocumentCreationError(error_msg)
+        raise DocumentUpdateError(error_msg)
+
+    async def _execute(self) -> Any:
         """
         Execute Deployment Create & Update Task
         """

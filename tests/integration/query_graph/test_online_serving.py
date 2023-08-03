@@ -208,7 +208,7 @@ def check_online_features_route(deployment, config, df_historical, columns):
     """
     client = config.get_client()
 
-    user_ids = [5, -999]
+    user_ids = [-999, 5]
     entity_serving_names = [{"üser id": user_id} for user_id in user_ids]
     data = OnlineFeaturesRequestPayload(entity_serving_names=entity_serving_names)
 
@@ -223,11 +223,17 @@ def check_online_features_route(deployment, config, df_historical, columns):
     elapsed = time.time() - tic
     print(f"online_features elapsed: {elapsed:.6f}s")
 
+    assert df["üser id"].tolist() == user_ids
     assert df.columns.tolist() == columns
     df_expected = df_historical[df_historical["üser id"].isin(user_ids)][columns].reset_index(
         drop=True
     )
-    fb_assert_frame_equal(df_expected, df, dict_like_columns=["EVENT_COUNT_BY_ACTION_24h"])
+    fb_assert_frame_equal(
+        df_expected,
+        df,
+        dict_like_columns=["EVENT_COUNT_BY_ACTION_24h"],
+        sort_by_columns=["üser id"],
+    )
 
 
 def check_get_batch_features(deployment, batch_request_table, df_historical, columns):
@@ -290,7 +296,6 @@ async def check_concurrent_online_store_table_updates(
             session=session,
             aggregation_id=aggregation_id,
             job_schedule_ts_str=job_schedule_ts_str,
-            retry_num=1,  # no issue even without retry
             online_store_table_version_service=online_store_table_version_service_factory(),
         )
         try:

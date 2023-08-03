@@ -23,7 +23,7 @@ class Progress:
     Progress object
     """
 
-    def __init__(self, user_id: Optional[ObjectId], task_id: UUID):
+    def __init__(self, user_id: Optional[ObjectId], task_id: UUID, redis_uri: str = REDIS_URI):
         """
         Initialize progress object
 
@@ -33,8 +33,10 @@ class Progress:
             User ID
         task_id: UUID
             Task ID
+        redis_uri: str
+            Redis URI
         """
-        self._redis = redis.from_url(REDIS_URI)
+        self._redis = redis.from_url(redis_uri)
         self._channel = f"task_{user_id}_{task_id}_progress"
         logger.debug("Publishing to channel", extra={"channel": self._channel})
 

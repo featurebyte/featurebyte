@@ -314,7 +314,7 @@ async def test_create_new_feature_list_version__without_specifying_features_mode
         ),
     )
     feat_namespace = await feature_readiness_service.update_feature_namespace(
-        feature_namespace_id=new_feat_version.feature_namespace_id, return_document=True
+        feature_namespace_id=new_feat_version.feature_namespace_id
     )
     assert feat_namespace.default_feature_id == new_feat_version.id
 
@@ -359,7 +359,7 @@ async def test_create_new_feature_list_version__specifying_features(
         ),
     )
     feat_namespace = await feature_readiness_service.update_feature_namespace(
-        feature_namespace_id=new_feat_version.feature_namespace_id, return_document=True
+        feature_namespace_id=new_feat_version.feature_namespace_id
     )
     assert feat_namespace.default_feature_id == new_feat_version.id
 

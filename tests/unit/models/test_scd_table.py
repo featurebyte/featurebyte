@@ -25,6 +25,7 @@ def get_scd_columns_info():
             "entity_id": None,
             "semantic_id": None,
             "critical_data_info": None,
+            "description": None,
         },
         {
             "name": "natural_id",
@@ -32,6 +33,7 @@ def get_scd_columns_info():
             "entity_id": None,
             "semantic_id": None,
             "critical_data_info": None,
+            "description": None,
         },
         {
             "name": "surrogate_id",
@@ -39,6 +41,7 @@ def get_scd_columns_info():
             "entity_id": None,
             "semantic_id": None,
             "critical_data_info": None,
+            "description": None,
         },
         {
             "name": "created_at",
@@ -46,6 +49,7 @@ def get_scd_columns_info():
             "entity_id": None,
             "semantic_id": None,
             "critical_data_info": None,
+            "description": None,
         },
         {
             "name": "effective_at",
@@ -53,6 +57,7 @@ def get_scd_columns_info():
             "entity_id": None,
             "semantic_id": None,
             "critical_data_info": None,
+            "description": None,
         },
         {
             "name": "end_at",
@@ -60,6 +65,7 @@ def get_scd_columns_info():
             "entity_id": None,
             "semantic_id": None,
             "critical_data_info": None,
+            "description": None,
         },
         {
             "name": "enabled",
@@ -67,6 +73,7 @@ def get_scd_columns_info():
             "entity_id": None,
             "semantic_id": None,
             "critical_data_info": None,
+            "description": None,
         },
     ]
 

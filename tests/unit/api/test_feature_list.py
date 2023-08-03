@@ -148,11 +148,13 @@ def test_feature_list_creation__not_a_list():
     """Test FeatureList must be created from a list"""
     with pytest.raises(TypeError) as exc_info:
         FeatureList("my_feature", name="my_feature_list")
-    expected_error = (
-        'type of argument "items"[0] must be one of (featurebyte.api.feature.Feature,'
-        " BaseFeatureGroup); got str instead"
+    expected_errors = (
+        "featurebyte.api.feature.Feature",
+        "BaseFeatureGroup",
+        "got str instead",
     )
-    assert expected_error in str(exc_info.value)
+    for expected_error in expected_errors:
+        assert expected_error in str(exc_info.value)
 
 
 def test_feature_list_creation__not_a_sequence():
@@ -166,11 +168,14 @@ def test_feature_list_creation__invalid_item():
     """Test FeatureList creation list cannot have invalid types"""
     with pytest.raises(TypeError) as exc_info:
         FeatureList(["my_feature"], name="my_feature_list")
-    error_message = (
-        'type of argument "items"[0] must be one of '
-        "(featurebyte.api.feature.Feature, BaseFeatureGroup); got str instead"
+    expected_errors = (
+        'type of argument "items"[0] must be one of ',
+        "featurebyte.api.feature.Feature",
+        "BaseFeatureGroup",
+        "got str instead",
     )
-    assert error_message in str(exc_info.value)
+    for expected_error in expected_errors:
+        assert expected_error in str(exc_info.value)
 
 
 def test_base_feature_group(production_ready_feature, draft_feature, deprecated_feature):
@@ -528,7 +533,7 @@ def test_list(saved_feature_list):
         feature_lists,
         pd.DataFrame(
             {
-                "id": [saved_feature_list.id],
+                "id": [str(saved_feature_list.id)],
                 "name": [saved_feature_list_namespace.name],
                 "num_feature": 1,
                 "status": [saved_feature_list_namespace.status],
@@ -538,7 +543,7 @@ def test_list(saved_feature_list):
                 "tables": [["sf_event_table"]],
                 "entities": [["customer"]],
                 "primary_entities": [["customer"]],
-                "created_at": [saved_feature_list_namespace.created_at],
+                "created_at": [saved_feature_list_namespace.created_at.isoformat()],
             }
         ),
     )
@@ -562,7 +567,7 @@ def test_list_versions(saved_feature_list):
         FeatureList.list_versions(),
         pd.DataFrame(
             {
-                "id": [flist_2.id, flist_1.id, saved_feature_list.id],
+                "id": [str(flist_2.id), str(flist_1.id), str(saved_feature_list.id)],
                 "name": [flist_2.name, flist_1.name, saved_feature_list.name],
                 "version": [
                     flist_2.version,
@@ -573,9 +578,9 @@ def test_list_versions(saved_feature_list):
                 "online_frac": [0.0] * 3,
                 "deployed": [False, False, saved_feature_list.deployed],
                 "created_at": [
-                    flist_2.created_at,
-                    flist_1.created_at,
-                    saved_feature_list.created_at,
+                    flist_2.created_at.isoformat(),
+                    flist_1.created_at.isoformat(),
+                    saved_feature_list.created_at.isoformat(),
                 ],
                 "is_default": [True] * 3,
             }
@@ -586,12 +591,12 @@ def test_list_versions(saved_feature_list):
         saved_feature_list.list_versions(),
         pd.DataFrame(
             {
-                "id": [saved_feature_list.id],
+                "id": [str(saved_feature_list.id)],
                 "name": [saved_feature_list.name],
                 "version": [saved_feature_list.version],
                 "online_frac": 0.0,
                 "deployed": [saved_feature_list.deployed],
-                "created_at": [saved_feature_list.created_at],
+                "created_at": [saved_feature_list.created_at.isoformat()],
                 "is_default": [True],
             }
         ),
@@ -697,7 +702,7 @@ def feature_list_fixture(
     yield feature_list
 
 
-def test_feature_list_update_status_and_default_version_mode(feature_list):
+def test_feature_list_update_status(feature_list):
     """Test update feature list status"""
     assert feature_list.saved is False
     feature_list.save()
@@ -710,27 +715,18 @@ def test_feature_list_update_status_and_default_version_mode(feature_list):
     feature_list.update_status(FeatureListStatus.PUBLIC_DRAFT)
     assert feature_list.status == FeatureListStatus.PUBLIC_DRAFT
 
-    # check default version mode
-    assert feature_list.default_version_mode == DefaultVersionMode.AUTO
-    feature_list.update_default_version_mode(DefaultVersionMode.MANUAL)
-    assert feature_list.default_version_mode == DefaultVersionMode.MANUAL
-
     # test update on wrong status input
     with pytest.raises(ValueError) as exc:
         feature_list.update_status("random")
     assert "'random' is not a valid FeatureListStatus" in str(exc.value)
 
 
-def test_feature_list_update_status_and_default_version_mode__unsaved_feature_list(feature_list):
+def test_feature_list_update_status__unsaved_feature_list(feature_list):
     """Test feature list status update - unsaved feature list"""
     assert feature_list.saved is False
     with pytest.raises(RecordRetrievalException) as exc:
         feature_list.update_status(FeatureListStatus.TEMPLATE)
     expected = f'FeatureList (id: "{feature_list.id}") not found. Please save the FeatureList object first.'
-    assert expected in str(exc.value)
-
-    with pytest.raises(RecordRetrievalException) as exc:
-        feature_list.update_default_version_mode(DefaultVersionMode.MANUAL)
     assert expected in str(exc.value)
 
 
@@ -1006,7 +1002,7 @@ def test_list_features(saved_feature_list, float_feature):
         feature_version_list,
         pd.DataFrame(
             {
-                "id": [float_feature.id],
+                "id": [str(float_feature.id)],
                 "name": [float_feature.name],
                 "version": [float_feature.version],
                 "dtype": [float_feature.dtype],
@@ -1016,7 +1012,7 @@ def test_list_features(saved_feature_list, float_feature):
                 "primary_tables": [["sf_event_table"]],
                 "entities": [["customer"]],
                 "primary_entities": [["customer"]],
-                "created_at": [float_feature.created_at],
+                "created_at": [float_feature.created_at.isoformat()],
                 "is_default": [True],
             }
         ),
@@ -1159,14 +1155,14 @@ def test_feature_list_synchronization(saved_feature_list, mock_api_object_cache)
     # construct a cloned feature list (feature list with the same feature list ID)
     cloned_feat_list = FeatureList.get_by_id(id=saved_feature_list.id)
 
-    # update the original feature list's version mode (stored at feature list namespace record)
-    target_mode = DefaultVersionMode.MANUAL
-    assert saved_feature_list.default_version_mode != target_mode
-    saved_feature_list.update_default_version_mode(target_mode)
-    assert saved_feature_list.default_version_mode == target_mode
+    # update the original feature list's status
+    target_status = FeatureListStatus.PUBLIC_DRAFT
+    assert saved_feature_list.status != target_status
+    saved_feature_list.update_status(target_status)
+    assert saved_feature_list.status == target_status
 
-    # check the clone's version mode also get updated
-    assert cloned_feat_list.default_version_mode == target_mode
+    # check the clone's status also get updated
+    assert cloned_feat_list.status == target_status
 
     # update original feature list deployed status (stored at feature list record)
     assert saved_feature_list.deployed is False
@@ -1194,7 +1190,7 @@ def test_feature_list_properties_from_cached_model__before_save(feature_list):
     assert feature_list.deployed is False
 
     # check properties use feature list namespace model info
-    props = ["is_default", "default_version_mode", "status"]
+    props = ["is_default", "status"]
     for prop in props:
         with pytest.raises(RecordRetrievalException):
             _ = getattr(feature_list, prop)
@@ -1212,8 +1208,6 @@ def test_feature_list_properties_from_cached_model__after_save(saved_feature_lis
     assert saved_feature_list.deployed is False
 
     # check properties use feature list namespace model info
-    assert saved_feature_list.is_default is True
-    assert saved_feature_list.default_version_mode == DefaultVersionMode.AUTO
     assert saved_feature_list.status == FeatureListStatus.DRAFT
 
 

@@ -7,9 +7,7 @@ from typing import Any, Literal, cast
 
 from bson.objectid import ObjectId
 
-from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.feature_list import FeatureListNamespaceModel
-from featurebyte.models.feature_namespace import DefaultVersionMode
 from featurebyte.routes.common.base import (
     BaseDocumentController,
     DerivePrimaryEntityHelper,
@@ -18,16 +16,11 @@ from featurebyte.routes.common.base import (
 from featurebyte.schema.feature_list_namespace import (
     FeatureListNamespaceList,
     FeatureListNamespaceModelResponse,
-    FeatureListNamespaceServiceUpdate,
     FeatureListNamespaceUpdate,
 )
 from featurebyte.schema.info import FeatureListNamespaceInfo
-from featurebyte.service.default_version_mode import DefaultVersionModeService
-from featurebyte.service.entity import EntityService
-from featurebyte.service.feature_list import FeatureListService
+from featurebyte.service.feature_list_facade import FeatureListFacadeService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
-from featurebyte.service.feature_list_status import FeatureListStatusService
-from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.mixin import DEFAULT_PAGE_SIZE, Document
 
 
@@ -45,19 +38,11 @@ class FeatureListNamespaceController(
     def __init__(
         self,
         feature_list_namespace_service: FeatureListNamespaceService,
-        entity_service: EntityService,
-        feature_list_service: FeatureListService,
-        default_version_mode_service: DefaultVersionModeService,
-        feature_readiness_service: FeatureReadinessService,
-        feature_list_status_service: FeatureListStatusService,
+        feature_list_facade_service: FeatureListFacadeService,
         derive_primary_entity_helper: DerivePrimaryEntityHelper,
     ):
         super().__init__(feature_list_namespace_service)
-        self.entity_service = entity_service
-        self.feature_list_service = feature_list_service
-        self.default_version_mode_service = default_version_mode_service
-        self.feature_readiness_service = feature_readiness_service
-        self.feature_list_status_service = feature_list_status_service
+        self.feature_list_facade_service = feature_list_facade_service
         self.derive_primary_entity_helper = derive_primary_entity_helper
 
     async def get(
@@ -131,43 +116,11 @@ class FeatureListNamespaceController(
         -------
         FeatureListNamespaceModel
             FeatureListNamespace object with updated attribute(s)
-
-        Raises
-        ------
-        DocumentUpdateError
-            When the new feature list version creation fails
         """
-        if data.default_version_mode:
-            await self.default_version_mode_service.update_feature_list_namespace(
-                feature_list_namespace_id=feature_list_namespace_id,
-                default_version_mode=data.default_version_mode,
-                return_document=False,
-            )
-
-        if data.default_feature_list_id:
-            feature_list_namespace = await self.service.get_document(
-                document_id=feature_list_namespace_id
-            )
-            if feature_list_namespace.default_version_mode != DefaultVersionMode.MANUAL:
-                raise DocumentUpdateError(
-                    "Cannot set default feature list ID when default version mode is not MANUAL."
-                )
-
-            # update feature list namespace default feature list ID and update feature readiness
-            await self.service.update_document(
-                document_id=feature_list_namespace_id,
-                data=FeatureListNamespaceServiceUpdate(
-                    default_feature_list_id=data.default_feature_list_id
-                ),
-            )
-            await self.feature_readiness_service.update_feature_list_namespace(
-                feature_list_namespace_id=feature_list_namespace_id
-            )
-
         if data.status:
-            await self.feature_list_status_service.update_feature_list_namespace_status(
+            await self.feature_list_facade_service.update_status(
                 feature_list_namespace_id=feature_list_namespace_id,
-                target_feature_list_status=data.status,
+                status=data.status,
             )
 
         return await self.get(document_id=feature_list_namespace_id)

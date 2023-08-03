@@ -22,6 +22,7 @@ class Task(FeatureByteBaseDocumentModel):
     result: str
     traceback: Optional[str]
     children: List[str]
+    start_time: Optional[datetime] = Field(default=None)
     date_done: datetime
     name: str
     args: List[Any]
@@ -29,6 +30,7 @@ class Task(FeatureByteBaseDocumentModel):
     worker: str
     retries: int
     queue: str
+    progress: Optional[Dict[str, Any]] = Field(default=None)
 
     class Settings:
         """
@@ -37,6 +39,7 @@ class Task(FeatureByteBaseDocumentModel):
 
         collection_name = "celery_taskmeta"
         indexes = [
+            pymongo.operations.IndexModel("start_time"),
             pymongo.operations.IndexModel("date_done"),
             [
                 ("name", pymongo.TEXT),

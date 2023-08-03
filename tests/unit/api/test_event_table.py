@@ -54,6 +54,7 @@ def event_table_dict_fixture(snowflake_database_table):
                 "dtype": "INT",
                 "semantic_id": None,
                 "critical_data_info": None,
+                "description": None,
             },
             {
                 "entity_id": None,
@@ -61,6 +62,7 @@ def event_table_dict_fixture(snowflake_database_table):
                 "dtype": "FLOAT",
                 "semantic_id": None,
                 "critical_data_info": None,
+                "description": None,
             },
             {
                 "entity_id": None,
@@ -68,6 +70,7 @@ def event_table_dict_fixture(snowflake_database_table):
                 "dtype": "CHAR",
                 "semantic_id": None,
                 "critical_data_info": None,
+                "description": None,
             },
             {
                 "entity_id": None,
@@ -75,6 +78,7 @@ def event_table_dict_fixture(snowflake_database_table):
                 "dtype": "VARCHAR",
                 "semantic_id": None,
                 "critical_data_info": None,
+                "description": None,
             },
             {
                 "entity_id": None,
@@ -82,6 +86,7 @@ def event_table_dict_fixture(snowflake_database_table):
                 "dtype": "BINARY",
                 "semantic_id": None,
                 "critical_data_info": None,
+                "description": None,
             },
             {
                 "entity_id": None,
@@ -89,6 +94,7 @@ def event_table_dict_fixture(snowflake_database_table):
                 "dtype": "BOOL",
                 "semantic_id": None,
                 "critical_data_info": None,
+                "description": None,
             },
             {
                 "entity_id": None,
@@ -96,6 +102,7 @@ def event_table_dict_fixture(snowflake_database_table):
                 "dtype": "TIMESTAMP_TZ",
                 "semantic_id": None,
                 "critical_data_info": None,
+                "description": None,
             },
             {
                 "entity_id": None,
@@ -103,6 +110,7 @@ def event_table_dict_fixture(snowflake_database_table):
                 "dtype": "TIMESTAMP_TZ",
                 "semantic_id": None,
                 "critical_data_info": None,
+                "description": None,
             },
             {
                 "entity_id": None,
@@ -110,6 +118,7 @@ def event_table_dict_fixture(snowflake_database_table):
                 "dtype": "INT",
                 "semantic_id": None,
                 "critical_data_info": None,
+                "description": None,
             },
         ],
         "event_timestamp_column": "event_timestamp",
@@ -342,6 +351,9 @@ def test_info(saved_event_table, cust_id_entity):
         cleaning_operations=[MissingValueImputation(imputed_value=0)]
     )
 
+    # update column description
+    saved_event_table.col_int.update_description("new description")
+
     verbose_info_dict = saved_event_table.info(verbose=True)
     assert verbose_info_dict.items() > expected_info.items(), info_dict
     assert verbose_info_dict["updated_at"] is not None, verbose_info_dict["updated_at"]
@@ -355,6 +367,7 @@ def test_info(saved_event_table, cust_id_entity):
             "critical_data_info": {
                 "cleaning_operations": [{"type": "missing", "imputed_value": 0}]
             },
+            "description": "new description",
         },
         {
             "name": "col_float",
@@ -362,6 +375,7 @@ def test_info(saved_event_table, cust_id_entity):
             "entity": None,
             "semantic": None,
             "critical_data_info": None,
+            "description": None,
         },
         {
             "name": "col_char",
@@ -369,6 +383,7 @@ def test_info(saved_event_table, cust_id_entity):
             "entity": None,
             "semantic": None,
             "critical_data_info": None,
+            "description": None,
         },
         {
             "name": "col_text",
@@ -376,6 +391,7 @@ def test_info(saved_event_table, cust_id_entity):
             "entity": None,
             "semantic": None,
             "critical_data_info": None,
+            "description": None,
         },
         {
             "name": "col_binary",
@@ -383,6 +399,7 @@ def test_info(saved_event_table, cust_id_entity):
             "entity": None,
             "semantic": None,
             "critical_data_info": None,
+            "description": None,
         },
         {
             "name": "col_boolean",
@@ -390,6 +407,7 @@ def test_info(saved_event_table, cust_id_entity):
             "entity": None,
             "semantic": None,
             "critical_data_info": None,
+            "description": None,
         },
         {
             "name": "event_timestamp",
@@ -397,6 +415,7 @@ def test_info(saved_event_table, cust_id_entity):
             "entity": None,
             "semantic": "event_timestamp",
             "critical_data_info": None,
+            "description": None,
         },
         {
             "name": "created_at",
@@ -404,6 +423,7 @@ def test_info(saved_event_table, cust_id_entity):
             "entity": None,
             "semantic": None,
             "critical_data_info": None,
+            "description": None,
         },
         {
             "name": "cust_id",
@@ -411,6 +431,7 @@ def test_info(saved_event_table, cust_id_entity):
             "entity": "customer",
             "semantic": None,
             "critical_data_info": None,
+            "description": None,
         },
     ]
 
@@ -505,6 +526,7 @@ def test_update_default_feature_job_setting__using_feature_job_analysis(
             "_id": mock_post_async_task.call_args[1]["payload"]["_id"],
             "name": None,
             "event_table_id": "6337f9651050ee7d5980660d",
+            "event_table_candidate": None,
             "analysis_date": None,
             "analysis_length": 2419200,
             "min_featurejob_period": 60,
@@ -624,8 +646,10 @@ async def test_update_default_job_setting__feature_job_setting_analysis_failure(
     assert "ValueError: Event Data not found" in str(exc.value)
 
 
-def test_update_record_creation_timestamp_column__unsaved_object(snowflake_database_table):
+def test_update_record_creation_timestamp_column__unsaved_object(snowflake_database_table, catalog):
     """Test update record creation timestamp column (unsaved event table)"""
+    _ = catalog
+
     event_table = snowflake_database_table.create_event_table(
         name="event_table",
         event_id_column="col_int",
@@ -877,6 +901,7 @@ def test_create_new_feature_job_setting_analysis(
             "_id": mock_post_async_task.call_args[1]["payload"]["_id"],
             "name": None,
             "event_table_id": "6337f9651050ee7d5980660d",
+            "event_table_candidate": None,
             "analysis_date": analysis_date.isoformat(),
             "analysis_length": 3600,
             "min_featurejob_period": 100,

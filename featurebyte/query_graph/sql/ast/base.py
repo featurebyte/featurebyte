@@ -9,6 +9,7 @@ from abc import ABC, abstractmethod
 from copy import copy
 from dataclasses import dataclass, field
 
+from bson import ObjectId
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, select
 
@@ -21,6 +22,21 @@ from featurebyte.query_graph.sql.common import SQLType
 
 SQLNodeT = TypeVar("SQLNodeT", bound="SQLNode")
 TableNodeT = TypeVar("TableNodeT", bound="TableNode")
+
+
+@dataclass
+class EventTableTimestampFilter:
+    """
+    Information about the timestamp filter to be applied when selecting from EventTable
+
+    timestamp_column_name: str
+        Name of the timestamp column
+    event_table_id: ObjectId
+        Id of the EventTable. Only EventTable matching this id should be filtered.
+    """
+
+    timestamp_column_name: str
+    event_table_id: ObjectId
 
 
 @dataclass
@@ -48,6 +64,7 @@ class SQLNodeContext:
     source_type: SourceType
     input_sql_nodes: list[SQLNode]
     to_filter_scd_by_current_flag: Optional[bool]
+    event_table_timestamp_filter: Optional[EventTableTimestampFilter]
 
     def __post_init__(self) -> None:
         self.parameters = self.query_node.parameters.dict()
@@ -66,7 +83,7 @@ class SQLNodeContext:
         return get_sql_adapter(self.source_type)
 
 
-@dataclass  # type: ignore
+@dataclass
 class SQLNode(ABC):
     """Base class of a node in the SQL operations tree
 
@@ -384,7 +401,7 @@ class TableNode(SQLNode, ABC):
         return new_table
 
 
-@dataclass  # type: ignore
+@dataclass
 class ExpressionNode(SQLNode, ABC):
     """Base class for all expression nodes (non-table)"""
 

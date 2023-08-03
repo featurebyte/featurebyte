@@ -21,6 +21,7 @@ from featurebyte.routes.catalog.catalog_name_injector import CatalogNameInjector
 from featurebyte.routes.catalog.controller import CatalogController
 from featurebyte.routes.common.base import DerivePrimaryEntityHelper
 from featurebyte.routes.common.feature_metadata_extractor import FeatureOrTargetMetadataExtractor
+from featurebyte.routes.common.feature_or_target_helper import FeatureOrTargetHelper
 from featurebyte.routes.context.controller import ContextController
 from featurebyte.routes.credential.controller import CredentialController
 from featurebyte.routes.deployment.controller import AllDeploymentController, DeploymentController
@@ -55,7 +56,6 @@ from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.service.catalog import AllCatalogService, CatalogService
 from featurebyte.service.context import ContextService
 from featurebyte.service.credential import CredentialService
-from featurebyte.service.default_version_mode import DefaultVersionModeService
 from featurebyte.service.deploy import DeployService
 from featurebyte.service.deployment import AllDeploymentService, DeploymentService
 from featurebyte.service.dimension_table import DimensionTableService
@@ -66,6 +66,7 @@ from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_facade import FeatureFacadeService
 from featurebyte.service.feature_job_setting_analysis import FeatureJobSettingAnalysisService
 from featurebyte.service.feature_list import AllFeatureListService, FeatureListService
+from featurebyte.service.feature_list_facade import FeatureListFacadeService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_list_status import FeatureListStatusService
 from featurebyte.service.feature_manager import FeatureManagerService
@@ -149,7 +150,6 @@ app_container_config.register_class(ContextService)
 app_container_config.register_class(DataWarehouseMigrationMixin)
 app_container_config.register_class(DataWarehouseMigrationServiceV6)
 app_container_config.register_class(DataWarehouseMigrationServiceV8)
-app_container_config.register_class(DefaultVersionModeService)
 app_container_config.register_class(DeployService)
 app_container_config.register_class(DeploymentController)
 app_container_config.register_class(DeploymentService)
@@ -168,11 +168,13 @@ app_container_config.register_class(FeatureFacadeService)
 app_container_config.register_class(FeatureJobSettingAnalysisController)
 app_container_config.register_class(FeatureJobSettingAnalysisService)
 app_container_config.register_class(FeatureListController)
+app_container_config.register_class(FeatureListFacadeService)
 app_container_config.register_class(FeatureListService)
 app_container_config.register_class(FeatureListNamespaceController)
 app_container_config.register_class(FeatureListNamespaceService)
 app_container_config.register_class(FeatureListStatusService)
 app_container_config.register_class(FeatureManagerService)
+app_container_config.register_class(FeatureOrTargetHelper)
 app_container_config.register_class(FeatureOrTargetMetadataExtractor)
 app_container_config.register_class(FeatureNamespaceController)
 app_container_config.register_class(FeatureNamespaceService)

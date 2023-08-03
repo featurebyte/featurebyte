@@ -5,7 +5,7 @@ import datetime
 import math
 import time
 from unittest.mock import Mock
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from bson.objectid import ObjectId
@@ -85,7 +85,7 @@ async def test_task_manager__long_running_tasks(task_manager, celery, user_id, p
         await persistent._db[Task.collection_name()].insert_one(document)
 
         task = await task_manager.get_task(task_id=task_id)
-        assert task.id == task_id
+        assert str(task.id) == task_id
         assert task.status == "STARTED"
         expected_tasks.append(task)
         tasks, _ = await task_manager.list_tasks()
@@ -103,7 +103,7 @@ async def test_task_manager__list_tasks(task_manager, celery, user_id, persisten
         task_id = await task_manager.submit(
             payload=LongRunningPayload(user_id=user_id, catalog_id=catalog.id)
         )
-        task_ids.append(task_id)
+        task_ids.append(UUID(task_id))
         # insert task into db manually since we are mocking celery
         task = Task(
             _id=task_id,

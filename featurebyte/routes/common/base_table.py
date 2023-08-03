@@ -3,17 +3,19 @@ BaseDataController for API routes
 """
 from __future__ import annotations
 
-from typing import Any, Type, TypeVar, cast
+from typing import Any, Optional, Type, TypeVar, cast
 
 from abc import abstractmethod
 
 from bson.objectid import ObjectId
 
+from featurebyte.exception import ColumnNotFoundError
 from featurebyte.models.dimension_table import DimensionTableModel
 from featurebyte.models.event_table import EventTableModel
 from featurebyte.models.item_table import ItemTableModel
 from featurebyte.models.scd_table import SCDTableModel
 from featurebyte.query_graph.model.column_info import ColumnInfo
+from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
 from featurebyte.routes.common.base import BaseDocumentController, PaginatedDocument
 from featurebyte.schema.table import TableServiceUpdate, TableUpdate
 from featurebyte.service.dimension_table import DimensionTableService
@@ -134,6 +136,9 @@ class BaseTableDocumentController(
         TableDocumentT
             Table object with updated attribute(s)
         """
+
+        # Update of columns info is deprecated and will be removed in release 0.5.0
+        # See https://featurebyte.atlassian.net/browse/DEV-2000
         if data.columns_info:
             await self.table_column_info_service.update_columns_info(
                 service=self.service,
@@ -158,3 +163,149 @@ class BaseTableDocumentController(
             )
 
         return await self.get(document_id=document_id)
+
+    async def update_table_columns_info(
+        self, document_id: ObjectId, column_name: str, field: str, data: Any
+    ) -> TableDocumentT:
+        """
+        Update table columns info
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Table document ID
+        column_name: str
+            Column name
+        field: str
+            Field to update
+        data: Any
+            Data to update
+
+        Returns
+        -------
+        TableDocumentT
+            Table object with updated columns info
+        """
+        document = await self.service.get_document(document_id=document_id)
+        columns_info = document.columns_info
+        column_exists = False
+        for col_info in columns_info:
+            if col_info.name == column_name:
+                setattr(col_info, field, data)
+                column_exists = True
+                break
+
+        if not column_exists:
+            raise ColumnNotFoundError(
+                f'Column: {column_name} not found in {self.service.class_name} (id: "{document_id}")'
+            )
+
+        await self.table_column_info_service.update_columns_info(
+            service=self.service,
+            document_id=document_id,
+            columns_info=columns_info,
+        )
+        return await self.get(document_id=document_id)
+
+    async def update_column_entity(
+        self, document_id: ObjectId, column_name: str, entity_id: Optional[ObjectId]
+    ) -> TableDocumentT:
+        """
+        Update column entity
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Table document ID
+        column_name: str
+            Column name
+        entity_id: Optional[ObjectId]
+            Entity ID
+
+        Returns
+        -------
+        TableDocumentT
+            Table object with updated entity
+        """
+        return await self.update_table_columns_info(
+            document_id=document_id,
+            column_name=column_name,
+            field="entity_id",
+            data=entity_id,
+        )
+
+    async def update_column_critical_data_info(
+        self, document_id: ObjectId, column_name: str, critical_data_info: CriticalDataInfo
+    ) -> TableDocumentT:
+        """
+        Update column critical data info
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Table document ID
+        column_name: str
+            Column name
+        critical_data_info: CriticalDataInfo
+            Critical data info
+
+        Returns
+        -------
+        TableDocumentT
+            Table object with updated critical data info
+        """
+        return await self.update_table_columns_info(
+            document_id=document_id,
+            column_name=column_name,
+            field="critical_data_info",
+            data=critical_data_info,
+        )
+
+    async def update_column_description(
+        self, document_id: ObjectId, column_name: str, description: Optional[str]
+    ) -> TableDocumentT:
+        """
+        Update column description
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Table document ID
+        column_name: str
+            Column name
+        description: Optional[str]
+            Column description
+
+        Returns
+        -------
+        TableDocumentT
+            Table object with updated description
+        """
+        return await self.update_table_columns_info(
+            document_id=document_id,
+            column_name=column_name,
+            field="description",
+            data=description,
+        )
+
+    async def update_column_semantic(
+        self, document_id: ObjectId, column_name: str, semantic_id: Optional[ObjectId]
+    ) -> TableDocumentT:
+        """
+        Update column semantic
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Table document ID
+        column_name: str
+            Column name
+        semantic_id: Optional[ObjectId]
+            Semantic ID
+        """
+        return await self.update_table_columns_info(
+            document_id=document_id,
+            column_name=column_name,
+            field="semantic_id",
+            data=semantic_id,
+        )

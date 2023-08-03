@@ -48,7 +48,6 @@ from featurebyte.api.static_source_table import StaticSourceTable
 from featurebyte.api.table import Table
 from featurebyte.api.target import Target
 from featurebyte.api.target_namespace import TargetNamespace
-from featurebyte.api.target_table import TargetTable
 from featurebyte.api.user_defined_function import UserDefinedFunction
 from featurebyte.exception import (
     DuplicatedRecordException,
@@ -100,7 +99,6 @@ def catalog_list_methods_to_test_list():
         MethodMetadata("list_static_source_tables", StaticSourceTable, "list"),
         MethodMetadata("list_targets", Target, "list"),
         MethodMetadata("list_user_defined_functions", UserDefinedFunction, "list"),
-        MethodMetadata("list_target_tables", TargetTable, "list"),
     ]
 
 
@@ -122,7 +120,6 @@ def catalog_get_methods_to_test_list():
         MethodMetadata("get_static_source_table", StaticSourceTable, "get"),
         MethodMetadata("get_target", Target, "get"),
         MethodMetadata("get_user_defined_function", UserDefinedFunction, "get"),
-        MethodMetadata("get_target_table", TargetTable, "get"),
     ]
 
 
@@ -153,7 +150,6 @@ def catalog_get_by_id_list():
         MethodMetadata("get_deployment_by_id", Deployment, "get_by_id"),
         MethodMetadata("get_static_source_table_by_id", StaticSourceTable, "get_by_id"),
         MethodMetadata("get_user_defined_function_by_id", UserDefinedFunction, "get_by_id"),
-        MethodMetadata("get_target_table_by_id", TargetTable, "get_by_id"),
         MethodMetadata("get_target_by_id", Target, "get_by_id"),
     ]
 
@@ -521,10 +517,10 @@ def test_get_catalog(catalog):
     expected_catalog_list = pd.DataFrame(
         {
             "id": [
-                healthcare_catalog.id,
-                creditcard_catalog.id,
-                grocery_catalog.id,
-                default_catalog.id,
+                str(healthcare_catalog.id),
+                str(creditcard_catalog.id),
+                str(grocery_catalog.id),
+                str(default_catalog.id),
             ],
             "name": [
                 healthcare_catalog.name,
@@ -533,10 +529,10 @@ def test_get_catalog(catalog):
                 default_catalog.name,
             ],
             "created_at": [
-                healthcare_catalog.created_at,
-                creditcard_catalog.created_at,
-                grocery_catalog.created_at,
-                default_catalog.created_at,
+                healthcare_catalog.created_at.isoformat(),
+                creditcard_catalog.created_at.isoformat(),
+                grocery_catalog.created_at.isoformat(),
+                default_catalog.created_at.isoformat(),
             ],
             "active": [False, False, False, True],
         }
@@ -545,12 +541,6 @@ def test_get_catalog(catalog):
 
     # test list with include_id=True
     catalog_list = Catalog.list(include_id=True)
-    expected_catalog_list["id"] = [
-        healthcare_catalog.id,
-        creditcard_catalog.id,
-        grocery_catalog.id,
-        default_catalog.id,
-    ]
     assert_frame_equal(catalog_list, expected_catalog_list[catalog_list.columns])
 
     # test unexpected retrieval exception for Catalog.list

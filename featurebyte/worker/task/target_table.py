@@ -6,11 +6,11 @@ from __future__ import annotations
 from typing import Any, cast
 
 from featurebyte.logging import get_logger
-from featurebyte.models.target_table import TargetTableModel
+from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.schema.target import ComputeTargetRequest
 from featurebyte.schema.worker.task.target_table import TargetTableTaskPayload
+from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.target_helper.compute_target import TargetComputer
-from featurebyte.service.target_table import TargetTableService
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin
 from featurebyte.worker.util.observation_set_helper import ObservationSetHelper
@@ -40,8 +40,10 @@ class TargetTableTask(DataWarehouseMixin, BaseTask):
             payload.observation_table_id, payload.observation_set_storage_path
         )
 
-        target_table_service: TargetTableService = self.app_container.target_table_service
-        location = await target_table_service.generate_materialized_table_location(
+        observation_table_service: ObservationTableService = (
+            self.app_container.observation_table_service
+        )
+        location = await observation_table_service.generate_materialized_table_location(
             self.get_credential, payload.feature_store_id
         )
         async with self.drop_table_on_error(
@@ -62,20 +64,17 @@ class TargetTableTask(DataWarehouseMixin, BaseTask):
                 progress_callback=self.update_progress,
             )
 
-            (
-                columns_info,
-                num_rows,
-            ) = await target_table_service.get_columns_info_and_num_rows(
+            additional_metadata = await self.app_container.observation_table_service.validate_materialized_table_and_get_metadata(
                 db_session, location.table_details
             )
-            target_table = TargetTableModel(
-                _id=payload.output_document_id,
-                user_id=self.payload.user_id,
+
+            observation_table = ObservationTableModel(
+                _id=self.payload.output_document_id,
+                user_id=payload.user_id,
                 name=payload.name,
                 location=location,
-                observation_table_id=payload.observation_table_id,
-                target_id=payload.target_id,
-                columns_info=columns_info,
-                num_rows=num_rows,
+                context_id=payload.context_id,
+                request_input=payload.request_input,
+                **additional_metadata,
             )
-            await target_table_service.create_document(target_table)
+            await self.app_container.observation_table_service.create_document(observation_table)

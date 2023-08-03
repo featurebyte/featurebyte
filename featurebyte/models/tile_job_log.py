@@ -26,6 +26,7 @@ class TileJobLogModel(FeatureByteCatalogBaseDocumentModel):
     status: StrictStr
     message: StrictStr
     traceback: Optional[StrictStr]
+    duration: Optional[float]
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """

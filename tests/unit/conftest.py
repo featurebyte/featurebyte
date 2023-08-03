@@ -8,7 +8,7 @@ import traceback
 from datetime import datetime
 from unittest import mock
 from unittest.mock import Mock, PropertyMock, patch
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pandas as pd
 import pytest
@@ -48,6 +48,7 @@ from featurebyte.session.base import DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS
 from featurebyte.session.manager import SessionManager, session_cache
 from featurebyte.storage import LocalTempStorage
 from featurebyte.storage.local import LocalStorage
+from featurebyte.worker import get_redis
 from featurebyte.worker.task.base import TASK_MAP
 from tests.unit.conftest_config import (
     config_file_fixture,
@@ -97,6 +98,13 @@ def mock_websocket_client_fixture(request):
                 None
             )
             yield mock_get_websocket_client
+
+
+@pytest.fixture(name="mock_get_redis", autouse=True)
+def mock_get_redis_fixture():
+    """Mock get_redis in featurebyte.worker"""
+    with patch("featurebyte.worker.Redis") as mock_get_redis:
+        yield mock_get_redis
 
 
 @pytest.fixture(name="storage")
@@ -835,6 +843,14 @@ def snowflake_event_view_entity_feature_job_fixture(
     yield event_view
 
 
+@pytest.fixture(name="snowflake_scd_view_with_entity")
+def snowflake_scd_view_with_entity_fixture(snowflake_scd_table_with_entity):
+    """
+    Fixture for an SCD view with entity
+    """
+    return snowflake_scd_table_with_entity.get_view()
+
+
 @pytest.fixture(name="patched_observation_table_service")
 def patched_observation_table_service_fixture():
     """
@@ -1470,6 +1486,7 @@ def app_container_fixture(persistent, user, catalog):
         persistent=persistent,
         temp_storage=LocalTempStorage(),
         celery=get_celery(),
+        redis=get_redis(),
         storage=LocalTempStorage(),
         catalog_id=catalog.id,
         app_container_config=app_container_config,
@@ -1503,15 +1520,23 @@ def mock_task_manager(request, persistent, storage, temp_storage, get_credential
             async def submit(payload: BaseTaskPayload):
                 kwargs = payload.json_dict()
                 kwargs["task_output_path"] = payload.task_output_path
+                task_id = str(uuid4())
+                user = User(id=kwargs.get("user_id"))
                 task = TASK_MAP[payload.command](
+                    task_id=UUID(task_id),
                     payload=kwargs,
                     progress=Mock(),
-                    user=User(id=kwargs.get("user_id")),
                     get_credential=get_credential,
-                    get_persistent=lambda: persistent,
-                    get_storage=lambda: storage,
-                    get_temp_storage=lambda: temp_storage,
-                    get_celery=get_celery,
+                    app_container=LazyAppContainer(
+                        user=user,
+                        persistent=persistent,
+                        temp_storage=temp_storage,
+                        celery=get_celery(),
+                        redis=get_redis(),
+                        storage=storage,
+                        catalog_id=payload.catalog_id,
+                        app_container_config=app_container_config,
+                    ),
                 )
                 try:
                     await task.execute()
@@ -1521,7 +1546,6 @@ def mock_task_manager(request, persistent, storage, temp_storage, get_credential
                     status = TaskStatus.FAILURE
                     traceback_info = traceback.format_exc()
 
-                task_id = str(uuid4())
                 task_status[task_id] = status
 
                 # insert task into db manually since we are mocking celery

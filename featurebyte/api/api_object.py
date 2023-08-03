@@ -109,7 +109,7 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
 
         return construct_repr_string(self, info_repr)
 
-    @property  # type: ignore
+    @property
     @cachedmethod(cache=operator.attrgetter("_cache"), key=get_api_object_cache_key)
     def cached_model(self: ModelT) -> ModelT:
         """

@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional, Tuple
 
 import pymongo
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from featurebyte.models.base import (
     FeatureByteBaseModel,
@@ -18,6 +18,7 @@ from featurebyte.models.base import (
 from featurebyte.schema.feature_job_setting_analysis import (
     AnalysisOptions,
     AnalysisParameters,
+    EventTableCandidate,
     FeatureJobSetting,
 )
 
@@ -60,7 +61,8 @@ class FeatureJobSettingAnalysisModel(FeatureByteCatalogBaseDocumentModel):
     FeatureJobSettingAnalysis persistent model
     """
 
-    event_table_id: PydanticObjectId
+    event_table_id: Optional[PydanticObjectId]
+    event_table_candidate: Optional[EventTableCandidate] = Field(default=None)
     analysis_options: AnalysisOptions
     analysis_parameters: AnalysisParameters
     analysis_result: AnalysisResult

@@ -157,6 +157,10 @@ class TableColumnInfo(FeatureByteBaseModel):
         Entity name associated with the column
     semantic: str
         Semantic name associated with the column
+    critical_data_info: CriticalDataInfo
+        Critical data information associated with the column
+    description: str
+        Description of the column
     """
 
     name: StrictStr
@@ -164,6 +168,7 @@ class TableColumnInfo(FeatureByteBaseModel):
     entity: Optional[str] = Field(default=None)
     semantic: Optional[str] = Field(default=None)
     critical_data_info: Optional[CriticalDataInfo] = Field(default=None)
+    description: Optional[str] = Field(default=None)
 
 
 class TableInfo(TableBriefInfo, BaseInfo):

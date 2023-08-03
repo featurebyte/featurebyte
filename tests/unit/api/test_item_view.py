@@ -60,7 +60,7 @@ class TestItemView(BaseViewTestSuite):
         "event_timestamp" AS "event_timestamp"
       FROM "sf_database"."sf_schema"."items_table"
     ) AS L
-    LEFT JOIN (
+    INNER JOIN (
       SELECT
         "col_int" AS "col_int",
         "col_float" AS "col_float",
@@ -158,7 +158,7 @@ def test_get_view__auto_join_columns(
                         "name": "join_1",
                         "output_type": "frame",
                         "parameters": {
-                            "join_type": "left",
+                            "join_type": "inner",
                             "left_input_columns": [
                                 "event_id_col",
                                 "item_id_col",
@@ -255,7 +255,7 @@ def test_get_view__auto_join_columns(
             "event_timestamp" AS "event_timestamp"
           FROM "sf_database"."sf_schema"."items_table"
         ) AS L
-        LEFT JOIN (
+        INNER JOIN (
           SELECT
             "col_int" AS "col_int",
             "col_float" AS "col_float",
@@ -353,7 +353,7 @@ def test_join_event_table_attributes__more_columns(
             "right_on": "col_int",
             "right_input_columns": ["col_float"],
             "right_output_columns": ["col_float"],
-            "join_type": "left",
+            "join_type": "inner",
             "scd_parameters": None,
             "metadata": {
                 "type": "join_event_table_attributes",
@@ -421,7 +421,7 @@ def test_join_event_table_attributes__more_columns(
               "event_timestamp" AS "event_timestamp"
             FROM "sf_database"."sf_schema"."items_table"
           ) AS L
-          LEFT JOIN (
+          INNER JOIN (
             SELECT
               "col_int" AS "col_int",
               "col_float" AS "col_float",
@@ -435,7 +435,7 @@ def test_join_event_table_attributes__more_columns(
           ) AS R
             ON L."event_id_col" = R."col_int"
         ) AS L
-        LEFT JOIN (
+        INNER JOIN (
           SELECT
             "col_int" AS "col_int",
             "col_float" AS "col_float",
@@ -525,7 +525,7 @@ def test_item_view__item_table_same_event_id_column_as_event_table(
                             "right_on": "col_int",
                             "right_input_columns": ["event_timestamp", "cust_id"],
                             "right_output_columns": ["event_timestamp", "cust_id"],
-                            "join_type": "left",
+                            "join_type": "inner",
                             "scd_parameters": None,
                             "metadata": {
                                 "type": "join_event_table_attributes",

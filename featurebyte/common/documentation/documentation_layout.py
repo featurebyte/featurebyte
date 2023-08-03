@@ -50,7 +50,6 @@ from featurebyte.common.documentation.constants import (
     TABLE_COLUMN,
     TARGET,
     TARGET_NAMESPACE,
-    TARGET_TABLE,
     TRANSFORM,
     TYPE,
     USER_DEFINED_FUNCTION,
@@ -406,10 +405,8 @@ def _get_feature_list_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE_LIST, LINEAGE, "FeatureList.primary_entity"]),
         DocLayoutItem([FEATURE_LIST, MANAGE, "FeatureList.get_feature_jobs_status"]),
         DocLayoutItem([FEATURE_LIST, MANAGE, "FeatureList.delete"]),
-        DocLayoutItem([FEATURE_LIST, MANAGE, "FeatureList.as_default_version"]),
         DocLayoutItem([FEATURE_LIST, MANAGE, "FeatureList.create_new_version"]),
         DocLayoutItem([FEATURE_LIST, MANAGE, "FeatureList.list_versions"]),
-        DocLayoutItem([FEATURE_LIST, MANAGE, "FeatureList.update_default_version_mode"]),
         DocLayoutItem([FEATURE_LIST, MANAGE, "FeatureList.update_status"]),
         DocLayoutItem([FEATURE_LIST, SERVE, "FeatureList.compute_historical_features"]),
         DocLayoutItem([FEATURE_LIST, SERVE, "FeatureList.compute_historical_feature_table"]),
@@ -979,22 +976,6 @@ def _get_historical_feature_table_layout() -> List[DocLayoutItem]:
     ]
 
 
-def _get_target_table_layout() -> List[DocLayoutItem]:
-    """
-    The layout for the TargetTable module.
-
-    Returns
-    -------
-    List[DocLayoutItem]
-        The layout for the TargetTable module.
-    """
-    return [
-        *_get_materialized_table_layout(TARGET_TABLE),
-        DocLayoutItem([TARGET_TABLE, LINEAGE, "TargetTable.observation_table_id"]),
-        DocLayoutItem([TARGET_TABLE, LINEAGE, "TargetTable.target_id"]),
-    ]
-
-
 def _get_user_defined_function_layout() -> List[DocLayoutItem]:
     """
     The layout for the UserDefinedFunction module.
@@ -1091,5 +1072,4 @@ def get_overall_layout() -> List[DocLayoutItem]:
         *_get_user_defined_function_layout(),
         *_get_target_layout(),
         *_get_target_namespace_layout(),
-        *_get_target_table_layout(),
     ]

@@ -14,7 +14,11 @@ from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import ItemGroupbyParameters
-from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
+from featurebyte.query_graph.sql.ast.base import (
+    EventTableTimestampFilter,
+    SQLNodeContext,
+    TableNode,
+)
 from featurebyte.query_graph.sql.common import (
     SQLType,
     get_qualified_column_identifier,
@@ -48,6 +52,7 @@ class JoinFeature(TableNode):
             view_node=view_node,
             view_entity_column=context.parameters["view_entity_column"],
             source_type=context.source_type,
+            event_table_timestamp_filter=context.event_table_timestamp_filter,
         )
 
         # Apply any post-processing (e.g. filling missing value with 0 for count features)
@@ -76,6 +81,7 @@ class JoinFeature(TableNode):
         view_node: TableNode,
         view_entity_column: str,
         source_type: SourceType,
+        event_table_timestamp_filter: Optional[EventTableTimestampFilter] = None,
     ) -> Select:
         """
         Join the intermediate aggregation result of item aggregation with the EventView
@@ -96,6 +102,8 @@ class JoinFeature(TableNode):
             intermediate aggregation result
         source_type: SourceType
             Source type information
+        event_table_timestamp_filter: Optional[EventTableTimestampFilter]
+            Event table timestamp filter to apply if applicable
 
         Returns
         -------
@@ -127,6 +135,7 @@ class JoinFeature(TableNode):
                 graph=graph,
                 source_type=source_type,
                 serving_names_mapping=serving_names_mapping,
+                event_table_timestamp_filter=event_table_timestamp_filter,
             )
             for agg_spec in agg_specs:
                 item_aggregator.update(agg_spec)

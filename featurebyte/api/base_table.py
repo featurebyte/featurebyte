@@ -115,28 +115,6 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
         """
         return cast(FeatureStoreModel, self.parent.feature_store)
 
-    def _prepare_columns_info(self, column_info: ColumnInfo) -> List[ColumnInfo]:
-        """
-        Prepare columns info attribute of the update payload. The output of this function is used as part of the
-        table update route payload.
-
-        Parameters
-        ----------
-        column_info: ColumnInfo
-            Column info is used to replace the item of `columns_info` of this object.
-
-        Returns
-        -------
-        List[ColumnInfo]
-        """
-        columns_info = []
-        for col in self.parent.columns_info:
-            if col.name == column_info.name:
-                columns_info.append(column_info)
-            else:
-                columns_info.append(col)
-        return columns_info
-
     @typechecked
     def as_entity(self, entity_name: Optional[str]) -> None:
         """
@@ -155,18 +133,7 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
         >>> event_table = catalog.get_table("GROCERYINVOICE")
         >>> event_table["GroceryInvoiceGuid"].as_entity("groceryinvoice")
         """
-        if entity_name is None:
-            entity_id = None
-        else:
-            entity = Entity.get(entity_name)
-            entity_id = entity.id
-
-        column_info = ColumnInfo(**{**self.info.dict(), "entity_id": entity_id})
-        self.parent.update(
-            update_payload={"columns_info": self._prepare_columns_info(column_info)},
-            allow_update_local=True,
-            add_internal_prefix=True,
-        )
+        self.parent.update_column_entity(self.info.name, entity_name)
 
     @typechecked
     def update_critical_data_info(self, cleaning_operations: List[CleaningOperation]) -> None:
@@ -225,12 +192,26 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
         - [Table.column_cleaning_operations](/reference/featurebyte.api.base_table.TableApiObject.column_cleaning_operations)
         """
         critical_data_info = CriticalDataInfo(cleaning_operations=cleaning_operations)
-        column_info = ColumnInfo(**{**self.info.dict(), "critical_data_info": critical_data_info})
-        self.parent.update(
-            update_payload={"columns_info": self._prepare_columns_info(column_info)},
-            allow_update_local=True,
-            add_internal_prefix=True,
-        )
+        self.parent.update_column_critical_data_info(self.info.name, critical_data_info)
+
+    @typechecked
+    def update_description(self, description: Optional[str]) -> None:
+        """
+        Update description of a column in the table.
+
+        Parameters
+        ----------
+        description: Optional[str]
+            The description of the column.
+
+        Examples
+        --------
+        Update description of column "GroceryInvoiceGuid" of the target event table
+
+        >>> event_table = catalog.get_table("GROCERYINVOICE")
+        >>> event_table["GroceryInvoiceGuid"].update_description("Invoice ID")
+        """
+        self.parent.update_column_description(self.info.name, description)
 
     def extract_pruned_graph_and_node(self, **kwargs: Any) -> tuple[QueryGraphModel, Node]:
         """
@@ -1050,3 +1031,74 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
                 if col.critical_data_info and col.critical_data_info.cleaning_operations
             ]
         return table_data, column_cleaning_operations
+
+    def update_column_entity(self, column_name: str, entity_name: Optional[str]) -> None:
+        """
+        Update column entity
+
+        Parameters
+        ----------
+        column_name: str
+            Column name
+        entity_name: Optional[str]
+            Entity name
+        """
+        if entity_name is None:
+            entity_id = None
+        else:
+            entity = Entity.get(entity_name)
+            entity_id = str(entity.id)
+
+        self.update(
+            update_payload={
+                "column_name": column_name,
+                "entity_id": entity_id,
+            },
+            allow_update_local=False,
+            url=f"{self._route}/{self.id}/column_entity",
+            skip_update_schema_check=True,
+        )
+
+    def update_column_critical_data_info(
+        self, column_name: str, critical_data_info: CriticalDataInfo
+    ) -> None:
+        """
+        Update column critical data info
+
+        Parameters
+        ----------
+        column_name: str
+            Column name
+        critical_data_info: CriticalDataInfo
+            Column critical data info
+        """
+        self.update(
+            update_payload={
+                "column_name": column_name,
+                "critical_data_info": critical_data_info.dict(),
+            },
+            allow_update_local=False,
+            url=f"{self._route}/{self.id}/column_critical_data_info",
+            skip_update_schema_check=True,
+        )
+
+    def update_column_description(self, column_name: str, description: Optional[str]) -> None:
+        """
+        Update column description
+
+        Parameters
+        ----------
+        column_name: str
+            Column name
+        description: Optional[str]
+            Column description
+        """
+        self.update(
+            update_payload={
+                "column_name": column_name,
+                "description": description,
+            },
+            allow_update_local=False,
+            url=f"{self._route}/{self.id}/column_description",
+            skip_update_schema_check=True,
+        )

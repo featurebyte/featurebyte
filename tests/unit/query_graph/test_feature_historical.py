@@ -207,7 +207,7 @@ async def test_historical_feature_query_set_execute(mocked_session):
     """
     Test HistoricalFeatureQuerySet execution
     """
-    progress_callback = Mock(name="mock_progress_callback")
+    progress_callback = AsyncMock(name="mock_progress_callback")
     feature_queries = [
         FeatureQuery(
             sql="some_feature_query_1",

@@ -39,14 +39,10 @@ def test_configurations():
     # logging settings
     assert config.logging == LoggingSettings(
         level="INFO",
-        serialize=True,
     )
 
     # storage settings
     assert config.storage == LocalStorageSettings(local_path="~/.featurebyte_custom/data")
-
-    # other settings
-    assert config.settings == {}
 
     # featurebyte settings
     assert config.profiles == [
@@ -68,8 +64,9 @@ def test_get_client_no_persistence_settings():
     """
     Test getting client with no persistent settings
     """
+    config = Configurations("tests/fixtures/config/config_no_profile.yaml")
     with pytest.raises(InvalidSettingsError) as exc_info:
-        Configurations("tests/fixtures/config/invalid_config.yaml").get_client()
+        config.get_client()
     assert (
         str(exc_info.value)
         == 'No valid profile specified. Update config file or specify valid profile name with "use_profile".'
@@ -129,16 +126,14 @@ def test_use_profile(mock_requests_get):
     Test selecting profile for api service
     """
     mock_requests_get.return_value.status_code = 200
-    with patch("featurebyte.config.get_home_path") as mock_get_home_path:
-        mock_get_home_path.return_value = Path("tests/fixtures/config")
-        config = Configurations()
-        assert config.profile.name == "featurebyte1"
-        assert config.get_client().base_url == "https://app1.featurebyte.com/api/v1"
 
-        Configurations.use_profile("featurebyte2")
-        config = Configurations()
-        assert config.profile.name == "featurebyte2"
-        assert config.get_client().base_url == "https://app2.featurebyte.com/api/v1"
+    config = Configurations("tests/fixtures/config/config.yaml")
+    assert config.profile.name == "featurebyte1"
+    assert config.get_client().base_url == "https://app1.featurebyte.com/api/v1"
+
+    config.use_profile("featurebyte2")
+    assert config.profile.name == "featurebyte2"
+    assert config.get_client().base_url == "https://app2.featurebyte.com/api/v1"
 
 
 def test_use_profile_non_existent():
@@ -148,24 +143,22 @@ def test_use_profile_non_existent():
     with patch("featurebyte.config.get_home_path") as mock_get_home_path:
         mock_get_home_path.return_value = Path("tests/fixtures/config")
         with pytest.raises(InvalidSettingsError) as exc_info:
-            Configurations.use_profile("non-existent-profile")
+            Configurations().use_profile("non-existent-profile")
         assert str(exc_info.value) == "Profile not found: non-existent-profile"
 
 
 def test_use_profile_invalid_endpoint():
     """
-    Test use non-existent profile
+    Test use invalid endpoint profile
     """
-    with patch("featurebyte.config.get_home_path") as mock_get_home_path:
-        mock_get_home_path.return_value = Path("tests/fixtures/config")
-        with patch("featurebyte.config.BaseAPIClient.request") as mock_request:
-            mock_request.side_effect = requests.exceptions.ConnectionError()
-            with pytest.raises(InvalidSettingsError) as exc_info:
-                Configurations.use_profile("invalid")
-            assert (
-                str(exc_info.value)
-                == "Service endpoint is inaccessible: http://invalid.endpoint:1234"
-            )
+    config = Configurations("tests/fixtures/config/config.yaml")
+    with patch("featurebyte.config.BaseAPIClient.request") as mock_request:
+        mock_request.side_effect = requests.exceptions.ConnectionError()
+        with pytest.raises(InvalidSettingsError) as exc_info:
+            config.use_profile("invalid")
+        assert (
+            str(exc_info.value) == "Service endpoint is inaccessible: http://invalid.endpoint:1234"
+        )
 
 
 def test_empty_configuration_file():
@@ -176,17 +169,15 @@ def test_empty_configuration_file():
         Configurations(file_handle.name)
 
 
-@patch("featurebyte.config.get_home_path")
 @patch("featurebyte.config.Configurations.check_sdk_versions")
-def test_client_redirection(mock_check_sdk_versions, mock_get_home_path):
+def test_client_redirection(mock_check_sdk_versions):
     """
     Test client disallows redirection.
     Redirection can fail for some endpoints as POST requests gets redirected to GET.
     """
     mock_check_sdk_versions.return_value = {"remote sdk": 0.1, "local sdk": 0.1}
-    mock_get_home_path.return_value = Path("tests/fixtures/config")
 
-    Configurations.use_profile("featurebyte1")
+    Configurations("tests/fixtures/config/config.yaml").use_profile("featurebyte1")
     # expect 30x response to be returned as is instead of following redirection
     client = Configurations().get_client()
     assert isinstance(client, APIClient)
@@ -210,9 +201,6 @@ def test_client_redirection(mock_check_sdk_versions, mock_get_home_path):
             "Connection": "keep-alive",
             "Authorization": "Bearer API_TOKEN_VALUE1",
         }
-
-    # clean up environment variable
-    os.environ.pop("FEATUREBYTE_PROFILE")
 
 
 @pytest.mark.no_mock_websocket_client

@@ -28,11 +28,10 @@ from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
-from featurebyte.service.mixin import OpsServiceMixin
 from featurebyte.service.validator.production_ready_validator import ProductionReadyValidator
 
 
-class FeatureReadinessService(OpsServiceMixin):
+class FeatureReadinessService:
     """
     FeatureReadinessService class is responsible for maintaining the feature readiness structure
     consistencies between feature & feature list (version & namespace).
@@ -90,8 +89,7 @@ class FeatureReadinessService(OpsServiceMixin):
         self,
         feature_list_namespace_id: ObjectId,
         deleted_feature_list_ids: Optional[list[ObjectId]] = None,
-        return_document: bool = True,
-    ) -> Optional[FeatureListNamespaceModel]:
+    ) -> FeatureListNamespaceModel:
         """
         Update default feature list and feature list readiness distribution in feature list namespace
 
@@ -101,12 +99,10 @@ class FeatureReadinessService(OpsServiceMixin):
             FeatureListNamespace ID
         deleted_feature_list_ids: Optional[list[ObjectId]]
             Deleted feature list IDs
-        return_document: bool
-            Whether to return updated document
 
         Returns
         -------
-        Optional[FeatureListNamespaceModel]
+        FeatureListNamespaceModel
         """
         document = await self.feature_list_namespace_service.get_document(
             document_id=feature_list_namespace_id
@@ -121,38 +117,28 @@ class FeatureReadinessService(OpsServiceMixin):
         if feature_list_ids != document.feature_list_ids:
             update_dict["feature_list_ids"] = feature_list_ids
 
-        if document.default_version_mode == DefaultVersionMode.AUTO:
-            if feature_list_ids:
-                default_feature_list = await self._get_default_feature_list(feature_list_ids)
-                update_dict["default_feature_list_id"] = default_feature_list.id
-                update_dict["readiness_distribution"] = default_feature_list.readiness_distribution
-        else:
-            assert (
-                document.default_feature_list_id not in excluded_feature_list_ids
-            ), "default feature list should not be deleted"
-            default_feature_list = await self.feature_list_service.get_document(
-                document_id=document.default_feature_list_id
-            )
-            if default_feature_list.readiness_distribution != document.readiness_distribution:
-                # when feature readiness get updated and feature list namespace in manual default mode
-                update_dict["readiness_distribution"] = default_feature_list.readiness_distribution
+        if feature_list_ids:
+            default_feature_list = await self._get_default_feature_list(feature_list_ids)
+            update_dict["default_feature_list_id"] = default_feature_list.id
+            update_dict["readiness_distribution"] = default_feature_list.readiness_distribution
 
-        updated_document: Optional[FeatureListNamespaceModel] = document
         if update_dict:
-            updated_document = await self.feature_list_namespace_service.update_document(
+            await self.feature_list_namespace_service.update_document(
                 document_id=feature_list_namespace_id,
                 data=FeatureListNamespaceServiceUpdate(**update_dict),
-                return_document=return_document,
+                return_document=False,
             )
-        return self.conditional_return(document=updated_document, condition=return_document)
+            return await self.feature_list_namespace_service.get_document(
+                document_id=feature_list_namespace_id
+            )
+        return document
 
     async def update_feature_list(
         self,
         feature_list_id: ObjectId,
         from_readiness: FeatureReadiness,
         to_readiness: FeatureReadiness,
-        return_document: bool = True,
-    ) -> Optional[FeatureListModel]:
+    ) -> FeatureListModel:
         """
         Update FeatureReadiness distribution in feature list
 
@@ -164,8 +150,6 @@ class FeatureReadinessService(OpsServiceMixin):
             From feature readiness
         to_readiness: FeatureReadiness
             To feature readiness
-        return_document: bool
-            Whether to return updated document
 
         Returns
         -------
@@ -178,13 +162,14 @@ class FeatureReadinessService(OpsServiceMixin):
                     from_readiness=from_readiness, to_readiness=to_readiness
                 ),
             )
-            return await self.feature_list_service.update_document(
+            await self.feature_list_service.update_document(
                 document_id=feature_list_id,
                 data=FeatureListServiceUpdate(readiness_distribution=readiness_dist),
                 document=document,
-                return_document=return_document,
+                return_document=False,
             )
-        return self.conditional_return(document=document, condition=return_document)
+            return await self.feature_list_service.get_document(document_id=feature_list_id)
+        return document
 
     async def _get_default_feature(self, feature_ids: Sequence[ObjectId]) -> FeatureModel:
         """
@@ -222,8 +207,7 @@ class FeatureReadinessService(OpsServiceMixin):
         self,
         feature_namespace_id: ObjectId,
         deleted_feature_ids: Optional[list[ObjectId]] = None,
-        return_document: bool = True,
-    ) -> Optional[FeatureNamespaceModel]:
+    ) -> FeatureNamespaceModel:
         """
         Update default feature and feature readiness in feature namespace
 
@@ -233,8 +217,6 @@ class FeatureReadinessService(OpsServiceMixin):
             FeatureNamespace ID
         deleted_feature_ids: Optional[list[ObjectId]]
             Deleted feature IDs
-        return_document: bool
-            Whether to return updated document
 
         Returns
         -------
@@ -270,15 +252,18 @@ class FeatureReadinessService(OpsServiceMixin):
                 # when feature readiness get updated and feature namespace in manual default mode
                 update_dict["readiness"] = default_feature.readiness
 
-        updated_document: Optional[FeatureNamespaceModel] = document
         if update_dict:
-            updated_document = await self.feature_namespace_service.update_document(
+            await self.feature_namespace_service.update_document(
                 document_id=feature_namespace_id,
                 data=FeatureNamespaceServiceUpdate(**update_dict),
                 document=document,
-                return_document=return_document,
+                return_document=False,
             )
-        return self.conditional_return(document=updated_document, condition=return_document)
+            return await self.feature_namespace_service.get_document(
+                document_id=feature_namespace_id
+            )
+
+        return document
 
     async def _validate_readiness_transition(
         self, document: FeatureModel, target_readiness: FeatureReadiness, ignore_guardrails: bool
@@ -312,8 +297,7 @@ class FeatureReadinessService(OpsServiceMixin):
         feature_id: ObjectId,
         readiness: FeatureReadiness,
         ignore_guardrails: bool = False,
-        return_document: bool = True,
-    ) -> Optional[FeatureModel]:
+    ) -> FeatureModel:
         """
         Update feature readiness & trigger list of cascading updates
 
@@ -327,12 +311,10 @@ class FeatureReadinessService(OpsServiceMixin):
             Allow a user to specify if they want to ignore any guardrails when updating this feature. This should
             currently only apply of the FeatureReadiness value is being updated to PRODUCTION_READY. This should
             be a no-op for all other scenarios.
-        return_document: bool
-            Whether to return updated document
 
         Returns
         -------
-        Optional[FeatureModel]
+        FeatureModel
         """
         document = await self.feature_service.get_document(document_id=feature_id)
         await self._validate_readiness_transition(
@@ -349,19 +331,16 @@ class FeatureReadinessService(OpsServiceMixin):
                 assert isinstance(feature, FeatureModel)
                 await self.update_feature_namespace(
                     feature_namespace_id=feature.feature_namespace_id,
-                    return_document=False,
                 )
                 for feature_list_id in feature.feature_list_ids:
                     feature_list = await self.update_feature_list(
                         feature_list_id=feature_list_id,
                         from_readiness=document.readiness,
                         to_readiness=feature.readiness,
-                        return_document=True,
                     )
                     assert isinstance(feature_list, FeatureListModel)
                     await self.update_feature_list_namespace(
                         feature_list_namespace_id=feature_list.feature_list_namespace_id,
-                        return_document=False,
                     )
-                return self.conditional_return(document=feature, condition=return_document)
-        return self.conditional_return(document=document, condition=return_document)
+                return await self.feature_service.get_document(document_id=feature_id)
+        return document

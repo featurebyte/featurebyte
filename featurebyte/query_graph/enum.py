@@ -47,6 +47,7 @@ class NodeType(StrEnum):
     ITEM_GROUPBY = "item_groupby"
     AGGREGATE_AS_AT = "aggregate_as_at"
     LOOKUP = "lookup"
+    LOOKUP_TARGET = "lookup_target"
     JOIN = "join"
     JOIN_FEATURE = "join_feature"
     TRACK_CHANGES = "track_changes"

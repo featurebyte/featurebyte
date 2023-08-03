@@ -279,7 +279,7 @@ class BatchFeatureCreateTask(BaseTask):
             from_percent=start_percentage,
             to_percent=end_percentage,
         )
-        ranged_progress_update(0, "Started saving features")
+        await ranged_progress_update(0, "Started saving features")
 
         output_feature_ids = []
         for i, feature_item in enumerate(payload.features):
@@ -307,9 +307,9 @@ class BatchFeatureCreateTask(BaseTask):
             # update the progress
             percent = int(100 * (i + 1) / total_features)
             message = f"Completed {i+1}/{total_features} features"
-            ranged_progress_update(percent, message)
+            await ranged_progress_update(percent, message)
 
-        ranged_progress_update(100, "Completed saving features")
+        await ranged_progress_update(100, "Completed saving features")
         return output_feature_ids
 
     async def execute(self) -> Any:

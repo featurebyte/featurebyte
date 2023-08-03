@@ -150,6 +150,38 @@ def test_feature__cond_assign_unnamed(float_feature, bool_feature):
     ]
 
 
+def test_feature__cond_assign_different_groupby_operations(
+    snowflake_event_view_with_entity, feature_group_feature_job_setting
+):
+    """
+    Test conditional assignment of features not limited by Column's row index lineage
+    """
+    view = snowflake_event_view_with_entity
+    feature_1 = view.groupby("cust_id").aggregate_over(
+        value_column="col_float",
+        method="sum",
+        windows=["12h"],
+        feature_job_setting=feature_group_feature_job_setting,
+        feature_names=["feature_1"],
+    )["feature_1"]
+    feature_2 = view.groupby("cust_id").aggregate_over(
+        value_column="col_float",
+        method="min",
+        windows=["12h"],
+        feature_job_setting=feature_group_feature_job_setting,
+        feature_names=["feature_2"],
+    )["feature_2"]
+    feature_1[feature_2 < 0] = 100
+    feature_dict = feature_1.dict()
+    cond_node = get_node(feature_dict["graph"], "conditional_1")
+    assert cond_node == {
+        "name": "conditional_1",
+        "type": "conditional",
+        "parameters": {"value": 100},
+        "output_type": "series",
+    }
+
+
 def test_feature__preview_missing_point_in_time(float_feature):
     """
     Test feature preview validation missing point in time
@@ -297,7 +329,7 @@ def test_list(saved_feature):
         feature_list,
         pd.DataFrame(
             {
-                "id": [saved_feature.id],
+                "id": [str(saved_feature.id)],
                 "name": [saved_feature_namespace.name],
                 "dtype": [saved_feature.dtype],
                 "readiness": [saved_feature_namespace.readiness],
@@ -306,7 +338,7 @@ def test_list(saved_feature):
                 "primary_tables": [["sf_event_table"]],
                 "entities": [["customer"]],
                 "primary_entities": [["customer"]],
-                "created_at": [saved_feature_namespace.created_at],
+                "created_at": [saved_feature_namespace.created_at.isoformat()],
             }
         ),
     )
@@ -947,9 +979,9 @@ def test_list_versions(saved_feature):
         pd.DataFrame(
             {
                 "id": [
-                    feature_group["new_feat2"].id,
-                    feature_group["new_feat1"].id,
-                    saved_feature.id,
+                    str(feature_group["new_feat2"].id),
+                    str(feature_group["new_feat1"].id),
+                    str(saved_feature.id),
                 ],
                 "name": ["new_feat2", "new_feat1", saved_feature.name],
                 "version": [saved_feature.version] * 3,
@@ -963,11 +995,11 @@ def test_list_versions(saved_feature):
                 "created_at": [
                     feature_group[
                         "new_feat2"
-                    ].cached_model.created_at,  # DEV-1820: created_at is not synced
+                    ].cached_model.created_at.isoformat(),  # DEV-1820: created_at is not synced
                     feature_group[
                         "new_feat1"
-                    ].cached_model.created_at,  # DEV-1820: created_at is not synced
-                    saved_feature.created_at,
+                    ].cached_model.created_at.isoformat(),  # DEV-1820: created_at is not synced
+                    saved_feature.created_at.isoformat(),
                 ],
                 "is_default": [True] * 3,
             }
@@ -977,7 +1009,7 @@ def test_list_versions(saved_feature):
         saved_feature.list_versions(),
         pd.DataFrame(
             {
-                "id": [saved_feature.id],
+                "id": [str(saved_feature.id)],
                 "name": [saved_feature.name],
                 "version": [saved_feature.version],
                 "dtype": [saved_feature.dtype],
@@ -987,7 +1019,7 @@ def test_list_versions(saved_feature):
                 "primary_tables": [["sf_event_table"]],
                 "entities": [["customer"]],
                 "primary_entities": [["customer"]],
-                "created_at": [saved_feature.created_at],
+                "created_at": [saved_feature.created_at.isoformat()],
                 "is_default": [True],
             }
         ),

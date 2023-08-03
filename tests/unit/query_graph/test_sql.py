@@ -58,6 +58,7 @@ def make_context(node_type=None, parameters=None, input_sql_nodes=None, sql_type
         sql_type=sql_type,
         source_type=SourceType.SNOWFLAKE,
         to_filter_scd_by_current_flag=False,
+        event_table_timestamp_filter=None,
     )
     return context
 

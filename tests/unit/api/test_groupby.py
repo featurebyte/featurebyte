@@ -438,15 +438,15 @@ def get_test_aggregator_and_feature_fixture(snowflake_event_view_with_entity_and
     )
 
 
-def test__fill_feature_noop(test_aggregator_and_sum_feature):
+def test__fill_feature_or_target_noop(test_aggregator_and_sum_feature):
     """
-    Test _fill_feature
+    Test _fill_feature_or_target
     """
     aggregator, feature = test_aggregator_and_sum_feature
 
     # Passing in None as fill value, and sum count type should result in a no-op
     original_edges = get_graph_edges_from_feature(feature)
-    filled_feature = aggregator._fill_feature(
+    filled_feature = aggregator._fill_feature_or_target(
         feature,
         "sum",
         feature.name,
@@ -480,13 +480,13 @@ def get_test_aggregator_and_count_feature_fixture(snowflake_event_view_with_enti
     )
 
 
-def test__fill_feature_count_fill_with_0(test_aggregator_and_count_feature):
+def test__fill_feature_or_target_count_fill_with_0(test_aggregator_and_count_feature):
     """
-    Test _fill_feature
+    Test _fill_feature_or_target
     """
     aggregator, feature = test_aggregator_and_count_feature
     original_edges = get_graph_edges_from_feature(feature)
-    filled_feature = aggregator._fill_feature(
+    filled_feature = aggregator._fill_feature_or_target(
         feature,
         "count",
         feature.name,
@@ -509,14 +509,14 @@ def get_node_from_feature(feature, node_name):
     return nodes[node_name]
 
 
-def test__fill_feature_update_value_count_feature(test_aggregator_and_count_feature):
+def test__fill_feature_or_target_update_value_count_feature(test_aggregator_and_count_feature):
     """
-    Test _fill_feature
+    Test _fill_feature_or_target
     """
     aggregator, feature = test_aggregator_and_count_feature
     original_edges = get_graph_edges_from_feature(feature)
     value_to_update = 2
-    filled_feature = aggregator._fill_feature(
+    filled_feature = aggregator._fill_feature_or_target(
         feature,
         "count",
         feature.name,
@@ -543,14 +543,14 @@ def assert_edges_updated_with_conditional(original_edges, updated_edges):
     assert expected_filled_edges == updated_edges
 
 
-def test__fill_feature_update_value_non_count_features(test_aggregator_and_count_feature):
+def test__fill_feature_or_target_update_value_non_count_features(test_aggregator_and_count_feature):
     """
-    Test _fill_feature
+    Test _fill_feature_or_target
     """
     aggregator, feature = test_aggregator_and_count_feature
     original_edges = get_graph_edges_from_feature(feature)
     value_to_update = 2
-    filled_feature = aggregator._fill_feature(
+    filled_feature = aggregator._fill_feature_or_target(
         feature,
         "sum",
         feature.name,

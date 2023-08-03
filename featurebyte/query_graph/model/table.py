@@ -191,7 +191,7 @@ class ItemTableData(BaseTableData):
             left_output_columns=left_output_columns,
             right_input_columns=columns_excluding_event_id,
             right_output_columns=right_output_columns,
-            join_type="left",
+            join_type="inner",
             metadata=JoinEventTableAttributesMetadata(
                 columns=columns_to_join,
                 event_suffix=event_suffix,

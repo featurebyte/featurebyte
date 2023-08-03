@@ -124,7 +124,7 @@ def saved_event_table_fixture(snowflake_event_table):
                 "type": [snowflake_event_table.type],
                 "status": [snowflake_event_table.status],
                 "entities": event_table_list["entities"],
-                "created_at": [snowflake_event_table.created_at],
+                "created_at": [snowflake_event_table.created_at.isoformat()],
             }
         ),
     )
@@ -256,7 +256,7 @@ def saved_item_table_fixture(snowflake_feature_store, snowflake_item_table, item
                 "type": [snowflake_item_table.type],
                 "status": [snowflake_item_table.status],
                 "entities": [["item"]],
-                "created_at": [snowflake_item_table.created_at],
+                "created_at": [snowflake_item_table.created_at.isoformat()],
             }
         ),
     )
