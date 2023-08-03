@@ -21,15 +21,11 @@ from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import (
     AggregateAsAtNode,
     AggregateAsAtParameters,
-    EventLookupParameters,
     ForwardAggregateNode,
     ForwardAggregateParameters,
     GroupByNode,
     ItemGroupbyNode,
     ItemGroupbyParameters,
-    LookupNode,
-    LookupTargetNode,
-    SCDLookupParameters,
 )
 from featurebyte.query_graph.node.mixin import BaseGroupbyParameters
 from featurebyte.query_graph.sql.adapter import BaseAdapter

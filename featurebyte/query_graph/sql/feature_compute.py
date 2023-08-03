@@ -21,6 +21,7 @@ from featurebyte.query_graph.sql.aggregator.forward import ForwardAggregator
 from featurebyte.query_graph.sql.aggregator.item import ItemAggregator
 from featurebyte.query_graph.sql.aggregator.latest import LatestAggregator
 from featurebyte.query_graph.sql.aggregator.lookup import LookupAggregator
+from featurebyte.query_graph.sql.aggregator.lookup_target import LookupTargetAggregator
 from featurebyte.query_graph.sql.aggregator.window import WindowAggregator
 from featurebyte.query_graph.sql.ast.base import TableNode
 from featurebyte.query_graph.sql.ast.generic import AliasNode, Project
@@ -72,6 +73,7 @@ class FeatureExecutionPlan:
         self.aggregators: dict[str, AggregatorType] = {
             AggregationType.LATEST: LatestAggregator(**aggregator_kwargs),
             AggregationType.LOOKUP: LookupAggregator(**aggregator_kwargs),
+            AggregationType.LOOKUP_TARGET: LookupTargetAggregator(**aggregator_kwargs),
             AggregationType.WINDOW: WindowAggregator(**aggregator_kwargs),
             AggregationType.ITEM: ItemAggregator(**aggregator_kwargs),
             AggregationType.AS_AT: AsAtAggregator(**aggregator_kwargs),

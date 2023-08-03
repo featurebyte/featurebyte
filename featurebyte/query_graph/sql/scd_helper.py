@@ -11,6 +11,7 @@ import pandas as pd
 from sqlglot import expressions, parse_one
 from sqlglot.expressions import Expression, Select, alias_, select
 
+from featurebyte.enum import StrEnum
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import get_qualified_column_identifier, quoted_identifier
@@ -74,6 +75,11 @@ class Table:
         return cast(Expression, self.expr.subquery(alias=alias))
 
 
+class OffsetDirection(StrEnum):
+    FORWARD = "forward"
+    BACKWARD = "backward"
+
+
 def get_scd_join_expr(
     left_table: Table,
     right_table: Table,
@@ -81,6 +87,7 @@ def get_scd_join_expr(
     adapter: BaseAdapter,
     select_expr: Optional[Select] = None,
     offset: Optional[str] = None,
+    offset_direction: OffsetDirection = OffsetDirection.BACKWARD,
     allow_exact_match: bool = True,
     quote_right_input_columns: bool = True,
     convert_timestamps_to_utc: bool = True,
@@ -107,6 +114,8 @@ def get_scd_join_expr(
         Partially constructed select expression, if any
     offset: Optional[str]
         Offset to apply when performing SCD join
+    offset_direction: OffsetDirection
+        Direction of offset
     allow_exact_match: bool
         Whether to allow exact matching effective timestamps to be joined
     quote_right_input_columns: bool
@@ -148,6 +157,7 @@ def get_scd_join_expr(
         right_table=right_table,
         adapter=adapter,
         offset=offset,
+        offset_direction=offset_direction,
         allow_exact_match=allow_exact_match,
         convert_timestamps_to_utc=convert_timestamps_to_utc,
     )
@@ -196,6 +206,7 @@ def augment_table_with_effective_timestamp(
     right_table: Table,
     adapter: BaseAdapter,
     offset: Optional[str],
+    offset_direction: OffsetDirection,
     allow_exact_match: bool = True,
     convert_timestamps_to_utc: bool = True,
 ) -> Select:
@@ -249,6 +260,8 @@ def augment_table_with_effective_timestamp(
         Instance of BaseAdapter for engine specific sql generation
     offset: Optional[str]
         Offset to apply when performing SCD join
+    offset_direction: OffsetDirection
+        Direction of offset
     allow_exact_match: bool
         Whether to allow exact matching effective timestamps to be joined
     convert_timestamps_to_utc: bool
@@ -261,8 +274,9 @@ def augment_table_with_effective_timestamp(
     # Adjust left timestamps if offset is provided
     if offset:
         offset_seconds = pd.Timedelta(offset).total_seconds()
+        direction_adjustment_multiplier = -1 if offset_direction == OffsetDirection.BACKWARD else 1
         left_ts_col = adapter.dateadd_microsecond(
-            make_literal_value(offset_seconds * 1e6 * -1),
+            make_literal_value(offset_seconds * 1e6 * direction_adjustment_multiplier),
             left_table.timestamp_column_expr,
         )
     else:
