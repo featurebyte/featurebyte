@@ -1028,9 +1028,10 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         _ = calling_view
         return {}
 
-    def get_as_feature_parameters(self, offset: Optional[str] = None) -> dict[str, Any]:
+    def get_additional_lookup_parameters(self, offset: Optional[str] = None) -> dict[str, Any]:
         """
-        Returns any additional query node parameters for as_feature operation (LookupNode)
+        Returns any additional query node parameters for lookup operations - as_feature (LookupNode), or
+        as_target (LookupTargetNode).
 
         This is a no-op unless the lookup is time-aware (currently only available for
         SCDView)
@@ -1556,7 +1557,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         serving_name = entity.serving_name
 
         # Set up Lookup node
-        additional_params = self.get_as_feature_parameters(offset=offset)
+        additional_params = self.get_additional_lookup_parameters(offset=offset)
         return {
             "input_column_names": column_names,
             "feature_names": feature_names,
