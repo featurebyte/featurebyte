@@ -296,6 +296,7 @@ class ViewColumn(Series, SampleMixin):
         Raises
         ------
         ValueError
+            If the View object is not assigned to the ViewColumn.
         """
         view = self._parent
         if view is None:
