@@ -283,10 +283,15 @@ class ViewColumn(Series, SampleMixin):
         """
         Returns the View object that is used for lookup targets or features.
 
+        Parameters
+        ----------
+        function_name: str
+            The name of the function that is being called.
+
         Returns
         -------
-        View
-            View object that is used for lookup targets or features.
+        Tuple[View, str]
+            The View object and the input column name.
 
         Raises
         ------
@@ -321,11 +326,6 @@ class ViewColumn(Series, SampleMixin):
         Returns
         -------
         Target
-
-        Raises
-        ------
-        ValueError
-            If the column is a temporary column not associated with any View
 
         Examples
         --------
@@ -384,11 +384,6 @@ class ViewColumn(Series, SampleMixin):
         Returns
         -------
         Feature
-
-        Raises
-        ------
-        ValueError
-            If the column is a temporary column not associated with any View
 
         Examples
         --------
@@ -1541,6 +1536,11 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         Returns
         -------
         Dict[str, Any]
+
+        Raises
+        ------
+        ValueError
+            If the entity_column is not found in the columns_info
         """
         # Get entity_column
         entity_column = self.get_join_column()
@@ -1597,11 +1597,6 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             Feature names corresponding to column_names
         offset: Optional[str]
             When specified, retrieve feature values as of this offset prior to the point-in-time
-
-        Raises
-        ------
-        ValueError
-            When any of the specified parameters are invalid
 
         Returns
         -------
