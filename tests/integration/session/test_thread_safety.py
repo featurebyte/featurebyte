@@ -23,7 +23,6 @@ def get_threadsafe_sessions():
 
 
 @pytest.mark.skip
-@pytest.mark.parametrize("source_type", get_threadsafe_sessions(), indirect=True)
 @pytest.mark.asyncio
 async def test_threadsafety(session, source_type):
     """
@@ -63,7 +62,6 @@ async def test_threadsafety(session, source_type):
     assert set(df["A"].tolist()) == set(values)
 
 
-@pytest.mark.skip
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 @pytest.mark.asyncio
 async def test_threadsafety_api_object(event_table):
