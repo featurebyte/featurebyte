@@ -19,7 +19,7 @@ class BaseGraphExtractor(Generic[OutputT, BranchStateT, GlobalStateT]):
 
     def __init__(self, graph: QueryGraphT):
         self.graph = graph
-        self._input_node_map_cache = {}
+        self._input_node_map_cache: Dict[str, OutputT] = {}
 
     @abstractmethod
     def _pre_compute(
