@@ -16,7 +16,7 @@ from featurebyte.query_graph.node.generic import (
     LookupTargetNode,
     SCDLookupParameters,
 )
-from featurebyte.query_graph.sql.specs import AggregationSource, NonTileBasedAggregationSpec
+from featurebyte.query_graph.sql.specs import NonTileBasedAggregationSpec
 
 
 @dataclass

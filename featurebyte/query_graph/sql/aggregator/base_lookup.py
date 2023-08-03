@@ -151,6 +151,7 @@ class BaseLookupAggregator(NonTileBasedAggregator[LookupSpecT]):
         -------
         Optional[str]
         """
+        _ = base_lookup_spec
         return None
 
     def get_direct_lookups(self) -> Sequence[LeftJoinableSubquery]:
