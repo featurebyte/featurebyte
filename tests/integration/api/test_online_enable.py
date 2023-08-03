@@ -54,7 +54,7 @@ async def app_service_fixture(persistent):
                 await asyncio.sleep(1)
             raise TimeoutError("service did not start")
         finally:
-            proc.terminate()
+            proc.kill()
 
 
 @pytest.fixture(name="online_enabled_feature_list_and_deployment", scope="module")
