@@ -76,6 +76,10 @@ class Table:
 
 
 class OffsetDirection(StrEnum):
+    """
+    Offset direction
+    """
+
     FORWARD = "forward"
     BACKWARD = "backward"
 
@@ -201,7 +205,7 @@ def _convert_to_utc_ntz(
     return expressions.Cast(this=utc_ts_expr, to=parse_one("TIMESTAMP"))
 
 
-def augment_table_with_effective_timestamp(
+def augment_table_with_effective_timestamp(  # pylint: disable=too-many-locals
     left_table: Table,
     right_table: Table,
     adapter: BaseAdapter,
