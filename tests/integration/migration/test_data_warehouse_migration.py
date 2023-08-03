@@ -62,7 +62,6 @@ async def bad_feature_stores_fixture(feature_store, persistent, user, session):
     """
     Invalid FeatureStore documents to test error handling during migration
     """
-    raise
     feature_store_doc = await persistent.find_one("feature_store", {"_id": feature_store.id})
     del feature_store_doc["_id"]
 
