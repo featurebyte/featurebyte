@@ -51,6 +51,7 @@ from featurebyte.query_graph.transform.flattening import GraphFlatteningTransfor
 AggregatorType = Union[
     LatestAggregator,
     LookupAggregator,
+    LookupTargetAggregator,
     WindowAggregator,
     ItemAggregator,
     AsAtAggregator,
