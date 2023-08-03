@@ -16,7 +16,6 @@ from featurebyte import FeatureList
 from featurebyte.logging import get_logger
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 from tests.integration.conftest import MONGO_CONNECTION
-from tests.integration.worker.conftest import RunThread
 
 logger = get_logger(__name__)
 
@@ -36,16 +35,13 @@ async def app_service_fixture(persistent):
             "--port=8080",
         ],
         env=env,
-        stdout=subprocess.PIPE,
     ) as proc:
-        thread = RunThread(proc.stdout)
-        thread.daemon = True
-        thread.start()
-
         try:
             # wait for service to start
             start = time.time()
             while time.time() - start < 60:
+                if proc.poll() is not None:
+                    raise RuntimeError(f"uvicorn exited with code {proc.returncode}")
                 try:
                     response = requests.get("http://localhost:8080/status", timeout=5)
                     if response.status_code == 200:
@@ -54,6 +50,7 @@ async def app_service_fixture(persistent):
                         return
                 except requests.exceptions.ConnectionError:
                     pass
+                logger.info("waiting for service to be started...")
                 await asyncio.sleep(1)
             raise TimeoutError("service did not start")
         finally:
