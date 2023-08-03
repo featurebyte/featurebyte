@@ -54,6 +54,7 @@ class AggregationType(StrEnum):
 
     LATEST = "latest"
     LOOKUP = "lookup"
+    LOOKUP_TARGET = "lookup_target"
     WINDOW = "window"
     ITEM = "item"
     AS_AT = "as_at"

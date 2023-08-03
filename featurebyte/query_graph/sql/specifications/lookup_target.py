@@ -1,5 +1,5 @@
 """
-Lookup spec
+Lookup target spec
 """
 from __future__ import annotations
 
@@ -10,11 +10,11 @@ from featurebyte.query_graph.sql.specs import AggregationType
 
 
 @dataclass
-class LookupSpec(BaseLookupSpec):
+class LookupTargetSpec(BaseLookupSpec):
     """
-    LookupSpec contains all information required to generate sql for a lookup feature
+    LookupTargetSpec contains all information required to generate sql for a lookup target feature
     """
 
     @property
     def aggregation_type(self) -> AggregationType:
-        return AggregationType.LOOKUP
+        return AggregationType.LOOKUP_TARGET
