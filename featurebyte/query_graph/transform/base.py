@@ -19,6 +19,7 @@ class BaseGraphExtractor(Generic[OutputT, BranchStateT, GlobalStateT]):
 
     def __init__(self, graph: QueryGraphT):
         self.graph = graph
+        self._input_node_map_cache: Dict[str, OutputT] = {}
 
     @abstractmethod
     def _pre_compute(
@@ -117,19 +118,21 @@ class BaseGraphExtractor(Generic[OutputT, BranchStateT, GlobalStateT]):
         for input_node_name in sorted(
             input_node_names, key=lambda x: topological_order_map[x], reverse=True
         ):
-            input_node = self.graph.nodes_map[input_node_name]
-            branch_state = self._in_compute(
-                branch_state=branch_state,
-                global_state=global_state,
-                node=node,
-                input_node=input_node,
-            )
-            input_node_map[input_node_name] = self._extract(
-                node=input_node,
-                branch_state=branch_state,
-                global_state=global_state,
-                topological_order_map=topological_order_map,
-            )
+            if input_node_name not in self._input_node_map_cache:
+                input_node = self.graph.nodes_map[input_node_name]
+                branch_state = self._in_compute(
+                    branch_state=branch_state,
+                    global_state=global_state,
+                    node=node,
+                    input_node=input_node,
+                )
+                self._input_node_map_cache[input_node_name] = self._extract(
+                    node=input_node,
+                    branch_state=branch_state,
+                    global_state=global_state,
+                    topological_order_map=topological_order_map,
+                )
+            input_node_map[input_node_name] = self._input_node_map_cache[input_node_name]
 
         return self._post_compute(
             branch_state=branch_state,
