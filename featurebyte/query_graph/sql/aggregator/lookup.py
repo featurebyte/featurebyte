@@ -22,7 +22,7 @@ from featurebyte.query_graph.sql.common import (
     quoted_identifier,
 )
 from featurebyte.query_graph.sql.scd_helper import Table, get_scd_join_expr
-from featurebyte.query_graph.sql.specs import LookupSpec
+from featurebyte.query_graph.sql.specifications.lookup import LookupSpec
 
 
 @dataclass

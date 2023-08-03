@@ -33,6 +33,7 @@ from featurebyte.query_graph.sql.common import (
     quoted_identifier,
 )
 from featurebyte.query_graph.sql.parent_serving import construct_request_table_with_parent_entities
+from featurebyte.query_graph.sql.specifications.lookup import LookupSpec
 from featurebyte.query_graph.sql.specs import (
     AggregateAsAtSpec,
     AggregationSpec,
@@ -40,7 +41,6 @@ from featurebyte.query_graph.sql.specs import (
     FeatureSpec,
     ForwardAggregateSpec,
     ItemAggregationSpec,
-    LookupSpec,
     NonTileBasedAggregationSpec,
     TileBasedAggregationSpec,
 )

@@ -13,12 +13,12 @@ from sqlglot.expressions import Expression, Select
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.common import SQLType, quoted_identifier
+from featurebyte.query_graph.sql.specifications.lookup import LookupSpec
 from featurebyte.query_graph.sql.specs import (
     AggregateAsAtSpec,
     AggregationSource,
     ForwardAggregateSpec,
     ItemAggregationSpec,
-    LookupSpec,
 )
 
 
