@@ -1,8 +1,23 @@
 """
 Validate window parameter input.
 """
+from typing import Optional
 
-from featurebyte.common.model_util import parse_duration_string
+from featurebyte.common.model_util import parse_duration_string, validate_offset_string
+
+
+def validate_offset(offset: Optional[str]) -> None:
+    """
+    Validates whether the offset param is a valid one.
+
+    Parameters
+    ----------
+    offset: str
+        the offset parameter string
+    """
+    # Validate offset is valid if provided
+    if offset is not None:
+        validate_offset_string(offset)
 
 
 def validate_window(window: str, feature_job_frequency: str) -> None:

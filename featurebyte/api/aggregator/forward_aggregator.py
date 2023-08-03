@@ -83,26 +83,13 @@ class ForwardAggregator(BaseAggregator):
             node_output_type=NodeOutputType.FRAME,
             input_nodes=[self.view.node],
         )
-        # Project target node.
-        target_node = self.view.graph.add_operation(
-            node_type=NodeType.PROJECT,
-            node_params={"columns": [target_name]},
-            node_output_type=NodeOutputType.SERIES,
-            input_nodes=[forward_aggregate_node],
-        )
-        # Build and return Target
         agg_method = construct_agg_func(agg_func=cast(AggFunc, method))
         output_var_type = self.get_output_var_type(agg_method, method, value_column)
-        target = Target(
-            name=target_name,
-            entity_ids=self.entity_ids,
-            graph=self.view.graph,
-            node_name=target_node.name,
-            tabular_source=self.view.tabular_source,
-            feature_store=self.view.feature_store,
-            dtype=output_var_type,
-        )
+        # Project, build and return Target
         assert target_name is not None
+        target = self.view.project_target_from_node(
+            forward_aggregate_node, target_name, output_var_type
+        )
         if not skip_fill_na:
             return self._fill_feature_or_target(target, method, target_name, fill_value)  # type: ignore[return-value]
         return target
