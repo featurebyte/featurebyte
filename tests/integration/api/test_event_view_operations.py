@@ -1099,26 +1099,33 @@ def test_add_feature(event_view, non_time_based_feature, scd_table, source_type)
     )
     assert df_feature_preview.shape[0] == 1
 
-    # databricks return POINT_IN_TIME with "Etc/UTC" timezone
-    if source_type == "databricks":
-        df_feature_preview["POINT_IN_TIME"] = pd.to_datetime(
-            df_feature_preview["POINT_IN_TIME"]
-        ).dt.tz_localize(None)
-    assert df_feature_preview.iloc[0].to_dict() == {
-        "POINT_IN_TIME": pd.Timestamp(timestamp_str),
-        "PRODUCT_ACTION": "purchase",
-        "transaction_count_sum_24h": 56,
-    }
+    def _check_first_row_matches(df, expected_dict):
+        # databricks return POINT_IN_TIME with "Etc/UTC" timezone
+        if source_type == "databricks":
+            df["POINT_IN_TIME"] = pd.to_datetime(df["POINT_IN_TIME"]).dt.tz_localize(None)
+        assert df.iloc[0].to_dict() == expected_dict
+
+    _check_first_row_matches(
+        df_feature_preview,
+        {
+            "POINT_IN_TIME": pd.Timestamp(timestamp_str),
+            "PRODUCT_ACTION": "purchase",
+            "transaction_count_sum_24h": 56,
+        },
+    )
 
     feature_list = FeatureList([transaction_counts], name="temp_list")
     df_historical = feature_list.compute_historical_features(
         pd.DataFrame([{"POINT_IN_TIME": timestamp_str, "PRODUCT_ACTION": "purchase"}]),
     )
-    assert df_historical.iloc[0].to_dict() == {
-        "POINT_IN_TIME": pd.Timestamp(timestamp_str),
-        "PRODUCT_ACTION": "purchase",
-        "transaction_count_sum_24h": 56,
-    }
+    _check_first_row_matches(
+        df_historical,
+        {
+            "POINT_IN_TIME": pd.Timestamp(timestamp_str),
+            "PRODUCT_ACTION": "purchase",
+            "transaction_count_sum_24h": 56,
+        },
+    )
 
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
