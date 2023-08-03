@@ -9,6 +9,7 @@ from featurebyte.api.dimension_view import DimensionView
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.enum import DBVarType
 from featurebyte.exception import JoinViewMismatchError, RepeatedColumnNamesError
+from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
 from tests.util.helper import check_sdk_code_generation, get_node
 
@@ -276,6 +277,47 @@ def test_as_feature_same_column_name(
 
     new_feature = feature_b == feature_a
     new_feature.name = "lookup_combined_feature"
+
+
+def test_as_target__from_view_column(snowflake_dimension_view_with_entity, cust_id_entity):
+    """
+    Test calling as_target() correctly
+    """
+    view = snowflake_dimension_view_with_entity
+    feature = view["col_float"].as_target("FloatTarget", "1d")
+    assert feature.name == "FloatTarget"
+    assert feature.dtype == DBVarType.FLOAT
+
+    feature_dict = feature.dict()
+    graph_dict = feature_dict["graph"]
+    float_feature_node_dict = get_node(graph_dict, feature_dict["node_name"])
+    lookup_node_dict = get_node(graph_dict, "lookup_target_1")
+    assert graph_dict["edges"] == [
+        {"source": "input_1", "target": "graph_1"},
+        {"source": "graph_1", "target": "lookup_target_1"},
+        {"source": "lookup_target_1", "target": "project_1"},
+    ]
+    assert float_feature_node_dict == {
+        "name": "project_1",
+        "type": "project",
+        "output_type": "series",
+        "parameters": {"columns": ["FloatTarget"]},
+    }
+    assert lookup_node_dict == {
+        "name": "lookup_target_1",
+        "type": NodeType.LOOKUP_TARGET,
+        "output_type": NodeOutputType.FRAME,
+        "parameters": {
+            "input_column_names": ["col_float"],
+            "feature_names": ["FloatTarget"],
+            "entity_column": "col_int",
+            "serving_name": "cust_id",
+            "entity_id": cust_id_entity.id,
+            "scd_parameters": None,
+            "event_parameters": None,
+            "offset": "1d",
+        },
+    }
 
 
 def test_as_feature__from_view_column(snowflake_dimension_view_with_entity, cust_id_entity):

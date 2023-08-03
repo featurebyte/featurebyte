@@ -1,13 +1,14 @@
 """
 View class
 """
-# pylint: disable=too-many-lines
+# pylint: disable=too-many-lines,too-many-public-methods
 from __future__ import annotations
 
 from typing import (
     TYPE_CHECKING,
     Any,
     ClassVar,
+    Dict,
     List,
     Literal,
     Optional,
@@ -31,6 +32,8 @@ from featurebyte.api.feature import Feature
 from featurebyte.api.feature_group import FeatureGroup
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.static_source_table import StaticSourceTable
+from featurebyte.api.target import Target
+from featurebyte.api.window_validator import validate_offset
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.join_utils import (
     append_rsuffix_to_column_info,
@@ -40,7 +43,6 @@ from featurebyte.common.join_utils import (
     filter_columns_info,
     is_column_name_in_columns,
 )
-from featurebyte.common.model_util import validate_offset_string
 from featurebyte.common.typing import ScalarSequence
 from featurebyte.core.frame import Frame, FrozenFrame
 from featurebyte.core.generic import ProtectedColumnsQueryObject, QueryObject
@@ -277,6 +279,92 @@ class ViewColumn(Series, SampleMixin):
         """
         return super().describe(size, seed, from_timestamp, to_timestamp, **kwargs)
 
+    def _get_view_and_input_col_for_lookup(self, function_name: str) -> Tuple[View, str]:
+        """
+        Returns the View object that is used for lookup targets or features.
+
+        Parameters
+        ----------
+        function_name: str
+            The name of the function that is being called.
+
+        Returns
+        -------
+        Tuple[View, str]
+            The View object and the input column name.
+
+        Raises
+        ------
+        ValueError
+            If the View object is not assigned to the ViewColumn.
+        """
+        view = self._parent
+        if view is None:
+            raise ValueError(
+                f"{function_name} is only supported for named columns in the View object. Consider"
+                f" assigning to the View before calling {function_name}()."
+            )
+        input_column_name = cast(ProjectNode.Parameters, self.node.parameters).columns[0]
+        return cast(View, view[[input_column_name]]), input_column_name
+
+    @typechecked
+    def as_target(self, target_name: str, offset: Optional[str] = None) -> Target:
+        """
+        Create a lookup target directly from the column in the View.
+
+        For SCD views, lookup targets are materialized through point-in-time joins, and the resulting value represents
+        the active row for the natural key at the point-in-time indicated in the target request.
+
+        To obtain a target value at a specific time before the request's point-in-time, an offset can be specified.
+
+        Parameters
+        ----------
+        target_name: str
+            Name of the target to create.
+        offset: str
+            When specified, retrieve target value as of this offset prior to the point-in-time.
+
+        Returns
+        -------
+        Target
+
+        Examples
+        --------
+        >>> customer_view = catalog.get_view("GROCERYCUSTOMER")
+        >>> # Extract operating system from BrowserUserAgent column
+        >>> customer_view["OperatingSystemIsWindows"] = customer_view.BrowserUserAgent.str.contains("Windows")
+        >>> # Create a target from the OperatingSystemIsWindows column
+        >>> uses_windows = customer_view.OperatingSystemIsWindows.as_target("UsesWindows")
+
+
+        If the view is a Slowly Changing Dimension View, you may also consider to create a target that retrieves the
+        entity's attribute at a point-in-time prior to the point-in-time specified in the target request by specifying
+        an offset.
+
+        >>> uses_windows_12w_ago = customer_view.OperatingSystemIsWindows.as_target(
+        ...   "UsesWindows_12w_ago", offset="12w"
+        ... )
+        """
+        view, input_column_name = self._get_view_and_input_col_for_lookup("as_target")
+
+        # Perform validation
+        validate_offset(offset)
+
+        # Add lookup node to graph, and return Target
+        lookup_node_params = view.get_lookup_node_params([input_column_name], [target_name], offset)
+        input_node = view.get_input_node_for_lookup_node()
+        lookup_node = self.graph.add_operation(
+            node_type=NodeType.LOOKUP_TARGET,
+            node_params=lookup_node_params,
+            node_output_type=NodeOutputType.FRAME,
+            input_nodes=[input_node],
+        )
+        return view.project_target_from_node(
+            input_node=lookup_node,
+            target_name=target_name,
+            target_dtype=view.column_var_type_map[input_column_name],
+        )
+
     @typechecked
     def as_feature(self, feature_name: str, offset: Optional[str] = None) -> Feature:
         """
@@ -298,11 +386,6 @@ class ViewColumn(Series, SampleMixin):
         -------
         Feature
 
-        Raises
-        ------
-        ValueError
-            If the column is a temporary column not associated with any View
-
         Examples
         --------
         >>> customer_view = catalog.get_view("GROCERYCUSTOMER")
@@ -320,14 +403,7 @@ class ViewColumn(Series, SampleMixin):
         ...   "UsesWindows_12w_ago", offset="12w"
         ... )
         """
-        view = self._parent
-        if view is None:
-            raise ValueError(
-                "as_feature is only supported for named columns in the View object. Consider"
-                " assigning the Feature to the View before calling as_feature()."
-            )
-        input_column_name = cast(ProjectNode.Parameters, self.node.parameters).columns[0]
-        view = cast(View, view[[input_column_name]])
+        view, input_column_name = self._get_view_and_input_col_for_lookup("as_feature")
         feature = view.as_features(
             [input_column_name],
             [feature_name],
@@ -952,9 +1028,10 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         _ = calling_view
         return {}
 
-    def _get_as_feature_parameters(self, offset: Optional[str] = None) -> dict[str, Any]:
+    def get_additional_lookup_parameters(self, offset: Optional[str] = None) -> dict[str, Any]:
         """
-        Returns any additional query node parameters for as_feature operation (LookupNode)
+        Returns any additional query node parameters for lookup operations - as_feature (LookupNode), or
+        as_target (LookupTargetNode).
 
         This is a no-op unless the lookup is time-aware (currently only available for
         SCDView)
@@ -1314,13 +1391,48 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             new_node_name=node.name, joined_columns_info=joined_columns_info
         )
 
-    @staticmethod
-    def _validate_offset(offset: Optional[str]) -> None:
-        # Validate offset is valid if provided
-        if offset is not None:
-            validate_offset_string(offset)
+    def project_target_from_node(
+        self,
+        input_node: Node,
+        target_name: str,
+        target_dtype: DBVarType,
+    ) -> Target:
+        """
+        Create a Target object from a node that produces targets, such as groupby, lookup, etc.
 
-    def _project_feature_from_node(
+        Parameters
+        ----------
+        input_node: Node
+            Query graph node
+        target_name: str
+            Target name
+        target_dtype: DBVarType
+            Variable type of the Target
+
+        Returns
+        -------
+        Feature
+        """
+        # Project target node.
+        target_node = self.graph.add_operation(
+            node_type=NodeType.PROJECT,
+            node_params={"columns": [target_name]},
+            node_output_type=NodeOutputType.SERIES,
+            input_nodes=[input_node],
+        )
+        # Build and return Target
+        entity_ids = self.graph.get_entity_ids(node_name=target_node.name)
+        return Target(
+            name=target_name,
+            entity_ids=entity_ids,
+            graph=self.graph,
+            node_name=target_node.name,
+            tabular_source=self.tabular_source,
+            feature_store=self.feature_store,
+            dtype=target_dtype,
+        )
+
+    def project_feature_from_node(
         self,
         node: Node,
         feature_name: str,
@@ -1379,7 +1491,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
                 f" ({len(column_names)})"
             )
 
-    def _get_input_node_for_lookup_node(self) -> Node:
+    def get_input_node_for_lookup_node(self) -> Node:
         """
         Get the node before any projection(s) to be used as the input node for the lookup node in
         as_features(). The view before such projection(s) must also have those columns and can be
@@ -1407,6 +1519,54 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             node_before_projection = self.graph.get_node_by_name(input_node_names[0])
 
         return node_before_projection
+
+    def get_lookup_node_params(
+        self, column_names: List[str], feature_names: List[str], offset: Optional[str]
+    ) -> Dict[str, Any]:
+        """
+        Get the parameters for the lookup node in as_features().
+
+        Parameters
+        ----------
+        column_names: List[str]
+            List of column names to be used as input to the lookup node
+        feature_names: List[str]
+            List of feature names to be used as output of the lookup node
+        offset: Optional[str]
+            Offset to be used for the lookup node
+
+        Returns
+        -------
+        Dict[str, Any]
+
+        Raises
+        ------
+        ValueError
+            If the entity_column is not found in the columns_info
+        """
+        # Get entity_column
+        entity_column = self.get_join_column()
+
+        # Get serving_name
+        columns_info = self.columns_info
+        column_entity_map = {col.name: col.entity_id for col in columns_info if col.entity_id}
+        if entity_column not in column_entity_map:
+            raise ValueError(f'Column "{entity_column}" is not an entity!')
+        entity_id = column_entity_map[entity_column]
+        entity = Entity.get_by_id(entity_id)
+        serving_name = entity.serving_name
+
+        # Set up Lookup node
+        additional_params = self.get_additional_lookup_parameters(offset=offset)
+        return {
+            "input_column_names": column_names,
+            "feature_names": feature_names,
+            "entity_column": entity_column,
+            "serving_name": serving_name,
+            "entity_id": entity_id,
+            "offset": offset,
+            **additional_params,
+        }
 
     @typechecked
     def as_features(
@@ -1440,11 +1600,6 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         offset: Optional[str]
             When specified, retrieve feature values as of this offset prior to the point-in-time
 
-        Raises
-        ------
-        ValueError
-            When any of the specified parameters are invalid
-
         Returns
         -------
         FeatureGroup
@@ -1463,31 +1618,10 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             feature_names=feature_names,
         )
 
-        self._validate_offset(offset)
+        validate_offset(offset)
 
-        # Get entity_column
-        entity_column = self.get_join_column()
-
-        # Get serving_name
-        columns_info = self.columns_info
-        column_entity_map = {col.name: col.entity_id for col in columns_info if col.entity_id}
-        if entity_column not in column_entity_map:
-            raise ValueError(f'Column "{entity_column}" is not an entity!')
-        entity_id = column_entity_map[entity_column]
-        entity = Entity.get_by_id(entity_id)
-        serving_name = entity.serving_name
-
-        # Set up Lookup node
-        additional_params = self._get_as_feature_parameters(offset=offset)
-        lookup_node_params = {
-            "input_column_names": column_names,
-            "feature_names": feature_names,
-            "entity_column": entity_column,
-            "serving_name": serving_name,
-            "entity_id": entity_id,
-            **additional_params,
-        }
-        input_node = self._get_input_node_for_lookup_node()
+        lookup_node_params = self.get_lookup_node_params(column_names, feature_names, offset)
+        input_node = self.get_input_node_for_lookup_node()
         lookup_node = self.graph.add_operation(
             node_type=NodeType.LOOKUP,
             node_params=lookup_node_params,
@@ -1496,7 +1630,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         )
         features = []
         for input_column_name, feature_name in zip(column_names, feature_names):
-            feature = self._project_feature_from_node(
+            feature = self.project_feature_from_node(
                 node=lookup_node,
                 feature_name=feature_name,
                 feature_dtype=self.column_var_type_map[input_column_name],
