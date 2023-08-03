@@ -1538,6 +1538,11 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         Returns
         -------
         Dict[str, Any]
+
+        Raises
+        ------
+        ValueError
+            If the entity_column is not found in the columns_info
         """
         # Get entity_column
         entity_column = self.get_join_column()
