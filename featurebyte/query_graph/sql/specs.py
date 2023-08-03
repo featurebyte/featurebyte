@@ -33,6 +33,7 @@ from featurebyte.query_graph.node.generic import (
 )
 from featurebyte.query_graph.node.mixin import BaseGroupbyParameters
 from featurebyte.query_graph.sql.adapter import BaseAdapter
+from featurebyte.query_graph.sql.ast.base import EventTableTimestampFilter
 from featurebyte.query_graph.sql.common import apply_serving_names_mapping
 from featurebyte.query_graph.sql.tiling import InputColumn, get_aggregator
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
@@ -314,6 +315,7 @@ class NonTileBasedAggregationSpec(AggregationSpec):
         node: Node,
         source_type: SourceType,
         to_filter_scd_by_current_flag: bool,
+        event_table_timestamp_filter: Optional[EventTableTimestampFilter],
     ) -> AggregationSource:
         """
         Get the expression of the input view to be aggregated
@@ -328,6 +330,8 @@ class NonTileBasedAggregationSpec(AggregationSpec):
             Source type information
         to_filter_scd_by_current_flag: bool
             Whether to filter SCD by current flag
+        event_table_timestamp_filter: EventTableTimestampFilter
+            Event table timestamp filter to apply if applicable
 
         Returns
         -------
@@ -344,6 +348,7 @@ class NonTileBasedAggregationSpec(AggregationSpec):
             sql_type=SQLType.AGGREGATION,
             source_type=source_type,
             to_filter_scd_by_current_flag=to_filter_scd_by_current_flag,
+            event_table_timestamp_filter=event_table_timestamp_filter,
         ).build(node)
 
         sql_node = cast(Aggregate, sql_node)
@@ -462,6 +467,7 @@ class NonTileBasedAggregationSpec(AggregationSpec):
         source_type: Optional[SourceType] = None,
         serving_names_mapping: Optional[dict[str, str]] = None,
         is_online_serving: Optional[bool] = None,
+        event_table_timestamp_filter: Optional[EventTableTimestampFilter] = None,
     ) -> list[NonTileBasedAggregationSpecT]:
         """Construct NonTileBasedAggregationSpec objects given a query graph node
 
@@ -479,6 +485,8 @@ class NonTileBasedAggregationSpec(AggregationSpec):
             Serving names mapping
         is_online_serving: bool
             Whether the query is for online serving
+        event_table_timestamp_filter: Optional[EventTableTimestampFilter]
+            Event table timestamp filter to apply if applicable
 
         Returns
         -------
@@ -496,6 +504,7 @@ class NonTileBasedAggregationSpec(AggregationSpec):
                 node=node,
                 source_type=source_type,
                 to_filter_scd_by_current_flag=to_filter_scd_by_current_flag,
+                event_table_timestamp_filter=event_table_timestamp_filter,
             )
 
         return cls.construct_specs(
