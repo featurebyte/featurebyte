@@ -1562,6 +1562,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             "entity_column": entity_column,
             "serving_name": serving_name,
             "entity_id": entity_id,
+            "offset": offset,
             **additional_params,
         }
 
