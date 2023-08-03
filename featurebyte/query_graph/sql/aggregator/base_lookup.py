@@ -151,7 +151,7 @@ class BaseLookupAggregator(NonTileBasedAggregator[LookupSpecT]):
 
         Parameters
         ----------
-        base_lookup_spec: LookupSpec
+        base_lookup_spec: LookupSpecT
             LookupSpec
 
         Returns
