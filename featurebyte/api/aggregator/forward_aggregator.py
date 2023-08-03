@@ -86,6 +86,7 @@ class ForwardAggregator(BaseAggregator):
         agg_method = construct_agg_func(agg_func=cast(AggFunc, method))
         output_var_type = self.get_output_var_type(agg_method, method, value_column)
         # Project, build and return Target
+        assert target_name is not None
         target = self.view.project_target_from_node(
             forward_aggregate_node, target_name, output_var_type
         )
