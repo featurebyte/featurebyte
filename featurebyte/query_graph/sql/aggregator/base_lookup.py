@@ -149,6 +149,11 @@ class BaseLookupAggregator(NonTileBasedAggregator[LookupSpecT]):
         """
         Get the forward point in time offset for the lookup if it is provided.
 
+        Parameters
+        ----------
+        base_lookup_spec: LookupSpec
+            LookupSpec
+
         Returns
         -------
         Optional[str]

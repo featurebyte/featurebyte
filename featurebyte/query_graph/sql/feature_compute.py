@@ -35,6 +35,7 @@ from featurebyte.query_graph.sql.common import (
 )
 from featurebyte.query_graph.sql.parent_serving import construct_request_table_with_parent_entities
 from featurebyte.query_graph.sql.specifications.lookup import LookupSpec
+from featurebyte.query_graph.sql.specifications.lookup_target import LookupTargetSpec
 from featurebyte.query_graph.sql.specs import (
     AggregateAsAtSpec,
     AggregationSpec,
@@ -474,6 +475,7 @@ class FeatureExecutionPlanner:
         groupby_nodes = list(self.graph.iterate_nodes(node, NodeType.GROUPBY))
         item_groupby_nodes = list(self.graph.iterate_nodes(node, NodeType.ITEM_GROUPBY))
         lookup_nodes = list(self.graph.iterate_nodes(node, NodeType.LOOKUP))
+        lookup_target_nodes = list(self.graph.iterate_nodes(node, NodeType.LOOKUP_TARGET))
         asat_nodes = list(self.graph.iterate_nodes(node, NodeType.AGGREGATE_AS_AT))
         forward_aggregate_nodes = list(self.graph.iterate_nodes(node, NodeType.FORWARD_AGGREGATE))
 
@@ -493,6 +495,10 @@ class FeatureExecutionPlanner:
         if lookup_nodes:
             for lookup_node in lookup_nodes:
                 out.extend(self.get_non_tiling_specs(LookupSpec, lookup_node))
+
+        if lookup_target_nodes:
+            for lookup_node in lookup_target_nodes:
+                out.extend(self.get_non_tiling_specs(LookupTargetSpec, lookup_node))
 
         if asat_nodes:
             for asat_node in asat_nodes:
