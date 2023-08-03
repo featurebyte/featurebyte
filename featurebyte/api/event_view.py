@@ -159,7 +159,7 @@ class EventView(View, GroupByMixin, RawMixin):
         assert self.event_id_column is not None
         return self.event_id_column
 
-    def _get_as_feature_parameters(self, offset: Optional[str] = None) -> dict[str, Any]:
+    def get_as_feature_parameters(self, offset: Optional[str] = None) -> dict[str, Any]:
         _ = offset
         return {
             "event_parameters": {

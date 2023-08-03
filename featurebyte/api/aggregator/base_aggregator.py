@@ -144,7 +144,7 @@ class BaseAggregator(ABC):
         # value_column is None for count-like aggregation method
         var_type = self.get_output_var_type(agg_method, method, value_column)  # type: ignore[arg-type]
 
-        feature = self.view._project_feature_from_node(  # pylint: disable=protected-access
+        feature = self.view.project_feature_from_node(
             node=groupby_node,
             feature_name=feature_name,
             feature_dtype=var_type,
