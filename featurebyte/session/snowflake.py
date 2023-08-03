@@ -93,7 +93,7 @@ class SnowflakeSession(BaseSession):
 
     @classmethod
     def is_threadsafe(cls) -> bool:
-        return False
+        return True
 
     async def list_databases(self) -> list[str]:
         """
