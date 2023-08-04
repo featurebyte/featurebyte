@@ -92,22 +92,16 @@ class FeatureManagerService:
         # insert records into tile-feature mapping table
         await self._update_tile_feature_mapping_table(feature_spec, unscheduled_result_names)
 
-        # enable tile generation with scheduled jobs
+        # backfill historical tiles if required
         aggregation_id_to_tile_spec = {}
+        tile_specs_to_be_scheduled = []
         for tile_spec in feature_spec.feature.tile_specs:
             aggregation_id_to_tile_spec[tile_spec.aggregation_id] = tile_spec
             tile_job_exists = await self.tile_manager_service.tile_job_exists(tile_spec=tile_spec)
             if not tile_job_exists:
-                # enable online tiles scheduled job
-                await self.tile_manager_service.schedule_online_tiles(tile_spec=tile_spec)
-                logger.debug(f"Done schedule_online_tiles for {tile_spec.aggregation_id}")
-
-                # enable offline tiles scheduled job
-                await self.tile_manager_service.schedule_offline_tiles(tile_spec=tile_spec)
-                logger.debug(f"Done schedule_offline_tiles for {tile_spec.aggregation_id}")
-
                 # generate historical tiles
                 await self._generate_historical_tiles(session=session, tile_spec=tile_spec)
+                tile_specs_to_be_scheduled.append(tile_spec)
 
             elif is_recreating_schema:
                 # if this is called when recreating the schema, we cannot assume that the historical
@@ -135,6 +129,16 @@ class FeatureManagerService:
                 feature_store_id=query.feature_store_id,
                 online_store_table_name=query.table_name,
             )
+
+        # enable tile generation with scheduled jobs
+        for tile_spec in tile_specs_to_be_scheduled:
+            # enable online tiles scheduled job
+            await self.tile_manager_service.schedule_online_tiles(tile_spec=tile_spec)
+            logger.debug(f"Done schedule_online_tiles for {tile_spec.aggregation_id}")
+
+            # enable offline tiles scheduled job
+            await self.tile_manager_service.schedule_offline_tiles(tile_spec=tile_spec)
+            logger.debug(f"Done schedule_offline_tiles for {tile_spec.aggregation_id}")
 
     async def _get_unscheduled_aggregation_result_names(
         self, feature_spec: OnlineFeatureSpec
