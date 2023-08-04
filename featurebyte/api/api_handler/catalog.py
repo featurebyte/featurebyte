@@ -14,5 +14,5 @@ class CatalogListHandler(ListHandler):
 
     def additional_post_processing(self, item_list: pd.DataFrame) -> pd.DataFrame:
         # add column to indicate whether catalog is active
-        item_list["active"] = item_list.id == get_active_catalog_id()
+        item_list["active"] = item_list.id == str(get_active_catalog_id())
         return item_list

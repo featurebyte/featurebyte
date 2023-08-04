@@ -61,7 +61,7 @@ def test_list(catalog):
     ]
     assert (df["feature_store_name"] == "sf_featurestore").all()
     assert df["type"].tolist() == ["view", "source_table"]
-    assert (df["shape"] == (100, 2)).all()
+    assert df["shape"].tolist() == [[100, 2]] * 2
 
 
 def test_shape(observation_table_from_source):

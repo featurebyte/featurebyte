@@ -54,7 +54,7 @@ def test_list(saved_analysis, saved_event_table):
         "job_time_modulo_frequency",
         "blind_spot",
     ]
-    assert result["id"].iloc[0] == analysis_id
+    assert result["id"].iloc[0] == str(analysis_id)
     assert result["event_table"].iloc[0] == "sf_event_table"
 
     # list with filter

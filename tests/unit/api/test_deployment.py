@@ -30,7 +30,7 @@ def test_list(deployment):
     expected = pd.DataFrame(
         [
             {
-                "id": deployment.id,
+                "id": str(deployment.id),
                 "name": deployment.name,
                 "feature_list_name": "my_feature_list",
                 "feature_list_version": f'V{pd.Timestamp.now().strftime("%y%m%d")}',

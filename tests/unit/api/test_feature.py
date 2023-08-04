@@ -297,7 +297,7 @@ def test_list(saved_feature):
         feature_list,
         pd.DataFrame(
             {
-                "id": [saved_feature.id],
+                "id": [str(saved_feature.id)],
                 "name": [saved_feature_namespace.name],
                 "dtype": [saved_feature.dtype],
                 "readiness": [saved_feature_namespace.readiness],
@@ -306,7 +306,7 @@ def test_list(saved_feature):
                 "primary_tables": [["sf_event_table"]],
                 "entities": [["customer"]],
                 "primary_entities": [["customer"]],
-                "created_at": [saved_feature_namespace.created_at],
+                "created_at": [saved_feature_namespace.created_at.isoformat()],
             }
         ),
     )
@@ -946,9 +946,9 @@ def test_list_versions(saved_feature):
         pd.DataFrame(
             {
                 "id": [
-                    feature_group["new_feat2"].id,
-                    feature_group["new_feat1"].id,
-                    saved_feature.id,
+                    str(feature_group["new_feat2"].id),
+                    str(feature_group["new_feat1"].id),
+                    str(saved_feature.id),
                 ],
                 "name": ["new_feat2", "new_feat1", saved_feature.name],
                 "version": [saved_feature.version] * 3,
@@ -962,11 +962,11 @@ def test_list_versions(saved_feature):
                 "created_at": [
                     feature_group[
                         "new_feat2"
-                    ].cached_model.created_at,  # DEV-1820: created_at is not synced
+                    ].cached_model.created_at.isoformat(),  # DEV-1820: created_at is not synced
                     feature_group[
                         "new_feat1"
-                    ].cached_model.created_at,  # DEV-1820: created_at is not synced
-                    saved_feature.created_at,
+                    ].cached_model.created_at.isoformat(),  # DEV-1820: created_at is not synced
+                    saved_feature.created_at.isoformat(),
                 ],
                 "is_default": [True] * 3,
             }
@@ -976,7 +976,7 @@ def test_list_versions(saved_feature):
         saved_feature.list_versions(),
         pd.DataFrame(
             {
-                "id": [saved_feature.id],
+                "id": [str(saved_feature.id)],
                 "name": [saved_feature.name],
                 "version": [saved_feature.version],
                 "dtype": [saved_feature.dtype],
@@ -986,7 +986,7 @@ def test_list_versions(saved_feature):
                 "primary_tables": [["sf_event_table"]],
                 "entities": [["customer"]],
                 "primary_entities": [["customer"]],
-                "created_at": [saved_feature.created_at],
+                "created_at": [saved_feature.created_at.isoformat()],
                 "is_default": [True],
             }
         ),

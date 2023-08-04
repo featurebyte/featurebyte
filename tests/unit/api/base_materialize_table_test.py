@@ -83,7 +83,7 @@ class BaseMaterializedTableApiTest(Generic[BaseFeatureOrTargetTableT]):
         assert df["name"].tolist() == [f"my_{expected_name}"]
         assert df["feature_store_name"].tolist() == ["sf_featurestore"]
         assert df["observation_table_name"].tolist() == ["observation_table_from_source_table"]
-        assert (df["shape"] == (500, 1)).all()
+        assert df["shape"].tolist() == [[500, 1]]
 
     def test_list(self, table_under_test):
         """
