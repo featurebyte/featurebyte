@@ -152,7 +152,7 @@ class TileSQLGenerator:
                         timestamp_column_name=column.name,
                         event_table_id=column.table_id,
                     )
-            elif isinstance(column, DerivedDataColumn):
+            elif isinstance(column, DerivedDataColumn) and set(column.transforms) == {"join"}:
                 # In ItemView, the event timestamp column is considered a derived column because
                 # it is derived from join.
                 for source_column in column.columns:
