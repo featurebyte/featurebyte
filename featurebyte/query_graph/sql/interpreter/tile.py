@@ -7,13 +7,13 @@ from typing import Optional, cast
 
 from dataclasses import dataclass
 
-from featurebyte.enum import SourceType
+from featurebyte.enum import DBVarType, SourceType, TableDataType
 from featurebyte.query_graph.algorithm import dfs_traversal
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupByNode
-from featurebyte.query_graph.node.metadata.operation import SourceDataColumn
+from featurebyte.query_graph.node.metadata.operation import DerivedDataColumn, SourceDataColumn
 from featurebyte.query_graph.sql.ast.base import EventTableTimestampFilter
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import SQLType
@@ -140,17 +140,30 @@ class TileSQLGenerator:
             groupby_input_node
         )
         op_struct = op_struct_info.operation_structure_map[groupby_input_node.name]
+
         for column in op_struct.columns:
-            if (
-                column.name == groupby_node.parameters.timestamp
-                and isinstance(column, SourceDataColumn)
-                and column.table_id is not None
-            ):
-                assert isinstance(column, SourceDataColumn)
-                return EventTableTimestampFilter(
-                    timestamp_column_name=column.name,
-                    event_table_id=column.table_id,
-                )
+            if column.name != groupby_node.parameters.timestamp:
+                continue
+
+            # Check if the timestamp column is from an EventTable
+            if isinstance(column, SourceDataColumn):
+                if column.table_type == TableDataType.EVENT_TABLE and column.table_id is not None:
+                    return EventTableTimestampFilter(
+                        timestamp_column_name=column.name,
+                        event_table_id=column.table_id,
+                    )
+            elif isinstance(column, DerivedDataColumn):
+                # In ItemView, the event timestamp column is considered a derived column because
+                # it is derived from join.
+                for source_column in column.columns:
+                    if (
+                        source_column.table_type == TableDataType.EVENT_TABLE
+                        and source_column.dtype in {DBVarType.TIMESTAMP, DBVarType.TIMESTAMP_TZ}
+                    ):
+                        return EventTableTimestampFilter(
+                            timestamp_column_name=source_column.name,
+                            event_table_id=source_column.table_id,
+                        )
 
         return None
 

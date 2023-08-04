@@ -31,7 +31,6 @@ from featurebyte.api.feature_group import FeatureGroup
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.groupby import GroupBy
-from featurebyte.api.item_table import ItemTable
 from featurebyte.app import User, app, get_celery
 from featurebyte.enum import AggFunc, InternalName
 from featurebyte.exception import DuplicatedRecordException, ObjectHasBeenSavedError
@@ -1150,16 +1149,34 @@ def feature_with_cleaning_operations_fixture(
     yield feature_group["sum_30m"]
 
 
+@pytest.fixture(name="snowflake_item_table_with_entity")
+def snowflake_item_table_with_entity_fixture(snowflake_item_table, transaction_entity):
+    """
+    Fixture for an ItemTable with entity
+    """
+    snowflake_item_table.event_id_col.as_entity(transaction_entity.name)
+    return snowflake_item_table
+
+
+@pytest.fixture(name="snowflake_item_view_with_entity")
+def snowflake_item_view_with_entity_fixture(
+    snowflake_event_table_with_entity, snowflake_item_table_with_entity
+):
+    """
+    Fixture for an ItemView with entity
+    """
+    _ = snowflake_event_table_with_entity
+    return snowflake_item_table_with_entity.get_view(event_suffix="_event_table")
+
+
 @pytest.fixture(name="non_time_based_features")
-def get_non_time_based_features_fixture(snowflake_item_table, transaction_entity):
+def get_non_time_based_features_fixture(snowflake_item_view_with_entity):
     """
     Get a non-time-based feature.
 
     This is a non-time-based feature as it is built from ItemTable.
     """
-    snowflake_item_table.event_id_col.as_entity(transaction_entity.name)
-    item_table = ItemTable(**{**snowflake_item_table.json_dict(), "item_id_column": "item_id_col"})
-    item_view = item_table.get_view(event_suffix="_event_table")
+    item_view = snowflake_item_view_with_entity
     feature_1 = item_view.groupby("event_id_col").aggregate(
         value_column="item_amount",
         method=AggFunc.SUM,

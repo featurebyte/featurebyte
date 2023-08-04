@@ -16,7 +16,7 @@ component: service
 issues: []
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Apply event timestamp filter on EventTable directly in scheduled tile jobs when possible"
+note: "Apply event timestamp filter on EventTable directly in scheduled tile jobs when possible."
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.

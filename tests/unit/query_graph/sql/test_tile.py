@@ -25,6 +25,23 @@ def feature_with_lag(snowflake_event_view_with_entity, feature_group_feature_job
 
 
 @pytest.fixture
+def feature_from_item_view(snowflake_item_view_with_entity, feature_group_feature_job_setting):
+    """
+    Fixture for a feature from an ItemView
+    """
+    view = snowflake_item_view_with_entity
+    view = view.join_event_table_attributes(["col_float"])
+    feature = view.groupby("cust_id_event_table").aggregate_over(
+        value_column="item_amount",
+        method="sum",
+        windows=["30m"],
+        feature_names=["my_feature"],
+        feature_job_setting=feature_group_feature_job_setting,
+    )["my_feature"]
+    return feature
+
+
+@pytest.fixture
 def complex_feature_but_push_down_eligible(
     non_time_based_features,
     snowflake_event_view_with_entity,
@@ -89,5 +106,17 @@ def test_scheduled_tile_sql__complex(complex_feature_but_push_down_eligible, upd
     assert_equal_with_expected_fixture(
         tile_sql,
         "tests/fixtures/expected_tile_sql_complex_feature_push_down_eligible.sql",
+        update_fixtures,
+    )
+
+
+def test_scheduled_tile_sql__item_view(feature_from_item_view, update_fixtures):
+    """
+    Test date filters are applied for features from ItemView
+    """
+    tile_sql = get_tile_sql_used_in_scheduled_tasks(feature_from_item_view)
+    assert_equal_with_expected_fixture(
+        tile_sql,
+        "tests/fixtures/expected_tile_sql_feature_from_item_view.sql",
         update_fixtures,
     )
