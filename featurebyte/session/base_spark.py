@@ -195,6 +195,7 @@ class BaseSparkSession(BaseSession, ABC):
         else:
             create_command = "CREATE OR REPLACE VIEW"
         await self.execute_query_long_running(f"{create_command} `{table_name}` AS {query}")
+        await self.execute_query_long_running(f"CACHE TABLE `{table_name}`")
 
     async def register_table(
         self, table_name: str, dataframe: pd.DataFrame, temporary: bool = True
