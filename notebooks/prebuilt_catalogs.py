@@ -328,7 +328,7 @@ def register_credit_card_tables():
 
     # check whether the data is already registered
     CardFraudStatus = table_creator.get_or_create_scd_table(
-        name="CARDFRAUDSTATUS",
+        table_name="CARDFRAUDSTATUS",
         surrogate_key_column="RowID",
         natural_key_column="CardTransactionID",
         effective_timestamp_column="ValidFrom",
