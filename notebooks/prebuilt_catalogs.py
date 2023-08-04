@@ -1,5 +1,7 @@
 # load the featurebyte SDK
 # load the regular expressions module
+from typing import Any
+
 import re
 
 # load the datetime module
@@ -9,6 +11,7 @@ from datetime import datetime
 from enum import Enum
 
 import featurebyte as fb
+from featurebyte import DataSource, DimensionTable, EventTable, ItemTable, SCDTable
 
 
 # define an enum class containing the names of the prebuilt catalogs
@@ -27,25 +30,21 @@ def create_tutorial_catalog(catalog_type: PrebuiltCatalog):
     print("Cleaning up existing tutorial catalogs")
     clean_catalogs()
 
-    if catalog_type == PrebuiltCatalog.QuickStartFeatureEngineeering:
-        return create_quick_start_feature_engineering_catalog()
-    if catalog_type == PrebuiltCatalog.DeepDiveFeatureEngineeering:
-        return create_deep_dive_feature_engineering_catalog()
-    if catalog_type == PrebuiltCatalog.Playground_CreditCard:
-        return create_playground_credit_card_catalog()
-    if catalog_type == PrebuiltCatalog.DeepDiveMaterializingFeatures:
-        return create_deep_dive_materializing_features_catalog()
-    if catalog_type == PrebuiltCatalog.QuickStartReusingFeatures:
-        return create_quick_start_reusing_features_catalog()
-    if catalog_type == PrebuiltCatalog.Playground_Healthcare:
-        return create_playground_healthcare_catalog()
-    if catalog_type == PrebuiltCatalog.QuickStartFeatureManagement:
-        return create_quick_start_feature_management_catalog()
-    if catalog_type == PrebuiltCatalog.QuickStartModelTraining:
-        return create_quick_start_model_training_catalog()
+    catalog_type_map = {
+        PrebuiltCatalog.QuickStartFeatureEngineeering: create_quick_start_feature_engineering_catalog,
+        PrebuiltCatalog.DeepDiveFeatureEngineeering: create_deep_dive_feature_engineering_catalog,
+        PrebuiltCatalog.Playground_CreditCard: create_playground_credit_card_catalog,
+        PrebuiltCatalog.DeepDiveMaterializingFeatures: create_deep_dive_materializing_features_catalog,
+        PrebuiltCatalog.QuickStartReusingFeatures: create_quick_start_reusing_features_catalog,
+        PrebuiltCatalog.Playground_Healthcare: create_playground_healthcare_catalog,
+        PrebuiltCatalog.QuickStartFeatureManagement: create_quick_start_feature_management_catalog,
+        PrebuiltCatalog.QuickStartModelTraining: create_quick_start_model_training_catalog,
+    }
 
-    print("Error: Prebuilt catalog type not found")
-    return None
+    if catalog_type not in catalog_type_map:
+        print("Error: Prebuilt catalog type not found")
+        return None
+    return catalog_type_map[catalog_type]()
 
 
 def to_python_variable_name(name: str):
@@ -184,46 +183,83 @@ def generate_catalog_boilerplate_code(catalog):
     print("##################################################################")
 
 
+class TableCreator:
+    def __init__(self, schema_name: str):
+        # connect to the feature store
+        # get data source from the local spark feature store
+        self.data_source = fb.FeatureStore.get("playground").get_data_source()
+        catalog = fb.Catalog.get_active()
+        self.catalog = catalog
+        self.current_tables = catalog.list_tables().name.str
+        self.schema_name = schema_name
+
+    def get_or_create_scd_table(self, table_name: str, **kwargs) -> SCDTable:
+        if not self.current_tables.contains(table_name).any():
+            return self.data_source.get_source_table(
+                database_name="spark_catalog", schema_name=self.schema_name, table_name=table_name
+            ).create_scd_table(
+                name=table_name,
+                **kwargs,
+            )
+        else:
+            return self.catalog.get_source_table(table_name)
+
+    def get_or_create_event_table(self, table_name: str, **kwargs) -> EventTable:
+        if not self.current_tables.contains(table_name).any():
+            return self.data_source.get_source_table(
+                database_name="spark_catalog", schema_name=self.schema_name, table_name=table_name
+            ).create_event_table(
+                name=table_name,
+                **kwargs,
+            )
+        else:
+            return self.catalog.get_source_table(table_name)
+
+    def get_or_create_item_table(self, table_name: str, **kwargs) -> ItemTable:
+        if not self.current_tables.contains(table_name).any():
+            return self.data_source.get_source_table(
+                database_name="spark_catalog", schema_name=self.schema_name, table_name=table_name
+            ).create_item_table(
+                name=table_name,
+                **kwargs,
+            )
+        else:
+            return self.catalog.get_source_table(table_name)
+
+    def get_or_create_dimension_table(self, table_name: str, **kwargs) -> DimensionTable:
+        if not self.current_tables.contains(table_name).any():
+            return self.data_source.get_source_table(
+                database_name="spark_catalog", schema_name=self.schema_name, table_name=table_name
+            ).create_dimension_table(
+                name=table_name,
+                **kwargs,
+            )
+        else:
+            return self.catalog.get_source_table(table_name)
+
+
 def register_grocery_tables():
-    # connect to the feature store
-    # get data source from the local spark feature store
-    ds = fb.FeatureStore.get("playground").get_data_source()
-
     # get the active catalog
-    catalog = fb.Catalog.get_active()
+    table_creator = TableCreator("GROCERY")
 
-    # check whether the customer data is already registered
-    # check whether the data is already registered
-    if not catalog.list_tables().name.str.contains("GROCERYCUSTOMER").any():
-        GroceryCustomer = ds.get_source_table(
-            database_name="spark_catalog", schema_name="GROCERY", table_name="GROCERYCUSTOMER"
-        ).create_scd_table(
-            name="GROCERYCUSTOMER",
-            surrogate_key_column="RowID",
-            natural_key_column="GroceryCustomerGuid",
-            effective_timestamp_column="ValidFrom",
-            current_flag_column="CurrentRecord",
-            record_creation_timestamp_column="record_available_at",
-        )
-    else:
-        GroceryCustomer = catalog.get_source_table("GROCERYCUSTOMER")
-
-    # check whether the data is already registered
-    if not catalog.list_tables().name.str.contains("GROCERYINVOICE").any():
-        # register GroceryInvoice as an event data
-        GroceryInvoice = ds.get_source_table(
-            database_name="spark_catalog", schema_name="GROCERY", table_name="GROCERYINVOICE"
-        ).create_event_table(
-            name="GROCERYINVOICE",
-            event_id_column="GroceryInvoiceGuid",
-            event_timestamp_column="Timestamp",
-            event_timestamp_timezone_offset_column="tz_offset",
-            record_creation_timestamp_column="record_available_at",
-        )
-    else:
-        GroceryInvoice = catalog.get_source_table("GROCERYINVOICE")
-
-    # choose conservative feature job settings - tell featurebyte that the GroceryInvoice event data is updated 1.5 minutes after the end of each hour, and may miss data from the last 145 seconds of each hour
+    GroceryCustomer = table_creator.get_or_create_scd_table(
+        "GROCERYCUSTOMER",
+        surrogate_key_column="RowID",
+        natural_key_column="GroceryCustomerGuid",
+        effective_timestamp_column="ValidFrom",
+        current_flag_column="CurrentRecord",
+        record_creation_timestamp_column="record_available_at",
+    )
+    GroceryInvoice = table_creator.get_or_create_event_table(
+        table_name="GROCERYINVOICE",
+        event_id_column="GroceryInvoiceGuid",
+        event_timestamp_column="Timestamp",
+        event_timestamp_timezone_offset_column="tz_offset",
+        record_creation_timestamp_column="record_available_at",
+    )
+    # choose conservative feature job settings
+    # tell featurebyte that the GroceryInvoice event data is updated 1.5 minutes after the end of each hour,
+    # and may miss data from the last 145 seconds of each hour
     GroceryInvoice.update_default_feature_job_setting(
         fb.FeatureJobSetting(
             blind_spot="145",
@@ -232,98 +268,55 @@ def register_grocery_tables():
         )
     )
 
-    # check whether the data is already registered
-    if not catalog.list_tables().name.str.contains("INVOICEITEMS").any():
-        InvoiceItems = ds.get_source_table(
-            database_name="spark_catalog", schema_name="GROCERY", table_name="INVOICEITEMS"
-        ).create_item_table(
-            name="INVOICEITEMS",
-            event_id_column="GroceryInvoiceGuid",
-            item_id_column="GroceryInvoiceItemGuid",
-            event_table_name="GROCERYINVOICE",
-        )
-    else:
-        InvoiceItems = catalog.get_source_table("INVOICEITEMS")
+    InvoiceItems = table_creator.get_or_create_item_table(
+        table_name="INVOICEITEMS",
+        event_id_column="GroceryInvoiceGuid",
+        item_id_column="GroceryInvoiceItemGuid",
+        event_table_name="GROCERYINVOICE",
+    )
 
-    # check whether the grocery product data is already registered
-    # check whether the data is already registered
-    if not catalog.list_tables().name.str.contains("GROCERYPRODUCT").any():
-        GroceryProduct = ds.get_source_table(
-            database_name="spark_catalog", schema_name="GROCERY", table_name="GROCERYPRODUCT"
-        ).create_dimension_table(name="GROCERYPRODUCT", dimension_id_column="GroceryProductGuid")
-    else:
-        GroceryProduct = catalog.get_source_table("GROCERYPRODUCT")
+    GroceryProduct = table_creator.get_or_create_dimension_table(
+        table_name="GROCERYPRODUCT", dimension_id_column="GroceryProductGuid"
+    )
 
     return [GroceryCustomer, GroceryInvoice, InvoiceItems, GroceryProduct]
 
 
 def register_credit_card_tables():
-    # connect to the feature store
-    # get data source from the local spark feature store
-    ds = fb.FeatureStore.get("playground").get_data_source()
+    table_creator = TableCreator("CREDITCARD")
 
-    # get the active catalog
-    catalog = fb.Catalog.get_active()
+    BankCustomer = table_creator.get_or_create_scd_table(
+        table_name="BANKCUSTOMER",
+        surrogate_key_column="RowID",
+        natural_key_column="BankCustomerID",
+        effective_timestamp_column="ValidFrom",
+        end_timestamp_column="ValidTo",
+        record_creation_timestamp_column="record_available_at",
+    )
 
-    # check whether the customer data is already registered
-    # check whether the data is already registered
-    if not catalog.list_tables().name.str.contains("BANKCUSTOMER").any():
-        BankCustomer = ds.get_source_table(
-            database_name="spark_catalog", schema_name="CREDITCARD", table_name="BANKCUSTOMER"
-        ).create_scd_table(
-            name="BANKCUSTOMER",
-            surrogate_key_column="RowID",
-            natural_key_column="BankCustomerID",
-            effective_timestamp_column="ValidFrom",
-            end_timestamp_column="ValidTo",
-            record_creation_timestamp_column="record_available_at",
-        )
-    else:
-        BankCustomer = catalog.get_source_table("BANKCUSTOMER")
+    StateDetails = table_creator.get_or_create_scd_table(
+        table_name="STATEDETAILS",
+        surrogate_key_column="StateGuid",
+        natural_key_column="StateCode",
+        effective_timestamp_column="ValidFrom",
+    )
 
-    # check whether the state details data is already registered
-    # check whether the data is already registered
-    if not catalog.list_tables().name.str.contains("STATEDETAILS").any():
-        StateDetails = ds.get_source_table(
-            database_name="spark_catalog", schema_name="CREDITCARD", table_name="STATEDETAILS"
-        ).create_scd_table(
-            name="STATEDETAILS",
-            surrogate_key_column="StateGuid",
-            natural_key_column="StateCode",
-            effective_timestamp_column="ValidFrom",
-        )
-    else:
-        StateDetails = catalog.get_source_table("STATEDETAILS")
+    CreditCard = table_creator.get_or_create_scd_table(
+        table_name="CREDITCARD",
+        surrogate_key_column="RowID",
+        natural_key_column="AccountID",
+        effective_timestamp_column="ValidFrom",
+        end_timestamp_column="ValidTo",
+    )
 
     # check whether the data is already registered
-    if not catalog.list_tables().name.str.contains("CREDITCARD").any():
-        CreditCard = ds.get_source_table(
-            database_name="spark_catalog", schema_name="CREDITCARD", table_name="CREDITCARD"
-        ).create_scd_table(
-            name="CREDITCARD",
-            surrogate_key_column="RowID",
-            natural_key_column="AccountID",
-            effective_timestamp_column="ValidFrom",
-            end_timestamp_column="ValidTo",
-        )
-    else:
-        CreditCard = catalog.get_source_table("CREDITCARD")
-
-    # check whether the data is already registered
-    if not catalog.list_tables().name.str.contains("CARDTRANSACTIONS").any():
-        # register GroceryInvoice as an event data
-        CardTransactions = ds.get_source_table(
-            database_name="spark_catalog", schema_name="CREDITCARD", table_name="CARDTRANSACTIONS"
-        ).create_event_table(
-            name="CARDTRANSACTIONS",
-            event_id_column="CardTransactionID",
-            event_timestamp_column="Timestamp",
-            event_timestamp_timezone_offset_column="tz_offset",
-            record_creation_timestamp_column="record_available_at",
-        )
-    else:
-        CardTransactions = catalog.get_source_table("CARDTRANSACTIONS")
-
+    CardTransactions = table_creator.get_or_create_event_table(
+        table_name="CARDTRANSACTIONS",
+        event_id_column="CardTransactionID",
+        event_timestamp_column="Timestamp",
+        event_timestamp_timezone_offset_column="tz_offset",
+        record_creation_timestamp_column="record_available_at",
+    )
     # choose reasonable feature job settings - based upon the feature job analysis
     CardTransactions.update_default_feature_job_setting(
         fb.FeatureJobSetting(
@@ -334,31 +327,19 @@ def register_credit_card_tables():
     )
 
     # check whether the data is already registered
-    if not catalog.list_tables().name.str.contains("CARDFRAUDSTATUS").any():
-        CardFraudStatus = ds.get_source_table(
-            database_name="spark_catalog", schema_name="CREDITCARD", table_name="CARDFRAUDSTATUS"
-        ).create_scd_table(
-            name="CARDFRAUDSTATUS",
-            surrogate_key_column="RowID",
-            natural_key_column="CardTransactionID",
-            effective_timestamp_column="ValidFrom",
-            end_timestamp_column="ValidTo",
-            record_creation_timestamp_column="record_available_at",
-        )
-    else:
-        CardFraudStatus = catalog.get_source_table("CARDFRAUDSTATUS")
+    CardFraudStatus = table_creator.get_or_create_scd_table(
+        table_name="CARDFRAUDSTATUS",
+        surrogate_key_column="RowID",
+        natural_key_column="CardTransactionID",
+        effective_timestamp_column="ValidFrom",
+        end_timestamp_column="ValidTo",
+        record_creation_timestamp_column="record_available_at",
+    )
 
     # check whether the data is already registered
-    if not catalog.list_tables().name.str.contains("CARDTRANSACTIONGROUPS").any():
-        CardTransactionGroups = ds.get_source_table(
-            database_name="spark_catalog",
-            schema_name="CREDITCARD",
-            table_name="CARDTRANSACTIONGROUPS",
-        ).create_dimension_table(
-            name="CARDTRANSACTIONGROUPS", dimension_id_column="CardTransactionDescription"
-        )
-    else:
-        CardTransactionGroups = catalog.get_source_table("CARDTRANSACTIONGROUPS")
+    CardTransactionGroups = table_creator.get_or_create_dimension_table(
+        table_name="CARDTRANSACTIONGROUPS", dimension_id_column="CardTransactionDescription"
+    )
 
     return [
         BankCustomer,
@@ -371,106 +352,53 @@ def register_credit_card_tables():
 
 
 def register_healthcare_tables():
-    # connect to the feature store
-    # get data source from the local spark feature store
-    ds = fb.FeatureStore.get("playground").get_data_source()
+    table_creator = TableCreator("HEALTHCARE")
 
-    # get the active catalog
-    catalog = fb.Catalog.get_active()
+    # Create SCD tables
+    Patient = table_creator.get_or_create_scd_table(
+        "PATIENT",
+        surrogate_key_column="RowID",
+        natural_key_column="PatientGuid",
+        effective_timestamp_column="ValidFrom",
+        current_flag_column="CurrentRecord",
+        record_creation_timestamp_column="record_available_at",
+    )
+    Diagnosis = table_creator.get_or_create_scd_table(
+        "DIAGNOSIS",
+        surrogate_key_column="RowID",
+        natural_key_column="DiagnosisGuid",
+        effective_timestamp_column="ValidFrom",
+        end_timestamp_column="ValidTo",
+        record_creation_timestamp_column="record_available_at",
+    )
+    PatientSmokingStatus = table_creator.get_or_create_scd_table(
+        "PATIENTSMOKINGSTATUS",
+        natural_key_column="PatientSmokingStatusGuid",
+        effective_timestamp_column="ValidFrom",
+        current_flag_column="CurrentRecord",
+        record_creation_timestamp_column="record_available_at",
+    )
+    Allergy = table_creator.get_or_create_scd_table(
+        "ALLERGY",
+        natural_key_column="AllergyGuid",
+        effective_timestamp_column="StartDate",
+        record_creation_timestamp_column="record_available_at",
+    )
+    StateDetails = table_creator.get_or_create_scd_table(
+        "STATEDETAILS",
+        surrogate_key_column="StateGuid",
+        natural_key_column="StateCode",
+        effective_timestamp_column="ValidFrom",
+    )
 
-    # check whether the data is already registered
-    source_table_name = "PATIENT"
-    if not catalog.list_tables().name.str.contains(source_table_name).any():
-        Patient = ds.get_source_table(
-            database_name="spark_catalog", schema_name="HEALTHCARE", table_name=source_table_name
-        ).create_scd_table(
-            name=source_table_name,
-            surrogate_key_column="RowID",
-            natural_key_column="PatientGuid",
-            effective_timestamp_column="ValidFrom",
-            current_flag_column="CurrentRecord",
-            record_creation_timestamp_column="record_available_at",
-        )
-    else:
-        Patient = catalog.get_source_table(source_table_name)
-
-    # check whether the data is already registered
-    source_table_name = "DIAGNOSIS"
-    if not catalog.list_tables().name.str.contains(source_table_name).any():
-        Diagnosis = ds.get_source_table(
-            database_name="spark_catalog", schema_name="HEALTHCARE", table_name=source_table_name
-        ).create_scd_table(
-            name=source_table_name,
-            surrogate_key_column="RowID",
-            natural_key_column="DiagnosisGuid",
-            effective_timestamp_column="ValidFrom",
-            end_timestamp_column="ValidTo",
-            record_creation_timestamp_column="record_available_at",
-        )
-    else:
-        Diagnosis = catalog.get_source_table(source_table_name)
-
-    # check whether the data is already registered
-    source_table_name = "PATIENTSMOKINGSTATUS"
-    if not catalog.list_tables().name.str.contains(source_table_name).any():
-        PatientSmokingStatus = ds.get_source_table(
-            database_name="spark_catalog", schema_name="HEALTHCARE", table_name=source_table_name
-        ).create_scd_table(
-            name=source_table_name,
-            # surrogate_key_column='RowID',
-            natural_key_column="PatientSmokingStatusGuid",
-            effective_timestamp_column="ValidFrom",
-            current_flag_column="CurrentRecord",
-            record_creation_timestamp_column="record_available_at",
-        )
-    else:
-        PatientSmokingStatus = catalog.get_source_table(source_table_name)
-
-    # check whether the data is already registered
-    source_table_name = "ALLERGY"
-    if not catalog.list_tables().name.str.contains(source_table_name).any():
-        Allergy = ds.get_source_table(
-            database_name="spark_catalog", schema_name="HEALTHCARE", table_name=source_table_name
-        ).create_scd_table(
-            name=source_table_name,
-            # surrogate_key_column='AllergyGuid',
-            natural_key_column="AllergyGuid",
-            effective_timestamp_column="StartDate",
-            record_creation_timestamp_column="record_available_at",
-        )
-    else:
-        Allergy = catalog.get_source_table(source_table_name)
-
-    # check whether the data is already registered
-    source_table_name = "STATEDETAILS"
-    if not catalog.list_tables().name.str.contains(source_table_name).any():
-        StateDetails = ds.get_source_table(
-            database_name="spark_catalog", schema_name="HEALTHCARE", table_name=source_table_name
-        ).create_scd_table(
-            name=source_table_name,
-            surrogate_key_column="StateGuid",
-            natural_key_column="StateCode",
-            effective_timestamp_column="ValidFrom",
-        )
-    else:
-        StateDetails = catalog.get_source_table(source_table_name)
-
-    # check whether the data is already registered
-    source_table_name = "VISIT"
-    if not catalog.list_tables().name.str.contains(source_table_name).any():
-        # register GroceryInvoice as an event data
-        Visit = ds.get_source_table(
-            database_name="spark_catalog", schema_name="HEALTHCARE", table_name=source_table_name
-        ).create_event_table(
-            name=source_table_name,
-            event_id_column="VisitGuid",
-            event_timestamp_column="VisitDate",
-            event_timestamp_timezone_offset_column="tz_offset",
-            record_creation_timestamp_column="record_available_at",
-        )
-    else:
-        Visit = catalog.get_source_table(source_table_name)
-
+    # Create event tables
+    Visit = table_creator.get_or_create_event_table(
+        "VISIT",
+        event_id_column="VisitGuid",
+        event_timestamp_column="VisitDate",
+        event_timestamp_timezone_offset_column="tz_offset",
+        record_creation_timestamp_column="record_available_at",
+    )
     # choose reasonable feature job settings - based upon the feature job analysis
     Visit.update_default_feature_job_setting(
         fb.FeatureJobSetting(
@@ -479,23 +407,13 @@ def register_healthcare_tables():
             time_modulo_frequency="5s",
         )
     )
-
-    # check whether the data is already registered
-    source_table_name = "PRESCRIPTION"
-    if not catalog.list_tables().name.str.contains(source_table_name).any():
-        # register GroceryInvoice as an event data
-        Prescription = ds.get_source_table(
-            database_name="spark_catalog", schema_name="HEALTHCARE", table_name=source_table_name
-        ).create_event_table(
-            name=source_table_name,
-            event_id_column="PrescriptionGuid",
-            event_timestamp_column="PrescriptionDate",
-            event_timestamp_timezone_offset_column="tz_offset",
-            record_creation_timestamp_column="record_available_at",
-        )
-    else:
-        Prescription = catalog.get_source_table(source_table_name)
-
+    Prescription = table_creator.get_or_create_event_table(
+        "PRESCRIPTION",
+        event_id_column="PrescriptionGuid",
+        event_timestamp_column="PrescriptionDate",
+        event_timestamp_timezone_offset_column="tz_offset",
+        record_creation_timestamp_column="record_available_at",
+    )
     # choose reasonable feature job settings - based upon the feature job analysis
     Prescription.update_default_feature_job_setting(
         fb.FeatureJobSetting(
@@ -506,21 +424,13 @@ def register_healthcare_tables():
     )
 
     # check whether the data is already registered
-    source_table_name = "LABRESULT"
-    if not catalog.list_tables().name.str.contains(source_table_name).any():
-        # register GroceryInvoice as an event data
-        LabResult = ds.get_source_table(
-            database_name="spark_catalog", schema_name="HEALTHCARE", table_name=source_table_name
-        ).create_event_table(
-            name=source_table_name,
-            event_id_column="LabResultGuid",
-            event_timestamp_column="ReportDate",
-            event_timestamp_timezone_offset_column="tz_offset",
-            record_creation_timestamp_column="record_available_at",
-        )
-    else:
-        LabResult = catalog.get_source_table(source_table_name)
-
+    LabResult = table_creator.get_or_create_event_table(
+        "LABRESULT",
+        event_id_column="LabResultGuid",
+        event_timestamp_column="ReportDate",
+        event_timestamp_timezone_offset_column="tz_offset",
+        record_creation_timestamp_column="record_available_at",
+    )
     # choose reasonable feature job settings - based upon the feature job analysis
     LabResult.update_default_feature_job_setting(
         fb.FeatureJobSetting(
@@ -530,46 +440,25 @@ def register_healthcare_tables():
         )
     )
 
-    # check whether the data is already registered
-    source_table_name = "LABOBSERVATION"
-    if not catalog.list_tables().name.str.contains(source_table_name).any():
-        LabObservation = ds.get_source_table(
-            database_name="spark_catalog", schema_name="HEALTHCARE", table_name=source_table_name
-        ).create_item_table(
-            name=source_table_name,
-            event_id_column="LabResultGuid",
-            item_id_column="LabObservationGuid",
-            event_table_name="LABRESULT",
-        )
-    else:
-        LabObservation = catalog.get_source_table(source_table_name)
+    # Create item tables
+    LabObservation = table_creator.get_or_create_item_table(
+        "LABOBSERVATION",
+        event_id_column="LabResultGuid",
+        item_id_column="LabObservationGuid",
+        event_table_name="LABRESULT",
+    )
 
-    # check whether the data is already registered
-    source_table_name = "ICD9HIERARCHY"
-    if not catalog.list_tables().name.str.contains(source_table_name).any():
-        ICD9Hierarchy = ds.get_source_table(
-            database_name="spark_catalog", schema_name="HEALTHCARE", table_name=source_table_name
-        ).create_dimension_table(name=source_table_name, dimension_id_column="ICD9Code")
-    else:
-        ICD9Hierarchy = catalog.get_source_table(source_table_name)
-
-    # check whether the data is already registered
-    source_table_name = "SPECIALTYGROUP"
-    if not catalog.list_tables().name.str.contains(source_table_name).any():
-        SpecialtyGroup = ds.get_source_table(
-            database_name="spark_catalog", schema_name="HEALTHCARE", table_name=source_table_name
-        ).create_dimension_table(name=source_table_name, dimension_id_column="PhysicianSpecialty")
-    else:
-        SpecialtyGroup = catalog.get_source_table(source_table_name)
-
-    # check whether the data is already registered
-    source_table_name = "MEDICALPRODUCT"
-    if not catalog.list_tables().name.str.contains(source_table_name).any():
-        MedicalProduct = ds.get_source_table(
-            database_name="spark_catalog", schema_name="HEALTHCARE", table_name=source_table_name
-        ).create_dimension_table(name=source_table_name, dimension_id_column="NdcCode")
-    else:
-        MedicalProduct = catalog.get_source_table(source_table_name)
+    # Create dimension tables
+    ICD9Hierarchy = table_creator.get_or_create_dimension_table(
+        "ICD9HIERARCHY", dimension_id_column="ICD9Code"
+    )
+    SpecialtyGroup = table_creator.get_or_create_dimension_table(
+        "SPECIALTYGROUP", dimension_id_column="PhysicianSpecialty"
+    )
+    MedicalProduct = table_creator.get_or_create_dimension_table(
+        "MEDICALPRODUCT",
+        dimension_id_column="NdcCode",
+    )
 
     return [
         Patient,
@@ -747,12 +636,7 @@ def tag_healthcare_entities_to_columns(
     MedicalProduct.NdcCode.as_entity("ndc_code")
 
 
-def create_quick_start_feature_engineering_catalog():
-    catalog_name = "quick start feature engineering " + datetime.now().strftime("%Y%m%d:%H%M")
-
-    print("Building a quick start catalog for feature engineering named [" + catalog_name + "]")
-
-    # get a list of catalogs
+def _try_create_catalog(catalog_name: str):
     catalog_list = fb.Catalog.list()
 
     # check whether catalog_name exists in the name column of catalog_list
@@ -763,7 +647,11 @@ def create_quick_start_feature_engineering_catalog():
         # creating a catalog activates it
         catalog = fb.Catalog.create(catalog_name, "playground")
         print("Catalog created")
-    catalog = fb.activate_and_get_catalog(catalog_name)
+    return fb.activate_and_get_catalog(catalog_name)
+
+
+def _create_catalog_and_tag_entities(catalog_name: str):
+    catalog = _try_create_catalog(catalog_name)
 
     print("Registering the source tables")
     [
@@ -780,14 +668,29 @@ def create_quick_start_feature_engineering_catalog():
     tag_grocery_entities_to_columns(
         grocery_customer_table, grocery_invoice_table, grocery_items_table, grocery_product_table
     )
+    return [
+        catalog,
+        grocery_customer_table.get_view(),
+        grocery_invoice_table.get_view(),
+        grocery_items_table.get_view(),
+        grocery_product_table.get_view(),
+    ]
+
+
+def create_quick_start_feature_engineering_catalog():
+    catalog_name = "quick start feature engineering " + datetime.now().strftime("%Y%m%d:%H%M")
+
+    print("Building a quick start catalog for feature engineering named [" + catalog_name + "]")
+
+    [
+        catalog,
+        grocery_customer_view,
+        grocery_invoice_view,
+        grocery_items_view,
+        grocery_product_view,
+    ] = _create_catalog_and_tag_entities(catalog_name)
 
     print("Populating the feature store with example features")
-
-    # create an event view for the grocery invoice table
-    grocery_invoice_view = grocery_invoice_table.get_view()
-
-    # create an item data view for the grocery items table
-    grocery_items_view = grocery_items_table.get_view()
 
     # count the number of invoices per customer over the past 60 days
     # the target is the number of invoices in the next 30 days, grouped by customer
@@ -827,44 +730,15 @@ def create_quick_start_feature_engineering_catalog():
 def create_deep_dive_feature_engineering_catalog():
     catalog_name = "deep dive feature engineering " + datetime.now().strftime("%Y%m%d:%H%M")
 
-    print("Building a deep dive catalog for feature engineering named [" + catalog_name + "]")
-
-    # get a list of catalogs
-    catalog_list = fb.Catalog.list()
-
-    # check whether catalog_name exists in the name column of catalog_list
-    if catalog_name in catalog_list["name"].values:
-        print("Catalog already exists")
-    else:
-        print("Creating new catalog")
-        # creating a catalog activates it
-        catalog = fb.Catalog.create(catalog_name, "playground")
-        print("Catalog created")
-    catalog = fb.activate_and_get_catalog(catalog_name)
-
-    print("Registering the source tables")
     [
-        grocery_customer_table,
-        grocery_invoice_table,
-        grocery_items_table,
-        grocery_product_table,
-    ] = register_grocery_tables()
-
-    print("Registering the entities")
-    register_grocery_entities()
-
-    print("Tagging the entities to columns in the data tables")
-    tag_grocery_entities_to_columns(
-        grocery_customer_table, grocery_invoice_table, grocery_items_table, grocery_product_table
-    )
+        catalog,
+        grocery_customer_view,
+        grocery_invoice_view,
+        grocery_items_view,
+        grocery_product_view,
+    ] = _create_catalog_and_tag_entities(catalog_name)
 
     print("Populating the feature store with example features")
-
-    # create an event view for the grocery invoice table
-    grocery_invoice_view = grocery_invoice_table.get_view()
-
-    # create an item data view for the grocery items table
-    grocery_items_view = grocery_items_table.get_view()
 
     # count the number of invoices per customer over the past 60 days
     invoice_count_60days = grocery_invoice_view.groupby("GroceryCustomerGuid").aggregate_over(
@@ -900,42 +774,15 @@ def create_deep_dive_materializing_features_catalog():
 
     print("Building a deep dive catalog for materializing features named [" + catalog_name + "]")
 
-    # get a list of catalogs
-    catalog_list = fb.Catalog.list()
-
-    # check whether catalog_name exists in the name column of catalog_list
-    if catalog_name in catalog_list["name"].values:
-        print("Catalog already exists")
-    else:
-        print("Creating new catalog")
-        # creating a catalog activates it
-        catalog = fb.Catalog.create(catalog_name, "playground")
-        print("Catalog created")
-    catalog = fb.activate_and_get_catalog(catalog_name)
-
-    print("Registering the source tables")
     [
-        grocery_customer_table,
-        grocery_invoice_table,
-        grocery_items_table,
-        grocery_product_table,
-    ] = register_grocery_tables()
-
-    print("Registering the entities")
-    register_grocery_entities()
-
-    print("Tagging the entities to columns in the data tables")
-    tag_grocery_entities_to_columns(
-        grocery_customer_table, grocery_invoice_table, grocery_items_table, grocery_product_table
-    )
+        catalog,
+        grocery_customer_view,
+        grocery_invoice_view,
+        grocery_items_view,
+        grocery_product_view,
+    ] = _create_catalog_and_tag_entities(catalog_name)
 
     print("Populating the feature store with example features")
-
-    # create the views
-    grocery_customer_view = grocery_customer_table.get_view()
-    grocery_invoice_view = grocery_invoice_table.get_view()
-    grocery_items_view = grocery_items_table.get_view()
-    grocery_product_view = grocery_product_table.get_view()
 
     # join the product view to the items view
     grocery_items_view = grocery_items_view.join(grocery_product_view, on="GroceryProductGuid")
@@ -997,42 +844,15 @@ def create_quick_start_reusing_features_catalog():
 
     print("Building a quick start catalog for reusing features named [" + catalog_name + "]")
 
-    # get a list of catalogs
-    catalog_list = fb.Catalog.list()
-
-    # check whether catalog_name exists in the name column of catalog_list
-    if catalog_name in catalog_list["name"].values:
-        print("Catalog already exists")
-    else:
-        print("Creating new catalog")
-        # creating a catalog activates it
-        catalog = fb.Catalog.create(catalog_name, "playground")
-        print("Catalog created")
-    catalog = fb.activate_and_get_catalog(catalog_name)
-
-    print("Registering the source tables")
     [
-        grocery_customer_table,
-        grocery_invoice_table,
-        grocery_items_table,
-        grocery_product_table,
-    ] = register_grocery_tables()
-
-    print("Registering the entities")
-    register_grocery_entities()
-
-    print("Tagging the entities to columns in the data tables")
-    tag_grocery_entities_to_columns(
-        grocery_customer_table, grocery_invoice_table, grocery_items_table, grocery_product_table
-    )
+        catalog,
+        grocery_customer_view,
+        grocery_invoice_view,
+        grocery_items_view,
+        grocery_product_view,
+    ] = _create_catalog_and_tag_entities(catalog_name)
 
     print("Populating the feature store with example features")
-
-    # create the views
-    grocery_customer_view = grocery_customer_table.get_view()
-    grocery_invoice_view = grocery_invoice_table.get_view()
-    grocery_items_view = grocery_items_table.get_view()
-    grocery_product_view = grocery_product_table.get_view()
 
     ### join the tables in preparation for feature engineering
 
@@ -1166,19 +986,7 @@ def create_playground_credit_card_catalog():
 
     print("Building a playground catalog for credit cards named [" + catalog_name + "]")
 
-    # get a list of catalogs
-    catalog_list = fb.Catalog.list()
-
-    # check whether catalog_name exists in the name column of catalog_list
-    if catalog_name in catalog_list["name"].values:
-        print("Catalog already exists")
-    else:
-        print("Creating new catalog")
-        # creating a catalog activates it
-        catalog = fb.Catalog.create(catalog_name, "playground")
-        print("Catalog created")
-    catalog = fb.activate_and_get_catalog(catalog_name)
-
+    catalog = _try_create_catalog(catalog_name)
     print("Registering the source tables")
     [
         bank_customer_table,
@@ -1212,19 +1020,7 @@ def create_playground_healthcare_catalog():
 
     print("Building a playground catalog for healthcare named [" + catalog_name + "]")
 
-    # get a list of catalogs
-    catalog_list = fb.Catalog.list()
-
-    # check whether catalog_name exists in the name column of catalog_list
-    if catalog_name in catalog_list["name"].values:
-        print("Catalog already exists")
-    else:
-        print("Creating new catalog")
-        # creating a catalog activates it
-        catalog = fb.Catalog.create(catalog_name, "playground")
-        print("Catalog created")
-    catalog = fb.activate_and_get_catalog(catalog_name)
-
+    catalog = _try_create_catalog(catalog_name)
     print("Registering the source tables")
     [
         Patient,
@@ -1270,42 +1066,15 @@ def create_quick_start_feature_management_catalog():
 
     print("Building a quick start catalog for feature management named [" + catalog_name + "]")
 
-    # get a list of catalogs
-    catalog_list = fb.Catalog.list()
-
-    # check whether catalog_name exists in the name column of catalog_list
-    if catalog_name in catalog_list["name"].values:
-        print("Catalog already exists")
-    else:
-        print("Creating new catalog")
-        # creating a catalog activates it
-        catalog = fb.Catalog.create(catalog_name, "playground")
-        print("Catalog created")
-    catalog = fb.activate_and_get_catalog(catalog_name)
-
-    print("Registering the source tables")
     [
-        grocery_customer_table,
-        grocery_invoice_table,
-        grocery_items_table,
-        grocery_product_table,
-    ] = register_grocery_tables()
-
-    print("Registering the entities")
-    register_grocery_entities()
-
-    print("Tagging the entities to columns in the data tables")
-    tag_grocery_entities_to_columns(
-        grocery_customer_table, grocery_invoice_table, grocery_items_table, grocery_product_table
-    )
+        catalog,
+        grocery_customer_view,
+        grocery_invoice_view,
+        grocery_items_view,
+        grocery_product_view,
+    ] = _create_catalog_and_tag_entities(catalog_name)
 
     print("Populating the feature store with example features")
-
-    # create the views
-    grocery_customer_view = grocery_customer_table.get_view()
-    grocery_invoice_view = grocery_invoice_table.get_view()
-    grocery_items_view = grocery_items_table.get_view()
-    grocery_product_view = grocery_product_table.get_view()
 
     ### join the tables in preparation for feature engineering
 
@@ -1479,42 +1248,15 @@ def create_quick_start_model_training_catalog():
 
     print("Building a quick start catalog for model training named [" + catalog_name + "]")
 
-    # get a list of catalogs
-    catalog_list = fb.Catalog.list()
-
-    # check whether catalog_name exists in the name column of catalog_list
-    if catalog_name in catalog_list["name"].values:
-        print("Catalog already exists")
-    else:
-        print("Creating new catalog")
-        # creating a catalog activates it
-        catalog = fb.Catalog.create(catalog_name, "playground")
-        print("Catalog created")
-    catalog = fb.activate_and_get_catalog(catalog_name)
-
-    print("Registering the source tables")
     [
-        grocery_customer_table,
-        grocery_invoice_table,
-        grocery_items_table,
-        grocery_product_table,
-    ] = register_grocery_tables()
-
-    print("Registering the entities")
-    register_grocery_entities()
-
-    print("Tagging the entities to columns in the data tables")
-    tag_grocery_entities_to_columns(
-        grocery_customer_table, grocery_invoice_table, grocery_items_table, grocery_product_table
-    )
+        catalog,
+        grocery_customer_view,
+        grocery_invoice_view,
+        grocery_items_view,
+        grocery_product_view,
+    ] = _create_catalog_and_tag_entities(catalog_name)
 
     print("Populating the feature store with example features")
-
-    # create the views
-    grocery_customer_view = grocery_customer_table.get_view()
-    grocery_invoice_view = grocery_invoice_table.get_view()
-    grocery_items_view = grocery_items_table.get_view()
-    grocery_product_view = grocery_product_table.get_view()
 
     ### join the tables in preparation for feature engineering
 
