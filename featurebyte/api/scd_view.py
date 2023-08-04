@@ -166,7 +166,7 @@ class SCDView(View, GroupByMixin, RawMixin):
             excluded_columns.append(self.end_timestamp_column)
         return excluded_columns
 
-    def _get_as_feature_parameters(self, offset: Optional[str] = None) -> dict[str, Any]:
+    def get_additional_lookup_parameters(self, offset: Optional[str] = None) -> dict[str, Any]:
         return {
             "scd_parameters": {
                 "offset": offset,
