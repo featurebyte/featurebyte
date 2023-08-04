@@ -231,7 +231,7 @@ tasks:
       - task: install
     cmds:
       - task: test-setup
-      - poetry run pytest --timeout=240 --junitxml=pytest.xml.1 -n auto --cov=featurebyte tests/integration --source-types none,snowflake
+      - poetry run pytest --timeout=240 --timeout-method=thread --junitxml=pytest.xml.1 -n auto --cov=featurebyte tests/integration --source-types none,snowflake
       - task: test-teardown
 
   test-integration-spark:
