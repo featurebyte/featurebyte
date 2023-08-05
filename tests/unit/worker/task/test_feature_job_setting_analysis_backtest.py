@@ -2,6 +2,7 @@
 Test Feature Job Setting Analysis worker task
 """
 import copy
+import datetime
 from unittest.mock import call
 
 import pandas as pd
@@ -81,12 +82,18 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
 
     @pytest.mark.asyncio
     async def test_execute_success(  # pylint: disable=too-many-locals
-        self, task_completed, progress, temp_storage, update_fixtures
+        self,
+        mongo_persistent,
+        task_completed,
+        progress,
+        temp_storage,
+        update_fixtures,
     ):
         """
         Test successful task execution
         """
         _ = task_completed
+        persistent, _ = mongo_persistent
         output_document_id = self.payload["output_document_id"]
 
         # check storage of results in temp storage
@@ -119,6 +126,26 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
             call({"percent": 95, "message": "Saving Analysis"}),
             call({"percent": 100, "message": "Analysis Completed"}),
         ]
+
+        # check backtest summary is saved in analysis document
+        analysis_document = await persistent.find_one(
+            collection_name="feature_job_setting_analysis",
+            query_filter={"_id": ObjectId(self.payload["feature_job_setting_analysis_id"])},
+        )
+        backtest_summary = analysis_document["backtest_summaries"][0]
+        assert isinstance(backtest_summary.pop("created_at"), datetime.datetime)
+        assert backtest_summary == {
+            "user_id": ObjectId(self.payload["user_id"]),
+            "output_document_id": ObjectId(output_document_id),
+            "feature_job_setting": {
+                "frequency": 180,
+                "job_time_modulo_frequency": 61,
+                "blind_spot": 10,
+                "feature_cutoff_modulo_frequency": 0,
+            },
+            "pct_incomplete_jobs": 100.0,
+            "total_pct_late_data": 29.598486441034268,
+        }
 
     @pytest.mark.asyncio
     async def test_execute_fail(

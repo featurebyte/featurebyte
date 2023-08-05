@@ -2,7 +2,6 @@
 Tests for FeatureJobSettingAnalysis routes
 """
 import copy
-from datetime import datetime
 from http import HTTPStatus
 from unittest.mock import AsyncMock, Mock, patch
 
@@ -114,7 +113,13 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
         """
         return (
             BacktestResult(
-                results=pd.DataFrame({"a": [1, 2, 3], "b": [pd.Timestamp(datetime.now())] * 3}),
+                results=pd.DataFrame(
+                    {
+                        "count_on_time": [1, 2, 3],
+                        "total_count": [3, 5, 6],
+                        "pct_late_data": [0.33, 0.4, 0.5],
+                    }
+                ),
                 plot=None,
                 job_with_issues_count=0,
                 warnings=[],
