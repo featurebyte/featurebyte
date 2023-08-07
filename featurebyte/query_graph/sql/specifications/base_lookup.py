@@ -19,7 +19,7 @@ from featurebyte.query_graph.node.generic import (
 from featurebyte.query_graph.sql.specs import NonTileBasedAggregationSpec
 
 
-@dataclass
+@dataclass  # type: ignore[misc]
 class BaseLookupSpec(NonTileBasedAggregationSpec, ABC):
     """
     BaseLookupSpec contains the basic information required to generate sql for a lookup feature or target.
