@@ -1,7 +1,7 @@
 SELECT
   index,
   "cust_id",
-  SUM("added_feature") AS value_sum_ae7ea38511285eab9c15813aa9fe9c1b16f25fb4
+  SUM("added_feature") AS value_sum_400c301e5197eb04cbc59e892fd9961af0d99c7b
 FROM (
   SELECT
     *,
@@ -171,7 +171,8 @@ FROM (
               L."item_amount" AS "item_amount",
               L."created_at" AS "created_at",
               L."event_timestamp" AS "event_timestamp",
-              R."event_timestamp" AS "event_timestamp_event_table"
+              R."event_timestamp" AS "event_timestamp_event_table",
+              R."cust_id" AS "cust_id_event_table"
             FROM (
               SELECT
                 "event_id_col" AS "event_id_col",
