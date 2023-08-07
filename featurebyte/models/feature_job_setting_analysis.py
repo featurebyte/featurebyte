@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Tuple
 
+import datetime
+
 import pymongo
 from pydantic import BaseModel, Field
 
@@ -56,6 +58,19 @@ class AnalysisPlots(BaseModel):
     affected_jobs_record_age: Optional[Dict[str, Any]]
 
 
+class BackTestSummary(BaseModel):
+    """
+    BackTestSummary model
+    """
+
+    output_document_id: PydanticObjectId
+    user_id: Optional[PydanticObjectId]
+    created_at: datetime.datetime
+    feature_job_setting: FeatureJobSetting
+    total_pct_late_data: float
+    pct_incomplete_jobs: float
+
+
 class FeatureJobSettingAnalysisModel(FeatureByteCatalogBaseDocumentModel):
     """
     FeatureJobSettingAnalysis persistent model
@@ -67,6 +82,7 @@ class FeatureJobSettingAnalysisModel(FeatureByteCatalogBaseDocumentModel):
     analysis_parameters: AnalysisParameters
     analysis_result: AnalysisResult
     analysis_report: str
+    backtest_summaries: Optional[List[BackTestSummary]] = Field(default_factory=list)
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """

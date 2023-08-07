@@ -9,7 +9,10 @@ from bson.objectid import ObjectId
 
 from featurebyte.exception import DocumentError
 from featurebyte.models.base import FeatureByteBaseDocumentModel
-from featurebyte.models.feature_job_setting_analysis import FeatureJobSettingAnalysisModel
+from featurebyte.models.feature_job_setting_analysis import (
+    BackTestSummary,
+    FeatureJobSettingAnalysisModel,
+)
 from featurebyte.persistent import Persistent
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.schema.feature_job_setting_analysis import (
@@ -116,4 +119,29 @@ class FeatureJobSettingAnalysisService(
             user_id=self.user.id,
             catalog_id=self.catalog_id,
             output_document_id=output_document_id,
+        )
+
+    async def add_backtest_summary(
+        self, document_id: ObjectId, backtest_summary: BackTestSummary
+    ) -> None:
+        """
+        Add backtest summary to feature job setting analysis document
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            FeatureJobSettingAnalysis document id
+        backtest_summary: BackTestSummary
+            Backtest summary
+        """
+        # ensure document exists
+        _ = await self.get_document(document_id=document_id)
+
+        await self.persistent.update_one(
+            collection_name=self.collection_name,
+            query_filter={"_id": document_id, "catalog_id": self.catalog_id},
+            update={
+                "$push": {"backtest_summaries": backtest_summary.dict()},
+            },
+            user_id=self.user.id,
         )

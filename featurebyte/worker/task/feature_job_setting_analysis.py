@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Any, cast
 
+from datetime import datetime
 from pathlib import Path
 
 from featurebyte_freeware.feature_job_analysis.analysis import (
@@ -16,6 +17,7 @@ from featurebyte_freeware.feature_job_analysis.schema import FeatureJobSetting
 
 from featurebyte.logging import get_logger
 from featurebyte.models.feature_job_setting_analysis import (
+    BackTestSummary,
     FeatureJobSettingAnalysisData,
     FeatureJobSettingAnalysisModel,
 )
@@ -163,13 +165,32 @@ class FeatureJobSettingAnalysisBacktestTask(BaseTask):
 
         # run backtest
         await self.update_progress(percent=5, message="Running Analysis")
+        feature_job_setting = FeatureJobSetting(
+            frequency=payload.frequency,
+            blind_spot=payload.blind_spot,
+            job_time_modulo_frequency=payload.job_time_modulo_frequency,
+            feature_cutoff_modulo_frequency=0,
+        )
         backtest_result, backtest_report = analysis.backtest(
-            FeatureJobSetting(
-                frequency=payload.frequency,
-                blind_spot=payload.blind_spot,
-                job_time_modulo_frequency=payload.job_time_modulo_frequency,
-                feature_cutoff_modulo_frequency=0,
-            )
+            feature_job_setting=feature_job_setting
+        )
+
+        # update analysis with backtest summary
+        late_series = backtest_result.results
+        total_pct_late_data = (
+            1 - late_series["count_on_time"].sum() / late_series["total_count"].sum()
+        )
+        pct_incomplete_jobs = (late_series.pct_late_data > 0).sum() / late_series.shape[0]
+        await feature_job_settings_analysis_service.add_backtest_summary(
+            document_id=document_id,
+            backtest_summary=BackTestSummary(
+                output_document_id=payload.output_document_id,
+                user_id=payload.user_id,
+                created_at=datetime.utcnow(),
+                feature_job_setting=feature_job_setting.dict(),
+                total_pct_late_data=total_pct_late_data * 100,
+                pct_incomplete_jobs=pct_incomplete_jobs * 100,
+            ),
         )
 
         # store results in temp storage
