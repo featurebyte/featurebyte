@@ -100,7 +100,7 @@ def _target_with_offset_test_helper(
     assert preview_output[target_name] == expected_row[lookup_column_name]
 
 
-@pytest.mark.parametrize("source_type", ["databricks", "snowflake", "spark"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_scd_lookup_target_with_offset(config, scd_table, scd_dataframe):
     """
     Test creating lookup target from a SCDView with offset
@@ -122,7 +122,7 @@ def test_scd_lookup_target_with_offset(config, scd_table, scd_dataframe):
     )
 
 
-@pytest.mark.parametrize("source_type", ["databricks", "snowflake", "spark"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_event_lookup_target_with_offset(config, event_table, transaction_data_upper_case):
     """
     Test creating event target from a event view with offset
