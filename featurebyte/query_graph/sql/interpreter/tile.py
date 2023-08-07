@@ -159,6 +159,7 @@ class TileSQLGenerator:
                     if (
                         source_column.table_type == TableDataType.EVENT_TABLE
                         and source_column.dtype in {DBVarType.TIMESTAMP, DBVarType.TIMESTAMP_TZ}
+                        and source_column.table_id is not None
                     ):
                         return EventTableTimestampFilter(
                             timestamp_column_name=source_column.name,
