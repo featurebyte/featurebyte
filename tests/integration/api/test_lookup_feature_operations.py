@@ -1,13 +1,14 @@
 """
 Lookup feature operations
 """
-import numpy as np
 import pandas as pd
 import pytest
-import pytz
 
 from tests.integration.api.feature_preview_utils import (
     convert_preview_param_dict_to_feature_preview_resp,
+)
+from tests.integration.api.lookup_operations_utils import (
+    check_lookup_feature_or_target_is_time_aware,
 )
 
 
@@ -36,83 +37,23 @@ def test_lookup_features_same_column_name(dimension_view, item_table):
     }
 
 
-def check_lookup_feature_is_time_aware(
-    view,
-    df,
-    primary_key_column,
-    primary_key_value,
-    primary_key_serving_name,
-    lookup_column_name,
-    event_timestamp_column,
-):
-    """
-    Check that lookup feature is time based (value is NA is point in time is prior to event time)
-    """
-    lookup_row = df[df[primary_key_column] == primary_key_value].iloc[0]
-    event_timestamp = lookup_row[event_timestamp_column].astimezone(pytz.utc).replace(tzinfo=None)
-
-    # Create lookup feature
-    feature = view[lookup_column_name].as_feature("lookup_feature")
-    # Lookup from event should be time based - value is NA is point in time is prior to event time
-    ts_before_event = event_timestamp - pd.Timedelta("7d")
-    ts_after_event = event_timestamp + pd.Timedelta("7d")
-    expected_feature_value_if_after_event = lookup_row[lookup_column_name]
-    # Make sure to pick a non-na value to test meaningfully
-    assert not pd.isna(expected_feature_value_if_after_event)
-
-    # Point in time after event time - non-NA
-    df = feature.preview(
-        pd.DataFrame(
-            [
-                {
-                    "POINT_IN_TIME": ts_after_event,
-                    primary_key_serving_name: primary_key_value,
-                }
-            ]
-        )
-    )
-    expected = pd.Series(
-        {
-            "POINT_IN_TIME": ts_after_event,
-            primary_key_serving_name: primary_key_value,
-            "lookup_feature": expected_feature_value_if_after_event,
-        }
-    )
-    pd.testing.assert_series_equal(df.iloc[0], expected, check_names=False)
-
-    # Point in time before event time - NA
-    df = feature.preview(
-        pd.DataFrame(
-            [
-                {
-                    "POINT_IN_TIME": ts_before_event,
-                    primary_key_serving_name: primary_key_value,
-                }
-            ]
-        )
-    )
-    expected = pd.Series(
-        {
-            "POINT_IN_TIME": ts_before_event,
-            primary_key_serving_name: primary_key_value,
-            "lookup_feature": np.nan,
-        }
-    )
-    pd.testing.assert_series_equal(df.iloc[0], expected, check_names=False)
-
-
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_event_view_lookup_features(event_table, transaction_data_upper_case):
     """
     Test lookup features from EventView are time based
     """
-    check_lookup_feature_is_time_aware(
-        view=event_table.get_view(),
+    view = event_table.get_view()
+    lookup_column_name = "ÀMOUNT"
+    feature_name = "lookup_feature"
+    feature = view[lookup_column_name].as_feature(feature_name)
+    check_lookup_feature_or_target_is_time_aware(
+        feature_or_target=feature,
+        feature_or_target_name=feature_name,
         df=transaction_data_upper_case,
         primary_key_column="TRANSACTION_ID",
         primary_key_value="T42",
         primary_key_serving_name="order_id",
-        lookup_column_name="ÀMOUNT",
+        lookup_column_name=lookup_column_name,
         event_timestamp_column="ËVENT_TIMESTAMP",
     )
 
@@ -122,12 +63,17 @@ def test_item_view_lookup_features(item_table, expected_joined_event_item_datafr
     """
     Test lookup features from ItemView are time based
     """
-    check_lookup_feature_is_time_aware(
-        view=item_table.get_view(),
+    view = item_table.get_view()
+    lookup_column_name = "item_type"
+    feature_name = "lookup_feature"
+    feature = view[lookup_column_name].as_feature(feature_name)
+    check_lookup_feature_or_target_is_time_aware(
+        feature_or_target=feature,
+        feature_or_target_name=feature_name,
         df=expected_joined_event_item_dataframe,
         primary_key_column="item_id",
         primary_key_value="item_42",
         primary_key_serving_name="item_id",
-        lookup_column_name="item_type",
+        lookup_column_name=lookup_column_name,
         event_timestamp_column="ËVENT_TIMESTAMP",
     )

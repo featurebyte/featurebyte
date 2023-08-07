@@ -18,7 +18,8 @@ from featurebyte.query_graph.node.schema import FeatureStoreDetails
 from featurebyte.query_graph.sql.aggregator.lookup import LookupAggregator
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import SQLType, get_qualified_column_identifier
-from featurebyte.query_graph.sql.specs import AggregationSource, LookupSpec
+from featurebyte.query_graph.sql.specifications.lookup import LookupSpec
+from featurebyte.query_graph.sql.specs import AggregationSource
 
 
 @dataclass

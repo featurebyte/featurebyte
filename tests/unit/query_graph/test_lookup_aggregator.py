@@ -11,7 +11,7 @@ import pytest
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.node.generic import EventLookupParameters, SCDLookupParameters
 from featurebyte.query_graph.sql.aggregator.lookup import LookupAggregator
-from featurebyte.query_graph.sql.specs import LookupSpec
+from featurebyte.query_graph.sql.specifications.lookup import LookupSpec
 
 
 @pytest.fixture
