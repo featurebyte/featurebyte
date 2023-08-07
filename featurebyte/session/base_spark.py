@@ -178,6 +178,7 @@ class BaseSparkSession(BaseSession, ABC):
             "INTERVAL": DBVarType.TIMEDELTA,
             "VOID": DBVarType.VOID,
             "TIMESTAMP": DBVarType.TIMESTAMP,
+            "TIMESTAMP_NTZ": DBVarType.TIMESTAMP,
             "ARRAY": DBVarType.ARRAY,
             "MAP": DBVarType.MAP,
             "STRUCT": DBVarType.STRUCT,

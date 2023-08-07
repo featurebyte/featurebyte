@@ -420,12 +420,14 @@ def test_feature_execution_planner__lookup_features(global_graph, projected_look
     assert len(agg_results) == 1
     agg_result_dict = asdict(agg_results[0])
     agg_result_dict.pop("expr")
+    agg_result_dict.pop("adapter")
     assert agg_result_dict == {
         "column_names": [
             "_fb_internal_lookup_cust_value_1_input_1",
             "_fb_internal_lookup_cust_value_2_input_1",
         ],
         "join_keys": ["CUSTOMER_ID"],
+        "forward_point_in_time_offset": None,
         "event_timestamp_column": None,
     }
 
