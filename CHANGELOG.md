@@ -1,5 +1,26 @@
 # Changelog
 
+## v0.4.2 (2023-08-07)
+
+### 🛑 Breaking Changes
+
++ `target` Update compute_target to return observation table instead of target table
+  will make it easier to use with compute historical features
++ `target` Update target info to return a TableBriefInfoList instead of a custom struct
+  this will help keep it consistent with feature, and also fix a bug in info where we wrongly assumed there was only one input table.
+
+### 💡 Enhancements
+
++ `target` Add as_target to SDK, and add node to graph when it is called
++ `target` Add fill_value and skip_fill_na to forward_aggregate, and update name
++ `target` Create lookup target graph node
++ `service` Speed up operation structure extraction by caching the result of _extract() in BaseGraphExtractor
+
+### 🐛 Bug Fixes
+
++ `api` Fix api objects listing failure in some notebooks environments
++ `utils` Fix is_notebook check to support Google Colab [https://github.com/featurebyte/featurebyte/issues/1598]
+
 ## v0.4.1 (2023-07-25)
 
 ### 🛑 Breaking Changes
@@ -101,7 +122,7 @@
 + `feature` fix view join operation bug which causes improper query graph pruning
 + `service` Fix a bug in add_feature() where entity_id was incorrectly attached to the derived column
 
-## 0.4.0 yanked (2023-07-25)
+## v0.4.0 yanked (2023-07-25)
 
 ## v0.3.1 (2023-06-08)
 
