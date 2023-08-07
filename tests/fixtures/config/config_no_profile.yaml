@@ -1,3 +1,2 @@
 logging:
   level: INFO
-  serialize: True

@@ -5,6 +5,7 @@ from typing import Any, Dict, Iterator, List, Optional, Union, cast
 
 import json
 import os
+import ssl
 import time
 from contextlib import contextmanager
 from http import HTTPStatus
@@ -96,6 +97,7 @@ class Profile(BaseModel):
     name: str
     api_url: AnyHttpUrl
     api_token: Optional[str]
+    ssl_verify: bool = True
 
 
 class ProfileList(BaseModel):
@@ -117,7 +119,7 @@ class APIClient(BaseAPIClient):
     Http client for accessing the FeatureByte Application API
     """
 
-    def __init__(self, api_url: str, api_token: Optional[str]) -> None:
+    def __init__(self, api_url: str, api_token: Optional[str], ssl_verify: bool = True) -> None:
         """
         Initialize api settings
 
@@ -127,15 +129,19 @@ class APIClient(BaseAPIClient):
             URL of FeatureByte API service
         api_token: Optional[str]
             Access token to used for authentication
+        ssl_verify: bool
+            Flag to specify whether to verify SSL certificates
         """
         super().__init__()
         self.base_url = api_url
+        self.verify = ssl_verify  # To Ignore SSL Verification
         additional_headers = {
             "user-agent": "Python SDK",
             "accept": "application/json",
         }
         if api_token:
             additional_headers["Authorization"] = f"Bearer {api_token}"
+
         self.headers.update(additional_headers)
 
     def request(
@@ -173,6 +179,7 @@ class APIClient(BaseAPIClient):
             active_catalog_id = headers.get("active-catalog-id", get_active_catalog_id())
             if active_catalog_id:
                 headers["active-catalog-id"] = str(active_catalog_id)
+
             kwargs["headers"] = headers
             kwargs["allow_redirects"] = False
             return super().request(
@@ -192,7 +199,7 @@ class WebsocketClient:
     Websocket client for accessing the FeatureByte Application API
     """
 
-    def __init__(self, url: str, access_token: Optional[str]) -> None:
+    def __init__(self, url: str, access_token: Optional[str], ssl_verify: bool) -> None:
         """
         Initialize api settings
 
@@ -202,18 +209,23 @@ class WebsocketClient:
             URL of FeatureByte websocket service
         access_token: Optional[str]
             Access token to used for authentication
+        ssl_verify: bool
+            Flag to specify whether to verify SSL certificates
         """
         if access_token:
             self._url = f"{url}?token={access_token}"
         else:
             self._url = url
+        self.verify = ssl_verify
         self._reconnect()
 
     def _reconnect(self) -> None:
         """
         Reconnect websocket connection
         """
-        self._ws = websocket.create_connection(self._url, enable_multithread=True)
+        self._ws = websocket.create_connection(
+            self._url, enable_multithread=True, sslopt=self._get_sslopt()
+        )
 
     def close(self) -> None:
         """
@@ -258,6 +270,19 @@ class WebsocketClient:
         if message_bytes:
             return cast(Dict[str, Any], json.loads(message_bytes.decode("utf8")))
         return None
+
+    def _get_sslopt(self) -> Dict[str, Any]:
+        """
+        Return ssl options for websocket connection
+
+        Returns
+        -------
+        Dict[str, Any]
+            SSL options
+        """
+        if self.verify:
+            return {}
+        return {"cert_reqs": ssl.CERT_NONE}
 
 
 class Configurations:
@@ -312,6 +337,7 @@ class Configurations:
                     "# featurebyte configuration\n\n"
                     "profile:\n"
                     "  - name: local\n"
+                    "    ssl_verify: true\n"
                     "    api_url: http://127.0.0.1:8088\n\n"
                     "default_profile: local\n\n"
                 )
@@ -436,6 +462,7 @@ class Configurations:
           - name: local
             api_url: https://app.featurebyte.com/api/v1
             api_token: API_TOKEN_VALUE
+            ssl_verify: true
 
         default_profile: local
         ```
@@ -475,7 +502,11 @@ class Configurations:
 
         # configure logger
         reconfigure_loggers(self)
-        return APIClient(api_url=self.profile.api_url, api_token=self.profile.api_token)
+        return APIClient(
+            api_url=self.profile.api_url,
+            api_token=self.profile.api_token,
+            ssl_verify=self.profile.ssl_verify,
+        )
 
     @contextmanager
     def get_websocket_client(self, task_id: str) -> Iterator[WebsocketClient]:
@@ -494,7 +525,9 @@ class Configurations:
         """
         url = self.profile.api_url.replace("http://", "ws://").replace("https://", "wss://")
         url = f"{url}/ws/{task_id}"
-        websocket_client = WebsocketClient(url=url, access_token=self.profile.api_token)
+        websocket_client = WebsocketClient(
+            url=url, access_token=self.profile.api_token, ssl_verify=self.profile.ssl_verify
+        )
         try:
             yield websocket_client
         finally:

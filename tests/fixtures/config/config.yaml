@@ -10,7 +10,6 @@ profile:
 
 logging:
   level: INFO
-  serialize: True
 
 storage:
   local_path: ~/.featurebyte_custom/data

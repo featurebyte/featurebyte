@@ -60,6 +60,29 @@ def test_configurations():
     ]
 
 
+@patch("httpx._client.Client.send")
+def test_tls_verify_configurations(mock_requests_get):
+    """
+    Test certification verification from configuration files
+    """
+    # Mock return status code 200
+    mock_requests_get.return_value.status_code = 200
+
+    config = Configurations("tests/fixtures/config/config_certificate.yaml")
+
+    # Certificate verification
+    config.use_profile("cert_check")
+    assert config.get_client().verify
+
+    # Certificate verification disabled
+    config.use_profile("cert_no_check")
+    assert config.get_client().verify is False
+
+    # Certificate verification default (enabled)
+    config.use_profile("cert_default")
+    assert config.get_client().verify
+
+
 def test_get_client_no_persistence_settings():
     """
     Test getting client with no persistent settings
