@@ -92,7 +92,7 @@ license = "Elastic License 2.0"
 name = "featurebyte"
 readme = "README.md"
 repository = "https://github.com/featurebyte/featurebyte"
-version = "0.4.1"
+version = "0.4.2"
 
 [tool.poetry.dependencies]
 PyYAML = "^6.0"
