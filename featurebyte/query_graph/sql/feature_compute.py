@@ -21,6 +21,7 @@ from featurebyte.query_graph.sql.aggregator.forward import ForwardAggregator
 from featurebyte.query_graph.sql.aggregator.item import ItemAggregator
 from featurebyte.query_graph.sql.aggregator.latest import LatestAggregator
 from featurebyte.query_graph.sql.aggregator.lookup import LookupAggregator
+from featurebyte.query_graph.sql.aggregator.lookup_target import LookupTargetAggregator
 from featurebyte.query_graph.sql.aggregator.window import WindowAggregator
 from featurebyte.query_graph.sql.ast.base import TableNode
 from featurebyte.query_graph.sql.ast.generic import AliasNode, Project
@@ -33,6 +34,8 @@ from featurebyte.query_graph.sql.common import (
     quoted_identifier,
 )
 from featurebyte.query_graph.sql.parent_serving import construct_request_table_with_parent_entities
+from featurebyte.query_graph.sql.specifications.lookup import LookupSpec
+from featurebyte.query_graph.sql.specifications.lookup_target import LookupTargetSpec
 from featurebyte.query_graph.sql.specs import (
     AggregateAsAtSpec,
     AggregationSpec,
@@ -40,7 +43,6 @@ from featurebyte.query_graph.sql.specs import (
     FeatureSpec,
     ForwardAggregateSpec,
     ItemAggregationSpec,
-    LookupSpec,
     NonTileBasedAggregationSpec,
     TileBasedAggregationSpec,
 )
@@ -49,6 +51,7 @@ from featurebyte.query_graph.transform.flattening import GraphFlatteningTransfor
 AggregatorType = Union[
     LatestAggregator,
     LookupAggregator,
+    LookupTargetAggregator,
     WindowAggregator,
     ItemAggregator,
     AsAtAggregator,
@@ -72,6 +75,7 @@ class FeatureExecutionPlan:
         self.aggregators: dict[str, AggregatorType] = {
             AggregationType.LATEST: LatestAggregator(**aggregator_kwargs),
             AggregationType.LOOKUP: LookupAggregator(**aggregator_kwargs),
+            AggregationType.LOOKUP_TARGET: LookupTargetAggregator(**aggregator_kwargs),
             AggregationType.WINDOW: WindowAggregator(**aggregator_kwargs),
             AggregationType.ITEM: ItemAggregator(**aggregator_kwargs),
             AggregationType.AS_AT: AsAtAggregator(**aggregator_kwargs),
@@ -472,6 +476,7 @@ class FeatureExecutionPlanner:
         groupby_nodes = list(self.graph.iterate_nodes(node, NodeType.GROUPBY))
         item_groupby_nodes = list(self.graph.iterate_nodes(node, NodeType.ITEM_GROUPBY))
         lookup_nodes = list(self.graph.iterate_nodes(node, NodeType.LOOKUP))
+        lookup_target_nodes = list(self.graph.iterate_nodes(node, NodeType.LOOKUP_TARGET))
         asat_nodes = list(self.graph.iterate_nodes(node, NodeType.AGGREGATE_AS_AT))
         forward_aggregate_nodes = list(self.graph.iterate_nodes(node, NodeType.FORWARD_AGGREGATE))
 
@@ -491,6 +496,10 @@ class FeatureExecutionPlanner:
         if lookup_nodes:
             for lookup_node in lookup_nodes:
                 out.extend(self.get_non_tiling_specs(LookupSpec, lookup_node))
+
+        if lookup_target_nodes:
+            for lookup_node in lookup_target_nodes:
+                out.extend(self.get_non_tiling_specs(LookupTargetSpec, lookup_node))
 
         if asat_nodes:
             for asat_node in asat_nodes:

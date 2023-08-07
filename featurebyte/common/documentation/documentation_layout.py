@@ -17,6 +17,7 @@ from featurebyte.common.documentation.constants import (
     CREATE_FEATURE,
     CREATE_FEATURE_GROUP,
     CREATE_TABLE,
+    CREATE_TARGET,
     CREDENTIAL,
     DATA_SOURCE,
     DEPLOY,
@@ -643,6 +644,7 @@ def _get_view_column_layout() -> List[DocLayoutItem]:
     return [
         DocLayoutItem([VIEW_COLUMN]),
         DocLayoutItem([VIEW_COLUMN, CREATE_FEATURE, "ViewColumn.as_feature"]),
+        DocLayoutItem([VIEW_COLUMN, CREATE_TARGET, "ViewColumn.as_target"]),
         *_get_sample_mixin_layout(VIEW_COLUMN),
         DocLayoutItem([VIEW_COLUMN, INFO, "ViewColumn.dtype"]),
         DocLayoutItem([VIEW_COLUMN, INFO, "ViewColumn.is_datetime"]),

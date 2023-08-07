@@ -13,12 +13,13 @@ from sqlglot.expressions import Expression, Select
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.common import SQLType, quoted_identifier
+from featurebyte.query_graph.sql.specifications.lookup import LookupSpec
+from featurebyte.query_graph.sql.specifications.lookup_target import LookupTargetSpec
 from featurebyte.query_graph.sql.specs import (
     AggregateAsAtSpec,
     AggregationSource,
     ForwardAggregateSpec,
     ItemAggregationSpec,
-    LookupSpec,
 )
 
 
@@ -135,6 +136,29 @@ class Lookup(Aggregate):
         # Create LookupSpec which determines the internal aggregated result names
         columns_map = {}
         specs = LookupSpec.from_query_graph_node(
+            context.query_node,
+            aggregation_source=Aggregate.get_aggregation_source_from_source_node(source_node),
+        )
+        for spec in specs:
+            columns_map[spec.feature_name] = quoted_identifier(spec.agg_result_name)
+        return columns_map
+
+
+@dataclass
+class LookupTarget(Aggregate):
+    """
+    LookupTarget SQLNode
+    """
+
+    query_node_type = NodeType.LOOKUP_TARGET
+
+    @staticmethod
+    def construct_columns_map(
+        context: SQLNodeContext, source_node: TableNode
+    ) -> dict[str, Expression]:
+        # Create LookupTargetSpec which determines the internal aggregated result names
+        columns_map = {}
+        specs = LookupTargetSpec.from_query_graph_node(
             context.query_node,
             aggregation_source=Aggregate.get_aggregation_source_from_source_node(source_node),
         )
