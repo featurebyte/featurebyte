@@ -64,7 +64,7 @@ class TableFacadeService:
             TableDataType.DIMENSION_TABLE: self.dimension_table_service,
             TableDataType.SCD_TABLE: self.scd_table_service,
         }
-        return table_service_map[table_type]
+        return table_service_map[table_type]  # type: ignore
 
     async def update_table_columns_info(
         self,
@@ -108,6 +108,11 @@ class TableFacadeService:
             Column cleaning operations
         service: Optional[TableDocumentService]
             Table document service
+
+        Raises
+        ------
+        ValueError
+            If column not found in table
         """
         if service is None:
             table = await self.table_service.get_document(table_id)
