@@ -5,8 +5,9 @@ from featurebyte import ColumnCleaningOperation, MissingValueImputation
 
 
 @pytest.mark.asyncio
-async def test_update_table_column_cleaning_operations(app_container, event_table):
+async def test_update_table_column_cleaning_operations(app_container, snowflake_event_table):
     """Test update_table_column_cleaning_operations"""
+    event_table = snowflake_event_table
     await app_container.table_facade_service.update_table_column_cleaning_operations(
         table_id=event_table.id,
         column_cleaning_operations=[
