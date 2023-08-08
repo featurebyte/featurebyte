@@ -295,7 +295,9 @@ def test_feature_derived_from_multiple_scd_joins(multiple_scd_joined_feature):
     assert table_names == ["scd_table_state_map", "sf_scd_table", "sf_event_table"]
 
 
-def test_event_view_join_scd_view__feature(snowflake_event_view, snowflake_scd_view_with_entity):
+def test_event_view_join_scd_view__feature_info(
+    snowflake_event_view, snowflake_scd_view_with_entity
+):
     """
     Test joining event view with SCD view and creating a feature
     """
@@ -307,3 +309,18 @@ def test_event_view_join_scd_view__feature(snowflake_event_view, snowflake_scd_v
     feature.save()
     info = feature.info()
     assert info["name"] == "new_col_max_feature"
+    assert info["metadata"]["input_columns"] == {
+        "Input0": {
+            "data": "sf_event_table",
+            "column_name": "event_timestamp",
+            "semantic": "event_timestamp",
+        },
+        "Input1": {"data": "sf_event_table", "column_name": "col_text", "semantic": None},
+        "Input2": {
+            "data": "sf_scd_table",
+            "column_name": "col_text",
+            "semantic": "scd_natural_key_id",
+        },
+        "Input3": {"data": "sf_scd_table", "column_name": "cust_id", "semantic": None},
+        "Input4": {"data": "sf_event_table", "column_name": "col_float", "semantic": None},
+    }
