@@ -190,11 +190,13 @@ class TableCreator:
         self.data_source = fb.FeatureStore.get("playground").get_data_source()
         catalog = fb.Catalog.get_active()
         self.catalog = catalog
-        self.current_tables = catalog.list_tables().name.str
         self.schema_name = schema_name
 
+    def _does_table_exist(self, table_name: str) -> bool:
+        return self.catalog.list_tables().name.str.contains(table_name).any()
+
     def get_or_create_scd_table(self, table_name: str, **kwargs) -> SCDTable:
-        if not self.current_tables.contains(table_name).any():
+        if not self._does_table_exist(table_name):
             return self.data_source.get_source_table(
                 database_name="spark_catalog", schema_name=self.schema_name, table_name=table_name
             ).create_scd_table(
@@ -205,7 +207,7 @@ class TableCreator:
             return self.catalog.get_table(table_name)
 
     def get_or_create_event_table(self, table_name: str, **kwargs) -> EventTable:
-        if not self.current_tables.contains(table_name).any():
+        if not self._does_table_exist(table_name):
             return self.data_source.get_source_table(
                 database_name="spark_catalog", schema_name=self.schema_name, table_name=table_name
             ).create_event_table(
@@ -216,7 +218,7 @@ class TableCreator:
             return self.catalog.get_table(table_name)
 
     def get_or_create_item_table(self, table_name: str, **kwargs) -> ItemTable:
-        if not self.current_tables.contains(table_name).any():
+        if not self._does_table_exist(table_name):
             return self.data_source.get_source_table(
                 database_name="spark_catalog", schema_name=self.schema_name, table_name=table_name
             ).create_item_table(
@@ -227,7 +229,7 @@ class TableCreator:
             return self.catalog.get_table(table_name)
 
     def get_or_create_dimension_table(self, table_name: str, **kwargs) -> DimensionTable:
-        if not self.current_tables.contains(table_name).any():
+        if not self._does_table_exist(table_name):
             return self.data_source.get_source_table(
                 database_name="spark_catalog", schema_name=self.schema_name, table_name=table_name
             ).create_dimension_table(
