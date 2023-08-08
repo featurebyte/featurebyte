@@ -438,8 +438,9 @@ def event_table_factory_fixture(test_dir, feature_store, event_table_service, se
 
 
 @pytest_asyncio.fixture(name="event_table")
-async def event_table_fixture(event_table_factory):
+async def event_table_fixture(event_table_factory, entity, entity_transaction):
     """EventTable model"""
+    _ = entity, entity_transaction
     return await event_table_factory()
 
 
