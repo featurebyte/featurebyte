@@ -9,6 +9,7 @@ from abc import abstractmethod
 from enum import Enum
 from uuid import UUID
 
+from featurebyte.logging import get_logger
 from featurebyte.models.base import User
 from featurebyte.models.task import Task
 from featurebyte.persistent import Persistent
@@ -18,6 +19,9 @@ from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.storage import Storage
 
 TASK_MAP: Dict[Enum, type[BaseTask]] = {}
+
+
+logger = get_logger(__name__)
 
 
 class BaseTask:  # pylint: disable=too-many-instance-attributes
@@ -53,7 +57,7 @@ class BaseTask:  # pylint: disable=too-many-instance-attributes
         assert isinstance(cls.payload_class.command, Enum)
         command = cls.payload_class.command
         if command in TASK_MAP:
-            raise ValueError(f'Command "{command}" has been implemented.')
+            logger.warning("Existing task command overridden.", extra={"command": command.value})
         TASK_MAP[command] = cls
 
     @property
