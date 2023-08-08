@@ -101,6 +101,7 @@ from featurebyte.service.session_validator import SessionValidatorService
 from featurebyte.service.static_source_table import StaticSourceTableService
 from featurebyte.service.table import TableService
 from featurebyte.service.table_columns_info import TableColumnsInfoService
+from featurebyte.service.table_facade import TableFacadeService
 from featurebyte.service.table_info import TableInfoService
 from featurebyte.service.table_status import TableStatusService
 from featurebyte.service.target import TargetService
@@ -229,6 +230,7 @@ app_container_config.register_class(TableColumnsInfoService)
 app_container_config.register_class(
     TableController, dependency_override={"service": "table_service"}
 )
+app_container_config.register_class(TableFacadeService)
 app_container_config.register_class(TableInfoService)
 app_container_config.register_class(TableService)
 app_container_config.register_class(TableStatusService)
