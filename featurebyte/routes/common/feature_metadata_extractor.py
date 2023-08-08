@@ -8,6 +8,7 @@ from typing import Any, Optional, Type, TypeVar
 from bson import ObjectId
 
 from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.feature import BaseFeatureModel
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
 from featurebyte.schema.semantic import SemanticList
 from featurebyte.schema.table import TableList
@@ -59,7 +60,31 @@ class FeatureOrTargetMetadataExtractor:
         self.table_service = table_service
         self.semantic_service = semantic_service
 
-    async def extract(self, op_struct: GroupOperationStructure) -> dict[str, Any]:
+    async def extract_from_object(self, obj: BaseFeatureModel) -> dict[str, Any]:
+        """
+        Extract feature metadata from feature or target
+
+        Parameters
+        ----------
+        obj: BaseFeatureModel
+            Feature or target like object
+
+        Returns
+        -------
+        dict[str, Any]
+        """
+        try:
+            op_struct = obj.extract_operation_structure(keep_all_source_columns=False)
+            return await self._extract(op_struct=op_struct)
+        except KeyError:
+            # FIXME (https://featurebyte.atlassian.net/browse/DEV-2045): Setting
+            #  keep_all_source_columns to False fails in some edge cases. This is a workaround for
+            #  the cases where it fails, though it produces info that is more verbose than desired.
+            #  We should clean this up.
+            op_struct = obj.extract_operation_structure(keep_all_source_columns=True)
+            return await self._extract(op_struct=op_struct)
+
+    async def _extract(self, op_struct: GroupOperationStructure) -> dict[str, Any]:
         """
         Extract feature metadata from operation structure
 
