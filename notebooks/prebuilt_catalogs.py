@@ -202,7 +202,7 @@ class TableCreator:
                 **kwargs,
             )
         else:
-            return self.catalog.get_source_table(table_name)
+            return self.catalog.get_table(table_name)
 
     def get_or_create_event_table(self, table_name: str, **kwargs) -> EventTable:
         if not self.current_tables.contains(table_name).any():
@@ -213,7 +213,7 @@ class TableCreator:
                 **kwargs,
             )
         else:
-            return self.catalog.get_source_table(table_name)
+            return self.catalog.get_table(table_name)
 
     def get_or_create_item_table(self, table_name: str, **kwargs) -> ItemTable:
         if not self.current_tables.contains(table_name).any():
@@ -224,7 +224,7 @@ class TableCreator:
                 **kwargs,
             )
         else:
-            return self.catalog.get_source_table(table_name)
+            return self.catalog.get_table(table_name)
 
     def get_or_create_dimension_table(self, table_name: str, **kwargs) -> DimensionTable:
         if not self.current_tables.contains(table_name).any():
@@ -235,7 +235,7 @@ class TableCreator:
                 **kwargs,
             )
         else:
-            return self.catalog.get_source_table(table_name)
+            return self.catalog.get_table(table_name)
 
 
 def register_grocery_tables():
