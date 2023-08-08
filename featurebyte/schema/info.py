@@ -83,7 +83,7 @@ class EntityBriefInfoList(FeatureByteBaseModel):
         EntityBriefInfoList
         """
         entity_project = DictProject(rule=("data", ["name", "serving_names", "catalog_name"]))
-        entities = sorted(entity_project.project(paginated_data), key=lambda x: x["name"])
+        entities = sorted(entity_project.project(paginated_data), key=lambda x: x["name"])  # type: ignore
         return EntityBriefInfoList(__root__=entities)
 
 
@@ -118,7 +118,7 @@ class TableBriefInfoList(FeatureByteBaseModel):
         TableBriefInfoList
         """
         data_project = DictProject(rule=("data", ["name", "status", "catalog_name"]))
-        tables = sorted(data_project.project(paginated_data), key=lambda x: x["name"])
+        tables = sorted(data_project.project(paginated_data), key=lambda x: x["name"])  # type: ignore
         return TableBriefInfoList(__root__=tables)
 
 
@@ -144,7 +144,7 @@ class EventTableBriefInfoList(FeatureByteBaseModel):
         EventTableBriefInfoList
         """
         event_table_project = DictProject(rule=("data", ["name", "status"]))
-        tables = sorted(event_table_project.project(paginated_data), key=lambda x: x["name"])
+        tables = sorted(event_table_project.project(paginated_data), key=lambda x: x["name"])  # type: ignore
         return EventTableBriefInfoList(__root__=tables)
 
 
