@@ -122,12 +122,13 @@ class TableFacadeService:
 
         columns_info = table.columns_info
         col_name_to_cleaning_operations = {
-            col_clean_op.column_name: col_clean_op for col_clean_op in column_cleaning_operations
+            col_clean_op.column_name: col_clean_op.cleaning_operations
+            for col_clean_op in column_cleaning_operations
         }
         for col_info in columns_info:
             if col_info.name in col_name_to_cleaning_operations:
                 col_info.critical_data_info = CriticalDataInfo(
-                    column_cleaning_operations=col_name_to_cleaning_operations.pop(col_info.name)
+                    cleaning_operations=col_name_to_cleaning_operations.pop(col_info.name)
                 )
 
         if col_name_to_cleaning_operations:
