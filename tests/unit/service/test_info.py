@@ -88,7 +88,7 @@ async def test_get_entity_info(app_container, entity):
 
 
 @pytest.mark.asyncio
-async def test_get_event_table_info(app_container, event_table, entity):
+async def test_get_event_table_info(app_container, event_table, entity, entity_transaction):
     """Test get_event_table_info"""
     info = await app_container.event_table_controller.get_info(
         document_id=event_table.id, verbose=False
@@ -108,7 +108,10 @@ async def test_get_event_table_info(app_container, event_table, entity):
             blind_spot="10m", frequency="30m", time_modulo_frequency="5m"
         ),
         entities=[
-            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="grocery")
+            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="grocery"),
+            EntityBriefInfo(
+                name="transaction", serving_names=["transaction_id"], catalog_name="grocery"
+            ),
         ],
         semantics=["event_timestamp"],
         column_count=9,
@@ -126,7 +129,7 @@ async def test_get_event_table_info(app_container, event_table, entity):
         **{
             **expected_info.dict(),
             "columns_info": [
-                TableColumnInfo(name="col_int", dtype="INT"),
+                TableColumnInfo(name="col_int", dtype="INT", entity=entity_transaction.name),
                 TableColumnInfo(name="col_float", dtype="FLOAT"),
                 TableColumnInfo(name="col_char", dtype="CHAR"),
                 TableColumnInfo(name="col_text", dtype="VARCHAR"),
@@ -161,7 +164,11 @@ async def test_get_item_table_info(app_container, item_table, event_table):
             schema_name="sf_schema",
             table_name="sf_item_table",
         ),
-        entities=[],
+        entities=[
+            EntityBriefInfo(
+                name="transaction", serving_names=["transaction_id"], catalog_name="grocery"
+            ),
+        ],
         semantics=[],
         column_count=6,
         columns_info=None,
@@ -178,7 +185,7 @@ async def test_get_item_table_info(app_container, item_table, event_table):
         **{
             **expected_info.dict(),
             "columns_info": [
-                TableColumnInfo(name="event_id_col", dtype="INT"),
+                TableColumnInfo(name="event_id_col", dtype="INT", entity="transaction"),
                 TableColumnInfo(name="item_id_col", dtype="VARCHAR"),
                 TableColumnInfo(name="item_type", dtype="VARCHAR"),
                 TableColumnInfo(name="item_amount", dtype="FLOAT"),
@@ -715,19 +722,8 @@ async def test_get_target_info(app_container, entity, target):
     assert target_info == expected_info
 
 
-@pytest.fixture(name="transaction_entity")
-def transaction_entity_fixture(catalog):
-    """
-    Transaction entity fixture
-    """
-    _ = catalog
-    entity = Entity(name="transaction", serving_names=["transaction_id"])
-    entity.save()
-    yield entity
-
-
 @pytest.mark.asyncio
-async def test_get_relationship_info_info(app_container, event_table, entity, transaction_entity):
+async def test_get_relationship_info_info(app_container, event_table, entity, entity_transaction):
     """
     Test get relationship info info
     """
@@ -738,7 +734,7 @@ async def test_get_relationship_info_info(app_container, event_table, entity, tr
             name="test_relationship",
             relationship_type=relationship_type,
             entity_id=entity.id,
-            related_entity_id=transaction_entity.id,
+            related_entity_id=entity_transaction.id,
             relation_table_id=event_table.id,
             enabled=True,
             updated_by=PydanticObjectId(ObjectId()),
