@@ -568,4 +568,8 @@ debug/
 # task cache
 .task/
 
+# notebook related artifacts
 notebooks/.ipynb_checkpoints/
+model.pkl
+training_data.csv
+training_data.parquet
