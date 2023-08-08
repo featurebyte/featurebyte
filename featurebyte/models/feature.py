@@ -146,10 +146,17 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
         mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
         return pruned_graph, mapped_node
 
-    def extract_operation_structure(self, keep_all_source_columns=False) -> GroupOperationStructure:
+    def extract_operation_structure(
+        self, keep_all_source_columns: bool = False
+    ) -> GroupOperationStructure:
         """
         Extract feature or target operation structure based on query graph. This method is mainly
         used for deriving feature or target metadata used in feature/target info.
+
+        Parameters
+        ----------
+        keep_all_source_columns: bool
+            Whether to keep all source columns in the operation structure
 
         Returns
         -------
