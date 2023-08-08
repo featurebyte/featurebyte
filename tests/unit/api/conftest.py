@@ -291,6 +291,16 @@ def snowflake_scd_view_fixture(snowflake_scd_table):
     yield scd_view
 
 
+@pytest.fixture(name="snowflake_scd_view_with_entity")
+def snowflake_scd_view_with_entity_fixture(snowflake_scd_table, cust_id_entity, transaction_entity):
+    """
+    SCDView fixture with entity
+    """
+    snowflake_scd_table["cust_id"].as_entity(cust_id_entity.name)
+    snowflake_scd_table["col_text"].as_entity(transaction_entity.name)
+    return snowflake_scd_table.get_view()
+
+
 @pytest.fixture(name="snowflake_change_view")
 def snowflake_change_view(snowflake_scd_table):
     """

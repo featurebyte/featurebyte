@@ -293,3 +293,17 @@ def test_feature_derived_from_multiple_scd_joins(multiple_scd_joined_feature):
     feat_info = feat.info()
     table_names = [table["name"] for table in feat_info["tables"]]
     assert table_names == ["scd_table_state_map", "sf_scd_table", "sf_event_table"]
+
+
+def test_event_view_join_scd_view__feature(snowflake_event_view, snowflake_scd_view_with_entity):
+    """
+    Test joining event view with SCD view and creating a feature
+    """
+    joined_view = snowflake_event_view.join(snowflake_scd_view_with_entity, rsuffix="_scd")
+    joined_view["new_col"] = joined_view["col_float"].lag("cust_id_scd")
+    feature = joined_view.groupby("cust_id_scd").aggregate_over(
+        value_column="new_col", method="max", feature_names=["new_col_max_feature"], windows=["3d"]
+    )["new_col_max_feature"]
+    feature.save()
+    info = feature.info()
+    assert info["name"] == "new_col_max_feature"
