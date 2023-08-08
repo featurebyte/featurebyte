@@ -23,9 +23,8 @@ from featurebyte.service.event_table import EventTableService
 from featurebyte.service.item_table import ItemTableService
 from featurebyte.service.scd_table import SCDTableService
 from featurebyte.service.semantic import SemanticService
-from featurebyte.service.table_columns_info import TableColumnsInfoService, TableDocumentService
+from featurebyte.service.table_columns_info import TableDocumentService
 from featurebyte.service.table_facade import TableFacadeService
-from featurebyte.service.table_status import TableStatusService
 
 TableDocumentT = TypeVar(
     "TableDocumentT", EventTableModel, ItemTableModel, DimensionTableModel, SCDTableModel
