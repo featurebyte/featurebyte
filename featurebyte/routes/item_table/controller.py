@@ -15,9 +15,9 @@ from featurebyte.schema.item_table import ItemTableList, ItemTableServiceUpdate
 from featurebyte.service.event_table import EventTableService
 from featurebyte.service.item_table import ItemTableService
 from featurebyte.service.semantic import SemanticService
-from featurebyte.service.table_columns_info import TableColumnsInfoService, TableDocumentService
+from featurebyte.service.table_columns_info import TableDocumentService
+from featurebyte.service.table_facade import TableFacadeService
 from featurebyte.service.table_info import TableInfoService
-from featurebyte.service.table_status import TableStatusService
 
 
 class ItemTableController(
@@ -33,15 +33,12 @@ class ItemTableController(
     def __init__(
         self,
         item_table_service: TableDocumentService,
-        table_columns_info_service: TableColumnsInfoService,
-        table_status_service: TableStatusService,
+        table_facade_service: TableFacadeService,
         semantic_service: SemanticService,
         table_info_service: TableInfoService,
         event_table_service: EventTableService,
     ):
-        super().__init__(
-            item_table_service, table_columns_info_service, table_status_service, semantic_service
-        )
+        super().__init__(item_table_service, table_facade_service, semantic_service)
         self.table_info_service = table_info_service
         self.event_table_service = event_table_service
 

@@ -23,8 +23,8 @@ from featurebyte.service.event_table import EventTableService
 from featurebyte.service.item_table import ItemTableService
 from featurebyte.service.scd_table import SCDTableService
 from featurebyte.service.semantic import SemanticService
-from featurebyte.service.table_columns_info import TableColumnsInfoService, TableDocumentService
-from featurebyte.service.table_status import TableStatusService
+from featurebyte.service.table_columns_info import TableDocumentService
+from featurebyte.service.table_facade import TableFacadeService
 
 TableDocumentT = TypeVar(
     "TableDocumentT", EventTableModel, ItemTableModel, DimensionTableModel, SCDTableModel
@@ -50,13 +50,11 @@ class BaseTableDocumentController(
     def __init__(
         self,
         service: TableDocumentService,
-        table_columns_info_service: TableColumnsInfoService,
-        table_status_service: TableStatusService,
+        table_facade_service: TableFacadeService,
         semantic_service: SemanticService,
     ):
         super().__init__(service)  # type: ignore[arg-type]
-        self.table_column_info_service = table_columns_info_service
-        self.table_status_service = table_status_service
+        self.table_facade_service = table_facade_service
         self.semantic_service = semantic_service
 
     @abstractmethod
@@ -140,17 +138,17 @@ class BaseTableDocumentController(
         # Update of columns info is deprecated and will be removed in release 0.5.0
         # See https://featurebyte.atlassian.net/browse/DEV-2000
         if data.columns_info:
-            await self.table_column_info_service.update_columns_info(
-                service=self.service,
-                document_id=document_id,
+            await self.table_facade_service.update_table_columns_info(
+                table_id=document_id,
                 columns_info=data.columns_info,
+                service=self.service,
             )
 
         if data.status:
-            await self.table_status_service.update_status(
-                service=self.service,
-                document_id=document_id,
+            await self.table_facade_service.update_table_status(
+                table_id=document_id,
                 status=data.status,
+                service=self.service,
             )
 
         # update other parameters
@@ -200,10 +198,10 @@ class BaseTableDocumentController(
                 f'Column: {column_name} not found in {self.service.class_name} (id: "{document_id}")'
             )
 
-        await self.table_column_info_service.update_columns_info(
-            service=self.service,
-            document_id=document_id,
+        await self.table_facade_service.update_table_columns_info(
+            table_id=document_id,
             columns_info=columns_info,
+            service=self.service,
         )
         return await self.get(document_id=document_id)
 

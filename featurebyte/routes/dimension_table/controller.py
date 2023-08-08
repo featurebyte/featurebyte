@@ -14,9 +14,9 @@ from featurebyte.schema.dimension_table import DimensionTableList, DimensionTabl
 from featurebyte.schema.info import DimensionTableInfo
 from featurebyte.service.dimension_table import DimensionTableService
 from featurebyte.service.semantic import SemanticService
-from featurebyte.service.table_columns_info import TableColumnsInfoService, TableDocumentService
+from featurebyte.service.table_columns_info import TableDocumentService
+from featurebyte.service.table_facade import TableFacadeService
 from featurebyte.service.table_info import TableInfoService
-from featurebyte.service.table_status import TableStatusService
 
 
 class DimensionTableController(
@@ -32,17 +32,11 @@ class DimensionTableController(
     def __init__(
         self,
         dimension_table_service: TableDocumentService,
-        table_columns_info_service: TableColumnsInfoService,
-        table_status_service: TableStatusService,
+        table_facade_service: TableFacadeService,
         semantic_service: SemanticService,
         table_info_service: TableInfoService,
     ):
-        super().__init__(
-            dimension_table_service,
-            table_columns_info_service,
-            table_status_service,
-            semantic_service,
-        )
+        super().__init__(dimension_table_service, table_facade_service, semantic_service)
         self.table_info_service = table_info_service
 
     async def _get_column_semantic_map(self, document: DimensionTableModel) -> dict[str, Any]:
