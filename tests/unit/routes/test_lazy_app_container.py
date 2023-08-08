@@ -194,3 +194,37 @@ def test_get_all_deps_for_key():
     }
     deps = get_all_deps_for_key("a", class_def_mapping, {})
     assert deps == ["e", "d", "c", "b", "a"]
+
+
+def test_disable_block_modification_check(app_container):
+    """Test disable_block_modification_check"""
+    # check that _check_block_modification_func is set properly for deeply nested services
+    with app_container.disable_block_modification_check():
+        # level-1 service
+        assert app_container.event_table_service._check_block_modification_func() is False
+        # level-2 service
+        service = app_container.table_facade_service.event_table_service
+        assert service._check_block_modification_func() is False
+        # level-3 service
+        service = app_container.table_facade_service.table_columns_info_service.semantic_service
+        assert service._check_block_modification_func() is False
+        # level-4 service
+        service = (
+            app_container.table_facade_service.table_columns_info_service.entity_relationship_service
+        )
+        assert service.entity_service._check_block_modification_func() is False
+
+    # outside the context manager, the check should be enabled
+    # level-1 service
+    assert app_container.event_table_service._check_block_modification_func() is True
+    # level-2 service
+    service = app_container.table_facade_service.event_table_service
+    assert service._check_block_modification_func() is True
+    # level-3 service
+    service = app_container.table_facade_service.table_columns_info_service.semantic_service
+    assert service._check_block_modification_func() is True
+    # level-4 service
+    service = (
+        app_container.table_facade_service.table_columns_info_service.entity_relationship_service
+    )
+    assert service.entity_service._check_block_modification_func() is True
