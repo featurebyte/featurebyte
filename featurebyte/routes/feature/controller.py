@@ -443,7 +443,7 @@ class FeatureController(
                 )
             )
 
-        op_struct = feature.extract_operation_structure()
+        op_struct = feature.extract_operation_structure(keep_all_source_columns=True)
         metadata = await self.feature_or_target_metadata_extractor.extract(op_struct=op_struct)
 
         namespace_info_dict = namespace_info.dict()

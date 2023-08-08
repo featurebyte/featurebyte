@@ -146,7 +146,7 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
         mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
         return pruned_graph, mapped_node
 
-    def extract_operation_structure(self) -> GroupOperationStructure:
+    def extract_operation_structure(self, keep_all_source_columns=False) -> GroupOperationStructure:
         """
         Extract feature or target operation structure based on query graph. This method is mainly
         used for deriving feature or target metadata used in feature/target info.
@@ -157,7 +157,7 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
         """
         # group the view columns by source columns & derived columns
         operation_structure = self.graph.extract_operation_structure(
-            self.node, keep_all_source_columns=False
+            self.node, keep_all_source_columns=keep_all_source_columns
         )
         return operation_structure.to_group_operation_structure()
 
