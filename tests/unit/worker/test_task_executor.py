@@ -13,8 +13,9 @@ from bson.objectid import ObjectId
 
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.schema.worker.task.base import BaseTaskPayload, TaskType
-from featurebyte.worker.task.base import TASK_MAP, BaseTask
+from featurebyte.worker.task.base import TASK_MAP, BaseTask, logger
 from featurebyte.worker.task_executor import run_async
+from tests.unit.test_logger import MockLogHandler
 from tests.util.task import TaskExecutor
 
 
@@ -145,24 +146,33 @@ def test_task_has_been_implemented(app_container, random_task_class, command_cla
 
     # check task get loaded to TASK_MAP properly
     assert "random_command" in TASK_MAP
-    with pytest.raises(ValueError) as exc:
+    mock_handler = MockLogHandler()
 
-        class ConflictTaskPayload(BaseTaskPayload):
-            """Payload which going to cause conflict"""
+    logger.addHandler(mock_handler)
+    mock_handler.records.clear()
 
-            command = command_class.RANDOM_COMMAND
+    class ConflictTaskPayload(BaseTaskPayload):
+        """Payload which going to cause conflict"""
 
-        class ConflictTask(BaseTask):
-            """RandomTask class"""
+        command = command_class.RANDOM_COMMAND
 
-            payload_class = ConflictTaskPayload
+    class ConflictTask(BaseTask):
+        """RandomTask class"""
 
-            async def execute(self) -> None:
-                """Run some task"""
+        payload_class = ConflictTaskPayload
 
-        _ = ConflictTask
+        async def execute(self) -> None:
+            """Run some task"""
 
-    assert 'Command "random_command" has been implemented.' in str(exc.value)
+    _ = ConflictTask
+
+    # Expect conflicting task to override existing one with a warning log
+    assert TASK_MAP[command_class.RANDOM_COMMAND] == ConflictTask
+    assert len(mock_handler.records) == 1
+    assert (
+        "Existing task command overridden. | {'command': 'random_command'}"
+        in mock_handler.records[0]
+    )
 
     # initiate BaseTask without override payload_class will trigger NotImplementedError
     with pytest.raises(NotImplementedError):
