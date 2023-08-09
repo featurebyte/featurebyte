@@ -127,7 +127,10 @@ pip install featurebyte
 ```
 **Note**: To avoid potential conflicts with other packages it is strongly recommended to use a [virtual environment](https://docs.python.org/3/tutorial/venv.html) or a [conda environment](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html).
 
-Run the following python code to start the FeatureByte services locally with [Docker](https://docs.docker.com/engine/install/).
+If you would like to use our Hosted Tutorial server, you can signup for access [here](https://tutorials.featurebyte.com/tutorial/sign-up).
+
+Alternatively, run the following python code to start the FeatureByte services locally with [Docker](https://docs.docker.com/engine/install/).
+
 ``` python
 import featurebyte as fb
 fb.playground()
