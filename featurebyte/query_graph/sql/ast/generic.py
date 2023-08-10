@@ -179,7 +179,7 @@ def make_assign_node(context: SQLNodeContext) -> TableNode:
         )
     assert isinstance(expr_node, ExpressionNode)
     sql_node = input_table_node.copy()
-    sql_node.context = context
+    sql_node.context.current_query_node = context.query_node
     sql_node.assign_column(parameters["name"], expr_node)
     return sql_node
 

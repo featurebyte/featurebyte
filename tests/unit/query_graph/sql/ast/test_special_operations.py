@@ -19,7 +19,8 @@ def test_handle_filter_node(snowflake_event_view_with_entity):
     sql_node = SQLOperationGraph(
         query_graph=graph, sql_type=SQLType.AGGREGATION, source_type=SourceType.SNOWFLAKE
     ).build(node)
-    assert sql_node.context.query_node == node
+    assert sql_node.context.query_node.name.startswith("input")
+    assert sql_node.context.current_query_node.name == node.name
 
 
 def test_handle_assign_node(snowflake_event_view_with_entity):
@@ -34,7 +35,8 @@ def test_handle_assign_node(snowflake_event_view_with_entity):
     sql_node = SQLOperationGraph(
         query_graph=graph, sql_type=SQLType.AGGREGATION, source_type=SourceType.SNOWFLAKE
     ).build(node)
-    assert sql_node.context.query_node == node
+    assert sql_node.context.query_node.name.startswith("input")
+    assert sql_node.context.current_query_node.name == node.name
 
 
 def test_handle_project_node(snowflake_event_view_with_entity):
@@ -49,4 +51,5 @@ def test_handle_project_node(snowflake_event_view_with_entity):
     sql_node = SQLOperationGraph(
         query_graph=graph, sql_type=SQLType.AGGREGATION, source_type=SourceType.SNOWFLAKE
     ).build(node)
-    assert sql_node.context.query_node == node
+    assert sql_node.context.query_node.name.startswith("input")
+    assert sql_node.context.current_query_node.name == node.name

@@ -68,6 +68,7 @@ class SQLNodeContext:
 
     def __post_init__(self) -> None:
         self.parameters = self.query_node.parameters.dict()
+        self.current_query_node = self.query_node
         if self.to_filter_scd_by_current_flag is None:
             self.to_filter_scd_by_current_flag = False
 
@@ -343,7 +344,7 @@ class TableNode(SQLNode, ABC):
         Parameters
         ----------
         context: SQLNodeContext
-            Metadata such as the query graph and node associated with this SQLNode
+            Metadata such as the query graph and node associated with the SQLNode to be produced
         columns : list[str]
             Selected column names
 
@@ -363,7 +364,7 @@ class TableNode(SQLNode, ABC):
             if column_name in columns_set
         }
         subset_table = self.copy()
-        subset_table.context = context
+        subset_table.context.current_query_node = context.query_node
         subset_table.columns_map = subset_columns_map
         subset_table.columns_node = subset_columns_node
         return subset_table
@@ -374,7 +375,7 @@ class TableNode(SQLNode, ABC):
         Parameters
         ----------
         context: SQLNodeContext
-            Metadata such as the query graph and node associated with this SQLNode
+            Metadata such as the query graph and node associated with the SQLNode to be produced
         condition : Expression
             Condition expression to be used for filtering
 
@@ -383,7 +384,7 @@ class TableNode(SQLNode, ABC):
         TableNodeT
         """
         out = self.copy()
-        out.context = context
+        out.context.current_query_node = context.query_node
         if has_window_function(condition):
             assert self.qualify_condition is None
             out.qualify_condition = condition
