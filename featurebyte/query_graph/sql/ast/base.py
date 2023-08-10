@@ -40,7 +40,7 @@ class EventTableTimestampFilter:
 
 
 @dataclass
-class SQLNodeContext:
+class SQLNodeContext:  # pylint: disable=too-many-instance-attributes
     """
     Context containing information required when constructing instances of SQLNode
 
