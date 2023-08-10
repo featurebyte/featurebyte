@@ -337,11 +337,13 @@ class TableNode(SQLNode, ABC):
         """
         return self.columns_map[column_name]
 
-    def subset_columns(self: TableNodeT, columns: list[str]) -> TableNodeT:
+    def subset_columns(self: TableNodeT, context: SQLNodeContext, columns: list[str]) -> TableNodeT:
         """Create a new TableNode with subset of columns
 
         Parameters
         ----------
+        context: SQLNodeContext
+            Metadata such as the query graph and node associated with this SQLNode
         columns : list[str]
             Selected column names
 
@@ -361,6 +363,7 @@ class TableNode(SQLNode, ABC):
             if column_name in columns_set
         }
         subset_table = self.copy()
+        subset_table.context = context
         subset_table.columns_map = subset_columns_map
         subset_table.columns_node = subset_columns_node
         return subset_table
@@ -370,8 +373,8 @@ class TableNode(SQLNode, ABC):
 
         Parameters
         ----------
-        context : SQLNodeContext
-            SQLNodeContext to be associated with the returned TableNode
+        context: SQLNodeContext
+            Metadata such as the query graph and node associated with this SQLNode
         condition : Expression
             Condition expression to be used for filtering
 

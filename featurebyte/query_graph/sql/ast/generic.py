@@ -150,7 +150,7 @@ def make_project_node(context: SQLNodeContext) -> Project | TableNode:
     if context.query_node.output_type == NodeOutputType.SERIES:
         sql_node = Project(context=context, table_node=table_node, column_name=columns[0])
     else:
-        sql_node = table_node.subset_columns(columns)
+        sql_node = table_node.subset_columns(context, columns)
     return sql_node
 
 
@@ -179,6 +179,7 @@ def make_assign_node(context: SQLNodeContext) -> TableNode:
         )
     assert isinstance(expr_node, ExpressionNode)
     sql_node = input_table_node.copy()
+    sql_node.context = context
     sql_node.assign_column(parameters["name"], expr_node)
     return sql_node
 
