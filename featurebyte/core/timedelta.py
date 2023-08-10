@@ -35,10 +35,19 @@ def to_timedelta(series: Series, unit: TimedeltaSupportedUnitType) -> Series:
 
     Examples
     --------
+    Create a new column in the INVOICEITEMS view that represents the number of days since the last invoice.
+
     >>> items_view = catalog.get_view("INVOICEITEMS")
-    >>> items_view["DAYS_SINCE_LAST_INVOICE"] = to_timedelta(  # doctest: +SKIP
+    >>> items_view["TIMEDELTA_DAYS_SINCE_LAST_INVOICE"] = to_timedelta(  # doctest: +SKIP
     ...   items_view["DAYS_SINCE_LAST_INVOICE"], "days"
     ... )
+
+    Create a new column that is 10 minutes after the event
+
+    >>> items_view = catalog.get_view("INVOICEITEMS")
+    >>> items_view["10_MINS_AFTER_EVENT"] = to_timedelta(  # doctest: +SKIP
+    ...   items_view["EVENT_TIMESTAMP"], "minutes"
+    ... ) + 10
     """
     if series.dtype != DBVarType.INT:
         raise ValueError(f"to_timedelta only supports INT type series; got {series.dtype}")
