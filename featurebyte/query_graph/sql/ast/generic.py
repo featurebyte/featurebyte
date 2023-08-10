@@ -226,10 +226,10 @@ def handle_filter_node(context: SQLNodeContext) -> TableNode | ExpressionNode:
     sql_node: TableNode | ExpressionNode
     if context.query_node.output_type == NodeOutputType.FRAME:
         assert isinstance(item, TableNode)
-        sql_node = item.subset_rows(mask.sql)
+        sql_node = item.subset_rows(context, mask.sql)
     else:
         assert isinstance(item, ExpressionNode)
         assert isinstance(item.table_node, TableNode)
-        input_table_copy = item.table_node.subset_rows(mask.sql)
+        input_table_copy = item.table_node.subset_rows(context, mask.sql)
         sql_node = ParsedExpressionNode(context, input_table_copy, item.sql)
     return sql_node

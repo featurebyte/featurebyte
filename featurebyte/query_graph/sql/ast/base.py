@@ -365,11 +365,13 @@ class TableNode(SQLNode, ABC):
         subset_table.columns_node = subset_columns_node
         return subset_table
 
-    def subset_rows(self: TableNodeT, condition: Expression) -> TableNodeT:
+    def subset_rows(self: TableNodeT, context: SQLNodeContext, condition: Expression) -> TableNodeT:
         """Return a new InputNode with rows filtered
 
         Parameters
         ----------
+        context : SQLNodeContext
+            SQLNodeContext to be associated with the returned TableNode
         condition : Expression
             Condition expression to be used for filtering
 
@@ -378,6 +380,7 @@ class TableNode(SQLNode, ABC):
         TableNodeT
         """
         out = self.copy()
+        out.context = context
         if has_window_function(condition):
             assert self.qualify_condition is None
             out.qualify_condition = condition
