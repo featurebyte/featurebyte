@@ -45,7 +45,7 @@ def to_timedelta(series: Series, unit: TimedeltaSupportedUnitType) -> Series:
     Create a new column that is 10 minutes after the event.
 
     >>> items_view = catalog.get_view("INVOICEITEMS")
-    >>> items_view["10_MINS_AFTER_EVENT"] = items_view["EVENT_TIMESTAMP"] + pd.Timedelta(10, unit="minute")
+    >>> items_view["10_MINS_AFTER_EVENT"] = items_view["Timestamp"] + pd.Timedelta(10, unit="minute")
     """
     if series.dtype != DBVarType.INT:
         raise ValueError(f"to_timedelta only supports INT type series; got {series.dtype}")
