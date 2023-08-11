@@ -105,7 +105,7 @@ def test_input_node__subset_columns(input_node):
     input_node.assign_column("col_new_2", expr_node_2)
 
     # check subset node
-    subset_node = input_node.subset_columns(["col_1", "col_new_1"])
+    subset_node = input_node.subset_columns(make_context(), ["col_1", "col_new_1"])
     assert subset_node.columns_map == {"col_1": parse_one("col_1"), "col_new_1": parse_one("a + 1")}
     assert subset_node.columns_node == {"col_new_1": expr_node_1}
     assert subset_node.get_column_expr("col_1") == parse_one("col_1")

@@ -116,7 +116,7 @@ class Aggregate(TableNode):
         """
         return AggregationSource(
             expr=cast(Select, source_node.sql),
-            query_node_name=source_node.context.query_node.name,
+            query_node_name=source_node.context.current_query_node.name,
             is_scd_filtered_by_current_flag=source_node.context.to_filter_scd_by_current_flag,
         )
 
