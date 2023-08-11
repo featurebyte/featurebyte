@@ -39,7 +39,7 @@ def to_timedelta(series: Series, unit: TimedeltaSupportedUnitType) -> Series:
 
     >>> items_view = catalog.get_view("INVOICEITEMS")
     >>> items_view["TIMESTAMP_DAYS"] = fb.to_timedelta(
-    ...   items_view["Timestamp"], "days"
+    ...   items_view["Timestamp"], "day"
     ... )
 
     Create a new column that is 10 minutes after the event.
