@@ -520,8 +520,7 @@ class FeatureController(
                 )
             )
 
-        op_struct = feature.extract_operation_structure()
-        metadata = await self.feature_or_target_metadata_extractor.extract(op_struct=op_struct)
+        metadata = await self.feature_or_target_metadata_extractor.extract_from_object(feature)
 
         namespace_info_dict = namespace_info.dict()
         # use feature list description instead of namespace description

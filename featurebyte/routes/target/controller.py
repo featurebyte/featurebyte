@@ -140,9 +140,8 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
         )
 
         # Get metadata
-        group_op_structure = target_doc.extract_operation_structure()
-        target_metadata = await self.feature_or_target_metadata_extractor.extract(
-            group_op_structure
+        target_metadata = await self.feature_or_target_metadata_extractor.extract_from_object(
+            target_doc
         )
 
         return TargetInfo(
