@@ -1,9 +1,9 @@
 package com.featurebyte.hive.udf;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.util.Arrays;
 import java.util.List;
+
+import org.apache.hadoop.hive.ql.metadata.Hive;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
 import org.apache.hadoop.hive.ql.udf.generic.SimpleGenericUDAFParameterInfo;
@@ -11,6 +11,8 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 @SuppressWarnings("deprecation")
 public abstract class BaseVectorAggregateListTest {
@@ -22,6 +24,27 @@ public abstract class BaseVectorAggregateListTest {
    * refer to those values to calculate your final result.
    */
   protected abstract List<Double> getResults();
+
+  @Test
+  public void testErrorThrownIfColumnHasArrayOfDifferentLengths() throws HiveException {
+    ObjectInspector[] doubleOI =
+      new ObjectInspector[] {
+        ObjectInspectorFactory.getStandardListObjectInspector(
+          PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
+      };
+    BaseVectorAggregate udaf = getAggregator();
+    SimpleGenericUDAFParameterInfo info =
+      new SimpleGenericUDAFParameterInfo(doubleOI, false, false, false);
+    GenericUDAFEvaluator eval1 = udaf.getEvaluator(info);
+    GenericUDAFEvaluator.AggregationBuffer buffer1 = eval1.getNewAggregationBuffer();
+    eval1.iterate(buffer1, new Object[] {Arrays.asList(1d, 2d, 3d)});
+    try {
+      eval1.iterate(buffer1, new Object[] {Arrays.asList(4d, 5d, 6d, 7d)});
+      throw new RuntimeException("iterate should throw an assertion error as the size of the array passed in is " +
+        "different");
+    } catch (AssertionError ignored) {
+    }
+  }
 
   @Test
   public void testVectorAggregate() throws HiveException {
