@@ -1,9 +1,8 @@
 package com.featurebyte.hive.udf;
 
+import java.util.List;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
-
-import java.util.List;
 
 @Description(name = "vector_aggregate_sum", value = "_FUNC_(x) - Aggregate vectors by summing them")
 public class VectorAggregateSum extends BaseVectorAggregate {

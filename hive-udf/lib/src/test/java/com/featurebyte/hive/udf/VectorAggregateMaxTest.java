@@ -12,5 +12,4 @@ public class VectorAggregateMaxTest extends BaseVectorAggregateListTest {
   protected List<Double> getResults() {
     return Arrays.asList(100d, 101d, 102d);
   }
-
 }

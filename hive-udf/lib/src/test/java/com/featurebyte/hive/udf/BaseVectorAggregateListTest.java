@@ -1,5 +1,9 @@
 package com.featurebyte.hive.udf;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.util.Arrays;
+import java.util.List;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
 import org.apache.hadoop.hive.ql.udf.generic.SimpleGenericUDAFParameterInfo;
@@ -8,31 +12,27 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.junit.jupiter.api.Test;
 
-import java.util.Arrays;
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 @SuppressWarnings("deprecation")
 public abstract class BaseVectorAggregateListTest {
 
   protected abstract BaseVectorAggregate getAggregator();
 
   /**
-   * getResults should return the final aggregated result.
-   * Input is hardcoded into the test, so refer to those values to calculate your final result.
+   * getResults should return the final aggregated result. Input is hardcoded into the test, so
+   * refer to those values to calculate your final result.
    */
   protected abstract List<Double> getResults();
 
   @Test
   public void testVectorAggregate() throws HiveException {
-    ObjectInspector[] doubleOI = new ObjectInspector[] {
-      ObjectInspectorFactory.getStandardListObjectInspector(
-        PrimitiveObjectInspectorFactory.javaDoubleObjectInspector
-      ),
-    };
+    ObjectInspector[] doubleOI =
+        new ObjectInspector[] {
+          ObjectInspectorFactory.getStandardListObjectInspector(
+              PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
+        };
     BaseVectorAggregate udaf = getAggregator();
-    SimpleGenericUDAFParameterInfo info = new SimpleGenericUDAFParameterInfo(doubleOI, false, false, false);
+    SimpleGenericUDAFParameterInfo info =
+        new SimpleGenericUDAFParameterInfo(doubleOI, false, false, false);
     GenericUDAFEvaluator eval1 = udaf.getEvaluator(info);
     GenericUDAFEvaluator eval2 = udaf.getEvaluator(info);
 

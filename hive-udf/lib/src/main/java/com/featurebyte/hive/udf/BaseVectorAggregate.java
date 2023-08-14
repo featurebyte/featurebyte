@@ -1,5 +1,9 @@
 package com.featurebyte.hive.udf;
 
+import static org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector.Category.LIST;
+
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
@@ -11,11 +15,6 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.StandardListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector.Category.LIST;
 
 @Description(name = "vector_aggregate_sum", value = "_FUNC_(x) - Aggregate vectors by summing them")
 @SuppressWarnings("deprecation")
@@ -30,13 +29,12 @@ public abstract class BaseVectorAggregate extends AbstractGenericUDAFResolver {
    */
   protected abstract GenericUDAFEvaluator getEvaluator();
 
-  public GenericUDAFEvaluator getEvaluator(GenericUDAFParameterInfo info)
-    throws SemanticException {
+  public GenericUDAFEvaluator getEvaluator(GenericUDAFParameterInfo info) throws SemanticException {
     ObjectInspector firstParameter = getObjectInspector(info);
     StandardListObjectInspector listOI = (StandardListObjectInspector) firstParameter;
     String listElementTypeName = listOI.getListElementObjectInspector().getTypeName();
     PrimitiveObjectInspectorUtils.PrimitiveTypeEntry typeEntry =
-      PrimitiveObjectInspectorUtils.getTypeEntryFromTypeName(listElementTypeName);
+        PrimitiveObjectInspectorUtils.getTypeEntryFromTypeName(listElementTypeName);
     switch (typeEntry.primitiveCategory) {
       case INT:
       case LONG:
@@ -45,23 +43,23 @@ public abstract class BaseVectorAggregate extends AbstractGenericUDAFResolver {
       case DECIMAL:
         return getEvaluator();
       default:
-        throw new UDFArgumentTypeException(0, "Only ints, longs, floats, doubles or decimals are accepted " +
-          "for parameter 1");
+        throw new UDFArgumentTypeException(
+            0, "Only ints, longs, floats, doubles or decimals are accepted " + "for parameter 1");
     }
   }
 
-  private static ObjectInspector getObjectInspector(GenericUDAFParameterInfo info) throws SemanticException {
+  private static ObjectInspector getObjectInspector(GenericUDAFParameterInfo info)
+      throws SemanticException {
     // Taken from parent implementation
     if (info.isAllColumns()) {
-      throw new SemanticException(
-        "The specified syntax for UDAF invocation is invalid.");
+      throw new SemanticException("The specified syntax for UDAF invocation is invalid.");
     }
 
     ObjectInspector[] parameters = info.getParameterObjectInspectors();
 
     if (parameters.length != 1) {
       throw new UDFArgumentTypeException(
-        parameters.length - 1, "Exactly one argument is expected.");
+          parameters.length - 1, "Exactly one argument is expected.");
     }
 
     ObjectInspector firstParameter = parameters[0];
@@ -81,7 +79,7 @@ public abstract class BaseVectorAggregate extends AbstractGenericUDAFResolver {
     }
   }
 
-  public static abstract class VectorAggregateListEvaluator extends GenericUDAFEvaluator {
+  public abstract static class VectorAggregateListEvaluator extends GenericUDAFEvaluator {
     private transient ObjectInspector inputValueOI;
 
     public VectorAggregateListEvaluator() {}

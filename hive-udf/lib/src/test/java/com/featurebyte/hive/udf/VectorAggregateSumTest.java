@@ -11,5 +11,4 @@ public class VectorAggregateSumTest extends BaseVectorAggregateListTest {
   protected List<Double> getResults() {
     return Arrays.asList(140d, 147d, 154d);
   }
-
 }
