@@ -7,6 +7,22 @@ watch:
 
 nav:
   - API Reference: reference/
+  - Get Started:
+    - Tutorials:
+      - Quick-Start Tutorials:
+        - Feature Engineering: notebooks/quick start feature engineering - final.ipynb
+        - Feature Management: notebooks/quick start feature management - final.ipynb
+        - Reusing Features: notebooks/quick start reusing features - final.ipynb
+        - Feature Management: notebooks/quick start feature management - final.ipynb
+        - Model Training: notebooks/quick start model training - final.ipynb
+        - End-to-End: notebooks/quick start end-to-end workflow - final.ipynb
+      - Deep Dive Tutorials:
+        - Data Modeling: notebooks/deep dive data modeling - final.ipynb
+        - Feature Engineering: notebooks/deep dive feature engineering - final.ipynb
+        - Materializing Features: notebooks/deep dive materializing features - final.ipynb
+      - Playgrounds:
+        - Credit Card: notebooks/playground credit cards.ipynb
+        - Healthcare: notebooks/playground healthcare.ipynb
 
 theme:
   language: en
@@ -54,6 +70,9 @@ plugins:
   - literate-nav:
       nav_file: SUMMARY.md
   - section-index
+  - mkdocs-jupyter:
+      include_source: True
+      ignore_h1_titles: True
 
 markdown_extensions:
   - admonition
