@@ -74,6 +74,7 @@ class WindowAggregator(BaseAggregator):
         -------
         FeatureGroup
         """
+
         self._validate_parameters(
             value_column=value_column,
             method=method,
