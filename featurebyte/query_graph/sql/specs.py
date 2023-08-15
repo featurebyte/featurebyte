@@ -197,16 +197,14 @@ class TileBasedAggregationSpec(AggregationSpec):
 
         serving_names = params["serving_names"]
         aggregation_specs = []
-        aggregator = get_aggregator(
-            params["agg_func"], adapter=adapter, parent_dtype=params["parent_dtype"]
-        )
-        if params["parent"]:
-            # Note: here, we only need to retrieve tile column names. Ideally the dtype should be set
-            # as the parent column's dtype, but in this case a dummy dtype is passed since that
-            # doesn't affect the tile column names.
-            parent_column = InputColumn(name=params["parent"], dtype=DBVarType.FLOAT)
+        parent_dtype = None
+        parent_column_name = params["parent"]
+        if parent_column_name:
+            parent_dtype = get_parent_dtype(parent_column_name, graph, query_node=groupby_node)
+            parent_column = InputColumn(name=parent_column_name, dtype=parent_dtype)
         else:
             parent_column = None
+        aggregator = get_aggregator(params["agg_func"], adapter=adapter, parent_dtype=parent_dtype)
         tile_value_columns = [
             spec.tile_column_name
             for spec in aggregator.tile(parent_column, params["aggregation_id"])
@@ -618,7 +616,7 @@ class AggregateAsAtSpec(NonTileBasedAggregationSpec):
     ) -> list[AggregateAsAtSpec]:
         assert isinstance(node, AggregateAsAtNode)
         assert graph is not None
-        parent_dtype = get_parent_dtype(node.parameters["parent"], graph, node)
+        parent_dtype = get_parent_dtype(node.parameters.parent, graph, node)
         return [
             AggregateAsAtSpec(
                 parameters=node.parameters,

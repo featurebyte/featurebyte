@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, alias_, select
 
-from featurebyte.enum import DBVarType, InternalName
+from featurebyte.enum import InternalName
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
@@ -22,7 +22,6 @@ from featurebyte.query_graph.sql.common import (
 from featurebyte.query_graph.sql.query_graph_util import get_parent_dtype
 from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
 from featurebyte.query_graph.sql.tiling import InputColumn, TileSpec, get_aggregator
-from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 
 
 @dataclass
@@ -235,15 +234,6 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
         elif context.sql_type == SQLType.BUILD_TILE_ON_DEMAND:
             sql_node = cls.make_build_tile_node(context, is_on_demand=True)
         return sql_node
-
-    @staticmethod
-    def _get_parent_dtype(parent_column_name: str, context: SQLNodeContext) -> DBVarType:
-        op_struct = (
-            OperationStructureExtractor(graph=context.graph)
-            .extract(node=context.query_node)
-            .operation_structure_map[context.query_node.name]
-        )
-        return next(col for col in op_struct.columns if col.name == parent_column_name).dtype
 
     @classmethod
     def make_build_tile_node(cls, context: SQLNodeContext, is_on_demand: bool) -> BuildTileNode:
