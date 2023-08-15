@@ -6,6 +6,8 @@ from typing import List, Optional
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.query_graph.model.column_info import ColumnInfo
 
+VECTOR_AGGREGATE_SUPPORTED_FUNCTIONS = {AggFunc.MAX, AggFunc.AVG}
+
 
 def validate_vector_aggregate_parameters(
     columns_info: List[ColumnInfo], value_column: Optional[str], method: Optional[str]
@@ -36,5 +38,5 @@ def validate_vector_aggregate_parameters(
                 return
 
     # If it's an array, check whether the method is supported. We currently only support MAX and AVG operations.
-    if method in {AggFunc.MAX, AggFunc.AVG}:
+    if method in VECTOR_AGGREGATE_SUPPORTED_FUNCTIONS:
         raise ValueError(f"Method {method} is not supported for vector aggregate operations.")
