@@ -618,6 +618,7 @@ class AggregateAsAtSpec(NonTileBasedAggregationSpec):
     ) -> list[AggregateAsAtSpec]:
         assert isinstance(node, AggregateAsAtNode)
         assert graph is not None
+        assert node.parameters.parent is not None
         parent_dtype = get_parent_dtype(node.parameters.parent, graph, node)
         return [
             AggregateAsAtSpec(

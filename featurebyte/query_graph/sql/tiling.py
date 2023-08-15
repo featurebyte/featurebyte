@@ -321,11 +321,11 @@ def get_aggregator(
     type[TilingAggregator]
     """
     if parent_dtype is not None and parent_dtype == DBVarType.ARRAY:
-        aggregator_mapping: dict[AggFunc, type[TilingAggregator]] = {
+        vector_aggregator_mapping: dict[AggFunc, type[TilingAggregator]] = {
             AggFunc.MAX: VectorMaxAggregator,
         }
-        assert agg_name in aggregator_mapping
-        return aggregator_mapping[agg_name](adapter=adapter)
+        assert agg_name in vector_aggregator_mapping
+        return vector_aggregator_mapping[agg_name](adapter=adapter)
 
     aggregator_mapping: dict[AggFunc, type[TilingAggregator]] = {
         AggFunc.SUM: SumAggregator,
