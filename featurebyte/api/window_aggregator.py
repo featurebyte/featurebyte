@@ -6,7 +6,6 @@ from __future__ import annotations
 from typing import Any, List, Optional, Type, cast
 
 from featurebyte.api.aggregator.base_aggregator import BaseAggregator
-from featurebyte.api.aggregator.vector_validator import validate_vector_aggregate_parameters
 from featurebyte.api.change_view import ChangeView
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature_group import FeatureGroup
@@ -75,8 +74,6 @@ class WindowAggregator(BaseAggregator):
         -------
         FeatureGroup
         """
-
-        validate_vector_aggregate_parameters(self.view.columns_info, value_column, method)
         self._validate_parameters(
             value_column=value_column,
             method=method,

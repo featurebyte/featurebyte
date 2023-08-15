@@ -6,7 +6,6 @@ from __future__ import annotations
 from typing import List, Literal, Optional, Type
 
 from featurebyte.api.aggregator.base_aggregator import BaseAggregator
-from featurebyte.api.aggregator.vector_validator import validate_vector_aggregate_parameters
 from featurebyte.api.feature import Feature
 from featurebyte.api.item_view import ItemView
 from featurebyte.api.view import View
@@ -60,7 +59,6 @@ class SimpleAggregator(BaseAggregator):
         -------
         Feature
         """
-        validate_vector_aggregate_parameters(self.view.columns_info, value_column, method)
         self._validate_method_and_value_column(method=method, value_column=value_column)
         self._validate_fill_value_and_skip_fill_na(fill_value=fill_value, skip_fill_na=skip_fill_na)
         self.view.validate_simple_aggregate_parameters(

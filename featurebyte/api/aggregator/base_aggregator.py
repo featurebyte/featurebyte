@@ -8,6 +8,7 @@ from typing import List, Optional, Type, Union
 from abc import ABC, abstractmethod
 
 from featurebyte import Target
+from featurebyte.api.aggregator.vector_validator import validate_vector_aggregate_parameters
 from featurebyte.api.feature import Feature
 from featurebyte.api.view import View
 from featurebyte.common.typing import OptionalScalar, get_or_default
@@ -86,6 +87,8 @@ class BaseAggregator(ABC):
                 raise ValueError("value_column is required")
             if value_column not in self.view.columns:
                 raise KeyError(f'Column "{value_column}" not found in {self.view}!')
+
+        validate_vector_aggregate_parameters(self.view.columns_info, value_column, method)
 
     @staticmethod
     def _validate_fill_value_and_skip_fill_na(

@@ -7,7 +7,6 @@ from typing import Any, List, Optional, Type, cast
 
 from featurebyte import AggFunc, ChangeView, EventView, ItemView
 from featurebyte.api.aggregator.base_aggregator import BaseAggregator
-from featurebyte.api.aggregator.vector_validator import validate_vector_aggregate_parameters
 from featurebyte.api.target import Target
 from featurebyte.api.view import View
 from featurebyte.common.model_util import parse_duration_string
@@ -61,7 +60,6 @@ class ForwardAggregator(BaseAggregator):
         Target
         """
         # Validation
-        validate_vector_aggregate_parameters(self.view.columns_info, value_column, method)
         self._validate_parameters(
             value_column=value_column,
             method=method,
