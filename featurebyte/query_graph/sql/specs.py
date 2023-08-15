@@ -31,6 +31,7 @@ from featurebyte.query_graph.node.mixin import BaseGroupbyParameters
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.ast.base import EventTableTimestampFilter
 from featurebyte.query_graph.sql.common import apply_serving_names_mapping
+from featurebyte.query_graph.sql.query_graph_util import get_parent_dtype
 from featurebyte.query_graph.sql.tiling import InputColumn, get_aggregator
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 from featurebyte.query_graph.transform.pruning import prune_query_graph
@@ -441,6 +442,7 @@ class NonTileBasedAggregationSpec(AggregationSpec):
         node: Node,
         aggregation_source: AggregationSource,
         serving_names_mapping: Optional[dict[str, str]],
+        graph: Optional[QueryGraphModel],
     ) -> list[NonTileBasedAggregationSpecT]:
         """
         Construct the list of specifications
@@ -453,6 +455,8 @@ class NonTileBasedAggregationSpec(AggregationSpec):
             Source of the aggregation
         serving_names_mapping: Optional[dict[str, str]]
             Serving names mapping
+        graph: Optional[QueryGraphModel]
+            Query graph
         """
 
     @classmethod
@@ -550,6 +554,7 @@ class ItemAggregationSpec(NonTileBasedAggregationSpec):
         node: Node,
         aggregation_source: AggregationSource,
         serving_names_mapping: Optional[dict[str, str]],
+        graph: Optional[QueryGraphModel],
     ) -> list[ItemAggregationSpec]:
         assert isinstance(node, ItemGroupbyNode)
         return [
@@ -570,6 +575,7 @@ class AggregateAsAtSpec(NonTileBasedAggregationSpec):
     """
 
     parameters: AggregateAsAtParameters
+    parent_dtype: Optional[DBVarType] = None
 
     @property
     def agg_result_name(self) -> str:
@@ -606,11 +612,15 @@ class AggregateAsAtSpec(NonTileBasedAggregationSpec):
         node: Node,
         aggregation_source: AggregationSource,
         serving_names_mapping: Optional[dict[str, str]],
+        graph: Optional[QueryGraphModel],
     ) -> list[AggregateAsAtSpec]:
         assert isinstance(node, AggregateAsAtNode)
+        assert graph is not None
+        parent_dtype = get_parent_dtype(node.parameters["parent"], graph, node)
         return [
             AggregateAsAtSpec(
                 parameters=node.parameters,
+                parent_dtype=parent_dtype,
                 aggregation_source=aggregation_source,
                 entity_ids=cast(List[ObjectId], node.parameters.entity_ids),
                 serving_names=node.parameters.serving_names,
@@ -651,6 +661,7 @@ class ForwardAggregateSpec(NonTileBasedAggregationSpec):
         node: Node,
         aggregation_source: AggregationSource,
         serving_names_mapping: Optional[dict[str, str]],
+        graph: Optional[QueryGraphModel],
     ) -> list[ForwardAggregateSpec]:
         assert isinstance(node, ForwardAggregateNode)
         return [

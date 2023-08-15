@@ -19,6 +19,7 @@ from featurebyte.query_graph.sql.common import (
     get_qualified_column_identifier,
     quoted_identifier,
 )
+from featurebyte.query_graph.sql.query_graph_util import get_parent_dtype
 from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
 from featurebyte.query_graph.sql.tiling import InputColumn, TileSpec, get_aggregator
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
@@ -266,7 +267,7 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
         if parameters["parent"] is None:
             parent_column = None
         else:
-            parent_dtype = cls._get_parent_dtype(parameters["parent"], context)
+            parent_dtype = get_parent_dtype(parameters["parent"], context.graph, context.query_node)
             parent_column = InputColumn(name=parameters["parent"], dtype=parent_dtype)
         tile_specs = aggregator.tile(parent_column, parameters["aggregation_id"])
         columns = (
