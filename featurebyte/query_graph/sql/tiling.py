@@ -268,6 +268,21 @@ class StdAggregator(OrderIndependentAggregator):
         return stddev
 
 
+class VectorMaxAggregator(OrderIndependentAggregator):
+    """Aggregator the max of a vector"""
+
+    def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
+        assert col is not None
+        max_expression = expressions.Anonymous(
+            this="VECTOR_AGGREGATE_MAX", expressions=[quoted_identifier(col.name)]
+        )
+        return [self.construct_numeric_tile_spec(max_expression, f"value_{agg_id}")]
+
+    @staticmethod
+    def merge(agg_id: str) -> str:
+        return f"VECTOR_AGGREGATE_MAX(value_{agg_id})"
+
+
 class LatestValueAggregator(OrderDependentAggregator):
     """Aggregator that computes the latest value"""
 
@@ -286,8 +301,11 @@ class LatestValueAggregator(OrderDependentAggregator):
         return f"FIRST_VALUE(value_{agg_id})"
 
 
-def get_aggregator(agg_name: AggFunc, adapter: BaseAdapter) -> TilingAggregator:
-    """Retrieves an aggregator class given the aggregation name
+def get_aggregator(
+    agg_name: AggFunc, adapter: BaseAdapter, parent_dtype: Optional[DBVarType] = None
+) -> TilingAggregator:
+    """
+    Retrieves an aggregator class given the aggregation name.
 
     Parameters
     ----------
@@ -295,11 +313,20 @@ def get_aggregator(agg_name: AggFunc, adapter: BaseAdapter) -> TilingAggregator:
         Name of the aggregation function
     adapter : BaseAdapter
         Instance of BaseAdapter for engine specific sql generation
+    parent_dtype : Optional[DBVarType]
+        Parent column data type
 
     Returns
     -------
     type[TilingAggregator]
     """
+    if parent_dtype is not None and parent_dtype == DBVarType.ARRAY:
+        aggregator_mapping: dict[AggFunc, type[TilingAggregator]] = {
+            AggFunc.MAX: VectorMaxAggregator,
+        }
+        assert agg_name in aggregator_mapping
+        return aggregator_mapping[agg_name](adapter=adapter)
+
     aggregator_mapping: dict[AggFunc, type[TilingAggregator]] = {
         AggFunc.SUM: SumAggregator,
         AggFunc.AVG: AvgAggregator,
