@@ -188,6 +188,7 @@ class TileBasedAggregationSpec(AggregationSpec):
         list[TileBasedAggregationSpec]
             List of AggregationSpec
         """
+        # pylint: disable=too-many-locals
         assert isinstance(groupby_node, GroupByNode)
         tile_table_id = groupby_node.parameters.tile_id
         aggregation_id = groupby_node.parameters.aggregation_id
@@ -512,6 +513,7 @@ class NonTileBasedAggregationSpec(AggregationSpec):
             node=node,
             aggregation_source=aggregation_source,
             serving_names_mapping=serving_names_mapping,
+            graph=graph,
         )
 
 
