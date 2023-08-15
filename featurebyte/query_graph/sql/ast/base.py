@@ -24,7 +24,7 @@ TableNodeT = TypeVar("TableNodeT", bound="TableNode")
 
 
 @dataclass
-class SQLNodeContext:
+class SQLNodeContext:  # pylint: disable=too-many-instance-attributes
     """
     Context containing information required when constructing instances of SQLNode
 
@@ -51,6 +51,7 @@ class SQLNodeContext:
 
     def __post_init__(self) -> None:
         self.parameters = self.query_node.parameters.dict()
+        self.current_query_node = self.query_node
         if self.to_filter_scd_by_current_flag is None:
             self.to_filter_scd_by_current_flag = False
 
@@ -320,11 +321,13 @@ class TableNode(SQLNode, ABC):
         """
         return self.columns_map[column_name]
 
-    def subset_columns(self: TableNodeT, columns: list[str]) -> TableNodeT:
+    def subset_columns(self: TableNodeT, context: SQLNodeContext, columns: list[str]) -> TableNodeT:
         """Create a new TableNode with subset of columns
 
         Parameters
         ----------
+        context: SQLNodeContext
+            Metadata such as the query graph and node associated with the SQLNode to be produced
         columns : list[str]
             Selected column names
 
@@ -344,15 +347,18 @@ class TableNode(SQLNode, ABC):
             if column_name in columns_set
         }
         subset_table = self.copy()
+        subset_table.context.current_query_node = context.query_node
         subset_table.columns_map = subset_columns_map
         subset_table.columns_node = subset_columns_node
         return subset_table
 
-    def subset_rows(self: TableNodeT, condition: Expression) -> TableNodeT:
+    def subset_rows(self: TableNodeT, context: SQLNodeContext, condition: Expression) -> TableNodeT:
         """Return a new InputNode with rows filtered
 
         Parameters
         ----------
+        context: SQLNodeContext
+            Metadata such as the query graph and node associated with the SQLNode to be produced
         condition : Expression
             Condition expression to be used for filtering
 
@@ -361,6 +367,7 @@ class TableNode(SQLNode, ABC):
         TableNodeT
         """
         out = self.copy()
+        out.context.current_query_node = context.query_node
         if has_window_function(condition):
             assert self.qualify_condition is None
             out.qualify_condition = condition

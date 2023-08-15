@@ -248,3 +248,31 @@ def test_item_view_joined_with_dimension_view(
     assert df_historical_features.sort_values("üser id")[
         "most_frequent_item_type_30d"
     ].tolist() == ["type_10140", "type_1008", "type_11333", "type_10261", "type_10657"]
+
+
+def test_item_view_features_from_different_filters(item_table):
+    """
+    Test creating simple aggregate features using the same ItemView but filtered in different ways
+    """
+    view = item_table.get_view()
+    item_type_number = view["item_type"].str.replace("type_", "").astype(int)
+    filtered_1 = view[item_type_number % 2 == 0]
+    filtered_2 = view[item_type_number % 2 == 1]
+    feature_1 = filtered_1.groupby("order_id").aggregate(
+        method="count",
+        feature_name="feature_1",
+    )
+    feature_2 = filtered_2.groupby("order_id").aggregate(
+        method="count",
+        feature_name="feature_2",
+    )
+    feature_list = FeatureList([feature_1, feature_2], name="feature_list")
+    df_training_events = pd.DataFrame(
+        {
+            "POINT_IN_TIME": pd.to_datetime(["2001-01-02 10:00:00"] * 5),
+            "order_id": ["T1", "T2", "T3", "T4", "T5"],
+        }
+    )
+    df_historical_features = feature_list.compute_historical_features(df_training_events)
+    assert df_historical_features["feature_1"].tolist() == [2, 4, 0, 5, 1]
+    assert df_historical_features["feature_2"].tolist() == [1, 5, 2, 3, 2]

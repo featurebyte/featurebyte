@@ -150,7 +150,7 @@ def make_project_node(context: SQLNodeContext) -> Project | TableNode:
     if context.query_node.output_type == NodeOutputType.SERIES:
         sql_node = Project(context=context, table_node=table_node, column_name=columns[0])
     else:
-        sql_node = table_node.subset_columns(columns)
+        sql_node = table_node.subset_columns(context, columns)
     return sql_node
 
 
@@ -179,6 +179,7 @@ def make_assign_node(context: SQLNodeContext) -> TableNode:
         )
     assert isinstance(expr_node, ExpressionNode)
     sql_node = input_table_node.copy()
+    sql_node.context.current_query_node = context.query_node
     sql_node.assign_column(parameters["name"], expr_node)
     return sql_node
 
@@ -226,10 +227,10 @@ def handle_filter_node(context: SQLNodeContext) -> TableNode | ExpressionNode:
     sql_node: TableNode | ExpressionNode
     if context.query_node.output_type == NodeOutputType.FRAME:
         assert isinstance(item, TableNode)
-        sql_node = item.subset_rows(mask.sql)
+        sql_node = item.subset_rows(context, mask.sql)
     else:
         assert isinstance(item, ExpressionNode)
         assert isinstance(item.table_node, TableNode)
-        input_table_copy = item.table_node.subset_rows(mask.sql)
+        input_table_copy = item.table_node.subset_rows(context, mask.sql)
         sql_node = ParsedExpressionNode(context, input_table_copy, item.sql)
     return sql_node
