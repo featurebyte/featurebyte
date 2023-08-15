@@ -8,6 +8,7 @@ from typing import List, Optional, Type, cast
 from typeguard import typechecked
 
 from featurebyte.api.aggregator.base_aggregator import BaseAggregator
+from featurebyte.api.aggregator.vector_validator import validate_vector_aggregate_parameters
 from featurebyte.api.feature import Feature
 from featurebyte.api.scd_view import SCDView
 from featurebyte.api.view import View
@@ -79,6 +80,7 @@ class AsAtAggregator(BaseAggregator):
         -------
         Feature
         """
+        validate_vector_aggregate_parameters(self.view.columns_info, value_column, method)
         self._validate_parameters(
             method=method,
             value_column=value_column,
