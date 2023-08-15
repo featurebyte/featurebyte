@@ -197,9 +197,11 @@ class TileBasedAggregationSpec(AggregationSpec):
 
         serving_names = params["serving_names"]
         aggregation_specs = []
-        aggregator = get_aggregator(params["agg_func"], adapter=adapter)
+        aggregator = get_aggregator(
+            params["agg_func"], adapter=adapter, parent_dtype=params["parent_dtype"]
+        )
         if params["parent"]:
-            # Note: here, we only need to retrive tile column names. Ideally the dtype should be set
+            # Note: here, we only need to retrieve tile column names. Ideally the dtype should be set
             # as the parent column's dtype, but in this case a dummy dtype is passed since that
             # doesn't affect the tile column names.
             parent_column = InputColumn(name=params["parent"], dtype=DBVarType.FLOAT)

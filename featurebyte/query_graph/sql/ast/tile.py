@@ -263,12 +263,15 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
         parameters = context.parameters
         input_node = context.input_sql_nodes[0]
         assert isinstance(input_node, TableNode)
-        aggregator = get_aggregator(parameters["agg_func"], adapter=context.adapter)
         if parameters["parent"] is None:
             parent_column = None
+            parent_dtype = None
         else:
             parent_dtype = get_parent_dtype(parameters["parent"], context.graph, context.query_node)
             parent_column = InputColumn(name=parameters["parent"], dtype=parent_dtype)
+        aggregator = get_aggregator(
+            parameters["agg_func"], adapter=context.adapter, parent_dtype=parent_dtype
+        )
         tile_specs = aggregator.tile(parent_column, parameters["aggregation_id"])
         columns = (
             [InternalName.TILE_START_DATE.value]
