@@ -3,7 +3,7 @@ import subprocess
 
 import pytest
 
-NOTEBOOKS_PATH = pathlib.Path("./notebooks")
+NOTEBOOKS_PATH = pathlib.Path("./docs/notebooks")
 
 
 def notebook_runner(notebook_path):

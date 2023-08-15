@@ -105,9 +105,8 @@ black = "^23.3.0"
 cachetools = { version = "^5.2.0", optional = true }
 celery = { version = "^5.2.6", extras = ["redis"], optional = true }
 celerybeat-mongo = { version = "^0.2.0", optional = true }
-cryptography = "^40.0.2"
 databricks-cli = { version = "^0.17.3", optional = true }
-databricks-sql-connector = { version = "^2.5.0", optional = true }
+databricks-sql-connector = { version = "2.8.0", optional = true }  # Awaiting snowflake-connector-python to support urllib3>=2.0
 fastapi = { version =  "^0.95.1", optional = true }
 featurebyte-freeware = { version = "^0.2.14", optional = true }
 gevent = {version = "^22.10.2", optional = true}
@@ -173,8 +172,8 @@ mkdocs-enumerate-headings-plugin = "^0.5.0"
 mkdocs-gen-files = "^0.4.0"
 mkdocs-git-authors-plugin = "^0.6.5"
 mkdocs-git-revision-date-localized-plugin = "^1.1.0"
+mkdocs-jupyter = "^0.24.2"
 mkdocs-literate-nav = "^0.5.0"
-mkdocs-material = "^8.5.7"
 mkdocs-minify-plugin = "^0.6.1"
 mkdocs-print-site-plugin = "^2.3.4"
 mkdocs-section-index = "^0.3.4"
