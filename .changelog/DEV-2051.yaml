@@ -16,7 +16,7 @@ component: api
 issues: []
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Fix item table default job settings not synchronized when job settings are updated in the event table"
+note: "Fix item table default job settings not synchronized when job settings are updated in the event table, fix historical feature table listing failure"
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
