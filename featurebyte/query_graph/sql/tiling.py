@@ -283,6 +283,26 @@ class VectorMaxAggregator(OrderIndependentAggregator):
         return f"VECTOR_AGGREGATE_MAX(value_{agg_id})"
 
 
+class VectorAvgAggregator(OrderIndependentAggregator):
+    """Aggregator the average of a vector"""
+
+    def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
+        assert col is not None
+        max_expression = expressions.Anonymous(
+            this="VECTOR_AGGREGATE_SUM", expressions=[quoted_identifier(col.name)]
+        )
+        return [
+            self.construct_numeric_tile_spec(max_expression, f"sum_value_{agg_id}"),
+            self.construct_numeric_tile_spec(
+                expressions.Count(this=expressions.Star()), f"count_value_{agg_id}"
+            ),
+        ]
+
+    @staticmethod
+    def merge(agg_id: str) -> str:
+        return f"VECTOR_AGGREGATE_AVG(sum_value_{agg_id}, count_value_{agg_id})"
+
+
 class LatestValueAggregator(OrderDependentAggregator):
     """Aggregator that computes the latest value"""
 
@@ -323,6 +343,7 @@ def get_aggregator(
     if parent_dtype is not None and parent_dtype == DBVarType.ARRAY:
         vector_aggregator_mapping: dict[AggFunc, type[TilingAggregator]] = {
             AggFunc.MAX: VectorMaxAggregator,
+            AggFunc.AVG: VectorAvgAggregator,
         }
         assert agg_name in vector_aggregator_mapping
         return vector_aggregator_mapping[agg_name](adapter=adapter)

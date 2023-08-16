@@ -54,6 +54,19 @@ def make_expected_tile_spec(tile_expr, tile_column_name, tile_column_type=None):
             "SUM(sum_value_1234beef) / SUM(count_value_1234beef)",
         ),
         (
+            AggFunc.AVG,
+            DBVarType.FLOAT,  # adding a non-array parent type will use the normal average aggregator
+            [
+                make_expected_tile_spec(
+                    tile_expr='SUM("a_column")', tile_column_name="sum_value_1234beef"
+                ),
+                make_expected_tile_spec(
+                    tile_expr='COUNT("a_column")', tile_column_name="count_value_1234beef"
+                ),
+            ],
+            "SUM(sum_value_1234beef) / SUM(count_value_1234beef)",
+        ),
+        (
             AggFunc.MIN,
             None,
             [
@@ -75,7 +88,7 @@ def make_expected_tile_spec(tile_expr, tile_column_name, tile_column_type=None):
         ),
         (
             AggFunc.MAX,
-            DBVarType.FLOAT,
+            DBVarType.FLOAT,  # adding a non-array parent type will use the normal max aggregator
             [
                 make_expected_tile_spec(
                     tile_expr='MAX("a_column")', tile_column_name="value_1234beef"
@@ -148,6 +161,23 @@ def make_expected_tile_spec(tile_expr, tile_column_name, tile_column_type=None):
                 )
             ],
             "VECTOR_AGGREGATE_MAX(value_1234beef)",
+        ),
+        (
+            AggFunc.AVG,
+            DBVarType.ARRAY,
+            [
+                make_expected_tile_spec(
+                    tile_expr='VECTOR_AGGREGATE_SUM("a_column")',
+                    tile_column_name="sum_value_1234beef",
+                    tile_column_type="FLOAT",
+                ),
+                make_expected_tile_spec(
+                    tile_expr="COUNT(*)",
+                    tile_column_name="count_value_1234beef",
+                    tile_column_type="FLOAT",
+                ),
+            ],
+            "VECTOR_AGGREGATE_AVG(sum_value_1234beef, count_value_1234beef)",
         ),
     ],
 )
