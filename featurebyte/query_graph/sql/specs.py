@@ -464,8 +464,8 @@ class NonTileBasedAggregationSpec(AggregationSpec):
     def from_query_graph_node(
         cls: Type[NonTileBasedAggregationSpecT],
         node: Node,
+        graph: QueryGraphModel,
         aggregation_source: Optional[AggregationSource] = None,
-        graph: Optional[QueryGraphModel] = None,
         source_type: Optional[SourceType] = None,
         serving_names_mapping: Optional[dict[str, str]] = None,
         is_online_serving: Optional[bool] = None,
@@ -477,10 +477,10 @@ class NonTileBasedAggregationSpec(AggregationSpec):
         ----------
         node : Node
             Query graph node
+        graph: QueryGraphModel
+            Query graph. Mandatory if aggregation_source is not provided
         aggregation_source: Optional[AggregationSource]
             Source of the aggregation
-        graph: Optional[QueryGraphModel]
-            Query graph. Mandatory if aggregation_source is not provided
         source_type: Optional[SourceType]
             Source type information. Mandatory if aggregation_source is not provided
         serving_names_mapping: Optional[dict[str, str]]
@@ -617,9 +617,10 @@ class AggregateAsAtSpec(NonTileBasedAggregationSpec):
         graph: Optional[QueryGraphModel],
     ) -> list[AggregateAsAtSpec]:
         assert isinstance(node, AggregateAsAtNode)
-        assert graph is not None
-        assert node.parameters.parent is not None
-        parent_dtype = get_parent_dtype(node.parameters.parent, graph, node)
+        parent_dtype = None
+        if node.parameters.parent is not None:
+            assert graph is not None
+            parent_dtype = get_parent_dtype(node.parameters.parent, graph, node)
         return [
             AggregateAsAtSpec(
                 parameters=node.parameters,
