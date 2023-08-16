@@ -40,6 +40,7 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
         TIMESTAMP_TZ = "TIMESTAMP_TZ"
         VARCHAR = "VARCHAR"
         VARIANT = "VARIANT"
+        ARRAY = "ARRAY"
 
     @classmethod
     def to_epoch_seconds(cls, timestamp_expr: Expression) -> Expression:
@@ -102,6 +103,7 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
             DBVarType.OBJECT: cls.SnowflakeDataType.OBJECT,
             DBVarType.TIMESTAMP: cls.SnowflakeDataType.TIMESTAMP_NTZ,
             DBVarType.TIMESTAMP_TZ: cls.SnowflakeDataType.TIMESTAMP_TZ,
+            DBVarType.ARRAY: cls.SnowflakeDataType.ARRAY,
         }
         if dtype in mapping:
             return mapping[dtype]
