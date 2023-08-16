@@ -7,6 +7,7 @@ from typing import Optional
 
 from dataclasses import dataclass
 
+from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import LookupTargetNode
 from featurebyte.query_graph.sql.specifications.base_lookup import BaseLookupSpec
@@ -31,6 +32,7 @@ class LookupTargetSpec(BaseLookupSpec):
         node: Node,
         aggregation_source: AggregationSource,
         serving_names_mapping: Optional[dict[str, str]],
+        graph: Optional[QueryGraphModel],
     ) -> list[LookupTargetSpec]:
         assert isinstance(node, LookupTargetNode)
         params = node.parameters

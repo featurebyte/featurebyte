@@ -119,6 +119,27 @@ class TilingAggregator(ABC):
             self.adapter.get_physical_type_from_dtype(DBVarType.FLOAT),
         )
 
+    def construct_array_tile_spec(self, tile_expr: Expression, tile_column_name: str) -> TileSpec:
+        """
+        Construct a TileSpec for an array tile
+
+        Parameters
+        ----------
+        tile_expr: Expression
+            SQL expression
+        tile_column_name: str
+            Alias for the result of the SQL expression
+
+        Returns
+        -------
+        TileSpec
+        """
+        return TileSpec(
+            tile_expr,
+            tile_column_name,
+            self.adapter.get_physical_type_from_dtype(DBVarType.ARRAY),
+        )
+
 
 class OrderIndependentAggregator(TilingAggregator, ABC):
     """Base class for all aggregators are not order dependent"""
@@ -268,6 +289,41 @@ class StdAggregator(OrderIndependentAggregator):
         return stddev
 
 
+class VectorMaxAggregator(OrderIndependentAggregator):
+    """Aggregator the max of a vector"""
+
+    def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
+        assert col is not None
+        max_expression = expressions.Anonymous(
+            this="VECTOR_AGGREGATE_MAX", expressions=[quoted_identifier(col.name)]
+        )
+        return [self.construct_numeric_tile_spec(max_expression, f"value_{agg_id}")]
+
+    @staticmethod
+    def merge(agg_id: str) -> str:
+        return f"VECTOR_AGGREGATE_MAX(value_{agg_id})"
+
+
+class VectorAvgAggregator(OrderIndependentAggregator):
+    """Aggregator the average of a vector"""
+
+    def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
+        assert col is not None
+        max_expression = expressions.Anonymous(
+            this="VECTOR_AGGREGATE_SUM", expressions=[quoted_identifier(col.name)]
+        )
+        return [
+            self.construct_array_tile_spec(max_expression, f"sum_list_value_{agg_id}"),
+            self.construct_numeric_tile_spec(
+                expressions.Count(this=expressions.Star()), f"count_value_{agg_id}"
+            ),
+        ]
+
+    @staticmethod
+    def merge(agg_id: str) -> str:
+        return f"VECTOR_AGGREGATE_AVG(sum_list_value_{agg_id}, count_value_{agg_id})"
+
+
 class LatestValueAggregator(OrderDependentAggregator):
     """Aggregator that computes the latest value"""
 
@@ -286,8 +342,11 @@ class LatestValueAggregator(OrderDependentAggregator):
         return f"FIRST_VALUE(value_{agg_id})"
 
 
-def get_aggregator(agg_name: AggFunc, adapter: BaseAdapter) -> TilingAggregator:
-    """Retrieves an aggregator class given the aggregation name
+def get_aggregator(
+    agg_name: AggFunc, adapter: BaseAdapter, parent_dtype: Optional[DBVarType] = None
+) -> TilingAggregator:
+    """
+    Retrieves an aggregator class given the aggregation name.
 
     Parameters
     ----------
@@ -295,11 +354,21 @@ def get_aggregator(agg_name: AggFunc, adapter: BaseAdapter) -> TilingAggregator:
         Name of the aggregation function
     adapter : BaseAdapter
         Instance of BaseAdapter for engine specific sql generation
+    parent_dtype : Optional[DBVarType]
+        Parent column data type
 
     Returns
     -------
     type[TilingAggregator]
     """
+    if parent_dtype is not None and parent_dtype == DBVarType.ARRAY:
+        vector_aggregator_mapping: dict[AggFunc, type[TilingAggregator]] = {
+            AggFunc.MAX: VectorMaxAggregator,
+            AggFunc.AVG: VectorAvgAggregator,
+        }
+        assert agg_name in vector_aggregator_mapping
+        return vector_aggregator_mapping[agg_name](adapter=adapter)
+
     aggregator_mapping: dict[AggFunc, type[TilingAggregator]] = {
         AggFunc.SUM: SumAggregator,
         AggFunc.AVG: AvgAggregator,

@@ -17,6 +17,7 @@ from featurebyte.query_graph.sql.adapter import SnowflakeAdapter, SparkAdapter, 
         (DBVarType.VARCHAR, "VARCHAR"),
         (DBVarType.OBJECT, "OBJECT"),
         (DBVarType.BINARY, "VARIANT"),
+        (DBVarType.ARRAY, "ARRAY"),
     ],
 )
 def test_get_online_store_type_from_dtype(dtype, expected):

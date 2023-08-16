@@ -137,6 +137,7 @@ class Lookup(Aggregate):
         columns_map = {}
         specs = LookupSpec.from_query_graph_node(
             context.query_node,
+            graph=context.graph,
             aggregation_source=Aggregate.get_aggregation_source_from_source_node(source_node),
         )
         for spec in specs:
@@ -160,6 +161,7 @@ class LookupTarget(Aggregate):
         columns_map = {}
         specs = LookupTargetSpec.from_query_graph_node(
             context.query_node,
+            graph=context.graph,
             aggregation_source=Aggregate.get_aggregation_source_from_source_node(source_node),
         )
         for spec in specs:
@@ -182,6 +184,7 @@ class AsAt(Aggregate):
         columns_map = {}
         spec = AggregateAsAtSpec.from_query_graph_node(
             context.query_node,
+            graph=context.graph,
             aggregation_source=Aggregate.get_aggregation_source_from_source_node(source_node),
         )[0]
         feature_name = cast(str, spec.parameters.name)
@@ -204,6 +207,7 @@ class Item(Aggregate):
         columns_map = {}
         spec = ItemAggregationSpec.from_query_graph_node(
             context.query_node,
+            graph=context.graph,
             aggregation_source=Aggregate.get_aggregation_source_from_source_node(source_node),
         )[0]
         feature_name = cast(str, spec.parameters.name)
@@ -226,6 +230,7 @@ class Forward(Aggregate):
         columns_map = {}
         spec = ForwardAggregateSpec.from_query_graph_node(
             context.query_node,
+            graph=context.graph,
             aggregation_source=Aggregate.get_aggregation_source_from_source_node(source_node),
         )[0]
         columns_map[spec.parameters.name] = quoted_identifier(spec.agg_result_name)

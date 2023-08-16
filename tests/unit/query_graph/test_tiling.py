@@ -28,10 +28,11 @@ def make_expected_tile_spec(tile_expr, tile_column_name, tile_column_type=None):
 
 
 @pytest.mark.parametrize(
-    "agg_func,expected_tile_specs,expected_merge_expr",
+    "agg_func,parent_dtype,expected_tile_specs,expected_merge_expr",
     [
         (
             AggFunc.SUM,
+            None,
             [
                 make_expected_tile_spec(
                     tile_expr='SUM("a_column")', tile_column_name="value_1234beef"
@@ -41,6 +42,20 @@ def make_expected_tile_spec(tile_expr, tile_column_name, tile_column_type=None):
         ),
         (
             AggFunc.AVG,
+            None,
+            [
+                make_expected_tile_spec(
+                    tile_expr='SUM("a_column")', tile_column_name="sum_value_1234beef"
+                ),
+                make_expected_tile_spec(
+                    tile_expr='COUNT("a_column")', tile_column_name="count_value_1234beef"
+                ),
+            ],
+            "SUM(sum_value_1234beef) / SUM(count_value_1234beef)",
+        ),
+        (
+            AggFunc.AVG,
+            DBVarType.FLOAT,  # adding a non-array parent type will use the normal average aggregator
             [
                 make_expected_tile_spec(
                     tile_expr='SUM("a_column")', tile_column_name="sum_value_1234beef"
@@ -53,6 +68,7 @@ def make_expected_tile_spec(tile_expr, tile_column_name, tile_column_type=None):
         ),
         (
             AggFunc.MIN,
+            None,
             [
                 make_expected_tile_spec(
                     tile_expr='MIN("a_column")', tile_column_name="value_1234beef"
@@ -62,6 +78,17 @@ def make_expected_tile_spec(tile_expr, tile_column_name, tile_column_type=None):
         ),
         (
             AggFunc.MAX,
+            None,
+            [
+                make_expected_tile_spec(
+                    tile_expr='MAX("a_column")', tile_column_name="value_1234beef"
+                )
+            ],
+            "MAX(value_1234beef)",
+        ),
+        (
+            AggFunc.MAX,
+            DBVarType.FLOAT,  # adding a non-array parent type will use the normal max aggregator
             [
                 make_expected_tile_spec(
                     tile_expr='MAX("a_column")', tile_column_name="value_1234beef"
@@ -71,11 +98,13 @@ def make_expected_tile_spec(tile_expr, tile_column_name, tile_column_type=None):
         ),
         (
             AggFunc.COUNT,
+            None,
             [make_expected_tile_spec(tile_expr="COUNT(*)", tile_column_name="value_1234beef")],
             "SUM(value_1234beef)",
         ),
         (
             AggFunc.NA_COUNT,
+            None,
             [
                 make_expected_tile_spec(
                     tile_expr='SUM(CAST("a_column" IS NULL AS INTEGER))',
@@ -86,6 +115,7 @@ def make_expected_tile_spec(tile_expr, tile_column_name, tile_column_type=None):
         ),
         (
             AggFunc.STD,
+            None,
             [
                 make_expected_tile_spec(
                     tile_expr='SUM("a_column" * "a_column")',
@@ -110,6 +140,7 @@ def make_expected_tile_spec(tile_expr, tile_column_name, tile_column_type=None):
         ),
         (
             AggFunc.LATEST,
+            None,
             [
                 make_expected_tile_spec(
                     tile_expr='FIRST_VALUE("a_column")',
@@ -119,12 +150,43 @@ def make_expected_tile_spec(tile_expr, tile_column_name, tile_column_type=None):
             ],
             "FIRST_VALUE(value_1234beef)",
         ),
+        (
+            AggFunc.MAX,
+            DBVarType.ARRAY,
+            [
+                make_expected_tile_spec(
+                    tile_expr='VECTOR_AGGREGATE_MAX("a_column")',
+                    tile_column_name="value_1234beef",
+                    tile_column_type="VARCHAR",
+                )
+            ],
+            "VECTOR_AGGREGATE_MAX(value_1234beef)",
+        ),
+        (
+            AggFunc.AVG,
+            DBVarType.ARRAY,
+            [
+                make_expected_tile_spec(
+                    tile_expr='VECTOR_AGGREGATE_SUM("a_column")',
+                    tile_column_name="sum_list_value_1234beef",
+                    tile_column_type="ARRAY",
+                ),
+                make_expected_tile_spec(
+                    tile_expr="COUNT(*)",
+                    tile_column_name="count_value_1234beef",
+                    tile_column_type="FLOAT",
+                ),
+            ],
+            "VECTOR_AGGREGATE_AVG(sum_list_value_1234beef, count_value_1234beef)",
+        ),
     ],
 )
-def test_tiling_aggregators(agg_func, expected_tile_specs, expected_merge_expr):
+def test_tiling_aggregators(agg_func, parent_dtype, expected_tile_specs, expected_merge_expr):
     """Test tiling aggregators produces expected expressions"""
     agg_id = "1234beef"
-    agg = get_aggregator(agg_func, adapter=get_sql_adapter(SourceType.SNOWFLAKE))
+    agg = get_aggregator(
+        agg_func, adapter=get_sql_adapter(SourceType.SNOWFLAKE), parent_dtype=parent_dtype
+    )
     input_column = InputColumn(name="a_column", dtype=DBVarType.VARCHAR)
     tile_specs = agg.tile(input_column, agg_id)
     merge_expr = agg.merge(agg_id)
