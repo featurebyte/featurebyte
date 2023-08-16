@@ -119,6 +119,27 @@ class TilingAggregator(ABC):
             self.adapter.get_physical_type_from_dtype(DBVarType.FLOAT),
         )
 
+    def construct_array_tile_spec(self, tile_expr: Expression, tile_column_name: str) -> TileSpec:
+        """
+        Construct a TileSpec for an array tile
+
+        Parameters
+        ----------
+        tile_expr: Expression
+            SQL expression
+        tile_column_name: str
+            Alias for the result of the SQL expression
+
+        Returns
+        -------
+        TileSpec
+        """
+        return TileSpec(
+            tile_expr,
+            tile_column_name,
+            self.adapter.get_physical_type_from_dtype(DBVarType.ARRAY),
+        )
+
 
 class OrderIndependentAggregator(TilingAggregator, ABC):
     """Base class for all aggregators are not order dependent"""
@@ -292,7 +313,7 @@ class VectorAvgAggregator(OrderIndependentAggregator):
             this="VECTOR_AGGREGATE_SUM", expressions=[quoted_identifier(col.name)]
         )
         return [
-            self.construct_numeric_tile_spec(max_expression, f"sum_value_{agg_id}"),
+            self.construct_array_tile_spec(max_expression, f"sum_list_value_{agg_id}"),
             self.construct_numeric_tile_spec(
                 expressions.Count(this=expressions.Star()), f"count_value_{agg_id}"
             ),
@@ -300,7 +321,7 @@ class VectorAvgAggregator(OrderIndependentAggregator):
 
     @staticmethod
     def merge(agg_id: str) -> str:
-        return f"VECTOR_AGGREGATE_AVG(sum_value_{agg_id}, count_value_{agg_id})"
+        return f"VECTOR_AGGREGATE_AVG(sum_list_value_{agg_id}, count_value_{agg_id})"
 
 
 class LatestValueAggregator(OrderDependentAggregator):

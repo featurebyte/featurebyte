@@ -168,8 +168,8 @@ def make_expected_tile_spec(tile_expr, tile_column_name, tile_column_type=None):
             [
                 make_expected_tile_spec(
                     tile_expr='VECTOR_AGGREGATE_SUM("a_column")',
-                    tile_column_name="sum_value_1234beef",
-                    tile_column_type="FLOAT",
+                    tile_column_name="sum_list_value_1234beef",
+                    tile_column_type="ARRAY",
                 ),
                 make_expected_tile_spec(
                     tile_expr="COUNT(*)",
@@ -177,7 +177,7 @@ def make_expected_tile_spec(tile_expr, tile_column_name, tile_column_type=None):
                     tile_column_type="FLOAT",
                 ),
             ],
-            "VECTOR_AGGREGATE_AVG(sum_value_1234beef, count_value_1234beef)",
+            "VECTOR_AGGREGATE_AVG(sum_list_value_1234beef, count_value_1234beef)",
         ),
     ],
 )
