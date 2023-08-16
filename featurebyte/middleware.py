@@ -27,6 +27,7 @@ from featurebyte.exception import (
     SchemaNotFoundError,
     TableNotFoundError,
     UnexpectedServingNamesMappingError,
+    UseCaseInvalidDataError,
 )
 from featurebyte.logging import get_logger
 
@@ -230,6 +231,11 @@ ExecutionContext.register(
     CatalogNotSpecifiedError,
     handle_status_code=HTTPStatus.FAILED_DEPENDENCY,
     handle_message="Catalog not specified. Please specify a catalog.",
+)
+
+ExecutionContext.register(
+    UseCaseInvalidDataError,
+    handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
 )
 
 

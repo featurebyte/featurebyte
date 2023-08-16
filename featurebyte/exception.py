@@ -380,3 +380,9 @@ class CatalogNotSpecifiedError(FeatureByteException):
     """
     Raise when the catalog is not specified in a catalog-specific request
     """
+
+
+class UseCaseInvalidDataError(FeatureByteException):
+    """
+    Raise when invalid observation table default is specified
+    """
