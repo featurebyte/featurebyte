@@ -1,13 +1,14 @@
 """
 UseCase API routes
 """
-from typing import Optional
+from typing import List, Optional
 
 from http import HTTPStatus
 
 from fastapi import APIRouter, Request
 
 from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.base_feature_or_target_table import BaseFeatureOrTargetTableModel
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.models.use_case import UseCaseModel
 from featurebyte.routes.common.schema import (
@@ -127,3 +128,18 @@ async def update_use_case_description(
         description=data.description,
     )
     return doc
+
+
+@router.get("/{use_case_id}/feature_tables", response_model=List[BaseFeatureOrTargetTableModel])
+async def list_use_case_feature_tables(
+    request: Request,
+    use_case_id: PydanticObjectId,
+) -> List[BaseFeatureOrTargetTableModel]:
+    """
+    List Feature Tables associated with the Use Case
+    """
+    controller = request.state.app_container.use_case_controller
+    feature_tables_list: List[BaseFeatureOrTargetTableModel] = await controller.list_feature_tables(
+        use_case_id=use_case_id,
+    )
+    return feature_tables_list

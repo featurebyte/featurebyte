@@ -1,8 +1,11 @@
 """
 UseCase API route controller
 """
+from typing import List
+
 from bson import ObjectId
 
+from featurebyte.models.base_feature_or_target_table import BaseFeatureOrTargetTableModel
 from featurebyte.models.use_case import UseCaseModel
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.use_case import UseCaseCreate, UseCaseList, UseCaseUpdate
@@ -54,5 +57,22 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
         -------
         UseCaseModel
         """
-        result = await self.service.update_use_case(document_id=use_case_id, data=data)
-        return result
+        return await self.service.update_use_case(document_id=use_case_id, data=data)
+
+    async def list_feature_tables(
+        self,
+        use_case_id: ObjectId,
+    ) -> List[BaseFeatureOrTargetTableModel]:
+        """
+        list feature tables associated with the Use Case
+
+        Parameters
+        ----------
+        use_case_id: ObjectId
+            use case id
+
+        Returns
+        -------
+        List[BaseFeatureOrTargetTableModel]
+        """
+        return await self.service.list_feature_tables(use_case_id=use_case_id)

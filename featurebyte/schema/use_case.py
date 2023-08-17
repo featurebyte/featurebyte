@@ -21,6 +21,13 @@ class UseCaseCreate(FeatureByteBaseModel):
     context_id: PydanticObjectId
     target_id: PydanticObjectId
     description: Optional[StrictStr]
+
+
+class UseCaseCreateTarget(UseCaseCreate):
+    """
+    Use Case creation schema with observation_table_ids. Not exposed to API.
+    """
+
     observation_table_ids: Optional[List[PydanticObjectId]] = Field(default_factory=list)
 
 
@@ -32,6 +39,13 @@ class UseCaseUpdate(BaseDocumentServiceUpdateSchema):
     new_observation_table_id: Optional[PydanticObjectId]
     default_preview_table_id: Optional[PydanticObjectId]
     default_eda_table_id: Optional[PydanticObjectId]
+
+
+class UseCaseUpdateTarget(UseCaseUpdate):
+    """
+    Use Case update schema with observation_table_ids. Not exposed to API.
+    """
+
     observation_table_ids: Optional[List[PydanticObjectId]]
 
 
