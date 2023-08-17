@@ -344,12 +344,17 @@ class SemanticType(StrEnum):
     Builtin semantic enum
     """
 
-    EVENT_TIMESTAMP = "event_timestamp"
-    EVENT_ID = "event_id"
-    ITEM_ID = "item_id"
     DIMENSION_ID = "dimension_id"
+    EVENT_ID = "event_id"
+    EVENT_TIMESTAMP = "event_timestamp"
+    ITEM_ID = "item_id"
+    RECORD_CREATION_TIMESTAMP = "record_creation_timestamp"
+    SCD_CURRENT_FLAG = "scd_current_flag"
+    SCD_EFFECTIVE_TIMESTAMP = "scd_effective_timestamp"
+    SCD_END_TIMESTAMP = "scd_end_timestamp"
     SCD_NATURAL_KEY_ID = "scd_natural_key_id"
     SCD_SURROGATE_KEY_ID = "scd_surrogate_key_id"
+    TIME_ZONE = "time_zone"
 
 
 class MaterializedTableNamePrefix(StrEnum):

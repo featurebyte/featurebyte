@@ -346,7 +346,7 @@ def test_get_change_view__check_entity_id(snowflake_scd_table):
             "dtype": "TIMESTAMP_TZ",
             "entity_id": entity_eff_ts.id,
             "name": "new_effective_timestamp",
-            "semantic_id": None,
+            "semantic_id": columns_info_dict[1]["semantic_id"],
             "description": None,
         },
         {

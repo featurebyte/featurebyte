@@ -160,8 +160,10 @@ def test_create_event_table(snowflake_database_table, event_table_dict, catalog)
     event_table_dict["updated_at"] = event_table.updated_at
     event_table_dict["description"] = None
     event_table_dict["block_modification_by"] = []
-    event_table_dict["columns_info"][0]["semantic_id"] = event_table.columns_info[0].semantic_id
-    event_table_dict["columns_info"][6]["semantic_id"] = event_table.columns_info[6].semantic_id
+    for column_idx in [0, 6, 7]:
+        event_table_dict["columns_info"][column_idx]["semantic_id"] = event_table.columns_info[
+            column_idx
+        ].semantic_id
     assert output == event_table_dict
 
     # user input validation
@@ -421,7 +423,7 @@ def test_info(saved_event_table, cust_id_entity):
             "name": "created_at",
             "dtype": "TIMESTAMP_TZ",
             "entity": None,
-            "semantic": None,
+            "semantic": "record_creation_timestamp",
             "critical_data_info": None,
             "description": None,
         },

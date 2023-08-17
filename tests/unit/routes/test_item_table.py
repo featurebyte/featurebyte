@@ -147,7 +147,7 @@ class TestItemTableApi(BaseTableApiTestSuite):
             },
             "status": "PUBLIC_DRAFT",
             "entities": [],
-            "semantics": ["item_id"],
+            "semantics": ["event_id", "item_id"],
             "column_count": 6,
             "event_table_name": "sf_event_table",
             "catalog_name": "grocery",
@@ -165,4 +165,53 @@ class TestItemTableApi(BaseTableApiTestSuite):
         verbose_response_dict = verbose_response.json()
         assert verbose_response_dict.items() > expected_info_response.items(), verbose_response.text
         assert "created_at" in verbose_response_dict
-        assert verbose_response_dict["columns_info"] is not None
+        assert verbose_response_dict["columns_info"] == [
+            {
+                "name": "event_id_col",
+                "dtype": "INT",
+                "entity": None,
+                "semantic": "event_id",
+                "critical_data_info": None,
+                "description": None,
+            },
+            {
+                "name": "item_id_col",
+                "dtype": "VARCHAR",
+                "entity": None,
+                "semantic": "item_id",
+                "critical_data_info": None,
+                "description": None,
+            },
+            {
+                "name": "item_type",
+                "dtype": "VARCHAR",
+                "entity": None,
+                "semantic": None,
+                "critical_data_info": None,
+                "description": None,
+            },
+            {
+                "name": "item_amount",
+                "dtype": "FLOAT",
+                "entity": None,
+                "semantic": None,
+                "critical_data_info": None,
+                "description": None,
+            },
+            {
+                "name": "created_at",
+                "dtype": "TIMESTAMP_TZ",
+                "entity": None,
+                "semantic": None,
+                "critical_data_info": None,
+                "description": None,
+            },
+            {
+                "name": "event_timestamp",
+                "dtype": "TIMESTAMP_TZ",
+                "entity": None,
+                "semantic": None,
+                "critical_data_info": None,
+                "description": None,
+            },
+        ]

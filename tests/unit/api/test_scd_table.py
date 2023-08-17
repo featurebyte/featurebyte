@@ -219,8 +219,10 @@ def test_create_scd_table(snowflake_database_table_scd_table, scd_table_dict, ca
     scd_table_dict["updated_at"] = scd_table.updated_at
     scd_table_dict["description"] = None
     scd_table_dict["block_modification_by"] = []
-    scd_table_dict["columns_info"][0]["semantic_id"] = scd_table.columns_info[0].semantic_id
-    scd_table_dict["columns_info"][3]["semantic_id"] = scd_table.columns_info[3].semantic_id
+    for column_idx in [0, 2, 3, 6, 7, 8]:
+        scd_table_dict["columns_info"][column_idx]["semantic_id"] = scd_table.columns_info[
+            column_idx
+        ].semantic_id
     assert output == scd_table_dict
 
     # user input validation
