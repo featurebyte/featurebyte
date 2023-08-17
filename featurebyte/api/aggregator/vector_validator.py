@@ -37,5 +37,5 @@ def validate_vector_aggregate_parameters(
             return
 
     # If it's an array, check whether the method is supported. We currently only support MAX and AVG operations.
-    if method in VECTOR_AGGREGATE_SUPPORTED_FUNCTIONS:
+    if method not in VECTOR_AGGREGATE_SUPPORTED_FUNCTIONS:
         raise ValueError(f"Method {method} is not supported for vector aggregate operations.")

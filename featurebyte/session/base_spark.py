@@ -167,6 +167,9 @@ class BaseSparkSession(BaseSession, ABC):
         if spark_type.startswith("DECIMAL"):
             # DECIMAL(10, 2)
             return DBVarType.FLOAT
+        if spark_type.startswith("ARRAY"):
+            # ARRAY<BIGINT>
+            return DBVarType.ARRAY
 
         mapping = {
             "BINARY": DBVarType.BINARY,
@@ -179,7 +182,6 @@ class BaseSparkSession(BaseSession, ABC):
             "VOID": DBVarType.VOID,
             "TIMESTAMP": DBVarType.TIMESTAMP,
             "TIMESTAMP_NTZ": DBVarType.TIMESTAMP,
-            "ARRAY": DBVarType.ARRAY,
             "MAP": DBVarType.MAP,
             "STRUCT": DBVarType.STRUCT,
             "STRING": DBVarType.VARCHAR,

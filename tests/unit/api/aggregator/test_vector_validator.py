@@ -25,7 +25,7 @@ def test_validate_vector_aggregate_parameters():
             # Throw an error if the column dtype is an array and the agg_func is not supported
             if (
                 column_info.dtype == DBVarType.ARRAY
-                and agg_func in VECTOR_AGGREGATE_SUPPORTED_FUNCTIONS
+                and agg_func not in VECTOR_AGGREGATE_SUPPORTED_FUNCTIONS
             ):
                 with pytest.raises(ValueError) as exc_info:
                     validate_vector_aggregate_parameters([column_info], column_info.name, agg_func)
