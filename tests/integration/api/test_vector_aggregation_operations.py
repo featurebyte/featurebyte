@@ -117,6 +117,6 @@ def test_vector_aggregation_operations(event_table_with_array_column):
     feature_preview = feature.preview(pd.DataFrame([preview_params]))
     assert feature_preview.shape[0] == 1
     assert feature_preview.iloc[0].to_dict() == {
-        "vector_max": [3, 3, 3],
+        "vector_max": "[3,3,3]",
         **convert_preview_param_dict_to_feature_preview_resp(preview_params),
     }

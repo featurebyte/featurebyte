@@ -16,8 +16,7 @@ from ast import literal_eval
 
 import pandas as pd
 import pyarrow as pa
-from pandas._libs.lib import is_list_like
-from pandas.core.dtypes.common import is_datetime64_dtype, is_float_dtype, is_object_dtype
+from pandas.core.dtypes.common import is_datetime64_dtype, is_float_dtype
 from pyarrow import Schema
 from pydantic import Field, PrivateAttr
 from pyhive.exc import OperationalError
@@ -369,53 +368,16 @@ class SparkSession(BaseSparkSession):
         return pa.Table.from_batches(record_batches)
 
     def fetch_query_result_impl(self, cursor: Any) -> pd.DataFrame | None:
-        # arrow_table = self.fetchall_arrow(cursor)
-        # return arrow_table.to_pandas()
-        schema = None
-        if cursor.description:
-            schema = {row[0]: row[1] for row in cursor.description}
-
-        if schema:
-            post_processor = ArrowTablePostProcessor(schema=schema)
-            arrow_table = cursor.fetchall_arrow()
-            return post_processor.to_dataframe(arrow_table)
+        arrow_table = self.fetchall_arrow(cursor)
+        return arrow_table.to_pandas()
 
     async def fetch_query_stream_impl(self, cursor: Any) -> AsyncGenerator[pa.RecordBatch, None]:
         # fetch results in batches
-        # schema = pa.schema(
-        #     {metadata[0]: self._get_pyarrow_type(metadata[1]) for metadata in cursor.description}
-        # )
-        # while True:
-        #     record_batch = self._read_batch(cursor, schema)
-        #     yield record_batch
-        #     if record_batch.num_rows == 0:
-        #         break
-
-        schema = {row[0]: row[1] for row in cursor.description}
-        pa_schema = pa.schema(
-            {row[0]: self._get_pyarrow_type(row[1]) for row in cursor.description}
+        schema = pa.schema(
+            {metadata[0]: self._get_pyarrow_type(metadata[1]) for metadata in cursor.description}
         )
-
-        if schema:
-            post_processor = ArrowTablePostProcessor(schema=schema)
-            record_batch = self._read_batch(cursor, pa_schema)
-            dataframe = record_batch.to_pandas()
-            updated_dataframe = post_processor.update_df(dataframe)
-            updated_arrow_table = pa.Table.from_pandas(updated_dataframe)
-            for record_batch in updated_arrow_table.to_batches():
-                yield record_batch
-
-        # schema = None
-        # if cursor.description:
-        #     schema = {row[0]: row[1] for row in cursor.description}
-        #
-        # if schema:
-        #     post_processor = ArrowTablePostProcessor(schema=schema)
-        #     # fetch results in batches
-        #     while True:
-        #         dataframe = post_processor.to_dataframe(cursor.fetchmany_arrow(size=1000))
-        #         arrow_table = pa.Table.from_pandas(dataframe)
-        #         if arrow_table.num_rows == 0:
-        #             break
-        #         for record_batch in arrow_table.to_batches():
-        #             yield record_batch
+        while True:
+            record_batch = self._read_batch(cursor, schema)
+            yield record_batch
+            if record_batch.num_rows == 0:
+                break
