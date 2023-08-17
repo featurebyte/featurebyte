@@ -149,7 +149,7 @@ class TestDimensionTableApi(BaseTableApiTestSuite):
             },
             "status": "PUBLIC_DRAFT",
             "entities": [],
-            "semantics": ["dimension_id"],
+            "semantics": ["dimension_id", "record_creation_timestamp"],
             "column_count": 9,
             "catalog_name": "grocery",
         }
@@ -166,4 +166,77 @@ class TestDimensionTableApi(BaseTableApiTestSuite):
         verbose_response_dict = verbose_response.json()
         assert verbose_response_dict.items() > expected_info_response.items(), verbose_response.text
         assert "created_at" in verbose_response_dict
-        assert verbose_response_dict["columns_info"] is not None
+        assert verbose_response_dict["columns_info"] == [
+            {
+                "name": "col_int",
+                "dtype": "INT",
+                "entity": None,
+                "semantic": "dimension_id",
+                "critical_data_info": None,
+                "description": None,
+            },
+            {
+                "name": "col_float",
+                "dtype": "FLOAT",
+                "entity": None,
+                "semantic": None,
+                "critical_data_info": None,
+                "description": None,
+            },
+            {
+                "name": "col_char",
+                "dtype": "CHAR",
+                "entity": None,
+                "semantic": None,
+                "critical_data_info": None,
+                "description": None,
+            },
+            {
+                "name": "col_text",
+                "dtype": "VARCHAR",
+                "entity": None,
+                "semantic": None,
+                "critical_data_info": None,
+                "description": None,
+            },
+            {
+                "name": "col_binary",
+                "dtype": "BINARY",
+                "entity": None,
+                "semantic": None,
+                "critical_data_info": None,
+                "description": None,
+            },
+            {
+                "name": "col_boolean",
+                "dtype": "BOOL",
+                "entity": None,
+                "semantic": None,
+                "critical_data_info": None,
+                "description": None,
+            },
+            {
+                "name": "event_timestamp",
+                "dtype": "TIMESTAMP_TZ",
+                "entity": None,
+                "semantic": None,
+                "critical_data_info": None,
+                "description": None,
+            },
+            {
+                "name": "created_at",
+                "dtype": "TIMESTAMP_TZ",
+                "entity": None,
+                "semantic": "record_creation_timestamp",
+                "critical_data_info": None,
+                "description": None,
+            },
+            {
+                "name": "cust_id",
+                "dtype": "INT",
+                "entity": None,
+                "semantic": None,
+                "critical_data_info": None,
+                "description": None,
+            },
+        ]

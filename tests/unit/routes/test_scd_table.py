@@ -159,7 +159,13 @@ class TestSCDTableApi(BaseTableApiTestSuite):
             },
             "status": "PUBLIC_DRAFT",
             "entities": [],
-            "semantics": ["scd_surrogate_key_id", "scd_natural_key_id"],
+            "semantics": [
+                "scd_current_flag",
+                "scd_effective_timestamp",
+                "scd_end_timestamp",
+                "scd_natural_key_id",
+                "scd_surrogate_key_id",
+            ],
             "column_count": 10,
             "catalog_name": "grocery",
         }
@@ -168,7 +174,13 @@ class TestSCDTableApi(BaseTableApiTestSuite):
         assert response_dict.items() > expected_info_response.items(), response_dict
         assert "created_at" in response_dict
         assert response_dict["columns_info"] is None
-        assert set(response_dict["semantics"]) == {"scd_surrogate_key_id", "scd_natural_key_id"}
+        assert set(response_dict["semantics"]) == {
+            "scd_surrogate_key_id",
+            "scd_end_timestamp",
+            "scd_effective_timestamp",
+            "scd_current_flag",
+            "scd_natural_key_id",
+        }
 
         verbose_response = test_api_client.get(
             f"{self.base_route}/{doc_id}/info", params={"verbose": True}
@@ -177,4 +189,85 @@ class TestSCDTableApi(BaseTableApiTestSuite):
         verbose_response_dict = verbose_response.json()
         assert verbose_response_dict.items() > expected_info_response.items(), verbose_response.text
         assert "created_at" in verbose_response_dict
-        assert verbose_response_dict["columns_info"] is not None
+        assert verbose_response_dict["columns_info"] == [
+            {
+                "name": "col_int",
+                "dtype": "INT",
+                "entity": None,
+                "semantic": "scd_surrogate_key_id",
+                "critical_data_info": None,
+                "description": None,
+            },
+            {
+                "name": "col_float",
+                "dtype": "FLOAT",
+                "entity": None,
+                "semantic": None,
+                "critical_data_info": None,
+                "description": None,
+            },
+            {
+                "name": "is_active",
+                "dtype": "BOOL",
+                "entity": None,
+                "semantic": "scd_current_flag",
+                "critical_data_info": None,
+                "description": None,
+            },
+            {
+                "name": "col_text",
+                "dtype": "VARCHAR",
+                "entity": None,
+                "semantic": "scd_natural_key_id",
+                "critical_data_info": None,
+                "description": None,
+            },
+            {
+                "name": "col_binary",
+                "dtype": "BINARY",
+                "entity": None,
+                "semantic": None,
+                "critical_data_info": None,
+                "description": None,
+            },
+            {
+                "name": "col_boolean",
+                "dtype": "BOOL",
+                "entity": None,
+                "semantic": None,
+                "critical_data_info": None,
+                "description": None,
+            },
+            {
+                "name": "effective_timestamp",
+                "dtype": "TIMESTAMP_TZ",
+                "entity": None,
+                "semantic": "scd_effective_timestamp",
+                "critical_data_info": None,
+                "description": None,
+            },
+            {
+                "name": "end_timestamp",
+                "dtype": "TIMESTAMP_TZ",
+                "entity": None,
+                "semantic": "scd_end_timestamp",
+                "critical_data_info": None,
+                "description": None,
+            },
+            {
+                "name": "created_at",
+                "dtype": "TIMESTAMP_TZ",
+                "entity": None,
+                "semantic": None,
+                "critical_data_info": None,
+                "description": None,
+            },
+            {
+                "name": "cust_id",
+                "dtype": "INT",
+                "entity": None,
+                "semantic": None,
+                "critical_data_info": None,
+                "description": None,
+            },
+        ]

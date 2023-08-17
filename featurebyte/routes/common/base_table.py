@@ -5,10 +5,9 @@ from __future__ import annotations
 
 from typing import Any, Optional, Type, TypeVar, cast
 
-from abc import abstractmethod
-
 from bson.objectid import ObjectId
 
+from featurebyte.enum import SemanticType
 from featurebyte.exception import ColumnNotFoundError
 from featurebyte.models.dimension_table import DimensionTableModel
 from featurebyte.models.event_table import EventTableModel
@@ -46,6 +45,9 @@ class BaseTableDocumentController(
     """
 
     document_update_schema_class: Type[TableServiceUpdate]
+    semantic_tag_rules: dict[str, SemanticType] = {
+        "record_creation_timestamp_column": SemanticType.RECORD_CREATION_TIMESTAMP,
+    }
 
     def __init__(
         self,
@@ -57,7 +59,6 @@ class BaseTableDocumentController(
         self.table_facade_service = table_facade_service
         self.semantic_service = semantic_service
 
-    @abstractmethod
     async def _get_column_semantic_map(self, document: TableDocumentT) -> dict[str, Any]:
         """
         Construct column name to semantic mapping
@@ -71,6 +72,13 @@ class BaseTableDocumentController(
         -------
         dict[str, Any]
         """
+        column_semantic_map = {}
+        for field, semantic_type in self.semantic_tag_rules.items():
+            semantic_id = await self.semantic_service.get_or_create_document(name=semantic_type)
+            special_column_name = getattr(document, field)
+            if special_column_name:
+                column_semantic_map[special_column_name] = semantic_id
+        return column_semantic_map
 
     async def _add_semantic_tags(self, document: TableDocumentT) -> TableDocumentT:
         """

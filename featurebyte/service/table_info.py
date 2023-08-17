@@ -79,7 +79,7 @@ class TableInfoService:
             "table_details": data_document.tabular_source.table_details,
             "status": data_document.status,
             "entities": EntityBriefInfoList.from_paginated_data(entities),
-            "semantics": [semantic["name"] for semantic in semantics["data"]],
+            "semantics": sorted([semantic["name"] for semantic in semantics["data"]]),
             "column_count": len(data_document.columns_info),
             "columns_info": columns_info,
             "catalog_name": catalog_name,

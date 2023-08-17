@@ -3,8 +3,6 @@ ItemTable API route controller
 """
 from __future__ import annotations
 
-from typing import Any
-
 from bson import ObjectId
 
 from featurebyte.enum import SemanticType
@@ -29,6 +27,11 @@ class ItemTableController(
 
     paginated_document_class = ItemTableList
     document_update_schema_class = ItemTableServiceUpdate
+    semantic_tag_rules = {
+        **BaseTableDocumentController.semantic_tag_rules,
+        "event_id_column": SemanticType.EVENT_ID,
+        "item_id_column": SemanticType.ITEM_ID,
+    }
 
     def __init__(
         self,
@@ -41,10 +44,6 @@ class ItemTableController(
         super().__init__(item_table_service, table_facade_service, semantic_service)
         self.table_info_service = table_info_service
         self.event_table_service = event_table_service
-
-    async def _get_column_semantic_map(self, document: ItemTableModel) -> dict[str, Any]:
-        item_id = await self.semantic_service.get_or_create_document(name=SemanticType.ITEM_ID)
-        return {document.item_id_column: item_id}
 
     async def get_info(self, document_id: ObjectId, verbose: bool) -> ItemTableInfo:
         """

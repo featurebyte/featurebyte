@@ -79,9 +79,12 @@ class TestEventTableApi(BaseTableApiTestSuite):
         semantic_service = SemanticService(
             user=user, persistent=persistent, catalog_id=ObjectId(default_catalog_id)
         )
+        record_creation_timestamp = await semantic_service.get_or_create_document(
+            "record_creation_timestamp"
+        )
         event_timestamp = await semantic_service.get_or_create_document("event_timestamp")
         event_id = await semantic_service.get_or_create_document("event_id")
-        return event_timestamp.id, event_id.id
+        return event_timestamp.id, event_id.id, record_creation_timestamp.id
 
     @pytest.fixture(name="data_model_dict")
     def data_model_dict_fixture(
@@ -94,7 +97,11 @@ class TestEventTableApi(BaseTableApiTestSuite):
         default_catalog_id,
     ):
         """Fixture for a Event Data dict"""
-        event_timestamp_semantic_id, event_id_semantic_id = event_timestamp_id_semantic_ids
+        (
+            event_timestamp_semantic_id,
+            event_id_semantic_id,
+            record_creation_timestamp_id,
+        ) = event_timestamp_id_semantic_ids
         cols_info = []
         for col_info in columns_info:
             col = col_info.copy()
@@ -102,6 +109,8 @@ class TestEventTableApi(BaseTableApiTestSuite):
                 col["semantic_id"] = event_timestamp_semantic_id
             elif col["name"] == "event_id":
                 col["semantic_id"] = event_id_semantic_id
+            elif col["name"] == "created_at":
+                col["semantic_id"] = record_creation_timestamp_id
             cols_info.append(col)
 
         event_table_dict = {
@@ -319,6 +328,7 @@ class TestEventTableApi(BaseTableApiTestSuite):
             "entities": [
                 {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "grocery"}
             ],
+            "semantics": ["event_id", "event_timestamp", "record_creation_timestamp"],
             "column_count": 9,
             "catalog_name": "grocery",
         }
@@ -327,7 +337,11 @@ class TestEventTableApi(BaseTableApiTestSuite):
         assert response_dict.items() > expected_info_response.items(), response_dict
         assert "created_at" in response_dict
         assert response_dict["columns_info"] is None
-        assert set(response_dict["semantics"]) == {"event_id", "event_timestamp"}
+        assert set(response_dict["semantics"]) == {
+            "record_creation_timestamp",
+            "event_timestamp",
+            "event_id",
+        }
 
         verbose_response = test_api_client.get(
             f"{self.base_route}/{doc_id}/info", params={"verbose": True}
@@ -336,4 +350,77 @@ class TestEventTableApi(BaseTableApiTestSuite):
         verbose_response_dict = verbose_response.json()
         assert verbose_response_dict.items() > expected_info_response.items(), verbose_response.text
         assert "created_at" in verbose_response_dict
-        assert verbose_response_dict["columns_info"] is not None
+        assert verbose_response_dict["columns_info"] == [
+            {
+                "name": "col_int",
+                "dtype": "INT",
+                "entity": None,
+                "semantic": "event_id",
+                "critical_data_info": None,
+                "description": None,
+            },
+            {
+                "name": "col_float",
+                "dtype": "FLOAT",
+                "entity": None,
+                "semantic": None,
+                "critical_data_info": None,
+                "description": None,
+            },
+            {
+                "name": "col_char",
+                "dtype": "CHAR",
+                "entity": None,
+                "semantic": None,
+                "critical_data_info": None,
+                "description": None,
+            },
+            {
+                "name": "col_text",
+                "dtype": "VARCHAR",
+                "entity": None,
+                "semantic": None,
+                "critical_data_info": None,
+                "description": None,
+            },
+            {
+                "name": "col_binary",
+                "dtype": "BINARY",
+                "entity": None,
+                "semantic": None,
+                "critical_data_info": None,
+                "description": None,
+            },
+            {
+                "name": "col_boolean",
+                "dtype": "BOOL",
+                "entity": None,
+                "semantic": None,
+                "critical_data_info": None,
+                "description": None,
+            },
+            {
+                "name": "event_timestamp",
+                "dtype": "TIMESTAMP_TZ",
+                "entity": None,
+                "semantic": "event_timestamp",
+                "critical_data_info": None,
+                "description": None,
+            },
+            {
+                "name": "created_at",
+                "dtype": "TIMESTAMP_TZ",
+                "entity": None,
+                "semantic": "record_creation_timestamp",
+                "critical_data_info": None,
+                "description": None,
+            },
+            {
+                "name": "cust_id",
+                "dtype": "INT",
+                "entity": "customer",
+                "semantic": None,
+                "critical_data_info": None,
+                "description": None,
+            },
+        ]

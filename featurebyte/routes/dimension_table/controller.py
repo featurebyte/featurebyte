@@ -3,8 +3,6 @@ DimensionTable API route controller
 """
 from __future__ import annotations
 
-from typing import Any
-
 from bson import ObjectId
 
 from featurebyte.enum import SemanticType
@@ -28,6 +26,10 @@ class DimensionTableController(
 
     paginated_document_class = DimensionTableList
     document_update_schema_class = DimensionTableServiceUpdate
+    semantic_tag_rules = {
+        **BaseTableDocumentController.semantic_tag_rules,
+        "dimension_id_column": SemanticType.DIMENSION_ID,
+    }
 
     def __init__(
         self,
@@ -38,12 +40,6 @@ class DimensionTableController(
     ):
         super().__init__(dimension_table_service, table_facade_service, semantic_service)
         self.table_info_service = table_info_service
-
-    async def _get_column_semantic_map(self, document: DimensionTableModel) -> dict[str, Any]:
-        dimension_id_semantic = await self.semantic_service.get_or_create_document(
-            name=SemanticType.DIMENSION_ID
-        )
-        return {document.dimension_id_column: dimension_id_semantic}
 
     async def get_info(self, document_id: ObjectId, verbose: bool) -> DimensionTableInfo:
         """
