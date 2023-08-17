@@ -3,16 +3,26 @@ Test groupby helper
 """
 import textwrap
 
+import pytest
 from sqlglot import select
 
 from featurebyte import AggFunc, SourceType
-from featurebyte.enum import SpecialColumnName
+from featurebyte.enum import DBVarType, SpecialColumnName
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.common import get_qualified_column_identifier
 from featurebyte.query_graph.sql.groupby_helper import GroupbyColumn, GroupbyKey, get_groupby_expr
 
 
-def test_get_groupby_expr():
+@pytest.mark.parametrize(
+    "agg_func, parent_dtype, method",
+    [
+        (AggFunc.SUM, None, "SUM"),
+        (AggFunc.MAX, None, "MAX"),
+        (AggFunc.MAX, DBVarType.INT, "MAX"),
+        (AggFunc.MAX, DBVarType.ARRAY, "VECTOR_AGGREGATE_MAX"),
+    ],
+)
+def test_get_groupby_expr(agg_func, parent_dtype, method):
     """
     Test get_groupby_expr
     """
@@ -31,7 +41,7 @@ def test_get_groupby_expr():
         name="value_by",
     )
     groupby_column = GroupbyColumn(
-        agg_func=AggFunc.SUM,
+        agg_func=agg_func,
         parent_expr=(get_qualified_column_identifier("parent", "TABLE")),
         result_name="result",
     )
@@ -41,9 +51,10 @@ def test_get_groupby_expr():
         groupby_columns=[groupby_column],
         value_by=valueby_key,
         adapter=get_sql_adapter(SourceType.SNOWFLAKE),
+        parent_dtype=parent_dtype,
     )
     expected = textwrap.dedent(
-        """
+        f"""
         SELECT
           INNER_."serving_name",
           INNER_."POINT_IN_TIME",
@@ -63,7 +74,7 @@ def test_get_groupby_expr():
             REQ."serving_name" AS "serving_name",
             REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
             REQ."value_by" AS "value_by",
-            SUM(TABLE."parent") AS "result_inner"
+            {method}(TABLE."parent") AS "result_inner"
           GROUP BY
             REQ."serving_name",
             REQ."POINT_IN_TIME",

@@ -461,6 +461,15 @@ class NonTileBasedAggregationSpec(AggregationSpec):
         """
 
     @classmethod
+    def get_parent_dtype_from_graph(
+        cls, graph: Optional[QueryGraphModel], parent: Optional[str], node: Node
+    ) -> Optional[DBVarType]:
+        if not parent:
+            return None
+        assert graph is not None
+        return get_parent_dtype(parent, graph, node)
+
+    @classmethod
     def from_query_graph_node(
         cls: Type[NonTileBasedAggregationSpecT],
         node: Node,
@@ -524,6 +533,7 @@ class ItemAggregationSpec(NonTileBasedAggregationSpec):
     """
 
     parameters: ItemGroupbyParameters
+    parent_dtype: Optional[DBVarType]
 
     @property
     def agg_result_name(self) -> str:
@@ -566,6 +576,7 @@ class ItemAggregationSpec(NonTileBasedAggregationSpec):
                 serving_names_mapping=serving_names_mapping,
                 parameters=node.parameters,
                 aggregation_source=aggregation_source,
+                parent_dtype=cls.get_parent_dtype_from_graph(graph, node.parameters.parent, node),
             )
         ]
 
@@ -577,7 +588,7 @@ class AggregateAsAtSpec(NonTileBasedAggregationSpec):
     """
 
     parameters: AggregateAsAtParameters
-    parent_dtype: Optional[DBVarType] = None
+    parent_dtype: Optional[DBVarType]
 
     @property
     def agg_result_name(self) -> str:
@@ -617,14 +628,10 @@ class AggregateAsAtSpec(NonTileBasedAggregationSpec):
         graph: Optional[QueryGraphModel],
     ) -> list[AggregateAsAtSpec]:
         assert isinstance(node, AggregateAsAtNode)
-        parent_dtype = None
-        if node.parameters.parent is not None:
-            assert graph is not None
-            parent_dtype = get_parent_dtype(node.parameters.parent, graph, node)
         return [
             AggregateAsAtSpec(
                 parameters=node.parameters,
-                parent_dtype=parent_dtype,
+                parent_dtype=cls.get_parent_dtype_from_graph(graph, node.parameters.parent, node),
                 aggregation_source=aggregation_source,
                 entity_ids=cast(List[ObjectId], node.parameters.entity_ids),
                 serving_names=node.parameters.serving_names,
@@ -640,6 +647,7 @@ class ForwardAggregateSpec(NonTileBasedAggregationSpec):
     """
 
     parameters: ForwardAggregateParameters
+    parent_dtype: Optional[DBVarType]
 
     @property
     def agg_result_name(self) -> str:
@@ -675,6 +683,7 @@ class ForwardAggregateSpec(NonTileBasedAggregationSpec):
                 entity_ids=cast(List[ObjectId], node.parameters.entity_ids),
                 serving_names=node.parameters.serving_names,
                 serving_names_mapping=serving_names_mapping,
+                parent_dtype=cls.get_parent_dtype_from_graph(graph, node.parameters.parent, node),
             )
         ]
 
