@@ -91,6 +91,7 @@ def item_agg_spec_fixture():
             expr=select("*").from_("tab"), query_node_name="input_1"
         ),
         entity_ids=[ObjectId()],
+        parent_dtype=DBVarType.FLOAT,
     )
     return agg_spec
 

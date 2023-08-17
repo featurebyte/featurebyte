@@ -9,6 +9,7 @@ import pytest
 from sqlglot import select
 
 from featurebyte import SourceType
+from featurebyte.enum import DBVarType
 from featurebyte.query_graph.node.generic import ForwardAggregateParameters
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.aggregator.forward import ForwardAggregator
@@ -44,6 +45,7 @@ def forward_spec_fixture(forward_node_parameters, entity_id):
             expr=select("*").from_("tab"), query_node_name="input_1"
         ),
         entity_ids=[entity_id],
+        parent_dtype=DBVarType.FLOAT,
     )
 
 

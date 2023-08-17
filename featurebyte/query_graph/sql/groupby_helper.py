@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from sqlglot import expressions, parse_one
 from sqlglot.expressions import Expression, Select, alias_
 
-from featurebyte.enum import AggFunc
+from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.common import quoted_identifier
 
@@ -47,7 +47,7 @@ class GroupbyKey:
 
 
 def get_aggregation_expression(
-    agg_func: AggFunc, input_column: Optional[str | Expression]
+    agg_func: AggFunc, input_column: Optional[str | Expression], parent_dtype: Optional[DBVarType]
 ) -> Expression:
     """
     Convert an AggFunc and input column name to a SQL expression to be used in GROUP BY
@@ -58,6 +58,8 @@ def get_aggregation_expression(
         Aggregation function
     input_column : str
         Input column name
+    parent_dtype : Optional[DBVarType]
+        Parent column data type
 
     Returns
     -------
@@ -78,10 +80,17 @@ def get_aggregation_expression(
         AggFunc.MAX: "MAX",
         AggFunc.STD: "STDDEV",
     }
+    array_parent_agg_func_sql_mapping = {
+        AggFunc.MAX: "VECTOR_AGGREGATE_MAX",
+        AggFunc.AVG: "VECTOR_AGGREGATE_SIMPLE_AVERAGE",
+    }
     expr: Expression
     if agg_func in agg_func_sql_mapping:
         assert input_column_expr is not None
         sql_func = agg_func_sql_mapping[agg_func]
+        if parent_dtype is not None and parent_dtype == DBVarType.ARRAY:
+            assert agg_func in array_parent_agg_func_sql_mapping
+            sql_func = array_parent_agg_func_sql_mapping[agg_func]
         expr = expressions.Anonymous(this=sql_func, expressions=[input_column_expr])
     else:
         if agg_func == AggFunc.COUNT:
@@ -103,6 +112,7 @@ def get_groupby_expr(
     groupby_columns: list[GroupbyColumn],
     value_by: Optional[GroupbyKey],
     adapter: BaseAdapter,
+    parent_dtype: Optional[DBVarType],
 ) -> Select:
     """
     Construct a GROUP BY statement using the provided expression as input
@@ -120,6 +130,8 @@ def get_groupby_expr(
         Optional category parameter
     adapter: BaseAdapter
         Adapter for generating engine specific expressions
+    parent_dtype: Optional[DBVarType]
+        Parent column data type
 
     Returns
     -------
@@ -130,6 +142,7 @@ def get_groupby_expr(
             get_aggregation_expression(
                 agg_func=column.agg_func,
                 input_column=column.parent_expr,
+                parent_dtype=parent_dtype,
             ),
             alias=column.result_name + ("_inner" if value_by is not None else ""),
             quoted=True,

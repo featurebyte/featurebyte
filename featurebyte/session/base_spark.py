@@ -310,7 +310,7 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
 
     @property
     def current_working_schema_version(self) -> int:
-        return 3
+        return 4
 
     @property
     def sql_directory_name(self) -> str:
@@ -403,6 +403,10 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
             ("VECTOR_AGGREGATE_MAX", "com.featurebyte.hive.udf.VectorAggregateMax"),
             ("VECTOR_AGGREGATE_SUM", "com.featurebyte.hive.udf.VectorAggregateSum"),
             ("VECTOR_AGGREGATE_AVG", "com.featurebyte.hive.udf.VectorAggregateAverage"),
+            (
+                "VECTOR_AGGREGATE_SIMPLE_AVERAGE",
+                "com.featurebyte.hive.udf.VectorAggregateSimpleAverage",
+            ),
             ("OBJECT_AGG", "com.featurebyte.hive.udf.ObjectAggregate"),
             ("OBJECT_DELETE", "com.featurebyte.hive.udf.ObjectDelete"),
             ("F_TIMESTAMP_TO_INDEX", "com.featurebyte.hive.udf.TimestampToIndex"),

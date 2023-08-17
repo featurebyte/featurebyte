@@ -150,6 +150,7 @@ class ForwardAggregator(NonTileBasedAggregator[ForwardAggregateSpec]):
             groupby_columns=groupby_columns,
             value_by=value_by,
             adapter=self.adapter,
+            parent_dtype=spec.parent_dtype,
         )
         return LeftJoinableSubquery(
             expr=forward_agg_expr,

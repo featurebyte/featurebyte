@@ -343,7 +343,7 @@ class LatestValueAggregator(OrderDependentAggregator):
 
 
 def get_aggregator(
-    agg_name: AggFunc, adapter: BaseAdapter, parent_dtype: Optional[DBVarType] = None
+    agg_name: AggFunc, adapter: BaseAdapter, parent_dtype: Optional[DBVarType]
 ) -> TilingAggregator:
     """
     Retrieves an aggregator class given the aggregation name.
@@ -366,7 +366,6 @@ def get_aggregator(
             AggFunc.MAX: VectorMaxAggregator,
             AggFunc.AVG: VectorAvgAggregator,
         }
-        assert agg_name in vector_aggregator_mapping
         return vector_aggregator_mapping[agg_name](adapter=adapter)
 
     aggregator_mapping: dict[AggFunc, type[TilingAggregator]] = {
