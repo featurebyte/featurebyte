@@ -7,7 +7,7 @@ import pytest
 from bson import ObjectId
 from sqlglot.expressions import select
 
-from featurebyte.enum import SourceType
+from featurebyte.enum import DBVarType, SourceType
 from featurebyte.query_graph.node.generic import ItemGroupbyParameters
 from featurebyte.query_graph.sql.aggregator.item import ItemAggregator
 from featurebyte.query_graph.sql.specs import AggregationSource, ItemAggregationSpec
@@ -35,6 +35,7 @@ def aggregation_spec_order_size(item_aggregation_source):
         parameters=params,
         aggregation_source=item_aggregation_source,
         entity_ids=[ObjectId()],
+        parent_dtype=DBVarType.FLOAT,
     )
 
 
@@ -53,6 +54,7 @@ def aggregation_spec_max_item_price(item_aggregation_source):
         parameters=params,
         aggregation_source=item_aggregation_source,
         entity_ids=[ObjectId()],
+        parent_dtype=DBVarType.FLOAT,
     )
 
 
@@ -72,6 +74,7 @@ def aggregation_spec_with_category(item_aggregation_source):
         parameters=params,
         aggregation_source=item_aggregation_source,
         entity_ids=[ObjectId()],
+        parent_dtype=DBVarType.FLOAT,
     )
 
 
