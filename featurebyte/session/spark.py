@@ -4,7 +4,7 @@ SparkSession class
 # pylint: disable=duplicate-code
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator, Dict, Optional, OrderedDict, Union
+from typing import Any, AsyncGenerator, Optional, OrderedDict, Union
 from typing_extensions import Annotated
 
 # pylint: disable=wrong-import-order
@@ -12,7 +12,6 @@ import collections
 import os
 import subprocess
 import tempfile
-from ast import literal_eval
 
 import pandas as pd
 import pyarrow as pa
@@ -37,40 +36,6 @@ SparkDatabaseCredential = Annotated[
     Union[KerberosKeytabCredential, AccessTokenCredential],
     Field(discriminator="type"),
 ]
-
-
-class ArrowTablePostProcessor:
-    """
-    Post processor for Arrow table to fix spark return format
-    """
-
-    def __init__(self, schema: Dict[str, str]):
-        self._map_columns = []
-        for col_name, var_type in schema.items():
-            if var_type.upper() == "ARRAY_TYPE":
-                self._map_columns.append(col_name)
-
-    def to_dataframe(self, arrow_table: pa.Table) -> pd.DataFrame:
-        """
-        Convert Arrow table to Pandas dataframe
-
-        Parameters
-        ----------
-        arrow_table: pa.Table
-            Arrow table to convert
-
-        Returns
-        -------
-        pd.DataFrame:
-            Pandas dataframe
-        """
-        dataframe = arrow_table.to_pandas()
-        return self.update_df(dataframe)
-
-    def update_df(self, df: pd.DataFrame) -> pd.DataFrame:
-        for col_name in self._map_columns:
-            df[col_name] = df[col_name].apply(literal_eval)
-        return df
 
 
 class SparkSession(BaseSparkSession):
@@ -312,9 +277,6 @@ class SparkSession(BaseSparkSession):
                 data[column]
             ):
                 data[column] = pd.to_datetime(data[column])
-            # elif isinstance(schema.field(i).type, pa.ListType) and is_object_dtype(data[column]):
-            #     data[column] = data[column].apply(literal_eval)
-            #     data[column] = data[column].astype(list)
         return data
 
     def _read_batch(self, cursor: Cursor, schema: Schema, batch_size: int = 1000) -> pa.RecordBatch:
