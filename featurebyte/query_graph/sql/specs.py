@@ -464,6 +464,22 @@ class NonTileBasedAggregationSpec(AggregationSpec):
     def get_parent_dtype_from_graph(
         cls, graph: Optional[QueryGraphModel], parent: Optional[str], node: Node
     ) -> Optional[DBVarType]:
+        """
+        Helper method to get the dtype of the parent variable
+
+        Parameters
+        ----------
+        graph: Optional[QueryGraphModel]
+            Query graph
+        parent: Optional[str]
+            Parent variable name
+        node: Node
+            Query graph node
+
+        Returns
+        -------
+        Optional[DBVarType]
+        """
         if not parent:
             return None
         assert graph is not None

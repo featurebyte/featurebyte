@@ -6,7 +6,7 @@ import textwrap
 import pytest
 from sqlglot.expressions import select
 
-from featurebyte.enum import SourceType
+from featurebyte.enum import DBVarType, SourceType
 from featurebyte.query_graph.node.generic import AggregateAsAtParameters
 from featurebyte.query_graph.sql.aggregator.asat import AsAtAggregator
 from featurebyte.query_graph.sql.specs import AggregateAsAtSpec, AggregationSource
@@ -53,6 +53,7 @@ def aggregation_spec_without_end_timestamp(
         parameters=aggregate_as_at_node_parameters,
         aggregation_source=scd_aggregation_source,
         entity_ids=[entity_id],
+        parent_dtype=DBVarType.FLOAT,
     )
 
 
@@ -66,6 +67,7 @@ def aggregation_spec_with_end_timestamp(
         parameters=aggregate_as_at_node_parameters_with_end_timestamp,
         aggregation_source=scd_aggregation_source,
         entity_ids=[entity_id],
+        parent_dtype=DBVarType.FLOAT,
     )
 
 
@@ -79,6 +81,7 @@ def aggregation_spec_with_serving_names_mapping(
         parameters=aggregate_as_at_node_parameters_with_end_timestamp,
         aggregation_source=scd_aggregation_source,
         entity_ids=[entity_id],
+        parent_dtype=DBVarType.FLOAT,
     )
 
 
@@ -105,6 +108,7 @@ def aggregation_specs_same_source_different_agg_funcs(
                 parameters=params,
                 aggregation_source=scd_aggregation_source,
                 entity_ids=[entity_id],
+                parent_dtype=DBVarType.FLOAT,
             )
         )
 
@@ -134,6 +138,7 @@ def aggregation_specs_same_source_different_keys(
                 parameters=params,
                 aggregation_source=scd_aggregation_source,
                 entity_ids=[entity_id],
+                parent_dtype=DBVarType.FLOAT,
             )
         )
 
@@ -152,6 +157,7 @@ def aggregation_spec_with_category(
         parameters=parameters,
         aggregation_source=scd_aggregation_source,
         entity_ids=[entity_id],
+        parent_dtype=DBVarType.FLOAT,
     )
 
 
