@@ -35,19 +35,20 @@ public abstract class BaseVectorAggregate extends AbstractGenericUDAFResolver {
     String listElementTypeName = listOI.getListElementObjectInspector().getTypeName();
     PrimitiveObjectInspectorUtils.PrimitiveTypeEntry typeEntry =
         PrimitiveObjectInspectorUtils.getTypeEntryFromTypeName(listElementTypeName);
-    return getEvaluator();
-    //    switch (typeEntry.primitiveCategory) {
-    //      case INT:
-    //      case LONG:
-    //      case FLOAT:
-    //      case DOUBLE:
-    //      case DECIMAL:
-    //        return getEvaluator();
-    //      default:
-    //        throw new UDFArgumentTypeException(
-    //            0, "Only ints, longs, floats, doubles or decimals are accepted " + "for parameter
-    // 1");
-    //    }
+    switch (typeEntry.primitiveCategory) {
+      case INT:
+      case LONG:
+      case FLOAT:
+      case DOUBLE:
+      case SHORT:
+      case DECIMAL:
+      case STRING:
+      case VARCHAR:
+        return getEvaluator();
+      default:
+        throw new UDFArgumentTypeException(
+            0, "Only ints, longs, floats, doubles or decimals are accepted " + "for parameter 1");
+    }
   }
 
   private static ObjectInspector getObjectInspector(GenericUDAFParameterInfo info)
@@ -93,7 +94,7 @@ public abstract class BaseVectorAggregate extends AbstractGenericUDAFResolver {
       ObjectInspector inputListOI = parameters[0];
       StandardListObjectInspector internalValueOI = (StandardListObjectInspector) inputListOI;
       inputValueOI = internalValueOI.getListElementObjectInspector();
-      return ObjectInspectorFactory.getStandardListObjectInspector(inputListOI);
+      return ObjectInspectorFactory.getStandardListObjectInspector(inputValueOI);
     }
 
     protected ObjectInspector getInputValueOI() {

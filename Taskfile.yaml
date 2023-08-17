@@ -71,6 +71,7 @@ tasks:
     generates:
       - featurebyte/sql/spark/*.jar
     deps:
+      - task: format-java
       - task: lint-java
     cmds:
       - rm -f hive-udf/lib/build/libs/*.jar
@@ -234,6 +235,16 @@ tasks:
       - task: test-setup
       - poetry run pytest --timeout=240 --timeout-method=thread --junitxml=pytest.xml.1 -n auto --cov=featurebyte tests/integration --source-types none,snowflake
       - task: test-teardown
+
+  test-reset:
+    cmds:
+      - task: test-teardown
+      - task: test-setup
+
+  test-reset-java:
+    cmds:
+      - task: build-jar
+      - task: test-reset
 
   test-integration-spark:
     desc: Runs integration tests against Spark

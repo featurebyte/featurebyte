@@ -26,8 +26,7 @@ def data_with_array_fixture():
     """
     df = pd.read_csv(os.path.join(os.path.dirname(__file__), "fixtures", "vector_data.csv"))
     # manually add the vectors on since it's easier than shoving it into a csv
-    vectors = [[3, 1, 3], [1, 3, 1], [1, 5, 9], [4, 8, 6], [7, 2, 3]]
-    df["VECTOR_VALUE"] = vectors
+    df["VECTOR_VALUE"] = [[3, 1, 3], [1, 3, 1], [1, 5, 9], [4, 8, 6], [7, 2, 3]]
     df["EVENT_TIMESTAMP"] = pd.to_datetime(df["EVENT_TIMESTAMP"].astype(str))
     yield df
 
@@ -118,6 +117,6 @@ def test_vector_aggregation_operations(event_table_with_array_column):
     feature_preview = feature.preview(pd.DataFrame([preview_params]))
     assert feature_preview.shape[0] == 1
     assert feature_preview.iloc[0].to_dict() == {
-        "VECTOR_VALUE": True,
+        "vector_max": [3, 3, 3],
         **convert_preview_param_dict_to_feature_preview_resp(preview_params),
     }
