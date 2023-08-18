@@ -21,6 +21,9 @@ def test_validate_vector_aggregate_parameters():
         ColumnInfo(name="c", dtype=DBVarType.ARRAY),
     ]
     for agg_func in AggFunc.all():
+        # Verify that when value_column is None, we return None.
+        assert not validate_vector_aggregate_parameters(test_columns_info, None, agg_func)
+
         for column_info in test_columns_info:
             # Throw an error if the column dtype is an array and the agg_func is not supported
             if (
@@ -34,4 +37,6 @@ def test_validate_vector_aggregate_parameters():
                     == f"Method {agg_func} is not supported for vector aggregate operations."
                 )
             else:
-                validate_vector_aggregate_parameters([column_info], column_info.name, agg_func)
+                assert not validate_vector_aggregate_parameters(
+                    [column_info], column_info.name, agg_func
+                )

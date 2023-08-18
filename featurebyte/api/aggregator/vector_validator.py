@@ -29,6 +29,9 @@ def validate_vector_aggregate_parameters(
     ValueError
         If the method is not supported for vector aggregate operations
     """
+    if value_column is None:
+        return
+
     # Check whether the value_column's type is an array
     for info in columns_info:
         # If the type of the value_column is not an array, can return. If it is, break out of the loop and
