@@ -29,6 +29,9 @@ def validate_vector_aggregate_parameters(
     ValueError
         If the method is not supported for vector aggregate operations
     """
+    if value_column is None:
+        return
+
     # Check whether the value_column's type is an array
     for info in columns_info:
         # If the type of the value_column is not an array, can return. If it is, break out of the loop and
@@ -37,5 +40,5 @@ def validate_vector_aggregate_parameters(
             return
 
     # If it's an array, check whether the method is supported. We currently only support MAX and AVG operations.
-    if method in VECTOR_AGGREGATE_SUPPORTED_FUNCTIONS:
+    if method not in VECTOR_AGGREGATE_SUPPORTED_FUNCTIONS:
         raise ValueError(f"Method {method} is not supported for vector aggregate operations.")

@@ -40,7 +40,10 @@ public abstract class BaseVectorAggregate extends AbstractGenericUDAFResolver {
       case LONG:
       case FLOAT:
       case DOUBLE:
+      case SHORT:
       case DECIMAL:
+      case STRING:
+      case VARCHAR:
         return getEvaluator();
       default:
         throw new UDFArgumentTypeException(
@@ -91,7 +94,7 @@ public abstract class BaseVectorAggregate extends AbstractGenericUDAFResolver {
       ObjectInspector inputListOI = parameters[0];
       StandardListObjectInspector internalValueOI = (StandardListObjectInspector) inputListOI;
       inputValueOI = internalValueOI.getListElementObjectInspector();
-      return ObjectInspectorFactory.getStandardListObjectInspector(inputListOI);
+      return ObjectInspectorFactory.getStandardListObjectInspector(inputValueOI);
     }
 
     protected ObjectInspector getInputValueOI() {
