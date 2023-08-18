@@ -692,7 +692,7 @@ class SourceTable(AbstractTableData):
         - Type 1: Overwrites old data with new data
         - Type 2: Maintains a history of changes by creating a new record for each change.
 
-        eatureByte only supports the use of Type 2 SCD Tables since Type 1 SCD Tables may cause data leaks during
+        FeatureByte only supports the use of Type 2 SCD Tables since Type 1 SCD Tables may cause data leaks during
         model training and poor performance during inference.
 
         To create an SCD Table, you need to identify columns for the natural key, effective timestamp, optionally
