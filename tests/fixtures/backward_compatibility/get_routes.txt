@@ -29,4 +29,5 @@
 /target_namespace
 /target_table
 /task
+/use_case
 /user_defined_function
