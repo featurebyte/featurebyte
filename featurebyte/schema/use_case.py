@@ -28,7 +28,7 @@ class UseCaseCreateTarget(UseCaseCreate):
     Use Case creation schema with observation_table_ids. Not exposed to API.
     """
 
-    observation_table_ids: Optional[List[PydanticObjectId]] = Field(default_factory=list)
+    observation_table_ids: List[PydanticObjectId] = Field(default_factory=list)
 
 
 class UseCaseUpdate(BaseDocumentServiceUpdateSchema):
@@ -46,7 +46,7 @@ class UseCaseUpdateTarget(UseCaseUpdate):
     Use Case update schema with observation_table_ids. Not exposed to API.
     """
 
-    observation_table_ids: Optional[List[PydanticObjectId]]
+    observation_table_ids: List[PydanticObjectId] = Field(default_factory=list)
 
 
 class UseCaseList(PaginationMixin):

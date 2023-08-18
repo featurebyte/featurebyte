@@ -4,7 +4,7 @@ Use Case model
 from typing import List, Optional
 
 import pymongo
-from pydantic import Field, StrictStr
+from pydantic import Field
 
 from featurebyte.models.base import (
     FeatureByteCatalogBaseDocumentModel,
@@ -22,8 +22,6 @@ class UseCaseModel(FeatureByteCatalogBaseDocumentModel):
         The context id of ContextModel
     target_id: PydanticObjectId
         The target id of TargetModel
-    description: Optional[StrictStr]
-        The description of UseCaseModel
     observation_table_ids:  List[PydanticObjectId]
         The observation table ids of ObservationTableModel
     default_preview_table_id: PydanticObjectId
@@ -34,8 +32,7 @@ class UseCaseModel(FeatureByteCatalogBaseDocumentModel):
 
     context_id: PydanticObjectId
     target_id: PydanticObjectId
-    description: Optional[StrictStr]
-    observation_table_ids: Optional[List[PydanticObjectId]] = Field(default_factory=list)
+    observation_table_ids: List[PydanticObjectId] = Field(default=[])
     default_preview_table_id: Optional[PydanticObjectId]
     default_eda_table_id: Optional[PydanticObjectId]
 

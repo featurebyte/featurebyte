@@ -83,17 +83,35 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         self, test_api_client_persistent, location, default_catalog_id, user_id
     ):
         """
-        simulate creating observation table for target input with the same target_id and context_id
+        simulate creating observation table for target input, target_id and context_id
         """
 
         _, persistent = test_api_client_persistent
 
-        async def create_observation_table(ob_table_id):
+        async def create_observation_table(
+            ob_table_id, target_input=True, same_context=True, same_target=True
+        ):
+            context_id = ObjectId(self.payload["context_id"])
+            if not same_context:
+                context_id = ObjectId()
+
+            target_id = ObjectId(self.payload["target_id"])
+            if not same_target:
+                target_id = ObjectId()
+
             request_input = {
-                "target_id": ObjectId(self.payload["target_id"]),
+                "target_id": target_id,
                 "observation_table_id": ob_table_id,
                 "type": "dataframe",
             }
+            if not target_input:
+                request_input = {
+                    "columns": None,
+                    "columns_rename_mapping": None,
+                    "source": location,
+                    "type": "source_table",
+                }
+
             await persistent.insert_one(
                 collection_name="observation_table",
                 document={
@@ -108,7 +126,7 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
                     ],
                     "num_rows": 1000,
                     "most_recent_point_in_time": "2023-01-15T10:00:00",
-                    "context_id": ObjectId(self.payload["context_id"]),
+                    "context_id": context_id,
                     "catalog_id": ObjectId(default_catalog_id),
                     "user_id": user_id,
                 },
@@ -126,17 +144,25 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         """Test automated assign observation table when creating use case"""
 
         test_api_client, _ = test_api_client_persistent
-        ob_table_id = ObjectId()
+        target_ob_table_id = ObjectId()
+        non_target_ob_table_id = ObjectId()
+        different_context_ob_table_id = ObjectId()
 
-        await create_observation_table(ob_table_id)
+        # create observation table with target input
+        await create_observation_table(target_ob_table_id)
+        # create observation table with non target input
+        await create_observation_table(non_target_ob_table_id, target_input=False)
+        # create observation table with different context
+        await create_observation_table(different_context_ob_table_id, same_context=False)
 
         response = test_api_client.post(self.base_route, json=self.payload)
         assert response.status_code == HTTPStatus.CREATED, response.json()
         created_use_case = response.json()
+        assert len(created_use_case["observation_table_ids"]) == 1
         assert created_use_case["context_id"] == self.payload["context_id"]
         assert created_use_case["target_id"] == self.payload["target_id"]
         assert created_use_case["description"] == self.payload["description"]
-        assert created_use_case["observation_table_ids"] == [str(ob_table_id)]
+        assert created_use_case["observation_table_ids"] == [str(target_ob_table_id)]
 
     @pytest.mark.asyncio
     async def test_update_use_case(
@@ -188,6 +214,52 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         }
         assert data["default_preview_table_id"] == str(new_ob_table_id_2)
         assert data["default_eda_table_id"] == str(new_ob_table_id_3)
+
+    @pytest.mark.asyncio
+    async def test_update_use_case_with_error(
+        self,
+        create_success_response,
+        test_api_client_persistent,
+        create_observation_table,
+    ):
+        """Test update use case"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        use_case_id = create_response_dict["_id"]
+
+        # create observation table with non target input
+        non_target_ob_table_id = ObjectId()
+        await create_observation_table(non_target_ob_table_id, target_input=False)
+        response = test_api_client.patch(
+            f"{self.base_route}/{use_case_id}",
+            json={"new_observation_table_id": str(non_target_ob_table_id)},
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.json()["detail"] == "observation table request_input is not TargetInput"
+
+        non_target_ob_table_id = ObjectId()
+        await create_observation_table(non_target_ob_table_id, same_target=False)
+        response = test_api_client.patch(
+            f"{self.base_route}/{use_case_id}",
+            json={"new_observation_table_id": str(non_target_ob_table_id)},
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert (
+            response.json()["detail"]
+            == "Inconsistent target_id between use case and observation table"
+        )
+
+        non_target_ob_table_id = ObjectId()
+        await create_observation_table(non_target_ob_table_id, same_context=False)
+        response = test_api_client.patch(
+            f"{self.base_route}/{use_case_id}",
+            json={"new_observation_table_id": str(non_target_ob_table_id)},
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert (
+            response.json()["detail"]
+            == "Inconsistent context_id between use case and observation table"
+        )
 
     @pytest.mark.asyncio
     async def test_list_feature_tables(

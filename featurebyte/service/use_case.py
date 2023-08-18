@@ -67,7 +67,7 @@ class UseCaseService(BaseDocumentService[UseCaseModel, UseCaseCreate, UseCaseUpd
             obs_table_ids.append(obs_table.id)
         data.observation_table_ids = obs_table_ids
 
-        return await super().create_document(data=data)
+        return await self.create_document(data=data)
 
     async def update_use_case(
         self,
@@ -92,7 +92,6 @@ class UseCaseService(BaseDocumentService[UseCaseModel, UseCaseCreate, UseCaseUpd
         data = UseCaseUpdateTarget(
             **data.dict(), observation_table_ids=use_case.observation_table_ids
         )
-        assert data.observation_table_ids is not None
 
         if data.default_preview_table_id:
             # validate and add default_preview_table_id
