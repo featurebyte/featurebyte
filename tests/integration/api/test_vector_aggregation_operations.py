@@ -13,10 +13,15 @@ import pytest_asyncio
 
 from featurebyte.api.aggregator.vector_validator import VECTOR_AGGREGATE_SUPPORTED_FUNCTIONS
 from featurebyte.enum import AggFunc
+from featurebyte.exception import RecordRetrievalException
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from tests.integration.api.feature_preview_utils import (
     convert_preview_param_dict_to_feature_preview_resp,
 )
+
+VECTOR_VALUE_FLOAT_COL = "VECTOR_VALUE_FLOAT"
+VECTOR_VALUE_INT_COL = "VECTOR_VALUE_INT"
+VECTOR_VALUE_DIFF_LENGTH_COL = "VECTOR_VALUE_DIFFERENT_LENGTH"
 
 
 @pytest.fixture(name="data_with_array", scope="session")
@@ -25,13 +30,28 @@ def data_with_array_fixture():
     Simulated data with an array column
     """
     df = pd.read_csv(os.path.join(os.path.dirname(__file__), "fixtures", "vector_data.csv"))
-    # manually add the vectors on since it's easier than shoving it into a csv
-    df["VECTOR_VALUE"] = [
+    # Manually add the vectors on since it's easier than shoving it into a csv
+    # The first two rows will belong to CUST_ID 1, and the last three rows will belong to CUST_ID 3
+    df[VECTOR_VALUE_FLOAT_COL] = [
         [3.0, 1.0, 3.0],
         [1.0, 3.0, 1.0],
         [1.0, 5.0, 9.0],
         [4.0, 8.0, 6.0],
         [7.0, 2.0, 3.0],
+    ]
+    df[VECTOR_VALUE_INT_COL] = [
+        [3, 1, 3],
+        [1, 3, 1],
+        [1, 5, 9],
+        [4, 8, 6],
+        [7, 2, 3],
+    ]
+    df[VECTOR_VALUE_DIFF_LENGTH_COL] = [
+        [3, 1, 3],
+        [1],
+        None,
+        [4, 8],
+        [],
     ]
     df["EVENT_TIMESTAMP"] = pd.to_datetime(df["EVENT_TIMESTAMP"].astype(str))
     yield df
@@ -69,7 +89,7 @@ def test_random(data_with_array):
     """
     assert data_with_array.shape[0] == 5
     expected_dataframe = get_expected_dataframe(
-        data_with_array, ["CUST_ID", "USER_ID"], "VECTOR_VALUE", AggFunc.AVG
+        data_with_array, ["CUST_ID", "USER_ID"], "VECTOR_VALUE_FLOAT", AggFunc.AVG
     )
     assert expected_dataframe.shape[0] == 3
 
@@ -107,21 +127,26 @@ async def register_table_with_array_column(
 
 @pytest.mark.parametrize("source_type", ["spark"], indirect=True)
 @pytest.mark.parametrize(
-    "agg_func,expected_results",
+    "agg_func,expected_results,vector_value_column",
     [
-        (AggFunc.MAX, "[3.0,3.0,3.0]"),
-        (AggFunc.AVG, "[2.0,2.0,2.0]"),
-        (AggFunc.SUM, "[4.0,4.0,4.0]"),
+        (AggFunc.MAX, "[3.0,3.0,3.0]", VECTOR_VALUE_FLOAT_COL),
+        (AggFunc.AVG, "[2.0,2.0,2.0]", VECTOR_VALUE_FLOAT_COL),
+        (AggFunc.SUM, "[4.0,4.0,4.0]", VECTOR_VALUE_FLOAT_COL),
+        (AggFunc.MAX, "[3,3,3]", VECTOR_VALUE_INT_COL),
+        # (AggFunc.AVG, "[2.0,2.0,2.0]", "VECTOR_VALUE_INT"),  # TODO: fix
+        # (AggFunc.SUM, "[4.0,4.0,4.0]", "VECTOR_VALUE_INT"),  # TODO: fix
     ],
 )
-def test_vector_aggregation_operations(event_table_with_array_column, agg_func, expected_results):
+def test_vector_aggregation_operations(
+    event_table_with_array_column, agg_func, expected_results, vector_value_column
+):
     """
     Test vector aggregation operations
     """
     event_view = event_table_with_array_column.get_view()
     feature_name = "vector_agg"
     feature = event_view.groupby("CUST_ID").aggregate_over(
-        value_column="VECTOR_VALUE",
+        value_column=vector_value_column,
         method=agg_func,
         windows=["1d"],
         feature_names=[feature_name],
@@ -135,3 +160,26 @@ def test_vector_aggregation_operations(event_table_with_array_column, agg_func, 
         feature_name: expected_results,
         **convert_preview_param_dict_to_feature_preview_resp(preview_params),
     }
+
+
+@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
+@pytest.mark.parametrize("cust_id", [1, 3])
+def test_vector_aggregation_operations_fails_for_vectors_of_different_lengths(
+    event_table_with_array_column, cust_id
+):
+    """
+    Test vector aggregation operations
+    """
+    event_view = event_table_with_array_column.get_view()
+    feature_name = "vector_agg"
+    feature = event_view.groupby("CUST_ID").aggregate_over(
+        value_column=VECTOR_VALUE_DIFF_LENGTH_COL,
+        method=AggFunc.MAX,
+        windows=["1d"],
+        feature_names=[feature_name],
+        skip_fill_na=True,
+    )[feature_name]
+
+    preview_params = {"POINT_IN_TIME": "2022-06-06 00:58:00", "cust_id": f"{cust_id}"}
+    with pytest.raises(RecordRetrievalException):
+        feature.preview(pd.DataFrame([preview_params]))

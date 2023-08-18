@@ -144,7 +144,13 @@ public abstract class BaseVectorAggregate extends AbstractGenericUDAFResolver {
       }
 
       // If not, compare the two lists, and update to the max value.
-      assert (container.size() == myList.size());
+      if (container.size() != myList.size()) {
+        throw new RuntimeException(
+            "The two lists are of different sizes. ListA: "
+                + container.size()
+                + ", ListB: "
+                + myList.size());
+      }
       doMerge(container, myList);
     }
 

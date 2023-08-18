@@ -38,10 +38,9 @@ public abstract class BaseVectorAggregateListTest {
     eval1.iterate(buffer1, new Object[] {Arrays.asList(1d, 2d, 3d)});
     try {
       eval1.iterate(buffer1, new Object[] {Arrays.asList(4d, 5d, 6d, 7d)});
-      throw new RuntimeException(
-          "iterate should throw an assertion error as the size of the array passed in is "
-              + "different");
-    } catch (AssertionError ignored) {
+      fail(
+          "iterate should throw an assertion error as the size of the array passed in is different");
+    } catch (RuntimeException ignored) {
     }
   }
 
