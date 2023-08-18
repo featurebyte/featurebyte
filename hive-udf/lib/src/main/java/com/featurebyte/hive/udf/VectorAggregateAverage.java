@@ -156,7 +156,7 @@ public class VectorAggregateAverage extends AbstractGenericUDAFResolver {
       // Cast current aggregation buffer, and partial value.
       VectorAvgAggregationBuffer myagg = (VectorAvgAggregationBuffer) agg;
       List<Object> myList = (List<Object>) partial;
-      Integer count = (Integer) parameters[1];
+      Long count = (Long) parameters[1];
 
       doIterate(myagg, myList, count.longValue());
     }

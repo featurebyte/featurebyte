@@ -324,6 +324,23 @@ class VectorAvgAggregator(OrderIndependentAggregator):
         return f"VECTOR_AGGREGATE_AVG(sum_list_value_{agg_id}, count_value_{agg_id})"
 
 
+class VectorSumAggregator(OrderIndependentAggregator):
+    """Aggregator the sum of a vector"""
+
+    def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
+        assert col is not None
+        sum_expression = expressions.Anonymous(
+            this="VECTOR_AGGREGATE_SUM", expressions=[quoted_identifier(col.name)]
+        )
+        return [
+            self.construct_array_tile_spec(sum_expression, f"sum_list_value_{agg_id}"),
+        ]
+
+    @staticmethod
+    def merge(agg_id: str) -> str:
+        return f"VECTOR_AGGREGATE_SUM(sum_list_value_{agg_id})"
+
+
 class LatestValueAggregator(OrderDependentAggregator):
     """Aggregator that computes the latest value"""
 
@@ -365,6 +382,7 @@ def get_aggregator(
         vector_aggregator_mapping: dict[AggFunc, type[TilingAggregator]] = {
             AggFunc.MAX: VectorMaxAggregator,
             AggFunc.AVG: VectorAvgAggregator,
+            AggFunc.SUM: VectorSumAggregator,
         }
         return vector_aggregator_mapping[agg_name](adapter=adapter)
 

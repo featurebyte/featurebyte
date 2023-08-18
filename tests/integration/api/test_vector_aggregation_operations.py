@@ -26,7 +26,13 @@ def data_with_array_fixture():
     """
     df = pd.read_csv(os.path.join(os.path.dirname(__file__), "fixtures", "vector_data.csv"))
     # manually add the vectors on since it's easier than shoving it into a csv
-    df["VECTOR_VALUE"] = [[3, 1, 3], [1, 3, 1], [1, 5, 9], [4, 8, 6], [7, 2, 3]]
+    df["VECTOR_VALUE"] = [
+        [3.0, 1.0, 3.0],
+        [1.0, 3.0, 1.0],
+        [1.0, 5.0, 9.0],
+        [4.0, 8.0, 6.0],
+        [7.0, 2.0, 3.0],
+    ]
     df["EVENT_TIMESTAMP"] = pd.to_datetime(df["EVENT_TIMESTAMP"].astype(str))
     yield df
 
@@ -100,23 +106,32 @@ async def register_table_with_array_column(
 
 
 @pytest.mark.parametrize("source_type", ["spark"], indirect=True)
-def test_vector_aggregation_operations(event_table_with_array_column):
+@pytest.mark.parametrize(
+    "agg_func,expected_results",
+    [
+        (AggFunc.MAX, "[3.0,3.0,3.0]"),
+        (AggFunc.AVG, "[2.0,2.0,2.0]"),
+        (AggFunc.SUM, "[4.0,4.0,4.0]"),
+    ],
+)
+def test_vector_aggregation_operations(event_table_with_array_column, agg_func, expected_results):
     """
     Test vector aggregation operations
     """
     event_view = event_table_with_array_column.get_view()
+    feature_name = "vector_agg"
     feature = event_view.groupby("CUST_ID").aggregate_over(
         value_column="VECTOR_VALUE",
-        method=AggFunc.MAX,
+        method=agg_func,
         windows=["1d"],
-        feature_names=["vector_max"],
+        feature_names=[feature_name],
         skip_fill_na=True,
-    )["vector_max"]
+    )[feature_name]
 
     preview_params = {"POINT_IN_TIME": "2022-06-06 00:58:00", "cust_id": "1"}
     feature_preview = feature.preview(pd.DataFrame([preview_params]))
     assert feature_preview.shape[0] == 1
     assert feature_preview.iloc[0].to_dict() == {
-        "vector_max": "[3,3,3]",
+        feature_name: expected_results,
         **convert_preview_param_dict_to_feature_preview_resp(preview_params),
     }

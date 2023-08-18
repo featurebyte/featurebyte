@@ -76,6 +76,7 @@ class SumAggFunc(BaseAggFunc):
     _var_type_map: ClassVar[Dict[DBVarType, DBVarType]] = {
         DBVarType.INT: DBVarType.INT,
         DBVarType.FLOAT: DBVarType.FLOAT,
+        DBVarType.ARRAY: DBVarType.ARRAY,
     }
 
     def _derive_output_var_type(
@@ -91,8 +92,10 @@ class BaseNumAggFunc(BaseAggFunc):
     """BaseNumAggFunc class"""
 
     _var_type_map: ClassVar[Dict[DBVarType, DBVarType]] = {
-        var_type: DBVarType.FLOAT
-        for var_type in [DBVarType.INT, DBVarType.FLOAT, DBVarType.TIMEDELTA]
+        DBVarType.INT: DBVarType.FLOAT,
+        DBVarType.FLOAT: DBVarType.FLOAT,
+        DBVarType.TIMEDELTA: DBVarType.FLOAT,
+        DBVarType.ARRAY: DBVarType.ARRAY,
     }
 
     def _derive_output_var_type(
