@@ -312,7 +312,7 @@ class ItemTable(TableApiObject):
             timestamp_timezone_offset_column_name=timestamp_timezone_offset_column,
         )
 
-    @property
+    @property  # type: ignore
     @cachedmethod(cache=operator.attrgetter("_cache"), key=get_default_job_setting_cache_key)
     def default_feature_job_setting(self) -> Optional[FeatureJobSetting]:
         """
