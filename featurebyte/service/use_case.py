@@ -58,6 +58,8 @@ class UseCaseService(BaseDocumentService[UseCaseModel, UseCaseCreate, UseCaseUpd
         """
         data = UseCaseCreateTarget(**data.dict(), _id=data.id)
 
+        # automatically associate observation tables with the use case
+        # if they have the same context_id and target_id
         obs_table_ids = []
         async for obs_table in self.observation_table_service.list_documents_iterator(
             query_filter={"context_id": data.context_id, "request_input.target_id": data.target_id},
@@ -142,6 +144,9 @@ class UseCaseService(BaseDocumentService[UseCaseModel, UseCaseCreate, UseCaseUpd
         )
 
         # check target_id
+        if not isinstance(new_observation.request_input, TargetInput):
+            raise UseCaseInvalidDataError("observation table request_input is not TargetInput")
+
         if (
             isinstance(new_observation.request_input, TargetInput)
             and new_observation.request_input.target_id != use_case.target_id
@@ -150,7 +155,10 @@ class UseCaseService(BaseDocumentService[UseCaseModel, UseCaseCreate, UseCaseUpd
                 "Inconsistent target_id between use case and observation table"
             )
 
-        # check entity_ids
+        # check context_id (entity_ids)
+        if not new_observation.context_id:
+            raise UseCaseInvalidDataError("observation table context_id is empty")
+
         if new_observation.context_id and new_observation.context_id != use_case.context_id:
             raise UseCaseInvalidDataError(
                 "Inconsistent context_id between use case and observation table"
@@ -180,4 +188,4 @@ class UseCaseService(BaseDocumentService[UseCaseModel, UseCaseCreate, UseCaseUpd
         ):
             feature_tables.append(feature_table)
 
-        return feature_tables
+        return cast(List[BaseFeatureOrTargetTableModel], feature_tables)
