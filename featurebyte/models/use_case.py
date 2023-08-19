@@ -33,8 +33,8 @@ class UseCaseModel(FeatureByteCatalogBaseDocumentModel):
     context_id: PydanticObjectId
     target_id: PydanticObjectId
     observation_table_ids: List[PydanticObjectId] = Field(default=[])
-    default_preview_table_id: Optional[PydanticObjectId]
-    default_eda_table_id: Optional[PydanticObjectId]
+    default_preview_table_id: Optional[PydanticObjectId] = Field(default=None)
+    default_eda_table_id: Optional[PydanticObjectId] = Field(default=None)
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """

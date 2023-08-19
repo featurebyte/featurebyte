@@ -222,7 +222,7 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         test_api_client_persistent,
         create_observation_table,
     ):
-        """Test update use case"""
+        """Test update use case with error"""
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
         use_case_id = create_response_dict["_id"]
@@ -237,11 +237,11 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json()["detail"] == "observation table request_input is not TargetInput"
 
-        non_target_ob_table_id = ObjectId()
-        await create_observation_table(non_target_ob_table_id, same_target=False)
+        different_target_ob_table_id = ObjectId()
+        await create_observation_table(different_target_ob_table_id, same_target=False)
         response = test_api_client.patch(
             f"{self.base_route}/{use_case_id}",
-            json={"new_observation_table_id": str(non_target_ob_table_id)},
+            json={"new_observation_table_id": str(different_target_ob_table_id)},
         )
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert (
@@ -249,11 +249,11 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
             == "Inconsistent target_id between use case and observation table"
         )
 
-        non_target_ob_table_id = ObjectId()
-        await create_observation_table(non_target_ob_table_id, same_context=False)
+        different_context_ob_table_id = ObjectId()
+        await create_observation_table(different_context_ob_table_id, same_context=False)
         response = test_api_client.patch(
             f"{self.base_route}/{use_case_id}",
-            json={"new_observation_table_id": str(non_target_ob_table_id)},
+            json={"new_observation_table_id": str(different_context_ob_table_id)},
         )
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert (

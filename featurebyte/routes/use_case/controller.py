@@ -14,7 +14,7 @@ from featurebyte.service.use_case import UseCaseService
 
 class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, UseCaseList]):  # type: ignore[type-var]
     """
-    Context controller
+    UseCase controller
     """
 
     paginated_document_class = UseCaseList

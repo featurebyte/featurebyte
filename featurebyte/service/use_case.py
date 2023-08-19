@@ -24,7 +24,7 @@ from featurebyte.service.observation_table import ObservationTableService
 
 class UseCaseService(BaseDocumentService[UseCaseModel, UseCaseCreate, UseCaseUpdate]):
     """
-    ContextService class
+    UseCaseService class
     """
 
     document_class = UseCaseModel
