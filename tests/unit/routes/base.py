@@ -52,13 +52,13 @@ class BaseApiTestSuite:
             ],
         ),
         (
-            {"page_size": 101},
+            {"page_size": 501},
             [
                 {
                     "loc": ["query", "page_size"],
-                    "msg": "ensure this value is less than or equal to 100",
+                    "msg": "ensure this value is less than or equal to 500",
                     "type": "value_error.number.not_le",
-                    "ctx": {"limit_value": 100},
+                    "ctx": {"limit_value": 500},
                 },
             ],
         ),
