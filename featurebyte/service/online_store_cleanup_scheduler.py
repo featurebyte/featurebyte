@@ -8,7 +8,7 @@ from bson import ObjectId
 from featurebyte.logging import get_logger
 from featurebyte.models.base import User
 from featurebyte.models.periodic_task import Interval, PeriodicTask
-from featurebyte.persistent import Persistent
+from featurebyte.persistent import DuplicateDocumentError, Persistent
 from featurebyte.schema.worker.task.online_store_cleanup import OnlineStoreCleanupTaskPayload
 from featurebyte.service.task_manager import TaskManager
 
@@ -61,11 +61,17 @@ class OnlineStoreCleanupSchedulerService:
                 "Scheduling online store cleanup job",
                 extra={"online_store_table_name": online_store_table_name},
             )
-            await self.task_manager.schedule_interval_task(
-                name=self._get_job_id(online_store_table_name),
-                payload=payload,
-                interval=Interval(every=CLEANUP_INTERVAL_SECONDS, period="seconds"),
-            )
+            try:
+                await self.task_manager.schedule_interval_task(
+                    name=self._get_job_id(online_store_table_name),
+                    payload=payload,
+                    interval=Interval(every=CLEANUP_INTERVAL_SECONDS, period="seconds"),
+                )
+            except DuplicateDocumentError:
+                logger.warning(
+                    "Duplicated online store cleanup task",
+                    extra={"task_name": self._get_job_id(online_store_table_name)},
+                )
         else:
             logger.debug(
                 "Online store cleanup job already exists",
