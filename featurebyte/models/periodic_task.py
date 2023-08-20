@@ -7,6 +7,7 @@ from datetime import datetime
 
 import pymongo
 from pydantic import BaseModel, Field
+from pymongo.operations import IndexModel
 
 from featurebyte.models.base import (
     FeatureByteCatalogBaseDocumentModel,
@@ -91,8 +92,12 @@ class PeriodicTask(FeatureByteCatalogBaseDocumentModel):
             ),
         ]
 
-        indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
-            pymongo.operations.IndexModel("task"),
+        # NOTE: Index on name is created by scheduler package, DO NOT INCLUDE HERE
+        indexes = [
+            IndexModel("user_id"),
+            IndexModel("created_at"),
+            IndexModel("updated_at"),
+            IndexModel("task"),
             [
                 ("name", pymongo.TEXT),
                 ("description", pymongo.TEXT),
