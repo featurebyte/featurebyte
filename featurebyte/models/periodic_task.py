@@ -97,6 +97,7 @@ class PeriodicTask(FeatureByteCatalogBaseDocumentModel):
             IndexModel("user_id"),
             IndexModel("created_at"),
             IndexModel("updated_at"),
+            IndexModel("catalog_id"),
             IndexModel("task"),
             [
                 ("name", pymongo.TEXT),
