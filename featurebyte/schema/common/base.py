@@ -49,7 +49,7 @@ class PaginationMixin(FeatureByteBaseModel):
     """
 
     page: int = Field(default=1, gt=0)
-    page_size: int = Field(default=10, gt=0, le=100)
+    page_size: int = Field(default=10, gt=0, le=500)
     total: int
     data: List[Any]
 
