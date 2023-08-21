@@ -47,7 +47,7 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 360
     strategy:
       matrix:
         python-version:
