@@ -83,6 +83,15 @@ def event_data_with_array_fixture():
     yield _update_df(df, "EVENT_TIMESTAMP")
 
 
+@pytest.fixture(name="scd_data_with_array", scope="session")
+def scd_data_with_array_fixture():
+    """
+    Simulated data with an array column
+    """
+    df = pd.read_csv(os.path.join(os.path.dirname(__file__), "fixtures", "vector_data_scd.csv"))
+    yield _update_df(df, "EVENT_TIMESTAMP")
+
+
 def get_expected_dataframe(
     input_vector_data: pd.DataFrame,
     groupby_columns: List[str],
@@ -111,12 +120,12 @@ def get_expected_dataframe(
 
 @pytest_asyncio.fixture(name="event_table_with_array_column", scope="session")
 async def register_table_with_array_column(
-    event_data_with_array, session, data_source, catalog, user_entity, customer_entity, order_entity
+    event_data_with_array, session, data_source, catalog, user_entity, order_entity
 ):
     """
     Register a table with an array column
     """
-    _ = catalog, user_entity, customer_entity, order_entity
+    _ = catalog, user_entity, order_entity
     table_name = "event_table_with_vector"
     await session.register_table(table_name, event_data_with_array, temporary=False)
 
@@ -135,7 +144,7 @@ async def register_table_with_array_column(
             blind_spot="30m", frequency="1h", time_modulo_frequency="30m"
         )
     )
-    event_table["CUST_ID"].as_entity("Customer")
+    event_table["USER_ID"].as_entity("User")
     event_table["ORDER_ID"].as_entity("Order")
     return event_table
 
@@ -162,10 +171,34 @@ async def register_item_table_with_array_column(
         item_id_column="ITEM_ID",
         event_table_name=event_table_with_array_column.name,
     )
-    item_table["CUST_ID_ITEM"].as_entity("Customer")
     item_table["ITEM_ID"].as_entity("Item")
     item_table["ORDER_ID"].as_entity("Order")
     return item_table
+
+
+@pytest_asyncio.fixture(name="scd_table_with_array_column", scope="session")
+async def register_scd_table_with_array_column(
+    scd_data_with_array, session, data_source, catalog, user_entity
+):
+    """
+    Register a table with an array column
+    """
+    _ = user_entity
+    table_name = "scd_table_with_vector"
+    await session.register_table(table_name, scd_data_with_array, temporary=False)
+
+    database_table = data_source.get_source_table(
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+        table_name=table_name,
+    )
+    scd_table = database_table.create_scd_table(
+        name=table_name,
+        natural_key_column="ITEM_ID",
+        effective_timestamp_column="EVENT_TIMESTAMP",
+    )
+    scd_table["USER_ID"].as_entity("User")
+    return scd_table
 
 
 TEST_CASES = [
@@ -194,7 +227,7 @@ def test_vector_aggregation_operations__aggregate_over(
     """
     event_view = event_table_with_array_column.get_view()
     feature_name = "vector_agg"
-    feature = event_view.groupby("CUST_ID").aggregate_over(
+    feature = event_view.groupby("USER_ID").aggregate_over(
         value_column=vector_value_column,
         method=agg_func,
         windows=["1d"],
@@ -202,7 +235,7 @@ def test_vector_aggregation_operations__aggregate_over(
         skip_fill_na=True,
     )[feature_name]
 
-    preview_params = {"POINT_IN_TIME": "2022-06-06 00:58:00", "cust_id": "1"}
+    preview_params = {"POINT_IN_TIME": "2022-06-06 00:58:00", "üser id": "2"}
     feature_preview = feature.preview(pd.DataFrame([preview_params]))
     assert feature_preview.shape[0] == 1
     assert feature_preview.iloc[0].to_dict() == {
@@ -241,16 +274,45 @@ def test_vector_aggregation_operations__aggregate(
 
 
 @pytest.mark.parametrize("source_type", ["spark"], indirect=True)
-@pytest.mark.parametrize("cust_id", [1, 3])
+@pytest.mark.parametrize(
+    "agg_func,expected_results,vector_value_column",
+    TEST_CASES,
+)
+def test_vector_aggregation_operations__aggregate_asat(
+    scd_table_with_array_column, agg_func, expected_results, vector_value_column
+):
+    """
+    Test vector aggregation operations
+    """
+    item_view = scd_table_with_array_column.get_view()
+    feature_name = "vector_agg"
+    feature = item_view.groupby("USER_ID").aggregate_asat(
+        value_column=vector_value_column,
+        method=agg_func,
+        feature_name=feature_name,
+        skip_fill_na=True,
+    )
+
+    preview_params = {"POINT_IN_TIME": "2022-06-06 00:58:00", "üser id": "2"}
+    feature_preview = feature.preview(pd.DataFrame([preview_params]))
+    assert feature_preview.shape[0] == 1
+    assert feature_preview.iloc[0].to_dict() == {
+        feature_name: expected_results,
+        **convert_preview_param_dict_to_feature_preview_resp(preview_params),
+    }
+
+
+@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
+@pytest.mark.parametrize("user_id", [2, 4])
 def test_vector_aggregation_operations_fails_for_vectors_of_different_lengths(
-    event_table_with_array_column, cust_id
+    event_table_with_array_column, user_id
 ):
     """
     Test vector aggregation operations fails for vectors of different lengths
     """
     event_view = event_table_with_array_column.get_view()
     feature_name = "vector_agg"
-    feature = event_view.groupby("CUST_ID").aggregate_over(
+    feature = event_view.groupby("USER_ID").aggregate_over(
         value_column=VECTOR_VALUE_DIFF_LENGTH_COL,
         method=AggFunc.MAX,
         windows=["1d"],
@@ -258,6 +320,6 @@ def test_vector_aggregation_operations_fails_for_vectors_of_different_lengths(
         skip_fill_na=True,
     )[feature_name]
 
-    preview_params = {"POINT_IN_TIME": "2022-06-06 00:58:00", "cust_id": f"{cust_id}"}
+    preview_params = {"POINT_IN_TIME": "2022-06-06 00:58:00", "üser id": f"{user_id}"}
     with pytest.raises(RecordRetrievalException):
         feature.preview(pd.DataFrame([preview_params]))
