@@ -37,6 +37,7 @@ import featurebyte.routes.target_namespace.api as target_namespace_api
 import featurebyte.routes.target_table.api as target_table_api
 import featurebyte.routes.task.api as task_api
 import featurebyte.routes.temp_data.api as temp_data_api
+import featurebyte.routes.use_case.api as use_case_api
 import featurebyte.routes.user_defined_function.api as user_defined_function_api
 from featurebyte.common.utils import get_version
 from featurebyte.logging import get_logger
@@ -176,6 +177,7 @@ def get_app() -> FastAPI:
         periodic_tasks_api,
         user_defined_function_api,
         target_table_api,
+        use_case_api,
     ]
     dependencies = _get_api_deps_with_catalog()
     for resource_api in resource_apis:

@@ -50,6 +50,7 @@ from featurebyte.routes.target_namespace.controller import TargetNamespaceContro
 from featurebyte.routes.target_table.controller import TargetTableController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.routes.temp_data.controller import TempDataController
+from featurebyte.routes.use_case.controller import UseCaseController
 from featurebyte.routes.user_defined_function.controller import UserDefinedFunctionController
 from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.batch_request_table import BatchRequestTableService
@@ -115,6 +116,7 @@ from featurebyte.service.tile_job_log import TileJobLogService
 from featurebyte.service.tile_manager import TileManagerService
 from featurebyte.service.tile_registry_service import TileRegistryService
 from featurebyte.service.tile_scheduler import TileSchedulerService
+from featurebyte.service.use_case import UseCaseService
 from featurebyte.service.user_defined_function import UserDefinedFunctionService
 from featurebyte.service.user_service import UserService
 from featurebyte.service.validator.materialized_table_delete import ObservationTableDeleteValidator
@@ -267,6 +269,8 @@ app_container_config.register_class(VersionService)
 app_container_config.register_class(ViewConstructionService)
 app_container_config.register_class(WorkingSchemaService)
 
+app_container_config.register_class(UseCaseService)
+app_container_config.register_class(UseCaseController)
 
 # These have force_no_deps set as True, as they are manually initialized.
 app_container_config.register_class(Celery, force_no_deps=True)
