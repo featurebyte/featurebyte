@@ -119,7 +119,7 @@ async def register_table_with_array_column(
     )
     event_table = database_table.create_event_table(
         name=table_name,
-        event_id_column="EVENT_ID",
+        event_id_column="ORDER_ID",
         event_timestamp_column="EVENT_TIMESTAMP",
     )
     event_table.update_default_feature_job_setting(
@@ -129,7 +129,7 @@ async def register_table_with_array_column(
     )
     event_table["USER_ID"].as_entity("User")
     event_table["CUST_ID"].as_entity("Customer")
-    event_table["EVENT_ID"].as_entity("Order")
+    event_table["ORDER_ID"].as_entity("Order")
     return event_table
 
 
@@ -151,19 +151,14 @@ async def register_item_table_with_array_column(
     )
     item_table = database_table.create_item_table(
         name=table_name,
-        event_id_column="EVENT_ID",
+        event_id_column="ORDER_ID",
         item_id_column="ITEM_ID",
         event_table_name=event_table_with_array_column.name,
     )
-    # event_table.update_default_feature_job_setting(
-    #     feature_job_setting=FeatureJobSetting(
-    #         blind_spot="30m", frequency="1h", time_modulo_frequency="30m"
-    #     )
-    # )
     item_table["USER_ID_ITEM"].as_entity("User")
     item_table["CUST_ID_ITEM"].as_entity("Customer")
     item_table["ITEM_ID"].as_entity("Item")
-    item_table["EVENT_ID"].as_entity("Order")
+    item_table["ORDER_ID"].as_entity("Order")
     return item_table
 
 
@@ -220,14 +215,14 @@ def test_vector_aggregation_operations__aggregate(
     """
     item_view = item_table_with_array_column.get_view()
     feature_name = "vector_agg"
-    feature = item_view.groupby("EVENT_ID").aggregate(
+    feature = item_view.groupby("ORDER_ID").aggregate(
         value_column=vector_value_column,
         method=agg_func,
         feature_name=feature_name,
         skip_fill_na=True,
     )
 
-    preview_params = {"POINT_IN_TIME": "2022-06-06 00:58:00", "order_id": "1"}
+    preview_params = {"POINT_IN_TIME": "2022-06-06 00:58:00", "order_id": "1000"}
     feature_preview = feature.preview(pd.DataFrame([preview_params]))
     assert feature_preview.shape[0] == 1
     assert feature_preview.iloc[0].to_dict() == {

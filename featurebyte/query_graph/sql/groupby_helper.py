@@ -83,6 +83,7 @@ def get_aggregation_expression(
     array_parent_agg_func_sql_mapping = {
         AggFunc.MAX: "VECTOR_AGGREGATE_MAX",
         AggFunc.AVG: "VECTOR_AGGREGATE_SIMPLE_AVERAGE",
+        AggFunc.SUM: "VECTOR_AGGREGATE_SUM",
     }
     expr: Expression
     if agg_func in agg_func_sql_mapping:

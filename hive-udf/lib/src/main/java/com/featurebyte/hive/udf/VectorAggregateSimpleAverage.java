@@ -110,7 +110,7 @@ public class VectorAggregateSimpleAverage extends BaseVectorAggregate {
         doubleList[i + 1] = currentSum;
       }
 
-      return doubleList;
+      return Arrays.asList(doubleList);
     }
 
     @Override
@@ -122,13 +122,13 @@ public class VectorAggregateSimpleAverage extends BaseVectorAggregate {
 
       // Cast current aggregation buffer, and partial value.
       AverageAggregationBuffer myagg = (AverageAggregationBuffer) agg;
-      Double[] myList = (Double[]) partial;
+      List<Double> myList = (List<Double>) partial;
 
       // Get count from partial value
-      Double partialCount = myList[0];
+      Double partialCount = myList.get(0);
       long longPartialCount = partialCount.longValue();
 
-      List<Object> sumList = new ArrayList<>(Arrays.asList(myList).subList(1, myList.length));
+      List<Object> sumList = new ArrayList<>(myList.subList(1, myList.size()));
 
       doIterate(myagg, sumList, longPartialCount);
     }
