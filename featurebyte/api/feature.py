@@ -483,7 +483,7 @@ class Feature(
     @property
     def online_enabled(self) -> bool:
         """
-        Whether this feature is oneline-enabled or not, an online-enabled feature is a feature used by at least
+        Whether this feature is online-enabled. An online-enabled feature is a feature that is used by at least
         one deployed feature list.
 
         Returns
