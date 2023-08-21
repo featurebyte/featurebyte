@@ -3,11 +3,15 @@ ItemTable class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, List, Literal, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, ClassVar, List, Literal, Optional, Type, Union, cast
+
+import operator
 
 from bson import ObjectId
+from cachetools import cachedmethod
 from pydantic import Field, StrictStr, root_validator
 
+from featurebyte.api.api_object import ApiObjectT, get_api_object_cache_key
 from featurebyte.api.base_table import TableApiObject
 from featurebyte.api.event_table import EventTable
 from featurebyte.common.doc_util import FBAutoDoc
@@ -15,7 +19,7 @@ from featurebyte.common.join_utils import append_rsuffix_to_columns
 from featurebyte.common.validator import construct_data_model_root_validator
 from featurebyte.enum import DBVarType, TableDataType, ViewMode
 from featurebyte.exception import RecordRetrievalException
-from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.base import FeatureByteBaseDocumentModel, PydanticObjectId
 from featurebyte.models.item_table import ItemTableModel
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
@@ -27,6 +31,28 @@ from featurebyte.schema.item_table import ItemTableCreate, ItemTableUpdate
 
 if TYPE_CHECKING:
     from featurebyte.api.item_view import ItemView
+
+
+def get_default_job_setting_cache_key(
+    obj: Union[ApiObjectT, FeatureByteBaseDocumentModel], *args: Any, **kwargs: Any
+) -> Any:
+    """
+    Construct cache key for a given document model object
+
+    Parameters
+    ----------
+    obj: Union[ApiObjectT, FeatureByteBaseDocumentModel]
+        Api object or document model object
+    args: Any
+        Additional positional arguments
+    kwargs: Any
+        Additional keywords arguments
+
+    Returns
+    -------
+    Any
+    """
+    return get_api_object_cache_key(obj, *args, attribute="default_job_setting", **kwargs)
 
 
 class ItemTable(TableApiObject):
@@ -72,19 +98,6 @@ class ItemTable(TableApiObject):
     event_table_id: PydanticObjectId = Field(
         allow_mutation=False,
         description="Returns the ID of the event table that " "is associated with the item table.",
-    )
-    default_feature_job_setting: Optional[FeatureJobSetting] = Field(
-        exclude=True,
-        allow_mutation=False,
-        description="Returns the default feature job setting for the table.\n\n"
-        "The Default Feature Job Setting establishes the default "
-        "setting used by features that aggregate data in the table, "
-        "ensuring consistency of the Feature Job Setting across "
-        "features created by different team members. While it's "
-        "possible to override the setting during feature declaration, "
-        "using the Default Feature Job Setting simplifies the "
-        "process of setting up the Feature Job Setting for each "
-        "feature.",
     )
 
     # pydantic instance variable (internal use)
@@ -299,21 +312,28 @@ class ItemTable(TableApiObject):
             timestamp_timezone_offset_column_name=timestamp_timezone_offset_column,
         )
 
-    @root_validator(pre=True)
-    @classmethod
-    def _set_default_feature_job_setting(cls, values: dict[str, Any]) -> dict[str, Any]:
-        if "event_table_id" in values:
-            event_table_id = values["event_table_id"]
-            try:
-                default_feature_job_setting = EventTable.get_by_id(
-                    event_table_id
-                ).default_feature_job_setting
-            except RecordRetrievalException:
-                # Typically this shouldn't happen since event_table_id should be available if the
-                # ItemTable was instantiated correctly. Currently, this occurs only in tests.
-                return values
-            values["default_feature_job_setting"] = default_feature_job_setting
-        return values
+    @property  # type: ignore
+    @cachedmethod(cache=operator.attrgetter("_cache"), key=get_default_job_setting_cache_key)
+    def default_feature_job_setting(self) -> Optional[FeatureJobSetting]:
+        """
+        Returns the default feature job setting for the table.
+
+        The Default Feature Job Setting establishes the default setting used by features that
+        aggregate data in the table, ensuring consistency of the Feature Job Setting across
+        features created by different team members. While it's possible to override the setting
+        during feature declaration, using the Default Feature Job Setting simplifies the process
+        of setting up the Feature Job Setting for each feature.
+
+        Returns
+        -------
+        Optional[FeatureJobSetting]
+        """
+        try:
+            return EventTable.get_by_id(self.event_table_id).default_feature_job_setting
+        except RecordRetrievalException:
+            # Typically this shouldn't happen since event_table_id should be available if the
+            # ItemTable was instantiated correctly. Currently, this occurs only in tests.
+            return None
 
     @property
     def event_id_column(self) -> str:

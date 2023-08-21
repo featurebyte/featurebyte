@@ -3,7 +3,7 @@ HistoricalFeatureTable API payload schema
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from pydantic import root_validator
 
@@ -37,7 +37,7 @@ class HistoricalFeatureTableListRecord(BaseMaterializedTableListRecord):
     """
 
     feature_store_id: PydanticObjectId
-    observation_table_id: PydanticObjectId
+    observation_table_id: Optional[PydanticObjectId]
 
     @root_validator(pre=True)
     @classmethod
