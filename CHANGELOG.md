@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.4.3 (2023-08-21)
+
+### 🐛 Bug Fixes
+
++ `service` Fix feature materialization error due to ambiguous internal column names
++ `service` Fix error when generating info for features in some edge cases
++ `api` Fix item table default job settings not synchronized when job settings are updated in the event table, fix historical feature table listing failure
+
 ## v0.4.2 (2023-08-07)
 
 ### 🛑 Breaking Changes
