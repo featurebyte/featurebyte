@@ -4,7 +4,6 @@ import static org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector.Cate
 
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
@@ -14,9 +13,9 @@ import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFParameterInfo;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.StandardListObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 
-@Description(name = "vector_aggregate_sum", value = "_FUNC_(x) - Aggregate vectors by summing them")
 @SuppressWarnings("deprecation")
 public abstract class BaseVectorAggregate extends AbstractGenericUDAFResolver {
 
@@ -88,10 +87,9 @@ public abstract class BaseVectorAggregate extends AbstractGenericUDAFResolver {
     public ObjectInspector init(Mode m, ObjectInspector[] parameters) throws HiveException {
       super.init(m, parameters);
       assert (parameters.length == 1);
-      ObjectInspector inputListOI = parameters[0];
-      StandardListObjectInspector internalValueOI = (StandardListObjectInspector) inputListOI;
-      ObjectInspector inputValueOI = internalValueOI.getListElementObjectInspector();
-      return ObjectInspectorFactory.getStandardListObjectInspector(inputValueOI);
+      // We always return doubles regardless of input type to simplify the logic here.
+      return ObjectInspectorFactory.getStandardListObjectInspector(
+          PrimitiveObjectInspectorFactory.javaDoubleObjectInspector);
     }
 
     @Override

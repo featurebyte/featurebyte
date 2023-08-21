@@ -21,6 +21,7 @@ from tests.integration.api.feature_preview_utils import (
 
 VECTOR_VALUE_FLOAT_COL = "VECTOR_VALUE_FLOAT"
 VECTOR_VALUE_INT_COL = "VECTOR_VALUE_INT"
+VECTOR_VALUE_MIXED_COL = "VECTOR_VALUE_MIXED"
 VECTOR_VALUE_DIFF_LENGTH_COL = "VECTOR_VALUE_DIFFERENT_LENGTH"
 
 
@@ -42,6 +43,13 @@ def _update_df(df: pd.DataFrame, event_timestamp_col: str) -> pd.DataFrame:
         [1, 3, 1],
         [1, 5, 9],
         [4, 8, 6],
+        [7, 2, 3],
+    ]
+    df[VECTOR_VALUE_MIXED_COL] = [
+        [3, 1.0, 3],
+        [1.0, 3, 1],
+        [1, 5, 9.0],
+        [4.0, 8.0, 6],
         [7, 2, 3],
     ]
     df[VECTOR_VALUE_DIFF_LENGTH_COL] = [
@@ -166,6 +174,9 @@ TEST_CASES = [
     (AggFunc.MAX, "[3.0,3.0,3.0]", VECTOR_VALUE_FLOAT_COL),
     (AggFunc.AVG, "[2.0,2.0,2.0]", VECTOR_VALUE_FLOAT_COL),
     (AggFunc.SUM, "[4.0,4.0,4.0]", VECTOR_VALUE_FLOAT_COL),
+    (AggFunc.MAX, "[3.0,3.0,3.0]", VECTOR_VALUE_MIXED_COL),
+    (AggFunc.AVG, "[2.0,2.0,2.0]", VECTOR_VALUE_MIXED_COL),
+    (AggFunc.SUM, "[4.0,4.0,4.0]", VECTOR_VALUE_MIXED_COL),
     (AggFunc.MAX, "[3.0,3.0,3.0]", VECTOR_VALUE_INT_COL),
     (AggFunc.AVG, "[2.0,2.0,2.0]", VECTOR_VALUE_INT_COL),
     (AggFunc.SUM, "[4.0,4.0,4.0]", VECTOR_VALUE_INT_COL),

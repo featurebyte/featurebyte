@@ -45,14 +45,19 @@ public abstract class BaseVectorAggregateListTest {
     }
   }
 
-  public void vectorAggregateTestHelper(ObjectInspector listElementOI, List<Object> evalOneItems, List<Object> evalTwoItems, List<Double> expectedResults) throws HiveException {
+  public void vectorAggregateTestHelper(
+      ObjectInspector listElementOI,
+      List<Object> evalOneItems,
+      List<Object> evalTwoItems,
+      List<Double> expectedResults)
+      throws HiveException {
     ObjectInspector[] listOI =
-            new ObjectInspector[] {
-                    ObjectInspectorFactory.getStandardListObjectInspector(listElementOI),
-            };
+        new ObjectInspector[] {
+          ObjectInspectorFactory.getStandardListObjectInspector(listElementOI),
+        };
     BaseVectorAggregate udaf = getAggregator();
     SimpleGenericUDAFParameterInfo info =
-            new SimpleGenericUDAFParameterInfo(listOI, false, false, false);
+        new SimpleGenericUDAFParameterInfo(listOI, false, false, false);
     GenericUDAFEvaluator eval1 = udaf.getEvaluator(info);
     GenericUDAFEvaluator eval2 = udaf.getEvaluator(info);
 
@@ -60,13 +65,13 @@ public abstract class BaseVectorAggregateListTest {
     eval2.init(GenericUDAFEvaluator.Mode.PARTIAL1, listOI);
 
     GenericUDAFEvaluator.AggregationBuffer buffer1 = eval1.getNewAggregationBuffer();
-    for (Object item: evalOneItems) {
+    for (Object item : evalOneItems) {
       eval1.iterate(buffer1, new Object[] {item});
     }
     Object object1 = eval1.terminatePartial(buffer1);
 
     GenericUDAFEvaluator.AggregationBuffer buffer2 = eval2.getNewAggregationBuffer();
-    for (Object item: evalTwoItems) {
+    for (Object item : evalTwoItems) {
       eval2.iterate(buffer2, new Object[] {item});
     }
     Object object2 = eval2.terminatePartial(buffer2);
@@ -93,7 +98,11 @@ public abstract class BaseVectorAggregateListTest {
     evalTwoList.add(Arrays.asList(14d, 15d, 16d));
     evalTwoList.add(Arrays.asList(100d, 101d, 102d));
 
-    vectorAggregateTestHelper(PrimitiveObjectInspectorFactory.javaDoubleObjectInspector, evalOneList, evalTwoList, getResults());
+    vectorAggregateTestHelper(
+        PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+        evalOneList,
+        evalTwoList,
+        getResults());
   }
 
   @Test
@@ -109,7 +118,11 @@ public abstract class BaseVectorAggregateListTest {
     evalTwoList.add(Arrays.asList(14L, 15L, 16L));
     evalTwoList.add(Arrays.asList(100L, 101L, 102L));
 
-    vectorAggregateTestHelper(PrimitiveObjectInspectorFactory.javaLongObjectInspector, evalOneList, evalTwoList, getResults());
+    vectorAggregateTestHelper(
+        PrimitiveObjectInspectorFactory.javaLongObjectInspector,
+        evalOneList,
+        evalTwoList,
+        getResults());
   }
 
   @Test
@@ -125,6 +138,10 @@ public abstract class BaseVectorAggregateListTest {
     evalTwoList.add(Arrays.asList(14, 15, 16));
     evalTwoList.add(Arrays.asList(100, 101, 102));
 
-    vectorAggregateTestHelper(PrimitiveObjectInspectorFactory.javaIntObjectInspector, evalOneList, evalTwoList, getResults());
+    vectorAggregateTestHelper(
+        PrimitiveObjectInspectorFactory.javaIntObjectInspector,
+        evalOneList,
+        evalTwoList,
+        getResults());
   }
 }

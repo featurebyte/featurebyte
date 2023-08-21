@@ -31,11 +31,10 @@ public class VectorAggregateSimpleAverage extends BaseVectorAggregate {
   }
 
   protected GenericUDAFEvaluator getEvaluator() {
-    return new VectorAggregateSimpleAverageFloatEvaluator();
+    return new VectorAggregateSimpleAverageEvaluator();
   }
 
-  public static class BaseVectorAggregateSimpleAverageEvaluator
-      extends VectorAggregateListEvaluator {
+  public static class VectorAggregateSimpleAverageEvaluator extends VectorAggregateListEvaluator {
 
     @Override
     public AggregationBuffer getNewAggregationBuffer() {
@@ -146,45 +145,6 @@ public class VectorAggregateSimpleAverage extends BaseVectorAggregate {
 
       // Return list of averages
       return Arrays.asList(doubleAverageList);
-    }
-  }
-
-  public static class VectorAggregateSimpleAverageFloatEvaluator
-      extends BaseVectorAggregateSimpleAverageEvaluator {
-
-    public VectorAggregateSimpleAverageFloatEvaluator() {}
-
-    protected void doIterate(AverageAggregationBuffer myagg, List<Object> myList, long count) {
-      List<Double> container = myagg.sumList;
-
-      // If there's no current value in the buffer, just set the partial value into the buffer.
-      if (container == null || container.isEmpty()) {
-        List<Double> convertedList = new ArrayList<>();
-        for (Object currentValue : myList) {
-          convertedList.add(Double.valueOf(currentValue.toString()));
-        }
-        myagg.count = count;
-        myagg.sumList = convertedList;
-        return;
-      }
-
-      // If not, compare the two lists, and update to the max value.
-      if (container.size() != myList.size()) {
-        throw new RuntimeException(
-            "The two lists are of different sizes. ListA: "
-                + container.size()
-                + ", ListB: "
-                + myList.size());
-      }
-
-      // Increase count
-      myagg.count = myagg.count + count;
-      // Add sum's on from the partial to the buffer.
-      for (int i = 0; i < container.size(); i++) {
-        Double containerCurrentValue = container.get(i);
-        Double inputCurrentValue = Double.valueOf(myList.get(i).toString());
-        myagg.sumList.set(i, containerCurrentValue + inputCurrentValue);
-      }
     }
   }
 }
