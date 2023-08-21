@@ -18,6 +18,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from alive_progress import alive_bar
 from dateutil import parser
+from pandas.core.dtypes.inference import is_list_like
 from requests import Response
 
 from featurebyte.common.env_util import get_alive_bar_additional_params
@@ -208,7 +209,8 @@ def dataframe_to_json(
         prepare_dataframe_for_json(dataframe)
 
     # convert infinity values to string as these gets converted to null
-    dataframe = dataframe.replace({np.inf: "inf", -np.inf: "-inf"})
+    numeric_cols = dataframe.select_dtypes(include=[np.number]).columns
+    dataframe[numeric_cols] = dataframe[numeric_cols].replace({np.inf: "inf", -np.inf: "-inf"})
 
     return {
         "data": dataframe.to_json(orient="table", date_unit="ns", double_precision=15),

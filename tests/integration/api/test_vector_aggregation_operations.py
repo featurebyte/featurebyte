@@ -135,7 +135,6 @@ async def register_table_with_array_column(
             blind_spot="30m", frequency="1h", time_modulo_frequency="30m"
         )
     )
-    event_table["USER_ID"].as_entity("User")
     event_table["CUST_ID"].as_entity("Customer")
     event_table["ORDER_ID"].as_entity("Order")
     return event_table
@@ -163,7 +162,6 @@ async def register_item_table_with_array_column(
         item_id_column="ITEM_ID",
         event_table_name=event_table_with_array_column.name,
     )
-    item_table["USER_ID_ITEM"].as_entity("User")
     item_table["CUST_ID_ITEM"].as_entity("Customer")
     item_table["ITEM_ID"].as_entity("Item")
     item_table["ORDER_ID"].as_entity("Order")
@@ -171,15 +169,15 @@ async def register_item_table_with_array_column(
 
 
 TEST_CASES = [
-    (AggFunc.MAX, "[3.0,3.0,3.0]", VECTOR_VALUE_FLOAT_COL),
-    (AggFunc.AVG, "[2.0,2.0,2.0]", VECTOR_VALUE_FLOAT_COL),
-    (AggFunc.SUM, "[4.0,4.0,4.0]", VECTOR_VALUE_FLOAT_COL),
-    (AggFunc.MAX, "[3.0,3.0,3.0]", VECTOR_VALUE_MIXED_COL),
-    (AggFunc.AVG, "[2.0,2.0,2.0]", VECTOR_VALUE_MIXED_COL),
-    (AggFunc.SUM, "[4.0,4.0,4.0]", VECTOR_VALUE_MIXED_COL),
-    (AggFunc.MAX, "[3.0,3.0,3.0]", VECTOR_VALUE_INT_COL),
-    (AggFunc.AVG, "[2.0,2.0,2.0]", VECTOR_VALUE_INT_COL),
-    (AggFunc.SUM, "[4.0,4.0,4.0]", VECTOR_VALUE_INT_COL),
+    (AggFunc.MAX, [3.0, 3.0, 3.0], VECTOR_VALUE_FLOAT_COL),
+    (AggFunc.AVG, [2.0, 2.0, 2.0], VECTOR_VALUE_FLOAT_COL),
+    (AggFunc.SUM, [4.0, 4.0, 4.0], VECTOR_VALUE_FLOAT_COL),
+    (AggFunc.MAX, [3.0, 3.0, 3.0], VECTOR_VALUE_MIXED_COL),
+    (AggFunc.AVG, [2.0, 2.0, 2.0], VECTOR_VALUE_MIXED_COL),
+    (AggFunc.SUM, [4.0, 4.0, 4.0], VECTOR_VALUE_MIXED_COL),
+    (AggFunc.MAX, [3.0, 3.0, 3.0], VECTOR_VALUE_INT_COL),
+    (AggFunc.AVG, [2.0, 2.0, 2.0], VECTOR_VALUE_INT_COL),
+    (AggFunc.SUM, [4.0, 4.0, 4.0], VECTOR_VALUE_INT_COL),
 ]
 
 
