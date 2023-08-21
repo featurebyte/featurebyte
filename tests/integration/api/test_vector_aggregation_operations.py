@@ -63,7 +63,7 @@ def _update_df(df: pd.DataFrame, event_timestamp_col: str) -> pd.DataFrame:
     return df
 
 
-@pytest.fixture(name="item_data_with_array", scope="session")
+@pytest.fixture(name="item_data_with_array", scope="module")
 def item_data_with_array_fixture():
     """
     Simulated data with an array column
@@ -74,7 +74,7 @@ def item_data_with_array_fixture():
     yield _update_df(df, "EVENT_TIMESTAMP_ITEM")
 
 
-@pytest.fixture(name="event_data_with_array", scope="session")
+@pytest.fixture(name="event_data_with_array", scope="module")
 def event_data_with_array_fixture():
     """
     Simulated data with an array column
@@ -83,7 +83,7 @@ def event_data_with_array_fixture():
     yield _update_df(df, "EVENT_TIMESTAMP")
 
 
-@pytest.fixture(name="scd_data_with_array", scope="session")
+@pytest.fixture(name="scd_data_with_array", scope="module")
 def scd_data_with_array_fixture():
     """
     Simulated data with an array column
@@ -118,7 +118,7 @@ def get_expected_dataframe(
     return out
 
 
-@pytest_asyncio.fixture(name="event_table_with_array_column", scope="session")
+@pytest_asyncio.fixture(name="event_table_with_array_column", scope="module")
 async def register_table_with_array_column(
     event_data_with_array, session, data_source, catalog, user_entity, order_entity
 ):
@@ -149,7 +149,7 @@ async def register_table_with_array_column(
     return event_table
 
 
-@pytest_asyncio.fixture(name="item_table_with_array_column", scope="session")
+@pytest_asyncio.fixture(name="item_table_with_array_column", scope="module")
 async def register_item_table_with_array_column(
     event_table_with_array_column, item_data_with_array, session, data_source, catalog, item_entity
 ):
@@ -176,7 +176,7 @@ async def register_item_table_with_array_column(
     return item_table
 
 
-@pytest_asyncio.fixture(name="scd_table_with_array_column", scope="session")
+@pytest_asyncio.fixture(name="scd_table_with_array_column", scope="module")
 async def register_scd_table_with_array_column(
     scd_data_with_array, session, data_source, catalog, user_entity
 ):
