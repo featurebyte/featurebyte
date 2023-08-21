@@ -50,7 +50,6 @@ from featurebyte.common.documentation.constants import (
     TABLE,
     TABLE_COLUMN,
     TARGET,
-    TARGET_NAMESPACE,
     TRANSFORM,
     TYPE,
     USER_DEFINED_FUNCTION,
@@ -329,6 +328,7 @@ def _get_feature_layout() -> List[DocLayoutItem]:
         *_get_feature_or_target_items(FEATURE),
         DocLayoutItem([FEATURE, INFO, "Feature.readiness"]),
         DocLayoutItem([FEATURE, INFO, "Feature.is_default"]),
+        DocLayoutItem([FEATURE, INFO, "Feature.online_enabled"]),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.feature_list_ids"]),
         DocLayoutItem([FEATURE, LINEAGE, "Feature.sql"]),
         DocLayoutItem([FEATURE, MANAGE, "Feature.delete"]),
@@ -1022,21 +1022,7 @@ def _get_target_layout() -> List[DocLayoutItem]:
         *_get_feature_or_target_items(TARGET),
         DocLayoutItem([TARGET, SERVE, "Target.compute_targets"]),
         DocLayoutItem([TARGET, SERVE, "Target.compute_target_table"]),
-    ]
-
-
-def _get_target_namespace_layout() -> List[DocLayoutItem]:
-    """
-    The layout for the TargetNamespace module.
-
-    Returns
-    -------
-    List[DocLayoutItem]
-        The layout for the TargetNamespace module.
-    """
-    return [
-        DocLayoutItem([TARGET_NAMESPACE]),
-        DocLayoutItem([TARGET_NAMESPACE, CLASS_METHODS, "TargetNamespace.create"]),
+        DocLayoutItem([TARGET, CREATE, "TargetNamespace.create"]),
     ]
 
 
@@ -1073,5 +1059,4 @@ def get_overall_layout() -> List[DocLayoutItem]:
         *_get_historical_feature_table_layout(),
         *_get_user_defined_function_layout(),
         *_get_target_layout(),
-        *_get_target_namespace_layout(),
     ]

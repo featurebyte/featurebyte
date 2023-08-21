@@ -81,6 +81,7 @@ class BetaWave3Nav(Nav):
         RELATIONSHIP,
         VIEW,
         VIEW_COLUMN,
+        TARGET,
         FEATURE,
         FEATURE_GROUP,
         FEATURE_LIST,
@@ -90,8 +91,6 @@ class BetaWave3Nav(Nav):
         BATCH_REQUEST_TABLE,
         BATCH_FEATURE_TABLE,
         USER_DEFINED_FUNCTION,
-        TARGET,
-        TARGET_NAMESPACE,
         UTILITY_CLASSES,
         UTILITY_METHODS,
     ]
