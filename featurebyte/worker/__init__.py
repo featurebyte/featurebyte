@@ -33,6 +33,31 @@ def get_redis(redis_uri: str = REDIS_URI) -> Redis[Any]:
     return Redis.from_url(redis_uri)
 
 
+def format_mongo_uri_for_scheduler(mongo_uri: str) -> str:
+    """
+    Format mongo uri to be compatible with celery beat scheduler
+
+    Parameters
+    ----------
+    mongo_uri: str
+        Mongo URI
+
+    Returns
+    -------
+    str
+    """
+    # mongodb://.../admin ->  mongodb://.../?authSource=admin
+    if "/admin" in mongo_uri:
+        mongo_uri = mongo_uri.replace("/admin", "/")
+        if "?" in mongo_uri:
+            mongo_uri = mongo_uri.replace("?", "?authSource=admin&")
+            if mongo_uri.endswith("&"):
+                mongo_uri = mongo_uri[:-1]
+        else:
+            mongo_uri += "?authSource=admin"
+    return mongo_uri
+
+
 class ExtendedMongoBackend(MongoBackend):
     """
     Extend MongoBackend class to update mongodb document instead of replacing it
@@ -125,6 +150,6 @@ def get_celery(
     # beat scheduler
     celery_app.conf.mongodb_scheduler_db = database_name
     celery_app.conf.mongodb_scheduler_collection = PeriodicTask.collection_name()
-    celery_app.conf.mongodb_scheduler_url = mongo_uri
+    celery_app.conf.mongodb_scheduler_url = format_mongo_uri_for_scheduler(mongo_uri)
 
     return celery_app
