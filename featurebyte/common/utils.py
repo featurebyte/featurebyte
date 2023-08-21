@@ -18,7 +18,6 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from alive_progress import alive_bar
 from dateutil import parser
-from pandas.core.dtypes.inference import is_list_like
 from requests import Response
 
 from featurebyte.common.env_util import get_alive_bar_additional_params

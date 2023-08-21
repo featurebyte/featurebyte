@@ -2,14 +2,13 @@
 SparkSession class
 """
 # pylint: disable=duplicate-code
+# pylint: disable=wrong-import-order
 from __future__ import annotations
 
 from typing import Any, AsyncGenerator, Optional, OrderedDict, Union
 from typing_extensions import Annotated
 
 import ast
-
-# pylint: disable=wrong-import-order
 import collections
 import os
 import subprocess
