@@ -414,7 +414,10 @@ class BaseDocumentService(
         if kwargs.get("version"):
             output["version"] = kwargs["version"]
         if kwargs.get("search"):
-            output["$text"] = {"$search": kwargs["search"]}
+            output["$or"] = [
+                {"$text": {"$search": kwargs["search"]}},
+                {"name": {"$regex": kwargs["search"], "$options": "i"}},
+            ]
         # inject catalog_id into filter if document is catalog specific
         if self.is_catalog_specific:
             output["catalog_id"] = self.catalog_id
