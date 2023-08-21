@@ -140,9 +140,7 @@ class BatchFeatureCreateTask(BaseTask):
                 ] = feat_namespace.default_feature_id
         return conflict_to_resolution_feature_id_map
 
-    async def is_generated_feature_consistent(
-        self, document: FeatureModel, definition: str
-    ) -> bool:
+    async def is_generated_feature_consistent(self, document: FeatureModel) -> bool:
         """
         Validate the generated feature against the expected feature
 
@@ -150,8 +148,6 @@ class BatchFeatureCreateTask(BaseTask):
         ----------
         document: FeatureModel
             The feature document used to generate the feature definition
-        definition: str
-            Feature definition used at server side to generate the feature
 
         Returns
         -------
@@ -162,15 +158,16 @@ class BatchFeatureCreateTask(BaseTask):
         feature = await feature_service.get_document(document_id=document.id)
         generated_hash = feature.graph.node_name_to_ref[feature.node_name]
         expected_hash = document.graph.node_name_to_ref[document.node_name]
-        is_consistent = definition == feature.definition and expected_hash == generated_hash
+        is_consistent = expected_hash == generated_hash
         if not is_consistent:
             # log the difference between the expected feature and the saved feature
-            logger.debug(
+            logger.error(
                 "Generated feature is not the same as the expected feature",
                 extra={
                     "expected_hash": expected_hash,
                     "generated_hash": generated_hash,
-                    "match_definition": definition == feature.definition,
+                    "expected_node_name_to_ref": document.graph.node_name_to_ref,
+                    "generated_node_name_to_ref": feature.graph.node_name_to_ref,
                 },
             )
         return is_consistent
@@ -226,9 +223,7 @@ class BatchFeatureCreateTask(BaseTask):
         await execute_sdk_code(catalog_id=catalog_id, code=definition)
 
         # retrieve the saved feature & check if it is the same as the expected feature
-        is_consistent = await self.is_generated_feature_consistent(
-            document=document, definition=definition
-        )
+        is_consistent = await self.is_generated_feature_consistent(document=document)
 
         if not is_consistent:
             # delete the generated feature & raise an error
