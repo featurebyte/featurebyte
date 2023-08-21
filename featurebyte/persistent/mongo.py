@@ -46,6 +46,9 @@ class MongoDB(Persistent):
             if MONGODB_CLIENT is None:
                 MONGODB_CLIENT = AsyncIOMotorClient(uri, uuidRepresentation="standard")
 
+            # set client to global client
+            client = MONGODB_CLIENT
+
         self._database = database
         self._client = client
         self._db = self._client[self._database]
