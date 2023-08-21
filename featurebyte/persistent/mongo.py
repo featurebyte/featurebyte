@@ -16,6 +16,8 @@ from pymongo.results import DeleteResult, InsertManyResult, InsertOneResult, Upd
 from featurebyte.models.persistent import Document, DocumentUpdate, QueryFilter
 from featurebyte.persistent.base import DuplicateDocumentError, Persistent
 
+MONGODB_CLIENT = None
+
 
 class MongoDB(Persistent):
     """
@@ -37,8 +39,18 @@ class MongoDB(Persistent):
             Client to use
         """
         super().__init__()
+
+        if not client:
+            # use global client to enforce connection throttling
+            global MONGODB_CLIENT  # pylint: disable=global-statement
+            if MONGODB_CLIENT is None:
+                MONGODB_CLIENT = AsyncIOMotorClient(uri, uuidRepresentation="standard")
+
+            # set client to global client
+            client = MONGODB_CLIENT
+
         self._database = database
-        self._client = client or AsyncIOMotorClient(uri, uuidRepresentation="standard")
+        self._client = client
         self._db = self._client[self._database]
         self._session: Any = None
         # ensure client uses current loop
