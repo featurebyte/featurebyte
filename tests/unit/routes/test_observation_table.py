@@ -2,6 +2,7 @@
 Tests for ObservationTable routes
 """
 from http import HTTPStatus
+from unittest.mock import patch
 
 import pytest
 from bson.objectid import ObjectId
@@ -91,3 +92,22 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
             "updated_at": None,
             "description": None,
         }
+
+    def test_delete_with_associated_use_case(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test delete route (fail) with associated use case"""
+        test_api_client, _ = test_api_client_persistent
+        doc_id = create_success_response.json()["_id"]
+
+        # delete the observation table that is associated with the use case
+        with patch(
+            "featurebyte.service.use_case.UseCaseService.list_documents_as_dict"
+        ) as mock_service:
+            mock_service.return_value = {"total": 1}
+            response = test_api_client.delete(f"{self.base_route}/{doc_id}")
+            assert response.status_code == HTTPStatus.FAILED_DEPENDENCY
+            assert (
+                response.json()["detail"]
+                == f"Cannot delete materialized table with id {doc_id} that is associated with a use case"
+            )

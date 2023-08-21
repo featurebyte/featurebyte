@@ -22,6 +22,7 @@ from featurebyte.exception import (
     FeatureStoreSchemaCollisionError,
     LimitExceededError,
     NoFeatureStorePresentError,
+    ObservationTableUseCaseConstrainError,
     QueryNotSupportedError,
     RequiredEntityNotProvidedError,
     SchemaNotFoundError,
@@ -236,6 +237,12 @@ ExecutionContext.register(
 ExecutionContext.register(
     UseCaseInvalidDataError,
     handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
+)
+
+
+ExecutionContext.register(
+    ObservationTableUseCaseConstrainError,
+    handle_status_code=HTTPStatus.FAILED_DEPENDENCY,
 )
 
 

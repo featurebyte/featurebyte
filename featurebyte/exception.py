@@ -386,3 +386,9 @@ class UseCaseInvalidDataError(FeatureByteException):
     """
     Raise when invalid observation table default is specified
     """
+
+
+class ObservationTableUseCaseConstrainError(FeatureByteException):
+    """
+    Raise when observation table is still associated with a use case
+    """
