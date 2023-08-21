@@ -42,8 +42,6 @@ public abstract class BaseVectorAggregate extends AbstractGenericUDAFResolver {
       case DOUBLE:
       case SHORT:
       case DECIMAL:
-      case STRING:
-      case VARCHAR:
         return getEvaluator();
       default:
         throw new UDFArgumentTypeException(
@@ -75,7 +73,7 @@ public abstract class BaseVectorAggregate extends AbstractGenericUDAFResolver {
 
   static class ListAggregationBuffer extends GenericUDAFEvaluator.AbstractAggregationBuffer {
 
-    List<Object> container;
+    List<Double> container;
 
     public ListAggregationBuffer() {
       container = new ArrayList<>();
@@ -83,7 +81,6 @@ public abstract class BaseVectorAggregate extends AbstractGenericUDAFResolver {
   }
 
   public abstract static class VectorAggregateListEvaluator extends GenericUDAFEvaluator {
-    private transient ObjectInspector inputValueOI;
 
     public VectorAggregateListEvaluator() {}
 
@@ -93,12 +90,8 @@ public abstract class BaseVectorAggregate extends AbstractGenericUDAFResolver {
       assert (parameters.length == 1);
       ObjectInspector inputListOI = parameters[0];
       StandardListObjectInspector internalValueOI = (StandardListObjectInspector) inputListOI;
-      inputValueOI = internalValueOI.getListElementObjectInspector();
+      ObjectInspector inputValueOI = internalValueOI.getListElementObjectInspector();
       return ObjectInspectorFactory.getStandardListObjectInspector(inputValueOI);
-    }
-
-    protected ObjectInspector getInputValueOI() {
-      return inputValueOI;
     }
 
     @Override
@@ -123,7 +116,7 @@ public abstract class BaseVectorAggregate extends AbstractGenericUDAFResolver {
       return new ArrayList<>(myagg.container);
     }
 
-    protected abstract void doMerge(List<Object> listA, List<Object> listB);
+    protected abstract void doMerge(List<Double> listA, List<Double> listB);
 
     @Override
     public void merge(AggregationBuffer agg, Object partial) {
@@ -135,23 +128,28 @@ public abstract class BaseVectorAggregate extends AbstractGenericUDAFResolver {
       // Cast current aggregation buffer, and partial value.
       ListAggregationBuffer myagg = (ListAggregationBuffer) agg;
       List<Object> myList = (List<Object>) partial;
-      List<Object> container = myagg.container;
+      // Convert the parameter list to a list of doubles
+      List<Double> doubleList = new ArrayList<>();
+      for (Object o : myList) {
+        doubleList.add(Double.valueOf(o.toString()));
+      }
+      List<Double> container = myagg.container;
 
       // If there's no current value in the buffer, just set the partial value into the buffer.
       if (container == null || container.isEmpty()) {
-        myagg.container = myList;
+        myagg.container = doubleList;
         return;
       }
 
       // If not, compare the two lists, and update to the max value.
-      if (container.size() != myList.size()) {
+      if (container.size() != doubleList.size()) {
         throw new RuntimeException(
             "The two lists are of different sizes. ListA: "
                 + container.size()
                 + ", ListB: "
-                + myList.size());
+                + doubleList.size());
       }
-      doMerge(container, myList);
+      doMerge(container, doubleList);
     }
 
     @Override

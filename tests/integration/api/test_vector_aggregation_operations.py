@@ -166,9 +166,9 @@ TEST_CASES = [
     (AggFunc.MAX, "[3.0,3.0,3.0]", VECTOR_VALUE_FLOAT_COL),
     (AggFunc.AVG, "[2.0,2.0,2.0]", VECTOR_VALUE_FLOAT_COL),
     (AggFunc.SUM, "[4.0,4.0,4.0]", VECTOR_VALUE_FLOAT_COL),
-    (AggFunc.MAX, "[3,3,3]", VECTOR_VALUE_INT_COL),
-    # (AggFunc.AVG, "[2.0,2.0,2.0]", "VECTOR_VALUE_INT"),  # TODO: fix
-    # (AggFunc.SUM, "[4.0,4.0,4.0]", "VECTOR_VALUE_INT"),  # TODO: fix
+    (AggFunc.MAX, "[3.0,3.0,3.0]", VECTOR_VALUE_INT_COL),
+    (AggFunc.AVG, "[2.0,2.0,2.0]", VECTOR_VALUE_INT_COL),
+    (AggFunc.SUM, "[4.0,4.0,4.0]", VECTOR_VALUE_INT_COL),
 ]
 
 
