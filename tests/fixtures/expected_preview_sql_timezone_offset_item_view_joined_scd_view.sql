@@ -102,7 +102,7 @@ FROM (
             "event_timestamp" AS "event_timestamp"
           FROM "sf_database"."sf_schema"."items_table"
         ) AS L
-        INNER JOIN (
+        LEFT JOIN (
           SELECT
             "event_timestamp" AS "event_timestamp",
             "col_int" AS "col_int",
