@@ -28,6 +28,7 @@ class TestSCDView(BaseViewTestSuite):
       "col_boolean" AS "col_boolean",
       CAST("effective_timestamp" AS STRING) AS "effective_timestamp",
       CAST("end_timestamp" AS STRING) AS "end_timestamp",
+      "date_of_birth" AS "date_of_birth",
       CAST("created_at" AS STRING) AS "created_at",
       "cust_id" AS "cust_id",
       (
@@ -109,11 +110,19 @@ def test_event_view_join_scd_view(
             "event_timestamp",
             "cust_id",
         ],
-        "right_input_columns": ["col_float", "col_binary", "col_boolean", "created_at", "cust_id"],
+        "right_input_columns": [
+            "col_float",
+            "col_binary",
+            "col_boolean",
+            "date_of_birth",
+            "created_at",
+            "cust_id",
+        ],
         "right_output_columns": [
             "col_float_scd",
             "col_binary_scd",
             "col_boolean_scd",
+            "date_of_birth_scd",
             "created_at_scd",
             "cust_id_scd",
         ],
