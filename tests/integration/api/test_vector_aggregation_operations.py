@@ -270,11 +270,30 @@ def test_vector_aggregation_operations__aggregate_over(
         **convert_preview_param_dict_to_feature_preview_resp(preview_params),
     }
 
+
+@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
+def test_vector_aggregation_operations__aggregate_over_compute_historical_features(
+    event_table_with_array_column,
+):
+    """
+    Test vector aggregation operations
+    """
+    event_view = event_table_with_array_column.get_view()
+    feature_name = "vector_agg"
+    feature = event_view.groupby("USER_ID").aggregate_over(
+        value_column=VECTOR_VALUE_FLOAT_COL,
+        method=AggFunc.MAX,
+        windows=["1d"],
+        feature_names=[feature_name],
+        skip_fill_na=True,
+    )[feature_name]
+
+    preview_params = {"POINT_IN_TIME": "2022-06-06 00:58:00", "vector_user_id": "2"}
     feature_list = FeatureList([feature], name="vector_agg_list")
     observation_set_df = pd.DataFrame([preview_params])
     historical_features = feature_list.compute_historical_features(observation_set_df)
     assert historical_features.shape[0] == 1
-    assert list(historical_features.iloc[0]["vector_agg"]) == expected_results
+    assert list(historical_features.iloc[0][feature_name]) == [3.0, 3.0, 3.0]
 
 
 @pytest.mark.parametrize("source_type", ["spark"], indirect=True)
