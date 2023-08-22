@@ -212,6 +212,7 @@ class SnowflakeSession(BaseSession):
             SnowflakeDataType.BOOLEAN: DBVarType.BOOL,
             SnowflakeDataType.DATE: DBVarType.DATE,
             SnowflakeDataType.TIME: DBVarType.TIME,
+            SnowflakeDataType.ARRAY: DBVarType.ARRAY,
         }
         if snowflake_var_info["type"] in to_internal_variable_map:
             return to_internal_variable_map[snowflake_var_info["type"]]
@@ -311,7 +312,7 @@ class SnowflakeSchemaInitializer(BaseSchemaInitializer):
 
     @property
     def current_working_schema_version(self) -> int:
-        return 23
+        return 24
 
     async def create_schema(self) -> None:
         create_schema_query = f'CREATE SCHEMA "{self.session.schema_name}"'
