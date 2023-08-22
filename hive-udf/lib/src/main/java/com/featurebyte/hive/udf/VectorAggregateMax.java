@@ -3,8 +3,6 @@ package com.featurebyte.hive.udf;
 import java.util.List;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
-import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 
 @Description(
     name = "vector_aggregate_max",
@@ -22,16 +20,12 @@ public class VectorAggregateMax extends BaseVectorAggregate {
     public VectorAggregateMaxEvaluator() {}
 
     @Override
-    public void doMerge(List<Object> listA, List<Object> listB) {
-      ObjectInspector inputOI = getInputValueOI();
+    public void doMerge(List<Double> listA, List<Double> listB) {
       for (int i = 0; i < listA.size(); i++) {
-        Object containerCurrentValue = listA.get(i);
-        Object inputCurrentValue = listB.get(i);
-        int r =
-            ObjectInspectorUtils.compare(
-                containerCurrentValue, inputOI, inputCurrentValue, inputOI);
-        if (r < 0) {
-          listA.set(i, inputCurrentValue);
+        double valueA = listA.get(i);
+        double valueB = listB.get(i);
+        if (valueA < valueB) {
+          listA.set(i, valueB);
         }
       }
     }

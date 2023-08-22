@@ -6,7 +6,7 @@ from typing import List, Optional
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.query_graph.model.column_info import ColumnInfo
 
-VECTOR_AGGREGATE_SUPPORTED_FUNCTIONS = {AggFunc.MAX, AggFunc.AVG}
+VECTOR_AGGREGATE_SUPPORTED_FUNCTIONS = {AggFunc.MAX, AggFunc.AVG, AggFunc.SUM}
 
 
 def validate_vector_aggregate_parameters(

@@ -16,13 +16,9 @@ public class VectorAggregateSum extends BaseVectorAggregate {
   public static class VectorAggregateSumEvaluator extends VectorAggregateListEvaluator {
 
     @Override
-    public void doMerge(List<Object> listA, List<Object> listB) {
+    public void doMerge(List<Double> listA, List<Double> listB) {
       for (int i = 0; i < listA.size(); i++) {
-        Object containerCurrentValue = listA.get(i);
-        Object inputCurrentValue = listB.get(i);
-        double currentValue = Double.parseDouble(containerCurrentValue.toString());
-        double inputValue = Double.parseDouble(inputCurrentValue.toString());
-        listA.set(i, currentValue + inputValue);
+        listA.set(i, listA.get(i) + listB.get(i));
       }
     }
   }

@@ -156,7 +156,7 @@ public class VectorAggregateAverage extends AbstractGenericUDAFResolver {
       // Cast current aggregation buffer, and partial value.
       VectorAvgAggregationBuffer myagg = (VectorAvgAggregationBuffer) agg;
       List<Object> myList = (List<Object>) partial;
-      Integer count = (Integer) parameters[1];
+      Long count = (Long) parameters[1];
 
       doIterate(myagg, myList, count.longValue());
     }
@@ -175,7 +175,7 @@ public class VectorAggregateAverage extends AbstractGenericUDAFResolver {
         doubleList[i + 1] = currentSum;
       }
 
-      return doubleList;
+      return Arrays.asList(doubleList);
     }
 
     @Override
@@ -187,13 +187,13 @@ public class VectorAggregateAverage extends AbstractGenericUDAFResolver {
 
       // Cast current aggregation buffer, and partial value.
       VectorAvgAggregationBuffer myagg = (VectorAvgAggregationBuffer) agg;
-      Double[] myList = (Double[]) partial;
+      List<Double> myList = (List<Double>) partial;
 
       // Get count from partial value
-      Double partialCount = myList[0];
+      Double partialCount = myList.get(0);
       long longPartialCount = partialCount.longValue();
 
-      List<Object> sumList = new ArrayList<>(Arrays.asList(myList).subList(1, myList.length));
+      List<Object> sumList = new ArrayList<>(myList.subList(1, myList.size()));
 
       doIterate(myagg, sumList, longPartialCount);
     }

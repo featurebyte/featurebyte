@@ -18,7 +18,8 @@ public class VectorAggregateSimpleAverage extends BaseVectorAggregate {
 
   public VectorAggregateSimpleAverage() {}
 
-  static class AverageAggregationBuffer extends GenericUDAFEvaluator.AbstractAggregationBuffer {
+  protected static class AverageAggregationBuffer
+      extends GenericUDAFEvaluator.AbstractAggregationBuffer {
 
     List<Double> sumList;
     long count;
@@ -35,18 +36,16 @@ public class VectorAggregateSimpleAverage extends BaseVectorAggregate {
 
   public static class VectorAggregateSimpleAverageEvaluator extends VectorAggregateListEvaluator {
 
-    public VectorAggregateSimpleAverageEvaluator() {}
-
     @Override
     public AggregationBuffer getNewAggregationBuffer() {
       return new AverageAggregationBuffer();
     }
 
-    protected void doMerge(List<Object> listA, List<Object> listB) {
+    protected void doMerge(List<Double> listA, List<Double> listB) {
       // No-op because we override all the methods
     }
 
-    private void doIterate(AverageAggregationBuffer myagg, List<Object> myList, long count) {
+    protected void doIterate(AverageAggregationBuffer myagg, List<Object> myList, long count) {
       List<Double> container = myagg.sumList;
 
       // If there's no current value in the buffer, just set the partial value into the buffer.
@@ -61,7 +60,13 @@ public class VectorAggregateSimpleAverage extends BaseVectorAggregate {
       }
 
       // If not, compare the two lists, and update to the max value.
-      assert (container.size() == myList.size());
+      if (container.size() != myList.size()) {
+        throw new RuntimeException(
+            "The two lists are of different sizes. ListA: "
+                + container.size()
+                + ", ListB: "
+                + myList.size());
+      }
 
       // Increase count
       myagg.count = myagg.count + count;
@@ -104,7 +109,7 @@ public class VectorAggregateSimpleAverage extends BaseVectorAggregate {
         doubleList[i + 1] = currentSum;
       }
 
-      return doubleList;
+      return Arrays.asList(doubleList);
     }
 
     @Override
@@ -116,13 +121,13 @@ public class VectorAggregateSimpleAverage extends BaseVectorAggregate {
 
       // Cast current aggregation buffer, and partial value.
       AverageAggregationBuffer myagg = (AverageAggregationBuffer) agg;
-      Double[] myList = (Double[]) partial;
+      List<Double> myList = (List<Double>) partial;
 
       // Get count from partial value
-      Double partialCount = myList[0];
+      Double partialCount = myList.get(0);
       long longPartialCount = partialCount.longValue();
 
-      List<Object> sumList = new ArrayList<>(Arrays.asList(myList).subList(1, myList.length));
+      List<Object> sumList = new ArrayList<>(myList.subList(1, myList.size()));
 
       doIterate(myagg, sumList, longPartialCount);
     }

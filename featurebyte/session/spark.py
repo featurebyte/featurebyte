@@ -2,12 +2,13 @@
 SparkSession class
 """
 # pylint: disable=duplicate-code
+# pylint: disable=wrong-import-order
 from __future__ import annotations
 
 from typing import Any, AsyncGenerator, Optional, OrderedDict, Union
 from typing_extensions import Annotated
 
-# pylint: disable=wrong-import-order
+import ast
 import collections
 import os
 import subprocess
@@ -36,6 +37,9 @@ SparkDatabaseCredential = Annotated[
     Union[KerberosKeytabCredential, AccessTokenCredential],
     Field(discriminator="type"),
 ]
+
+
+PYARROW_ARRAY_TYPE = pa.list_(pa.float64())
 
 
 class SparkSession(BaseSparkSession):
@@ -238,7 +242,7 @@ class SparkSession(BaseSparkSession):
             "INTERVAL_TYPE": pa.duration("ns"),
             "NULL_TYPE": pa.null(),
             "TIMESTAMP_TYPE": pa.timestamp("ns", tz=None),
-            "ARRAY_TYPE": pa.string(),
+            "ARRAY_TYPE": PYARROW_ARRAY_TYPE,
             "MAP_TYPE": pa.string(),
             "STRUCT_TYPE": pa.string(),
         }
@@ -269,14 +273,23 @@ class SparkSession(BaseSparkSession):
         pd.DataFrame
             Processed data
         """
+        if data.empty:
+            return data
+
         for i, column in enumerate(schema.names):
+            current_type = schema.field(i).type
             # Convert decimal columns to float
-            if schema.field(i).type == pa.float64() and not is_float_dtype(data[column]):
+            if current_type == pa.float64() and not is_float_dtype(data[column]):
                 data[column] = data[column].astype(float)
-            elif isinstance(schema.field(i).type, pa.TimestampType) and not is_datetime64_dtype(
+            elif isinstance(current_type, pa.TimestampType) and not is_datetime64_dtype(
                 data[column]
             ):
                 data[column] = pd.to_datetime(data[column])
+            elif current_type == PYARROW_ARRAY_TYPE:
+                # Check if column is string. If so, convert to a list.
+                is_string_series = data[column].apply(lambda x: isinstance(x, str))
+                if is_string_series.any():
+                    data[column] = data[column].apply(ast.literal_eval)
         return data
 
     def _read_batch(self, cursor: Cursor, schema: Schema, batch_size: int = 1000) -> pa.RecordBatch:
@@ -298,12 +311,11 @@ class SparkSession(BaseSparkSession):
             None if no more rows are available
         """
         results = cursor.fetchmany(batch_size)
-        return pa.record_batch(
-            self._process_batch_data(
-                pd.DataFrame(results if results else None, columns=schema.names), schema
-            ),
-            schema=schema,
+        # Process data to update types of certain columns based on their schema type
+        processed_data = self._process_batch_data(
+            pd.DataFrame(results if results else None, columns=schema.names), schema
         )
+        return pa.record_batch(processed_data, schema=schema)
 
     def fetchall_arrow(self, cursor: Cursor) -> pa.Table:
         """
