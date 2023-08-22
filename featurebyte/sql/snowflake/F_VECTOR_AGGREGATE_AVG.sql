@@ -27,7 +27,6 @@ class VectorAggregateAvg:
       return self._calculate_average()
 
     def end_partition(self):
-      # Calculate average
       return self._calculate_average()
 $$
 ;
