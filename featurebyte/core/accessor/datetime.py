@@ -647,7 +647,7 @@ class DatetimeAccessor:
 
             elif isinstance(opstruct_column, DerivedDataColumn):
                 if cls._is_valid_timezone_offset_column_if_derived_column(
-                    opstruct_column, table_id, offset_column_name, frame
+                    opstruct_column, table_id, offset_column_name
                 ):
                     offset_column_name_in_frame = opstruct_column.name
                     break

@@ -1,7 +1,7 @@
 SELECT
   index,
   "cust_id",
-  SUM("added_feature") AS value_sum_ae7ea38511285eab9c15813aa9fe9c1b16f25fb4
+  SUM("added_feature") AS value_sum_135378d8fda24b22b1987e8f97c82334823c50c7
 FROM (
   SELECT
     *,
@@ -22,6 +22,7 @@ FROM (
         "col_float_scd" AS "col_float_scd",
         "col_binary_scd" AS "col_binary_scd",
         "col_boolean_scd" AS "col_boolean_scd",
+        "date_of_birth_scd" AS "date_of_birth_scd",
         "created_at_scd" AS "created_at_scd",
         "cust_id_scd" AS "cust_id_scd",
         (
@@ -40,6 +41,7 @@ FROM (
           REQ."col_float_scd",
           REQ."col_binary_scd",
           REQ."col_boolean_scd",
+          REQ."date_of_birth_scd",
           REQ."created_at_scd",
           REQ."cust_id_scd",
           "T0"."_fb_internal_item_sum_item_amount_event_id_col_None_join_1" AS "_fb_internal_item_sum_item_amount_event_id_col_None_join_1"
@@ -56,6 +58,7 @@ FROM (
             R."col_float" AS "col_float_scd",
             R."col_binary" AS "col_binary_scd",
             R."col_boolean" AS "col_boolean_scd",
+            R."date_of_birth" AS "date_of_birth_scd",
             R."created_at" AS "created_at_scd",
             R."cust_id" AS "cust_id_scd"
           FROM (
@@ -135,6 +138,7 @@ FROM (
                     "col_boolean" AS "col_boolean",
                     "effective_timestamp" AS "effective_timestamp",
                     "end_timestamp" AS "end_timestamp",
+                    "date_of_birth" AS "date_of_birth",
                     "created_at" AS "created_at",
                     "cust_id" AS "cust_id"
                   FROM "sf_database"."sf_schema"."scd_table"
@@ -153,6 +157,7 @@ FROM (
               "col_boolean" AS "col_boolean",
               "effective_timestamp" AS "effective_timestamp",
               "end_timestamp" AS "end_timestamp",
+              "date_of_birth" AS "date_of_birth",
               "created_at" AS "created_at",
               "cust_id" AS "cust_id"
             FROM "sf_database"."sf_schema"."scd_table"
