@@ -39,6 +39,9 @@ SparkDatabaseCredential = Annotated[
 ]
 
 
+PYARROW_ARRAY_TYPE = pa.list_(pa.float64())
+
+
 class SparkSession(BaseSparkSession):
     """
     Spark session class
@@ -239,7 +242,7 @@ class SparkSession(BaseSparkSession):
             "INTERVAL_TYPE": pa.duration("ns"),
             "NULL_TYPE": pa.null(),
             "TIMESTAMP_TYPE": pa.timestamp("ns", tz=None),
-            "ARRAY_TYPE": pa.list_(pa.float64()),
+            "ARRAY_TYPE": PYARROW_ARRAY_TYPE,
             "MAP_TYPE": pa.string(),
             "STRUCT_TYPE": pa.string(),
         }
@@ -282,14 +285,14 @@ class SparkSession(BaseSparkSession):
                 data[column]
             ):
                 data[column] = pd.to_datetime(data[column])
-            elif current_type == pa.list_(pa.float64()):
+            elif current_type == PYARROW_ARRAY_TYPE:
                 # Check if column is string. If so, convert to a list.
                 is_string_series = data[column].apply(lambda x: isinstance(x, str))
                 if is_string_series.any():
                     data[column] = data[column].apply(ast.literal_eval)
         return data
 
-    def _read_batch(self, cursor: Cursor, batch_size: int = 1000) -> pa.RecordBatch:
+    def _read_batch(self, cursor: Cursor, schema: Schema, batch_size: int = 1000) -> pa.RecordBatch:
         """
         Fetch a batch of rows from a query result, returning them as a PyArrow record batch.
 
@@ -297,6 +300,8 @@ class SparkSession(BaseSparkSession):
         ----------
         cursor: Cursor
             Cursor to fetch data from
+        schema: Schema
+            Schema of the data to fetch
         batch_size: int
             Number of rows to fetch at a time
 
@@ -305,9 +310,6 @@ class SparkSession(BaseSparkSession):
         pa.RecordBatch
             None if no more rows are available
         """
-        schema = pa.schema(
-            {metadata[0]: self._get_pyarrow_type(metadata[1]) for metadata in cursor.description}
-        )
         results = cursor.fetchmany(batch_size)
         # Process data to update types of certain columns based on their schema type
         processed_data = self._process_batch_data(
@@ -328,9 +330,12 @@ class SparkSession(BaseSparkSession):
         -------
         pa.Table
         """
+        schema = pa.schema(
+            {metadata[0]: self._get_pyarrow_type(metadata[1]) for metadata in cursor.description}
+        )
         record_batches = []
         while True:
-            record_batch = self._read_batch(cursor)
+            record_batch = self._read_batch(cursor, schema)
             record_batches.append(record_batch)
             if record_batch.num_rows == 0:
                 break
@@ -342,8 +347,11 @@ class SparkSession(BaseSparkSession):
 
     async def fetch_query_stream_impl(self, cursor: Any) -> AsyncGenerator[pa.RecordBatch, None]:
         # fetch results in batches
+        schema = pa.schema(
+            {metadata[0]: self._get_pyarrow_type(metadata[1]) for metadata in cursor.description}
+        )
         while True:
-            record_batch = self._read_batch(cursor)
+            record_batch = self._read_batch(cursor, schema)
             yield record_batch
             if record_batch.num_rows == 0:
                 break
