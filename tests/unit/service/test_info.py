@@ -299,6 +299,7 @@ async def test_get_feature_info(app_container, production_ready_feature, feature
         "derived_columns": {},
         "aggregations": {
             "F0": {
+                "aggregation_type": "groupby",
                 "name": "sum_30m",
                 "column": "Input0",
                 "function": "sum",
@@ -375,6 +376,7 @@ async def test_get_feature_info(app_container, production_ready_feature, feature
 def expected_feature_iet_info_fixture(feature_iet):
     """Expected complex feature info"""
     common_agg_parameters = {
+        "aggregation_type": "groupby",
         "filter": False,
         "keys": ["cust_id"],
         "category": None,
@@ -685,6 +687,7 @@ async def test_get_target_info(app_container, entity, target):
         "derived_columns": {},
         "aggregations": {
             "F0": {
+                "aggregation_type": "forward_aggregate",
                 "name": "float_target",
                 "column": "Input0",
                 "function": "sum",

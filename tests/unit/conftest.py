@@ -412,9 +412,7 @@ def snowflake_data_source_fixture(snowflake_feature_store):
 
 
 @pytest.fixture(name="snowflake_database_table")
-def snowflake_database_table_fixture(
-    snowflake_data_source,
-):
+def snowflake_database_table_fixture(snowflake_data_source):
     """
     SourceTable object fixture
     """

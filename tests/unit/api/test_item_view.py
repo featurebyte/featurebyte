@@ -1104,3 +1104,35 @@ def test_update_to_production_ready(item_event_saved_feature):
     """Test updating feature to production ready"""
     item_event_saved_feature.update_readiness(readiness=FeatureReadiness.PRODUCTION_READY)
     assert item_event_saved_feature.readiness == FeatureReadiness.PRODUCTION_READY
+
+
+def test_item_view_aggregate_metadata(snowflake_item_table, transaction_entity):
+    """Test ItemView aggregate metadata"""
+    snowflake_item_table.event_id_col.as_entity(transaction_entity.name)
+    item_view = snowflake_item_table.get_view(event_suffix="_event_table")
+    feat = item_view.groupby("event_id_col", category="item_type").aggregate(
+        value_column="item_amount",
+        method=AggFunc.SUM,
+        feature_name="non_time_time_sum_amount_feature",
+    )
+    feat.save()
+    assert feat.info()["metadata"] == {
+        "aggregations": {
+            "F0": {
+                "aggregation_type": "item_groupby",
+                "category": "item_type",
+                "column": "Input1",
+                "filter": False,
+                "function": "sum",
+                "keys": ["event_id_col"],
+                "name": "non_time_time_sum_amount_feature",
+                "window": None,
+            }
+        },
+        "derived_columns": {},
+        "input_columns": {
+            "Input0": {"column_name": "item_type", "data": "sf_item_table", "semantic": None},
+            "Input1": {"column_name": "item_amount", "data": "sf_item_table", "semantic": None},
+        },
+        "post_aggregation": None,
+    }

@@ -148,6 +148,7 @@ class FeatureOrTargetMetadataExtractor:
                 "window": agg_col.window,
                 "category": agg_col.category,
                 "filter": agg_col.filter,
+                "aggregation_type": agg_col.aggregation_type,
             }
 
         post_aggregation = None
