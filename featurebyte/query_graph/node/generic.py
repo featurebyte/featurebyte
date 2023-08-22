@@ -733,7 +733,7 @@ class ItemGroupbyNode(AggregationOpStructMixin, BaseNode):
                 method=self.parameters.agg_func,
                 keys=self.parameters.keys,
                 window=None,
-                category=None,
+                category=self.parameters.value_by,
                 column=col_name_map.get(self.parameters.parent),
                 filter=any(col.filter for col in columns),
                 aggregation_type=self.type,
