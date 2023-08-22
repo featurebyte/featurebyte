@@ -14,6 +14,7 @@ from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.static_source_table import StaticSourceTableService
 from featurebyte.service.table import TableService
 from featurebyte.service.target_table import TargetTableService
+from featurebyte.service.use_case import UseCaseService
 
 MATERIALIZED_TABLE_DELETE_ERROR_MESSAGE = (
     "Cannot delete {table_name} Table {document_id} because it is referenced by "
@@ -31,10 +32,12 @@ class ObservationTableDeleteValidator:
         observation_table_service: ObservationTableService,
         historical_feature_table_service: HistoricalFeatureTableService,
         target_table_service: TargetTableService,
+        use_case_service: UseCaseService,
     ):
         self.observation_table_service = observation_table_service
         self.historical_feature_table_service = historical_feature_table_service
         self.target_table_service = target_table_service
+        self.use_case_service = use_case_service
 
     async def check_delete_observation_table(
         self,
@@ -72,13 +75,22 @@ class ObservationTableDeleteValidator:
                 query_filter={"observation_table_id": document.id}
             )
         ]
-        all_reference_ids = reference_ids + target_reference_ids
+        # check if the document is associated with a use case
+        use_case_ids = [
+            str(doc["_id"])
+            async for doc in self.use_case_service.list_documents_as_dict_iterator(
+                query_filter={"observation_table_ids": document.id}
+            )
+        ]
+        all_reference_ids = reference_ids + target_reference_ids + use_case_ids
         if all_reference_ids:
             table_names = []
             if reference_ids:
                 table_names.append("Historical Feature")
             if target_reference_ids:
                 table_names.append("Target")
+            if use_case_ids:
+                table_names.append("UseCase")
             raise DocumentDeletionError(
                 MATERIALIZED_TABLE_DELETE_ERROR_MESSAGE.format(
                     document_id=document.id,

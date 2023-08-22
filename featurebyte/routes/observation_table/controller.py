@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from bson import ObjectId
 
-from featurebyte.exception import ObservationTableUseCaseConstrainError
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.routes.common.base_materialized_table import BaseMaterializedTableController
 from featurebyte.routes.task.controller import TaskController
@@ -15,7 +14,6 @@ from featurebyte.schema.task import Task
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.preview import PreviewService
-from featurebyte.service.use_case import UseCaseService
 from featurebyte.service.validator.materialized_table_delete import ObservationTableDeleteValidator
 
 
@@ -37,13 +35,11 @@ class ObservationTableController(
         task_controller: TaskController,
         feature_store_service: FeatureStoreService,
         observation_table_delete_validator: ObservationTableDeleteValidator,
-        use_case_service: UseCaseService,
     ):
         super().__init__(service=observation_table_service, preview_service=preview_service)
         self.task_controller = task_controller
         self.feature_store_service = feature_store_service
         self.observation_table_delete_validator = observation_table_delete_validator
-        self.use_case_service = use_case_service
 
     async def create_observation_table(
         self,
@@ -69,15 +65,6 @@ class ObservationTableController(
         await self.observation_table_delete_validator.check_delete_observation_table(
             observation_table_id=document_id,
         )
-
-        # check if the document is associated with a use case
-        doc_result = await self.use_case_service.list_documents_as_dict(
-            query_filter={"observation_table_ids": document_id}
-        )
-        if doc_result["total"] > 0:
-            raise ObservationTableUseCaseConstrainError(
-                f"Cannot delete materialized table with id {document_id} that is associated with a use case"
-            )
 
     async def get_info(self, document_id: ObjectId, verbose: bool) -> ObservationTableInfo:
         """
