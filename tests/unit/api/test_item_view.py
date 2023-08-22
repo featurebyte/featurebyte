@@ -1120,6 +1120,7 @@ def test_item_view_aggregate_metadata(snowflake_item_table, transaction_entity):
     assert feat.info()["metadata"] == {
         "aggregations": {
             "F0": {
+                "aggregation_type": "item_groupby",
                 "category": "item_type",
                 "column": "Input1",
                 "filter": False,

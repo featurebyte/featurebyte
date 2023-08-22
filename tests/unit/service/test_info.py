@@ -299,6 +299,7 @@ async def test_get_feature_info(app_container, production_ready_feature, feature
         "derived_columns": {},
         "aggregations": {
             "F0": {
+                "aggregation_type": "groupby",
                 "name": "sum_30m",
                 "column": "Input0",
                 "function": "sum",
