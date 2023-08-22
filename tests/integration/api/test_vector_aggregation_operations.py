@@ -13,6 +13,7 @@ import pytest_asyncio
 
 from featurebyte.api.aggregator.vector_validator import VECTOR_AGGREGATE_SUPPORTED_FUNCTIONS
 from featurebyte.api.entity import Entity
+from featurebyte.api.feature_list import FeatureList
 from featurebyte.enum import AggFunc
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
@@ -268,6 +269,12 @@ def test_vector_aggregation_operations__aggregate_over(
         feature_name: expected_results,
         **convert_preview_param_dict_to_feature_preview_resp(preview_params),
     }
+
+    feature_list = FeatureList([feature], name="vector_agg_list")
+    observation_set_df = pd.DataFrame([preview_params])
+    historical_features = feature_list.compute_historical_features(observation_set_df)
+    assert historical_features.shape[0] == 1
+    assert list(historical_features.iloc[0]["vector_agg"]) == expected_results
 
 
 @pytest.mark.parametrize("source_type", ["spark"], indirect=True)
