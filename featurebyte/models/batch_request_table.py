@@ -55,5 +55,6 @@ class BatchRequestTableModel(MaterializedTableModel):
             pymongo.operations.IndexModel("context_id"),
             [
                 ("name", pymongo.TEXT),
+                ("description", pymongo.TEXT),
             ],
         ]

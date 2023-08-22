@@ -49,5 +49,6 @@ class SemanticModel(Relationship):
         indexes = Relationship.Settings.indexes + [
             [
                 ("name", pymongo.TEXT),
+                ("description", pymongo.TEXT),
             ],
         ]

@@ -44,4 +44,8 @@ class DeploymentModel(FeatureByteCatalogBaseDocumentModel):
 
         indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
             pymongo.operations.IndexModel("feature_list_id"),
+            [
+                ("name", pymongo.TEXT),
+                ("description", pymongo.TEXT),
+            ],
         ]

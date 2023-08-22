@@ -114,5 +114,6 @@ class EntityModel(EntityRelationship):
             pymongo.operations.IndexModel("serving_names"),
             [
                 ("name", pymongo.TEXT),
+                ("description", pymongo.TEXT),
             ],
         ]

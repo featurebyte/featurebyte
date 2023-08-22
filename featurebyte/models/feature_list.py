@@ -439,6 +439,7 @@ class FeatureListNamespaceModel(FrozenFeatureListNamespaceModel):
             pymongo.operations.IndexModel("status"),
             [
                 ("name", pymongo.TEXT),
+                ("description", pymongo.TEXT),
             ],
         ]
 
@@ -619,5 +620,6 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
             [
                 ("name", pymongo.TEXT),
                 ("version", pymongo.TEXT),
+                ("description", pymongo.TEXT),
             ],
         ]

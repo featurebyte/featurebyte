@@ -50,5 +50,6 @@ class StaticSourceTableModel(MaterializedTableModel):
         indexes = MaterializedTableModel.Settings.indexes + [
             [
                 ("name", pymongo.TEXT),
+                ("description", pymongo.TEXT),
             ],
         ]

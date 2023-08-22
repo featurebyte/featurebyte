@@ -39,6 +39,7 @@ class Task(FeatureByteBaseDocumentModel):
 
         collection_name = "celery_taskmeta"
         indexes = [
+            pymongo.operations.IndexModel("name"),
             pymongo.operations.IndexModel("start_time"),
             pymongo.operations.IndexModel("date_done"),
             [

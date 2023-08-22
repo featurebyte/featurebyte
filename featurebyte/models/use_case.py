@@ -56,5 +56,8 @@ class UseCaseModel(FeatureByteCatalogBaseDocumentModel):
         ]
 
         indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
-            pymongo.operations.IndexModel("name"),
+            [
+                ("name", pymongo.TEXT),
+                ("description", pymongo.TEXT),
+            ]
         ]
