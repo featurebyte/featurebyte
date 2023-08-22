@@ -12,6 +12,7 @@ import pytest
 import pytest_asyncio
 
 from featurebyte.api.aggregator.vector_validator import VECTOR_AGGREGATE_SUPPORTED_FUNCTIONS
+from featurebyte.api.entity import Entity
 from featurebyte.enum import AggFunc
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
@@ -118,14 +119,36 @@ def get_expected_dataframe(
     return out
 
 
+@pytest.fixture(name="vector_user_entity", scope="module")
+def vector_user_entity_fixture(catalog):
+    """
+    Fixture for an Entity "User"
+    """
+    _ = catalog
+    entity = Entity(name="Vector User", serving_names=["vector_user_id"])
+    entity.save()
+    return entity
+
+
+@pytest.fixture(name="vector_order_entity", scope="module")
+def vector_order_entity_fixture(catalog):
+    """
+    Fixture for an Entity "User"
+    """
+    _ = catalog
+    entity = Entity(name="Vector Order", serving_names=["vector_order_id"])
+    entity.save()
+    return entity
+
+
 @pytest_asyncio.fixture(name="event_table_with_array_column", scope="module")
 async def register_table_with_array_column(
-    event_data_with_array, session, data_source, catalog, user_entity, order_entity
+    event_data_with_array, session, data_source, catalog, vector_order_entity, vector_user_entity
 ):
     """
     Register a table with an array column
     """
-    _ = catalog, user_entity, order_entity
+    _ = catalog
     table_name = "event_table_with_vector"
     await session.register_table(table_name, event_data_with_array, temporary=False)
 
@@ -144,19 +167,23 @@ async def register_table_with_array_column(
             blind_spot="30m", frequency="1h", time_modulo_frequency="30m"
         )
     )
-    event_table["USER_ID"].as_entity("User")
-    event_table["ORDER_ID"].as_entity("Order")
+    event_table["USER_ID"].as_entity(vector_user_entity.name)
+    event_table["ORDER_ID"].as_entity(vector_order_entity.name)
     return event_table
 
 
 @pytest_asyncio.fixture(name="item_table_with_array_column", scope="module")
 async def register_item_table_with_array_column(
-    event_table_with_array_column, item_data_with_array, session, data_source, catalog, item_entity
+    event_table_with_array_column,
+    item_data_with_array,
+    session,
+    data_source,
+    item_entity,
+    vector_order_entity,
 ):
     """
     Register a table with an array column
     """
-    _ = item_entity
     table_name = "item_table_with_vector"
     await session.register_table(table_name, item_data_with_array, temporary=False)
 
@@ -171,19 +198,18 @@ async def register_item_table_with_array_column(
         item_id_column="ITEM_ID",
         event_table_name=event_table_with_array_column.name,
     )
-    item_table["ITEM_ID"].as_entity("Item")
-    item_table["ORDER_ID"].as_entity("Order")
+    item_table["ITEM_ID"].as_entity(item_entity.name)
+    item_table["ORDER_ID"].as_entity(vector_order_entity.name)
     return item_table
 
 
 @pytest_asyncio.fixture(name="scd_table_with_array_column", scope="module")
 async def register_scd_table_with_array_column(
-    scd_data_with_array, session, data_source, catalog, user_entity
+    scd_data_with_array, session, data_source, catalog, vector_user_entity
 ):
     """
     Register a table with an array column
     """
-    _ = user_entity
     table_name = "scd_table_with_vector"
     await session.register_table(table_name, scd_data_with_array, temporary=False)
 
@@ -197,7 +223,7 @@ async def register_scd_table_with_array_column(
         natural_key_column="ITEM_ID",
         effective_timestamp_column="EVENT_TIMESTAMP",
     )
-    scd_table["USER_ID"].as_entity("User")
+    scd_table["USER_ID"].as_entity(vector_user_entity.name)
     return scd_table
 
 
@@ -235,7 +261,7 @@ def test_vector_aggregation_operations__aggregate_over(
         skip_fill_na=True,
     )[feature_name]
 
-    preview_params = {"POINT_IN_TIME": "2022-06-06 00:58:00", "üser id": "2"}
+    preview_params = {"POINT_IN_TIME": "2022-06-06 00:58:00", "vector_user_id": "2"}
     feature_preview = feature.preview(pd.DataFrame([preview_params]))
     assert feature_preview.shape[0] == 1
     assert feature_preview.iloc[0].to_dict() == {
@@ -264,7 +290,7 @@ def test_vector_aggregation_operations__aggregate(
         skip_fill_na=True,
     )
 
-    preview_params = {"POINT_IN_TIME": "2022-06-06 00:58:00", "order_id": "1000"}
+    preview_params = {"POINT_IN_TIME": "2022-06-06 00:58:00", "vector_order_id": "1000"}
     feature_preview = feature.preview(pd.DataFrame([preview_params]))
     assert feature_preview.shape[0] == 1
     assert feature_preview.iloc[0].to_dict() == {
@@ -293,7 +319,7 @@ def test_vector_aggregation_operations__aggregate_asat(
         skip_fill_na=True,
     )
 
-    preview_params = {"POINT_IN_TIME": "2022-06-06 00:58:00", "üser id": "2"}
+    preview_params = {"POINT_IN_TIME": "2022-06-06 00:58:00", "vector_user_id": "2"}
     feature_preview = feature.preview(pd.DataFrame([preview_params]))
     assert feature_preview.shape[0] == 1
     assert feature_preview.iloc[0].to_dict() == {
@@ -320,6 +346,6 @@ def test_vector_aggregation_operations_fails_for_vectors_of_different_lengths(
         skip_fill_na=True,
     )[feature_name]
 
-    preview_params = {"POINT_IN_TIME": "2022-06-06 00:58:00", "üser id": f"{user_id}"}
+    preview_params = {"POINT_IN_TIME": "2022-06-06 00:58:00", "vector_user_id": f"{user_id}"}
     with pytest.raises(RecordRetrievalException):
         feature.preview(pd.DataFrame([preview_params]))
