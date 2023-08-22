@@ -661,9 +661,9 @@ class DatetimeAccessor:
     def _is_valid_timezone_offset_column_if_derived_column(
         cls,
         opstruct_column: DerivedDataColumn,
-        table_id: PydanticObjectId,
+        table_id: Optional[PydanticObjectId],
         offset_column_name: str,
-    ):
+    ) -> bool:
         """
         Check whether a DerivedDataColumn is a valid timezone offset column
 
@@ -671,13 +671,15 @@ class DatetimeAccessor:
         ----------
         opstruct_column: DerivedDataColumn
             The DerivedDataColumn to check
-        table_id: PydanticObjectId
+        table_id: Optional[PydanticObjectId]
             Table identifier of the EventTable
         offset_column_name: str
             Name of the offset column as defined in the EventTable. The column might not necessarily
             have the same name in the frame (e.g. due to join suffix).
-        frame: Frame
-            The parent object of the datetime series
+
+        Returns
+        -------
+        bool
         """
         is_derived_from_timezone_offset_column = False
         for column in opstruct_column.columns:
