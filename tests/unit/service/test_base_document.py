@@ -320,7 +320,13 @@ def test_get_filed_history__existing_field_removal(audit_docs, expected):
         ({"name": "some_name"}, {"name": "some_name", "catalog_id": "catalog_id"}),
         (
             {"search": "some_value"},
-            {"$text": {"$search": "some_value"}, "catalog_id": "catalog_id"},
+            {
+                "$or": [
+                    {"$text": {"$search": "some_value"}},
+                    {"name": {"$regex": "some_value", "$options": "i"}},
+                ],
+                "catalog_id": "catalog_id",
+            },
         ),
         (
             {"query_filter": {"field": {"$in": ["a", "b"]}}},
@@ -334,7 +340,10 @@ def test_get_filed_history__existing_field_removal(audit_docs, expected):
             },
             {
                 "name": "some_name",
-                "$text": {"$search": "some_value"},
+                "$or": [
+                    {"$text": {"$search": "some_value"}},
+                    {"name": {"$regex": "some_value", "$options": "i"}},
+                ],
                 "field": {"$in": ["a", "b"]},
                 "catalog_id": "catalog_id",
             },
