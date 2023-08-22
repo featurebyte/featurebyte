@@ -5,7 +5,7 @@ import textwrap
 
 from featurebyte import FeatureJobSetting, MissingValueImputation
 from featurebyte.api.feature import Feature
-from tests.util.helper import check_sdk_code_generation
+from tests.util.helper import assert_equal_with_expected_fixture, check_sdk_code_generation
 
 
 def test_protected_attributes__event_view(
@@ -245,6 +245,26 @@ def test_datetime_property_extraction__event_timestamp_in_item_view(
         """
     ).strip()
     assert view.preview_sql() == expected
+
+
+def test_datetime_property_extraction__event_timestamp_in_item_view_joined_scd_view(
+    snowflake_item_table_with_timezone_offset_column, snowflake_scd_view, update_fixtures
+):
+    """
+    Test datetime property extraction from an ItemView with event timestamp timezone offset column
+    """
+    view = snowflake_item_table_with_timezone_offset_column.get_view(event_suffix="_event_table")
+    view = view.join(snowflake_scd_view, on="cust_id_event_table", rsuffix="_joined")
+    view["customer_age"] = (
+        view["event_timestamp_event_table"].dt.year - view["date_of_birth_joined"].dt.year
+    )
+    cond = view["event_timestamp_event_table"].dt.month < view["date_of_birth_joined"].dt.month
+    view["customer_age"][cond] = view["customer_age"][cond] - 1
+    assert_equal_with_expected_fixture(
+        view.preview_sql(),
+        "tests/fixtures/expected_preview_sql_timezone_offset_item_view_joined_scd_view.sql",
+        update_fixtures,
+    )
 
 
 def test_feature_using_timezone_offset_with_cleaning_operations(

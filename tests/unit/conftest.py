@@ -280,6 +280,10 @@ def snowflake_query_map_fixture():
                 "column_name": "end_timestamp",
                 "data_type": json.dumps({"type": "TIMESTAMP_TZ"}),
             },
+            {
+                "column_name": "date_of_birth",
+                "data_type": json.dumps({"type": "TIMESTAMP_NTZ"}),
+            },
             {"column_name": "created_at", "data_type": json.dumps({"type": "TIMESTAMP_TZ"})},
             {"column_name": "cust_id", "data_type": json.dumps({"type": "FIXED", "scale": 0})},
         ],

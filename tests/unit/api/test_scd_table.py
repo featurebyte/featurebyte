@@ -30,6 +30,7 @@ class TestSCDTableTestSuite(BaseTableTestSuite):
         "col_binary",
         "col_int",
         "cust_id",
+        "date_of_birth",
     }
     expected_table_sql = """
     SELECT
@@ -41,6 +42,7 @@ class TestSCDTableTestSuite(BaseTableTestSuite):
       "col_boolean" AS "col_boolean",
       CAST("effective_timestamp" AS STRING) AS "effective_timestamp",
       CAST("end_timestamp" AS STRING) AS "end_timestamp",
+      "date_of_birth" AS "date_of_birth",
       CAST("created_at" AS STRING) AS "created_at",
       "cust_id" AS "cust_id"
     FROM "sf_database"."sf_schema"."scd_table"
@@ -64,6 +66,7 @@ class TestSCDTableTestSuite(BaseTableTestSuite):
       "col_boolean" AS "col_boolean",
       CAST("effective_timestamp" AS STRING) AS "effective_timestamp",
       CAST("end_timestamp" AS STRING) AS "end_timestamp",
+      "date_of_birth" AS "date_of_birth",
       CAST("created_at" AS STRING) AS "created_at",
       "cust_id" AS "cust_id"
     FROM "sf_database"."sf_schema"."scd_table"
@@ -150,6 +153,13 @@ def scd_table_dict_fixture(snowflake_database_table_scd_table):
                 "dtype": "TIMESTAMP_TZ",
                 "semantic_id": None,
                 "critical_data_info": None,
+            },
+            {
+                "critical_data_info": None,
+                "dtype": "TIMESTAMP",
+                "entity_id": None,
+                "name": "date_of_birth",
+                "semantic_id": None,
             },
             {
                 "entity_id": None,
