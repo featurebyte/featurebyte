@@ -688,6 +688,9 @@ class DatetimeAccessor:
                 break
 
         if is_derived_from_timezone_offset_column:
+            # These node types are allowed as they don't change the nature of the timezone offset
+            # column. They arise from joins between tables (e.g. EventTable and ItemTable) as well
+            # as cleaning operations.
             allowed_node_types = {NodeType.INPUT, NodeType.GRAPH, NodeType.JOIN}
             for node_name in opstruct_column.node_names:
                 is_node_type_allowed = any(
