@@ -646,12 +646,59 @@ class DatetimeAccessor:
                     break
 
             elif isinstance(opstruct_column, DerivedDataColumn):
-                for column in opstruct_column.columns:
-                    if column.table_id == table_id and column.name == offset_column_name:
-                        offset_column_name_in_frame = opstruct_column.name
-                        break
+                if cls._is_valid_timezone_offset_column_if_derived_column(
+                    opstruct_column, table_id, offset_column_name
+                ):
+                    offset_column_name_in_frame = opstruct_column.name
+                    break
 
         if offset_column_name_in_frame is not None:
             return frame[offset_column_name_in_frame]  # type: ignore
 
         return None
+
+    @classmethod
+    def _is_valid_timezone_offset_column_if_derived_column(
+        cls,
+        opstruct_column: DerivedDataColumn,
+        table_id: Optional[PydanticObjectId],
+        offset_column_name: str,
+    ) -> bool:
+        """
+        Check whether a DerivedDataColumn is a valid timezone offset column
+
+        Parameters
+        ----------
+        opstruct_column: DerivedDataColumn
+            The DerivedDataColumn to check
+        table_id: Optional[PydanticObjectId]
+            Table identifier of the EventTable
+        offset_column_name: str
+            Name of the offset column as defined in the EventTable. The column might not necessarily
+            have the same name in the frame (e.g. due to join suffix).
+
+        Returns
+        -------
+        bool
+        """
+        is_derived_from_timezone_offset_column = False
+        for column in opstruct_column.columns:
+            if column.table_id == table_id and column.name == offset_column_name:
+                is_derived_from_timezone_offset_column = True
+                break
+
+        if is_derived_from_timezone_offset_column:
+            # These node types are allowed as they don't change the nature of the timezone offset
+            # column. They arise from joins between tables (e.g. EventTable and ItemTable) as well
+            # as cleaning operations.
+            allowed_node_types = {NodeType.INPUT, NodeType.GRAPH, NodeType.JOIN}
+            for node_name in opstruct_column.node_names:
+                is_node_type_allowed = any(
+                    node_name.startswith(allowed_node_type)
+                    for allowed_node_type in allowed_node_types
+                )
+                if not is_node_type_allowed:
+                    return False
+            return True
+
+        return False
