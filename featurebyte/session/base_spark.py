@@ -312,7 +312,7 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
 
     @property
     def current_working_schema_version(self) -> int:
-        return 4
+        return 5
 
     @property
     def sql_directory_name(self) -> str:
