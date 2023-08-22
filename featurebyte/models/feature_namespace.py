@@ -72,6 +72,7 @@ class BaseFeatureNamespaceModel(FeatureByteCatalogBaseDocumentModel):
             pymongo.operations.IndexModel(
                 [
                     ("name", pymongo.TEXT),
+                    ("description", pymongo.TEXT),
                 ],
             ),
             pymongo.operations.IndexModel("entity_ids"),

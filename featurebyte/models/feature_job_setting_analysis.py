@@ -102,6 +102,7 @@ class FeatureJobSettingAnalysisModel(FeatureByteCatalogBaseDocumentModel):
             pymongo.operations.IndexModel("event_table_id"),
             [
                 ("name", pymongo.TEXT),
+                ("description", pymongo.TEXT),
             ],
         ]
 

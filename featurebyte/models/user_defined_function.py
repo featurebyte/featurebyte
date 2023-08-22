@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Any, List, Optional, Union
 
 import pandas as pd
+import pymongo
 from pydantic import Field, validator
 from sqlglot.expressions import select
 from typeguard import check_type, typechecked
@@ -324,4 +325,11 @@ class UserDefinedFunctionModel(FeatureByteBaseDocumentModel):
                 conflict_fields_signature={"id": ["_id"]},
                 resolution_signature=None,
             ),
+        ]
+
+        indexes = FeatureByteBaseDocumentModel.Settings.indexes + [
+            [
+                ("name", pymongo.TEXT),
+                ("description", pymongo.TEXT),
+            ]
         ]

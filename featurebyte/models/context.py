@@ -52,5 +52,6 @@ class ContextModel(FeatureByteCatalogBaseDocumentModel):
         indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
             [
                 ("name", pymongo.TEXT),
+                ("description", pymongo.TEXT),
             ],
         ]

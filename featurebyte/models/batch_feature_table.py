@@ -3,6 +3,8 @@ BatchFeatureTable related model(s)
 """
 from __future__ import annotations
 
+import pymongo
+
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.materialized_table import MaterializedTableModel
 
@@ -21,3 +23,10 @@ class BatchFeatureTableModel(MaterializedTableModel):
         """
 
         collection_name: str = "batch_feature_table"
+
+        indexes = MaterializedTableModel.Settings.indexes + [
+            [
+                ("name", pymongo.TEXT),
+                ("description", pymongo.TEXT),
+            ],
+        ]

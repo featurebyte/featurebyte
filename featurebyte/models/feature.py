@@ -196,6 +196,7 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
                 [
                     ("name", pymongo.TEXT),
                     ("version", pymongo.TEXT),
+                    ("description", pymongo.TEXT),
                 ],
             ),
         ]

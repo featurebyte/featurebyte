@@ -80,5 +80,6 @@ class CatalogModel(FeatureByteBaseDocumentModel):
         indexes = FeatureByteBaseDocumentModel.Settings.indexes + [
             [
                 ("name", pymongo.TEXT),
+                ("description", pymongo.TEXT),
             ],
         ]

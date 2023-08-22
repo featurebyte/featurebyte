@@ -92,3 +92,7 @@ def test_indexes():
 
         if not combined_indexes:
             raise ValueError(f"No indexes defined for {collection_name}")
+
+        # ensure indexes include name field
+        if collection_name not in {"periodic_task"}:
+            assert "name_1" in combined_indexes, f"name not indexed for {collection_name}"

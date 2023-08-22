@@ -240,5 +240,6 @@ class TableModel(BaseTableData, ConstructGraphMixin, FeatureByteCatalogBaseDocum
             pymongo.operations.IndexModel("tabular_source.feature_store_id"),
             [
                 ("name", pymongo.TEXT),
+                ("description", pymongo.TEXT),
             ],
         ]
