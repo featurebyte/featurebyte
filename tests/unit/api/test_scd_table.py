@@ -30,6 +30,7 @@ class TestSCDTableTestSuite(BaseTableTestSuite):
         "col_binary",
         "col_int",
         "cust_id",
+        "date_of_birth",
     }
     expected_table_sql = """
     SELECT
@@ -41,6 +42,7 @@ class TestSCDTableTestSuite(BaseTableTestSuite):
       "col_boolean" AS "col_boolean",
       CAST("effective_timestamp" AS STRING) AS "effective_timestamp",
       CAST("end_timestamp" AS STRING) AS "end_timestamp",
+      "date_of_birth" AS "date_of_birth",
       CAST("created_at" AS STRING) AS "created_at",
       "cust_id" AS "cust_id"
     FROM "sf_database"."sf_schema"."scd_table"
@@ -64,6 +66,7 @@ class TestSCDTableTestSuite(BaseTableTestSuite):
       "col_boolean" AS "col_boolean",
       CAST("effective_timestamp" AS STRING) AS "effective_timestamp",
       CAST("end_timestamp" AS STRING) AS "end_timestamp",
+      "date_of_birth" AS "date_of_birth",
       CAST("created_at" AS STRING) AS "created_at",
       "cust_id" AS "cust_id"
     FROM "sf_database"."sf_schema"."scd_table"
@@ -160,6 +163,14 @@ def scd_table_dict_fixture(snowflake_database_table_scd_table):
                 "description": None,
             },
             {
+                "critical_data_info": None,
+                "description": None,
+                "dtype": "TIMESTAMP",
+                "entity_id": None,
+                "name": "date_of_birth",
+                "semantic_id": None,
+            },
+            {
                 "entity_id": None,
                 "name": "created_at",
                 "dtype": "TIMESTAMP_TZ",
@@ -219,7 +230,7 @@ def test_create_scd_table(snowflake_database_table_scd_table, scd_table_dict, ca
     scd_table_dict["updated_at"] = scd_table.updated_at
     scd_table_dict["description"] = None
     scd_table_dict["block_modification_by"] = []
-    for column_idx in [0, 2, 3, 6, 7, 8]:
+    for column_idx in [0, 2, 3, 6, 7, 9]:
         scd_table_dict["columns_info"][column_idx]["semantic_id"] = scd_table.columns_info[
             column_idx
         ].semantic_id

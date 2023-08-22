@@ -650,7 +650,7 @@ class DatetimeAccessor:
                     opstruct_column, table_id, offset_column_name, frame
                 ):
                     offset_column_name_in_frame = opstruct_column.name
-                    # break
+                    break
 
         if offset_column_name_in_frame is not None:
             return frame[offset_column_name_in_frame]  # type: ignore
@@ -663,7 +663,6 @@ class DatetimeAccessor:
         opstruct_column: DerivedDataColumn,
         table_id: PydanticObjectId,
         offset_column_name: str,
-        frame: Frame,
     ):
         """
         Check whether a DerivedDataColumn is a valid timezone offset column

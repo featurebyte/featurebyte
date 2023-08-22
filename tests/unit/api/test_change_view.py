@@ -407,7 +407,7 @@ def test_aggregate_over_feature_tile_sql(feature_from_change_view):
         SELECT
           index,
           "col_text",
-          COUNT(*) AS value_{expected_aggregation_id}
+          COUNT(*) AS value_count_4286197032f980d554bc6f6564ea53f42532d702
         FROM (
           SELECT
             *,
@@ -445,6 +445,7 @@ def test_aggregate_over_feature_tile_sql(feature_from_change_view):
                       "col_boolean" AS "col_boolean",
                       "effective_timestamp" AS "effective_timestamp",
                       "end_timestamp" AS "end_timestamp",
+                      "date_of_birth" AS "date_of_birth",
                       "created_at" AS "created_at",
                       "cust_id" AS "cust_id"
                     FROM "sf_database"."sf_schema"."scd_table"
@@ -509,6 +510,7 @@ def test_get_change_view__keep_record_creation_timestamp_column(
                 "col_boolean" AS "col_boolean",
                 "effective_timestamp" AS "effective_timestamp",
                 "end_timestamp" AS "end_timestamp",
+                "date_of_birth" AS "date_of_birth",
                 "created_at" AS "created_at",
                 "cust_id" AS "cust_id"
               FROM "sf_database"."sf_schema"."scd_table"
@@ -565,6 +567,7 @@ def test_get_change_view__keep_record_creation_timestamp_column(
                 "col_boolean" AS "col_boolean",
                 "effective_timestamp" AS "effective_timestamp",
                 "end_timestamp" AS "end_timestamp",
+                "date_of_birth" AS "date_of_birth",
                 CASE WHEN (
                   "created_at" IS NULL
                 ) THEN '2020-01-01' ELSE "created_at" END AS "created_at",
@@ -674,6 +677,7 @@ def test_filtered_view_output(saved_scd_table, cust_id_entity):
             "col_boolean" AS "col_boolean",
             "effective_timestamp" AS "effective_timestamp",
             "end_timestamp" AS "end_timestamp",
+            "date_of_birth" AS "date_of_birth",
             "created_at" AS "created_at",
             "cust_id" AS "cust_id"
           FROM "sf_database"."sf_schema"."scd_table"
@@ -734,6 +738,7 @@ def test_change_view_column_lag(snowflake_change_view):
                 "col_boolean" AS "col_boolean",
                 "effective_timestamp" AS "effective_timestamp",
                 "end_timestamp" AS "end_timestamp",
+                "date_of_birth" AS "date_of_birth",
                 "created_at" AS "created_at",
                 "cust_id" AS "cust_id"
               FROM "sf_database"."sf_schema"."scd_table"

@@ -36,6 +36,7 @@ scd_table = SCDTable(
         ColumnInfo(name="col_boolean", dtype="BOOL"),
         ColumnInfo(name="effective_timestamp", dtype="TIMESTAMP_TZ"),
         ColumnInfo(name="end_timestamp", dtype="TIMESTAMP_TZ"),
+        ColumnInfo(name="date_of_birth", dtype="TIMESTAMP"),
         ColumnInfo(name="created_at", dtype="TIMESTAMP_TZ"),
         ColumnInfo(name="cust_id", dtype="INT"),
     ],
