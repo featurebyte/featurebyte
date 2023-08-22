@@ -171,6 +171,9 @@ EXPECTED_FUNCTIONS = [
     "F_GET_RANK",
     "F_GET_RELATIVE_FREQUENCY",
     "F_TIMEZONE_OFFSET_TO_SECOND",
+    "F_VECTOR_AGGREGATE_MAX",
+    "F_VECTOR_AGGREGATE_SUM",
+    "F_VECTOR_AGGREGATE_AVG",
 ]
 
 EXPECTED_TABLES = [
@@ -322,6 +325,21 @@ def test_schema_initializer__sql_objects(
         {
             "filename": "F_TIMEZONE_OFFSET_TO_SECOND.sql",
             "identifier": "F_TIMEZONE_OFFSET_TO_SECOND",
+            "type": "function",
+        },
+        {
+            "filename": "F_VECTOR_AGGREGATE_AVG.sql",
+            "identifier": "F_VECTOR_AGGREGATE_AVG",
+            "type": "function",
+        },
+        {
+            "filename": "F_VECTOR_AGGREGATE_MAX.sql",
+            "identifier": "F_VECTOR_AGGREGATE_MAX",
+            "type": "function",
+        },
+        {
+            "filename": "F_VECTOR_AGGREGATE_SUM.sql",
+            "identifier": "F_VECTOR_AGGREGATE_SUM",
             "type": "function",
         },
         {
