@@ -5,7 +5,6 @@ import textwrap
 
 import pytest
 
-from featurebyte import ItemTable
 from featurebyte.api.feature import Feature
 from featurebyte.api.item_view import ItemView
 from featurebyte.core.series import Series
