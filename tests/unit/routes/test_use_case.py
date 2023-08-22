@@ -313,3 +313,29 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         assert data[0]["_id"] == str(feature_table_payload["_id"])
         assert data[0]["name"] == feature_table_payload["name"]
         assert data[0]["observation_table_id"] == str(new_ob_table_id)
+
+    @pytest.mark.asyncio
+    async def test_delete_associated_observation_table(
+        self, test_api_client_persistent, create_success_response, create_observation_table
+    ):
+        """Test delete observation_table (fail) that is already associated with a use case"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        use_case_id = create_response_dict["_id"]
+
+        new_ob_table_id = ObjectId()
+        await create_observation_table(new_ob_table_id)
+        response = test_api_client.patch(
+            f"{self.base_route}/{use_case_id}",
+            json={"new_observation_table_id": str(new_ob_table_id)},
+        )
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["observation_table_ids"] == [str(new_ob_table_id)]
+
+        # delete the observation table that is associated with the use case
+        response = test_api_client.delete(f"/observation_table/{str(new_ob_table_id)}")
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert (
+            f"Cannot delete Observation Table {str(new_ob_table_id)} because it is referenced"
+            in response.json()["detail"]
+        )
