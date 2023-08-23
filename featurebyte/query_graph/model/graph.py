@@ -363,7 +363,12 @@ class QueryGraphModel(FeatureByteBaseModel):
             return list(required_columns)
         return []
 
-    def iterate_nodes(self, target_node: Node, node_type: Optional[NodeType]) -> Iterator[Node]:
+    def iterate_nodes(
+        self,
+        target_node: Node,
+        node_type: Optional[NodeType],
+        skip_node_type: Optional[NodeType] = None,
+    ) -> Iterator[Node]:
         """
         Iterate all specified nodes in this query graph
 
@@ -379,7 +384,7 @@ class QueryGraphModel(FeatureByteBaseModel):
         Node
             Query graph nodes of the specified node type
         """
-        for node in dfs_traversal(self, target_node):
+        for node in dfs_traversal(self, target_node, skip_node_type=skip_node_type):
             if node_type is None:
                 yield node
             else:

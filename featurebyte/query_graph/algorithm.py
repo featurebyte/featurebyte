@@ -3,14 +3,20 @@ Generic graph related algorithms
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, Iterator, List
+from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Optional
+
+from featurebyte.query_graph.enum import NodeType
 
 if TYPE_CHECKING:
     from featurebyte.query_graph.model.graph import QueryGraphModel
     from featurebyte.query_graph.node import Node
 
 
-def dfs_traversal(query_graph: QueryGraphModel, node: Node) -> Iterator[Node]:
+def dfs_traversal(
+    query_graph: QueryGraphModel,
+    node: Node,
+    skip_node_type: Optional[NodeType] = None,
+) -> Iterator[Node]:
     """Perform a DFS traversal
 
     Parameters
@@ -25,10 +31,15 @@ def dfs_traversal(query_graph: QueryGraphModel, node: Node) -> Iterator[Node]:
     Node
         Query graph nodes
     """
-    yield from dfs_inner(query_graph, node, {})
+    yield from dfs_inner(query_graph, node, {}, skip_node_type=skip_node_type)
 
 
-def dfs_inner(query_graph: QueryGraphModel, node: Node, visited: dict[str, bool]) -> Iterator[Node]:
+def dfs_inner(
+    query_graph: QueryGraphModel,
+    node: Node,
+    visited: dict[str, bool],
+    skip_node_type: Optional[NodeType] = None,
+) -> Iterator[Node]:
     """Performs the actual work of a DFS traversal
 
     Parameters
@@ -51,7 +62,9 @@ def dfs_inner(query_graph: QueryGraphModel, node: Node, visited: dict[str, bool]
         if visited.get(parent_name):
             continue
         parent_node = query_graph.get_node_by_name(parent_name)
-        yield from dfs_inner(query_graph, parent_node, visited)
+        if parent_node.type == skip_node_type:
+            continue
+        yield from dfs_inner(query_graph, parent_node, visited, skip_node_type=skip_node_type)
 
 
 def _topological_sort_util(

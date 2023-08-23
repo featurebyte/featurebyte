@@ -79,14 +79,14 @@ def test_combined_simple_aggregate_and_window_aggregate(event_table, item_table)
     item_feature = item_view.groupby("order_id").aggregate(
         method="count", feature_name="my_item_feature"
     )
-    event_view = event_view.add_feature("added_feature", item_feature)
+    event_view = event_view.add_feature("added_feature", item_feature, "TRANSACTION_ID")
 
     window_feature = event_view.groupby("ÜSER ID").aggregate_over(
         value_column="added_feature",
         method="sum",
-        windows=["24h"],
-        feature_names=["added_feature_sum_24h"],
-    )["added_feature_sum_24h"]
+        windows=["7d"],
+        feature_names=["added_feature_sum_7d"],
+    )["added_feature_sum_7d"]
 
     feature = window_feature + item_feature
     feature.name = "combined_feature"
@@ -96,5 +96,12 @@ def test_combined_simple_aggregate_and_window_aggregate(event_table, item_table)
             "order_id": ["T1"],
         }
     )
-    feature.preview(df_observation)
-    raise
+    df_preview = feature.preview(df_observation)
+    expected = [
+        {
+            "POINT_IN_TIME": pd.Timestamp("2001-11-15 10:00:00"),
+            "order_id": "T1",
+            "combined_feature": 69,
+        }
+    ]
+    assert df_preview.to_dict("records") == expected
