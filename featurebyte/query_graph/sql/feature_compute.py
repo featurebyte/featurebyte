@@ -461,7 +461,9 @@ class FeatureExecutionPlanner:
             self.plan.add_aggregation_spec(agg_spec)
         self.update_feature_specs(node)
 
-    def get_aggregation_specs(self, node: Node) -> list[AggregationSpecType]:
+    def get_aggregation_specs(  # pylint: disable=too-many-branches
+        self, node: Node
+    ) -> list[AggregationSpecType]:
         """Get list of aggregation specs for a given query graph node
 
         Parameters

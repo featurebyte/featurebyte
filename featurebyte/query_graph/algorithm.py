@@ -25,6 +25,8 @@ def dfs_traversal(
         Query graph
     node : Node
         Current node to traverse from
+    skip_node_type : Optional[NodeType]
+        If specified, skip nodes of this type during traversal
 
     Yields
     ------
@@ -50,6 +52,8 @@ def dfs_inner(
         Current node to traverse from
     visited : dict
         Markers for visited nodes
+    skip_node_type : Optional[NodeType]
+        If specified, skip nodes of this type during traversal
 
     Yields
     ------

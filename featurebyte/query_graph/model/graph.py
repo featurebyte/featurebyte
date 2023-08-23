@@ -378,6 +378,8 @@ class QueryGraphModel(FeatureByteBaseModel):
             Node from which to start the backward search
         node_type: Optional[NodeType]
             Specific node type to iterate, if None, iterate all node types
+        skip_node_type : Optional[NodeType]
+            If specified, skip nodes of this type during traversal
 
         Yields
         ------
