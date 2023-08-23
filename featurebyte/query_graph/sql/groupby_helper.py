@@ -23,6 +23,7 @@ class GroupbyColumn:
 
     agg_func: AggFunc
     parent_expr: Optional[Expression]
+    parent_dtype: Optional[DBVarType]
     result_name: str
 
 
@@ -113,7 +114,6 @@ def get_groupby_expr(
     groupby_columns: list[GroupbyColumn],
     value_by: Optional[GroupbyKey],
     adapter: BaseAdapter,
-    parent_dtype: Optional[DBVarType],
 ) -> Select:
     """
     Construct a GROUP BY statement using the provided expression as input
@@ -131,8 +131,6 @@ def get_groupby_expr(
         Optional category parameter
     adapter: BaseAdapter
         Adapter for generating engine specific expressions
-    parent_dtype: Optional[DBVarType]
-        Parent column data type
 
     Returns
     -------
@@ -143,7 +141,7 @@ def get_groupby_expr(
             get_aggregation_expression(
                 agg_func=column.agg_func,
                 input_column=column.parent_expr,
-                parent_dtype=parent_dtype,
+                parent_dtype=column.parent_dtype,
             ),
             alias=column.result_name + ("_inner" if value_by is not None else ""),
             quoted=True,
