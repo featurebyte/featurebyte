@@ -461,7 +461,9 @@ class FeatureExecutionPlanner:
             self.plan.add_aggregation_spec(agg_spec)
         self.update_feature_specs(node)
 
-    def get_aggregation_specs(self, node: Node) -> list[AggregationSpecType]:
+    def get_aggregation_specs(  # pylint: disable=too-many-branches
+        self, node: Node
+    ) -> list[AggregationSpecType]:
         """Get list of aggregation specs for a given query graph node
 
         Parameters
@@ -474,7 +476,18 @@ class FeatureExecutionPlanner:
         AggregationSpec
         """
         groupby_nodes = list(self.graph.iterate_nodes(node, NodeType.GROUPBY))
-        item_groupby_nodes = list(self.graph.iterate_nodes(node, NodeType.ITEM_GROUPBY))
+        # If ITEM_GROUPBY nodes can be reached without going through GROUPBY nodes, they need to be
+        # processed separately as simple aggregations (not part of double aggregations).
+        if node.type == NodeType.GROUPBY:
+            # This should occur only in test. In practice, all feature nodes are alias or project
+            # nodes.
+            item_groupby_nodes = []
+        else:
+            item_groupby_nodes = list(
+                self.graph.iterate_nodes(
+                    node, NodeType.ITEM_GROUPBY, skip_node_type=NodeType.GROUPBY
+                )
+            )
         lookup_nodes = list(self.graph.iterate_nodes(node, NodeType.LOOKUP))
         lookup_target_nodes = list(self.graph.iterate_nodes(node, NodeType.LOOKUP_TARGET))
         asat_nodes = list(self.graph.iterate_nodes(node, NodeType.AGGREGATE_AS_AT))
@@ -482,13 +495,10 @@ class FeatureExecutionPlanner:
 
         out: list[AggregationSpecType] = []
         if groupby_nodes:
-            # Feature involves window aggregations. In this case, tiling applies. Even if
-            # ITEM_GROUPBY nodes are involved, their results would have already been incorporated in
-            # tiles, so we only need to handle GROUPBY node type here.
             for groupby_node in groupby_nodes:
                 out.extend(self.get_specs_from_groupby(groupby_node))
 
-        elif item_groupby_nodes:
+        if item_groupby_nodes:
             # Feature involves non-time-aware aggregations
             for item_groupby_node in item_groupby_nodes:
                 out.extend(self.get_non_tiling_specs(ItemAggregationSpec, item_groupby_node))

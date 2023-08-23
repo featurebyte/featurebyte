@@ -958,9 +958,10 @@ def test_accessing_saved_event_table_attributes(saved_event_table):
     assert cloned.default_feature_job_setting == feature_job_setting
 
 
-def test_timezone_offset__valid_constant(snowflake_database_table_dimension_table):
+def test_timezone_offset__valid_constant(snowflake_database_table, catalog):
     """Test specifying a constant timezone offset"""
-    event_table = snowflake_database_table_dimension_table.create_event_table(
+    _ = catalog
+    event_table = snowflake_database_table.create_event_table(
         name="sf_event_table",
         event_id_column="col_int",
         event_timestamp_column="event_timestamp",
@@ -984,8 +985,9 @@ def test_timezone_offset__invalid_constant(snowflake_database_table_dimension_ta
     assert "Invalid timezone_offset: 8 hours ahead" in str(exc.value)
 
 
-def test_timezone_offset__valid_column(snowflake_database_table_dimension_table):
+def test_timezone_offset__valid_column(snowflake_database_table_dimension_table, catalog):
     """Test specifying a constant timezone offset using a column"""
+    _ = catalog
     event_table = snowflake_database_table_dimension_table.create_event_table(
         name="sf_event_table",
         event_id_column="col_int",
@@ -998,8 +1000,9 @@ def test_timezone_offset__valid_column(snowflake_database_table_dimension_table)
     assert input_node_params.event_timestamp_timezone_offset_column == "col_text"
 
 
-def test_timezone_offset__invalid_column(snowflake_database_table_dimension_table):
+def test_timezone_offset__invalid_column(snowflake_database_table_dimension_table, catalog):
     """Test specifying a constant timezone offset using a column"""
+    _ = catalog
     with pytest.raises(RecordCreationException) as exc:
         snowflake_database_table_dimension_table.create_event_table(
             name="sf_event_table",
@@ -1011,8 +1014,11 @@ def test_timezone_offset__invalid_column(snowflake_database_table_dimension_tabl
     assert expected in str(exc.value)
 
 
-def test_create_event_table__duplicated_column_name_in_different_fields(snowflake_database_table):
+def test_create_event_table__duplicated_column_name_in_different_fields(
+    snowflake_database_table, catalog
+):
     """Test EventTable creation failure due to duplicated column name in different fields"""
+    _ = catalog
     with pytest.raises(ValueError) as exc:
         snowflake_database_table.create_event_table(
             name="sf_event_table",
