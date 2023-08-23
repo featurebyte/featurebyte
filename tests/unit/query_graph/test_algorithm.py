@@ -2,6 +2,7 @@
 Unit tests for featurebyte.query_graph.algorithms
 """
 from featurebyte.query_graph.algorithm import dfs_traversal, topological_sort
+from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
 
 def test_dfs__1(query_graph_with_groupby):
@@ -33,6 +34,20 @@ def test_dfs__3(query_graph_with_groupby):
         "project_1",
         "project_2",
     ]
+
+
+def test_dfs__skip_node_type(query_graph_with_groupby):
+    """Test case for DFS traversal with skip node type"""
+    node = query_graph_with_groupby.get_node_by_name("groupby_1")
+    node = query_graph_with_groupby.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["some_col"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[node],
+    )
+    result = list(dfs_traversal(query_graph_with_groupby, node, skip_node_type=NodeType.GROUPBY))
+    traverse_sequence = [x.name for x in result]
+    assert traverse_sequence == ["project_3"]
 
 
 def test_topological_sort__0():

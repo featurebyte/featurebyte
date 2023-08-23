@@ -68,3 +68,40 @@ def test_features_without_entity(event_table):
 
     pd.testing.assert_frame_equal(df_features_1, df_features_deployed_1)
     pd.testing.assert_frame_equal(df_features_2, df_features_deployed_2)
+
+
+def test_combined_simple_aggregate_and_window_aggregate(event_table, item_table):
+    """
+    Test combining simple aggregate and window aggregate
+    """
+    event_view = event_table.get_view()
+    item_view = item_table.get_view()
+    item_feature = item_view.groupby("order_id").aggregate(
+        method="count", feature_name="my_item_feature"
+    )
+    event_view = event_view.add_feature("added_feature", item_feature, "TRANSACTION_ID")
+
+    window_feature = event_view.groupby("ÜSER ID").aggregate_over(
+        value_column="added_feature",
+        method="sum",
+        windows=["7d"],
+        feature_names=["added_feature_sum_7d"],
+    )["added_feature_sum_7d"]
+
+    feature = window_feature + item_feature
+    feature.name = "combined_feature"
+    df_observation = pd.DataFrame(
+        {
+            "POINT_IN_TIME": pd.to_datetime(["2001-11-15 10:00:00"]),
+            "order_id": ["T1"],
+        }
+    )
+    df_preview = feature.preview(df_observation)
+    expected = [
+        {
+            "POINT_IN_TIME": pd.Timestamp("2001-11-15 10:00:00"),
+            "order_id": "T1",
+            "combined_feature": 69,
+        }
+    ]
+    assert df_preview.to_dict("records") == expected
