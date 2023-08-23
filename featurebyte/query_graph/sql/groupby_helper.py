@@ -3,14 +3,14 @@ Utilities related to SQL generation for groupby operations
 """
 from __future__ import annotations
 
-from typing import Optional, cast
+from typing import List, Optional, cast
 
 from dataclasses import dataclass
 
 from sqlglot import expressions, parse_one
 from sqlglot.expressions import Expression, Select, alias_
 
-from featurebyte.enum import AggFunc, DBVarType
+from featurebyte.enum import AggFunc, DBVarType, SourceType
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.common import quoted_identifier
 
@@ -108,6 +108,43 @@ def get_aggregation_expression(
     return expr
 
 
+def get_vector_agg_expr_snowflake(
+    agg_func: AggFunc, groupby_keys: List[GroupbyKey], groupby_column: GroupbyColumn, index: int
+) -> Expression:
+    """
+    Returns the vector aggregate expression for snowflake. This will call the vector aggregate function, and return its
+    value as part of a table.
+
+    SELECT ENTITY_ID, agg.NUM AS MY_NUM_1
+        FROM TAB,
+        TABLE(MYSUM(CAST(VALUE AS DOUBLE)) OVER (PARTITION BY ENTITY_ID)) agg
+    """
+    array_parent_agg_func_sql_mapping = {
+        AggFunc.MAX: "VECTOR_AGGREGATE_MAX",
+        AggFunc.AVG: "VECTOR_AGGREGATE_AVG",
+        AggFunc.SUM: "VECTOR_AGGREGATE_SUM",
+    }
+    assert agg_func in array_parent_agg_func_sql_mapping
+    snowflake_agg_func = array_parent_agg_func_sql_mapping[agg_func]
+
+    select_keys = [k.get_alias() for k in groupby_keys]
+    keys = [k.expr.sql() for k in groupby_keys]
+
+    agg_name = f"AGG_{index}"
+    agg_result_column = alias_(
+        f"{agg_name}.VECTOR_AGG_RESULT", alias=f"AGG_RESULT_{index}", quoted=True
+    )
+    agg_func_expr = expressions.Anonymous(
+        this=snowflake_agg_func, expressions=[groupby_column.parent_expr]
+    )
+    concatenated_keys = ", ".join(keys)
+    partition = parse_one(f"{agg_func_expr} OVER (PARTITION BY {concatenated_keys})")
+    table_expr = expressions.Anonymous(this="TABLE", expressions=[partition])
+    aliased_table_expr = alias_(table_expr, alias=agg_name, quoted=True)
+
+    return expressions.select(*select_keys, agg_result_column).from_("REQ", aliased_table_expr)
+
+
 def get_groupby_expr(
     input_expr: Select,
     groupby_keys: list[GroupbyKey],
@@ -136,7 +173,7 @@ def get_groupby_expr(
     -------
     Select
     """
-    agg_exprs = [
+    non_vector_agg_exprs = [
         alias_(
             get_aggregation_expression(
                 agg_func=column.agg_func,
@@ -147,6 +184,23 @@ def get_groupby_expr(
             quoted=True,
         )
         for column in groupby_columns
+        if not (
+            column.parent_dtype == DBVarType.ARRAY and adapter.source_type == SourceType.SNOWFLAKE
+        )
+    ]
+    vector_agg_exprs = [
+        alias_(
+            get_vector_agg_expr_snowflake(
+                agg_func=column.agg_func,
+                groupby_keys=groupby_keys,
+                groupby_column=column,
+                index=index,
+            ),
+            alias=column.result_name + ("_inner" if value_by is not None else ""),
+            quoted=True,
+        )
+        for index, column in enumerate(groupby_columns)
+        if column.parent_dtype == DBVarType.ARRAY and adapter.source_type == SourceType.SNOWFLAKE
     ]
 
     select_keys = [k.get_alias() for k in groupby_keys]
@@ -155,7 +209,9 @@ def get_groupby_expr(
         select_keys.append(value_by.get_alias())
         keys.append(value_by.expr)
 
-    groupby_expr = adapter.group_by(input_expr, select_keys, agg_exprs, keys)
+    groupby_expr = adapter.group_by(
+        input_expr, select_keys, non_vector_agg_exprs, keys, vector_agg_exprs
+    )
 
     if value_by is not None:
         groupby_expr = adapter.construct_key_value_aggregation_sql(

@@ -5,13 +5,13 @@ from __future__ import annotations
 
 from typing import List, Literal, Optional
 
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 
 from numpy import format_float_positional
 from sqlglot import expressions
 from sqlglot.expressions import Alias, Expression, Select, alias_, select
 
-from featurebyte.enum import DBVarType, InternalName
+from featurebyte.enum import DBVarType, InternalName, SourceType
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
@@ -23,12 +23,13 @@ from featurebyte.query_graph.sql.common import (
 FB_QUALIFY_CONDITION_COLUMN = "__fb_qualify_condition_column"
 
 
-class BaseAdapter:  # pylint: disable=too-many-public-methods
+class BaseAdapter(ABC):  # pylint: disable=too-many-public-methods
     """
     Helper class to generate engine specific SQL expressions
     """
 
     TABLESAMPLE_PERCENT_KEY = "percent"
+    source_type: SourceType
 
     @classmethod
     @abstractmethod
@@ -631,6 +632,7 @@ class BaseAdapter:  # pylint: disable=too-many-public-methods
         select_keys: List[Expression],
         agg_exprs: List[Expression],
         keys: List[Expression],
+        vector_aggregate_expressions: Optional[List[Expression]] = None,
     ) -> Select:
         """
         Construct query to group by
@@ -645,11 +647,16 @@ class BaseAdapter:  # pylint: disable=too-many-public-methods
             List of aggregation expressions
         keys: List[Expression]
             List of keys
+        vector_aggregate_expressions: Optional[List[Expression]]
+            List of vector aggregate expressions. This should only be used if special handling is required to join
+            vector aggregate functions, and that they're not usable as a normal function. This param is a no-op
+            by default, and will only be used by specific data warehouses.
 
         Returns
         -------
         Select
         """
+        _ = vector_aggregate_expressions
         return input_expr.select(*select_keys, *agg_exprs).group_by(*keys)
 
     @classmethod

@@ -11,7 +11,7 @@ import string
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, alias_
 
-from featurebyte.enum import DBVarType, InternalName, StrEnum
+from featurebyte.enum import DBVarType, InternalName, SourceType, StrEnum
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql import expression as fb_expressions
 from featurebyte.query_graph.sql.adapter.base import BaseAdapter
@@ -23,6 +23,8 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
     """
     Helper class to generate Snowflake specific SQL expressions
     """
+
+    source_type = SourceType.SNOWFLAKE
 
     # Snowflake does not support the PERCENT keyword. Setting the size parameter instead to
     # prevent the generated SQL to have the PERCENT keyword. Ideally, this should be handled by

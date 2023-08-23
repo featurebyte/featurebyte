@@ -37,7 +37,9 @@ class BaseAdapterTest:
         ]
         select_keys = [k.get_alias() for k in groupby_keys]
         keys = [k.expr for k in groupby_keys]
-        agg_exprs = [get_aggregation_expression(AggFunc.SUM, "parent", None)]
+        agg_exprs = [
+            get_aggregation_expression(AggFunc.SUM, "parent", None),
+        ]
         group_by_expr = adapter.group_by(select_expr, select_keys, agg_exprs, keys)
         expected = textwrap.dedent(
             """
