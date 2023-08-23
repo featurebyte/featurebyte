@@ -3,13 +3,12 @@ Module for groupby operation (non-time aware) sql generation
 """
 from __future__ import annotations
 
-from typing import Optional, cast
+from typing import cast
 
 from dataclasses import dataclass
 
 from sqlglot.expressions import Expression, select
 
-from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.common import SQLType, quoted_identifier
