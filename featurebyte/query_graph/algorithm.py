@@ -66,7 +66,7 @@ def dfs_inner(
         if visited.get(parent_name):
             continue
         parent_node = query_graph.get_node_by_name(parent_name)
-        if parent_node.type == skip_node_type:
+        if skip_node_type is not None and parent_node.type == skip_node_type:
             continue
         yield from dfs_inner(query_graph, parent_node, visited, skip_node_type=skip_node_type)
 
