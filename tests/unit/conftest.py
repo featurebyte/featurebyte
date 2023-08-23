@@ -827,6 +827,24 @@ def snowflake_event_view_entity_feature_job_fixture(
     yield event_view
 
 
+@pytest.fixture(name="snowflake_item_view_with_entity")
+def snowflake_item_view_with_entity_fixture(snowflake_item_table, transaction_entity):
+    """
+    Snowflake item view with entity
+    """
+    snowflake_item_table["event_id_col"].as_entity(transaction_entity.name)
+    item_view = snowflake_item_table.get_view(event_suffix="_event")
+    return item_view
+
+
+@pytest.fixture(name="snowflake_scd_view_with_entity")
+def snowflake_scd_view_with_entity_fixture(snowflake_scd_table_with_entity):
+    """
+    Fixture for an SCD view with entity
+    """
+    return snowflake_scd_table_with_entity.get_view()
+
+
 @pytest.fixture(name="patched_observation_table_service")
 def patched_observation_table_service_fixture():
     """
