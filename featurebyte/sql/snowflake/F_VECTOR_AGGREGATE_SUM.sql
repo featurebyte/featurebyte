@@ -11,12 +11,11 @@ class VectorAggregateSum:
     def process(self, vector):
       if not self._sum_array:
         self._sum_array = vector
-        return [(self._sum_array,)]
+        return
 
       assert len(self._sum_array) == len(vector)
       for i in range(len(vector)):
         self._sum_array[i] += vector[i]
-      return [(self._sum_array,)]
 
     def end_partition(self):
       return [(self._sum_array,)]
