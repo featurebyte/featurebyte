@@ -629,7 +629,7 @@ class BaseAdapter:  # pylint: disable=too-many-public-methods
         cls,
         input_expr: Select,
         select_keys: List[Expression],
-        agg_exprs: List[Alias],
+        agg_exprs: List[Expression],
         keys: List[Expression],
     ) -> Select:
         """
