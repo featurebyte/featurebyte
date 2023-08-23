@@ -76,7 +76,7 @@ def test_get_vector_agg_expr_snowflake(agg_func, expected_table_func, expect_err
         f"""
             SELECT
               REQ."serving_name" AS "serving_name",
-              AGG_0.VECTOR_AGG_RESULT AS "AGG_RESULT_0"
+              AGG_0.VECTOR_AGG_RESULT AS "result"
             FROM REQ, TABLE({expected_table_func}(TABLE."parent") OVER (PARTITION BY REQ."serving_name")) AS "AGG_0"
         """
     ).strip()

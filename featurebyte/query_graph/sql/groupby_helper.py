@@ -132,7 +132,7 @@ def get_vector_agg_expr_snowflake(
 
     agg_name = f"AGG_{index}"
     agg_result_column = alias_(
-        f"{agg_name}.VECTOR_AGG_RESULT", alias=f"AGG_RESULT_{index}", quoted=True
+        f"{agg_name}.VECTOR_AGG_RESULT", alias=groupby_column.result_name, quoted=True
     )
     agg_func_expr = expressions.Anonymous(
         this=snowflake_agg_func, expressions=[groupby_column.parent_expr]

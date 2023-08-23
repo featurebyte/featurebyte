@@ -35,7 +35,7 @@ class TestSnowflakeAdapter(BaseAdapterTest):
                   SELECT
                     REQ."serving_name" AS "serving_name",
                     REQ."serving_name_2" AS "serving_name_2",
-                    AGG_0.VECTOR_AGG_RESULT AS "AGG_RESULT_0"
+                    AGG_0.VECTOR_AGG_RESULT AS "result"
                   FROM REQ, TABLE(
                     VECTOR_AGGREGATE_SUM(TABLE."parent") OVER (PARTITION BY REQ."serving_name", REQ."serving_name_2")
                   ) AS "AGG_0"
@@ -44,7 +44,7 @@ class TestSnowflakeAdapter(BaseAdapterTest):
                   SELECT
                     REQ."serving_name" AS "serving_name",
                     REQ."serving_name_2" AS "serving_name_2",
-                    AGG_1.VECTOR_AGG_RESULT AS "AGG_RESULT_1"
+                    AGG_1.VECTOR_AGG_RESULT AS "result2"
                   FROM REQ, TABLE(
                     VECTOR_AGGREGATE_SUM(TABLE."parent2") OVER (PARTITION BY REQ."serving_name", REQ."serving_name_2")
                   ) AS "AGG_1"
@@ -54,7 +54,7 @@ class TestSnowflakeAdapter(BaseAdapterTest):
                   SELECT
                     REQ."serving_name" AS "serving_name",
                     REQ."serving_name_2" AS "serving_name_2",
-                    AGG_2.VECTOR_AGG_RESULT AS "AGG_RESULT_2"
+                    AGG_2.VECTOR_AGG_RESULT AS "result3"
                   FROM REQ, TABLE(
                     VECTOR_AGGREGATE_SUM(TABLE."parent3") OVER (PARTITION BY REQ."serving_name", REQ."serving_name_2")
                   ) AS "AGG_2"
