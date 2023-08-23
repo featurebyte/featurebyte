@@ -3,7 +3,7 @@ SnowflakeAdapter class for generating Snowflake specific SQL expressions
 """
 from __future__ import annotations
 
-from typing import Literal, Optional, cast
+from typing import List, Literal, Optional, cast
 
 import re
 import string
@@ -16,7 +16,11 @@ from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql import expression as fb_expressions
 from featurebyte.query_graph.sql.adapter.base import BaseAdapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
-from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, quoted_identifier
+from featurebyte.query_graph.sql.common import (
+    get_fully_qualified_table_name,
+    get_qualified_column_identifier,
+    quoted_identifier,
+)
 
 
 class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
@@ -282,3 +286,84 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
             ),
             expression=order_expr,
         )
+
+    @classmethod
+    def group_by(
+        cls,
+        input_expr: Select,
+        select_keys: List[Expression],
+        agg_exprs: List[Expression],
+        keys: List[Expression],
+        vector_aggregate_expressions: Optional[List[Expression]] = None,
+    ) -> Select:
+        # If there are no vector aggregate expressions, we can use the standard group by.
+        normal_groupby_expr = super().group_by(input_expr, select_keys, agg_exprs, keys)
+        if not vector_aggregate_expressions:
+            return normal_groupby_expr
+
+        # If there are vector aggregate expressions, we need to
+        # - get the vector aggregate expressions in a subquery
+        # - join them with the original table
+
+        # Generate vector aggregation joins
+        vector_agg_select_keys = []
+        for idx, vector_agg_expr in enumerate(vector_aggregate_expressions):
+            # TODO: pass in names constructed via get_agg_result_name_from_groupby_parameters
+            # found in the groupbycolumn already. change `AGG_RESULT_` to these
+            vector_agg_select_keys.append(
+                alias_(f"T{idx}.AGG_RESULT_{idx}", alias=f"AGG_RESULT_{idx}", quoted=True)
+            )
+
+        # Update agg_exprs select keys
+        # TODO: fix this
+        groupby_subquery_alias = "GROUPBY_RESULT"
+        new_groupby_exprs = []
+        for agg_expr in agg_exprs:
+            new_groupby_exprs.append(
+                get_qualified_column_identifier(agg_expr.name, groupby_subquery_alias)
+            )
+
+        vector_expr = vector_aggregate_expressions[0].subquery(alias="T0")
+        left_expression = input_expr.select(
+            *select_keys, *agg_exprs, *vector_agg_select_keys
+        ).from_(vector_expr)
+        if len(vector_aggregate_expressions) == 1:
+            return left_expression
+        # If there's more than one, continue joining the rest of them.
+        for idx, vector_agg_expr in enumerate(vector_aggregate_expressions[1:]):
+            right_expr = vector_agg_expr.subquery(alias=f"T{idx+1}")
+            join_conditions = []
+            for select_key in select_keys:
+                join_conditions.append(
+                    expressions.EQ(
+                        this=get_qualified_column_identifier(select_key.alias, f"T{idx}"),
+                        expression=get_qualified_column_identifier(select_key.alias, f"T{idx+1}"),
+                    )
+                )
+            left_expression = left_expression.join(
+                right_expr,
+                join_type="INNER",
+                on=expressions.and_(*join_conditions),
+            )
+
+        # Join with normal aggregation groupby's
+        if agg_exprs:
+            join_conditions = []
+            for select_key in select_keys:
+                join_conditions.append(
+                    expressions.EQ(
+                        this=get_qualified_column_identifier(
+                            select_key.alias, groupby_subquery_alias
+                        ),
+                        expression=get_qualified_column_identifier(
+                            select_key.alias, f"T{len(vector_aggregate_expressions) - 1}"
+                        ),
+                    )
+                )
+            left_expression = left_expression.join(
+                normal_groupby_expr.subquery(alias="GROUPBY_RESULT"),
+                join_type="INNER",
+                on=expressions.and_(*join_conditions),
+            )
+
+        return left_expression
