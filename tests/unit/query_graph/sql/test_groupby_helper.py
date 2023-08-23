@@ -44,6 +44,7 @@ def test_get_groupby_expr(agg_func, parent_dtype, method):
         agg_func=agg_func,
         parent_expr=(get_qualified_column_identifier("parent", "TABLE")),
         result_name="result",
+        parent_dtype=parent_dtype,
     )
     groupby_expr = get_groupby_expr(
         input_expr=select_expr,
@@ -51,7 +52,6 @@ def test_get_groupby_expr(agg_func, parent_dtype, method):
         groupby_columns=[groupby_column],
         value_by=valueby_key,
         adapter=get_sql_adapter(SourceType.SNOWFLAKE),
-        parent_dtype=parent_dtype,
     )
     expected = textwrap.dedent(
         f"""

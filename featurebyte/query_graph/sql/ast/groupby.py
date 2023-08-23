@@ -28,7 +28,6 @@ class ItemGroupby(TableNode):
     value_by: str
     groupby_columns: list[GroupbyColumn]
     query_node_type = NodeType.ITEM_GROUPBY
-    parent_dtype: Optional[DBVarType]
 
     @property
     def sql(self) -> Expression:
@@ -44,7 +43,6 @@ class ItemGroupby(TableNode):
             groupby_columns=self.groupby_columns,
             value_by=value_by,
             adapter=self.context.adapter,
-            parent_dtype=self.parent_dtype,
         )
 
     @classmethod
@@ -57,6 +55,9 @@ class ItemGroupby(TableNode):
             columns_map[key] = quoted_identifier(key)
         output_name = parameters["name"]
         columns_map[output_name] = quoted_identifier(output_name)
+        parent_dtype = None
+        if parameters["parent"]:
+            parent_dtype = get_parent_dtype(parameters["parent"], context.graph, context.query_node)
         groupby_columns = [
             GroupbyColumn(
                 agg_func=parameters["agg_func"],
@@ -64,11 +65,9 @@ class ItemGroupby(TableNode):
                     quoted_identifier(parameters["parent"]) if parameters["parent"] else None
                 ),
                 result_name=output_name,
+                parent_dtype=parent_dtype,
             )
         ]
-        parent_dtype = None
-        if parameters["parent"]:
-            parent_dtype = get_parent_dtype(parameters["parent"], context.graph, context.query_node)
         node = ItemGroupby(
             context=context,
             columns_map=columns_map,
@@ -76,6 +75,5 @@ class ItemGroupby(TableNode):
             keys=parameters["keys"],
             value_by=parameters["value_by"],
             groupby_columns=groupby_columns,
-            parent_dtype=parent_dtype,
         )
         return node

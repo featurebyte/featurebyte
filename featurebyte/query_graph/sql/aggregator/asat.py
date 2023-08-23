@@ -157,6 +157,7 @@ class AsAtAggregator(NonTileBasedAggregator[AggregateAsAtSpec]):
                     else None
                 ),
                 result_name=s.agg_result_name,
+                parent_dtype=s.parent_dtype,
             )
             for s in specs
         ]
@@ -180,7 +181,6 @@ class AsAtAggregator(NonTileBasedAggregator[AggregateAsAtSpec]):
             groupby_columns=groupby_columns,
             value_by=value_by,
             adapter=self.adapter,
-            parent_dtype=spec.parent_dtype,
         )
         return LeftJoinableSubquery(
             expr=aggregate_asat_expr,
