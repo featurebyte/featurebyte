@@ -1644,7 +1644,7 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
             # Since there is no single line in SDK code to generate conditional expression, we output info instead
             # and delay the generation of SDK code to the assign node. This method only generates the conditional part,
             # the assignment part will be generated in the assign node.
-            info_dict_data = {"value": self.parameters.value, "mask": mask_var_name}
+            info_dict_data: Dict[str, Any] = {"value": self.parameters.value, "mask": mask_var_name}
             if is_series_assignment:
                 info_dict_data["value"] = value
                 info_dict_data["is_series_assignment"] = True
