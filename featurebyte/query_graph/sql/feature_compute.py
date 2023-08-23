@@ -476,9 +476,16 @@ class FeatureExecutionPlanner:
         groupby_nodes = list(self.graph.iterate_nodes(node, NodeType.GROUPBY))
         # If ITEM_GROUPBY nodes can be reached without going through GROUPBY nodes, they need to be
         # processed separately as simple aggregations (not part of double aggregations).
-        item_groupby_nodes = list(
-            self.graph.iterate_nodes(node, NodeType.ITEM_GROUPBY, skip_node_type=NodeType.GROUPBY)
-        )
+        if node.type == NodeType.GROUPBY:
+            # This should occur only in test. In practice, all feature nodes are alias or project
+            # nodes.
+            item_groupby_nodes = []
+        else:
+            item_groupby_nodes = list(
+                self.graph.iterate_nodes(
+                    node, NodeType.ITEM_GROUPBY, skip_node_type=NodeType.GROUPBY
+                )
+            )
         lookup_nodes = list(self.graph.iterate_nodes(node, NodeType.LOOKUP))
         lookup_target_nodes = list(self.graph.iterate_nodes(node, NodeType.LOOKUP_TARGET))
         asat_nodes = list(self.graph.iterate_nodes(node, NodeType.AGGREGATE_AS_AT))
