@@ -402,7 +402,10 @@ class AssignNode(AssignColumnMixin, BasePrunableNode):
         value: RightHandSide
         if isinstance(second_input, InfoDict):
             mask_var = second_input["mask"]
-            value = ValueStr.create(second_input["value"])
+            if second_input.get("is_series_assignment"):
+                value = second_input["value"]
+            else:
+                value = ValueStr.create(second_input["value"])
             statements.append(
                 (
                     VariableNameStr(f"{output_var_name}['{column_name}'][{mask_var}]"),
@@ -1632,7 +1635,8 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
         statements.extend(var_statements)
 
         value: RightHandSide = ValueStr.create(self.parameters.value)
-        if len(var_name_expressions) == 3:
+        is_series_assignment = len(var_name_expressions) == 3
+        if is_series_assignment:
             value = var_name_expressions[2]
 
         if context.as_info_dict:
@@ -1640,8 +1644,11 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
             # Since there is no single line in SDK code to generate conditional expression, we output info instead
             # and delay the generation of SDK code to the assign node. This method only generates the conditional part,
             # the assignment part will be generated in the assign node.
-            info_dict = InfoDict({"value": self.parameters.value, "mask": mask_var_name})
-            return statements, info_dict
+            info_dict_data: Dict[str, Any] = {"value": self.parameters.value, "mask": mask_var_name}
+            if is_series_assignment:
+                info_dict_data["value"] = value
+                info_dict_data["is_series_assignment"] = True
+            return statements, InfoDict(info_dict_data)
 
         # This handles the normal series assignment case where `col[<condition>] = <value>` is used. In this case,
         # the conditional assignment should not update their parent view.
