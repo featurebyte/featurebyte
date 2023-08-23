@@ -3,13 +3,13 @@ Base class for SQL adapters
 """
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import List, Literal, Optional
 
 from abc import abstractmethod
 
 from numpy import format_float_positional
 from sqlglot import expressions
-from sqlglot.expressions import Expression, Select, alias_, select
+from sqlglot.expressions import Alias, Expression, Select, alias_, select
 
 from featurebyte.enum import DBVarType, InternalName
 from featurebyte.query_graph.node.schema import TableDetails
@@ -623,6 +623,34 @@ class BaseAdapter:  # pylint: disable=too-many-public-methods
         Expression
         """
         return quoted_identifier(serving_name)
+
+    @classmethod
+    def group_by(
+        cls,
+        input_expr: Select,
+        select_keys: List[Expression],
+        agg_exprs: List[Alias],
+        keys: List[Expression],
+    ) -> Select:
+        """
+        Construct query to group by
+
+        Parameters
+        ----------
+        input_expr: Select
+            Input Select expression
+        select_keys: List[Expression]
+            List of select keys
+        agg_exprs: List[Alias]
+            List of aggregation expressions
+        keys: List[Expression]
+            List of keys
+
+        Returns
+        -------
+        Select
+        """
+        return input_expr.select(*select_keys, *agg_exprs).group_by(*keys)
 
     @classmethod
     @abstractmethod

@@ -155,7 +155,7 @@ def get_groupby_expr(
         select_keys.append(value_by.get_alias())
         keys.append(value_by.expr)
 
-    groupby_expr = input_expr.select(*select_keys, *agg_exprs).group_by(*keys)
+    groupby_expr = adapter.group_by(input_expr, select_keys, agg_exprs, keys)
 
     if value_by is not None:
         groupby_expr = adapter.construct_key_value_aggregation_sql(
