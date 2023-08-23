@@ -523,3 +523,21 @@ def test_isin_feature_sdk_code_generation(
         update_fixtures=update_fixtures,
         table_id=saved_event_table.id,
     )
+
+
+def test_conditional_assign_feature_sdk_code_generation(saved_event_table, transaction_entity):
+    """Test SDK code generation for conditional assignment feature"""
+    # tag event ID column as entity
+    saved_event_table.col_int.as_entity(transaction_entity.name)
+
+    # create lookup feature
+    event_view = saved_event_table.get_view()
+    col_float = event_view["col_float"]
+    mask = col_float < 0
+    col_float[mask] = col_float[mask] * -1
+    event_view["col_float"] = col_float
+    grouped = event_view.as_features(column_names=["col_float"], feature_names=["feat_col_float"])
+    feat = grouped["feat_col_float"]
+
+    # check that the feature can be saved without throw graph inconsistency error
+    feat.save()
