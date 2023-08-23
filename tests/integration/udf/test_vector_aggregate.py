@@ -47,7 +47,6 @@ def _get_query(aggregate_function: str) -> str:
     return f"""
     SELECT a.id_col, b.VECTOR_AGG_RESULT AS OUT
     FROM test_table AS a, table({aggregate_function}(ARRAY_COL) OVER (partition by id_col)) AS b
-    WHERE a.array_col IS NULL;
     """
 
 
