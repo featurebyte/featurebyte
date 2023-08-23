@@ -20,20 +20,20 @@ WITH "REQUEST_TABLE_W604800_F360_BS90_M180_cust_id" AS (
   FROM REQUEST_TABLE
 ), _FB_AGGREGATED AS (
   SELECT
-    "T0"."_fb_internal_window_w604800_sum_51acca95b732b0b5744296f1b41d524c2254208c" AS "_fb_internal_window_w604800_sum_51acca95b732b0b5744296f1b41d524c2254208c",
+    "T0"."_fb_internal_window_w604800_sum_1c0ce7faa2412738b8ac274e6e7c17288489eeb9" AS "_fb_internal_window_w604800_sum_1c0ce7faa2412738b8ac274e6e7c17288489eeb9",
     "T1"."_fb_internal_item_count_None_event_id_col_None_join_1" AS "_fb_internal_item_count_None_event_id_col_None_join_1"
   FROM REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
       "POINT_IN_TIME",
       "cust_id",
-      SUM(value_sum_51acca95b732b0b5744296f1b41d524c2254208c) AS "_fb_internal_window_w604800_sum_51acca95b732b0b5744296f1b41d524c2254208c"
+      SUM(value_sum_1c0ce7faa2412738b8ac274e6e7c17288489eeb9) AS "_fb_internal_window_w604800_sum_1c0ce7faa2412738b8ac274e6e7c17288489eeb9"
     FROM (
       SELECT
         REQ."POINT_IN_TIME",
         REQ."cust_id",
         TILE.INDEX,
-        TILE.value_sum_51acca95b732b0b5744296f1b41d524c2254208c
+        TILE.value_sum_1c0ce7faa2412738b8ac274e6e7c17288489eeb9
       FROM "REQUEST_TABLE_W604800_F360_BS90_M180_cust_id" AS REQ
       INNER JOIN TILE_F360_M180_B90_53734EDD6250B91AC4C9B2A0EB6975F2856266F9 AS TILE
         ON FLOOR(REQ.__FB_LAST_TILE_INDEX / 1680) = FLOOR(TILE.INDEX / 1680)
@@ -45,7 +45,7 @@ WITH "REQUEST_TABLE_W604800_F360_BS90_M180_cust_id" AS (
         REQ."POINT_IN_TIME",
         REQ."cust_id",
         TILE.INDEX,
-        TILE.value_sum_51acca95b732b0b5744296f1b41d524c2254208c
+        TILE.value_sum_1c0ce7faa2412738b8ac274e6e7c17288489eeb9
       FROM "REQUEST_TABLE_W604800_F360_BS90_M180_cust_id" AS REQ
       INNER JOIN TILE_F360_M180_B90_53734EDD6250B91AC4C9B2A0EB6975F2856266F9 AS TILE
         ON FLOOR(REQ.__FB_LAST_TILE_INDEX / 1680) - 1 = FLOOR(TILE.INDEX / 1680)
@@ -83,7 +83,7 @@ WITH "REQUEST_TABLE_W604800_F360_BS90_M180_cust_id" AS (
           "event_timestamp" AS "event_timestamp"
         FROM "sf_database"."sf_schema"."items_table"
       ) AS L
-      INNER JOIN (
+      LEFT JOIN (
         SELECT
           "col_int" AS "col_int",
           "col_float" AS "col_float",
@@ -105,7 +105,7 @@ WITH "REQUEST_TABLE_W604800_F360_BS90_M180_cust_id" AS (
 )
 SELECT
   (
-    "_fb_internal_window_w604800_sum_51acca95b732b0b5744296f1b41d524c2254208c" + CASE
+    "_fb_internal_window_w604800_sum_1c0ce7faa2412738b8ac274e6e7c17288489eeb9" + CASE
       WHEN (
         "_fb_internal_item_count_None_event_id_col_None_join_1" IS NULL
       )
