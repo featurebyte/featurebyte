@@ -52,6 +52,8 @@ class ExtendedFeatureModel(FeatureModel):
                 value_column_types=info.tile_value_types,
                 tile_id=info.tile_table_id,
                 aggregation_id=info.aggregation_id,
+                aggregation_function_name=info.agg_func,
+                parent_column_name=info.parent,
                 category_column_name=info.value_by_column,
                 feature_store_id=self.tabular_source.feature_store_id,
             )

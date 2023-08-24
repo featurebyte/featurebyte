@@ -21,8 +21,6 @@ class TileSpec(FeatureByteBaseModel):
     """
     Model for TileSpec
 
-    tile_id: str
-        hash value of tile id and name
     time_modulo_frequency_seconds: int
         time modulo seconds for the tile
     blind_spot_seconds: int
@@ -35,8 +33,20 @@ class TileSpec(FeatureByteBaseModel):
         entity column names for the tile table
     value_column_names: List[str]
         tile value column names for the tile table
+    value_column_types: List[str]
+        tile value column types for the tile table
+    tile_id: str
+        hash value of tile id and name
+    aggregation_id: str
+        aggregation id for the tile
+    aggregation_function_name: Optional[str]
+        optional aggregation function name
+    parent_column_name: Optional[str]
+        optional parent column name from groupby node
     category_column_name: Optional[str]
         optional category column name when the groupby operation specifies a category
+    feature_store_id: Optional[ObjectId]
+        feature store id
     """
 
     time_modulo_frequency_second: int = Field(ge=0)
@@ -48,6 +58,8 @@ class TileSpec(FeatureByteBaseModel):
     value_column_types: List[str]
     tile_id: str
     aggregation_id: str
+    aggregation_function_name: Optional[str]
+    parent_column_name: Optional[str]
     category_column_name: Optional[str]
     feature_store_id: Optional[ObjectId]
 

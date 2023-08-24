@@ -53,14 +53,18 @@ class TileGenSql:
     sql_template: SqlExpressionTemplate
     columns: list[str]
     entity_columns: list[str]
-    serving_names: list[str]
-    value_by_column: str | None
     tile_value_columns: list[str]
     tile_value_types: list[str]
+
+    # group-by node parameters
     time_modulo_frequency: int
     frequency: int
     blind_spot: int
     windows: list[str | None]
+    serving_names: list[str]
+    value_by_column: str | None
+    parent: str | None
+    agg_func: str | None
 
     @property
     def sql(self) -> str:
@@ -205,6 +209,8 @@ class TileSQLGenerator:
             windows=groupby_node.parameters.windows,
             serving_names=groupby_node.parameters.serving_names,
             value_by_column=groupby_node.parameters.value_by,
+            parent=groupby_node.parameters.parent,
+            agg_func=groupby_node.parameters.agg_func,
         )
         return info
 

@@ -231,6 +231,8 @@ def test_graph_interpreter_tile_gen(query_graph_with_groupby, groupby_node_aggre
         "windows": ["2h", "48h"],
         "serving_names": ["CUSTOMER_ID"],
         "value_by_column": None,
+        "parent": "a",
+        "agg_func": "avg",
     }
 
 
@@ -313,6 +315,8 @@ def test_graph_interpreter_on_demand_tile_gen(
         "windows": ["2h", "48h"],
         "serving_names": ["CUSTOMER_ID"],
         "value_by_column": None,
+        "parent": "a",
+        "agg_func": "avg",
     }
 
 
@@ -387,6 +391,8 @@ def test_graph_interpreter_tile_gen_with_category(query_graph_with_category_grou
         "windows": ["2h", "48h"],
         "serving_names": ["CUSTOMER_ID"],
         "value_by_column": "product_type",
+        "parent": "a",
+        "agg_func": "avg",
     }
 
 
@@ -425,6 +431,8 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
         "frequency": 3600,
         "blind_spot": 900,
         "windows": ["2h", "48h"],
+        "parent": "a",
+        "agg_func": "avg",
     }
     expected = textwrap.dedent(
         f"""
@@ -490,6 +498,8 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
         "frequency": 3600,
         "blind_spot": 900,
         "windows": ["7d"],
+        "parent": "a",
+        "agg_func": "sum",
     }
     expected = textwrap.dedent(
         f"""
