@@ -19,6 +19,9 @@ from featurebyte.query_graph.sql.groupby_helper import (
 from tests.unit.query_graph.sql.fixtures.snowflake_double_vector_agg_only import (
     SNOWFLAKE_DOUBLE_VECTOR_AGG_ONLY_QUERY,
 )
+from tests.unit.query_graph.sql.fixtures.snowflake_double_vector_agg_only_no_value_by import (
+    SNOWFLAKE_DOUBLE_VECTOR_AGG_NO_VALUE_BY_QUERY,
+)
 from tests.unit.query_graph.sql.fixtures.snowflake_vector_agg_with_normal_agg import (
     SNOWFLAKE_VECTOR_AGG_WITH_NORMAL_AGG_QUERY,
 )
@@ -198,29 +201,38 @@ def test_get_groupby_expr__multiple_groupby_columns__non_snowflake_vector_aggrs(
 
 
 @pytest.mark.parametrize(
-    "column_params, methods, source_type, result",
+    "column_params, methods, source_type, use_value_by, result",
     [
         (
             [(AggFunc.MAX, DBVarType.ARRAY), (AggFunc.MAX, DBVarType.ARRAY)],
             ["VECTOR_AGGREGATE_MAX", "VECTOR_AGGREGATE_MAX"],
             SourceType.SNOWFLAKE,
+            True,
             SNOWFLAKE_DOUBLE_VECTOR_AGG_ONLY_QUERY,
         ),
         (
             [(AggFunc.MAX, DBVarType.ARRAY), (AggFunc.MAX, DBVarType.INT)],
             ["VECTOR_AGGREGATE_MAX", "MAX"],
             SourceType.SNOWFLAKE,
+            True,
             SNOWFLAKE_VECTOR_AGG_WITH_NORMAL_AGG_QUERY,
+        ),
+        (
+            [(AggFunc.MAX, DBVarType.ARRAY), (AggFunc.MAX, DBVarType.ARRAY)],
+            ["VECTOR_AGGREGATE_MAX", "VECTOR_AGGREGATE_MAX"],
+            SourceType.SNOWFLAKE,
+            False,
+            SNOWFLAKE_DOUBLE_VECTOR_AGG_NO_VALUE_BY_QUERY,
         ),
     ],
 )
 def test_get_groupby_expr__multiple_groupby_columns__snowflake_vector_aggrs(
-    column_params, methods, source_type, result, common_params
+    column_params, methods, source_type, use_value_by, result, common_params
 ):
     """
     Test get_groupby_expr with multiple groupby columns
     """
-    select_expr, groupby_key, groupby_key_point_in_time, valueby_key = common_params
+    select_expr, groupby_key, groupby_key_point_in_time, value_by = common_params
 
     groupby_columns = []
     i = 0
@@ -233,11 +245,13 @@ def test_get_groupby_expr__multiple_groupby_columns__snowflake_vector_aggrs(
         )
         i += 1
         groupby_columns.append(groupby_column)
+    if not use_value_by:
+        value_by = None
     groupby_expr = get_groupby_expr(
         input_expr=select_expr,
         groupby_keys=[groupby_key, groupby_key_point_in_time],
         groupby_columns=groupby_columns,
-        value_by=valueby_key,
+        value_by=value_by,
         adapter=get_sql_adapter(source_type),
     )
     assert groupby_expr.sql(pretty=True) == result.strip()
