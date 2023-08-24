@@ -8,7 +8,7 @@ import textwrap
 from select import select
 
 from sqlglot import select
-from sqlglot.expressions import Select
+from sqlglot.expressions import Select, alias_
 
 from featurebyte import AggFunc
 from featurebyte.enum import DBVarType
@@ -68,8 +68,16 @@ class BaseAdapterTest:
         select_keys = [k.get_alias() for k in groupby_keys]
         keys = [k.expr for k in groupby_keys]
         agg_exprs = [
-            get_aggregation_expression(AggFunc.SUM, "parent", None),
-            get_aggregation_expression(AggFunc.AVG, "parent_avg", None),
+            alias_(
+                get_aggregation_expression(AggFunc.SUM, "parent", None),
+                alias="sum_result",
+                quoted=True,
+            ),
+            alias_(
+                get_aggregation_expression(AggFunc.AVG, "parent_avg", None),
+                alias="avg_result",
+                quoted=True,
+            ),
         ]
         vector_aggregate_exprs = [
             get_vector_agg_expr_snowflake(

@@ -314,18 +314,21 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
                 alias_(f"T{idx}.AGG_RESULT_{idx}", alias=f"AGG_RESULT_{idx}", quoted=True)
             )
 
-        # Update agg_exprs select keys
-        # TODO: fix this
+        # Update agg_exprs select keys to use the aliases from the inner join subquery
         groupby_subquery_alias = "GROUPBY_RESULT"
         new_groupby_exprs = []
         for agg_expr in agg_exprs:
             new_groupby_exprs.append(
-                get_qualified_column_identifier(agg_expr.name, groupby_subquery_alias)
+                alias_(
+                    get_qualified_column_identifier(agg_expr.alias, groupby_subquery_alias),
+                    alias=agg_expr.alias,
+                    quoted=True,
+                )
             )
 
         vector_expr = vector_aggregate_expressions[0].subquery(alias="T0")
         left_expression = input_expr.select(
-            *select_keys, *agg_exprs, *vector_agg_select_keys
+            *select_keys, *new_groupby_exprs, *vector_agg_select_keys
         ).from_(vector_expr)
         if len(vector_aggregate_expressions) == 1:
             return left_expression
