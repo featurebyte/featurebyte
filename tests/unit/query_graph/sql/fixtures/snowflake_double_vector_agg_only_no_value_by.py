@@ -10,7 +10,7 @@ SNOWFLAKE_DOUBLE_VECTOR_AGG_NO_VALUE_BY_QUERY = textwrap.dedent(
           REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
           T0.result_0 AS "result_0",
           T1.result_1 AS "result_1"
-        FROM REQ, (
+        FROM (
           SELECT
             REQ."serving_name" AS "serving_name",
             REQ."POINT_IN_TIME" AS "POINT_IN_TIME",

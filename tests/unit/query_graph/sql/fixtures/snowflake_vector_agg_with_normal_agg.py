@@ -31,7 +31,7 @@ SNOWFLAKE_VECTOR_AGG_WITH_NORMAL_AGG_QUERY = textwrap.dedent(
             REQ."value_by" AS "value_by",
             GROUP_BY_RESULT."result_1_inner" AS "result_1_inner",
             T0.result_0 AS "result_0"
-          FROM REQ, (
+          FROM (
             SELECT
               REQ."serving_name" AS "serving_name",
               REQ."POINT_IN_TIME" AS "POINT_IN_TIME",

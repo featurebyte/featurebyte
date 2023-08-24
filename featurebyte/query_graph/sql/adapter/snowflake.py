@@ -9,7 +9,7 @@ import re
 import string
 
 from sqlglot import expressions
-from sqlglot.expressions import Expression, Select, alias_
+from sqlglot.expressions import Expression, Select, alias_, select
 
 from featurebyte.enum import DBVarType, InternalName, SourceType, StrEnum
 from featurebyte.query_graph.node.schema import TableDetails
@@ -329,9 +329,9 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
             )
 
         vector_expr = vector_aggregate_columns[0].aggr_expr.subquery(alias="T0")
-        left_expression = input_expr.select(
-            *select_keys, *new_groupby_exprs, *vector_agg_select_keys
-        ).from_(vector_expr)
+        left_expression = select(*select_keys, *new_groupby_exprs, *vector_agg_select_keys).from_(
+            vector_expr
+        )
         # Join with the remaining vector aggregates if there are more than one
         if len(vector_aggregate_columns) > 1:
             for idx, vector_agg_expr in enumerate(vector_aggregate_columns[1:]):
