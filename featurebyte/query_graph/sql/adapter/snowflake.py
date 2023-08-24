@@ -333,24 +333,25 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
         left_expression = input_expr.select(
             *select_keys, *new_groupby_exprs, *vector_agg_select_keys
         ).from_(vector_expr)
-        if len(vector_aggregate_columns) == 1:
-            return left_expression
-        # If there's more than one, continue joining the rest of them.
-        for idx, vector_agg_expr in enumerate(vector_aggregate_columns[1:]):
-            right_expr = vector_agg_expr.aggr_expr.subquery(alias=f"T{idx+1}")
-            join_conditions = []
-            for select_key in select_keys:
-                join_conditions.append(
-                    expressions.EQ(
-                        this=get_qualified_column_identifier(select_key.alias, f"T{idx}"),
-                        expression=get_qualified_column_identifier(select_key.alias, f"T{idx+1}"),
+        # Join with the remaining vector aggregates if there are more than one
+        if len(vector_aggregate_columns) > 1:
+            for idx, vector_agg_expr in enumerate(vector_aggregate_columns[1:]):
+                right_expr = vector_agg_expr.aggr_expr.subquery(alias=f"T{idx+1}")
+                join_conditions = []
+                for select_key in select_keys:
+                    join_conditions.append(
+                        expressions.EQ(
+                            this=get_qualified_column_identifier(select_key.alias, f"T{idx}"),
+                            expression=get_qualified_column_identifier(
+                                select_key.alias, f"T{idx+1}"
+                            ),
+                        )
                     )
+                left_expression = left_expression.join(
+                    right_expr,
+                    join_type="INNER",
+                    on=expressions.and_(*join_conditions),
                 )
-            left_expression = left_expression.join(
-                right_expr,
-                join_type="INNER",
-                on=expressions.and_(*join_conditions),
-            )
 
         # Join with normal aggregation groupby's
         if agg_exprs:

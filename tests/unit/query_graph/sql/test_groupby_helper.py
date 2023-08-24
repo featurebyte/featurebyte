@@ -16,6 +16,12 @@ from featurebyte.query_graph.sql.groupby_helper import (
     get_groupby_expr,
     get_vector_agg_column_snowflake,
 )
+from tests.unit.query_graph.sql.fixtures.snowflake_double_vector_agg_only import (
+    SNOWFLAKE_DOUBLE_VECTOR_AGG_ONLY_QUERY,
+)
+from tests.unit.query_graph.sql.fixtures.snowflake_vector_agg_with_normal_agg import (
+    SNOWFLAKE_VECTOR_AGG_WITH_NORMAL_AGG_QUERY,
+)
 
 
 @pytest.fixture(name="common_params")
@@ -192,22 +198,24 @@ def test_get_groupby_expr__multiple_groupby_columns__non_snowflake_vector_aggrs(
 
 
 @pytest.mark.parametrize(
-    "column_params, methods, source_type",
+    "column_params, methods, source_type, result",
     [
-        # (
-        #     [(AggFunc.MAX, DBVarType.ARRAY), (AggFunc.MAX, DBVarType.ARRAY)],
-        #     ["VECTOR_AGGREGATE_MAX", "VECTOR_AGGREGATE_MAX"],
-        #     SourceType.SNOWFLAKE,
-        # ),
+        (
+            [(AggFunc.MAX, DBVarType.ARRAY), (AggFunc.MAX, DBVarType.ARRAY)],
+            ["VECTOR_AGGREGATE_MAX", "VECTOR_AGGREGATE_MAX"],
+            SourceType.SNOWFLAKE,
+            SNOWFLAKE_DOUBLE_VECTOR_AGG_ONLY_QUERY,
+        ),
         (
             [(AggFunc.MAX, DBVarType.ARRAY), (AggFunc.MAX, DBVarType.INT)],
             ["VECTOR_AGGREGATE_MAX", "MAX"],
             SourceType.SNOWFLAKE,
+            SNOWFLAKE_VECTOR_AGG_WITH_NORMAL_AGG_QUERY,
         ),
     ],
 )
 def test_get_groupby_expr__multiple_groupby_columns__snowflake_vector_aggrs(
-    column_params, methods, source_type, common_params
+    column_params, methods, source_type, result, common_params
 ):
     """
     Test get_groupby_expr with multiple groupby columns
@@ -232,65 +240,7 @@ def test_get_groupby_expr__multiple_groupby_columns__snowflake_vector_aggrs(
         value_by=valueby_key,
         adapter=get_sql_adapter(source_type),
     )
-
-    result_0 = _maybe_wrap_in_variant(source_type, 'INNER_."result_0_inner"')
-    result_1 = _maybe_wrap_in_variant(source_type, 'INNER_."result_1_inner"')
-    expected = textwrap.dedent(
-        f"""
-            SELECT
-              INNER_."serving_name",
-              INNER_."POINT_IN_TIME",
-              OBJECT_AGG(
-                CASE
-                  WHEN INNER_."value_by" IS NULL
-                  THEN '__MISSING__'
-                  ELSE CAST(INNER_."value_by" AS TEXT)
-                END,
-                TO_VARIANT(INNER_."result_0_inner")
-              ) AS "result_0",
-              OBJECT_AGG(
-                CASE
-                  WHEN INNER_."value_by" IS NULL
-                  THEN '__MISSING__'
-                  ELSE CAST(INNER_."value_by" AS TEXT)
-                END,
-                TO_VARIANT(INNER_."result_1_inner")
-              ) AS "result_1"
-            FROM (
-              SELECT
-                REQ."serving_name" AS "serving_name",
-                REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
-                REQ."value_by" AS "value_by",
-                T0.result_0 AS "result_0",
-                T1.result_1 AS "result_1"
-              FROM REQ, (
-                SELECT
-                  REQ."serving_name" AS "serving_name",
-                  REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
-                  AGG_0.VECTOR_AGG_RESULT AS "result_0"
-                FROM REQ, TABLE(
-                  VECTOR_AGGREGATE_MAX(TABLE."parent") OVER (PARTITION BY REQ."serving_name", REQ."POINT_IN_TIME")
-                ) AS "AGG_0"
-              ) AS T0
-              INNER JOIN (
-                SELECT
-                  REQ."serving_name" AS "serving_name",
-                  REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
-                  AGG_1.VECTOR_AGG_RESULT AS "result_1"
-                FROM REQ, TABLE(
-                  VECTOR_AGGREGATE_MAX(TABLE."parent") OVER (PARTITION BY REQ."serving_name", REQ."POINT_IN_TIME")
-                ) AS "AGG_1"
-              ) AS T1
-                ON T0."serving_name" = T1."serving_name"
-                AND T0."POINT_IN_TIME" = T1."POINT_IN_TIME"
-                AND T0."value_by" = T1."value_by"
-            ) AS INNER_
-            GROUP BY
-              INNER_."serving_name",
-              INNER_."POINT_IN_TIME"
-        """
-    ).strip()
-    assert groupby_expr.sql(pretty=True) == expected
+    assert groupby_expr.sql(pretty=True) == result.strip()
 
 
 @pytest.mark.parametrize(
