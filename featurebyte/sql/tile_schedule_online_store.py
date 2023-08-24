@@ -70,10 +70,6 @@ class TileScheduleOnlineStore(BaseSqlModel):
             quoted_entity_columns = (
                 [self.quote_column(col) for col in f_entity_columns] if f_entity_columns else []
             )
-            column_names = ", ".join(
-                quoted_entity_columns + [quoted_result_name_column, quoted_value_column]
-            )
-
             current_ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
             # get current version
@@ -101,7 +97,7 @@ class TileScheduleOnlineStore(BaseSqlModel):
                       to_timestamp('{current_ts}') AS UPDATED_AT
                     FROM ({f_sql})
                     """
-                ).strip()
+                )
                 create_sql = construct_create_table_query(
                     fs_table,
                     query,
@@ -112,7 +108,9 @@ class TileScheduleOnlineStore(BaseSqlModel):
 
             else:
                 # feature store table already exists, insert records with the input feature sql
-
+                column_names = ", ".join(
+                    quoted_entity_columns + [quoted_result_name_column, quoted_value_column]
+                )
                 insert_query = textwrap.dedent(
                     f"""
                     INSERT INTO {fs_table} ({column_names}, {quoted_version_column}, UPDATED_AT)
