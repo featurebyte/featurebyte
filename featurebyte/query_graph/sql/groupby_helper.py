@@ -245,7 +245,7 @@ def get_groupby_expr(
     -------
     Select
     """
-    non_vector_agg_exprs, vector_agg_cols = _split_agg_and_snowflake_vector_aggregation_columns(
+    agg_exprs, snowflake_vector_agg_cols = _split_agg_and_snowflake_vector_aggregation_columns(
         groupby_keys, groupby_columns, value_by, adapter.source_type
     )
 
@@ -256,7 +256,7 @@ def get_groupby_expr(
         keys.append(value_by.expr)
 
     groupby_expr = adapter.group_by(
-        input_expr, select_keys, non_vector_agg_exprs, keys, vector_agg_cols
+        input_expr, select_keys, agg_exprs, keys, snowflake_vector_agg_cols
     )
 
     if value_by is not None:
