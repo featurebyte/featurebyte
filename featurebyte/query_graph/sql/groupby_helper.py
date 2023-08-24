@@ -191,29 +191,30 @@ def _split_agg_and_snowflake_vector_aggregation_columns(
     -------
     tuple[list[Expression], list[VectorAggColumn]]
     """
-    non_vector_agg_exprs = [
-        alias_(
-            get_aggregation_expression(
-                agg_func=column.agg_func,
-                input_column=column.parent_expr,
-                parent_dtype=column.parent_dtype,
-            ),
-            alias=column.result_name + ("_inner" if value_by is not None else ""),
-            quoted=True,
-        )
-        for column in groupby_columns
-        if not (column.parent_dtype == DBVarType.ARRAY and source_type == SourceType.SNOWFLAKE)
-    ]
-    vector_agg_cols = [
-        get_vector_agg_column_snowflake(
-            agg_func=column.agg_func,
-            groupby_keys=groupby_keys,
-            groupby_column=column,
-            index=index,
-        )
-        for index, column in enumerate(groupby_columns)
-        if column.parent_dtype == DBVarType.ARRAY and source_type == SourceType.SNOWFLAKE
-    ]
+    non_vector_agg_exprs = []
+    vector_agg_cols = []
+    for index, column in enumerate(groupby_columns):
+        if column.parent_dtype == DBVarType.ARRAY and source_type == SourceType.SNOWFLAKE:
+            vector_agg_cols.append(
+                get_vector_agg_column_snowflake(
+                    agg_func=column.agg_func,
+                    groupby_keys=groupby_keys,
+                    groupby_column=column,
+                    index=index,
+                )
+            )
+        else:
+            non_vector_agg_exprs.append(
+                alias_(
+                    get_aggregation_expression(
+                        agg_func=column.agg_func,
+                        input_column=column.parent_expr,
+                        parent_dtype=column.parent_dtype,
+                    ),
+                    alias=column.result_name + ("_inner" if value_by is not None else ""),
+                    quoted=True,
+                )
+            )
     return non_vector_agg_exprs, vector_agg_cols
 
 
