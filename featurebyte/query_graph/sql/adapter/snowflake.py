@@ -14,7 +14,7 @@ from sqlglot.expressions import Expression, Select, alias_
 from featurebyte.enum import DBVarType, InternalName, SourceType, StrEnum
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql import expression as fb_expressions
-from featurebyte.query_graph.sql.adapter.base import BaseAdapter
+from featurebyte.query_graph.sql.adapter.base import BaseAdapter, VectorAggColumn
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
     get_fully_qualified_table_name,
@@ -294,11 +294,11 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
         select_keys: List[Expression],
         agg_exprs: List[Expression],
         keys: List[Expression],
-        vector_aggregate_expressions: Optional[List[Expression]] = None,
+        vector_aggregate_columns: Optional[List[VectorAggColumn]] = None,
     ) -> Select:
         # If there are no vector aggregate expressions, we can use the standard group by.
         normal_groupby_expr = super().group_by(input_expr, select_keys, agg_exprs, keys)
-        if not vector_aggregate_expressions:
+        if not vector_aggregate_columns:
             return normal_groupby_expr
 
         # If there are vector aggregate expressions, we need to
@@ -307,11 +307,14 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
 
         # Generate vector aggregation joins
         vector_agg_select_keys = []
-        for idx, vector_agg_expr in enumerate(vector_aggregate_expressions):
-            # TODO: pass in names constructed via get_agg_result_name_from_groupby_parameters
+        for idx, vector_agg_col in enumerate(vector_aggregate_columns):
             # found in the groupbycolumn already. change `AGG_RESULT_` to these
             vector_agg_select_keys.append(
-                alias_(f"T{idx}.AGG_RESULT_{idx}", alias=f"AGG_RESULT_{idx}", quoted=True)
+                alias_(
+                    f"T{idx}.{vector_agg_col.result_name}",
+                    alias=f"{vector_agg_col.result_name}",
+                    quoted=True,
+                )
             )
 
         # Update agg_exprs select keys to use the aliases from the inner join subquery
@@ -326,15 +329,15 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
                 )
             )
 
-        vector_expr = vector_aggregate_expressions[0].subquery(alias="T0")
+        vector_expr = vector_aggregate_columns[0].aggr_expr.subquery(alias="T0")
         left_expression = input_expr.select(
             *select_keys, *new_groupby_exprs, *vector_agg_select_keys
         ).from_(vector_expr)
-        if len(vector_aggregate_expressions) == 1:
+        if len(vector_aggregate_columns) == 1:
             return left_expression
         # If there's more than one, continue joining the rest of them.
-        for idx, vector_agg_expr in enumerate(vector_aggregate_expressions[1:]):
-            right_expr = vector_agg_expr.subquery(alias=f"T{idx+1}")
+        for idx, vector_agg_expr in enumerate(vector_aggregate_columns[1:]):
+            right_expr = vector_agg_expr.aggr_expr.subquery(alias=f"T{idx+1}")
             join_conditions = []
             for select_key in select_keys:
                 join_conditions.append(
@@ -359,7 +362,7 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
                             select_key.alias, groupby_subquery_alias
                         ),
                         expression=get_qualified_column_identifier(
-                            select_key.alias, f"T{len(vector_aggregate_expressions) - 1}"
+                            select_key.alias, f"T{len(vector_aggregate_columns) - 1}"
                         ),
                     )
                 )

@@ -28,9 +28,9 @@ class TestSnowflakeAdapter(BaseAdapterTest):
                   REQ."serving_name_2" AS "serving_name_2",
                   GROUPBY_RESULT."sum_result" AS "sum_result",
                   GROUPBY_RESULT."avg_result" AS "avg_result",
-                  T0.AGG_RESULT_0 AS "AGG_RESULT_0",
-                  T1.AGG_RESULT_1 AS "AGG_RESULT_1",
-                  T2.AGG_RESULT_2 AS "AGG_RESULT_2"
+                  T0.result AS "result",
+                  T1.result2 AS "result2",
+                  T2.result3 AS "result3"
                 FROM (
                   SELECT
                     REQ."serving_name" AS "serving_name",

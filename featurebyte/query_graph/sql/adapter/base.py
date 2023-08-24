@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import List, Literal, Optional
 
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 
 from numpy import format_float_positional
 from sqlglot import expressions
@@ -21,6 +22,16 @@ from featurebyte.query_graph.sql.common import (
 )
 
 FB_QUALIFY_CONDITION_COLUMN = "__fb_qualify_condition_column"
+
+
+@dataclass
+class VectorAggColumn:
+    """
+    Represents a set of parameters that produces one output column in a groupby statement
+    """
+
+    aggr_expr: Expression
+    result_name: str
 
 
 class BaseAdapter(ABC):  # pylint: disable=too-many-public-methods
@@ -632,7 +643,7 @@ class BaseAdapter(ABC):  # pylint: disable=too-many-public-methods
         select_keys: List[Expression],
         agg_exprs: List[Expression],
         keys: List[Expression],
-        vector_aggregate_expressions: Optional[List[Expression]] = None,
+        vector_aggregate_columns: Optional[List[VectorAggColumn]] = None,
     ) -> Select:
         """
         Construct query to group by
@@ -647,7 +658,7 @@ class BaseAdapter(ABC):  # pylint: disable=too-many-public-methods
             List of aggregation expressions
         keys: List[Expression]
             List of keys
-        vector_aggregate_expressions: Optional[List[Expression]]
+        vector_aggregate_columns: Optional[List[Expression]]
             List of vector aggregate expressions. This should only be used if special handling is required to join
             vector aggregate functions, and that they're not usable as a normal function. This param is a no-op
             by default, and will only be used by specific data warehouses.
@@ -656,7 +667,7 @@ class BaseAdapter(ABC):  # pylint: disable=too-many-public-methods
         -------
         Select
         """
-        _ = vector_aggregate_expressions
+        _ = vector_aggregate_columns
         return input_expr.select(*select_keys, *agg_exprs).group_by(*keys)
 
     @classmethod

@@ -12,6 +12,7 @@ from sqlglot.expressions import Expression, Select, alias_
 
 from featurebyte.enum import AggFunc, DBVarType, SourceType
 from featurebyte.query_graph.sql.adapter import BaseAdapter
+from featurebyte.query_graph.sql.adapter.base import VectorAggColumn
 from featurebyte.query_graph.sql.common import quoted_identifier
 
 
@@ -108,9 +109,9 @@ def get_aggregation_expression(
     return expr
 
 
-def get_vector_agg_expr_snowflake(
+def get_vector_agg_column_snowflake(
     agg_func: AggFunc, groupby_keys: List[GroupbyKey], groupby_column: GroupbyColumn, index: int
-) -> Expression:
+) -> VectorAggColumn:
     """
     Returns the vector aggregate expression for snowflake. This will call the vector aggregate function, and return its
     value as part of a table.
@@ -142,7 +143,11 @@ def get_vector_agg_expr_snowflake(
     table_expr = expressions.Anonymous(this="TABLE", expressions=[partition])
     aliased_table_expr = alias_(table_expr, alias=agg_name, quoted=True)
 
-    return expressions.select(*select_keys, agg_result_column).from_("REQ", aliased_table_expr)
+    expr = expressions.select(*select_keys, agg_result_column).from_("REQ", aliased_table_expr)
+    return VectorAggColumn(
+        aggr_expr=expr,
+        result_name=groupby_column.result_name,
+    )
 
 
 def get_groupby_expr(
@@ -188,16 +193,12 @@ def get_groupby_expr(
             column.parent_dtype == DBVarType.ARRAY and adapter.source_type == SourceType.SNOWFLAKE
         )
     ]
-    vector_agg_exprs = [
-        alias_(
-            get_vector_agg_expr_snowflake(
-                agg_func=column.agg_func,
-                groupby_keys=groupby_keys,
-                groupby_column=column,
-                index=index,
-            ),
-            alias=column.result_name + ("_inner" if value_by is not None else ""),
-            quoted=True,
+    vector_agg_cols = [
+        get_vector_agg_column_snowflake(
+            agg_func=column.agg_func,
+            groupby_keys=groupby_keys,
+            groupby_column=column,
+            index=index,
         )
         for index, column in enumerate(groupby_columns)
         if column.parent_dtype == DBVarType.ARRAY and adapter.source_type == SourceType.SNOWFLAKE
@@ -210,7 +211,7 @@ def get_groupby_expr(
         keys.append(value_by.expr)
 
     groupby_expr = adapter.group_by(
-        input_expr, select_keys, non_vector_agg_exprs, keys, vector_agg_exprs
+        input_expr, select_keys, non_vector_agg_exprs, keys, vector_agg_cols
     )
 
     if value_by is not None:

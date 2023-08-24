@@ -18,7 +18,7 @@ from featurebyte.query_graph.sql.groupby_helper import (
     GroupbyColumn,
     GroupbyKey,
     get_aggregation_expression,
-    get_vector_agg_expr_snowflake,
+    get_vector_agg_column_snowflake,
 )
 
 
@@ -41,8 +41,8 @@ class BaseAdapterTest:
                   b,
                   REQ."serving_name" AS "serving_name",
                   REQ."serving_name_2" AS "serving_name_2",
-                  SUM("parent"),
-                  AVG("parent_avg")
+                  SUM("parent") AS "sum_result",
+                  AVG("parent_avg") AS "avg_result"
                 GROUP BY
                   REQ."serving_name",
                   REQ."serving_name_2"
@@ -80,7 +80,7 @@ class BaseAdapterTest:
             ),
         ]
         vector_aggregate_exprs = [
-            get_vector_agg_expr_snowflake(
+            get_vector_agg_column_snowflake(
                 AggFunc.SUM,
                 groupby_keys,
                 GroupbyColumn(
@@ -91,7 +91,7 @@ class BaseAdapterTest:
                 ),
                 0,
             ),
-            get_vector_agg_expr_snowflake(
+            get_vector_agg_column_snowflake(
                 AggFunc.SUM,
                 groupby_keys,
                 GroupbyColumn(
@@ -102,7 +102,7 @@ class BaseAdapterTest:
                 ),
                 1,
             ),
-            get_vector_agg_expr_snowflake(
+            get_vector_agg_column_snowflake(
                 AggFunc.SUM,
                 groupby_keys,
                 GroupbyColumn(
