@@ -163,6 +163,60 @@ def get_vector_agg_column_snowflake(
     )
 
 
+def _split_agg_and_snowflake_vector_aggregation_columns(
+    groupby_keys: list[GroupbyKey],
+    groupby_columns: list[GroupbyColumn],
+    value_by: Optional[GroupbyKey],
+    source_type: SourceType,
+) -> tuple[list[Expression], list[VectorAggColumn]]:
+    """
+    Split the list of groupby columns into normal aggregations, and snowflake vector aggregation columns.
+
+    Note that the return value will only contain VectorAggColumns if the source type is for snowflake, as special
+    handling is required for vector aggregations there. For other data warehouses, we will return vector aggregations
+    as part fo the normal aggregation expressions.
+
+    Parameters
+    ----------
+    groupby_keys: list[GroupbyKey]
+        List of groupby keys
+    groupby_columns: list[GroupbyColumn]
+        List of groupby columns
+    value_by: Optional[GroupbyKey]
+        Value by key
+    source_type: SourceType
+        Source type
+
+    Returns
+    -------
+    tuple[list[Expression], list[VectorAggColumn]]
+    """
+    non_vector_agg_exprs = [
+        alias_(
+            get_aggregation_expression(
+                agg_func=column.agg_func,
+                input_column=column.parent_expr,
+                parent_dtype=column.parent_dtype,
+            ),
+            alias=column.result_name + ("_inner" if value_by is not None else ""),
+            quoted=True,
+        )
+        for column in groupby_columns
+        if not (column.parent_dtype == DBVarType.ARRAY and source_type == SourceType.SNOWFLAKE)
+    ]
+    vector_agg_cols = [
+        get_vector_agg_column_snowflake(
+            agg_func=column.agg_func,
+            groupby_keys=groupby_keys,
+            groupby_column=column,
+            index=index,
+        )
+        for index, column in enumerate(groupby_columns)
+        if column.parent_dtype == DBVarType.ARRAY and source_type == SourceType.SNOWFLAKE
+    ]
+    return non_vector_agg_exprs, vector_agg_cols
+
+
 def get_groupby_expr(
     input_expr: Select,
     groupby_keys: list[GroupbyKey],
@@ -191,31 +245,9 @@ def get_groupby_expr(
     -------
     Select
     """
-    non_vector_agg_exprs = [
-        alias_(
-            get_aggregation_expression(
-                agg_func=column.agg_func,
-                input_column=column.parent_expr,
-                parent_dtype=column.parent_dtype,
-            ),
-            alias=column.result_name + ("_inner" if value_by is not None else ""),
-            quoted=True,
-        )
-        for column in groupby_columns
-        if not (
-            column.parent_dtype == DBVarType.ARRAY and adapter.source_type == SourceType.SNOWFLAKE
-        )
-    ]
-    vector_agg_cols = [
-        get_vector_agg_column_snowflake(
-            agg_func=column.agg_func,
-            groupby_keys=groupby_keys,
-            groupby_column=column,
-            index=index,
-        )
-        for index, column in enumerate(groupby_columns)
-        if column.parent_dtype == DBVarType.ARRAY and adapter.source_type == SourceType.SNOWFLAKE
-    ]
+    non_vector_agg_exprs, vector_agg_cols = _split_agg_and_snowflake_vector_aggregation_columns(
+        groupby_keys, groupby_columns, value_by, adapter.source_type
+    )
 
     select_keys = [k.get_alias() for k in groupby_keys]
     keys = [k.expr for k in groupby_keys]

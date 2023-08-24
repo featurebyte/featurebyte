@@ -22,8 +22,6 @@ class TestSnowflakeAdapter(BaseAdapterTest):
         return textwrap.dedent(
             """
                 SELECT
-                  a,
-                  b,
                   REQ."serving_name" AS "serving_name",
                   REQ."serving_name_2" AS "serving_name_2",
                   GROUP_BY_RESULT."sum_result" AS "sum_result",

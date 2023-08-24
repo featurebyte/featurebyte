@@ -301,10 +301,6 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
         if not vector_aggregate_columns:
             return normal_groupby_expr
 
-        # If there are vector aggregate expressions, we need to
-        # - get the vector aggregate expressions in a subquery
-        # - join them with the original table
-
         # Generate vector aggregation joins
         vector_agg_select_keys = []
         for idx, vector_agg_col in enumerate(vector_aggregate_columns):
@@ -328,31 +324,29 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
                 )
             )
 
+        # Initialize the first join that has the initial select.
         vector_expr = vector_aggregate_columns[0].aggr_expr.subquery(alias="T0")
         left_expression = select(*select_keys, *new_groupby_exprs, *vector_agg_select_keys).from_(
             vector_expr
         )
-        # Join with the remaining vector aggregates if there are more than one
-        if len(vector_aggregate_columns) > 1:
-            for idx, vector_agg_expr in enumerate(vector_aggregate_columns[1:]):
-                right_expr = vector_agg_expr.aggr_expr.subquery(alias=f"T{idx+1}")
-                join_conditions = []
-                for select_key in select_keys:
-                    join_conditions.append(
-                        expressions.EQ(
-                            this=get_qualified_column_identifier(select_key.alias, f"T{idx}"),
-                            expression=get_qualified_column_identifier(
-                                select_key.alias, f"T{idx+1}"
-                            ),
-                        )
+        # Chain the remaining joins with the remaining vector aggregates if there are more than one
+        for idx, vector_agg_expr in enumerate(vector_aggregate_columns[1:]):
+            right_expr = vector_agg_expr.aggr_expr.subquery(alias=f"T{idx+1}")
+            join_conditions = []
+            for select_key in select_keys:
+                join_conditions.append(
+                    expressions.EQ(
+                        this=get_qualified_column_identifier(select_key.alias, f"T{idx}"),
+                        expression=get_qualified_column_identifier(select_key.alias, f"T{idx+1}"),
                     )
-                left_expression = left_expression.join(
-                    right_expr,
-                    join_type="INNER",
-                    on=expressions.and_(*join_conditions),
                 )
+            left_expression = left_expression.join(
+                right_expr,
+                join_type="INNER",
+                on=expressions.and_(*join_conditions),
+            )
 
-        # Join with normal aggregation groupby's
+        # Join with normal aggregation groupby's if there are any.
         if agg_exprs:
             join_conditions = []
             for select_key in select_keys:
