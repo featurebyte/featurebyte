@@ -26,8 +26,8 @@ class TestSnowflakeAdapter(BaseAdapterTest):
                   b,
                   REQ."serving_name" AS "serving_name",
                   REQ."serving_name_2" AS "serving_name_2",
-                  GROUPBY_RESULT."sum_result" AS "sum_result",
-                  GROUPBY_RESULT."avg_result" AS "avg_result",
+                  GROUP_BY_RESULT."sum_result" AS "sum_result",
+                  GROUP_BY_RESULT."avg_result" AS "avg_result",
                   T0.result AS "result",
                   T1.result2 AS "result2",
                   T2.result3 AS "result3"
@@ -71,8 +71,8 @@ class TestSnowflakeAdapter(BaseAdapterTest):
                   GROUP BY
                     REQ."serving_name",
                     REQ."serving_name_2"
-                ) AS GROUPBY_RESULT
-                  ON GROUPBY_RESULT."serving_name" = T2."serving_name"
-                  AND GROUPBY_RESULT."serving_name_2" = T2."serving_name_2"
+                ) AS GROUP_BY_RESULT
+                  ON GROUP_BY_RESULT."serving_name" = T2."serving_name"
+                  AND GROUP_BY_RESULT."serving_name_2" = T2."serving_name_2"
             """
         ).strip()

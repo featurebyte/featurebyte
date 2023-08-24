@@ -308,7 +308,6 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
         # Generate vector aggregation joins
         vector_agg_select_keys = []
         for idx, vector_agg_col in enumerate(vector_aggregate_columns):
-            # found in the groupbycolumn already. change `AGG_RESULT_` to these
             vector_agg_select_keys.append(
                 alias_(
                     f"T{idx}.{vector_agg_col.result_name}",
@@ -318,7 +317,7 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
             )
 
         # Update agg_exprs select keys to use the aliases from the inner join subquery
-        groupby_subquery_alias = "GROUPBY_RESULT"
+        groupby_subquery_alias = "GROUP_BY_RESULT"
         new_groupby_exprs = []
         for agg_expr in agg_exprs:
             new_groupby_exprs.append(
@@ -368,7 +367,7 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
                     )
                 )
             left_expression = left_expression.join(
-                normal_groupby_expr.subquery(alias="GROUPBY_RESULT"),
+                normal_groupby_expr.subquery(alias=groupby_subquery_alias),
                 join_type="INNER",
                 on=expressions.and_(*join_conditions),
             )

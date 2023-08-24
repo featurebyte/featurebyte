@@ -29,7 +29,7 @@ SNOWFLAKE_VECTOR_AGG_WITH_NORMAL_AGG_QUERY = textwrap.dedent(
             REQ."serving_name" AS "serving_name",
             REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
             REQ."value_by" AS "value_by",
-            GROUPBY_RESULT."result_1_inner" AS "result_1_inner",
+            GROUP_BY_RESULT."result_1_inner" AS "result_1_inner",
             T0.result_0 AS "result_0"
           FROM REQ, (
             SELECT
@@ -51,10 +51,10 @@ SNOWFLAKE_VECTOR_AGG_WITH_NORMAL_AGG_QUERY = textwrap.dedent(
               REQ."serving_name",
               REQ."POINT_IN_TIME",
               REQ."value_by"
-          ) AS GROUPBY_RESULT
-            ON GROUPBY_RESULT."serving_name" = T0."serving_name"
-            AND GROUPBY_RESULT."POINT_IN_TIME" = T0."POINT_IN_TIME"
-            AND GROUPBY_RESULT."value_by" = T0."value_by"
+          ) AS GROUP_BY_RESULT
+            ON GROUP_BY_RESULT."serving_name" = T0."serving_name"
+            AND GROUP_BY_RESULT."POINT_IN_TIME" = T0."POINT_IN_TIME"
+            AND GROUP_BY_RESULT."value_by" = T0."value_by"
         ) AS INNER_
         GROUP BY
           INNER_."serving_name",

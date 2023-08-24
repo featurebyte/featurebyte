@@ -116,9 +116,20 @@ def get_vector_agg_column_snowflake(
     Returns the vector aggregate expression for snowflake. This will call the vector aggregate function, and return its
     value as part of a table.
 
-    SELECT ENTITY_ID, agg.NUM AS MY_NUM_1
-        FROM TAB,
-        TABLE(MYSUM(CAST(VALUE AS DOUBLE)) OVER (PARTITION BY ENTITY_ID)) agg
+    Parameters
+    ----------
+    agg_func : AggFunc
+        Aggregation function
+    groupby_keys : List[GroupbyKey]
+        List of groupby keys
+    groupby_column : GroupbyColumn
+        Groupby column
+    index : int
+        Index of the vector aggregate column
+
+    Returns
+    -------
+    VectorAggColumn
     """
     array_parent_agg_func_sql_mapping = {
         AggFunc.MAX: "VECTOR_AGGREGATE_MAX",
@@ -132,6 +143,8 @@ def get_vector_agg_column_snowflake(
     keys = [k.expr.sql() for k in groupby_keys]
 
     agg_name = f"AGG_{index}"
+    # The VECTOR_AGG_RESULT column value here, is a constant and is the name of the return value defined in the
+    # UDTFs.
     agg_result_column = alias_(
         f"{agg_name}.VECTOR_AGG_RESULT", alias=groupby_column.result_name, quoted=True
     )
