@@ -10,7 +10,7 @@ from dataclasses import dataclass
 
 from numpy import format_float_positional
 from sqlglot import expressions
-from sqlglot.expressions import Alias, Expression, Select, alias_, select
+from sqlglot.expressions import Expression, Select, alias_, select
 
 from featurebyte.enum import DBVarType, InternalName, SourceType
 from featurebyte.query_graph.node.schema import TableDetails
@@ -654,7 +654,7 @@ class BaseAdapter(ABC):  # pylint: disable=too-many-public-methods
             Input Select expression
         select_keys: List[Expression]
             List of select keys
-        agg_exprs: List[Alias]
+        agg_exprs: List[Expression]
             List of aggregation expressions
         keys: List[Expression]
             List of keys
