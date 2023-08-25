@@ -140,9 +140,7 @@ class TileSQLGenerator:
         groupby_input_node = pruned_graph.get_node_by_name(
             pruned_graph.get_input_node_names(pruned_node)[0]
         )
-        op_struct_info = OperationStructureExtractor(graph=self.query_graph).extract(
-            groupby_input_node
-        )
+        op_struct_info = OperationStructureExtractor(graph=pruned_graph).extract(groupby_input_node)
         op_struct = op_struct_info.operation_structure_map[groupby_input_node.name]
         for column in op_struct.columns:
             if (

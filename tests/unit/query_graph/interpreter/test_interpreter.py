@@ -1,6 +1,8 @@
 """
 This module contains the tests for the Query Graph Interpreter
 """
+import json
+import os
 import textwrap
 from dataclasses import asdict
 
@@ -9,6 +11,7 @@ import pytest
 
 from featurebyte.enum import InternalName, SourceType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import SQLType
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
@@ -1117,3 +1120,22 @@ def test_graph_interpreter_sample_date_range_no_timestamp_column(simple_graph):
         """
     ).strip()
     assert sql_code == expected
+
+
+def test_graph_interpreter__construct_tile_gen_sql__item_join_dimension_join_scd_and_groupby(
+    test_dir,
+):
+    fixture_path = os.path.join(
+        test_dir,
+        "fixtures/graph/PRODUCT_vs_PRODUCTGROUP_item_TotalCost_across_customer_PostalCodes_28d.json",
+    )
+    with open(fixture_path, "r") as file_handle:
+        graph_dict = json.load(file_handle)
+
+    query_graph = QueryGraph(**graph_dict)
+    node = query_graph.get_node_by_name("alias_1")
+    interpreter = GraphInterpreter(query_graph, SourceType.SNOWFLAKE)
+
+    # check that the tile sql is generated without error
+    tile_infos = interpreter.construct_tile_gen_sql(node, is_on_demand=False)
+    assert len(tile_infos) == 2
