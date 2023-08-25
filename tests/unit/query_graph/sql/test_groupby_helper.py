@@ -63,7 +63,7 @@ def test_get_vector_agg_column_snowflake(
     """
     Test get_vector_agg_expr for snowflake
     """
-    _, groupby_key, _, _ = common_params
+    select_expr, groupby_key, _, _ = common_params
     groupby_column = GroupbyColumn(
         agg_func=AggFunc.SUM,
         parent_expr=(get_qualified_column_identifier("parent", "TABLE")),
@@ -75,13 +75,17 @@ def test_get_vector_agg_column_snowflake(
     if expect_error:
         with pytest.raises(AssertionError):
             get_vector_agg_column_snowflake(
-                agg_func, groupby_keys=[groupby_key], groupby_column=groupby_column, index=0
+                select_expr,
+                agg_func,
+                groupby_keys=[groupby_key],
+                groupby_column=groupby_column,
+                index=0,
             )
         return
 
     # If no error expected, check the SQL.
     vector_agg_col = get_vector_agg_column_snowflake(
-        agg_func, groupby_keys=[groupby_key], groupby_column=groupby_column, index=0
+        select_expr, agg_func, groupby_keys=[groupby_key], groupby_column=groupby_column, index=0
     )
     expected = textwrap.dedent(
         f"""

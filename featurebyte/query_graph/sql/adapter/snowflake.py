@@ -288,6 +288,10 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
         )
 
     @classmethod
+    def _get_groupby_table_alias(cls, index: int) -> str:
+        return f"VECTOR_T{index}"
+
+    @classmethod
     def group_by(
         cls,
         input_expr: Select,
@@ -306,7 +310,9 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
         for idx, vector_agg_col in enumerate(vector_aggregate_columns):
             vector_agg_select_keys.append(
                 alias_(
-                    f"T{idx}.{vector_agg_col.result_name}",
+                    get_qualified_column_identifier(
+                        vector_agg_col.result_name, cls._get_groupby_table_alias(idx)
+                    ),
                     alias=f"{vector_agg_col.result_name}",
                     quoted=True,
                 )
@@ -325,19 +331,23 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
             )
 
         # Initialize the first join that has the initial select.
-        vector_expr = vector_aggregate_columns[0].aggr_expr.subquery(alias="T0")  # type: ignore[attr-defined]
+        vector_expr = vector_aggregate_columns[0].aggr_expr.subquery(alias=cls._get_groupby_table_alias(0))  # type: ignore[attr-defined]
         left_expression = select(*select_keys, *new_groupby_exprs, *vector_agg_select_keys).from_(
             vector_expr
         )
         # Chain the remaining joins with the remaining vector aggregates if there are more than one
         for idx, vector_agg_expr in enumerate(vector_aggregate_columns[1:]):
-            right_expr = vector_agg_expr.aggr_expr.subquery(alias=f"T{idx+1}")  # type: ignore[attr-defined]
+            right_expr = vector_agg_expr.aggr_expr.subquery(alias=cls._get_groupby_table_alias(idx + 1))  # type: ignore[attr-defined]
             join_conditions = []
             for select_key in select_keys:
                 join_conditions.append(
                     expressions.EQ(
-                        this=get_qualified_column_identifier(select_key.alias, f"T{idx}"),
-                        expression=get_qualified_column_identifier(select_key.alias, f"T{idx+1}"),
+                        this=get_qualified_column_identifier(
+                            select_key.alias, cls._get_groupby_table_alias(idx)
+                        ),
+                        expression=get_qualified_column_identifier(
+                            select_key.alias, cls._get_groupby_table_alias(idx + 1)
+                        ),
                     )
                 )
             left_expression = left_expression.join(

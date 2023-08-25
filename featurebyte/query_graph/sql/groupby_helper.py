@@ -8,12 +8,12 @@ from typing import List, Optional, cast
 from dataclasses import dataclass
 
 from sqlglot import expressions, parse_one
-from sqlglot.expressions import Expression, Select, alias_
+from sqlglot.expressions import Expression, Select, alias_, select
 
 from featurebyte.enum import AggFunc, DBVarType, SourceType
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.adapter.base import VectorAggColumn
-from featurebyte.query_graph.sql.common import quoted_identifier
+from featurebyte.query_graph.sql.common import get_qualified_column_identifier, quoted_identifier
 
 
 @dataclass
@@ -110,7 +110,11 @@ def get_aggregation_expression(
 
 
 def get_vector_agg_column_snowflake(
-    agg_func: AggFunc, groupby_keys: List[GroupbyKey], groupby_column: GroupbyColumn, index: int
+    input_expr: Select,
+    agg_func: AggFunc,
+    groupby_keys: List[GroupbyKey],
+    groupby_column: GroupbyColumn,
+    index: int,
 ) -> VectorAggColumn:
     """
     Returns the vector aggregate expression for snowflake. This will call the vector aggregate function, and return its
@@ -118,6 +122,8 @@ def get_vector_agg_column_snowflake(
 
     Parameters
     ----------
+    input_expr : Select
+        Input expression
     agg_func : AggFunc
         Aggregation function
     groupby_keys : List[GroupbyKey]
@@ -140,23 +146,39 @@ def get_vector_agg_column_snowflake(
     snowflake_agg_func = array_parent_agg_func_sql_mapping[agg_func]
 
     select_keys = [k.get_alias() for k in groupby_keys]
-    keys = [k.expr.sql() for k in groupby_keys]
+    initial_data_table_name = "INITIAL_DATA"
+    keys = [
+        get_qualified_column_identifier(k.name, initial_data_table_name).sql() for k in groupby_keys
+    ]
 
     agg_name = f"AGG_{index}"
     # The VECTOR_AGG_RESULT column value here, is a constant and is the name of the return value defined in the
     # UDTFs.
     agg_result_column = alias_(
-        f"{agg_name}.VECTOR_AGG_RESULT", alias=groupby_column.result_name, quoted=True
+        get_qualified_column_identifier("VECTOR_AGG_RESULT", agg_name),
+        alias=groupby_column.result_name,
+        quoted=True,
     )
     agg_func_expr = expressions.Anonymous(
-        this=snowflake_agg_func, expressions=[groupby_column.parent_expr]
+        this=snowflake_agg_func, expressions=[groupby_column.parent_expr.name]
     )
     concatenated_keys = ", ".join(keys)
     partition = parse_one(f"{agg_func_expr} OVER (PARTITION BY {concatenated_keys})")
     table_expr = expressions.Anonymous(this="TABLE", expressions=[partition])
     aliased_table_expr = alias_(table_expr, alias=agg_name, quoted=True)
 
-    expr = expressions.select(*select_keys, agg_result_column).from_("REQ", aliased_table_expr)
+    # TODO: fix these columns to not be hardcoded
+    updated_input_expr_with_select_keys = input_expr.select(
+        alias_('ITEM."ORDER_ID"', alias="vector_order_id", quoted=True),
+        alias_('ITEM."VECTOR_VALUE_FLOAT"', alias="VECTOR_VALUE_FLOAT", quoted=True),
+    )
+    expr = select(
+        alias_('INITIAL_DATA."vector_order_id"', alias="vector_order_id", quoted=True),
+        agg_result_column,
+    ).from_(
+        updated_input_expr_with_select_keys.subquery(alias=initial_data_table_name),
+        aliased_table_expr,
+    )
     return VectorAggColumn(
         aggr_expr=expr,
         result_name=groupby_column.result_name,
@@ -164,6 +186,7 @@ def get_vector_agg_column_snowflake(
 
 
 def _split_agg_and_snowflake_vector_aggregation_columns(
+    input_expr: Select,
     groupby_keys: list[GroupbyKey],
     groupby_columns: list[GroupbyColumn],
     value_by: Optional[GroupbyKey],
@@ -178,6 +201,8 @@ def _split_agg_and_snowflake_vector_aggregation_columns(
 
     Parameters
     ----------
+    input_expr: Select
+        Input expression
     groupby_keys: list[GroupbyKey]
         List of groupby keys
     groupby_columns: list[GroupbyColumn]
@@ -197,6 +222,7 @@ def _split_agg_and_snowflake_vector_aggregation_columns(
         if column.parent_dtype == DBVarType.ARRAY and source_type == SourceType.SNOWFLAKE:
             vector_agg_cols.append(
                 get_vector_agg_column_snowflake(
+                    input_expr=input_expr,
                     agg_func=column.agg_func,
                     groupby_keys=groupby_keys,
                     groupby_column=column,
@@ -247,7 +273,7 @@ def get_groupby_expr(
     Select
     """
     agg_exprs, snowflake_vector_agg_cols = _split_agg_and_snowflake_vector_aggregation_columns(
-        groupby_keys, groupby_columns, value_by, adapter.source_type
+        input_expr, groupby_keys, groupby_columns, value_by, adapter.source_type
     )
 
     select_keys = [k.get_alias() for k in groupby_keys]
@@ -256,8 +282,13 @@ def get_groupby_expr(
         select_keys.append(value_by.get_alias())
         keys.append(value_by.expr)
 
+    # TODO: fix this
     groupby_expr = adapter.group_by(
-        input_expr, select_keys, agg_exprs, keys, snowflake_vector_agg_cols
+        input_expr,
+        [alias_('VECTOR_T0."vector_order_id"', alias="vector_order_id", quoted=True)],
+        agg_exprs,
+        keys,
+        snowflake_vector_agg_cols,
     )
 
     if value_by is not None:

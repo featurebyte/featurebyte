@@ -3,6 +3,7 @@ Test vector aggregation operations module
 """
 from typing import List
 
+import ast
 import json
 import os
 
@@ -296,7 +297,7 @@ def test_vector_aggregation_operations__aggregate_over_compute_historical_featur
     assert list(historical_features.iloc[0][feature_name]) == [3.0, 3.0, 3.0]
 
 
-@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.parametrize(
     "agg_func,expected_results,vector_value_column",
     TEST_CASES,
@@ -319,6 +320,9 @@ def test_vector_aggregation_operations__aggregate(
     preview_params = {"POINT_IN_TIME": "2022-06-06 00:58:00", "vector_order_id": "1000"}
     feature_preview = feature.preview(pd.DataFrame([preview_params]))
     assert feature_preview.shape[0] == 1
+    feature_value = feature_preview.iloc[0][feature_name]
+    if isinstance(feature_value, str):
+        feature_preview[feature_name] = feature_preview[feature_name].apply(ast.literal_eval)
     assert feature_preview.iloc[0].to_dict() == {
         feature_name: expected_results,
         **convert_preview_param_dict_to_feature_preview_resp(preview_params),
