@@ -300,6 +300,7 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
         keys: List[Expression],
         vector_aggregate_columns: Optional[List[VectorAggColumn]] = None,
     ) -> Select:
+        # pylint: disable=too-many-locals
         # If there are no vector aggregate expressions, we can use the standard group by.
         normal_groupby_expr = super().group_by(input_expr, select_keys, agg_exprs, keys)
         if not vector_aggregate_columns:

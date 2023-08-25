@@ -137,6 +137,7 @@ def get_vector_agg_column_snowflake(
     -------
     VectorAggColumn
     """
+    # pylint: disable=too-many-locals
     array_parent_agg_func_sql_mapping = {
         AggFunc.MAX: "VECTOR_AGGREGATE_MAX",
         AggFunc.AVG: "VECTOR_AGGREGATE_AVG",
