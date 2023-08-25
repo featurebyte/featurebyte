@@ -263,7 +263,7 @@ def get_groupby_expr(
     adapter: BaseAdapter,
 ) -> Select:
     """
-    Construct a GROUP BY statement using the provided expression as input
+    Construct a GROUP BY statement using the provided expression as input.
 
     Parameters
     ----------
@@ -279,7 +279,7 @@ def get_groupby_expr(
     adapter: BaseAdapter
         Adapter for generating engine specific expressions
 
-    Returns - see what groupby_keys are like here
+    Returns
     -------
     Select
     """
