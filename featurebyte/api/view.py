@@ -123,7 +123,7 @@ class ViewColumn(Series, SampleMixin):
         ... )
         >>> view = catalog.get_view("GROCERYINVOICE")
         >>> view["Amount"].cleaning_operations
-        [MissingValueImputation(imputed_value=0, type=missing)]
+        [MissingValueImputation(imputed_value=0)]
 
         Empty list of column cleaning operations of the event table amount column.
 
