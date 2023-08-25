@@ -34,18 +34,6 @@ def feature_manager_service_fixture(app_container):
     return app_container.feature_manager_service
 
 
-@pytest.fixture(name="mock_snowflake_session")
-def mock_snowflake_session_fixture():
-    """
-    SnowflakeSession object fixture
-    """
-    return Mock(
-        name="mock_snowflake_session",
-        spec=SnowflakeSession,
-        source_type=SourceType.SNOWFLAKE,
-    )
-
-
 @pytest.fixture(name="feature_spec")
 def feature_spec_fixture(mock_snowflake_feature):
     """

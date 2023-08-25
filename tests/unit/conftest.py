@@ -33,7 +33,7 @@ from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.groupby import GroupBy
 from featurebyte.api.item_table import ItemTable
 from featurebyte.app import User, app, get_celery
-from featurebyte.enum import AggFunc, InternalName
+from featurebyte.enum import AggFunc, InternalName, SourceType
 from featurebyte.exception import DuplicatedRecordException, ObjectHasBeenSavedError
 from featurebyte.models.credential import CredentialModel
 from featurebyte.models.feature_namespace import FeatureReadiness
@@ -46,6 +46,7 @@ from featurebyte.schema.task import TaskStatus
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.session.base import DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS
 from featurebyte.session.manager import SessionManager, session_cache
+from featurebyte.session.snowflake import SnowflakeSession
 from featurebyte.storage import LocalTempStorage
 from featurebyte.storage.local import LocalStorage
 from featurebyte.worker import get_redis
@@ -1342,6 +1343,20 @@ def session_manager_fixture(credentials, snowflake_connector):
     _ = snowflake_connector
     session_cache.clear()
     yield SessionManager(credentials=credentials)
+
+
+@pytest.fixture(name="mock_snowflake_session")
+def mock_snowflake_session_fixture():
+    """
+    SnowflakeSession object fixture
+    """
+    return Mock(
+        name="mock_snowflake_session",
+        spec=SnowflakeSession,
+        source_type=SourceType.SNOWFLAKE,
+        database_name="sf_db",
+        schema_name="sf_schema",
+    )
 
 
 @pytest.fixture
