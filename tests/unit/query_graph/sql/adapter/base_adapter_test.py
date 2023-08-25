@@ -81,6 +81,7 @@ class BaseAdapterTest:
         ]
         vector_aggregate_exprs = [
             get_vector_agg_column_snowflake(
+                select(),
                 AggFunc.SUM,
                 groupby_keys,
                 GroupbyColumn(
@@ -92,6 +93,7 @@ class BaseAdapterTest:
                 0,
             ),
             get_vector_agg_column_snowflake(
+                select(),
                 AggFunc.SUM,
                 groupby_keys,
                 GroupbyColumn(
@@ -103,6 +105,7 @@ class BaseAdapterTest:
                 1,
             ),
             get_vector_agg_column_snowflake(
+                select(),
                 AggFunc.SUM,
                 groupby_keys,
                 GroupbyColumn(

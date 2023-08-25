@@ -331,13 +331,21 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
             )
 
         # Initialize the first join that has the initial select.
-        vector_expr = vector_aggregate_columns[0].aggr_expr.subquery(
-            alias=cls._get_groupby_table_alias(0)
-        )
-        select_keys = [alias_('VECTOR_T0."vector_order_id"', alias="vector_order_id", quoted=True)]
-        left_expression = select(*select_keys, *new_groupby_exprs, *vector_agg_select_keys).from_(
-            vector_expr
-        )
+        table_alias = cls._get_groupby_table_alias(0)
+        vector_expr = vector_aggregate_columns[0].aggr_expr.subquery(alias=table_alias)
+        # Rename the TABLE that we're selecting the keys from to be the aggregated table, aliased by the subquery above.
+        renamed_table_select_keys = []
+        for select_key in select_keys:
+            renamed_table_select_keys.append(
+                alias_(
+                    get_qualified_column_identifier(select_key.alias, table_alias),
+                    alias=select_key.alias,
+                    quoted=True,
+                )
+            )
+        left_expression = select(
+            *renamed_table_select_keys, *new_groupby_exprs, *vector_agg_select_keys
+        ).from_(vector_expr)
         # Chain the remaining joins with the remaining vector aggregates if there are more than one
         for idx, vector_agg_expr in enumerate(vector_aggregate_columns[1:]):
             right_expr = vector_agg_expr.aggr_expr.subquery(

@@ -173,11 +173,14 @@ def get_vector_agg_column_snowflake(
     table_expr = expressions.Anonymous(this="TABLE", expressions=[window_expr])
     aliased_table_expr = alias_(table_expr, alias=agg_name, quoted=True)
 
-    # TODO: fix these columns to not be hardcoded
-    updated_input_expr_with_select_keys = input_expr.select(
-        alias_('ITEM."ORDER_ID"', alias="vector_order_id", quoted=True),
-        alias_(groupby_column.parent_expr, alias=groupby_column_parent_expr.name, quoted=True),
+    updated_groupby_keys = []
+    for key in groupby_keys:
+        updated_groupby_keys.append(alias_(key.expr, alias=key.name, quoted=True))
+    updated_groupby_keys.append(
+        alias_(groupby_column.parent_expr, alias=groupby_column_parent_expr.name, quoted=True)
     )
+
+    updated_input_expr_with_select_keys = input_expr.select(*updated_groupby_keys)
     expr = select(
         *select_keys,
         agg_result_column,
@@ -221,6 +224,7 @@ def _split_agg_and_snowflake_vector_aggregation_columns(
     Returns
     -------
     tuple[list[Expression], list[VectorAggColumn]]
+        The first list contains the normal aggregation expressions, and the second list contains the vector aggregation.
     """
     non_vector_agg_exprs = []
     vector_agg_cols = []
@@ -274,7 +278,7 @@ def get_groupby_expr(
     adapter: BaseAdapter
         Adapter for generating engine specific expressions
 
-    Returns
+    Returns - see what groupby_keys are like here
     -------
     Select
     """

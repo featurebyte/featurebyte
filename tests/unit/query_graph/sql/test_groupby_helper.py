@@ -90,9 +90,14 @@ def test_get_vector_agg_column_snowflake(
     expected = textwrap.dedent(
         f"""
             SELECT
-              REQ."serving_name" AS "serving_name",
-              AGG_0.VECTOR_AGG_RESULT AS "result"
-            FROM REQ, TABLE({expected_table_func}(TABLE."parent") OVER (PARTITION BY REQ."serving_name")) AS "AGG_0"
+              INITIAL_DATA."serving_name" AS "serving_name",
+              AGG_0."VECTOR_AGG_RESULT" AS "result"
+            FROM (
+              SELECT
+                REQ."serving_name" AS "serving_name",
+                TABLE."parent" AS "parent"
+              FROM REQ
+            ) AS INITIAL_DATA, TABLE({expected_table_func}(parent) OVER (PARTITION BY INITIAL_DATA."serving_name")) AS "AGG_0"
         """
     ).strip()
     assert vector_agg_col.aggr_expr.sql(pretty=True) == expected
