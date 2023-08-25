@@ -145,8 +145,15 @@ def get_vector_agg_column_snowflake(
     assert agg_func in array_parent_agg_func_sql_mapping
     snowflake_agg_func = array_parent_agg_func_sql_mapping[agg_func]
 
-    select_keys = [k.get_alias() for k in groupby_keys]
     initial_data_table_name = "INITIAL_DATA"
+    select_keys = [
+        alias_(
+            get_qualified_column_identifier(k.name, initial_data_table_name),
+            alias=k.name,
+            quoted=True,
+        )
+        for k in groupby_keys
+    ]
     keys = [
         get_qualified_column_identifier(k.name, initial_data_table_name).sql() for k in groupby_keys
     ]
@@ -170,10 +177,10 @@ def get_vector_agg_column_snowflake(
     # TODO: fix these columns to not be hardcoded
     updated_input_expr_with_select_keys = input_expr.select(
         alias_('ITEM."ORDER_ID"', alias="vector_order_id", quoted=True),
-        alias_('ITEM."VECTOR_VALUE_FLOAT"', alias="VECTOR_VALUE_FLOAT", quoted=True),
+        alias_(groupby_column.parent_expr, alias=groupby_column.parent_expr.name, quoted=True),
     )
     expr = select(
-        alias_('INITIAL_DATA."vector_order_id"', alias="vector_order_id", quoted=True),
+        *select_keys,
         agg_result_column,
     ).from_(
         updated_input_expr_with_select_keys.subquery(alias=initial_data_table_name),

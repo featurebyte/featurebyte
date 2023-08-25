@@ -320,6 +320,7 @@ def test_vector_aggregation_operations__aggregate(
     preview_params = {"POINT_IN_TIME": "2022-06-06 00:58:00", "vector_order_id": "1000"}
     feature_preview = feature.preview(pd.DataFrame([preview_params]))
     assert feature_preview.shape[0] == 1
+    # TODO: fix this
     feature_value = feature_preview.iloc[0][feature_name]
     if isinstance(feature_value, str):
         feature_preview[feature_name] = feature_preview[feature_name].apply(ast.literal_eval)
