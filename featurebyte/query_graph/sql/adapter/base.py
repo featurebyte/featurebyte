@@ -30,7 +30,7 @@ class VectorAggColumn:
     Represents a set of parameters that produces one output column in a groupby statement
     """
 
-    aggr_expr: Expression
+    aggr_expr: Select
     result_name: str
 
 
