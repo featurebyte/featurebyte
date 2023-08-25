@@ -164,8 +164,10 @@ def get_vector_agg_column_snowflake(
         alias=groupby_column.result_name,
         quoted=True,
     )
+    groupby_column_parent_expr = groupby_column.parent_expr
+    assert groupby_column_parent_expr is not None
     agg_func_expr = expressions.Anonymous(
-        this=snowflake_agg_func, expressions=[groupby_column.parent_expr.name]
+        this=snowflake_agg_func, expressions=[groupby_column_parent_expr.name]
     )
     window_expr = expressions.Window(this=agg_func_expr, partition_by=keys)
     table_expr = expressions.Anonymous(this="TABLE", expressions=[window_expr])
@@ -174,7 +176,7 @@ def get_vector_agg_column_snowflake(
     # TODO: fix these columns to not be hardcoded
     updated_input_expr_with_select_keys = input_expr.select(
         alias_('ITEM."ORDER_ID"', alias="vector_order_id", quoted=True),
-        alias_(groupby_column.parent_expr, alias=groupby_column.parent_expr.name, quoted=True),
+        alias_(groupby_column.parent_expr, alias=groupby_column_parent_expr.name, quoted=True),
     )
     expr = select(
         *select_keys,
