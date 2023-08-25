@@ -139,7 +139,7 @@ class MissingValueImputation(BaseCleaningOperation):
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.MissingValueImputation")
 
     type: Literal[ConditionOperationField.MISSING] = Field(
-        ConditionOperationField.MISSING, const=True
+        ConditionOperationField.MISSING, const=True, repr=False
     )
 
     def derive_sdk_code(self) -> ObjectClass:
@@ -178,7 +178,7 @@ class DisguisedValueImputation(BaseCleaningOperation):
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.DisguisedValueImputation")
 
     type: Literal[ConditionOperationField.DISGUISED] = Field(
-        ConditionOperationField.DISGUISED, const=True
+        ConditionOperationField.DISGUISED, const=True, repr=False
     )
     disguised_values: Sequence[OptionalScalar] = Field(
         description="List of values that need to be replaced."
@@ -219,7 +219,7 @@ class UnexpectedValueImputation(BaseCleaningOperation):
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.UnexpectedValueImputation")
 
     type: Literal[ConditionOperationField.NOT_IN] = Field(
-        ConditionOperationField.NOT_IN, const=True
+        ConditionOperationField.NOT_IN, const=True, repr=False
     )
     expected_values: Sequence[OptionalScalar] = Field(
         description="List of values that are expected to be present."
@@ -344,7 +344,7 @@ class StringValueImputation(BaseCleaningOperation):
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.StringValueImputation")
 
     type: Literal[ConditionOperationField.IS_STRING] = Field(
-        ConditionOperationField.IS_STRING, const=True
+        ConditionOperationField.IS_STRING, const=True, repr=False
     )
 
     def derive_sdk_code(self) -> ObjectClass:

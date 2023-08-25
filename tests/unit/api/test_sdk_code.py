@@ -277,17 +277,17 @@ def test_sdk_code_generation__multi_table_feature(
         # data source does not have col_float cleaning operations
         "and the input table.\n{'cleaning_operations': {'data_source': ["
         "ColumnCleaningOperation(column_name='col_int', "
-        "cleaning_operations=[MissingValueImputation(imputed_value=0.0, type=missing)]), "
+        "cleaning_operations=[MissingValueImputation(imputed_value=0.0)]), "
         "ColumnCleaningOperation(column_name='cust_id', "
-        "cleaning_operations=[MissingValueImputation(imputed_value=0.0, type=missing)])], "
+        "cleaning_operations=[MissingValueImputation(imputed_value=0.0)])], "
         # promoted feature has additional col_float cleaning operations
         "'promoted_feature': ["
         "ColumnCleaningOperation(column_name='col_int', "
-        "cleaning_operations=[MissingValueImputation(imputed_value=0.0, type=missing)]), "
+        "cleaning_operations=[MissingValueImputation(imputed_value=0.0)]), "
         "ColumnCleaningOperation(column_name='col_float', "
-        "cleaning_operations=[MissingValueImputation(imputed_value=0.0, type=missing)]), "
+        "cleaning_operations=[MissingValueImputation(imputed_value=0.0)]), "
         "ColumnCleaningOperation(column_name='cust_id', "
-        "cleaning_operations=[MissingValueImputation(imputed_value=0.0, type=missing)])]}}\n"
+        "cleaning_operations=[MissingValueImputation(imputed_value=0.0)])]}}\n"
         "Please fix these issues first before trying to promote your feature to PRODUCTION_READY."
     )
     assert expected_error in str(exc.value)
