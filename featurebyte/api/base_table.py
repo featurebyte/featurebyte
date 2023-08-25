@@ -91,7 +91,7 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
         ...    ]
         ... )
         >>> event_table["Amount"].cleaning_operations
-        [MissingValueImputation(imputed_value=0, type=missing)]
+        [MissingValueImputation(imputed_value=0)]
 
         Empty list of column cleaning operations of the event table amount column.
 
@@ -177,8 +177,8 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
         Show column cleaning operations of the event table.
 
         >>> event_table.column_cleaning_operations
-        [ColumnCleaningOperation(column_name='Amount', cleaning_operations=[MissingValueImputation(imputed_value=0,
-        type=missing), ValueBeyondEndpointImputation(imputed_value=0, type=less_than, end_point=0)])]
+        [ColumnCleaningOperation(column_name='Amount', cleaning_operations=[MissingValueImputation(imputed_value=0),
+        ValueBeyondEndpointImputation(imputed_value=0, type=less_than, end_point=0)])]
 
         Remove cleaning operations and show the column cleaning operations of the event table.
 
@@ -652,7 +652,7 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
         ...   ]
         ... )
         >>> event_table.column_cleaning_operations
-        [ColumnCleaningOperation(column_name='Amount', cleaning_operations=[MissingValueImputation(imputed_value=0, type=missing), ValueBeyondEndpointImputation(imputed_value=0, type=less_than, end_point=0)])]
+        [ColumnCleaningOperation(column_name='Amount', cleaning_operations=[MissingValueImputation(imputed_value=0), ValueBeyondEndpointImputation(imputed_value=0, type=less_than, end_point=0)])]
 
         Empty list of column cleaning operations after resetting the cleaning operations.
 

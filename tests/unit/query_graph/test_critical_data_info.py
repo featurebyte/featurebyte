@@ -214,3 +214,28 @@ def test_critical_data_info__add_cleaning_operation(input_node, imputation, expe
         "output_type": "series",
         "parameters": {"type": "float", "from_dtype": "FLOAT"},
     }
+
+
+@pytest.mark.parametrize(
+    "cleaning_operation,expected_repr",
+    [
+        (MissingValueImputation(imputed_value=0), "MissingValueImputation(imputed_value=0)"),
+        (
+            DisguisedValueImputation(disguised_values=["a", "b"], imputed_value=None),
+            "DisguisedValueImputation(imputed_value=None, disguised_values=['a', 'b'])",
+        ),
+        (
+            UnexpectedValueImputation(expected_values=["c", "d"], imputed_value=None),
+            "UnexpectedValueImputation(imputed_value=None, expected_values=['c', 'd'])",
+        ),
+        (
+            # should include type in repr as there are multiple types
+            ValueBeyondEndpointImputation(type="greater_than", end_point=0, imputed_value=0),
+            "ValueBeyondEndpointImputation(imputed_value=0, type=greater_than, end_point=0)",
+        ),
+        (StringValueImputation(imputed_value=None), "StringValueImputation(imputed_value=None)"),
+    ],
+)
+def test_cleaning_operation_representation(cleaning_operation, expected_repr):
+    """Test cleaning operation representation"""
+    assert repr(cleaning_operation) == expected_repr
