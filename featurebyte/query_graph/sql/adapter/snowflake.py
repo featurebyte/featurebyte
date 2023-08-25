@@ -334,6 +334,7 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
         vector_expr = vector_aggregate_columns[0].aggr_expr.subquery(
             alias=cls._get_groupby_table_alias(0)
         )
+        select_keys = [alias_('VECTOR_T0."vector_order_id"', alias="vector_order_id", quoted=True)]
         left_expression = select(*select_keys, *new_groupby_exprs, *vector_agg_select_keys).from_(
             vector_expr
         )

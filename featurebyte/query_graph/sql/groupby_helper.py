@@ -288,10 +288,9 @@ def get_groupby_expr(
         select_keys.append(value_by.get_alias())
         keys.append(value_by.expr)
 
-    # TODO: fix this
     groupby_expr = adapter.group_by(
         input_expr,
-        [alias_('VECTOR_T0."vector_order_id"', alias="vector_order_id", quoted=True)],
+        select_keys,
         agg_exprs,
         keys,
         snowflake_vector_agg_cols,
