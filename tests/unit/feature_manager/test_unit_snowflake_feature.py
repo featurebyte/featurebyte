@@ -34,18 +34,6 @@ def feature_manager_service_fixture(app_container):
     return app_container.feature_manager_service
 
 
-@pytest.fixture(name="mock_snowflake_session")
-def mock_snowflake_session_fixture():
-    """
-    SnowflakeSession object fixture
-    """
-    return Mock(
-        name="mock_snowflake_session",
-        spec=SnowflakeSession,
-        source_type=SourceType.SNOWFLAKE,
-    )
-
-
 @pytest.fixture(name="feature_spec")
 def feature_spec_fixture(mock_snowflake_feature):
     """
@@ -110,9 +98,10 @@ async def test_online_enable(
 
     # Expected execute_query calls are triggered by TileScheduleOnlineStore:
     # 1. Check if online store table exists (execute_query)
-    # 2. Insert into online store table (execute_query_long_running)
+    # 2. Compute online store values and store in a temporary table
+    # 3. Insert into online store table (execute_query_long_running)
     assert mock_snowflake_session.execute_query.call_count == 1
-    assert mock_snowflake_session.execute_query_long_running.call_count == 1
+    assert mock_snowflake_session.execute_query_long_running.call_count == 2
 
     # First call
     args, _ = mock_snowflake_session.execute_query.call_args_list[0]
@@ -122,6 +111,10 @@ async def test_online_enable(
 
     # Second call
     args, _ = mock_snowflake_session.execute_query_long_running.call_args_list[0]
+    assert args[0].strip().startswith("CREATE TABLE __SESSION_TEMP_TABLE_")
+
+    # Third call
+    args, _ = mock_snowflake_session.execute_query_long_running.call_args_list[1]
     assert args[0].strip().startswith("INSERT INTO online_store_")
 
 

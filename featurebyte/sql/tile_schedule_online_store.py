@@ -15,7 +15,7 @@ from featurebyte.models.online_store_table_version import OnlineStoreTableVersio
 from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.sql.base import BaseSqlModel
-from featurebyte.sql.common import construct_create_table_query
+from featurebyte.sql.common import construct_create_table_query, register_temporary_physical_table
 
 logger = get_logger(__name__)
 
@@ -111,14 +111,15 @@ class TileScheduleOnlineStore(BaseSqlModel):
                 column_names = ", ".join(
                     quoted_entity_columns + [quoted_result_name_column, quoted_value_column]
                 )
-                insert_query = textwrap.dedent(
-                    f"""
-                    INSERT INTO {fs_table} ({column_names}, {quoted_version_column}, UPDATED_AT)
-                    SELECT {column_names}, {next_version}, to_timestamp('{current_ts}')
-                    FROM ({f_sql})
-                    """
-                )
-                await self._session.execute_query_long_running(insert_query)
+                async with register_temporary_physical_table(self._session, f_sql) as temp_table:
+                    insert_query = textwrap.dedent(
+                        f"""
+                        INSERT INTO {fs_table} ({column_names}, {quoted_version_column}, UPDATED_AT)
+                        SELECT {column_names}, {next_version}, to_timestamp('{current_ts}')
+                        FROM {temp_table}
+                        """
+                    )
+                    await self._session.execute_query_long_running(insert_query)
                 logger.debug(
                     "Done inserting to online store",
                     extra={"fs_table": fs_table, "result_name": f_name, "version": next_version},
