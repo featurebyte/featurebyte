@@ -1,11 +1,12 @@
 """
 UseCase API route controller
 """
-from typing import List
+from typing import List, cast
 
 from bson import ObjectId
 
 from featurebyte.models.base_feature_or_target_table import BaseFeatureOrTargetTableModel
+from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.use_case import UseCaseModel
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.use_case import UseCaseCreate, UseCaseList, UseCaseUpdate
@@ -76,3 +77,35 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
         List[BaseFeatureOrTargetTableModel]
         """
         return await self.service.list_feature_tables(use_case_id=use_case_id)
+
+    async def list_observation_tables(
+        self,
+        use_case_id: ObjectId,
+    ) -> List[ObservationTableModel]:
+        """
+        list observation tables associated with the Use Case
+
+        Parameters
+        ----------
+        use_case_id: ObjectId
+            use case id
+
+        Returns
+        -------
+        List[ObservationTableModel]
+        """
+        return cast(
+            List[ObservationTableModel],
+            await self.service.list_observation_tables(use_case_id=use_case_id),
+        )
+
+    async def delete_use_case(self, document_id: ObjectId) -> None:
+        """
+        Delete UseCase from persistent
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            UseCase id to be deleted
+        """
+        await self.service.delete_document(document_id=document_id)

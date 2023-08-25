@@ -9,6 +9,7 @@ from fastapi import APIRouter, Request
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.base_feature_or_target_table import BaseFeatureOrTargetTableModel
+from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.models.use_case import UseCaseModel
 from featurebyte.routes.common.schema import (
@@ -51,6 +52,35 @@ async def get_use_case(request: Request, use_case_id: PydanticObjectId) -> UseCa
     return use_case
 
 
+@router.get("/{use_case_id}/observation_tables", response_model=List[ObservationTableModel])
+async def list_observation_tables(
+    request: Request, use_case_id: PydanticObjectId
+) -> List[ObservationTableModel]:
+    """
+    List Observation Tables associated with the Use Case
+    """
+    controller = request.state.app_container.use_case_controller
+    doc_list: List[ObservationTableModel] = await controller.list_observation_tables(
+        use_case_id=use_case_id,
+    )
+    return doc_list
+
+
+@router.get("/{use_case_id}/feature_tables", response_model=List[BaseFeatureOrTargetTableModel])
+async def list_use_case_feature_tables(
+    request: Request,
+    use_case_id: PydanticObjectId,
+) -> List[BaseFeatureOrTargetTableModel]:
+    """
+    List Feature Tables associated with the Use Case
+    """
+    controller = request.state.app_container.use_case_controller
+    feature_tables_list: List[BaseFeatureOrTargetTableModel] = await controller.list_feature_tables(
+        use_case_id=use_case_id,
+    )
+    return feature_tables_list
+
+
 @router.patch("/{use_case_id}", response_model=UseCaseModel)
 async def update_use_case(
     request: Request, use_case_id: PydanticObjectId, data: UseCaseUpdate
@@ -61,6 +91,15 @@ async def update_use_case(
     controller = request.state.app_container.use_case_controller
     use_case: UseCaseModel = await controller.update_use_case(use_case_id=use_case_id, data=data)
     return use_case
+
+
+@router.delete("/{use_case_id}", status_code=HTTPStatus.OK)
+async def delete_use_case(request: Request, use_case_id: PydanticObjectId) -> None:
+    """
+    Update Use Case
+    """
+    controller = request.state.app_container.use_case_controller
+    await controller.delete_use_case(document_id=use_case_id)
 
 
 @router.get("", response_model=UseCaseList)
@@ -128,18 +167,3 @@ async def update_use_case_description(
         description=data.description,
     )
     return doc
-
-
-@router.get("/{use_case_id}/feature_tables", response_model=List[BaseFeatureOrTargetTableModel])
-async def list_use_case_feature_tables(
-    request: Request,
-    use_case_id: PydanticObjectId,
-) -> List[BaseFeatureOrTargetTableModel]:
-    """
-    List Feature Tables associated with the Use Case
-    """
-    controller = request.state.app_container.use_case_controller
-    feature_tables_list: List[BaseFeatureOrTargetTableModel] = await controller.list_feature_tables(
-        use_case_id=use_case_id,
-    )
-    return feature_tables_list

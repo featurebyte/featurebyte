@@ -40,6 +40,7 @@ from featurebyte.api.source_table import SourceTable
 from featurebyte.api.table import Table
 from featurebyte.api.target import Target
 from featurebyte.api.target_namespace import TargetNamespace
+from featurebyte.api.use_case import UseCase
 from featurebyte.api.user_defined_function import UDF, UserDefinedFunction
 from featurebyte.common.env_util import is_notebook
 from featurebyte.common.utils import get_version
@@ -465,6 +466,7 @@ __all__ = [
     "TableFeatureJobSetting",
     "Target",
     "TargetNamespace",
+    "UseCase",
     # credentials
     "AzureBlobStorageCredential",
     "AccessTokenCredential",

@@ -215,6 +215,17 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         assert data["default_preview_table_id"] == str(new_ob_table_id_2)
         assert data["default_eda_table_id"] == str(new_ob_table_id_3)
 
+        # test list observation tables endpoint
+        response = test_api_client.get(
+            f"{self.base_route}/{use_case_id}/observation_tables",
+        )
+        assert response.status_code == HTTPStatus.OK
+        data = response.json()
+        assert len(data) == 3
+        assert sorted(
+            [str(new_ob_table_id_1), str(new_ob_table_id_2), str(new_ob_table_id_3)]
+        ) == sorted([data[0]["_id"], data[1]["_id"], data[2]["_id"]])
+
     @pytest.mark.asyncio
     async def test_update_use_case_with_error(
         self,
@@ -339,3 +350,21 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
             f"Cannot delete Observation Table {str(new_ob_table_id)} because it is referenced"
             in response.json()["detail"]
         )
+
+    @pytest.mark.asyncio
+    async def test_delete_use_case(self, test_api_client_persistent, create_success_response):
+        """Test delete observation_table (fail) that is already associated with a use case"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        use_case_id = create_response_dict["_id"]
+
+        response = test_api_client.get(f"{self.base_route}/{use_case_id}")
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["_id"] == use_case_id
+
+        # delete use case
+        response = test_api_client.delete(f"{self.base_route}/{use_case_id}")
+        assert response.status_code == HTTPStatus.OK
+
+        response = test_api_client.get(f"{self.base_route}/{use_case_id}")
+        assert response.status_code == HTTPStatus.NOT_FOUND

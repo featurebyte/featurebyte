@@ -7,7 +7,7 @@ from bson import ObjectId
 
 from featurebyte.exception import UseCaseInvalidDataError
 from featurebyte.models.base_feature_or_target_table import BaseFeatureOrTargetTableModel
-from featurebyte.models.observation_table import TargetInput
+from featurebyte.models.observation_table import ObservationTableModel, TargetInput
 from featurebyte.models.use_case import UseCaseModel
 from featurebyte.persistent import Persistent
 from featurebyte.schema.use_case import (
@@ -188,3 +188,29 @@ class UseCaseService(BaseDocumentService[UseCaseModel, UseCaseCreate, UseCaseUpd
             feature_tables.append(feature_table)
 
         return cast(List[BaseFeatureOrTargetTableModel], feature_tables)
+
+    async def list_observation_tables(
+        self,
+        use_case_id: ObjectId,
+    ) -> List[ObservationTableModel]:
+        """
+        list observation tables associated with the Use Case
+
+        Parameters
+        ----------
+        use_case_id: ObjectId
+            use case id
+
+        Returns
+        -------
+        List[ObservationTableModel]
+        """
+        use_case = await self.get_document(document_id=use_case_id)
+
+        observation_tables = []
+        async for observation_table in self.observation_table_service.list_documents_iterator(
+            query_filter={"_id": {"$in": use_case.observation_table_ids}}
+        ):
+            observation_tables.append(observation_table)
+
+        return observation_tables
