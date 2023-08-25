@@ -1,0 +1,1248 @@
+{
+    "edges": [
+        {
+            "source": "input_1",
+            "target": "graph_1"
+        },
+        {
+            "source": "input_2",
+            "target": "graph_2"
+        },
+        {
+            "source": "input_3",
+            "target": "graph_3"
+        },
+        {
+            "source": "input_4",
+            "target": "graph_4"
+        },
+        {
+            "source": "graph_3",
+            "target": "graph_4"
+        },
+        {
+            "source": "graph_4",
+            "target": "join_1"
+        },
+        {
+            "source": "graph_2",
+            "target": "join_1"
+        },
+        {
+            "source": "join_1",
+            "target": "join_2"
+        },
+        {
+            "source": "graph_1",
+            "target": "join_2"
+        },
+        {
+            "source": "join_2",
+            "target": "groupby_1"
+        },
+        {
+            "source": "groupby_1",
+            "target": "project_1"
+        },
+        {
+            "source": "join_2",
+            "target": "groupby_2"
+        },
+        {
+            "source": "groupby_2",
+            "target": "project_2"
+        },
+        {
+            "source": "project_1",
+            "target": "cosine_similarity_1"
+        },
+        {
+            "source": "project_2",
+            "target": "cosine_similarity_1"
+        },
+        {
+            "source": "cosine_similarity_1",
+            "target": "alias_1"
+        }
+    ],
+    "nodes": [
+        {
+            "name": "input_1",
+            "type": "input",
+            "output_type": "frame",
+            "parameters": {
+                "columns": [
+                    {
+                        "name": "RowID",
+                        "dtype": "VARCHAR"
+                    },
+                    {
+                        "name": "GroceryCustomerGuid",
+                        "dtype": "VARCHAR"
+                    },
+                    {
+                        "name": "ValidFrom",
+                        "dtype": "TIMESTAMP"
+                    },
+                    {
+                        "name": "Gender",
+                        "dtype": "VARCHAR"
+                    },
+                    {
+                        "name": "Title",
+                        "dtype": "VARCHAR"
+                    },
+                    {
+                        "name": "GivenName",
+                        "dtype": "VARCHAR"
+                    },
+                    {
+                        "name": "MiddleInitial",
+                        "dtype": "VARCHAR"
+                    },
+                    {
+                        "name": "Surname",
+                        "dtype": "VARCHAR"
+                    },
+                    {
+                        "name": "StreetAddress",
+                        "dtype": "VARCHAR"
+                    },
+                    {
+                        "name": "City",
+                        "dtype": "VARCHAR"
+                    },
+                    {
+                        "name": "State",
+                        "dtype": "VARCHAR"
+                    },
+                    {
+                        "name": "PostalCode",
+                        "dtype": "VARCHAR"
+                    },
+                    {
+                        "name": "BrowserUserAgent",
+                        "dtype": "VARCHAR"
+                    },
+                    {
+                        "name": "DateOfBirth",
+                        "dtype": "DATE"
+                    },
+                    {
+                        "name": "Latitude",
+                        "dtype": "FLOAT"
+                    },
+                    {
+                        "name": "Longitude",
+                        "dtype": "FLOAT"
+                    },
+                    {
+                        "name": "record_available_at",
+                        "dtype": "TIMESTAMP"
+                    },
+                    {
+                        "name": "CurrentRecord",
+                        "dtype": "BOOL"
+                    }
+                ],
+                "table_details": {
+                    "database_name": "spark_catalog",
+                    "schema_name": "grocery",
+                    "table_name": "GROCERYCUSTOMER"
+                },
+                "feature_store_details": {
+                    "type": "spark",
+                    "details": {
+                        "host": "spark-thrift",
+                        "port": 10000,
+                        "http_path": "cliservice",
+                        "use_http_transport": false,
+                        "use_ssl": false,
+                        "storage_type": "file",
+                        "storage_url": "/data/staging/playground",
+                        "storage_spark_url": "file:///opt/spark/data/staging/playground",
+                        "featurebyte_catalog": "spark_catalog",
+                        "featurebyte_schema": "playground"
+                    }
+                },
+                "type": "scd_table",
+                "id": "64e5b473f0a62a07ead83839",
+                "natural_key_column": "GroceryCustomerGuid",
+                "effective_timestamp_column": "ValidFrom",
+                "surrogate_key_column": null,
+                "end_timestamp_column": null,
+                "current_flag_column": "CurrentRecord"
+            }
+        },
+        {
+            "name": "graph_1",
+            "type": "graph",
+            "output_type": "frame",
+            "parameters": {
+                "graph": {
+                    "edges": [
+                        {
+                            "source": "proxy_input_1",
+                            "target": "project_1"
+                        }
+                    ],
+                    "nodes": [
+                        {
+                            "name": "proxy_input_1",
+                            "type": "proxy_input",
+                            "output_type": "frame",
+                            "parameters": {
+                                "input_order": 0
+                            }
+                        },
+                        {
+                            "name": "project_1",
+                            "type": "project",
+                            "output_type": "frame",
+                            "parameters": {
+                                "columns": [
+                                    "RowID",
+                                    "GroceryCustomerGuid",
+                                    "ValidFrom",
+                                    "Gender",
+                                    "Title",
+                                    "GivenName",
+                                    "MiddleInitial",
+                                    "Surname",
+                                    "StreetAddress",
+                                    "City",
+                                    "State",
+                                    "PostalCode",
+                                    "BrowserUserAgent",
+                                    "DateOfBirth",
+                                    "Latitude",
+                                    "Longitude",
+                                    "record_available_at"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                "output_node_name": "project_1",
+                "type": "scd_view",
+                "metadata": {
+                    "view_mode": "auto",
+                    "drop_column_names": [
+                        "CurrentRecord"
+                    ],
+                    "column_cleaning_operations": [],
+                    "table_id": "64e5b473f0a62a07ead83839"
+                }
+            }
+        },
+        {
+            "name": "input_2",
+            "type": "input",
+            "output_type": "frame",
+            "parameters": {
+                "columns": [
+                    {
+                        "name": "GroceryProductGuid",
+                        "dtype": "VARCHAR"
+                    },
+                    {
+                        "name": "ProductGroup",
+                        "dtype": "VARCHAR"
+                    }
+                ],
+                "table_details": {
+                    "database_name": "spark_catalog",
+                    "schema_name": "grocery",
+                    "table_name": "GROCERYPRODUCT"
+                },
+                "feature_store_details": {
+                    "type": "spark",
+                    "details": {
+                        "host": "spark-thrift",
+                        "port": 10000,
+                        "http_path": "cliservice",
+                        "use_http_transport": false,
+                        "use_ssl": false,
+                        "storage_type": "file",
+                        "storage_url": "/data/staging/playground",
+                        "storage_spark_url": "file:///opt/spark/data/staging/playground",
+                        "featurebyte_catalog": "spark_catalog",
+                        "featurebyte_schema": "playground"
+                    }
+                },
+                "type": "dimension_table",
+                "id": "64e5b474f0a62a07ead8383a",
+                "id_column": "GroceryProductGuid"
+            }
+        },
+        {
+            "name": "graph_2",
+            "type": "graph",
+            "output_type": "frame",
+            "parameters": {
+                "graph": {
+                    "edges": [
+                        {
+                            "source": "proxy_input_1",
+                            "target": "project_1"
+                        }
+                    ],
+                    "nodes": [
+                        {
+                            "name": "proxy_input_1",
+                            "type": "proxy_input",
+                            "output_type": "frame",
+                            "parameters": {
+                                "input_order": 0
+                            }
+                        },
+                        {
+                            "name": "project_1",
+                            "type": "project",
+                            "output_type": "frame",
+                            "parameters": {
+                                "columns": [
+                                    "GroceryProductGuid",
+                                    "ProductGroup"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                "output_node_name": "project_1",
+                "type": "dimension_view",
+                "metadata": {
+                    "view_mode": "auto",
+                    "drop_column_names": [],
+                    "column_cleaning_operations": [],
+                    "table_id": "64e5b474f0a62a07ead8383a"
+                }
+            }
+        },
+        {
+            "name": "input_3",
+            "type": "input",
+            "output_type": "frame",
+            "parameters": {
+                "columns": [
+                    {
+                        "name": "GroceryInvoiceGuid",
+                        "dtype": "VARCHAR"
+                    },
+                    {
+                        "name": "GroceryCustomerGuid",
+                        "dtype": "VARCHAR"
+                    },
+                    {
+                        "name": "Timestamp",
+                        "dtype": "TIMESTAMP"
+                    },
+                    {
+                        "name": "tz_offset",
+                        "dtype": "VARCHAR"
+                    },
+                    {
+                        "name": "record_available_at",
+                        "dtype": "TIMESTAMP"
+                    },
+                    {
+                        "name": "Amount",
+                        "dtype": "FLOAT"
+                    }
+                ],
+                "table_details": {
+                    "database_name": "spark_catalog",
+                    "schema_name": "grocery",
+                    "table_name": "GROCERYINVOICE"
+                },
+                "feature_store_details": {
+                    "type": "spark",
+                    "details": {
+                        "host": "spark-thrift",
+                        "port": 10000,
+                        "http_path": "cliservice",
+                        "use_http_transport": false,
+                        "use_ssl": false,
+                        "storage_type": "file",
+                        "storage_url": "/data/staging/playground",
+                        "storage_spark_url": "file:///opt/spark/data/staging/playground",
+                        "featurebyte_catalog": "spark_catalog",
+                        "featurebyte_schema": "playground"
+                    }
+                },
+                "type": "event_table",
+                "id": "64e5b470f0a62a07ead83837",
+                "timestamp_column": "Timestamp",
+                "id_column": "GroceryInvoiceGuid",
+                "event_timestamp_timezone_offset": null,
+                "event_timestamp_timezone_offset_column": null
+            }
+        },
+        {
+            "name": "graph_3",
+            "type": "graph",
+            "output_type": "frame",
+            "parameters": {
+                "graph": {
+                    "edges": [
+                        {
+                            "source": "proxy_input_1",
+                            "target": "project_1"
+                        }
+                    ],
+                    "nodes": [
+                        {
+                            "name": "proxy_input_1",
+                            "type": "proxy_input",
+                            "output_type": "frame",
+                            "parameters": {
+                                "input_order": 0
+                            }
+                        },
+                        {
+                            "name": "project_1",
+                            "type": "project",
+                            "output_type": "frame",
+                            "parameters": {
+                                "columns": [
+                                    "GroceryInvoiceGuid",
+                                    "GroceryCustomerGuid",
+                                    "Timestamp",
+                                    "tz_offset",
+                                    "Amount"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                "output_node_name": "project_1",
+                "type": "event_view",
+                "metadata": {
+                    "view_mode": "auto",
+                    "drop_column_names": [
+                        "record_available_at"
+                    ],
+                    "column_cleaning_operations": [],
+                    "table_id": "64e5b470f0a62a07ead83837"
+                }
+            }
+        },
+        {
+            "name": "input_4",
+            "type": "input",
+            "output_type": "frame",
+            "parameters": {
+                "columns": [
+                    {
+                        "name": "GroceryInvoiceItemGuid",
+                        "dtype": "VARCHAR"
+                    },
+                    {
+                        "name": "GroceryInvoiceGuid",
+                        "dtype": "VARCHAR"
+                    },
+                    {
+                        "name": "GroceryProductGuid",
+                        "dtype": "VARCHAR"
+                    },
+                    {
+                        "name": "Quantity",
+                        "dtype": "FLOAT"
+                    },
+                    {
+                        "name": "UnitPrice",
+                        "dtype": "FLOAT"
+                    },
+                    {
+                        "name": "TotalCost",
+                        "dtype": "FLOAT"
+                    },
+                    {
+                        "name": "Discount",
+                        "dtype": "FLOAT"
+                    },
+                    {
+                        "name": "record_available_at",
+                        "dtype": "TIMESTAMP"
+                    }
+                ],
+                "table_details": {
+                    "database_name": "spark_catalog",
+                    "schema_name": "grocery",
+                    "table_name": "INVOICEITEMS"
+                },
+                "feature_store_details": {
+                    "type": "spark",
+                    "details": {
+                        "host": "spark-thrift",
+                        "port": 10000,
+                        "http_path": "cliservice",
+                        "use_http_transport": false,
+                        "use_ssl": false,
+                        "storage_type": "file",
+                        "storage_url": "/data/staging/playground",
+                        "storage_spark_url": "file:///opt/spark/data/staging/playground",
+                        "featurebyte_catalog": "spark_catalog",
+                        "featurebyte_schema": "playground"
+                    }
+                },
+                "type": "item_table",
+                "id": "64e5b472f0a62a07ead83838",
+                "id_column": "GroceryInvoiceItemGuid",
+                "event_table_id": "64e5b470f0a62a07ead83837",
+                "event_id_column": "GroceryInvoiceGuid"
+            }
+        },
+        {
+            "name": "graph_4",
+            "type": "graph",
+            "output_type": "frame",
+            "parameters": {
+                "graph": {
+                    "edges": [
+                        {
+                            "source": "proxy_input_1",
+                            "target": "project_1"
+                        },
+                        {
+                            "source": "project_1",
+                            "target": "graph_1"
+                        },
+                        {
+                            "source": "graph_1",
+                            "target": "join_1"
+                        },
+                        {
+                            "source": "proxy_input_2",
+                            "target": "join_1"
+                        }
+                    ],
+                    "nodes": [
+                        {
+                            "name": "proxy_input_1",
+                            "type": "proxy_input",
+                            "output_type": "frame",
+                            "parameters": {
+                                "input_order": 0
+                            }
+                        },
+                        {
+                            "name": "proxy_input_2",
+                            "type": "proxy_input",
+                            "output_type": "frame",
+                            "parameters": {
+                                "input_order": 1
+                            }
+                        },
+                        {
+                            "name": "project_1",
+                            "type": "project",
+                            "output_type": "frame",
+                            "parameters": {
+                                "columns": [
+                                    "GroceryInvoiceItemGuid",
+                                    "GroceryInvoiceGuid",
+                                    "GroceryProductGuid",
+                                    "Quantity",
+                                    "UnitPrice",
+                                    "TotalCost",
+                                    "Discount",
+                                    "record_available_at"
+                                ]
+                            }
+                        },
+                        {
+                            "name": "graph_1",
+                            "type": "graph",
+                            "output_type": "frame",
+                            "parameters": {
+                                "graph": {
+                                    "edges": [
+                                        {
+                                            "source": "proxy_input_1",
+                                            "target": "project_1"
+                                        },
+                                        {
+                                            "source": "project_1",
+                                            "target": "is_null_1"
+                                        },
+                                        {
+                                            "source": "project_1",
+                                            "target": "conditional_1"
+                                        },
+                                        {
+                                            "source": "is_null_1",
+                                            "target": "conditional_1"
+                                        },
+                                        {
+                                            "source": "conditional_1",
+                                            "target": "cast_1"
+                                        },
+                                        {
+                                            "source": "cast_1",
+                                            "target": "lt_1"
+                                        },
+                                        {
+                                            "source": "cast_1",
+                                            "target": "conditional_2"
+                                        },
+                                        {
+                                            "source": "lt_1",
+                                            "target": "conditional_2"
+                                        },
+                                        {
+                                            "source": "conditional_2",
+                                            "target": "cast_2"
+                                        },
+                                        {
+                                            "source": "proxy_input_1",
+                                            "target": "assign_1"
+                                        },
+                                        {
+                                            "source": "cast_2",
+                                            "target": "assign_1"
+                                        },
+                                        {
+                                            "source": "proxy_input_1",
+                                            "target": "project_2"
+                                        },
+                                        {
+                                            "source": "project_2",
+                                            "target": "is_null_2"
+                                        },
+                                        {
+                                            "source": "project_2",
+                                            "target": "conditional_3"
+                                        },
+                                        {
+                                            "source": "is_null_2",
+                                            "target": "conditional_3"
+                                        },
+                                        {
+                                            "source": "conditional_3",
+                                            "target": "cast_3"
+                                        },
+                                        {
+                                            "source": "cast_3",
+                                            "target": "lt_2"
+                                        },
+                                        {
+                                            "source": "cast_3",
+                                            "target": "conditional_4"
+                                        },
+                                        {
+                                            "source": "lt_2",
+                                            "target": "conditional_4"
+                                        },
+                                        {
+                                            "source": "conditional_4",
+                                            "target": "cast_4"
+                                        },
+                                        {
+                                            "source": "assign_1",
+                                            "target": "assign_2"
+                                        },
+                                        {
+                                            "source": "cast_4",
+                                            "target": "assign_2"
+                                        },
+                                        {
+                                            "source": "proxy_input_1",
+                                            "target": "project_3"
+                                        },
+                                        {
+                                            "source": "project_3",
+                                            "target": "is_null_3"
+                                        },
+                                        {
+                                            "source": "project_3",
+                                            "target": "conditional_5"
+                                        },
+                                        {
+                                            "source": "is_null_3",
+                                            "target": "conditional_5"
+                                        },
+                                        {
+                                            "source": "conditional_5",
+                                            "target": "cast_5"
+                                        },
+                                        {
+                                            "source": "cast_5",
+                                            "target": "lt_3"
+                                        },
+                                        {
+                                            "source": "cast_5",
+                                            "target": "conditional_6"
+                                        },
+                                        {
+                                            "source": "lt_3",
+                                            "target": "conditional_6"
+                                        },
+                                        {
+                                            "source": "conditional_6",
+                                            "target": "cast_6"
+                                        },
+                                        {
+                                            "source": "assign_2",
+                                            "target": "assign_3"
+                                        },
+                                        {
+                                            "source": "cast_6",
+                                            "target": "assign_3"
+                                        }
+                                    ],
+                                    "nodes": [
+                                        {
+                                            "name": "proxy_input_1",
+                                            "type": "proxy_input",
+                                            "output_type": "frame",
+                                            "parameters": {
+                                                "input_order": 0
+                                            }
+                                        },
+                                        {
+                                            "name": "project_1",
+                                            "type": "project",
+                                            "output_type": "series",
+                                            "parameters": {
+                                                "columns": [
+                                                    "Quantity"
+                                                ]
+                                            }
+                                        },
+                                        {
+                                            "name": "is_null_1",
+                                            "type": "is_null",
+                                            "output_type": "series",
+                                            "parameters": {}
+                                        },
+                                        {
+                                            "name": "conditional_1",
+                                            "type": "conditional",
+                                            "output_type": "series",
+                                            "parameters": {
+                                                "value": 0
+                                            }
+                                        },
+                                        {
+                                            "name": "cast_1",
+                                            "type": "cast",
+                                            "output_type": "series",
+                                            "parameters": {
+                                                "type": "float",
+                                                "from_dtype": "FLOAT"
+                                            }
+                                        },
+                                        {
+                                            "name": "lt_1",
+                                            "type": "lt",
+                                            "output_type": "series",
+                                            "parameters": {
+                                                "value": 0
+                                            }
+                                        },
+                                        {
+                                            "name": "conditional_2",
+                                            "type": "conditional",
+                                            "output_type": "series",
+                                            "parameters": {
+                                                "value": 0
+                                            }
+                                        },
+                                        {
+                                            "name": "cast_2",
+                                            "type": "cast",
+                                            "output_type": "series",
+                                            "parameters": {
+                                                "type": "float",
+                                                "from_dtype": "FLOAT"
+                                            }
+                                        },
+                                        {
+                                            "name": "assign_1",
+                                            "type": "assign",
+                                            "output_type": "frame",
+                                            "parameters": {
+                                                "name": "Quantity",
+                                                "value": null
+                                            }
+                                        },
+                                        {
+                                            "name": "project_2",
+                                            "type": "project",
+                                            "output_type": "series",
+                                            "parameters": {
+                                                "columns": [
+                                                    "UnitPrice"
+                                                ]
+                                            }
+                                        },
+                                        {
+                                            "name": "is_null_2",
+                                            "type": "is_null",
+                                            "output_type": "series",
+                                            "parameters": {}
+                                        },
+                                        {
+                                            "name": "conditional_3",
+                                            "type": "conditional",
+                                            "output_type": "series",
+                                            "parameters": {
+                                                "value": 0
+                                            }
+                                        },
+                                        {
+                                            "name": "cast_3",
+                                            "type": "cast",
+                                            "output_type": "series",
+                                            "parameters": {
+                                                "type": "float",
+                                                "from_dtype": "FLOAT"
+                                            }
+                                        },
+                                        {
+                                            "name": "lt_2",
+                                            "type": "lt",
+                                            "output_type": "series",
+                                            "parameters": {
+                                                "value": 0
+                                            }
+                                        },
+                                        {
+                                            "name": "conditional_4",
+                                            "type": "conditional",
+                                            "output_type": "series",
+                                            "parameters": {
+                                                "value": 0
+                                            }
+                                        },
+                                        {
+                                            "name": "cast_4",
+                                            "type": "cast",
+                                            "output_type": "series",
+                                            "parameters": {
+                                                "type": "float",
+                                                "from_dtype": "FLOAT"
+                                            }
+                                        },
+                                        {
+                                            "name": "assign_2",
+                                            "type": "assign",
+                                            "output_type": "frame",
+                                            "parameters": {
+                                                "name": "UnitPrice",
+                                                "value": null
+                                            }
+                                        },
+                                        {
+                                            "name": "project_3",
+                                            "type": "project",
+                                            "output_type": "series",
+                                            "parameters": {
+                                                "columns": [
+                                                    "Discount"
+                                                ]
+                                            }
+                                        },
+                                        {
+                                            "name": "is_null_3",
+                                            "type": "is_null",
+                                            "output_type": "series",
+                                            "parameters": {}
+                                        },
+                                        {
+                                            "name": "conditional_5",
+                                            "type": "conditional",
+                                            "output_type": "series",
+                                            "parameters": {
+                                                "value": 0
+                                            }
+                                        },
+                                        {
+                                            "name": "cast_5",
+                                            "type": "cast",
+                                            "output_type": "series",
+                                            "parameters": {
+                                                "type": "float",
+                                                "from_dtype": "FLOAT"
+                                            }
+                                        },
+                                        {
+                                            "name": "lt_3",
+                                            "type": "lt",
+                                            "output_type": "series",
+                                            "parameters": {
+                                                "value": 0
+                                            }
+                                        },
+                                        {
+                                            "name": "conditional_6",
+                                            "type": "conditional",
+                                            "output_type": "series",
+                                            "parameters": {
+                                                "value": 0
+                                            }
+                                        },
+                                        {
+                                            "name": "cast_6",
+                                            "type": "cast",
+                                            "output_type": "series",
+                                            "parameters": {
+                                                "type": "float",
+                                                "from_dtype": "FLOAT"
+                                            }
+                                        },
+                                        {
+                                            "name": "assign_3",
+                                            "type": "assign",
+                                            "output_type": "frame",
+                                            "parameters": {
+                                                "name": "Discount",
+                                                "value": null
+                                            }
+                                        }
+                                    ]
+                                },
+                                "output_node_name": "assign_3",
+                                "type": "cleaning",
+                                "metadata": {}
+                            }
+                        },
+                        {
+                            "name": "join_1",
+                            "type": "join",
+                            "output_type": "frame",
+                            "parameters": {
+                                "left_on": "GroceryInvoiceGuid",
+                                "right_on": "GroceryInvoiceGuid",
+                                "left_input_columns": [
+                                    "GroceryInvoiceItemGuid",
+                                    "GroceryInvoiceGuid",
+                                    "GroceryProductGuid",
+                                    "Quantity",
+                                    "UnitPrice",
+                                    "TotalCost",
+                                    "Discount",
+                                    "record_available_at"
+                                ],
+                                "left_output_columns": [
+                                    "GroceryInvoiceItemGuid",
+                                    "GroceryInvoiceGuid",
+                                    "GroceryProductGuid",
+                                    "Quantity",
+                                    "UnitPrice",
+                                    "TotalCost",
+                                    "Discount",
+                                    "record_available_at"
+                                ],
+                                "right_input_columns": [
+                                    "Timestamp",
+                                    "GroceryCustomerGuid"
+                                ],
+                                "right_output_columns": [
+                                    "Timestamp",
+                                    "GroceryCustomerGuid"
+                                ],
+                                "join_type": "inner",
+                                "scd_parameters": null,
+                                "metadata": {
+                                    "type": "join_event_table_attributes",
+                                    "columns": [
+                                        "Timestamp",
+                                        "GroceryInvoiceGuid",
+                                        "GroceryCustomerGuid"
+                                    ],
+                                    "event_suffix": null
+                                }
+                            }
+                        }
+                    ]
+                },
+                "output_node_name": "join_1",
+                "type": "item_view",
+                "metadata": {
+                    "view_mode": "auto",
+                    "drop_column_names": [],
+                    "column_cleaning_operations": [
+                        {
+                            "column_name": "Quantity",
+                            "cleaning_operations": [
+                                {
+                                    "imputed_value": 0,
+                                    "type": "missing"
+                                },
+                                {
+                                    "imputed_value": 0,
+                                    "type": "less_than",
+                                    "end_point": 0
+                                }
+                            ]
+                        },
+                        {
+                            "column_name": "UnitPrice",
+                            "cleaning_operations": [
+                                {
+                                    "imputed_value": 0,
+                                    "type": "missing"
+                                },
+                                {
+                                    "imputed_value": 0,
+                                    "type": "less_than",
+                                    "end_point": 0
+                                }
+                            ]
+                        },
+                        {
+                            "column_name": "Discount",
+                            "cleaning_operations": [
+                                {
+                                    "imputed_value": 0,
+                                    "type": "missing"
+                                },
+                                {
+                                    "imputed_value": 0,
+                                    "type": "less_than",
+                                    "end_point": 0
+                                }
+                            ]
+                        }
+                    ],
+                    "table_id": "64e5b472f0a62a07ead83838",
+                    "event_suffix": null,
+                    "event_drop_column_names": [
+                        "record_available_at"
+                    ],
+                    "event_column_cleaning_operations": [],
+                    "event_join_column_names": [
+                        "Timestamp",
+                        "GroceryInvoiceGuid",
+                        "GroceryCustomerGuid"
+                    ],
+                    "event_table_id": "64e5b470f0a62a07ead83837"
+                }
+            }
+        },
+        {
+            "name": "join_1",
+            "type": "join",
+            "output_type": "frame",
+            "parameters": {
+                "left_on": "GroceryProductGuid",
+                "right_on": "GroceryProductGuid",
+                "left_input_columns": [
+                    "GroceryInvoiceItemGuid",
+                    "GroceryInvoiceGuid",
+                    "GroceryProductGuid",
+                    "Quantity",
+                    "UnitPrice",
+                    "TotalCost",
+                    "Discount",
+                    "record_available_at",
+                    "GroceryCustomerGuid",
+                    "Timestamp"
+                ],
+                "left_output_columns": [
+                    "GroceryInvoiceItemGuid",
+                    "GroceryInvoiceGuid",
+                    "GroceryProductGuid",
+                    "Quantity",
+                    "UnitPrice",
+                    "TotalCost",
+                    "Discount",
+                    "record_available_at",
+                    "GroceryCustomerGuid",
+                    "Timestamp"
+                ],
+                "right_input_columns": [
+                    "ProductGroup"
+                ],
+                "right_output_columns": [
+                    "ProductGroup_joined"
+                ],
+                "join_type": "left",
+                "scd_parameters": null,
+                "metadata": {
+                    "type": "join",
+                    "rsuffix": "_joined"
+                }
+            }
+        },
+        {
+            "name": "join_2",
+            "type": "join",
+            "output_type": "frame",
+            "parameters": {
+                "left_on": "GroceryCustomerGuid",
+                "right_on": "GroceryCustomerGuid",
+                "left_input_columns": [
+                    "GroceryInvoiceItemGuid",
+                    "GroceryInvoiceGuid",
+                    "GroceryProductGuid",
+                    "Quantity",
+                    "UnitPrice",
+                    "TotalCost",
+                    "Discount",
+                    "record_available_at",
+                    "GroceryCustomerGuid",
+                    "Timestamp",
+                    "ProductGroup_joined"
+                ],
+                "left_output_columns": [
+                    "GroceryInvoiceItemGuid",
+                    "GroceryInvoiceGuid",
+                    "GroceryProductGuid",
+                    "Quantity",
+                    "UnitPrice",
+                    "TotalCost",
+                    "Discount",
+                    "record_available_at",
+                    "GroceryCustomerGuid",
+                    "Timestamp",
+                    "ProductGroup_joined"
+                ],
+                "right_input_columns": [
+                    "RowID",
+                    "Gender",
+                    "Title",
+                    "GivenName",
+                    "MiddleInitial",
+                    "Surname",
+                    "StreetAddress",
+                    "City",
+                    "State",
+                    "PostalCode",
+                    "BrowserUserAgent",
+                    "DateOfBirth",
+                    "Latitude",
+                    "Longitude",
+                    "record_available_at"
+                ],
+                "right_output_columns": [
+                    "RowID_joined",
+                    "Gender_joined",
+                    "Title_joined",
+                    "GivenName_joined",
+                    "MiddleInitial_joined",
+                    "Surname_joined",
+                    "StreetAddress_joined",
+                    "City_joined",
+                    "State_joined",
+                    "PostalCode_joined",
+                    "BrowserUserAgent_joined",
+                    "DateOfBirth_joined",
+                    "Latitude_joined",
+                    "Longitude_joined",
+                    "record_available_at_joined"
+                ],
+                "join_type": "left",
+                "scd_parameters": {
+                    "effective_timestamp_column": "ValidFrom",
+                    "natural_key_column": "GroceryCustomerGuid",
+                    "current_flag_column": "CurrentRecord",
+                    "end_timestamp_column": null,
+                    "left_timestamp_column": "Timestamp"
+                },
+                "metadata": {
+                    "type": "join",
+                    "rsuffix": "_joined"
+                }
+            }
+        },
+        {
+            "name": "groupby_1",
+            "type": "groupby",
+            "output_type": "frame",
+            "parameters": {
+                "keys": [
+                    "GroceryProductGuid"
+                ],
+                "parent": "TotalCost",
+                "agg_func": "sum",
+                "value_by": "PostalCode_joined",
+                "serving_names": [
+                    "GROCERYPRODUCTGUID"
+                ],
+                "entity_ids": [
+                    "64e5b475f0a62a07ead8383d"
+                ],
+                "windows": [
+                    "28d"
+                ],
+                "timestamp": "Timestamp",
+                "blind_spot": 3600,
+                "time_modulo_frequency": 60,
+                "frequency": 3600,
+                "names": [
+                    "PRODUCT_item_TotalCost_across_customer_PostalCodes_28d"
+                ],
+                "tile_id": "TILE_F3600_M60_B3600_90041015AF56913DD564E9DB2011A13AA481F845",
+                "aggregation_id": "sum_0ddf4150b0032f70fdfff158b7c9d8a9fa228a62"
+            }
+        },
+        {
+            "name": "project_1",
+            "type": "project",
+            "output_type": "series",
+            "parameters": {
+                "columns": [
+                    "PRODUCT_item_TotalCost_across_customer_PostalCodes_28d"
+                ]
+            }
+        },
+        {
+            "name": "groupby_2",
+            "type": "groupby",
+            "output_type": "frame",
+            "parameters": {
+                "keys": [
+                    "ProductGroup_joined"
+                ],
+                "parent": "TotalCost",
+                "agg_func": "sum",
+                "value_by": "PostalCode_joined",
+                "serving_names": [
+                    "PRODUCT_GROUP"
+                ],
+                "entity_ids": [
+                    "64e7e332d7c35f06f1231aa3"
+                ],
+                "windows": [
+                    "28d"
+                ],
+                "timestamp": "Timestamp",
+                "blind_spot": 3600,
+                "time_modulo_frequency": 60,
+                "frequency": 3600,
+                "names": [
+                    "PRODUCTGROUP_item_TotalCost_across_customer_PostalCodes_28d"
+                ],
+                "tile_id": "TILE_F3600_M60_B3600_D66E8995292F0B4343BA24A63CF77AF849132A9D",
+                "aggregation_id": "sum_11e3d068c1f023473d74b8db3bdabde69c4f1c1a"
+            }
+        },
+        {
+            "name": "project_2",
+            "type": "project",
+            "output_type": "series",
+            "parameters": {
+                "columns": [
+                    "PRODUCTGROUP_item_TotalCost_across_customer_PostalCodes_28d"
+                ]
+            }
+        },
+        {
+            "name": "cosine_similarity_1",
+            "type": "cosine_similarity",
+            "output_type": "series",
+            "parameters": {}
+        },
+        {
+            "name": "alias_1",
+            "type": "alias",
+            "output_type": "series",
+            "parameters": {
+                "name": "PRODUCT_vs_PRODUCTGROUP_item_TotalCost_across_customer_PostalCodes_28d"
+            }
+        }
+    ]
+}
