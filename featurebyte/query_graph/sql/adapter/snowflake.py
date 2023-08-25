@@ -380,7 +380,8 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
                             select_key.alias, groupby_subquery_alias
                         ),
                         expression=get_qualified_column_identifier(
-                            select_key.alias, f"T{len(vector_aggregate_columns) - 1}"
+                            select_key.alias,
+                            cls._get_groupby_table_alias(len(vector_aggregate_columns) - 1),
                         ),
                     )
                 )

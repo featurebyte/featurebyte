@@ -87,7 +87,7 @@ class TestSnowflakeAdapter(BaseAdapterTest):
                     REQ."serving_name",
                     REQ."serving_name_2"
                 ) AS GROUP_BY_RESULT
-                  ON GROUP_BY_RESULT."serving_name" = T2."serving_name"
-                  AND GROUP_BY_RESULT."serving_name_2" = T2."serving_name_2"
+                  ON GROUP_BY_RESULT."serving_name" = VECTOR_T2."serving_name"
+                  AND GROUP_BY_RESULT."serving_name_2" = VECTOR_T2."serving_name_2"
             """
         ).strip()

@@ -58,9 +58,9 @@ SNOWFLAKE_VECTOR_AGG_WITH_NORMAL_AGG_QUERY = textwrap.dedent(
               REQ."POINT_IN_TIME",
               REQ."value_by"
           ) AS GROUP_BY_RESULT
-            ON GROUP_BY_RESULT."serving_name" = T0."serving_name"
-            AND GROUP_BY_RESULT."POINT_IN_TIME" = T0."POINT_IN_TIME"
-            AND GROUP_BY_RESULT."value_by" = T0."value_by"
+            ON GROUP_BY_RESULT."serving_name" = VECTOR_T0."serving_name"
+            AND GROUP_BY_RESULT."POINT_IN_TIME" = VECTOR_T0."POINT_IN_TIME"
+            AND GROUP_BY_RESULT."value_by" = VECTOR_T0."value_by"
         ) AS INNER_
         GROUP BY
           INNER_."serving_name",
