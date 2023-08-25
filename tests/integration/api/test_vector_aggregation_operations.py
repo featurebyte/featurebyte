@@ -3,6 +3,7 @@ Test vector aggregation operations module
 """
 from typing import List
 
+import ast
 import json
 import os
 
@@ -296,7 +297,19 @@ def test_vector_aggregation_operations__aggregate_over_compute_historical_featur
     assert list(historical_features.iloc[0][feature_name]) == [3.0, 3.0, 3.0]
 
 
-@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
+def _update_df_to_list(df: pd.DataFrame, col_name: str) -> pd.DataFrame:
+    """
+    Convert a dataframe with a vector column to a dataframe with a list column.
+
+    Will remove this once we fix snowflake to not return lists as strings.
+    """
+    feature_value = df.iloc[0][col_name]
+    if isinstance(feature_value, str):
+        df[col_name] = df[col_name].apply(ast.literal_eval)
+    return df
+
+
+@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.parametrize(
     "agg_func,expected_results,vector_value_column",
     TEST_CASES,
@@ -319,13 +332,14 @@ def test_vector_aggregation_operations__aggregate(
     preview_params = {"POINT_IN_TIME": "2022-06-06 00:58:00", "vector_order_id": "1000"}
     feature_preview = feature.preview(pd.DataFrame([preview_params]))
     assert feature_preview.shape[0] == 1
+    feature_preview = _update_df_to_list(feature_preview, feature_name)
     assert feature_preview.iloc[0].to_dict() == {
         feature_name: expected_results,
         **convert_preview_param_dict_to_feature_preview_resp(preview_params),
     }
 
 
-@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.parametrize(
     "agg_func,expected_results,vector_value_column",
     TEST_CASES,
@@ -348,6 +362,7 @@ def test_vector_aggregation_operations__aggregate_asat(
     preview_params = {"POINT_IN_TIME": "2022-06-06 00:58:00", "vector_user_id": "2"}
     feature_preview = feature.preview(pd.DataFrame([preview_params]))
     assert feature_preview.shape[0] == 1
+    feature_preview = _update_df_to_list(feature_preview, feature_name)
     assert feature_preview.iloc[0].to_dict() == {
         feature_name: expected_results,
         **convert_preview_param_dict_to_feature_preview_resp(preview_params),

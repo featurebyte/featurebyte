@@ -6,6 +6,7 @@ from __future__ import annotations
 from sqlglot import expressions
 from sqlglot.expressions import Expression
 
+from featurebyte.enum import SourceType
 from featurebyte.query_graph.sql.adapter.databricks import DatabricksAdapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 
@@ -16,6 +17,8 @@ class SparkAdapter(DatabricksAdapter):
 
     Spark is the OSS version of Databricks, so it shares most of the same SQL syntax.
     """
+
+    source_type = SourceType.SPARK
 
     @classmethod
     def is_qualify_clause_supported(cls) -> bool:

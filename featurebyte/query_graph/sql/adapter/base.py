@@ -3,15 +3,16 @@ Base class for SQL adapters
 """
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import List, Literal, Optional
 
-from abc import abstractmethod
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
 
 from numpy import format_float_positional
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, alias_, select
 
-from featurebyte.enum import DBVarType, InternalName
+from featurebyte.enum import DBVarType, InternalName, SourceType
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
@@ -23,12 +24,23 @@ from featurebyte.query_graph.sql.common import (
 FB_QUALIFY_CONDITION_COLUMN = "__fb_qualify_condition_column"
 
 
-class BaseAdapter:  # pylint: disable=too-many-public-methods
+@dataclass
+class VectorAggColumn:
+    """
+    Represents a set of parameters that produces one output column in a groupby statement
+    """
+
+    aggr_expr: Select
+    result_name: str
+
+
+class BaseAdapter(ABC):  # pylint: disable=too-many-public-methods
     """
     Helper class to generate engine specific SQL expressions
     """
 
     TABLESAMPLE_PERCENT_KEY = "percent"
+    source_type: SourceType
 
     @classmethod
     @abstractmethod
@@ -623,6 +635,40 @@ class BaseAdapter:  # pylint: disable=too-many-public-methods
         Expression
         """
         return quoted_identifier(serving_name)
+
+    @classmethod
+    def group_by(
+        cls,
+        input_expr: Select,
+        select_keys: List[Expression],
+        agg_exprs: List[Expression],
+        keys: List[Expression],
+        vector_aggregate_columns: Optional[List[VectorAggColumn]] = None,
+    ) -> Select:
+        """
+        Construct query to group by
+
+        Parameters
+        ----------
+        input_expr: Select
+            Input Select expression
+        select_keys: List[Expression]
+            List of select keys
+        agg_exprs: List[Expression]
+            List of aggregation expressions
+        keys: List[Expression]
+            List of keys
+        vector_aggregate_columns: Optional[List[Expression]]
+            List of vector aggregate expressions. This should only be used if special handling is required to join
+            vector aggregate functions, and that they're not usable as a normal function. This param is a no-op
+            by default, and will only be used by specific data warehouses.
+
+        Returns
+        -------
+        Select
+        """
+        _ = vector_aggregate_columns
+        return input_expr.select(*select_keys, *agg_exprs).group_by(*keys)
 
     @classmethod
     @abstractmethod

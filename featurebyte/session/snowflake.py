@@ -279,6 +279,11 @@ class SnowflakeSession(BaseSession):
                 db_type = "DOUBLE"
             elif pd.api.types.is_integer_dtype(dtype):
                 db_type = "INT"
+            elif (
+                dataframe.shape[0] > 0
+                and dataframe[colname].apply(lambda x: isinstance(x, list)).all()
+            ):
+                db_type = "ARRAY"
             else:
                 db_type = "VARCHAR"
             schema.append((colname, db_type))

@@ -505,6 +505,7 @@ def test_get_columns_schema_from_dataframe():
             "x_int": [1, 2, 3, 4],
             "x_float": [1.1, 2.2, 3.3, 4.4],
             "x_string": ["C1", "C2", "C3", "C4"],
+            "x_array": [[1, 2], [3, 4], [5, 6], [7, 8]],
             "x_date": pd.date_range("2022-01-01", periods=4),
         }
     )
@@ -518,6 +519,7 @@ def test_get_columns_schema_from_dataframe():
         "x_int": "INT",
         "x_float": "DOUBLE",
         "x_string": "VARCHAR",
+        "x_array": "ARRAY",
         "x_date": "TIMESTAMP_NTZ",
         "x_int32": "INT",
         "x_int16": "INT",
@@ -525,12 +527,12 @@ def test_get_columns_schema_from_dataframe():
         "x_float32": "DOUBLE",
         "x_float16": "DOUBLE",
     }
-    expected_schema = list(expected_dict.items())
-    assert schema == expected_schema
+    assert schema == list(expected_dict.items())
 
     # test empty dataframe
     schema = SnowflakeSession.get_columns_schema_from_dataframe(dataframe.iloc[:0])
-    assert schema == expected_schema
+    expected_dict["x_array"] = "VARCHAR"
+    assert schema == list(expected_dict.items())
 
 
 @pytest.mark.parametrize("error_type", [DatabaseError, OperationalError])

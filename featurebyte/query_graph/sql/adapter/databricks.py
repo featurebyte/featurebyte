@@ -10,7 +10,7 @@ import re
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select
 
-from featurebyte.enum import DBVarType, StrEnum
+from featurebyte.enum import DBVarType, SourceType, StrEnum
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter.base import BaseAdapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
@@ -21,6 +21,8 @@ class DatabricksAdapter(BaseAdapter):
     """
     Helper class to generate Databricks specific SQL expressions
     """
+
+    source_type = SourceType.DATABRICKS
 
     class DataType(StrEnum):
         """
