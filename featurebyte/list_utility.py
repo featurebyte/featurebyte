@@ -8,7 +8,7 @@ from http import HTTPStatus
 
 import pandas as pd
 
-from featurebyte import iterate_api_object_using_paginated_routes
+from featurebyte.api.api_object_util import iterate_api_object_using_paginated_routes
 from featurebyte.api.catalog import Catalog
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_group import BaseFeatureGroup
