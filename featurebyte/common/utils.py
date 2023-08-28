@@ -19,6 +19,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from alive_progress import alive_bar
 from dateutil import parser
+from pandas.core.dtypes.common import is_string_dtype
 from requests import Response
 
 from featurebyte.common.env_util import get_alive_bar_additional_params
@@ -150,9 +151,8 @@ def _update_batches_for_types(
         curr_df = batch.to_pandas()
         for col_name, db_var_type in col_name_to_db_var_type.items():
             if DBVarType.ARRAY == db_var_type:
-                # Check if column has elements of string type
-                is_string_series = curr_df[col_name].apply(lambda x: isinstance(x, str))
-                if is_string_series.all():
+                # Check if column is of string dtype
+                if is_string_dtype(curr_df[col_name]):
                     # Apply a transformation to the column if the type is an array of strings, to convert them to list
                     # type.
                     curr_df[col_name] = curr_df[col_name].apply(ast.literal_eval)
