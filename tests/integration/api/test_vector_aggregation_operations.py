@@ -297,7 +297,7 @@ def test_vector_aggregation_operations__aggregate_over_compute_historical_featur
     assert list(historical_features.iloc[0][feature_name]) == [3.0, 3.0, 3.0]
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.parametrize(
     "agg_func,expected_results,vector_value_column",
     TEST_CASES,
