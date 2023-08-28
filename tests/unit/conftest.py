@@ -1057,7 +1057,8 @@ def target_table_fixture(
     Fixture for a TargetTable
     """
     _ = snowflake_execute_query_for_materialized_table
-    float_target.save()
+    if not float_target.saved:
+        float_target.save()
     return float_target.compute_target_table(observation_table_from_source, "my_target_table")
 
 

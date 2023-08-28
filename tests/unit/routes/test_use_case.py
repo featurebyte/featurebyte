@@ -220,8 +220,8 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
             f"{self.base_route}/{use_case_id}/observation_tables",
         )
         assert response.status_code == HTTPStatus.OK
-        data = response.json()
-        assert len(data) == 3
+        assert response.json()["total"] == 3
+        data = response.json()["data"]
         assert sorted(
             [str(new_ob_table_id_1), str(new_ob_table_id_2), str(new_ob_table_id_3)]
         ) == sorted([data[0]["_id"], data[1]["_id"], data[2]["_id"]])
@@ -258,18 +258,6 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         assert (
             response.json()["detail"]
             == "Inconsistent target_id between use case and observation table"
-        )
-
-        different_context_ob_table_id = ObjectId()
-        await create_observation_table(different_context_ob_table_id, same_context=False)
-        response = test_api_client.patch(
-            f"{self.base_route}/{use_case_id}",
-            json={"new_observation_table_id": str(different_context_ob_table_id)},
-        )
-        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-        assert (
-            response.json()["detail"]
-            == "Inconsistent context_id between use case and observation table"
         )
 
     @pytest.mark.asyncio
@@ -319,7 +307,8 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
 
         response = test_api_client.get(f"{self.base_route}/{use_case_id}/feature_tables")
         assert response.status_code == HTTPStatus.OK, response.json()
-        data = response.json()
+        assert response.json()["total"] == 1
+        data = response.json()["data"]
         assert len(data) == 1
         assert data[0]["_id"] == str(feature_table_payload["_id"])
         assert data[0]["name"] == feature_table_payload["name"]

@@ -1,15 +1,12 @@
 """
 UseCase API route controller
 """
-from typing import List, cast
-
 from bson import ObjectId
 
-from featurebyte.models.base_feature_or_target_table import BaseFeatureOrTargetTableModel
-from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.use_case import UseCaseModel
 from featurebyte.routes.common.base import BaseDocumentController
-from featurebyte.schema.use_case import UseCaseCreate, UseCaseList, UseCaseUpdate
+from featurebyte.schema.use_case import UseCaseCreate, UseCaseList, UseCaseRead, UseCaseUpdate
+from featurebyte.service.target import TargetService
 from featurebyte.service.use_case import UseCaseService
 
 
@@ -24,8 +21,10 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
     def __init__(
         self,
         use_case_service: UseCaseService,
+        target_service: TargetService,
     ):
         super().__init__(use_case_service)
+        self.target_service = target_service
 
     async def create_use_case(self, data: UseCaseCreate) -> UseCaseModel:
         """
@@ -43,6 +42,25 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
         """
         return await self.service.create_use_case(data)
 
+    async def get_use_case(self, use_case_id: ObjectId) -> UseCaseRead:
+        """
+        Get a UseCase
+
+        Parameters
+        ----------
+        use_case_id: UseCase Id
+            use case creation data
+
+        Returns
+        -------
+        UseCaseRead
+
+        """
+        use_case = await self.get(document_id=use_case_id)
+        target = await self.target_service.get_document(document_id=use_case.target_id)
+
+        return UseCaseRead(**use_case.dict(by_alias=True), target=target)
+
     async def update_use_case(self, use_case_id: ObjectId, data: UseCaseUpdate) -> UseCaseModel:
         """
         Update a UseCase
@@ -59,45 +77,6 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
         UseCaseModel
         """
         return await self.service.update_use_case(document_id=use_case_id, data=data)
-
-    async def list_feature_tables(
-        self,
-        use_case_id: ObjectId,
-    ) -> List[BaseFeatureOrTargetTableModel]:
-        """
-        list feature tables associated with the Use Case
-
-        Parameters
-        ----------
-        use_case_id: ObjectId
-            use case id
-
-        Returns
-        -------
-        List[BaseFeatureOrTargetTableModel]
-        """
-        return await self.service.list_feature_tables(use_case_id=use_case_id)
-
-    async def list_observation_tables(
-        self,
-        use_case_id: ObjectId,
-    ) -> List[ObservationTableModel]:
-        """
-        list observation tables associated with the Use Case
-
-        Parameters
-        ----------
-        use_case_id: ObjectId
-            use case id
-
-        Returns
-        -------
-        List[ObservationTableModel]
-        """
-        return cast(
-            List[ObservationTableModel],
-            await self.service.list_observation_tables(use_case_id=use_case_id),
-        )
 
     async def delete_use_case(self, document_id: ObjectId) -> None:
         """

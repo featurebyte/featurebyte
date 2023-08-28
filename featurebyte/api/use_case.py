@@ -3,23 +3,24 @@ UseCase module
 """
 from __future__ import annotations
 
-from typing import Any, Optional
-
-from http import HTTPStatus
+from typing import Any, List, Optional
 
 import pandas as pd
 from bson import ObjectId
 
-from featurebyte.api.api_object_util import ForeignKeyMapping
+from featurebyte.api.api_object_util import (
+    ForeignKeyMapping,
+    get_api_object_by_id,
+    iterate_api_object_using_paginated_routes,
+)
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.savable_api_object import DeletableApiObject, SavableApiObject
 from featurebyte.api.target import Target
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.utils import dataframe_from_json
-from featurebyte.config import Configurations
-from featurebyte.exception import RecordRetrievalException
+from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.use_case import UseCaseModel
-from featurebyte.schema.use_case import UseCaseCreate, UseCaseUpdate
+from featurebyte.schema.use_case import UseCaseCreate, UseCaseRead, UseCaseUpdate
 
 
 class UseCase(SavableApiObject, DeletableApiObject):
@@ -40,8 +41,8 @@ class UseCase(SavableApiObject, DeletableApiObject):
     _update_schema_class = UseCaseUpdate
     _list_fields = [
         "name",
-        "context_id",
         "target_name",
+        "observation_table_ids",
         "default_preview_table_name",
         "default_eda_table_name",
         "description",
@@ -57,6 +58,9 @@ class UseCase(SavableApiObject, DeletableApiObject):
         ),
     ]
 
+    # pydantic instance variable (public)
+    target: Target
+
     def _get_create_payload(self) -> dict[str, Any]:
         """
         Get the payload for creating a new Use Case.
@@ -65,39 +69,18 @@ class UseCase(SavableApiObject, DeletableApiObject):
         -------
         dict[str, Any]
         """
-        data = UseCaseCreate(**self.dict(by_alias=True))
+        data = UseCaseCreate(**self.dict(by_alias=True), target_id=self.target.id)
         return data.json_dict()
 
-    def _get_from_customized_url_as_df(self, url: str) -> pd.DataFrame:
-        """
-        Get result from customized input url as a pandas DataFrame.
-
-        Parameters
-        ----------
-        url: str
-            The url to get the result from.
-
-        Returns
-        -------
-        pd.DataFrame
-        """
-        client = Configurations().get_client()
-        response = client.get(
-            url=url,
-        )
-        if response.status_code != HTTPStatus.OK:
-            raise RecordRetrievalException(response)
-
-        feature_tables = dataframe_from_json(response.json())
-        return feature_tables
+    def _get_init_params_from_object(self) -> dict[str, Any]:
+        return {"target": self.target}
 
     @classmethod
     def create(
         cls,
         name: str,
-        context_id: ObjectId,
-        target_id: ObjectId,
-        description: Optional[str],
+        target: Target,
+        description: Optional[str] = None,
     ) -> UseCase:
         """
         Create a new Use Case.
@@ -106,10 +89,8 @@ class UseCase(SavableApiObject, DeletableApiObject):
         ----------
         name: str
             Name of the UseCase.
-        context_id: ObjectId
-            context_id of the UseCase.
-        target_id: ObjectId
-            target_id of the UseCase.
+        target: Target
+            target object of the UseCase
         description: Optional[str]
             description of the UseCase.
 
@@ -121,9 +102,7 @@ class UseCase(SavableApiObject, DeletableApiObject):
         Examples
         --------
         """
-        use_case = UseCase(
-            name=name, context_id=context_id, target_id=target_id, description=description
-        )
+        use_case = UseCase(name=name, target=target, description=description)
         use_case.save()
         return use_case
 
@@ -162,14 +141,18 @@ class UseCase(SavableApiObject, DeletableApiObject):
             update_payload={"default_eda_table_id": default_eda_table_id}, allow_update_local=False
         )
 
-    def list_observation_tables(self) -> pd.DataFrame:
+    def list_observation_tables(self) -> List[ObservationTableModel]:
         """
         List observation tables associated with the Use Case.
 
         Examples
         --------
         """
-        return self._get_from_customized_url_as_df(f"{self._route}/{self.id}/observation_tables")
+        route = f"{self._route}/{self.id}/observation_tables"
+        feature_tables = []
+        for feature_table_dict in iterate_api_object_using_paginated_routes(route):
+            feature_tables.append(ObservationTableModel(**feature_table_dict))
+        return feature_tables
 
     def list_feature_tables(self) -> pd.DataFrame:
         """
@@ -178,7 +161,10 @@ class UseCase(SavableApiObject, DeletableApiObject):
         Examples
         --------
         """
-        return self._get_from_customized_url_as_df(f"{self._route}/{self.id}/feature_tables")
+        result = get_api_object_by_id(self._route, self.id, "feature_tables")
+        obs_tables = dataframe_from_json(result)
+
+        return obs_tables
 
     def list_deployments(self) -> None:
         """
