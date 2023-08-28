@@ -14,6 +14,7 @@ import pandas as pd
 import pyarrow as pa
 from pydantic import Field
 from snowflake import connector
+from snowflake.connector.cursor import ResultMetadata
 from snowflake.connector.errors import (
     DatabaseError,
     NotSupportedError,
@@ -190,6 +191,8 @@ class SnowflakeSession(BaseSession):
         # handling for. If we need to apply more special handling in the future, we can add more mappings here.
         type_code_to_db_var_type_mapping: dict[int, DBVarType] = {10: DBVarType.ARRAY}
         for metadata in cursor.description:
+            if not isinstance(metadata, ResultMetadata):
+                continue
             type_code = metadata.type_code
             if type_code in type_code_to_db_var_type_mapping:
                 output[metadata.name] = type_code_to_db_var_type_mapping[type_code]

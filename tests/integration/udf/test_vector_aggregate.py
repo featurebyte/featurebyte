@@ -1,7 +1,6 @@
 """
 Tests for vector aggregate operations in snowflake
 """
-from typing import List, Tuple
 
 import pandas as pd
 import pytest
