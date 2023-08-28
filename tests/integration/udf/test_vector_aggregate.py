@@ -32,7 +32,7 @@ async def setup_test_data_fixture(session):
         insert_values.append(f"({id_col}, '{array_col}')")
     insert_query = f"""
         INSERT INTO test_table
-          SELECT $1, PARSE_JSON($2), 1
+          SELECT $1, PARSE_JSON($2), 2
           FROM VALUES
           {", ".join(insert_values)}
           ;
@@ -131,6 +131,6 @@ async def test_vector_aggregate_avg(setup_test_data, session):
     df = await session.execute_query(query)
 
     # Assert expected results
-    results = [[4, 4, 6], [4, 8, 7]]
+    results = [[2, 2, 3], [2, 4, 3.5]]
     expected_df = pd.DataFrame({"ID_COL": [1, 2], "OUT": _get_formatted_output(results)})
     fb_assert_frame_equal(df, expected_df, sort_by_columns=["ID_COL"])
