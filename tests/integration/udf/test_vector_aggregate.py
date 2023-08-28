@@ -50,19 +50,6 @@ def _get_query(aggregate_function: str) -> str:
     """
 
 
-def _get_formatted_output(expected_output: List[List[int]]) -> Tuple[str]:
-    """
-    Get formatted output for now, as our output in the dataframe is currently being rendered as a string.
-
-    We will fix this in a follow-up.
-    """
-    output = ()
-    for item in expected_output:
-        current_item = "[\n  " + ",\n  ".join([str(x) for x in item]) + "\n]"
-        output = output + (current_item,)
-    return output
-
-
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_vector_aggregate_max(setup_test_data, session):
@@ -76,7 +63,7 @@ async def test_vector_aggregate_max(setup_test_data, session):
 
     # Assert expected results
     results = [[7, 5, 9], [7, 12, 10]]
-    expected_df = pd.DataFrame({"ID_COL": [1, 2], "OUT": _get_formatted_output(results)})
+    expected_df = pd.DataFrame({"ID_COL": [1, 2], "OUT": results})
     fb_assert_frame_equal(df, expected_df, sort_by_columns=["ID_COL"])
 
 
@@ -93,7 +80,7 @@ async def test_vector_aggregate_sum(setup_test_data, session):
 
     # Assert expected results
     results = [[12, 12, 18], [12, 24, 21]]
-    expected_df = pd.DataFrame({"ID_COL": [1, 2], "OUT": _get_formatted_output(results)})
+    expected_df = pd.DataFrame({"ID_COL": [1, 2], "OUT": results})
     fb_assert_frame_equal(df, expected_df, sort_by_columns=["ID_COL"])
 
 
@@ -110,5 +97,5 @@ async def test_vector_aggregate_avg(setup_test_data, session):
 
     # Assert expected results
     results = [[4, 4, 6], [4, 8, 7]]
-    expected_df = pd.DataFrame({"ID_COL": [1, 2], "OUT": _get_formatted_output(results)})
+    expected_df = pd.DataFrame({"ID_COL": [1, 2], "OUT": results})
     fb_assert_frame_equal(df, expected_df, sort_by_columns=["ID_COL"])
