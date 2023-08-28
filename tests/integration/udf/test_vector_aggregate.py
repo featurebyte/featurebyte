@@ -99,7 +99,7 @@ async def test_vector_aggregate_simple_avg(setup_test_data, session):
 
     # Assert expected results
     results = [[4, 4, 6], [4, 8, 7]]
-    expected_df = pd.DataFrame({"ID_COL": [1, 2], "OUT": _get_formatted_output(results)})
+    expected_df = pd.DataFrame({"ID_COL": [1, 2], "OUT": results})
     fb_assert_frame_equal(df, expected_df, sort_by_columns=["ID_COL"])
 
 
