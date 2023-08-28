@@ -169,12 +169,39 @@ class SnowflakeSession(BaseSession):
                 return super().fetch_query_result_impl(cursor)
         return None
 
+    @staticmethod
+    def _get_column_name_to_db_var_type(cursor: Any) -> dict[str, DBVarType]:
+        """
+        Get DB var type of data being fetched from the snowflake cursor.
+
+        Parameters
+        ----------
+        cursor: Any
+            The connection cursor
+
+        Returns
+        -------
+        dict[str, DBVarType]
+            A dictionary mapping column names to DB var types
+        """
+        output = {}
+        # See https://docs.snowflake.com/en/developer-guide/python-connector/python-connector-api#label-python-connector-type-codes
+        # for more details. We currently only map one value since that's the only one we need to do any special
+        # handling for. If we need to apply more special handling in the future, we can add more mappings here.
+        type_code_to_db_var_type_mapping: dict[int, DBVarType] = {10: DBVarType.ARRAY}
+        for metadata in cursor.description:
+            type_code = metadata.type_code
+            if type_code in type_code_to_db_var_type_mapping:
+                output[metadata.name] = type_code_to_db_var_type_mapping[type_code]
+        return output
+
     async def fetch_query_stream_impl(self, cursor: Any) -> AsyncGenerator[pa.RecordBatch, None]:
+        col_name_to_db_var_type = self._get_column_name_to_db_var_type(cursor)
         # fetch results in batches and write to the stream
         try:
             counter = 0
             for table in cursor.fetch_arrow_batches():
-                for batch in pa_table_to_record_batches(table):
+                for batch in pa_table_to_record_batches(table, col_name_to_db_var_type):
                     counter += 1
                     yield batch
             if counter == 0:
