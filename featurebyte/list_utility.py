@@ -1,11 +1,14 @@
 """
 Utility module
 """
+from typing import Optional
+
 import inspect
 from http import HTTPStatus
 
 import pandas as pd
 
+from featurebyte import iterate_api_object_using_paginated_routes
 from featurebyte.api.catalog import Catalog
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_group import BaseFeatureGroup
@@ -101,3 +104,50 @@ def list_unsaved_features() -> pd.DataFrame:
             .reset_index(drop=True)
         )
     return pd.DataFrame(columns=["object_id", "variable_name", "name", "catalog", "active_catalog"])
+
+
+def list_deployments(
+    include_id: Optional[bool] = True,
+) -> pd.DataFrame:
+    """
+    List all deployments across all catalogs.
+
+    Deployed features are updated regularly based on their job settings and consume recurring compute resources
+    in the data warehouse.
+
+    It is recommended to delete deployments when they are no longer needed to avoid unnecessary costs.
+
+    Parameters
+    ----------
+    include_id: Optional[bool]
+        Whether to include id in the list
+
+    Returns
+    -------
+    pd.DataFrame
+        List of deployments
+
+    Examples
+    --------
+    >>> fb.list_deployments()
+    Empty DataFrame
+    Columns: [id, name, catalog_name, feature_list_name, feature_list_version, num_feature]
+    Index: []
+
+    See Also
+    --------
+    - [FeatureList.deploy](/reference/featurebyte.api.feature_list.FeatureList.deploy/) Deploy / Undeploy a feature list
+    """
+    output = []
+    for item_dict in iterate_api_object_using_paginated_routes(
+        route="/deployment/all/", params={"enabled": True}
+    ):
+        output.append(item_dict)
+    columns = ["name", "catalog_name", "feature_list_name", "feature_list_version", "num_feature"]
+    output_df = pd.DataFrame(
+        output,
+        columns=["_id"] + columns,
+    ).rename(columns={"_id": "id"})
+    if include_id:
+        return output_df
+    return output_df.drop(columns=["id"])

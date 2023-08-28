@@ -743,7 +743,12 @@ def _get_utility_methods_layout() -> List[DocLayoutItem]:
         ),
         DocLayoutItem(
             [UTILITY_METHODS, LIST, "list_unsaved_features"],
-            doc_path_override="feature_utility.list_unsaved_features.md",
+            doc_path_override="list_utility.list_unsaved_features.md",
+            is_pure_method=True,
+        ),
+        DocLayoutItem(
+            [UTILITY_METHODS, LIST, "list_deployments"],
+            doc_path_override="list_utility.list_deployments.md",
             is_pure_method=True,
         ),
     ]
