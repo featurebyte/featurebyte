@@ -58,7 +58,7 @@ from featurebyte.exception import (
     InvalidSettingsError,
     RecordRetrievalException,
 )
-from featurebyte.feature_utility import list_unsaved_features
+from featurebyte.list_utility import list_deployments, list_unsaved_features
 from featurebyte.logging import get_logger
 from featurebyte.models.credential import (
     AccessTokenCredential,
@@ -399,51 +399,6 @@ def playground(
     )
 
 
-def list_deployments(
-    include_id: Optional[bool] = True,
-) -> pd.DataFrame:
-    """
-    List all deployments across all catalogs.
-    Deployed features are updated regularly based on their job settings and consume recurring compute resources
-    in the data warehouse.
-    It is recommended to delete deployments when they are no longer needed to avoid unnecessary costs.
-
-    Parameters
-    ----------
-    include_id: Optional[bool]
-        Whether to include id in the list
-
-    Returns
-    -------
-    pd.DataFrame
-        List of deployments
-
-    Examples
-    --------
-    >>> fb.list_deployments()
-    Empty DataFrame
-    Columns: [id, name, catalog_name, feature_list_name, feature_list_version, num_feature]
-    Index: []
-
-    See Also
-    --------
-    - [FeatureList.deploy](/reference/featurebyte.api.feature_list.FeatureList.deploy/) Deploy / Undeploy a feature list
-    """
-    output = []
-    for item_dict in iterate_api_object_using_paginated_routes(
-        route="/deployment/all/", params={"enabled": True}
-    ):
-        output.append(item_dict)
-    columns = ["name", "catalog_name", "feature_list_name", "feature_list_version", "num_feature"]
-    output_df = pd.DataFrame(
-        output,
-        columns=["_id"] + columns,
-    ).rename(columns={"_id": "id"})
-    if include_id:
-        return output_df
-    return output_df.drop(columns=["id"])
-
-
 __all__ = [
     # API objects
     "BatchFeatureTable",
@@ -513,6 +468,7 @@ __all__ = [
     "stop",
     "playground",
     # utility
+    "list_deployments",
     "list_unsaved_features",
     "UDF",
 ]
