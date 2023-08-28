@@ -20,6 +20,12 @@ class TileTask(BaseTask):
 
     payload_class = TileTaskPayload
 
+    async def get_task_description(self) -> str:
+        payload = cast(TileTaskPayload, self.payload)
+        return (
+            f'Generate tile for "{payload.parameters.tile_id}:{payload.parameters.aggregation_id}"'
+        )
+
     async def execute(self) -> Any:
         """
         Execute Tile task

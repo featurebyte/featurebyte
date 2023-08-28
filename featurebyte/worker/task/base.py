@@ -137,6 +137,17 @@ class BaseTask:  # pylint: disable=too-many-instance-attributes
         Execute the task
         """
 
+    @abstractmethod
+    async def get_task_description(self) -> str:
+        """
+        Get the task description
+
+        Returns
+        -------
+        str
+        """
+        raise NotImplementedError()
+
 
 class BaseLockTask(BaseTask):
     """

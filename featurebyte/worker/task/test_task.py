@@ -19,6 +19,9 @@ class TestTask(BaseTask):
 
     payload_class = TestTaskPayload
 
+    async def get_task_description(self) -> str:
+        return "Run Test task"
+
     async def execute(self) -> Any:
         """
         Execute test task

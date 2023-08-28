@@ -126,9 +126,9 @@ class TaskExecutor:
         )
         self._setup_worker_config()
 
-    async def _update_task_start_time(self, persistent: Any) -> None:
+    async def _update_task_start_time_and_description(self, persistent: Any) -> None:
         """
-        Update task start time
+        Update task start time and description
 
         Parameters
         ----------
@@ -138,7 +138,12 @@ class TaskExecutor:
         await persistent.update_one(
             collection_name=TaskModel.collection_name(),
             query_filter={"_id": str(self.task_id)},
-            update={"$set": {"start_time": datetime.utcnow()}},
+            update={
+                "$set": {
+                    "start_time": datetime.utcnow(),
+                    "description": await self.task.get_task_description(),
+                }
+            },
             disable_audit=True,
             user_id=self.task.user.id,
         )
@@ -169,7 +174,7 @@ class TaskExecutor:
         """
         Execute the task
         """
-        await self._update_task_start_time(self.task.persistent)
+        await self._update_task_start_time_and_description(self.task.persistent)
         await self.task.execute()
 
 

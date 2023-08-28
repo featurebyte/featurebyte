@@ -3,13 +3,22 @@ Test batch feature creation task
 """
 import os
 import textwrap
+from unittest.mock import Mock
+from uuid import uuid4
 
 import pytest
+from bson import ObjectId
 
 from featurebyte import RecordRetrievalException
 from featurebyte.api.catalog import Catalog, Entity
 from featurebyte.models.base import activate_catalog
-from featurebyte.worker.task.batch_feature_create import execute_sdk_code, set_environment_variable
+from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.worker.task.batch_feature_create import (
+    BatchFeatureCreateTask,
+    BatchFeatureCreateTaskPayload,
+    execute_sdk_code,
+    set_environment_variable,
+)
 
 
 @pytest.fixture(name="test_catalog")
@@ -57,3 +66,25 @@ async def test_execute_sdk_code(test_catalog, catalog):
     activate_catalog(catalog_id=current_active_catalog.id)
     catalog = Catalog.get_active()
     assert catalog == current_active_catalog
+
+
+@pytest.mark.asyncio
+async def test_get_task_description():
+    """
+    Test get task description
+    """
+    payload = BatchFeatureCreateTaskPayload(
+        output_feature_ids=[ObjectId(), ObjectId()],
+        graph=QueryGraph(),
+        features=[],
+        catalog_id=ObjectId(),
+        conflict_resolution="raise",
+    )
+    task = BatchFeatureCreateTask(
+        task_id=uuid4(),
+        payload=payload.dict(by_alias=True),
+        progress=Mock(),
+        get_credential=Mock(),
+        app_container=Mock(),
+    )
+    assert await task.get_task_description() == "Save 2 features"

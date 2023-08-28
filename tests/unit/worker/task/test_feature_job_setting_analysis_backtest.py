@@ -3,7 +3,8 @@ Test Feature Job Setting Analysis worker task
 """
 import copy
 import datetime
-from unittest.mock import call
+from unittest.mock import Mock, call
+from uuid import uuid4
 
 import pandas as pd
 import pytest
@@ -15,6 +16,8 @@ from featurebyte.exception import DocumentNotFoundError
 from featurebyte.models.event_table import EventTableModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent import DuplicateDocumentError
+from featurebyte.routes.lazy_app_container import LazyAppContainer
+from featurebyte.routes.registry import app_container_config
 from featurebyte.worker.task.feature_job_setting_analysis import (
     FeatureJobSettingAnalysisBacktestTask,
     FeatureJobSettingAnalysisTask,
@@ -180,3 +183,30 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
         assert progress.put.call_args_list == [
             call({"percent": 0, "message": "Preparing table"}),
         ]
+
+    @pytest.mark.asyncio
+    async def test_get_task_description(self, persistent, catalog):
+        """
+        Test get task description
+        """
+        payload = FeatureJobSettingAnalysisBacktestTask.payload_class(**self.payload)
+        task = FeatureJobSettingAnalysisBacktestTask(
+            task_id=uuid4(),
+            payload=payload.dict(by_alias=True),
+            progress=Mock(),
+            get_credential=Mock(),
+            app_container=LazyAppContainer(
+                user=Mock(),
+                persistent=persistent,
+                temp_storage=Mock(),
+                celery=Mock(),
+                redis=Mock(),
+                storage=Mock(),
+                catalog_id=catalog.id,
+                app_container_config=app_container_config,
+            ),
+        )
+        assert (
+            await task.get_task_description()
+            == 'Backtest feature job settings for table "sf_event_table"'
+        )

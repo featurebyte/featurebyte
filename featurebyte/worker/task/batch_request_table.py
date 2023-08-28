@@ -21,6 +21,10 @@ class BatchRequestTableTask(DataWarehouseMixin, BaseTask):
 
     payload_class = BatchRequestTableTaskPayload
 
+    async def get_task_description(self) -> str:
+        payload = cast(BatchRequestTableTaskPayload, self.payload)
+        return f'Save batch request table "{payload.name}"'
+
     async def execute(self) -> Any:
         """
         Execute BatchRequestTable task

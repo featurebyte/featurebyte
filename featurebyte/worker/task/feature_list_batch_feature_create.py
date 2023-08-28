@@ -20,9 +20,13 @@ class FeatureListCreateWithBatchFeatureCreationTask(BatchFeatureCreateTask):
 
     payload_class: type[BaseTaskPayload] = FeatureListCreateWithBatchFeatureCreationTaskPayload
 
+    async def get_task_description(self) -> str:
+        payload = cast(FeatureListCreateWithBatchFeatureCreationTaskPayload, self.payload)
+        return f'Save feature list "{payload.name}"'
+
     async def execute(self) -> Any:
         """
-        Execute Deployment Create & Update Task
+        Execute FeatureListCreateWithBatchFeatureCreationTask
         """
         payload = cast(FeatureListCreateWithBatchFeatureCreationTaskPayload, self.payload)
 

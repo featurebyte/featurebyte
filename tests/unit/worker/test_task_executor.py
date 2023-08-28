@@ -57,6 +57,9 @@ def random_task_class_fixture(random_task_payload_class, persistent):
 
             payload_class = random_task_payload_class
 
+            async def get_task_description(self) -> str:
+                return "Execute random task"
+
             async def execute(self) -> None:
                 """Run some task"""
                 await persistent.insert_one(
@@ -131,11 +134,12 @@ async def test_task_executor(random_task_class, persistent):
         "output_document_id": document_id,
     }
 
-    # check task start time is updated
+    # check task start time and description is updated
     document = await persistent.find_one(
         collection_name="celery_taskmeta", query_filter={"_id": str(task_id)}, user_id=user_id
     )
     assert isinstance(document["start_time"], datetime.datetime)
+    assert document["description"] == "Execute random task"
 
 
 def test_task_has_been_implemented(app_container, random_task_class, command_class):
@@ -160,6 +164,9 @@ def test_task_has_been_implemented(app_container, random_task_class, command_cla
         """RandomTask class"""
 
         payload_class = ConflictTaskPayload
+
+        async def get_task_description(self) -> str:
+            return "Execute task with conflict command"
 
         async def execute(self) -> None:
             """Run some task"""

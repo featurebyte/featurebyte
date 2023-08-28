@@ -39,6 +39,21 @@ class FeatureJobSettingAnalysisTask(BaseTask):
 
     payload_class = FeatureJobSettingAnalysisTaskPayload
 
+    async def get_task_description(self) -> str:
+        payload = cast(FeatureJobSettingAnalysisTaskPayload, self.payload)
+        # retrieve event data
+        if payload.event_table_id:
+            event_table_service = self.app_container.event_table_service
+            event_table_document = await event_table_service.get_document(
+                document_id=payload.event_table_id
+            )
+            event_table_name = event_table_document.name
+        else:
+            # event table candidate should be provided if event table is not
+            assert payload.event_table_candidate
+            event_table_name = payload.event_table_candidate.name
+        return f'Analyze feature job settings for table "{event_table_name}"'
+
     async def execute(self) -> Any:
         """
         Execute the task
@@ -134,6 +149,13 @@ class FeatureJobSettingAnalysisBacktestTask(BaseTask):
     """
 
     payload_class = FeatureJobSettingAnalysisBackTestTaskPayload
+
+    async def get_task_description(self) -> str:
+        payload = cast(FeatureJobSettingAnalysisBackTestTaskPayload, self.payload)
+        analysis = await self.app_container.feature_job_setting_analysis_service.get_document(
+            document_id=payload.feature_job_setting_analysis_id
+        )
+        return f'Backtest feature job settings for table "{analysis.analysis_parameters.event_table_name}"'
 
     async def execute(self) -> None:
         """
