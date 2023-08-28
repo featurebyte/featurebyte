@@ -183,7 +183,7 @@ def pa_table_to_record_batches(
     if table.shape[0]:
         # No mapping means we don't have to perform any updates.
         if not col_name_to_db_var_type:
-            return table.to_batches()
+            return table.to_batches()  # type: ignore[no-any-return]
 
         return _update_batches_for_types(table.to_batches(), col_name_to_db_var_type)
 
