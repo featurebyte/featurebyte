@@ -1,7 +1,7 @@
 """
 UseCaseService class
 """
-from typing import Any, List, Optional, cast
+from typing import Any, Optional, cast
 
 from bson import ObjectId
 

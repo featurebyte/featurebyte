@@ -6,21 +6,17 @@ from __future__ import annotations
 from typing import Any, List, Optional
 
 import pandas as pd
-from bson import ObjectId
 
 from featurebyte.api.api_object_util import (
     ForeignKeyMapping,
-    get_api_object_by_id,
     iterate_api_object_using_paginated_routes,
 )
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.savable_api_object import DeletableApiObject, SavableApiObject
 from featurebyte.api.target import Target
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.utils import dataframe_from_json
-from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.use_case import UseCaseModel
-from featurebyte.schema.use_case import UseCaseCreate, UseCaseRead, UseCaseUpdate
+from featurebyte.schema.use_case import UseCaseCreate, UseCaseUpdate
 
 
 class UseCase(SavableApiObject, DeletableApiObject):
@@ -54,12 +50,14 @@ class UseCase(SavableApiObject, DeletableApiObject):
             "default_preview_table_id", ObservationTable, "default_preview_table_name", "name"
         ),
         ForeignKeyMapping(
-            "default_eda_table__d", ObservationTable, "default_eda_table_name", "name"
+            "default_eda_table_id", ObservationTable, "default_eda_table_name", "name"
         ),
     ]
 
     # pydantic instance variable (public)
     target: Target
+    # Context api object is not implemented yet. This is a placeholder.
+    context: Optional[Any]
 
     def _get_create_payload(self) -> dict[str, Any]:
         """
@@ -80,97 +78,151 @@ class UseCase(SavableApiObject, DeletableApiObject):
         cls,
         name: str,
         target: Target,
+        context: Optional[Any] = None,
         description: Optional[str] = None,
     ) -> UseCase:
         """
-        Create a new Use Case.
+        Create a new UseCase.
 
         Parameters
         ----------
         name: str
             Name of the UseCase.
         target: Target
-            target object of the UseCase
+            target object of the UseCase.
+        context: Optional[Any]
+            context of the UseCase.
         description: Optional[str]
             description of the UseCase.
 
         Returns
         -------
         UseCase
-            The newly created Use Case.
+            The newly created UseCase.
 
         Examples
         --------
+        >>> use_case = fb.UseCase.create(
+        ...     name="use_case_1",
+        ...     context=context,
+        ...     target=target,
+        ...     description="use case description."
+        ... )
         """
-        use_case = UseCase(name=name, target=target, description=description)
+        use_case = UseCase(name=name, target=target, context=context, description=description)
         use_case.save()
         return use_case
 
-    def add_observation_table(self, new_observation_table_id: ObjectId) -> None:
+    def add_observation_table(self, new_observation_table: ObservationTable) -> None:
         """
         Add observation table for the Use Case.
 
+        Parameters
+        ----------
+        new_observation_table: ObservationTable
+            New observation table to be added.
+
         Examples
         --------
+        >>> use_case = catalog.get_use_case("use_case")
+        >>> use_case.add_observation_table(new_observation_table)  # doctest: +SKIP
         """
         self.update(
-            update_payload={"new_observation_table_id": new_observation_table_id},
+            update_payload={"new_observation_table_id": new_observation_table.id},
             allow_update_local=False,
         )
 
-    def update_default_preview_table(self, default_preview_table_id: ObjectId) -> None:
+    def update_default_preview_table(self, default_preview_table: ObservationTable) -> None:
         """
         Update default preview table for the Use Case.
 
+        Parameters
+        ----------
+        default_preview_table: ObservationTable
+            New default preview table.
+
         Examples
         --------
+        >>> use_case = catalog.get_use_case("use_case")
+        >>> use_case.update_default_preview_table(default_preview_table)  # doctest: +SKIP
         """
         self.update(
-            update_payload={"default_preview_table_id": default_preview_table_id},
+            update_payload={"default_preview_table_id": default_preview_table.id},
             allow_update_local=False,
         )
 
-    def update_default_eda_table(self, default_eda_table_id: ObjectId) -> None:
+    def update_default_eda_table(self, default_eda_table: ObservationTable) -> None:
         """
         Update default eda table for the Use Case.
 
+        Parameters
+        ----------
+        default_eda_table: ObservationTable
+            New default eda table.
+
         Examples
         --------
+        >>> use_case = catalog.get_use_case("use_case")
+        >>> use_case.update_default_eda_table(default_eda_table)  # doctest: +SKIP
         """
         self.update(
-            update_payload={"default_eda_table_id": default_eda_table_id}, allow_update_local=False
+            update_payload={"default_eda_table_id": default_eda_table.id}, allow_update_local=False
         )
 
-    def list_observation_tables(self) -> List[ObservationTableModel]:
+    def list_observation_tables(self) -> pd.DataFrame:
         """
         List observation tables associated with the Use Case.
 
+        Returns
+        -------
+        pd.DataFrame
+
         Examples
         --------
+        >>> use_case = catalog.get_use_case("use_case")
+        >>> use_case.list_observation_tables()  # doctest: +SKIP
         """
         route = f"{self._route}/{self.id}/observation_tables"
-        feature_tables = []
-        for feature_table_dict in iterate_api_object_using_paginated_routes(route):
-            feature_tables.append(ObservationTableModel(**feature_table_dict))
-        return feature_tables
+        return self._construct_table_result_df(
+            list(iterate_api_object_using_paginated_routes(route))
+        )
 
     def list_feature_tables(self) -> pd.DataFrame:
         """
         List feature tables (BaseFeatureOrTargetTableModel) associated with the Use Case.
 
-        Examples
-        --------
-        """
-        result = get_api_object_by_id(self._route, self.id, "feature_tables")
-        obs_tables = dataframe_from_json(result)
-
-        return obs_tables
-
-    def list_deployments(self) -> None:
-        """
-        List deployments associated with the Use Case
+        Returns
+        -------
+        pd.DataFrame
 
         Examples
         --------
+        >>> use_case = catalog.get_use_case("use_case")
+        >>> use_case.list_feature_tables()  # doctest: +SKIP
         """
-        raise NotImplementedError
+        route = f"{self._route}/{self.id}/feature_tables"
+        return self._construct_table_result_df(
+            list(iterate_api_object_using_paginated_routes(route))
+        )
+
+    def _construct_table_result_df(self, result_dict: List[dict[str, Any]]) -> pd.DataFrame:
+        """
+        Construct a pandas DataFrame from the result_dict returned by the API.
+
+        Parameters
+        ----------
+        result_dict: dict[str, Any]
+            The result_dict returned by the API.
+
+        Returns
+        -------
+        pd.DataFrame
+            The pandas DataFrame constructed from the result_dict.
+        """
+        dataframe_dict: dict[str, Any] = {"id": [], "name": [], "description": []}
+        for r_dict in result_dict:
+            dataframe_dict["id"].append(r_dict["_id"])
+            dataframe_dict["name"].append(r_dict["name"])
+            dataframe_dict["description"].append(r_dict["description"])
+
+        return pd.DataFrame.from_dict(dataframe_dict)

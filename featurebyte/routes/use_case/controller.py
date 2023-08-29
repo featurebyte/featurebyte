@@ -1,11 +1,19 @@
 """
 UseCase API route controller
 """
+from typing import Literal, Optional
+
 from bson import ObjectId
 
 from featurebyte.models.use_case import UseCaseModel
 from featurebyte.routes.common.base import BaseDocumentController
-from featurebyte.schema.use_case import UseCaseCreate, UseCaseList, UseCaseRead, UseCaseUpdate
+from featurebyte.schema.use_case import (
+    UseCaseCreate,
+    UseCaseList,
+    UseCaseRead,
+    UseCaseReadList,
+    UseCaseUpdate,
+)
 from featurebyte.service.target import TargetService
 from featurebyte.service.use_case import UseCaseService
 
@@ -48,7 +56,7 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
 
         Parameters
         ----------
-        use_case_id: UseCase Id
+        use_case_id: ObjectId
             use case creation data
 
         Returns
@@ -88,3 +96,52 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
             UseCase id to be deleted
         """
         await self.service.delete_document(document_id=document_id)
+
+    async def list_use_cases(
+        self,
+        page: int,
+        page_size: int,
+        sort_by: Optional[str],
+        sort_dir: Literal["asc", "desc"],
+        search: Optional[str],
+        name: Optional[str],
+    ) -> UseCaseReadList:
+        """
+        List UseCases
+
+        Parameters
+        ----------
+        page: int
+            Page number
+        page_size: int
+            Number of items per page
+        sort_by: str | None
+            Key used to sort the returning documents
+        sort_dir: "asc" or "desc"
+            Sorting the returning documents in ascending order or descending order
+        search: str
+            search string
+        name: str
+            name string
+
+        Returns
+        -------
+        UseCaseReadList
+            List of UseCases fulfilled the filtering condition
+        """
+        use_case_list = await super().list(
+            page=page,
+            page_size=page_size,
+            sort_by=sort_by,
+            sort_dir=sort_dir,
+            search=search,
+            name=name,
+        )
+
+        use_cases = []
+        for use_case in use_case_list.data:
+            use_cases.append(await self.get_use_case(use_case.id))
+
+        return UseCaseReadList(
+            page=page, page_size=page_size, total=use_case_list.total, data=use_cases
+        )

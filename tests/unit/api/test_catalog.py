@@ -48,6 +48,7 @@ from featurebyte.api.static_source_table import StaticSourceTable
 from featurebyte.api.table import Table
 from featurebyte.api.target import Target
 from featurebyte.api.target_namespace import TargetNamespace
+from featurebyte.api.use_case import UseCase
 from featurebyte.api.user_defined_function import UserDefinedFunction
 from featurebyte.exception import (
     DuplicatedRecordException,
@@ -99,6 +100,7 @@ def catalog_list_methods_to_test_list():
         MethodMetadata("list_static_source_tables", StaticSourceTable, "list"),
         MethodMetadata("list_targets", Target, "list"),
         MethodMetadata("list_user_defined_functions", UserDefinedFunction, "list"),
+        MethodMetadata("list_use_cases", UseCase, "list"),
     ]
 
 
@@ -120,6 +122,7 @@ def catalog_get_methods_to_test_list():
         MethodMetadata("get_static_source_table", StaticSourceTable, "get"),
         MethodMetadata("get_target", Target, "get"),
         MethodMetadata("get_user_defined_function", UserDefinedFunction, "get"),
+        MethodMetadata("get_use_case", UseCase, "get"),
     ]
 
 
@@ -151,6 +154,7 @@ def catalog_get_by_id_list():
         MethodMetadata("get_static_source_table_by_id", StaticSourceTable, "get_by_id"),
         MethodMetadata("get_user_defined_function_by_id", UserDefinedFunction, "get_by_id"),
         MethodMetadata("get_target_by_id", Target, "get_by_id"),
+        MethodMetadata("get_use_case_by_id", UseCase, "get_by_id"),
     ]
 
 

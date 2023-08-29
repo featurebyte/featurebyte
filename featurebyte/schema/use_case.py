@@ -3,7 +3,6 @@ Use Case API payload schema
 """
 from typing import List, Optional
 
-from bson import ObjectId
 from pydantic import Field, StrictStr
 
 from featurebyte.models.base import (
@@ -21,7 +20,7 @@ class UseCaseCreate(FeatureByteBaseModel):
     Use Case creation schema
     """
 
-    id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
+    id: Optional[PydanticObjectId] = Field(default_factory=PydanticObjectId, alias="_id")
     name: StrictStr
     target_id: PydanticObjectId
     context_id: Optional[PydanticObjectId]
@@ -33,8 +32,11 @@ class UseCaseRead(FeatureByteBaseDocumentModel):
     Use Case creation schema
     """
 
-    id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     target: TargetModel
+    target_id: PydanticObjectId
+    context_id: Optional[PydanticObjectId]
+    default_preview_table_id: Optional[PydanticObjectId]
+    default_eda_table_id: Optional[PydanticObjectId]
 
 
 class UseCaseCreateTarget(UseCaseCreate):
@@ -65,7 +67,15 @@ class UseCaseUpdateTarget(UseCaseUpdate):
 
 class UseCaseList(PaginationMixin):
     """
-    Paginated list of context
+    Paginated list of use case
     """
 
     data: List[UseCaseModel]
+
+
+class UseCaseReadList(PaginationMixin):
+    """
+    Paginated list of use case
+    """
+
+    data: List[UseCaseRead]

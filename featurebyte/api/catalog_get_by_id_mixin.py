@@ -24,6 +24,7 @@ from featurebyte.api.relationship import Relationship
 from featurebyte.api.static_source_table import StaticSourceTable
 from featurebyte.api.table import Table
 from featurebyte.api.target import Target
+from featurebyte.api.use_case import UseCase
 from featurebyte.api.user_defined_function import UserDefinedFunction
 from featurebyte.api.view import View
 
@@ -484,3 +485,28 @@ class CatalogGetByIdMixin:
         >>> target = catalog.get_target_by_id(ObjectId())  # doctest: +SKIP
         """
         return Target.get_by_id(id=id)
+
+    @update_and_reset_catalog
+    def get_use_case_by_id(
+        self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
+    ) -> UseCase:
+        """
+        Get use case by id.
+
+        Parameters
+        ----------
+        id: ObjectId
+            UseCase id.
+
+        Returns
+        -------
+        UseCase
+            UseCase object.
+
+        Examples
+        --------
+        Get a saved target .
+
+        >>> target = catalog.get_use_case_by_id(ObjectId())  # doctest: +SKIP
+        """
+        return UseCase.get_by_id(id=id)

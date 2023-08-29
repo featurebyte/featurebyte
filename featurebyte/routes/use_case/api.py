@@ -1,7 +1,7 @@
 """
 UseCase API routes
 """
-from typing import List, Optional
+from typing import Optional
 
 from http import HTTPStatus
 
@@ -22,7 +22,7 @@ from featurebyte.routes.common.schema import (
 from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.historical_feature_table import HistoricalFeatureTableList
 from featurebyte.schema.observation_table import ObservationTableList
-from featurebyte.schema.use_case import UseCaseCreate, UseCaseList, UseCaseRead, UseCaseUpdate
+from featurebyte.schema.use_case import UseCaseCreate, UseCaseRead, UseCaseReadList, UseCaseUpdate
 
 router = APIRouter(prefix="/use_case")
 
@@ -121,7 +121,7 @@ async def delete_use_case(request: Request, use_case_id: PydanticObjectId) -> No
     await controller.delete_use_case(document_id=use_case_id)
 
 
-@router.get("", response_model=UseCaseList)
+@router.get("", response_model=UseCaseReadList)
 async def list_use_cases(
     request: Request,
     page: int = PageQuery,
@@ -130,12 +130,12 @@ async def list_use_cases(
     sort_dir: Optional[str] = SortDirQuery,
     search: Optional[str] = SearchQuery,
     name: Optional[str] = NameQuery,
-) -> UseCaseList:
+) -> UseCaseReadList:
     """
     List Use Case
     """
     controller = request.state.app_container.use_case_controller
-    doc_list: UseCaseList = await controller.list(
+    doc_list: UseCaseReadList = await controller.list_use_cases(
         page=page,
         page_size=page_size,
         sort_by=sort_by,

@@ -33,6 +33,7 @@ from featurebyte.api.savable_api_object import SavableApiObject
 from featurebyte.api.static_source_table import StaticSourceTable
 from featurebyte.api.table import Table
 from featurebyte.api.target import Target
+from featurebyte.api.use_case import UseCase
 from featurebyte.api.user_defined_function import UserDefinedFunction
 from featurebyte.api.view import View
 from featurebyte.common.doc_util import FBAutoDoc
@@ -549,6 +550,27 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return Target.list(include_id=include_id)
 
     @update_and_reset_catalog
+    def list_use_cases(self, include_id: Optional[bool] = True) -> pd.DataFrame:
+        """
+        Returns a DataFrame that contains various attributes of the registered use cases in the catalog
+
+        Parameters
+        ----------
+        include_id: Optional[bool]
+            Whether to include id in the list.
+
+        Returns
+        -------
+        pd.DataFrame
+            Dataframe of use cases
+
+        Examples
+        --------
+        >>> use_cases = catalog.list_use_cases()
+        """
+        return UseCase.list(include_id=include_id)
+
+    @update_and_reset_catalog
     def list_relationships(
         self, include_id: Optional[bool] = True, relationship_type: Optional[Literal[tuple(RelationshipType)]] = None  # type: ignore
     ) -> pd.DataFrame:
@@ -1002,6 +1024,27 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         >>> target = catalog.get_target("target_name")  # doctest: +SKIP
         """
         return Target.get(name=name)
+
+    @update_and_reset_catalog
+    def get_use_case(self, name: str) -> UseCase:
+        """
+        Gets a UseCase object from the catalog based on its name.
+
+        Parameters
+        ----------
+        name: str
+            UseCase name.
+
+        Returns
+        -------
+        UseCase
+            Retrieved UseCase.
+
+        Examples
+        --------
+        >>> use_case = catalog.get_use_case("use_case_name")  # doctest: +SKIP
+        """
+        return UseCase.get(name=name)
 
     @update_and_reset_catalog
     def get_relationship(self, name: str) -> Relationship:
