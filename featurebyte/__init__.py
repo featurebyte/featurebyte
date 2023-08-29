@@ -1,11 +1,10 @@
 """Python Library for FeatureOps"""
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 import os
 import shutil
 import sys
 from http import HTTPStatus
-from pathlib import Path
 
 import pandas as pd
 import yaml
@@ -171,19 +170,27 @@ def use_profile(profile: str) -> None:
             pass
 
 
-def register_tutorial_api_token(api_token: str) -> None:
+def register_profile(profile_name: str, api_url: str, api_token: Optional[str] = None) -> None:
     """
-    Register tutorial api token, and use the tutorial profile. This will write a new tutorial profile to the
-    configuration file.
+    Register a profile for connecting to a FeatureByte service in the configuration file.
+    If the profile already exists, it will be updated.
 
     Parameters
     ----------
+    profile_name: str
+        Profile name
+    api_url: str
+        Featurebye API Service URL
     api_token: str
         Tutorial api token
 
     Examples
     --------
-    >>> fb.register_tutorial_api_token("your_api_token")  # doctest: +SKIP
+    >>> fb.register_profile(  # doctest: +SKIP
+    ...     profile_name="tutorial",
+    ...     api_url="https://tutorials.featurebyte.com/api/v1",
+    ...     api_token="your_api_token"
+    ... )
     """
     # Read configuration file
     config_file_path = Configurations().config_file_path
@@ -191,24 +198,20 @@ def register_tutorial_api_token(api_token: str) -> None:
         loaded_config = yaml.safe_load(file_obj)
 
     profiles: List[Any] = loaded_config["profile"]
-    tutorial_profile_name = "tutorial"
     # Update API token in existing profile if it's there
-    tutorial_url = "https://tutorials.featurebyte.com/api/v1"
     for profile in profiles:
-        if profile["name"] == tutorial_profile_name:
-            if "api_token" in profile:
-                updated_profile = profile["api_token"] != api_token
-            else:
-                updated_profile = True
-            profile["api_token"] = api_token
-            profile["api_url"] = tutorial_url
+        if profile["name"] == profile_name:
+            updated_profile = profile["api_url"] != api_url or profile.get("api_token") != api_token
+            if updated_profile:
+                profile["api_url"] = api_url
+                profile["api_token"] = api_token
             break
     # Add tutorial profile if it's not already there
     else:
         profiles.append(
             {
-                "name": tutorial_profile_name,
-                "api_url": tutorial_url,
+                "name": profile_name,
+                "api_url": api_url,
                 "api_token": api_token,
             }
         )
@@ -226,8 +229,29 @@ def register_tutorial_api_token(api_token: str) -> None:
         with open(config_file_path, "w", encoding="utf-8") as file_obj:
             file_obj.write(yaml_str)
 
-    # Use the tutorial profile
-    use_profile(tutorial_profile_name)
+    # Use the profile
+    use_profile(profile_name)
+
+
+def register_tutorial_api_token(api_token: str) -> None:
+    """
+    Register tutorial api token, and use the tutorial profile. This will write a new tutorial profile to the
+    configuration file.
+
+    Parameters
+    ----------
+    api_token: str
+        Tutorial api token
+
+    Examples
+    --------
+    >>> fb.register_tutorial_api_token("your_api_token")  # doctest: +SKIP
+    """
+    register_profile(
+        profile_name="tutorial",
+        api_url="https://tutorials.featurebyte.com/api/v1",
+        api_token=api_token,
+    )
 
 
 def list_credentials(
