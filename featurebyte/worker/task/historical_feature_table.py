@@ -26,6 +26,10 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask):
 
     payload_class = HistoricalFeatureTableTaskPayload
 
+    async def get_task_description(self) -> str:
+        payload = cast(HistoricalFeatureTableTaskPayload, self.payload)
+        return f'Save historical feature table "{payload.name}"'
+
     async def execute(self) -> Any:
         """
         Execute HistoricalFeatureTableTask

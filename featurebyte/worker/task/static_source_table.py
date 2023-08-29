@@ -21,6 +21,10 @@ class StaticSourceTableTask(DataWarehouseMixin, BaseTask):
 
     payload_class = StaticSourceTableTaskPayload
 
+    async def get_task_description(self) -> str:
+        payload = cast(StaticSourceTableTaskPayload, self.payload)
+        return f'Save static source table "{payload.name}"'
+
     async def execute(self) -> Any:
         """
         Execute StaticSourceTable task

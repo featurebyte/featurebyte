@@ -1061,20 +1061,14 @@ def test_create_event_table__duplicated_column_name_in_different_fields(
     assert expected_error_message in str(exc.value)
 
 
-def test_sdk_code_generation(snowflake_database_table, update_fixtures):
+def test_sdk_code_generation(saved_event_table, update_fixtures):
     """Check SDK code generation for unsaved table"""
-    event_table = snowflake_database_table.create_event_table(
-        name="sf_event_table",
-        event_id_column="col_int",
-        event_timestamp_column="event_timestamp",
-        record_creation_timestamp_column="created_at",
-    )
     check_sdk_code_generation(
-        event_table.frame,
+        saved_event_table.frame,
         to_use_saved_data=False,
         fixture_path="tests/fixtures/sdk_code/event_table.py",
         update_fixtures=update_fixtures,
-        table_id=event_table.id,
+        table_id=saved_event_table.id,
     )
 
 

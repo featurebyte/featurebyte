@@ -19,6 +19,10 @@ class OnlineStoreCleanupTask(BaseTask):
 
     payload_class = OnlineStoreCleanupTaskPayload
 
+    async def get_task_description(self) -> str:
+        payload = cast(OnlineStoreCleanupTaskPayload, self.payload)
+        return f'Clean up online store table "{payload.online_store_table_name}"'
+
     async def execute(self) -> Any:
         """
         Execute task

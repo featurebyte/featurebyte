@@ -26,6 +26,10 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask):
 
     payload_class = BatchFeatureTableTaskPayload
 
+    async def get_task_description(self) -> str:
+        payload = cast(BatchFeatureTableTaskPayload, self.payload)
+        return f'Save batch feature table "{payload.name}"'
+
     async def execute(self) -> Any:
         """
         Execute BatchFeatureTableTask

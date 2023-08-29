@@ -48,5 +48,6 @@ class Task(FeatureByteBaseDocumentModel):
                 ("queue", pymongo.TEXT),
                 ("args", pymongo.TEXT),
                 ("kwargs", pymongo.TEXT),
+                ("description", pymongo.TEXT),
             ],
         ]

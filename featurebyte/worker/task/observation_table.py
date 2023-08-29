@@ -21,6 +21,10 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask):
 
     payload_class = ObservationTableTaskPayload
 
+    async def get_task_description(self) -> str:
+        payload = cast(ObservationTableTaskPayload, self.payload)
+        return f'Save observation table "{payload.name}"'
+
     async def execute(self) -> Any:
         """
         Execute ObservationTable task

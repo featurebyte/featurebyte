@@ -22,6 +22,23 @@ class DeploymentCreateUpdateTask(BaseLockTask):
 
     payload_class = DeploymentCreateUpdateTaskPayload
 
+    async def get_task_description(self) -> str:
+        payload = cast(DeploymentCreateUpdateTaskPayload, self.payload)
+        if payload.deployment_payload.type == DeploymentPayloadType.CREATE:
+            action = "Create"
+            creation_payload = cast(CreateDeploymentPayload, payload.deployment_payload)
+            deployment_name = creation_payload.name
+        else:
+            deployment = await self.app_container.deployment_service.get_document(
+                document_id=payload.output_document_id
+            )
+            deployment_name = deployment.name
+            if payload.deployment_payload.enabled:
+                action = "Enable"
+            else:
+                action = "Disable"
+        return f'{action} deployment "{deployment_name}"'
+
     @property
     def lock_key(self) -> str:
         # each deployment can only be created or updated once at a time

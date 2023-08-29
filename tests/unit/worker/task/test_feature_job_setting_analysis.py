@@ -3,7 +3,8 @@ Test Feature Job Setting Analysis worker task
 """
 import copy
 import json
-from unittest.mock import call
+from unittest.mock import Mock, call
+from uuid import uuid4
 
 import pytest
 from bson import ObjectId
@@ -13,6 +14,8 @@ from featurebyte.models.event_table import EventTableModel
 from featurebyte.models.feature_job_setting_analysis import FeatureJobSettingAnalysisModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent import DuplicateDocumentError
+from featurebyte.routes.lazy_app_container import LazyAppContainer
+from featurebyte.routes.registry import app_container_config
 from featurebyte.worker.task.feature_job_setting_analysis import FeatureJobSettingAnalysisTask
 from tests.unit.worker.task.base import BaseTaskTestSuite
 
@@ -213,4 +216,31 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
             storage=storage,
             progress=progress,
             update_fixtures=update_fixtures,
+        )
+
+    @pytest.mark.asyncio
+    async def test_get_task_description(self, persistent, catalog):
+        """
+        Test get task description
+        """
+        payload = FeatureJobSettingAnalysisTask.payload_class(**self.payload)
+        task = FeatureJobSettingAnalysisTask(
+            task_id=uuid4(),
+            payload=payload.dict(by_alias=True),
+            progress=Mock(),
+            get_credential=Mock(),
+            app_container=LazyAppContainer(
+                user=Mock(),
+                persistent=persistent,
+                temp_storage=Mock(),
+                celery=Mock(),
+                redis=Mock(),
+                storage=Mock(),
+                catalog_id=catalog.id,
+                app_container_config=app_container_config,
+            ),
+        )
+        assert (
+            await task.get_task_description()
+            == 'Analyze feature job settings for table "sf_event_table"'
         )

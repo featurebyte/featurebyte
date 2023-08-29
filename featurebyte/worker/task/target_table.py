@@ -25,6 +25,10 @@ class TargetTableTask(DataWarehouseMixin, BaseTask):
 
     payload_class = TargetTableTaskPayload
 
+    async def get_task_description(self) -> str:
+        payload = cast(TargetTableTaskPayload, self.payload)
+        return f'Save target table "{payload.name}"'
+
     async def execute(self) -> Any:
         """
         Execute TargetTableTask

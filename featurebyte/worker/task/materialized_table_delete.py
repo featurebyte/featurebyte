@@ -26,6 +26,23 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask):
 
     payload_class = MaterializedTableDeleteTaskPayload
 
+    async def get_task_description(self) -> str:
+        payload = cast(MaterializedTableDeleteTaskPayload, self.payload)
+        service_map = {
+            MaterializedTableCollectionName.BATCH_REQUEST: self.app_container.batch_request_table_service,
+            MaterializedTableCollectionName.BATCH_FEATURE: self.app_container.batch_feature_table_service,
+            MaterializedTableCollectionName.OBSERVATION: self.app_container.observation_table_service,
+            MaterializedTableCollectionName.HISTORICAL_FEATURE: self.app_container.historical_feature_table_service,
+            MaterializedTableCollectionName.STATIC_SOURCE: self.app_container.static_source_table_service,
+            MaterializedTableCollectionName.TARGET: self.app_container.target_table_service,
+        }
+        service = service_map[payload.collection_name]
+        materialized_table = await service.get_document(document_id=payload.document_id)
+        description = payload.collection_name.replace("_", " ")
+        if not description.endswith(" table"):
+            description = f"{description} table"
+        return f'Delete {description} "{materialized_table.name}"'
+
     @property
     def task_payload(self) -> MaterializedTableDeleteTaskPayload:
         """

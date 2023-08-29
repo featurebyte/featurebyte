@@ -35,6 +35,9 @@ class LongRunningTask(BaseTask):
 
     payload_class = LongRunningPayload
 
+    async def get_task_description(self) -> str:
+        return "Execute long running task"
+
     async def execute(self) -> None:
         """Delay for 1 second to simulate long-running task"""
         step = 10
@@ -55,6 +58,9 @@ class ErrorTask(BaseTask):
     """ErrorTask class"""
 
     payload_class = ErrorTaskPayload
+
+    async def get_task_description(self) -> str:
+        return "Execute task that errors"
 
     async def execute(self) -> None:
         """Make it error"""
