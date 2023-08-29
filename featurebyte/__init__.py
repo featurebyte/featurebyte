@@ -170,19 +170,27 @@ def use_profile(profile: str) -> None:
             pass
 
 
-def register_tutorial_api_token(api_token: str) -> None:
+def register_profile(profile_name: str, api_url: str, api_token: Optional[str] = None) -> None:
     """
-    Register tutorial api token, and use the tutorial profile. This will write a new tutorial profile to the
-    configuration file.
+    Register a profile to the local configuration file. This profile can be used to connect to FeatureByte service.
+
 
     Parameters
     ----------
+    profile_name: str
+        Profile name
+    api_url: str
+        Featurebye API Service URL
     api_token: str
         Tutorial api token
 
     Examples
     --------
-    >>> fb.register_tutorial_api_token("your_api_token")  # doctest: +SKIP
+    >>> fb.register_profile(  # doctest: +SKIP
+    ...     profile_name="tutorial",
+    ...     api_url="https://tutorials.featurebyte.com/api/v1",
+    ...     api_token="your_api_token"
+    ... )
     """
     # Read configuration file
     config_file_path = Configurations().config_file_path
@@ -190,24 +198,22 @@ def register_tutorial_api_token(api_token: str) -> None:
         loaded_config = yaml.safe_load(file_obj)
 
     profiles: List[Any] = loaded_config["profile"]
-    tutorial_profile_name = "tutorial"
     # Update API token in existing profile if it's there
-    tutorial_url = "https://tutorials.featurebyte.com/api/v1"
     for profile in profiles:
-        if profile["name"] == tutorial_profile_name:
+        if profile["name"] == profile_name:
             if "api_token" in profile:
                 updated_profile = profile["api_token"] != api_token
             else:
                 updated_profile = True
             profile["api_token"] = api_token
-            profile["api_url"] = tutorial_url
+            profile["api_url"] = api_url
             break
     # Add tutorial profile if it's not already there
     else:
         profiles.append(
             {
-                "name": tutorial_profile_name,
-                "api_url": tutorial_url,
+                "name": profile_name,
+                "api_url": api_url,
                 "api_token": api_token,
             }
         )
@@ -228,8 +234,29 @@ def register_tutorial_api_token(api_token: str) -> None:
         # Reload configuration with new entry
         Configurations(force=True)
 
-    # Use the tutorial profile
-    use_profile(tutorial_profile_name)
+    # Use the profile
+    use_profile(profile_name)
+
+
+def register_tutorial_api_token(api_token: str) -> None:
+    """
+    Register tutorial api token, and use the tutorial profile. This will write a new tutorial profile to the
+    configuration file.
+
+    Parameters
+    ----------
+    api_token: str
+        Tutorial api token
+
+    Examples
+    --------
+    >>> fb.register_tutorial_api_token("your_api_token")  # doctest: +SKIP
+    """
+    register_profile(
+        profile_name="tutorial",
+        api_url="https://tutorials.featurebyte.com/api/v1",
+        api_token=api_token,
+    )
 
 
 def list_credentials(
