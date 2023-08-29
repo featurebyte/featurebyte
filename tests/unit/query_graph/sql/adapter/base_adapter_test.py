@@ -69,12 +69,12 @@ class BaseAdapterTest:
         keys = [k.expr for k in groupby_keys]
         agg_exprs = [
             alias_(
-                get_aggregation_expression(AggFunc.SUM, "parent", None),
+                get_aggregation_expression(AggFunc.SUM, "parent", None, False),
                 alias="sum_result",
                 quoted=True,
             ),
             alias_(
-                get_aggregation_expression(AggFunc.AVG, "parent_avg", None),
+                get_aggregation_expression(AggFunc.AVG, "parent_avg", None, False),
                 alias="avg_result",
                 quoted=True,
             ),
@@ -89,6 +89,7 @@ class BaseAdapterTest:
                     parent_expr=(get_qualified_column_identifier("parent", "TABLE")),
                     parent_dtype=DBVarType.ARRAY,
                     result_name="result",
+                    parent_cols=["parent"],
                 ),
                 0,
             ),
@@ -101,6 +102,7 @@ class BaseAdapterTest:
                     parent_expr=(get_qualified_column_identifier("parent2", "TABLE")),
                     parent_dtype=DBVarType.ARRAY,
                     result_name="result2",
+                    parent_cols=["parent2"],
                 ),
                 1,
             ),
@@ -113,6 +115,7 @@ class BaseAdapterTest:
                     parent_expr=(get_qualified_column_identifier("parent3", "TABLE")),
                     parent_dtype=DBVarType.ARRAY,
                     result_name="result3",
+                    parent_cols=["parent3"],
                 ),
                 2,
             ),

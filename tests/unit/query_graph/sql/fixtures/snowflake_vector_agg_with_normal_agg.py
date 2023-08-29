@@ -29,21 +29,21 @@ SNOWFLAKE_VECTOR_AGG_WITH_NORMAL_AGG_QUERY = textwrap.dedent(
             VECTOR_T0."serving_name" AS "serving_name",
             VECTOR_T0."POINT_IN_TIME" AS "POINT_IN_TIME",
             VECTOR_T0."value_by" AS "value_by",
-            GROUP_BY_RESULT."result_1_inner" AS "result_1_inner",
-            VECTOR_T0."result_0" AS "result_0"
+            GROUP_BY_RESULT."result_1_inner" AS result_1_inner,
+            VECTOR_T0."result_0" AS result_0
           FROM (
             SELECT
-              INITIAL_DATA."serving_name" AS "serving_name",
-              INITIAL_DATA."POINT_IN_TIME" AS "POINT_IN_TIME",
+              INITIAL_DATA.REQ."serving_name" AS "serving_name",
+              INITIAL_DATA.REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
               AGG_0."VECTOR_AGG_RESULT" AS "result_0"
             FROM (
               SELECT
                 REQ."serving_name" AS "serving_name",
                 REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
-                TABLE."parent" AS parent
+                parent AS parent
               FROM REQ
             ) AS INITIAL_DATA, TABLE(
-              VECTOR_AGGREGATE_MAX(parent) OVER (PARTITION BY INITIAL_DATA."serving_name", INITIAL_DATA."POINT_IN_TIME")
+              VECTOR_AGGREGATE_MAX(parent) OVER (PARTITION BY INITIAL_DATA.REQ."serving_name", INITIAL_DATA.REQ."POINT_IN_TIME")
             ) AS "AGG_0"
           ) AS VECTOR_T0
           INNER JOIN (

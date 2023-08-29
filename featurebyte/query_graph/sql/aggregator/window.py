@@ -5,10 +5,10 @@ from __future__ import annotations
 
 from typing import Any, Iterable, Optional, Tuple, cast
 
-from sqlglot import expressions
+from sqlglot import expressions, parse_one
 from sqlglot.expressions import Expression, Select, alias_, select
 
-from featurebyte.enum import InternalName, SourceType, SpecialColumnName
+from featurebyte.enum import AggFunc, InternalName, SourceType, SpecialColumnName
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.aggregator.base import (
     AggregationResult,
@@ -20,6 +20,11 @@ from featurebyte.query_graph.sql.common import (
     CteStatements,
     get_qualified_column_identifier,
     quoted_identifier,
+)
+from featurebyte.query_graph.sql.groupby_helper import (
+    GroupbyColumn,
+    GroupbyKey,
+    _split_agg_and_snowflake_vector_aggregation_columns,
 )
 from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
 from featurebyte.query_graph.sql.tile_util import calculate_first_and_last_tile_indices
@@ -410,6 +415,7 @@ class WindowAggregator(TileBasedAggregator):
         num_tiles: int,
         is_order_dependent: bool,
         tile_value_columns: list[str],
+        groupby_columns: Optional[list[GroupbyColumn]] = None,
     ) -> expressions.Select:
         """
         Construct SQL code for one specific aggregation
@@ -466,6 +472,8 @@ class WindowAggregator(TileBasedAggregator):
             Whether the aggregation depends on the ordering of data
         tile_value_columns : list[str]
             List of column names referenced in the tile table
+        groupby_columns : Optional[list[GroupbyColumn]]
+            List of groupby columns
 
         Returns
         -------
@@ -509,6 +517,7 @@ class WindowAggregator(TileBasedAggregator):
                 inner_group_by_keys=inner_group_by_keys,
                 merge_exprs=merge_exprs,
                 inner_agg_result_names=inner_agg_result_names,
+                groupby_columns=groupby_columns,
             )
 
         if value_by is None:
@@ -525,12 +534,13 @@ class WindowAggregator(TileBasedAggregator):
 
         return agg_expr
 
-    @staticmethod
     def merge_tiles_order_independent(
+        self,
         req_joined_with_tiles: Select,
         inner_group_by_keys: list[Expression],
         merge_exprs: list[str],
         inner_agg_result_names: list[str],
+        groupby_columns: Optional[list[GroupbyColumn]],
     ) -> Select:
         """
         Merge tile values to produce feature values for order independent aggregation methods
@@ -547,18 +557,29 @@ class WindowAggregator(TileBasedAggregator):
             Expressions that merge tile values to produce feature values
         inner_agg_result_names: list[str]
             Names of the aggregation results, should have the same length as merge_exprs
+        groupby_columns: Optional[list[GroupbyColumn]]
+            List of groupby columns
 
         Returns
         -------
         Select
         """
-        inner_agg_expr = req_joined_with_tiles.select(
-            *inner_group_by_keys,
-            *[
-                alias_(merge_expr, inner_agg_result_name, quoted=True)
-                for merge_expr, inner_agg_result_name in zip(merge_exprs, inner_agg_result_names)
-            ],
-        ).group_by(*inner_group_by_keys)
+        groupby_keys = [GroupbyKey(expr=key, name=key.name) for key in inner_group_by_keys]
+        agg_exprs, snowflake_vector_agg_cols = _split_agg_and_snowflake_vector_aggregation_columns(
+            req_joined_with_tiles,
+            groupby_keys,
+            groupby_columns,
+            None,
+            self.adapter.source_type,
+            is_tile=True,
+        )
+        inner_agg_expr = self.adapter.group_by(
+            req_joined_with_tiles,
+            select_keys=inner_group_by_keys,
+            agg_exprs=agg_exprs,
+            keys=inner_group_by_keys,
+            vector_aggregate_columns=snowflake_vector_agg_cols,
+        )
         return inner_agg_expr
 
     @staticmethod
@@ -650,6 +671,17 @@ class WindowAggregator(TileBasedAggregator):
             tile_value_columns_set = set()
             for agg_spec in agg_specs:
                 tile_value_columns_set.update(agg_spec.tile_value_columns)
+            groupby_columns = []
+            for agg_spec in agg_specs:
+                groupby_columns.append(
+                    GroupbyColumn(
+                        parent_dtype=agg_spec.dtype,
+                        agg_func=agg_spec.agg_func,
+                        parent_expr=expressions.Identifier(this=agg_spec.merge_expr),
+                        result_name=agg_spec.agg_result_name,
+                        parent_cols=agg_spec.tile_value_columns,
+                    )
+                )
 
             assert agg_spec.window is not None
             agg_expr = self.construct_aggregation_sql(
@@ -664,6 +696,7 @@ class WindowAggregator(TileBasedAggregator):
                 num_tiles=agg_spec.window // agg_spec.frequency,
                 is_order_dependent=is_order_dependent,
                 tile_value_columns=sorted(tile_value_columns_set),
+                groupby_columns=groupby_columns,
             )
             agg_result = LeftJoinableSubquery(
                 expr=agg_expr,

@@ -69,6 +69,7 @@ def test_get_vector_agg_column_snowflake(
         parent_expr=(get_qualified_column_identifier("parent", "TABLE")),
         result_name="result",
         parent_dtype=DBVarType.ARRAY,
+        parent_cols=["parent"],
     )
 
     # If error expected, check the assertion and return.
@@ -90,14 +91,14 @@ def test_get_vector_agg_column_snowflake(
     expected = textwrap.dedent(
         f"""
             SELECT
-              INITIAL_DATA."serving_name" AS "serving_name",
+              INITIAL_DATA.REQ."serving_name" AS "serving_name",
               AGG_0."VECTOR_AGG_RESULT" AS "result"
             FROM (
               SELECT
                 REQ."serving_name" AS "serving_name",
-                TABLE."parent" AS parent
+                parent as parent
               FROM REQ
-            ) AS INITIAL_DATA, TABLE({expected_table_func}(parent) OVER (PARTITION BY INITIAL_DATA."serving_name")) AS "AGG_0"
+            ) AS INITIAL_DATA, TABLE({expected_table_func}(parent) OVER (PARTITION BY INITIAL_DATA.REQ."serving_name")) AS "AGG_0"
         """
     ).strip()
     parsed_expression = parse_one(expected)
@@ -155,6 +156,7 @@ def test_get_groupby_expr__multiple_groupby_columns__non_snowflake_vector_aggrs(
             parent_expr=(get_qualified_column_identifier("parent", "TABLE")),
             result_name=f"result_{i}",
             parent_dtype=param[1],
+            parent_cols=["parent"],
         )
         i += 1
         groupby_columns.append(groupby_column)
@@ -252,6 +254,7 @@ def test_get_groupby_expr__multiple_groupby_columns__snowflake_vector_aggrs(
             parent_expr=(get_qualified_column_identifier("parent", "TABLE")),
             result_name=f"result_{i}",
             parent_dtype=param[1],
+            parent_cols=["parent"],
         )
         i += 1
         groupby_columns.append(groupby_column)
@@ -286,6 +289,7 @@ def test_get_groupby_expr(agg_func, parent_dtype, method, common_params):
         parent_expr=(get_qualified_column_identifier("parent", "TABLE")),
         result_name="result",
         parent_dtype=parent_dtype,
+        parent_cols=["parent"],
     )
     groupby_expr = get_groupby_expr(
         input_expr=select_expr,

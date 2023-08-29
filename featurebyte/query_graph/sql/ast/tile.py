@@ -10,14 +10,20 @@ from dataclasses import dataclass
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, alias_, select
 
-from featurebyte.enum import InternalName
+from featurebyte.enum import AggFunc, DBVarType, InternalName
 from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
     SQLType,
     get_qualified_column_identifier,
     quoted_identifier,
+)
+from featurebyte.query_graph.sql.groupby_helper import (
+    GroupbyColumn,
+    GroupbyKey,
+    _split_agg_and_snowflake_vector_aggregation_columns,
 )
 from featurebyte.query_graph.sql.query_graph_util import get_parent_dtype
 from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
@@ -43,6 +49,8 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
     is_on_demand: bool
     is_order_dependent: bool
     query_node_type = NodeType.GROUPBY
+
+    adapter: BaseAdapter
 
     # Internal names
     ROW_NUMBER = "__FB_ROW_NUMBER"
@@ -164,21 +172,47 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
         )
         return cast(Select, select_expr)
 
+    @staticmethod
+    def _get_db_var_type_from_col_type(col_type: str) -> DBVarType:
+        mapping: dict[str, DBVarType] = {"ARRAY": DBVarType.ARRAY}
+        return mapping.get(col_type, DBVarType.UNKNOWN)
+
     def _get_tile_sql_order_independent(
         self,
         keys: list[Expression],
         input_tiled: expressions.Select,
     ) -> Expression:
-        groupby_sql = (
-            select(
-                "index",
-                *keys,
-                *[alias_(spec.tile_expr, alias=spec.tile_column_name) for spec in self.tile_specs],
+        inner_group_by_keys = [expressions.Identifier(this="index"), *keys]
+        groupby_keys = [GroupbyKey(expr=key, name=key) for key in inner_group_by_keys]
+        original_query = select().from_(input_tiled.subquery())
+
+        groupby_columns = []
+        for spec in self.tile_specs:
+            groupby_columns.append(
+                GroupbyColumn(
+                    parent_dtype=self._get_db_var_type_from_col_type(spec.tile_column_type),
+                    agg_func=spec.tile_aggregation_type,
+                    parent_expr=spec.tile_expr,
+                    result_name=spec.tile_column_name,
+                    parent_cols=spec.tile_expr.expressions,
+                )
             )
-            .from_(input_tiled.subquery())
-            .group_by("index", *keys)
+        agg_exprs, snowflake_vector_agg_cols = _split_agg_and_snowflake_vector_aggregation_columns(
+            original_query,
+            groupby_keys,
+            groupby_columns,
+            None,
+            self.adapter.source_type,
+            is_tile=True,
         )
-        return groupby_sql
+        groupby_expr = self.adapter.group_by(
+            original_query,
+            select_keys=inner_group_by_keys,
+            agg_exprs=agg_exprs,
+            keys=inner_group_by_keys,
+            vector_aggregate_columns=snowflake_vector_agg_cols,
+        )
+        return groupby_expr
 
     def _get_tile_sql_order_dependent(
         self,
@@ -282,6 +316,7 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
             time_modulo_frequency=parameters["time_modulo_frequency"],
             is_on_demand=is_on_demand,
             is_order_dependent=aggregator.is_order_dependent,
+            adapter=context.adapter,
         )
         return sql_node
 

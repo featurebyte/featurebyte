@@ -9,7 +9,7 @@ import pytest
 from bson import ObjectId
 from sqlglot import select
 
-from featurebyte.enum import DBVarType, SourceType
+from featurebyte.enum import AggFunc, DBVarType, SourceType
 from featurebyte.query_graph.node.generic import ItemGroupbyParameters
 from featurebyte.query_graph.sql.aggregator.request_table import RequestTablePlan
 from featurebyte.query_graph.sql.aggregator.window import TileBasedRequestTablePlan
@@ -43,6 +43,7 @@ def agg_spec_template_fixture(expected_pruned_graph_and_node_1):
         tile_value_columns=["value"],
         entity_ids=[ObjectId()],
         dtype=DBVarType.FLOAT,
+        agg_func=AggFunc.SUM,
         **expected_pruned_graph_and_node_1,
     )
     return agg_spec
@@ -263,6 +264,7 @@ def test_feature_execution_planner(
                 ],
                 entity_ids=[ObjectId("637516ebc9c18f5a277a78db")],
                 dtype=DBVarType.FLOAT,
+                agg_func=AggFunc.AVG,
                 **expected_pruned_graph_and_node_1,
             )
         ],
@@ -290,6 +292,7 @@ def test_feature_execution_planner(
                 ],
                 entity_ids=[ObjectId("637516ebc9c18f5a277a78db")],
                 dtype=DBVarType.FLOAT,
+                agg_func=AggFunc.AVG,
                 **expected_pruned_graph_and_node_2,
             )
         ],
@@ -354,6 +357,7 @@ def test_feature_execution_planner__serving_names_mapping(
                 ],
                 entity_ids=[ObjectId("637516ebc9c18f5a277a78db")],
                 dtype=DBVarType.FLOAT,
+                agg_func=AggFunc.AVG,
                 **expected_pruned_graph_and_node_1,
             )
         ],
@@ -381,6 +385,7 @@ def test_feature_execution_planner__serving_names_mapping(
                 ],
                 entity_ids=[ObjectId("637516ebc9c18f5a277a78db")],
                 dtype=DBVarType.FLOAT,
+                agg_func=AggFunc.AVG,
                 **expected_pruned_graph_and_node_2,
             )
         ],

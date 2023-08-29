@@ -314,8 +314,7 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
                     get_qualified_column_identifier(
                         vector_agg_col.result_name, cls._get_groupby_table_alias(idx)
                     ),
-                    alias=f"{vector_agg_col.result_name}",
-                    quoted=True,
+                    alias=vector_agg_col.result_name,
                 )
             )
 
@@ -327,7 +326,6 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
                 alias_(
                     get_qualified_column_identifier(agg_expr.alias, groupby_subquery_alias),
                     alias=agg_expr.alias,
-                    quoted=True,
                 )
             )
 
@@ -337,11 +335,16 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
         # Rename the TABLE that we're selecting the keys from to be the aggregated table, aliased by the subquery above.
         renamed_table_select_keys = []
         for select_key in select_keys:
+            to_quote = True  # TODO: hack
+            if select_key.alias_or_name.upper() == "INDEX":
+                to_quote = False
             renamed_table_select_keys.append(
                 alias_(
-                    get_qualified_column_identifier(select_key.alias, table_alias),
-                    alias=select_key.alias,
-                    quoted=True,
+                    get_qualified_column_identifier(
+                        select_key.alias_or_name, table_alias, quote_column=to_quote
+                    ),
+                    alias=select_key.alias_or_name,
+                    quoted=to_quote,
                 )
             )
         left_expression = select(
@@ -357,10 +360,10 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
                 join_conditions.append(
                     expressions.EQ(
                         this=get_qualified_column_identifier(
-                            select_key.alias, cls._get_groupby_table_alias(idx)
+                            select_key.alias_or_name, cls._get_groupby_table_alias(idx)
                         ),
                         expression=get_qualified_column_identifier(
-                            select_key.alias, cls._get_groupby_table_alias(idx + 1)
+                            select_key.alias_or_name, cls._get_groupby_table_alias(idx + 1)
                         ),
                     )
                 )
@@ -374,14 +377,18 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
         if agg_exprs:
             join_conditions = []
             for select_key in select_keys:
+                to_quote = True  # TODO: hack
+                if select_key.alias_or_name.upper() == "INDEX":
+                    to_quote = False
                 join_conditions.append(
                     expressions.EQ(
                         this=get_qualified_column_identifier(
-                            select_key.alias, groupby_subquery_alias
+                            select_key.alias_or_name, groupby_subquery_alias, quote_column=to_quote
                         ),
                         expression=get_qualified_column_identifier(
-                            select_key.alias,
+                            select_key.alias_or_name,
                             cls._get_groupby_table_alias(len(vector_aggregate_columns) - 1),
+                            quote_column=to_quote,
                         ),
                     )
                 )
