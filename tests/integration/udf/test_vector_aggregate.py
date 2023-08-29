@@ -1,7 +1,6 @@
 """
 Tests for vector aggregate operations in snowflake
 """
-from typing import List, Tuple
 
 import pandas as pd
 import pytest
@@ -24,13 +23,15 @@ async def setup_test_data_fixture(session):
         (2, [4, 4, 10]),
         (2, [1, 12, 2]),
     ]
-    create_table_query = "CREATE OR REPLACE TABLE test_table (id_col number, array_col ARRAY);"
+    create_table_query = (
+        "CREATE OR REPLACE TABLE test_table (id_col number, array_col ARRAY, count number);"
+    )
     insert_values = []
     for id_col, array_col in input_data:
         insert_values.append(f"({id_col}, '{array_col}')")
     insert_query = f"""
         INSERT INTO test_table
-          SELECT $1, PARSE_JSON($2)
+          SELECT $1, PARSE_JSON($2), 1
           FROM VALUES
           {", ".join(insert_values)}
           ;
@@ -50,19 +51,6 @@ def _get_query(aggregate_function: str) -> str:
     """
 
 
-def _get_formatted_output(expected_output: List[List[int]]) -> Tuple[str]:
-    """
-    Get formatted output for now, as our output in the dataframe is currently being rendered as a string.
-
-    We will fix this in a follow-up.
-    """
-    output = ()
-    for item in expected_output:
-        current_item = "[\n  " + ",\n  ".join([str(x) for x in item]) + "\n]"
-        output = output + (current_item,)
-    return output
-
-
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_vector_aggregate_max(setup_test_data, session):
@@ -76,7 +64,7 @@ async def test_vector_aggregate_max(setup_test_data, session):
 
     # Assert expected results
     results = [[7, 5, 9], [7, 12, 10]]
-    expected_df = pd.DataFrame({"ID_COL": [1, 2], "OUT": _get_formatted_output(results)})
+    expected_df = pd.DataFrame({"ID_COL": [1, 2], "OUT": results})
     fb_assert_frame_equal(df, expected_df, sort_by_columns=["ID_COL"])
 
 
@@ -93,7 +81,24 @@ async def test_vector_aggregate_sum(setup_test_data, session):
 
     # Assert expected results
     results = [[12, 12, 18], [12, 24, 21]]
-    expected_df = pd.DataFrame({"ID_COL": [1, 2], "OUT": _get_formatted_output(results)})
+    expected_df = pd.DataFrame({"ID_COL": [1, 2], "OUT": results})
+    fb_assert_frame_equal(df, expected_df, sort_by_columns=["ID_COL"])
+
+
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.asyncio
+async def test_vector_aggregate_simple_avg(setup_test_data, session):
+    """
+    Test vector aggregate avg
+    """
+    _ = setup_test_data
+    # Run query
+    query = _get_query("VECTOR_AGGREGATE_SIMPLE_AVERAGE")
+    df = await session.execute_query(query)
+
+    # Assert expected results
+    results = [[4, 4, 6], [4, 8, 7]]
+    expected_df = pd.DataFrame({"ID_COL": [1, 2], "OUT": results})
     fb_assert_frame_equal(df, expected_df, sort_by_columns=["ID_COL"])
 
 
@@ -105,10 +110,13 @@ async def test_vector_aggregate_avg(setup_test_data, session):
     """
     _ = setup_test_data
     # Run query
-    query = _get_query("VECTOR_AGGREGATE_AVG")
+    query = """
+    SELECT a.id_col, b.VECTOR_AGG_RESULT AS OUT
+    FROM test_table AS a, table(VECTOR_AGGREGATE_AVG(ARRAY_COL, COUNT) OVER (partition by id_col)) AS b
+    """
     df = await session.execute_query(query)
 
     # Assert expected results
     results = [[4, 4, 6], [4, 8, 7]]
-    expected_df = pd.DataFrame({"ID_COL": [1, 2], "OUT": _get_formatted_output(results)})
+    expected_df = pd.DataFrame({"ID_COL": [1, 2], "OUT": results})
     fb_assert_frame_equal(df, expected_df, sort_by_columns=["ID_COL"])

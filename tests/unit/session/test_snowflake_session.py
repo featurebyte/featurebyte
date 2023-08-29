@@ -174,6 +174,7 @@ EXPECTED_FUNCTIONS = [
     "F_VECTOR_AGGREGATE_MAX",
     "F_VECTOR_AGGREGATE_SUM",
     "F_VECTOR_AGGREGATE_AVG",
+    "F_VECTOR_AGGREGATE_SIMPLE_AVERAGE",
 ]
 
 EXPECTED_TABLES = [
@@ -335,6 +336,11 @@ def test_schema_initializer__sql_objects(
         {
             "filename": "F_VECTOR_AGGREGATE_MAX.sql",
             "identifier": "F_VECTOR_AGGREGATE_MAX",
+            "type": "function",
+        },
+        {
+            "filename": "F_VECTOR_AGGREGATE_SIMPLE_AVERAGE.sql",
+            "identifier": "F_VECTOR_AGGREGATE_SIMPLE_AVERAGE",
             "type": "function",
         },
         {
@@ -642,7 +648,7 @@ async def test_execute_query_no_data(snowflake_connector, snowflake_session_dict
         yield
 
     # empty dataframe, no batch data from fetch_arrow_batches
-    cursor.description = True
+    cursor.description = [True]
     session = SnowflakeSession(**snowflake_session_dict)
     cursor.fetch_arrow_batches.side_effect = mock_fetch_arrow_batches_empty
     cursor.get_result_batches.return_value = [Mock(to_arrow=lambda: pa.Table.from_pandas(empty_df))]
@@ -653,7 +659,7 @@ async def test_execute_query_no_data(snowflake_connector, snowflake_session_dict
     def mock_fetch_arrow_batches():
         yield pa.Table.from_pandas(empty_df)
 
-    cursor.description = True
+    cursor.description = [True]
     cursor.fetch_arrow_batches.side_effect = mock_fetch_arrow_batches
     result = await session.execute_query(query)
     assert_frame_equal(result, empty_df)

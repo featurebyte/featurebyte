@@ -1,10 +1,10 @@
-CREATE OR REPLACE FUNCTION VECTOR_AGGREGATE_AVG(vector ARRAY, vector_count INTEGER)
+CREATE OR REPLACE FUNCTION VECTOR_AGGREGATE_SIMPLE_AVERAGE(vector ARRAY)
     RETURNS TABLE (vector_agg_result ARRAY)
     LANGUAGE python
     RUNTIME_VERSION=3.8
-    HANDLER='VectorAggregateAvg'
+    HANDLER='VectorAggregateSimpleAvg'
 as $$
-class VectorAggregateAvg:
+class VectorAggregateSimpleAvg:
     def __init__(self):
       self._sum_array = []
       self._count = 0.0
@@ -15,8 +15,8 @@ class VectorAggregateAvg:
         avg_array.append(self._sum_array[i] / self._count)
       return [(avg_array,)]
 
-    def process(self, vector, vector_count):
-      self._count += vector_count
+    def process(self, vector):
+      self._count += 1
       if not self._sum_array:
         self._sum_array = vector
         return

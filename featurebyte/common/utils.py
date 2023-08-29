@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Any, Iterator, List, Optional, Union
 
+import ast
 import functools
 from datetime import datetime
 from decimal import Decimal
@@ -18,6 +19,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from alive_progress import alive_bar
 from dateutil import parser
+from pandas.core.dtypes.common import is_string_dtype
 from requests import Response
 
 from featurebyte.common.env_util import get_alive_bar_additional_params
@@ -137,7 +139,31 @@ def dataframe_from_arrow_stream(buffer: Any) -> pd.DataFrame:
     return reader.read_all().to_pandas()
 
 
-def pa_table_to_record_batches(table: pa.Table) -> Any:
+def _update_batches_for_types(
+    batches: List[pa.RecordBatch], col_name_to_db_var_type: dict[str, DBVarType]
+) -> List[pa.RecordBatch]:
+    # Currently, we only need to perform updates if we have an ARRAY type.
+    if DBVarType.ARRAY not in col_name_to_db_var_type.values():
+        return batches
+
+    output_list = []
+    for batch in batches:
+        curr_df = batch.to_pandas()
+        for col_name, db_var_type in col_name_to_db_var_type.items():
+            if DBVarType.ARRAY == db_var_type:
+                # Check if column is of string dtype
+                if is_string_dtype(curr_df[col_name]):
+                    # Apply a transformation to the column if the type is an array of strings, to convert them to list
+                    # type.
+                    curr_df[col_name] = curr_df[col_name].apply(ast.literal_eval)
+        output_list.append(pa.RecordBatch.from_pandas(curr_df))
+
+    return output_list
+
+
+def pa_table_to_record_batches(
+    table: pa.Table, col_name_to_db_var_type: Optional[dict[str, DBVarType]] = None
+) -> List[pa.RecordBatch]:
     """
     Convert pyarrow table to list of RecordBatch object, with special handling
     include schema in output for empty table
@@ -146,6 +172,8 @@ def pa_table_to_record_batches(table: pa.Table) -> Any:
     ----------
     table: pa.Table
         PyArrow Table object
+    col_name_to_db_var_type: Optional[dict[str, DBVarType]]
+        Dict mapping column name to DBVarType
 
     Returns
     -------
@@ -153,7 +181,11 @@ def pa_table_to_record_batches(table: pa.Table) -> Any:
         List of RecordBatch objects
     """
     if table.shape[0]:
-        return table.to_batches()
+        # No mapping means we don't have to perform any updates.
+        if not col_name_to_db_var_type:
+            return table.to_batches()  # type: ignore[no-any-return]
+
+        return _update_batches_for_types(table.to_batches(), col_name_to_db_var_type)
 
     # convert to pandas in order to create empty record batch with schema
     # there is no way to get empty record batch from pyarrow table directly

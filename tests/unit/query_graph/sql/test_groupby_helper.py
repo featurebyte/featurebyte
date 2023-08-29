@@ -4,7 +4,7 @@ Test groupby helper
 import textwrap
 
 import pytest
-from sqlglot import select
+from sqlglot import parse_one, select
 
 from featurebyte import AggFunc, SourceType
 from featurebyte.enum import DBVarType, SpecialColumnName
@@ -53,7 +53,7 @@ def common_params_fixture():
     [
         (AggFunc.SUM, "VECTOR_AGGREGATE_SUM", False),
         (AggFunc.MAX, "VECTOR_AGGREGATE_MAX", False),
-        (AggFunc.AVG, "VECTOR_AGGREGATE_AVG", False),
+        (AggFunc.AVG, "VECTOR_AGGREGATE_SIMPLE_AVERAGE", False),
         (AggFunc.MIN, "n/a", True),
     ],
 )
@@ -100,7 +100,8 @@ def test_get_vector_agg_column_snowflake(
             ) AS INITIAL_DATA, TABLE({expected_table_func}(parent) OVER (PARTITION BY INITIAL_DATA."serving_name")) AS "AGG_0"
         """
     ).strip()
-    assert vector_agg_col.aggr_expr.sql(pretty=True) == expected
+    parsed_expression = parse_one(expected)
+    assert vector_agg_col.aggr_expr.sql(pretty=True) == parsed_expression.sql(pretty=True)
 
 
 def _maybe_wrap_in_variant(source_type: SourceType, expr_str: str) -> str:
