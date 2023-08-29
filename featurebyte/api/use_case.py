@@ -102,12 +102,13 @@ class UseCase(SavableApiObject, DeletableApiObject):
 
         Examples
         --------
-        >>> use_case = fb.UseCase.create(
+        >>> fb.UseCase.create(  # doctest: +SKIP
         ...     name="use_case_1",
         ...     context=context,
         ...     target=target,
         ...     description="use case description."
         ... )
+        >>> use_case_1 = catalog.get_use_case("use_case_1")  # doctest: +SKIP
         """
         use_case = UseCase(name=name, target=target, context=context, description=description)
         use_case.save()
