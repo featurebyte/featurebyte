@@ -129,6 +129,17 @@ def test_register_profile(noop_check_sdk_versions, noop_log_env_summary, config)
             profile_name="test2",
             api_url="https://test.featurebyte.com/api/v1",
         )
+
+        # Update existing profile with different details
+        fb.register_profile(
+            profile_name="test2",
+            api_url="https://test2.featurebyte.com/api/v1",
+        )
+        _assert_profile_with_details(
+            profile_name="test2",
+            api_url="https://test2.featurebyte.com/api/v1",
+        )
+
     finally:
         # Reset back to original profile
         config.use_profile(original_profile_name)

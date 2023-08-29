@@ -1,5 +1,5 @@
 """Python Library for FeatureOps"""
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 import os
 import shutil
@@ -172,8 +172,8 @@ def use_profile(profile: str) -> None:
 
 def register_profile(profile_name: str, api_url: str, api_token: Optional[str] = None) -> None:
     """
-    Register a profile to the local configuration file. This profile can be used to connect to FeatureByte service.
-
+    Register a profile for connecting to a FeatureByte service in the configuration file.
+    If the profile already exists, it will be updated.
 
     Parameters
     ----------
@@ -201,12 +201,10 @@ def register_profile(profile_name: str, api_url: str, api_token: Optional[str] =
     # Update API token in existing profile if it's there
     for profile in profiles:
         if profile["name"] == profile_name:
-            if "api_token" in profile:
-                updated_profile = profile["api_token"] != api_token
-            else:
-                updated_profile = True
-            profile["api_token"] = api_token
-            profile["api_url"] = api_url
+            updated_profile = profile["api_url"] != api_url or profile.get("api_token") != api_token
+            if updated_profile:
+                profile["api_url"] = api_url
+                profile["api_token"] = api_token
             break
     # Add tutorial profile if it's not already there
     else:

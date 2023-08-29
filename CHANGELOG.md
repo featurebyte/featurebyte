@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.4.4 (2023-09-29)
+
+### 🐛 Bug Fixes
+
++ `api` Fix logic for determining timezone offset column in datetime accessor
++ `service` Fix SDK code generation for conditional assignment when the assign value is a series
++ `service` Fix invalid identifier error for complex features with both item and window aggregates
+
+### 💡 Enhancements
+
++ `profile` Allow creating of profile directly with fb.register_profile(name, url, token)
+
+
 ## v0.4.3 (2023-08-21)
 
 ### 🐛 Bug Fixes
