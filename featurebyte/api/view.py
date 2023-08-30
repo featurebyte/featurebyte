@@ -23,6 +23,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 
 import pandas as pd
+from bson import ObjectId
 from pydantic import PrivateAttr
 from typeguard import typechecked
 
@@ -1645,6 +1646,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         sample_rows: Optional[int] = None,
         columns: Optional[list[str]] = None,
         columns_rename_mapping: Optional[dict[str, str]] = None,
+        context_id: Optional[ObjectId] = None,
     ) -> ObservationTable:
         """
         Creates an ObservationTable from the View.
@@ -1667,6 +1669,8 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         columns_rename_mapping: Optional[dict[str, str]]
             Rename columns in the view using this mapping from old column names to new column names
             when creating the observation table. If None, no columns are renamed.
+        context_id: Optional[ObjectId]
+            context_id for the observation table.
 
         Returns
         -------
@@ -1680,6 +1684,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         ...   sample_rows=10000,
         ...   columns=["timestamp", "<entity_serving_name>"],
         ...   columns_rename_mapping={"timestamp": "POINT_IN_TIME"},
+        ...   context_id=context_id,
         ... )
         """
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
@@ -1693,6 +1698,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
                 columns_rename_mapping=columns_rename_mapping,
             ),
             sample_rows=sample_rows,
+            context_id=context_id,
         )
         observation_table_doc = ObservationTable.post_async_task(
             route="/observation_table", payload=payload.json_dict()

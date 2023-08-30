@@ -25,6 +25,7 @@ from featurebyte import (
 )
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.catalog import Catalog
+from featurebyte.api.context import Context
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_group import FeatureGroup
@@ -1112,6 +1113,17 @@ def feature_group_fixture(
         assert feature.table_ids == [snowflake_event_table_with_entity.id]
         assert feature.entity_ids == [cust_id_entity.id]
     yield feature_group
+
+
+@pytest.fixture(name="context")
+def context_fixture(cust_id_entity):
+    """
+    Float target fixture
+    """
+    context = Context(name="context", entity_ids=[cust_id_entity.id])
+    if not context.saved:
+        context.save()
+    return context
 
 
 @pytest.fixture(name="float_target")

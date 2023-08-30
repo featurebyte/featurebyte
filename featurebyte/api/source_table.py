@@ -965,6 +965,7 @@ class SourceTable(AbstractTableData):
         sample_rows: Optional[int] = None,
         columns: Optional[list[str]] = None,
         columns_rename_mapping: Optional[dict[str, str]] = None,
+        context_id: Optional[ObjectId] = None,
     ) -> ObservationTable:
         """
         Creates an ObservationTable from the SourceTable.
@@ -987,6 +988,8 @@ class SourceTable(AbstractTableData):
         columns_rename_mapping: Optional[dict[str, str]]
             Rename columns in the source table using this mapping from old column names to new
             column names when creating the observation table. If None, no columns are renamed.
+        context_id: Optional[ObjectId]
+            context_id for the observation table.
 
         Returns
         -------
@@ -1008,6 +1011,7 @@ class SourceTable(AbstractTableData):
         ...     timestamp_column_name: "POINT_IN_TIME",
         ...     entity_column_name: <entity_serving_name>,
         ...   },
+        ...   context_id=context_id,
         ... )
         """
         # pylint: disable=import-outside-toplevel
@@ -1022,6 +1026,7 @@ class SourceTable(AbstractTableData):
                 columns_rename_mapping=columns_rename_mapping,
             ),
             sample_rows=sample_rows,
+            context_id=context_id,
         )
         observation_table_doc = ObservationTable.post_async_task(
             route="/observation_table", payload=payload.json_dict()

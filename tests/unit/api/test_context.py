@@ -6,7 +6,7 @@ import pytest
 from featurebyte import Context
 
 
-@pytest.fixture(name="context")
+@pytest.fixture(name="context_1")
 def context_fixture(catalog, cust_id_entity):
     """
     UseCase fixture
@@ -50,11 +50,12 @@ def test_create_context(catalog, cust_id_entity):
     assert retrieved_context2.entities == [cust_id_entity]
 
 
-def test_list_contexts(catalog, context, cust_id_entity):
+def test_list_contexts(catalog, context_1, cust_id_entity):
     """
     Test Context.list method
     """
     _ = catalog
+    _ = context_1
 
     context_df = Context.list()
     assert len(context_df) == 1

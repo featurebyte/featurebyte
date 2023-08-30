@@ -22,7 +22,7 @@ from featurebyte.routes.common.schema import (
 from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.historical_feature_table import HistoricalFeatureTableList
 from featurebyte.schema.observation_table import ObservationTableList
-from featurebyte.schema.use_case import UseCaseCreate, UseCaseRead, UseCaseReadList, UseCaseUpdate
+from featurebyte.schema.use_case import UseCaseCreate, UseCaseList, UseCaseUpdate
 
 router = APIRouter(prefix="/use_case")
 
@@ -42,13 +42,13 @@ async def create_use_case(
     return use_case
 
 
-@router.get("/{use_case_id}", response_model=UseCaseRead)
-async def get_use_case(request: Request, use_case_id: PydanticObjectId) -> UseCaseRead:
+@router.get("/{use_case_id}", response_model=UseCaseModel)
+async def get_use_case(request: Request, use_case_id: PydanticObjectId) -> UseCaseModel:
     """
     Get Use Case
     """
     controller = request.state.app_container.use_case_controller
-    use_case: UseCaseRead = await controller.get_use_case(use_case_id=use_case_id)
+    use_case: UseCaseModel = await controller.get(document_id=use_case_id)
     return use_case
 
 
@@ -121,7 +121,7 @@ async def delete_use_case(request: Request, use_case_id: PydanticObjectId) -> No
     await controller.delete_use_case(document_id=use_case_id)
 
 
-@router.get("", response_model=UseCaseReadList)
+@router.get("", response_model=UseCaseList)
 async def list_use_cases(
     request: Request,
     page: int = PageQuery,
@@ -130,12 +130,12 @@ async def list_use_cases(
     sort_dir: Optional[str] = SortDirQuery,
     search: Optional[str] = SearchQuery,
     name: Optional[str] = NameQuery,
-) -> UseCaseReadList:
+) -> UseCaseList:
     """
     List Use Case
     """
     controller = request.state.app_container.use_case_controller
-    doc_list: UseCaseReadList = await controller.list_use_cases(
+    doc_list: UseCaseList = await controller.list(
         page=page,
         page_size=page_size,
         sort_by=sort_by,

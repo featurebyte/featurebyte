@@ -7,7 +7,7 @@ from featurebyte import UseCase
 
 
 @pytest.fixture(name="use_case")
-def use_case_fixture(catalog, float_target):
+def use_case_fixture(catalog, float_target, context):
     """
     UseCase fixture
     """
@@ -16,7 +16,8 @@ def use_case_fixture(catalog, float_target):
 
     use_case = UseCase(
         name="test_use_case",
-        target=float_target,
+        target_id=float_target.id,
+        context_id=context.id,
         description="test_use_case description",
     )
     previous_id = use_case.id
@@ -27,23 +28,33 @@ def use_case_fixture(catalog, float_target):
     yield use_case
 
 
-def test_create_use_case(catalog, float_target):
+def test_create_use_case(catalog, float_target, context):
     """
     Test UseCase.create method
     """
     _ = catalog
 
-    float_target.save()
+    if not context.saved:
+        context.save()
+
+    if not float_target.saved:
+        float_target.save()
 
     use_case = UseCase.create(
-        name="test_use_case", target=float_target, description="test_use_case description"
+        name="test_use_case",
+        target=float_target,
+        context=context,
+        description="test_use_case description",
     )
 
     # Test get use case and verify attributes
     retrieved_use_case = UseCase.get_by_id(use_case.id)
     assert retrieved_use_case.name == "test_use_case"
-    assert retrieved_use_case.target.id == float_target.id
+    assert retrieved_use_case.target_id == float_target.id
+    assert retrieved_use_case.context_id == context.id
     assert retrieved_use_case.description == "test_use_case description"
+    assert retrieved_use_case.target.name == float_target.name
+    assert retrieved_use_case.context.name == context.name
 
     # Test list use cases
     use_case_df = UseCase.list()
