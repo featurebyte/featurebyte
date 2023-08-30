@@ -19,7 +19,7 @@ SNOWFLAKE_DOUBLE_VECTOR_AGG_NO_VALUE_BY_QUERY = textwrap.dedent(
             SELECT
               REQ."serving_name" AS "serving_name",
               REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
-              TABLE."parent" AS "parent"
+              TABLE."parent" AS parent
             FROM REQ
           ) AS INITIAL_DATA, TABLE(
             VECTOR_AGGREGATE_MAX(parent) OVER (PARTITION BY INITIAL_DATA."serving_name", INITIAL_DATA."POINT_IN_TIME")
@@ -34,7 +34,7 @@ SNOWFLAKE_DOUBLE_VECTOR_AGG_NO_VALUE_BY_QUERY = textwrap.dedent(
             SELECT
               REQ."serving_name" AS "serving_name",
               REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
-              TABLE."parent" AS "parent"
+              TABLE."parent" AS parent
             FROM REQ
           ) AS INITIAL_DATA, TABLE(
             VECTOR_AGGREGATE_MAX(parent) OVER (PARTITION BY INITIAL_DATA."serving_name", INITIAL_DATA."POINT_IN_TIME")
