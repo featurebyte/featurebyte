@@ -231,7 +231,9 @@ def to_request_func(response_dict: dict[str, Any], page: int) -> bool:
     return bool(response_dict["total"] > (page * response_dict["page_size"]))
 
 
-def get_api_object_by_id(route: str, id_value: ObjectId) -> dict[str, Any]:
+def get_api_object_by_id(
+    route: str, id_value: ObjectId, resource_url: Optional[str] = None
+) -> dict[str, Any]:
     """
     Retrieve api object by given route & id
 
@@ -241,6 +243,8 @@ def get_api_object_by_id(route: str, id_value: ObjectId) -> dict[str, Any]:
         Route to retrieve object
     id_value: ObjectId
         Id of object to retrieve
+    resource_url: Optional[str]
+        extrac resource url for the object
 
     Returns
     -------
@@ -253,7 +257,12 @@ def get_api_object_by_id(route: str, id_value: ObjectId) -> dict[str, Any]:
         When failed to retrieve from list route
     """
     client = Configurations().get_client()
-    response = client.get(url=f"{route}/{id_value}")
+
+    url = f"{route}/{id_value}"
+    if resource_url:
+        url = url + "/" + resource_url
+
+    response = client.get(url=url)
     if response.status_code == HTTPStatus.OK:
         object_dict = dict(response.json())
         return object_dict

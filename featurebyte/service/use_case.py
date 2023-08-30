@@ -1,12 +1,11 @@
 """
 UseCaseService class
 """
-from typing import Any, List, Optional, cast
+from typing import Any, Optional, cast
 
 from bson import ObjectId
 
 from featurebyte.exception import UseCaseInvalidDataError
-from featurebyte.models.base_feature_or_target_table import BaseFeatureOrTargetTableModel
 from featurebyte.models.observation_table import TargetInput
 from featurebyte.models.use_case import UseCaseModel
 from featurebyte.persistent import Persistent
@@ -153,38 +152,3 @@ class UseCaseService(BaseDocumentService[UseCaseModel, UseCaseCreate, UseCaseUpd
             raise UseCaseInvalidDataError(
                 "Inconsistent target_id between use case and observation table"
             )
-
-        # check context_id (entity_ids)
-        if not new_observation.context_id:
-            raise UseCaseInvalidDataError("observation table context_id is empty")
-
-        if new_observation.context_id and new_observation.context_id != use_case.context_id:
-            raise UseCaseInvalidDataError(
-                "Inconsistent context_id between use case and observation table"
-            )
-
-    async def list_feature_tables(
-        self,
-        use_case_id: ObjectId,
-    ) -> List[BaseFeatureOrTargetTableModel]:
-        """
-        list feature tables associated with the Use Case
-
-        Parameters
-        ----------
-        use_case_id: ObjectId
-            use case id
-
-        Returns
-        -------
-        List[BaseFeatureOrTargetTableModel]
-        """
-        use_case = await self.get_document(document_id=use_case_id)
-
-        feature_tables = []
-        async for feature_table in self.historical_feature_table_service.list_documents_iterator(
-            query_filter={"observation_table_id": {"$in": use_case.observation_table_ids}}
-        ):
-            feature_tables.append(feature_table)
-
-        return cast(List[BaseFeatureOrTargetTableModel], feature_tables)

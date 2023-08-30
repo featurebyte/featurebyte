@@ -209,6 +209,9 @@ def setup() -> None:
     )
     target_latest_invoice_timestamp.save(conflict_resolution="retrieve")
 
+    # UseCase setup
+    fb.UseCase.create(name="use_case", target=target_latest_invoice_timestamp)
+
 
 if __name__ == "__main__":
     setup()
