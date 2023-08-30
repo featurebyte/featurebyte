@@ -11,7 +11,6 @@ from bson import ObjectId
 from pydantic import Field
 from typeguard import typechecked
 
-from featurebyte.api.context import Context
 from featurebyte.api.api_handler.base import ListHandler
 from featurebyte.api.api_handler.catalog import CatalogListHandler
 from featurebyte.api.api_object_util import NameAttributeUpdatableMixin
@@ -19,6 +18,7 @@ from featurebyte.api.batch_feature_table import BatchFeatureTable
 from featurebyte.api.batch_request_table import BatchRequestTable
 from featurebyte.api.catalog_decorator import update_and_reset_catalog
 from featurebyte.api.catalog_get_by_id_mixin import CatalogGetByIdMixin
+from featurebyte.api.context import Context
 from featurebyte.api.data_source import DataSource
 from featurebyte.api.deployment import Deployment
 from featurebyte.api.entity import Entity

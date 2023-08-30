@@ -3,15 +3,14 @@ UseCase module
 """
 from __future__ import annotations
 
-from typing import Any, List
-
 from typeguard import typechecked
 
+from featurebyte.api.entity import Entity
 from featurebyte.api.savable_api_object import SavableApiObject
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.context import ContextModel
-from featurebyte.schema.context import ContextCreate, ContextUpdate
+from featurebyte.schema.context import ContextUpdate
 
 
 class Context(SavableApiObject):
@@ -35,25 +34,36 @@ class Context(SavableApiObject):
     ]
 
     # pydantic instance variable (public)
-    entity_ids: List[PydanticObjectId]
+    entity_ids: list[PydanticObjectId]
 
-    def _get_create_payload(self) -> dict[str, Any]:
+    @property
+    def entities(self) -> list[Entity]:
         """
-        Get the payload for creating a new Context.
+        Returns the history of the entity name of the Entity object.
 
         Returns
         -------
-        dict[str, Any]
+        list[Entity]
+            list of Entity objects.
+
+        Examples
+        --------
+        Get the enitity objects of the Context object:
+
+        >>> context_1 = catalog.get_context("context_1")  # doctest: +SKIP
+        >>> context_1.entities  # doctest: +SKIP
         """
-        data = ContextCreate(**self.dict(by_alias=True))
-        return data.json_dict()
+        entities = []
+        for entity_id in self.entity_ids:
+            entities.append(Entity.get_by_id(entity_id))
+        return entities
 
     @classmethod
     @typechecked
     def create(
         cls,
         name: str,
-        entity_ids: List[PydanticObjectId],
+        entity_names: list[str],
     ) -> Context:
         """
         Create a new Context.
@@ -62,8 +72,8 @@ class Context(SavableApiObject):
         ----------
         name: str
             Name of the UseCase.
-        entity_ids: List[PydanticObjectId]
-            List of entity ids.
+        entity_names: List[str]
+            List of entity names.
 
         Returns
         -------
@@ -74,10 +84,14 @@ class Context(SavableApiObject):
         --------
         >>> fb.Context.create(  # doctest: +SKIP
         ...     name="context_1",
-        ...     entity_ids=entity_ids,
+        ...     entity_names=entity_names,
         ... )
         >>> context_1 = catalog.get_context("context_1")  # doctest: +SKIP
         """
+        entity_ids = []
+        for entity_name in entity_names:
+            entity_ids.append(Entity.get(entity_name).id)
+
         context = Context(name=name, entity_ids=entity_ids)
         context.save()
         return context

@@ -211,6 +211,7 @@ class Entity(NameAttributeUpdatableMixin, SavableApiObject):
         return self._get_audit_history(field_name="name")
 
     @classmethod
+    @typechecked
     def create(cls, name: str, serving_names: List[str]) -> Entity:
         """
         Create a new entity.
@@ -236,6 +237,7 @@ class Entity(NameAttributeUpdatableMixin, SavableApiObject):
         return entity
 
     @classmethod
+    @typechecked
     def get_or_create(
         cls,
         name: str,
