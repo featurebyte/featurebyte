@@ -95,7 +95,7 @@ def test_get_vector_agg_column_snowflake(
             FROM (
               SELECT
                 REQ."serving_name" AS "serving_name",
-                TABLE."parent" AS "parent"
+                TABLE."parent" AS parent
               FROM REQ
             ) AS INITIAL_DATA, TABLE({expected_table_func}(parent) OVER (PARTITION BY INITIAL_DATA."serving_name")) AS "AGG_0"
         """

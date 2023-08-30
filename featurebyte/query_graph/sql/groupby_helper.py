@@ -178,7 +178,7 @@ def get_vector_agg_column_snowflake(
     for key in groupby_keys:
         updated_groupby_keys.append(alias_(key.expr, alias=key.name, quoted=True))
     updated_groupby_keys.append(
-        alias_(groupby_column.parent_expr, alias=groupby_column_parent_expr.name, quoted=True)
+        alias_(groupby_column.parent_expr, alias=groupby_column_parent_expr.name)
     )
 
     updated_input_expr_with_select_keys = input_expr.select(*updated_groupby_keys)
