@@ -152,3 +152,12 @@ class UseCaseService(BaseDocumentService[UseCaseModel, UseCaseCreate, UseCaseUpd
             raise UseCaseInvalidDataError(
                 "Inconsistent target_id between use case and observation table"
             )
+
+        # check context_id (entity_ids)
+        if not new_observation.context_id:
+            raise UseCaseInvalidDataError("observation table context_id is empty")
+
+        if new_observation.context_id and new_observation.context_id != use_case.context_id:
+            raise UseCaseInvalidDataError(
+                "Inconsistent context_id between use case and observation table"
+            )

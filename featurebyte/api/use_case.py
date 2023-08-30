@@ -127,6 +127,7 @@ class UseCase(SavableApiObject, DeletableApiObject):
         use_case.save()
         return use_case
 
+    @typechecked
     def add_observation_table(self, new_observation_table: ObservationTable) -> None:
         """
         Add observation table for the Use Case.
@@ -146,6 +147,7 @@ class UseCase(SavableApiObject, DeletableApiObject):
             allow_update_local=False,
         )
 
+    @typechecked
     def update_default_preview_table(self, default_preview_table: ObservationTable) -> None:
         """
         Update default preview table for the Use Case.
@@ -165,6 +167,7 @@ class UseCase(SavableApiObject, DeletableApiObject):
             allow_update_local=False,
         )
 
+    @typechecked
     def update_default_eda_table(self, default_eda_table: ObservationTable) -> None:
         """
         Update default eda table for the Use Case.
