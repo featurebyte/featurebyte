@@ -14,6 +14,7 @@ from featurebyte.api.batch_feature_table import BatchFeatureTable
 from featurebyte.api.batch_request_table import BatchRequestTable
 from featurebyte.api.catalog import Catalog
 from featurebyte.api.change_view import ChangeView
+from featurebyte.api.context import Context
 from featurebyte.api.credential import Credential
 from featurebyte.api.data_source import DataSource
 from featurebyte.api.deployment import Deployment
@@ -465,6 +466,7 @@ __all__ = [
     "Target",
     "TargetNamespace",
     "UseCase",
+    "Context",
     # credentials
     "AzureBlobStorageCredential",
     "AccessTokenCredential",

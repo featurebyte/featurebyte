@@ -28,6 +28,7 @@ def test_all_init_items_are_exposed():
         "playground",  # Utility method - should add.
         "UDF",  # TODO: add to docs.
         "UseCase",  # TODO: add to docs.
+        "Context",  # TODO: add to docs.
     }
     for item in all_exposed_items:
         if item in items and item in excluded_items:
