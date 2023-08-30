@@ -24,6 +24,7 @@ from featurebyte.api.base_table import TableApiObject, TableListMixin
 from featurebyte.api.batch_feature_table import BatchFeatureTable
 from featurebyte.api.batch_request_table import BatchRequestTable
 from featurebyte.api.catalog import Catalog, update_and_reset_catalog
+from featurebyte.api.context import Context
 from featurebyte.api.credential import Credential
 from featurebyte.api.deployment import Deployment
 from featurebyte.api.dimension_table import DimensionTable
@@ -101,6 +102,7 @@ def catalog_list_methods_to_test_list():
         MethodMetadata("list_targets", Target, "list"),
         MethodMetadata("list_user_defined_functions", UserDefinedFunction, "list"),
         MethodMetadata("list_use_cases", UseCase, "list"),
+        MethodMetadata("list_contexts", Context, "list"),
     ]
 
 
@@ -123,6 +125,7 @@ def catalog_get_methods_to_test_list():
         MethodMetadata("get_target", Target, "get"),
         MethodMetadata("get_user_defined_function", UserDefinedFunction, "get"),
         MethodMetadata("get_use_case", UseCase, "get"),
+        MethodMetadata("get_context", Context, "get"),
     ]
 
 
@@ -155,6 +158,7 @@ def catalog_get_by_id_list():
         MethodMetadata("get_user_defined_function_by_id", UserDefinedFunction, "get_by_id"),
         MethodMetadata("get_target_by_id", Target, "get_by_id"),
         MethodMetadata("get_use_case_by_id", UseCase, "get_by_id"),
+        MethodMetadata("get_context_by_id", Context, "get_by_id"),
     ]
 
 

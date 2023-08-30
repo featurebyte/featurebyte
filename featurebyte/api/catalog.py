@@ -11,6 +11,7 @@ from bson import ObjectId
 from pydantic import Field
 from typeguard import typechecked
 
+from featurebyte.api.context import Context
 from featurebyte.api.api_handler.base import ListHandler
 from featurebyte.api.api_handler.catalog import CatalogListHandler
 from featurebyte.api.api_object_util import NameAttributeUpdatableMixin
@@ -571,6 +572,28 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return UseCase.list(include_id=include_id)
 
     @update_and_reset_catalog
+    def list_contexts(self, include_id: Optional[bool] = True) -> pd.DataFrame:
+        """
+        Returns a DataFrame that contains various attributes of the registered contexts in the catalog
+
+        Parameters
+        ----------
+        include_id: Optional[bool]
+            Whether to include id in the list.
+
+        Returns
+        -------
+        pd.DataFrame
+            Dataframe of contexts
+
+        Examples
+        --------
+        >>> contexts = catalog.list_contexts()
+        """
+
+        return Context.list(include_id=include_id)
+
+    @update_and_reset_catalog
     def list_relationships(
         self, include_id: Optional[bool] = True, relationship_type: Optional[Literal[tuple(RelationshipType)]] = None  # type: ignore
     ) -> pd.DataFrame:
@@ -1042,9 +1065,34 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
 
         Examples
         --------
+        Get a saved UseCase.
+
         >>> use_case = catalog.get_use_case("use_case_name")  # doctest: +SKIP
         """
         return UseCase.get(name=name)
+
+    @update_and_reset_catalog
+    def get_context(self, name: str) -> Any:
+        """
+        Gets a Context object from the catalog based on its name.
+
+        Parameters
+        ----------
+        name: str
+            Context name.
+
+        Returns
+        -------
+        Any
+            Retrieved target.
+
+        Examples
+        --------
+        Get a saved Context.
+
+        >>> context = catalog.get_target("context_name")  # doctest: +SKIP
+        """
+        return Context.get(name=name)
 
     @update_and_reset_catalog
     def get_relationship(self, name: str) -> Relationship:

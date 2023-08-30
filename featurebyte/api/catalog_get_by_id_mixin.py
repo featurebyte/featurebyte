@@ -10,6 +10,7 @@ from bson import ObjectId
 from featurebyte.api.batch_feature_table import BatchFeatureTable
 from featurebyte.api.batch_request_table import BatchRequestTable
 from featurebyte.api.catalog_decorator import update_and_reset_catalog
+from featurebyte.api.context import Context
 from featurebyte.api.data_source import DataSource
 from featurebyte.api.deployment import Deployment
 from featurebyte.api.entity import Entity
@@ -505,8 +506,33 @@ class CatalogGetByIdMixin:
 
         Examples
         --------
-        Get a saved target .
+        Get a saved UseCase .
 
         >>> target = catalog.get_use_case_by_id(ObjectId())  # doctest: +SKIP
         """
         return UseCase.get_by_id(id=id)
+
+    @update_and_reset_catalog
+    def get_context_by_id(
+        self, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
+    ) -> Context:
+        """
+        Get context by id.
+
+        Parameters
+        ----------
+        id: ObjectId
+            Context id.
+
+        Returns
+        -------
+        Context
+            Context object.
+
+        Examples
+        --------
+        Get a saved context.
+
+        >>> context = catalog.get_context_by_id(ObjectId())  # doctest: +SKIP
+        """
+        return Context.get_by_id(id=id)
