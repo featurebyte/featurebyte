@@ -1,7 +1,7 @@
 """
-UseCase module
+Context module
 """
-from __future__ import annotations
+from typing import List
 
 from typeguard import typechecked
 
@@ -34,10 +34,10 @@ class Context(SavableApiObject):
     ]
 
     # pydantic instance variable (public)
-    entity_ids: list[PydanticObjectId]
+    entity_ids: List[PydanticObjectId]
 
     @property
-    def entities(self) -> list[Entity]:
+    def entities(self) -> List[Entity]:
         """
         Returns the history of the entity name of the Entity object.
 
@@ -63,8 +63,8 @@ class Context(SavableApiObject):
     def create(
         cls,
         name: str,
-        entity_names: list[str],
-    ) -> Context:
+        entity_names: List[str],
+    ) -> "Context":
         """
         Create a new Context.
 
