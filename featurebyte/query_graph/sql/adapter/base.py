@@ -646,18 +646,21 @@ class BaseAdapter(ABC):  # pylint: disable=too-many-public-methods
         vector_aggregate_columns: Optional[List[VectorAggColumn]] = None,
     ) -> Select:
         """
-        Construct query to group by
+        Construct query to group by.
 
         Parameters
         ----------
         input_expr: Select
-            Input Select expression
+            Input Select expression. This will typically contain the base table data that we are querying from, and
+            will be performing the groupby over.
         select_keys: List[Expression]
-            List of select keys
+            List of select keys. These are keys that typically correspond to the group by keys, as we will often
+            perform joins with these keys at a later point with other tables.
         agg_exprs: List[Expression]
-            List of aggregation expressions
+            List of aggregation expressions. These are typically aggregation functions that have been applied on a
+            column already, and potentially with an alias. An input might be something like ["sum(col1) as sum_col_1"].
         keys: List[Expression]
-            List of keys
+            List of keys. These keys refer to the columns that we want to group by.
         vector_aggregate_columns: Optional[List[Expression]]
             List of vector aggregate expressions. This should only be used if special handling is required to join
             vector aggregate functions, and that they're not usable as a normal function. This param is a no-op
