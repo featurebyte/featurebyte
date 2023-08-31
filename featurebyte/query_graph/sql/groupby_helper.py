@@ -23,9 +23,19 @@ class GroupbyColumn:
     """
 
     agg_func: AggFunc
+    # parent_expr refers to the expression that is used to generate the column. For example, `sum(col1)`.
+    # This is not provided for certain aggregations like count.
     parent_expr: Optional[Expression]
+    # parent_dtype is the dtype of the parent column.
     parent_dtype: Optional[DBVarType]
+    # result_name is the aliased name of the aggregation result. For example if we want `sum(col1) as "sum_col_1",
+    # the result_name is "sum_col_1".
     result_name: str
+    # parent_cols refers to the columns used in the parent_expr. As an example, for the aggregation `sum(col1)`, the
+    # parent_cols here will be ['col1'].
+    parent_cols: List[Expression]
+    # Use this to skip quoting result name when aliasing.
+    quote_result_name: bool = True
 
 
 @dataclass
@@ -170,10 +180,10 @@ def get_vector_agg_column_snowflake(
         alias=groupby_column.result_name,
         quoted=True,
     )
-    groupby_column_parent_expr = groupby_column.parent_expr
-    assert groupby_column_parent_expr is not None
+    parent_cols = groupby_column.parent_cols
+    assert len(parent_cols) == 1
     agg_func_expr = expressions.Anonymous(
-        this=_get_vector_sql_func(agg_func), expressions=[groupby_column_parent_expr.name]
+        this=_get_vector_sql_func(agg_func), expressions=[parent_cols[0].name]
     )
     window_expr = expressions.Window(this=agg_func_expr, partition_by=partition_by_keys)
     table_expr = expressions.Anonymous(this="TABLE", expressions=[window_expr])
@@ -182,9 +192,7 @@ def get_vector_agg_column_snowflake(
     updated_groupby_keys = []
     for key in groupby_keys:
         updated_groupby_keys.append(alias_(key.expr, alias=key.name, quoted=True))
-    updated_groupby_keys.append(
-        alias_(groupby_column.parent_expr, alias=groupby_column_parent_expr.name)
-    )
+    updated_groupby_keys.append(alias_(parent_cols[0], alias=parent_cols[0].name))
 
     updated_input_expr_with_select_keys = input_expr.select(*updated_groupby_keys)
     expr = select(
@@ -248,16 +256,43 @@ def _split_agg_and_snowflake_vector_aggregation_columns(
         else:
             non_vector_agg_exprs.append(
                 alias_(
-                    get_aggregation_expression(
-                        agg_func=column.agg_func,
-                        input_column=column.parent_expr,
-                        parent_dtype=column.parent_dtype,
-                    ),
+                    column.parent_expr,
                     alias=column.result_name + ("_inner" if value_by is not None else ""),
-                    quoted=True,
+                    quoted=column.quote_result_name,
                 )
             )
     return non_vector_agg_exprs, vector_agg_cols
+
+
+def update_aggregation_expression_for_columns(
+    groupby_columns: list[GroupbyColumn], adapter_type: SourceType
+) -> list[GroupbyColumn]:
+    """
+    Helper function to update the aggregation expression for the groupby columns. This will update the parent_expr
+    in the GroupbyColumn object to be the aggregation expression (eg. `sum(col1)`.
+
+    Parameters
+    ----------
+    groupby_columns: list[GroupbyColumn]
+        List of groupby columns
+    adapter_type: SourceType
+        Adapter type
+
+    Returns
+    -------
+    list[GroupbyColumn]
+    """
+    output: list[GroupbyColumn] = []
+    for column in groupby_columns:
+        if not (column.parent_dtype is DBVarType.ARRAY and adapter_type == SourceType.SNOWFLAKE):
+            aggregation_expression = get_aggregation_expression(
+                agg_func=column.agg_func,
+                input_column=column.parent_cols[0] if column.parent_cols else None,
+                parent_dtype=column.parent_dtype,
+            )
+            column.parent_expr = aggregation_expression
+        output.append(column)
+    return output
 
 
 def get_groupby_expr(
@@ -288,8 +323,11 @@ def get_groupby_expr(
     -------
     Select
     """
+    updated_groupby_columns = update_aggregation_expression_for_columns(
+        groupby_columns, adapter.source_type
+    )
     agg_exprs, snowflake_vector_agg_cols = _split_agg_and_snowflake_vector_aggregation_columns(
-        input_expr, groupby_keys, groupby_columns, value_by, adapter.source_type
+        input_expr, groupby_keys, updated_groupby_columns, value_by, adapter.source_type
     )
 
     select_keys = [k.get_alias() for k in groupby_keys]
@@ -311,8 +349,8 @@ def get_groupby_expr(
             point_in_time_column=None,
             serving_names=[k.name for k in groupby_keys],
             value_by=value_by.name,
-            agg_result_names=[col.result_name for col in groupby_columns],
-            inner_agg_result_names=[col.result_name + "_inner" for col in groupby_columns],
+            agg_result_names=[col.result_name for col in updated_groupby_columns],
+            inner_agg_result_names=[col.result_name + "_inner" for col in updated_groupby_columns],
             inner_agg_expr=groupby_expr,
         )
 

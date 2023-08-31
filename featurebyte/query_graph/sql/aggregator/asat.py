@@ -158,6 +158,9 @@ class AsAtAggregator(NonTileBasedAggregator[AggregateAsAtSpec]):
                 ),
                 result_name=s.agg_result_name,
                 parent_dtype=s.parent_dtype,
+                parent_cols=[get_qualified_column_identifier(s.parameters.parent, "SCD")]
+                if s.parameters.parent
+                else [],
             )
             for s in specs
         ]

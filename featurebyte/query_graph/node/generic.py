@@ -565,24 +565,25 @@ class ForwardAggregateNode(AggregationOpStructMixin, BaseNode):
         return statements, out_var_name
 
 
+class GroupByNodeParameters(BaseGroupbyParameters):
+    """Parameters"""
+
+    windows: List[Optional[str]]
+    timestamp: InColumnStr
+    blind_spot: int
+    time_modulo_frequency: int
+    frequency: int
+    names: List[OutColumnStr]
+    tile_id: Optional[str]
+    aggregation_id: Optional[str]
+
+
 class GroupByNode(AggregationOpStructMixin, BaseNode):
     """GroupByNode class"""
 
-    class Parameters(BaseGroupbyParameters):
-        """Parameters"""
-
-        windows: List[Optional[str]]
-        timestamp: InColumnStr
-        blind_spot: int
-        time_modulo_frequency: int
-        frequency: int
-        names: List[OutColumnStr]
-        tile_id: Optional[str]
-        aggregation_id: Optional[str]
-
     type: Literal[NodeType.GROUPBY] = Field(NodeType.GROUPBY, const=True)
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
-    parameters: Parameters
+    parameters: GroupByNodeParameters
 
     @property
     def max_input_count(self) -> int:

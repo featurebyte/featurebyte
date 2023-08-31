@@ -65,6 +65,9 @@ class ItemGroupby(TableNode):
                 ),
                 result_name=output_name,
                 parent_dtype=parent_dtype,
+                parent_cols=[quoted_identifier(parameters["parent"])]
+                if parameters["parent"]
+                else [],
             )
         ]
         node = ItemGroupby(
