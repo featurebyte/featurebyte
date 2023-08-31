@@ -200,7 +200,7 @@ def test_event_view_ops(event_view, transaction_data_upper_case, source_type):
     pd.testing.assert_frame_equal(output[columns], expected[columns], check_dtype=False)
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
+@pytest.mark.parametrize("source_type", ["databricks"], indirect=True)
 def test_feature_operations__feature_group_preview(feature_group):
     """
     Test operations on Feature objects

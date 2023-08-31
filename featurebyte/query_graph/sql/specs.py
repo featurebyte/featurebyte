@@ -191,28 +191,26 @@ class TileBasedAggregationSpec(AggregationSpec):
         """
         # pylint: disable=too-many-locals
         assert isinstance(groupby_node, GroupByNode)
-        tile_table_id = groupby_node.parameters.tile_id
+        groupby_node_params = groupby_node.parameters
+        tile_table_id = groupby_node_params.tile_id
         aggregation_id = groupby_node.parameters.aggregation_id
-        params = groupby_node.parameters.dict()
         assert tile_table_id is not None
         assert aggregation_id is not None
 
-        serving_names = params["serving_names"]
         aggregation_specs = []
         parent_dtype = None
-        parent_column_name = params["parent"]
+        parent_column = None
+        parent_column_name = groupby_node_params.parent
         if parent_column_name:
             parent_dtype = get_parent_dtype(parent_column_name, graph, query_node=groupby_node)
             parent_column = InputColumn(name=parent_column_name, dtype=parent_dtype)
-        else:
-            parent_column = None
-        aggregator = get_aggregator(params["agg_func"], adapter=adapter, parent_dtype=parent_dtype)
+        aggregator = get_aggregator(
+            groupby_node_params.agg_func, adapter=adapter, parent_dtype=parent_dtype
+        )
         tile_value_columns = [
-            spec.tile_column_name
-            for spec in aggregator.tile(parent_column, params["aggregation_id"])
+            spec.tile_column_name for spec in aggregator.tile(parent_column, aggregation_id)
         ]
-        for window, feature_name in zip(params["windows"], params["names"]):
-            params = groupby_node.parameters.dict()
+        for window, feature_name in zip(groupby_node_params.windows, groupby_node_params.names):
             if window is not None:
                 window = int(pd.Timedelta(window).total_seconds())
             pruned_graph, pruned_node, dtype = cls._get_aggregation_column_type(
@@ -222,24 +220,24 @@ class TileBasedAggregationSpec(AggregationSpec):
             )
             agg_spec = cls(
                 window=window,
-                frequency=params["frequency"],
-                time_modulo_frequency=params["time_modulo_frequency"],
-                blind_spot=params["blind_spot"],
+                frequency=groupby_node_params.frequency,
+                time_modulo_frequency=groupby_node_params.time_modulo_frequency,
+                blind_spot=groupby_node_params.blind_spot,
                 tile_table_id=tile_table_id,
                 aggregation_id=aggregation_id,
-                keys=params["keys"],
-                serving_names=serving_names,
+                keys=groupby_node_params.keys,
+                serving_names=groupby_node_params.serving_names,
                 serving_names_mapping=serving_names_mapping,
-                value_by=params["value_by"],
+                value_by=groupby_node_params.value_by,
                 merge_expr=aggregator.merge(aggregation_id),
                 feature_name=feature_name,
                 is_order_dependent=aggregator.is_order_dependent,
                 tile_value_columns=tile_value_columns,
-                entity_ids=params["entity_ids"],
+                entity_ids=groupby_node_params.entity_ids,
                 dtype=dtype,
                 pruned_graph=pruned_graph,
                 pruned_node=pruned_node,
-                agg_func=params["agg_func"],
+                agg_func=groupby_node_params.agg_func,
             )
             aggregation_specs.append(agg_spec)
 
