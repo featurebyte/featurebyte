@@ -182,7 +182,7 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
         keys: list[Expression],
         input_tiled: expressions.Select,
     ) -> Expression:
-        inner_groupby_keys = [expressions.Identifier(this="INDEX"), *keys]
+        inner_groupby_keys = [expressions.Identifier(this="index"), *keys]
         groupby_keys = [GroupbyKey(expr=key, name=key.name) for key in inner_groupby_keys]
         original_query = select().from_(input_tiled.subquery())
 

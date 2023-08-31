@@ -342,7 +342,7 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
                 alias_(
                     get_qualified_column_identifier(select_key.alias_or_name, table_alias),
                     alias=select_key.alias_or_name,
-                    quoted=True,
+                    quoted=quote_vector_agg_aliases,
                 )
             )
         left_expression = select(
