@@ -319,6 +319,8 @@ class DeployService(OpsServiceMixin):
         to_enable_deployment: bool,
         get_credential: Any,
         update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
+        use_case_id: Optional[ObjectId] = None,
+        context_id: Optional[ObjectId] = None,
     ) -> None:
         """
         Create deployment for the given feature list feature list
@@ -337,6 +339,10 @@ class DeployService(OpsServiceMixin):
             Get credential handler function
         update_progress: Callable[[int, str | None], Coroutine[Any, Any, None]]
             Update progress handler function
+        use_case_id: ObjectId
+            Use case ID
+        context_id: ObjectId
+            Use case ID
 
         Raises
         ------
@@ -354,6 +360,8 @@ class DeployService(OpsServiceMixin):
                     name=deployment_name or default_deployment_name,
                     feature_list_id=feature_list_id,
                     enabled=to_enable_deployment,
+                    use_case_id=use_case_id,
+                    context_id=context_id,
                 )
             )
             await self._update_feature_list(

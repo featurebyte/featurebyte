@@ -38,6 +38,7 @@ from featurebyte.api.feature_job import FeatureJobMixin, FeatureJobStatusResult
 from featurebyte.api.historical_feature_table import HistoricalFeatureTable
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.savable_api_object import DeletableApiObject, SavableApiObject
+from featurebyte.api.use_case import UseCase
 from featurebyte.common.descriptor import ClassInstanceMethodDescriptor
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.utils import (
@@ -1394,6 +1395,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         deployment_name: Optional[str] = None,
         make_production_ready: bool = False,
         ignore_guardrails: bool = False,
+        use_case_name: Optional[str] = None,
     ) -> Deployment:
         """
         Create a deployment of a feature list. With a deployment, you can serve the feature list in production by
@@ -1414,6 +1416,8 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
             Whether to convert the feature to production ready if it is not production ready.
         ignore_guardrails: bool
             Whether to ignore guardrails when trying to promote features in the list to production ready status.
+        use_case_name: Optional[str]
+            name of the use case associated with the deployment.
 
         Returns
         -------
@@ -1426,6 +1430,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         >>> deployment = feature_list.deploy(  # doctest: +SKIP
         ...   deployment_name="new deploy",
         ...   make_production_ready=True,
+        ...   use_case_name="fraud detection",
         ... )
 
         See Also
@@ -1439,7 +1444,10 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
             },
             allow_update_local=False,
         )
-        deployment_payload = DeploymentCreate(name=deployment_name, feature_list_id=self.id)
+        use_case_id = UseCase.get(use_case_name).id if use_case_name else None
+        deployment_payload = DeploymentCreate(
+            name=deployment_name, feature_list_id=self.id, use_case_id=use_case_id
+        )
         output = self.post_async_task(
             route="/deployment",
             payload=deployment_payload.json_dict(),

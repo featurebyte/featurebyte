@@ -438,6 +438,7 @@ class DeploymentInfo(BaseInfo):
     num_feature: int
     enabled: bool
     serving_endpoint: Optional[str]
+    use_case_name: Optional[str]
 
 
 class BatchRequestTableInfo(BaseInfo):

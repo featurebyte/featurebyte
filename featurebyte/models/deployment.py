@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import List, Optional
 
 import pymongo
-from pydantic import StrictStr
+from pydantic import Field, StrictStr
 
 from featurebyte.models.base import (
     FeatureByteCatalogBaseDocumentModel,
@@ -22,6 +22,8 @@ class DeploymentModel(FeatureByteCatalogBaseDocumentModel):
     name: Optional[StrictStr]
     feature_list_id: PydanticObjectId
     enabled: bool
+    context_id: Optional[PydanticObjectId] = Field(default=None)
+    use_case_id: Optional[PydanticObjectId] = Field(default=None)
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """

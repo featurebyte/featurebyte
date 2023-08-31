@@ -77,6 +77,8 @@ class DeploymentCreateUpdateTask(BaseLockTask):
                 to_enable_deployment=create_deployment_payload.enabled,
                 get_credential=self.get_credential,
                 update_progress=self.update_progress,
+                use_case_id=create_deployment_payload.use_case_id,
+                context_id=create_deployment_payload.context_id,
             )
 
         if payload.deployment_payload.type == DeploymentPayloadType.UPDATE:

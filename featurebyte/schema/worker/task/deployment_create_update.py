@@ -26,6 +26,8 @@ class CreateDeploymentPayload(BaseModel):
     name: Optional[str] = Field(default=None)
     feature_list_id: PydanticObjectId
     enabled: bool
+    use_case_id: Optional[PydanticObjectId] = Field(default=None)
+    context_id: Optional[PydanticObjectId] = Field(default=None)
 
 
 class UpdateDeploymentPayload(BaseModel):

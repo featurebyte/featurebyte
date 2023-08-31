@@ -38,6 +38,7 @@ from featurebyte.service.deployment import AllDeploymentService, DeploymentServi
 from featurebyte.service.feature_list import AllFeatureListService, FeatureListService
 from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
 from featurebyte.service.online_serving import OnlineServingService
+from featurebyte.service.use_case import UseCaseService
 
 
 class DeploymentController(
@@ -57,6 +58,7 @@ class DeploymentController(
         feature_list_service: FeatureListService,
         online_serving_service: OnlineServingService,
         task_controller: TaskController,
+        use_case_service: UseCaseService,
     ):
         super().__init__(deployment_service)
         self.catalog_service = catalog_service
@@ -64,6 +66,7 @@ class DeploymentController(
         self.feature_list_service = feature_list_service
         self.online_serving_service = online_serving_service
         self.task_controller = task_controller
+        self.use_case_service = use_case_service
 
     async def create_deployment(self, data: DeploymentCreate) -> Task:
         """
@@ -82,11 +85,18 @@ class DeploymentController(
         # check if feature list exists
         _ = await self.feature_list_service.get_document(document_id=data.feature_list_id)
 
+        context_id = None
+        if data.use_case_id:
+            use_case = await self.use_case_service.get_document(document_id=data.use_case_id)
+            context_id = use_case.context_id
+
         payload = DeploymentCreateUpdateTaskPayload(
             deployment_payload=CreateDeploymentPayload(
                 name=data.name,
                 feature_list_id=data.feature_list_id,
                 enabled=False,
+                use_case_id=data.use_case_id,
+                context_id=context_id,
             ),
             user_id=self.service.user.id,
             catalog_id=self.service.catalog_id,
@@ -146,6 +156,11 @@ class DeploymentController(
         feature_list = await self.feature_list_service.get_document(
             document_id=deployment.feature_list_id
         )
+        use_case_name = None
+        if deployment.use_case_id:
+            use_case = await self.use_case_service.get_document(document_id=deployment.use_case_id)
+            use_case_name = use_case.name
+
         return DeploymentInfo(
             name=deployment.name,
             feature_list_name=feature_list.name,
@@ -158,6 +173,7 @@ class DeploymentController(
             created_at=deployment.created_at,
             updated_at=deployment.updated_at,
             description=deployment.description,
+            use_case_name=use_case_name,
         )
 
     async def compute_online_features(

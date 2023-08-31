@@ -21,6 +21,7 @@ class DeploymentCreate(FeatureByteBaseModel):
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: Optional[StrictStr]
     feature_list_id: PydanticObjectId
+    use_case_id: Optional[PydanticObjectId]
 
 
 class DeploymentList(PaginationMixin):
