@@ -379,13 +379,25 @@ class Target(
         return TargetNamespace.get_by_id(id=target_namespace_id)
 
     @typechecked
-    def update_namespace_description(self, description: Optional[str]) -> None:
+    def update_description(self, description: Optional[str]) -> None:
         """
-        Update description of object namespace
+        Update target description
 
         Parameters
         ----------
         description: Optional[str]
-            Description of the object namespace
+            Description of target
         """
         self.target_namespace.update_description(description=description)
+
+    @typechecked
+    def update_version_description(self, description: Optional[str]) -> None:
+        """
+        Update target version description
+
+        Parameters
+        ----------
+        description: Optional[str]
+            Description of target version
+        """
+        super().update_description(description=description)

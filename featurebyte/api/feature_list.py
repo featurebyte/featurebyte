@@ -1542,13 +1542,25 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
     )
 
     @typechecked
-    def update_namespace_description(self, description: Optional[str]) -> None:
+    def update_description(self, description: Optional[str]) -> None:
         """
-        Update description of object namespace
+        Update feature list description
 
         Parameters
         ----------
         description: Optional[str]
-            Description of the object namespace
+            Description of feature list
         """
         self.feature_list_namespace.update_description(description=description)
+
+    @typechecked
+    def update_version_description(self, description: Optional[str]) -> None:
+        """
+        Update feature list version description
+
+        Parameters
+        ----------
+        description: Optional[str]
+            Description of feature list version
+        """
+        super().update_description(description=description)
