@@ -117,6 +117,8 @@ tasks:
     vars:
       PYLINT_DISABLE_FOR_SRCS: 'too-few-public-methods,logging-fstring-interpolation,useless-parent-delegation'
       PYLINT_DISABLE_FOR_TESTS: 'redefined-outer-name,invalid-name,protected-access,too-few-public-methods,unspecified-encoding,duplicate-code'
+      CPU_CORES:
+        sh: python -c 'import multiprocessing as mp; print(mp.cpu_count())'
     env:
       DARG_SOURCES:
         sh: |
@@ -132,7 +134,7 @@ tasks:
       - poetry run black --diff --check .
       - poetry run pylint --disable={{ .PYLINT_DISABLE_FOR_SRCS }} --rcfile pyproject.toml featurebyte
       - poetry run pylint --disable={{ .PYLINT_DISABLE_FOR_TESTS }} --rcfile pyproject.toml tests
-      - echo "${DARG_SOURCES}" | xargs -n16 -P $(nproc) poetry run darglint
+      - echo "${DARG_SOURCES}" | xargs -n16 -P {{ .CPU_CORES }} poetry run darglint
 
   lint-type:
     desc: "Run the linter[type]"
