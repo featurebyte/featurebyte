@@ -402,6 +402,36 @@ class WindowAggregator(TileBasedAggregator):
         assert req_joined_with_tiles is not None
         return select().from_(req_joined_with_tiles.subquery())
 
+    @staticmethod
+    def _update_groupby_cols_and_result_names(
+        groupby_columns: list[GroupbyColumn], agg_result_names: list[str]
+    ) -> tuple[list[GroupbyColumn], list[str]]:
+        """
+        Helper method to update groupby_cols with new result names.
+
+        Parameters
+        ----------
+        groupby_columns: list[GroupbyColumn]
+            Groupby columns
+        agg_result_names: list[str]
+            Aggregation result names
+
+        Returns
+        -------
+        tuple[list[GroupbyColumn], list[str]]
+            Updated groupby columns and result names
+        """
+        # Update the groupby_columns with the updated aggregate result names.
+        assert len(groupby_columns) == len(agg_result_names)
+        result_names = []
+        for idx, agg_result_name in enumerate(agg_result_names):
+            curr_col = groupby_columns[idx]
+            updated_agg_result_name = f"inner_{agg_result_name}"
+            curr_col.result_name = updated_agg_result_name
+            groupby_columns[idx] = curr_col
+            result_names.append(updated_agg_result_name)
+        return groupby_columns, result_names
+
     def construct_aggregation_sql(  # pylint: disable=too-many-arguments
         self,
         expanded_request_table_name: str,
@@ -498,16 +528,9 @@ class WindowAggregator(TileBasedAggregator):
         inner_agg_result_names = agg_result_names
         inner_group_by_keys = group_by_keys
         if value_by is not None:
-            # Update the groupby_columns with the updated aggregate result names.
-            assert len(groupby_columns) == len(agg_result_names)
-            result_names = []
-            for idx, agg_result_name in enumerate(agg_result_names):
-                curr_col = groupby_columns[idx]
-                updated_agg_result_name = f"inner_{agg_result_name}"
-                curr_col.result_name = updated_agg_result_name
-                groupby_columns[idx] = curr_col
-                result_names.append(updated_agg_result_name)
-            inner_agg_result_names = result_names
+            groupby_columns, inner_agg_result_names = self._update_groupby_cols_and_result_names(
+                groupby_columns, agg_result_names
+            )
             inner_group_by_keys = group_by_keys + [quoted_identifier(value_by)]
 
         if is_order_dependent:
