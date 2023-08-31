@@ -210,7 +210,10 @@ def setup() -> None:
     target_latest_invoice_timestamp.save(conflict_resolution="retrieve")
 
     # UseCase setup
-    fb.UseCase.create(name="use_case", target=target_latest_invoice_timestamp)
+    context = fb.Context.create(name="context", entity_names=["grocerycustomer"])
+    fb.UseCase.create(
+        name="use_case", target_name=target_latest_invoice_timestamp.name, context_name=context.name
+    )
 
 
 if __name__ == "__main__":

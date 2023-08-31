@@ -6,17 +6,20 @@ from __future__ import annotations
 from typing import Any, List, Optional
 
 import pandas as pd
+from typeguard import typechecked
 
 from featurebyte.api.api_object_util import (
     ForeignKeyMapping,
     iterate_api_object_using_paginated_routes,
 )
+from featurebyte.api.context import Context
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.savable_api_object import DeletableApiObject, SavableApiObject
 from featurebyte.api.target import Target
 from featurebyte.common.doc_util import FBAutoDoc
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.use_case import UseCaseModel
-from featurebyte.schema.use_case import UseCaseCreate, UseCaseUpdate
+from featurebyte.schema.use_case import UseCaseUpdate
 
 
 class UseCase(SavableApiObject, DeletableApiObject):
@@ -37,7 +40,6 @@ class UseCase(SavableApiObject, DeletableApiObject):
     _update_schema_class = UseCaseUpdate
     _list_fields = [
         "name",
-        "target_name",
         "observation_table_ids",
         "default_preview_table_name",
         "default_eda_table_name",
@@ -45,7 +47,6 @@ class UseCase(SavableApiObject, DeletableApiObject):
     ]
 
     _list_foreign_keys = [
-        ForeignKeyMapping("target_id", Target, "target_name", "name"),
         ForeignKeyMapping(
             "default_preview_table_id", ObservationTable, "default_preview_table_name", "name"
         ),
@@ -55,30 +56,40 @@ class UseCase(SavableApiObject, DeletableApiObject):
     ]
 
     # pydantic instance variable (public)
-    target: Target
-    # Context api object is not implemented yet. This is a placeholder.
-    context: Optional[Any]
+    target_id: PydanticObjectId
+    context_id: PydanticObjectId
 
-    def _get_create_payload(self) -> dict[str, Any]:
+    @property
+    def target(self) -> Target:
         """
-        Get the payload for creating a new Use Case.
+        Returns the target object of the UseCase.
 
         Returns
         -------
-        dict[str, Any]
+        Target
+            The target object of the UseCase.
         """
-        data = UseCaseCreate(**self.dict(by_alias=True), target_id=self.target.id)
-        return data.json_dict()
+        return Target.get_by_id(self.target_id)
 
-    def _get_init_params_from_object(self) -> dict[str, Any]:
-        return {"target": self.target}
+    @property
+    def context(self) -> Context:
+        """
+        Returns the context object of the UseCase.
+
+        Returns
+        -------
+        Context
+            The context object of the UseCase.
+        """
+        return Context.get_by_id(self.context_id)
 
     @classmethod
+    @typechecked
     def create(
         cls,
         name: str,
-        target: Target,
-        context: Optional[Any] = None,
+        target_name: str,
+        context_name: str,
         description: Optional[str] = None,
     ) -> UseCase:
         """
@@ -88,10 +99,10 @@ class UseCase(SavableApiObject, DeletableApiObject):
         ----------
         name: str
             Name of the UseCase.
-        target: Target
-            target object of the UseCase.
-        context: Optional[Any]
-            context of the UseCase.
+        target_name: str
+            target name of the UseCase.
+        context_name: str
+            context name of the UseCase.
         description: Optional[str]
             description of the UseCase.
 
@@ -104,16 +115,22 @@ class UseCase(SavableApiObject, DeletableApiObject):
         --------
         >>> fb.UseCase.create(  # doctest: +SKIP
         ...     name="use_case_1",
-        ...     context=context,
-        ...     target=target,
+        ...     context_name="context_1",
+        ...     target_name="target_1",
         ...     description="use case description."
         ... )
         >>> use_case_1 = catalog.get_use_case("use_case_1")  # doctest: +SKIP
         """
-        use_case = UseCase(name=name, target=target, context=context, description=description)
+        use_case = UseCase(
+            name=name,
+            target_id=Target.get(target_name).id,
+            context_id=Context.get(context_name).id,
+            description=description,
+        )
         use_case.save()
         return use_case
 
+    @typechecked
     def add_observation_table(self, new_observation_table: ObservationTable) -> None:
         """
         Add observation table for the Use Case.
@@ -133,6 +150,7 @@ class UseCase(SavableApiObject, DeletableApiObject):
             allow_update_local=False,
         )
 
+    @typechecked
     def update_default_preview_table(self, default_preview_table: ObservationTable) -> None:
         """
         Update default preview table for the Use Case.
@@ -152,6 +170,7 @@ class UseCase(SavableApiObject, DeletableApiObject):
             allow_update_local=False,
         )
 
+    @typechecked
     def update_default_eda_table(self, default_eda_table: ObservationTable) -> None:
         """
         Update default eda table for the Use Case.

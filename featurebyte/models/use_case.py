@@ -30,7 +30,7 @@ class UseCaseModel(FeatureByteCatalogBaseDocumentModel):
         The default eda table id of from observation_table_ids
     """
 
-    context_id: Optional[PydanticObjectId]
+    context_id: PydanticObjectId
     target_id: PydanticObjectId
     observation_table_ids: List[PydanticObjectId] = Field(default=[])
     default_preview_table_id: Optional[PydanticObjectId] = Field(default=None)

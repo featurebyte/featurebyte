@@ -25,6 +25,7 @@ from featurebyte import (
 )
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.catalog import Catalog
+from featurebyte.api.context import Context
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_group import FeatureGroup
@@ -986,14 +987,16 @@ def snowflake_execute_query_for_materialized_table_fixture(
 
 @pytest.fixture(name="observation_table_from_source")
 def observation_table_from_source_fixture(
-    snowflake_database_table, patched_observation_table_service, catalog
+    snowflake_database_table, patched_observation_table_service, catalog, context
 ):
     """
     Observation table created from SourceTable
     """
     _ = catalog
     _ = patched_observation_table_service
-    return snowflake_database_table.create_observation_table("observation_table_from_source_table")
+    return snowflake_database_table.create_observation_table(
+        "observation_table_from_source_table", context_id=context.id
+    )
 
 
 @pytest.fixture(name="observation_table_from_view")
@@ -1112,6 +1115,17 @@ def feature_group_fixture(
         assert feature.table_ids == [snowflake_event_table_with_entity.id]
         assert feature.entity_ids == [cust_id_entity.id]
     yield feature_group
+
+
+@pytest.fixture(name="context")
+def context_fixture(cust_id_entity):
+    """
+    Context fixture
+    """
+    context = Context(name="context", entity_ids=[cust_id_entity.id])
+    if not context.saved:
+        context.save()
+    return context
 
 
 @pytest.fixture(name="float_target")

@@ -260,6 +260,18 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
             == "Inconsistent target_id between use case and observation table"
         )
 
+        different_context_ob_table_id = ObjectId()
+        await create_observation_table(different_context_ob_table_id, same_context=False)
+        response = test_api_client.patch(
+            f"{self.base_route}/{use_case_id}",
+            json={"new_observation_table_id": str(different_context_ob_table_id)},
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert (
+            response.json()["detail"]
+            == "Inconsistent context_id between use case and observation table"
+        )
+
     @pytest.mark.asyncio
     async def test_list_feature_tables(
         self,

@@ -5,12 +5,7 @@ from typing import List, Optional
 
 from pydantic import Field, StrictStr
 
-from featurebyte.models.base import (
-    FeatureByteBaseDocumentModel,
-    FeatureByteBaseModel,
-    PydanticObjectId,
-)
-from featurebyte.models.target import TargetModel
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.use_case import UseCaseModel
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 
@@ -25,18 +20,6 @@ class UseCaseCreate(FeatureByteBaseModel):
     target_id: PydanticObjectId
     context_id: Optional[PydanticObjectId]
     description: Optional[StrictStr]
-
-
-class UseCaseRead(FeatureByteBaseDocumentModel):
-    """
-    Use Case creation schema
-    """
-
-    target: TargetModel
-    target_id: PydanticObjectId
-    context_id: Optional[PydanticObjectId]
-    default_preview_table_id: Optional[PydanticObjectId]
-    default_eda_table_id: Optional[PydanticObjectId]
 
 
 class UseCaseCreateTarget(UseCaseCreate):
@@ -71,11 +54,3 @@ class UseCaseList(PaginationMixin):
     """
 
     data: List[UseCaseModel]
-
-
-class UseCaseReadList(PaginationMixin):
-    """
-    Paginated list of use case
-    """
-
-    data: List[UseCaseRead]
