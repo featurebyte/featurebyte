@@ -313,7 +313,7 @@ class VectorMaxAggregator(OrderIndependentAggregator):
         max_expression = expressions.Anonymous(
             this="VECTOR_AGGREGATE_MAX", expressions=[quoted_identifier(col.name)]
         )
-        return [self.construct_numeric_tile_spec(max_expression, f"value_{agg_id}", AggFunc.MAX)]
+        return [self.construct_array_tile_spec(max_expression, f"value_{agg_id}", AggFunc.MAX)]
 
     @staticmethod
     def merge(agg_id: str) -> str:

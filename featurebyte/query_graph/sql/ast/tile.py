@@ -182,7 +182,7 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
         keys: list[Expression],
         input_tiled: expressions.Select,
     ) -> Expression:
-        inner_groupby_keys = [expressions.Identifier(this="index"), *keys]
+        inner_groupby_keys = [expressions.Identifier(this="INDEX"), *keys]
         groupby_keys = [GroupbyKey(expr=key, name=key.name) for key in inner_groupby_keys]
         original_query = select().from_(input_tiled.subquery())
 
@@ -198,7 +198,7 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
                     quote_result_name=False,
                 )
             )
-        agg_exprs, _ = _split_agg_and_snowflake_vector_aggregation_columns(
+        agg_exprs, vector_agg_exprs = _split_agg_and_snowflake_vector_aggregation_columns(
             original_query,
             groupby_keys,
             groupby_columns,
@@ -211,6 +211,8 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
             select_keys=inner_groupby_keys,
             agg_exprs=agg_exprs,
             keys=inner_groupby_keys,
+            vector_aggregate_columns=vector_agg_exprs,
+            quote_vector_agg_aliases=False,
         )
 
     def _get_tile_sql_order_dependent(
