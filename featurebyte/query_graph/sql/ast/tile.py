@@ -286,6 +286,7 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
             time_modulo_frequency=parameters["time_modulo_frequency"],
             is_on_demand=is_on_demand,
             is_order_dependent=aggregator.is_order_dependent,
+            adapter=context.adapter,
         )
         return sql_node
 
