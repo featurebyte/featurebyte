@@ -6,8 +6,6 @@ from bson import ObjectId
 from featurebyte.models.use_case import UseCaseModel
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.use_case import UseCaseCreate, UseCaseList, UseCaseUpdate
-from featurebyte.service.context import ContextService
-from featurebyte.service.target import TargetService
 from featurebyte.service.use_case import UseCaseService
 
 
@@ -22,12 +20,8 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
     def __init__(
         self,
         use_case_service: UseCaseService,
-        target_service: TargetService,
-        context_service: ContextService,
     ):
         super().__init__(use_case_service)
-        self.target_service = target_service
-        self.context_service = context_service
 
     async def create_use_case(self, data: UseCaseCreate) -> UseCaseModel:
         """

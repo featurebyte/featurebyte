@@ -42,8 +42,8 @@ def test_create_use_case(catalog, float_target, context):
 
     use_case = UseCase.create(
         name="test_use_case",
-        target=float_target,
-        context=context,
+        target_name=float_target.name,
+        context_name=context.name,
         description="test_use_case description",
     )
 

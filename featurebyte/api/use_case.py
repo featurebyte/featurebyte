@@ -88,8 +88,8 @@ class UseCase(SavableApiObject, DeletableApiObject):
     def create(
         cls,
         name: str,
-        target: Target,
-        context: Context,
+        target_name: str,
+        context_name: str,
         description: Optional[str] = None,
     ) -> UseCase:
         """
@@ -99,10 +99,10 @@ class UseCase(SavableApiObject, DeletableApiObject):
         ----------
         name: str
             Name of the UseCase.
-        target: Target
-            target object of the UseCase.
-        context: Context
-            context of the UseCase.
+        target_name: str
+            target name of the UseCase.
+        context_name: str
+            context name of the UseCase.
         description: Optional[str]
             description of the UseCase.
 
@@ -115,14 +115,17 @@ class UseCase(SavableApiObject, DeletableApiObject):
         --------
         >>> fb.UseCase.create(  # doctest: +SKIP
         ...     name="use_case_1",
-        ...     context=context,
-        ...     target=target,
+        ...     context_name="context_1",
+        ...     target_name="target_1",
         ...     description="use case description."
         ... )
         >>> use_case_1 = catalog.get_use_case("use_case_1")  # doctest: +SKIP
         """
         use_case = UseCase(
-            name=name, target_id=target.id, context_id=context.id, description=description
+            name=name,
+            target_id=Target.get(target_name).id,
+            context_id=Context.get(context_name).id,
+            description=description,
         )
         use_case.save()
         return use_case
