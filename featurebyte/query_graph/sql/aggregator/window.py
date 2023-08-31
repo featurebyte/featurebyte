@@ -525,8 +525,8 @@ class WindowAggregator(TileBasedAggregator):
 
         return agg_expr
 
-    @staticmethod
     def merge_tiles_order_independent(
+        self,
         req_joined_with_tiles: Select,
         inner_group_by_keys: list[Expression],
         merge_exprs: list[str],
@@ -552,14 +552,16 @@ class WindowAggregator(TileBasedAggregator):
         -------
         Select
         """
-        inner_agg_expr = req_joined_with_tiles.select(
-            *inner_group_by_keys,
-            *[
-                alias_(merge_expr, inner_agg_result_name, quoted=True)
-                for merge_expr, inner_agg_result_name in zip(merge_exprs, inner_agg_result_names)
-            ],
-        ).group_by(*inner_group_by_keys)
-        return inner_agg_expr
+        agg_exprs = [
+            alias_(merge_expr, inner_agg_result_name, quoted=True)
+            for merge_expr, inner_agg_result_name in zip(merge_exprs, inner_agg_result_names)
+        ]
+        return self.adapter.group_by(
+            req_joined_with_tiles,
+            select_keys=inner_group_by_keys,
+            agg_exprs=agg_exprs,
+            keys=inner_group_by_keys,
+        )
 
     @staticmethod
     def merge_tiles_order_dependent(

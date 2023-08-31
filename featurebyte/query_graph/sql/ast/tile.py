@@ -12,6 +12,7 @@ from sqlglot.expressions import Expression, Select, alias_, select
 
 from featurebyte.enum import InternalName
 from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
@@ -43,6 +44,8 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
     is_on_demand: bool
     is_order_dependent: bool
     query_node_type = NodeType.GROUPBY
+
+    adapter: BaseAdapter
 
     # Internal names
     ROW_NUMBER = "__FB_ROW_NUMBER"
@@ -169,16 +172,17 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
         keys: list[Expression],
         input_tiled: expressions.Select,
     ) -> Expression:
-        groupby_sql = (
-            select(
-                "index",
-                *keys,
-                *[alias_(spec.tile_expr, alias=spec.tile_column_name) for spec in self.tile_specs],
-            )
-            .from_(input_tiled.subquery())
-            .group_by("index", *keys)
+        group_by_keys = [expressions.Identifier(this="index"), *keys]
+        agg_exprs = [
+            alias_(spec.tile_expr, alias=spec.tile_column_name) for spec in self.tile_specs
+        ]
+        original_query = select().from_(input_tiled.subquery())
+        return self.adapter.group_by(
+            original_query,
+            select_keys=group_by_keys,
+            agg_exprs=agg_exprs,
+            keys=group_by_keys,
         )
-        return groupby_sql
 
     def _get_tile_sql_order_dependent(
         self,
