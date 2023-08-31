@@ -403,6 +403,7 @@ class TableNode(SQLNode, ABC):
         TableNode
         """
         new_table = copy(self)
+        new_table.context = copy(self.context)
         new_table.columns_map = copy(self.columns_map)
         new_table.columns_node = copy(self.columns_node)
         return new_table
