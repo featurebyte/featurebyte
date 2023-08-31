@@ -211,7 +211,9 @@ def setup() -> None:
 
     # UseCase setup
     context = fb.Context.create(name="context", entity_names=["grocerycustomer"])
-    fb.UseCase.create(name="use_case", target=target_latest_invoice_timestamp, context=context)
+    fb.UseCase.create(
+        name="use_case", target_name=target_latest_invoice_timestamp.name, context_name=context.name
+    )
 
 
 if __name__ == "__main__":
