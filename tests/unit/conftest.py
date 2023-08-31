@@ -1120,7 +1120,7 @@ def feature_group_fixture(
 @pytest.fixture(name="context")
 def context_fixture(cust_id_entity):
     """
-    Float target fixture
+    Context fixture
     """
     context = Context(name="context", entity_ids=[cust_id_entity.id])
     if not context.saved:
