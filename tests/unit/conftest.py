@@ -987,14 +987,16 @@ def snowflake_execute_query_for_materialized_table_fixture(
 
 @pytest.fixture(name="observation_table_from_source")
 def observation_table_from_source_fixture(
-    snowflake_database_table, patched_observation_table_service, catalog
+    snowflake_database_table, patched_observation_table_service, catalog, context
 ):
     """
     Observation table created from SourceTable
     """
     _ = catalog
     _ = patched_observation_table_service
-    return snowflake_database_table.create_observation_table("observation_table_from_source_table")
+    return snowflake_database_table.create_observation_table(
+        "observation_table_from_source_table", context_id=context.id
+    )
 
 
 @pytest.fixture(name="observation_table_from_view")
