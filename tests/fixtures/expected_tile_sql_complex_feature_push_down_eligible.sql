@@ -1,7 +1,7 @@
 SELECT
   index,
   "cust_id",
-  SUM("added_feature") AS value_sum_135378d8fda24b22b1987e8f97c82334823c50c7
+  SUM("added_feature") AS "value_sum_135378d8fda24b22b1987e8f97c82334823c50c7"
 FROM (
   SELECT
     *,

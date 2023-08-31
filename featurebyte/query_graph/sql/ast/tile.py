@@ -194,7 +194,7 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
                     agg_func=spec.tile_aggregation_type,
                     parent_expr=spec.tile_expr,
                     result_name=spec.tile_column_name,
-                    parent_cols=spec.tile_expr.expressions,
+                    parent_cols=spec.tile_expr.expressions or [spec.tile_expr.alias_or_name],
                 )
             )
         agg_exprs, snowflake_vector_agg_cols = _split_agg_and_snowflake_vector_aggregation_columns(

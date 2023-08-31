@@ -407,7 +407,7 @@ def test_aggregate_over_feature_tile_sql(feature_from_change_view):
         SELECT
           index,
           "col_text",
-          COUNT(*) AS value_count_4286197032f980d554bc6f6564ea53f42532d702
+          COUNT(*) AS "value_count_4286197032f980d554bc6f6564ea53f42532d702"
         FROM (
           SELECT
             *,

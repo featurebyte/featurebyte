@@ -263,7 +263,7 @@ def _split_agg_and_snowflake_vector_aggregation_columns(
                 alias_(
                     get_aggregation_expression(
                         agg_func=column.agg_func,
-                        input_column=column.parent_expr,
+                        input_column=column.parent_cols[0],
                         parent_dtype=column.parent_dtype,
                         is_tile=is_tile,
                     ),
