@@ -424,13 +424,13 @@ class WindowAggregator(TileBasedAggregator):
         # Update the groupby_columns with the updated aggregate result names.
         assert len(groupby_columns) == len(agg_result_names)
         result_names = []
-        for idx, agg_result_name in enumerate(agg_result_names):
-            curr_col = groupby_columns[idx]
+        output_columns = []
+        for curr_col, agg_result_name in zip(groupby_columns, agg_result_names):
             updated_agg_result_name = f"inner_{agg_result_name}"
             curr_col.result_name = updated_agg_result_name
-            groupby_columns[idx] = curr_col
+            output_columns.append(curr_col)
             result_names.append(updated_agg_result_name)
-        return groupby_columns, result_names
+        return output_columns, result_names
 
     def construct_aggregation_sql(  # pylint: disable=too-many-arguments
         self,
