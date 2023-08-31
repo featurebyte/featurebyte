@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, alias_, select
 
-from featurebyte.enum import InternalName
+from featurebyte.enum import DBVarType, InternalName
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
@@ -19,6 +19,11 @@ from featurebyte.query_graph.sql.common import (
     SQLType,
     get_qualified_column_identifier,
     quoted_identifier,
+)
+from featurebyte.query_graph.sql.groupby_helper import (
+    GroupbyColumn,
+    GroupbyKey,
+    _split_agg_and_snowflake_vector_aggregation_columns,
 )
 from featurebyte.query_graph.sql.query_graph_util import get_parent_dtype
 from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
@@ -167,21 +172,45 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
         )
         return cast(Select, select_expr)
 
+    @staticmethod
+    def _get_db_var_type_from_col_type(col_type: str) -> DBVarType:
+        mapping: dict[str, DBVarType] = {"ARRAY": DBVarType.ARRAY}
+        return mapping.get(col_type, DBVarType.UNKNOWN)
+
     def _get_tile_sql_order_independent(
         self,
         keys: list[Expression],
         input_tiled: expressions.Select,
     ) -> Expression:
-        group_by_keys = [expressions.Identifier(this="index"), *keys]
-        agg_exprs = [
-            alias_(spec.tile_expr, alias=spec.tile_column_name) for spec in self.tile_specs
-        ]
+        inner_groupby_keys = [expressions.Identifier(this="index"), *keys]
+        groupby_keys = [GroupbyKey(expr=key, name=key) for key in inner_groupby_keys]
         original_query = select().from_(input_tiled.subquery())
+
+        groupby_columns = []
+        for spec in self.tile_specs:
+            groupby_columns.append(
+                GroupbyColumn(
+                    parent_dtype=self._get_db_var_type_from_col_type(spec.tile_column_type),
+                    agg_func=spec.tile_aggregation_type,
+                    parent_expr=spec.tile_expr,
+                    result_name=spec.tile_column_name,
+                    parent_cols=spec.tile_expr.expressions or [spec.tile_expr.alias_or_name],
+                    quote_result_name=False,
+                )
+            )
+        agg_exprs, _ = _split_agg_and_snowflake_vector_aggregation_columns(
+            original_query,
+            groupby_keys,
+            groupby_columns,
+            None,
+            self.adapter.source_type,
+        )
+
         return self.adapter.group_by(
             original_query,
-            select_keys=group_by_keys,
+            select_keys=inner_groupby_keys,
             agg_exprs=agg_exprs,
-            keys=group_by_keys,
+            keys=inner_groupby_keys,
         )
 
     def _get_tile_sql_order_dependent(

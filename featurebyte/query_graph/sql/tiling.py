@@ -48,6 +48,7 @@ class TileSpec:
     tile_expr: Expression
     tile_column_name: str
     tile_column_type: str
+    tile_aggregation_type: AggFunc
 
 
 class TilingAggregator(ABC):
@@ -98,7 +99,9 @@ class TilingAggregator(ABC):
         str
         """
 
-    def construct_numeric_tile_spec(self, tile_expr: Expression, tile_column_name: str) -> TileSpec:
+    def construct_numeric_tile_spec(
+        self, tile_expr: Expression, tile_column_name: str, agg_func: AggFunc
+    ) -> TileSpec:
         """
         Construct a TileSpec for a numeric tile
 
@@ -108,6 +111,8 @@ class TilingAggregator(ABC):
             SQL expression
         tile_column_name: str
             Alias for the result of the SQL expression
+        agg_func: AggFunc
+            Aggregation function
 
         Returns
         -------
@@ -117,9 +122,12 @@ class TilingAggregator(ABC):
             tile_expr,
             tile_column_name,
             self.adapter.get_physical_type_from_dtype(DBVarType.FLOAT),
+            agg_func,
         )
 
-    def construct_array_tile_spec(self, tile_expr: Expression, tile_column_name: str) -> TileSpec:
+    def construct_array_tile_spec(
+        self, tile_expr: Expression, tile_column_name: str, agg_func: AggFunc
+    ) -> TileSpec:
         """
         Construct a TileSpec for an array tile
 
@@ -129,6 +137,8 @@ class TilingAggregator(ABC):
             SQL expression
         tile_column_name: str
             Alias for the result of the SQL expression
+        agg_func: AggFunc
+            Aggregation function
 
         Returns
         -------
@@ -138,6 +148,7 @@ class TilingAggregator(ABC):
             tile_expr,
             tile_column_name,
             self.adapter.get_physical_type_from_dtype(DBVarType.ARRAY),
+            agg_func,
         )
 
 
@@ -164,7 +175,7 @@ class CountAggregator(OrderIndependentAggregator):
         _ = col
         return [
             self.construct_numeric_tile_spec(
-                expressions.Count(this=expressions.Star()), f"value_{agg_id}"
+                expressions.Count(this=expressions.Star()), f"value_{agg_id}", AggFunc.COUNT
             )
         ]
 
@@ -180,11 +191,14 @@ class AvgAggregator(OrderIndependentAggregator):
         assert col is not None
         tile_specs = [
             self.construct_numeric_tile_spec(
-                expressions.Sum(this=quoted_identifier(col.name)), f"sum_value_{agg_id}"
+                expressions.Sum(this=quoted_identifier(col.name)),
+                f"sum_value_{agg_id}",
+                AggFunc.SUM,
             ),
             self.construct_numeric_tile_spec(
                 expressions.Count(this=quoted_identifier(col.name)),
                 f"count_value_{agg_id}",
+                AggFunc.COUNT,
             ),
         ]
         return tile_specs
@@ -201,7 +215,7 @@ class SumAggregator(OrderIndependentAggregator):
         assert col is not None
         return [
             self.construct_numeric_tile_spec(
-                expressions.Sum(this=quoted_identifier(col.name)), f"value_{agg_id}"
+                expressions.Sum(this=quoted_identifier(col.name)), f"value_{agg_id}", AggFunc.SUM
             )
         ]
 
@@ -217,7 +231,7 @@ class MinAggregator(OrderIndependentAggregator):
         assert col is not None
         return [
             self.construct_numeric_tile_spec(
-                expressions.Min(this=quoted_identifier(col.name)), f"value_{agg_id}"
+                expressions.Min(this=quoted_identifier(col.name)), f"value_{agg_id}", AggFunc.MIN
             )
         ]
 
@@ -233,7 +247,7 @@ class MaxAggregator(OrderIndependentAggregator):
         assert col is not None
         return [
             self.construct_numeric_tile_spec(
-                expressions.Max(this=quoted_identifier(col.name)), f"value_{agg_id}"
+                expressions.Max(this=quoted_identifier(col.name)), f"value_{agg_id}", AggFunc.MAX
             )
         ]
 
@@ -253,7 +267,7 @@ class NACountAggregator(OrderIndependentAggregator):
         col_casted_as_integer = expressions.Cast(this=col_is_null, to="INTEGER")
         return [
             self.construct_numeric_tile_spec(
-                expressions.Sum(this=col_casted_as_integer), f"value_{agg_id}"
+                expressions.Sum(this=col_casted_as_integer), f"value_{agg_id}", AggFunc.SUM
             )
         ]
 
@@ -274,9 +288,11 @@ class StdAggregator(OrderIndependentAggregator):
         sum_value = expressions.Sum(this=col_expr)
         count_value = expressions.Count(this=col_expr)
         return [
-            self.construct_numeric_tile_spec(sum_value_squared, f"sum_value_squared_{agg_id}"),
-            self.construct_numeric_tile_spec(sum_value, f"sum_value_{agg_id}"),
-            self.construct_numeric_tile_spec(count_value, f"count_value_{agg_id}"),
+            self.construct_numeric_tile_spec(
+                sum_value_squared, f"sum_value_squared_{agg_id}", AggFunc.SUM
+            ),
+            self.construct_numeric_tile_spec(sum_value, f"sum_value_{agg_id}", AggFunc.SUM),
+            self.construct_numeric_tile_spec(count_value, f"count_value_{agg_id}", AggFunc.COUNT),
         ]
 
     @staticmethod
@@ -297,7 +313,7 @@ class VectorMaxAggregator(OrderIndependentAggregator):
         max_expression = expressions.Anonymous(
             this="VECTOR_AGGREGATE_MAX", expressions=[quoted_identifier(col.name)]
         )
-        return [self.construct_numeric_tile_spec(max_expression, f"value_{agg_id}")]
+        return [self.construct_numeric_tile_spec(max_expression, f"value_{agg_id}", AggFunc.MAX)]
 
     @staticmethod
     def merge(agg_id: str) -> str:
@@ -309,13 +325,13 @@ class VectorAvgAggregator(OrderIndependentAggregator):
 
     def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
         assert col is not None
-        max_expression = expressions.Anonymous(
+        sum_expression = expressions.Anonymous(
             this="VECTOR_AGGREGATE_SUM", expressions=[quoted_identifier(col.name)]
         )
         return [
-            self.construct_array_tile_spec(max_expression, f"sum_list_value_{agg_id}"),
+            self.construct_array_tile_spec(sum_expression, f"sum_list_value_{agg_id}", AggFunc.SUM),
             self.construct_numeric_tile_spec(
-                expressions.Count(this=expressions.Star()), f"count_value_{agg_id}"
+                expressions.Count(this=expressions.Star()), f"count_value_{agg_id}", AggFunc.COUNT
             ),
         ]
 
@@ -333,7 +349,7 @@ class VectorSumAggregator(OrderIndependentAggregator):
             this="VECTOR_AGGREGATE_SUM", expressions=[quoted_identifier(col.name)]
         )
         return [
-            self.construct_array_tile_spec(sum_expression, f"sum_list_value_{agg_id}"),
+            self.construct_array_tile_spec(sum_expression, f"sum_list_value_{agg_id}", AggFunc.SUM),
         ]
 
     @staticmethod
@@ -351,6 +367,7 @@ class LatestValueAggregator(OrderDependentAggregator):
                 Anonymous(this="FIRST_VALUE", expressions=[quoted_identifier(col.name)]),
                 f"value_{agg_id}",
                 self.adapter.get_physical_type_from_dtype(col.dtype),
+                AggFunc.LATEST,
             ),
         ]
 

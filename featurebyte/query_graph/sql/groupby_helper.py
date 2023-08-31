@@ -34,6 +34,8 @@ class GroupbyColumn:
     # parent_cols refers to the columns used in the parent_expr. As an example, for the aggregation `sum(col1)`, the
     # parent_cols here will be ['col1'].
     parent_cols: List[Expression]
+    # Use this to skip quoting result name when aliasing.
+    quote_result_name: bool = True
 
 
 @dataclass
@@ -256,7 +258,7 @@ def _split_agg_and_snowflake_vector_aggregation_columns(
                 alias_(
                     column.parent_expr,
                     alias=column.result_name + ("_inner" if value_by is not None else ""),
-                    quoted=True,
+                    quoted=column.quote_result_name,
                 )
             )
     return non_vector_agg_exprs, vector_agg_cols
