@@ -69,6 +69,7 @@ def test_get_vector_agg_column_snowflake(
         parent_expr=(get_qualified_column_identifier("parent", "TABLE")),
         result_name="result",
         parent_dtype=DBVarType.ARRAY,
+        parent_cols=[(get_qualified_column_identifier("parent", "TABLE"))],
     )
 
     # If error expected, check the assertion and return.
@@ -155,6 +156,7 @@ def test_get_groupby_expr__multiple_groupby_columns__non_snowflake_vector_aggrs(
             parent_expr=(get_qualified_column_identifier("parent", "TABLE")),
             result_name=f"result_{i}",
             parent_dtype=param[1],
+            parent_cols=[(get_qualified_column_identifier("parent", "TABLE"))],
         )
         i += 1
         groupby_columns.append(groupby_column)
@@ -252,6 +254,7 @@ def test_get_groupby_expr__multiple_groupby_columns__snowflake_vector_aggrs(
             parent_expr=(get_qualified_column_identifier("parent", "TABLE")),
             result_name=f"result_{i}",
             parent_dtype=param[1],
+            parent_cols=[(get_qualified_column_identifier("parent", "TABLE"))],
         )
         i += 1
         groupby_columns.append(groupby_column)
@@ -286,6 +289,7 @@ def test_get_groupby_expr(agg_func, parent_dtype, method, common_params):
         parent_expr=(get_qualified_column_identifier("parent", "TABLE")),
         result_name="result",
         parent_dtype=parent_dtype,
+        parent_cols=[(get_qualified_column_identifier("parent", "TABLE"))],
     )
     groupby_expr = get_groupby_expr(
         input_expr=select_expr,

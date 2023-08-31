@@ -14,7 +14,7 @@ import pandas as pd
 from bson import ObjectId
 from sqlglot.expressions import Expression, Select
 
-from featurebyte.enum import DBVarType, SourceType, StrEnum
+from featurebyte.enum import AggFunc, DBVarType, SourceType, StrEnum
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
@@ -140,6 +140,7 @@ class TileBasedAggregationSpec(AggregationSpec):
     dtype: DBVarType
     pruned_graph: QueryGraphModel
     pruned_node: Node
+    agg_func: AggFunc
 
     @property
     def agg_result_name(self) -> str:
@@ -238,6 +239,7 @@ class TileBasedAggregationSpec(AggregationSpec):
                 dtype=dtype,
                 pruned_graph=pruned_graph,
                 pruned_node=pruned_node,
+                agg_func=params["agg_func"],
             )
             aggregation_specs.append(agg_spec)
 

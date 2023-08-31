@@ -23,9 +23,17 @@ class GroupbyColumn:
     """
 
     agg_func: AggFunc
+    # parent_expr refers to the expression that is used to generate the column. For example, `sum(col1)`.
+    # This is not provided for certain aggregations like count.
     parent_expr: Optional[Expression]
+    # parent_dtype is the dtype of the parent column.
     parent_dtype: Optional[DBVarType]
+    # result_name is the aliased name of the aggregation result. For example if we want `sum(col1) as "sum_col_1",
+    # the result_name is "sum_col_1".
     result_name: str
+    # parent_cols refers to the columns used in the parent_expr. As an example, for the aggregation `sum(col1)`, the
+    # parent_cols here will be ['col1'].
+    parent_cols: List[Expression]
 
 
 @dataclass
@@ -246,13 +254,18 @@ def _split_agg_and_snowflake_vector_aggregation_columns(
                 )
             )
         else:
+            # Use the parent expr passed in if it's a complex expression with more than 2 columns. Else, we can
+            # construct the aggregation expression from the agg_func and the parent column.
+            aggregation_expression = column.parent_expr
+            if len(column.parent_cols) <= 1:
+                aggregation_expression = get_aggregation_expression(
+                    agg_func=column.agg_func,
+                    input_column=column.parent_cols[0] if column.parent_cols else None,
+                    parent_dtype=column.parent_dtype,
+                )
             non_vector_agg_exprs.append(
                 alias_(
-                    get_aggregation_expression(
-                        agg_func=column.agg_func,
-                        input_column=column.parent_expr,
-                        parent_dtype=column.parent_dtype,
-                    ),
+                    aggregation_expression,
                     alias=column.result_name + ("_inner" if value_by is not None else ""),
                     quoted=True,
                 )

@@ -4,7 +4,7 @@ Tests for featurebyte.query_graph.feature_common
 
 from bson import ObjectId
 
-from featurebyte.enum import DBVarType, SourceType
+from featurebyte.enum import AggFunc, DBVarType, SourceType
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
 
@@ -46,6 +46,7 @@ def test_aggregation_spec__from_groupby_query_node(
             ],
             entity_ids=[ObjectId("637516ebc9c18f5a277a78db")],
             dtype=DBVarType.FLOAT,
+            agg_func=AggFunc.AVG,
             **expected_pruned_graph_and_node_1,
         ),
         TileBasedAggregationSpec(
@@ -71,6 +72,7 @@ def test_aggregation_spec__from_groupby_query_node(
             ],
             entity_ids=[ObjectId("637516ebc9c18f5a277a78db")],
             dtype=DBVarType.FLOAT,
+            agg_func=AggFunc.AVG,
             **expected_pruned_graph_and_node_2,
         ),
     ]
@@ -120,6 +122,7 @@ def test_aggregation_spec__override_serving_names(
             ],
             entity_ids=[ObjectId("637516ebc9c18f5a277a78db")],
             dtype=DBVarType.FLOAT,
+            agg_func=AggFunc.AVG,
             **expected_pruned_graph_and_node_1,
         ),
         TileBasedAggregationSpec(
@@ -145,6 +148,7 @@ def test_aggregation_spec__override_serving_names(
             ],
             entity_ids=[ObjectId("637516ebc9c18f5a277a78db")],
             dtype=DBVarType.FLOAT,
+            agg_func=AggFunc.AVG,
             **expected_pruned_graph_and_node_2,
         ),
     ]
