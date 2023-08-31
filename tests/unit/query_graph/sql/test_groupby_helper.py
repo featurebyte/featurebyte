@@ -15,6 +15,7 @@ from featurebyte.query_graph.sql.groupby_helper import (
     GroupbyKey,
     get_groupby_expr,
     get_vector_agg_column_snowflake,
+    update_aggregation_expression_for_columns,
 )
 from tests.unit.query_graph.sql.fixtures.snowflake_double_vector_agg_only import (
     SNOWFLAKE_DOUBLE_VECTOR_AGG_ONLY_QUERY,
@@ -258,6 +259,7 @@ def test_get_groupby_expr__multiple_groupby_columns__snowflake_vector_aggrs(
         )
         i += 1
         groupby_columns.append(groupby_column)
+    groupby_columns = update_aggregation_expression_for_columns(groupby_columns, source_type)
     if not use_value_by:
         value_by = None
     groupby_expr = get_groupby_expr(

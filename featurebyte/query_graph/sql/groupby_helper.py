@@ -264,8 +264,8 @@ def _split_agg_and_snowflake_vector_aggregation_columns(
     return non_vector_agg_exprs, vector_agg_cols
 
 
-def _update_aggregation_expression_for_columns(
-    groupby_columns: list[GroupbyColumn],
+def update_aggregation_expression_for_columns(
+    groupby_columns: list[GroupbyColumn], adapter_type: SourceType
 ) -> list[GroupbyColumn]:
     """
     Helper function to update the aggregation expression for the groupby columns. This will update the parent_expr
@@ -275,6 +275,8 @@ def _update_aggregation_expression_for_columns(
     ----------
     groupby_columns: list[GroupbyColumn]
         List of groupby columns
+    adapter_type: SourceType
+        Adapter type
 
     Returns
     -------
@@ -282,12 +284,13 @@ def _update_aggregation_expression_for_columns(
     """
     output: list[GroupbyColumn] = []
     for column in groupby_columns:
-        aggregation_expression = get_aggregation_expression(
-            agg_func=column.agg_func,
-            input_column=column.parent_cols[0] if column.parent_cols else None,
-            parent_dtype=column.parent_dtype,
-        )
-        column.parent_expr = aggregation_expression
+        if not (column.parent_dtype is DBVarType.ARRAY and adapter_type == SourceType.SNOWFLAKE):
+            aggregation_expression = get_aggregation_expression(
+                agg_func=column.agg_func,
+                input_column=column.parent_cols[0] if column.parent_cols else None,
+                parent_dtype=column.parent_dtype,
+            )
+            column.parent_expr = aggregation_expression
         output.append(column)
     return output
 
@@ -320,7 +323,9 @@ def get_groupby_expr(
     -------
     Select
     """
-    updated_groupby_columns = _update_aggregation_expression_for_columns(groupby_columns)
+    updated_groupby_columns = update_aggregation_expression_for_columns(
+        groupby_columns, adapter.source_type
+    )
     agg_exprs, snowflake_vector_agg_cols = _split_agg_and_snowflake_vector_aggregation_columns(
         input_expr, groupby_keys, updated_groupby_columns, value_by, adapter.source_type
     )
