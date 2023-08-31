@@ -56,6 +56,7 @@ def test_info(deployment):
         "created_at": info_dict["created_at"],
         "updated_at": None,
         "description": None,
+        "use_case_name": "test_use_case",
     }
 
 

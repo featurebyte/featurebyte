@@ -20,6 +20,7 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
 )
 from featurebyte.schema.common.base import DescriptionUpdate
+from featurebyte.schema.deployment import DeploymentList
 from featurebyte.schema.historical_feature_table import HistoricalFeatureTableList
 from featurebyte.schema.observation_table import ObservationTableList
 from featurebyte.schema.use_case import UseCaseCreate, UseCaseList, UseCaseUpdate
@@ -53,7 +54,7 @@ async def get_use_case(request: Request, use_case_id: PydanticObjectId) -> UseCa
 
 
 @router.get("/{use_case_id}/observation_tables", response_model=ObservationTableList)
-async def list_observation_tables(
+async def list_use_case_observation_tables(
     request: Request,
     use_case_id: PydanticObjectId,
     page: int = PageQuery,
@@ -98,6 +99,28 @@ async def list_use_case_feature_tables(
         )
     )
     return historical_feature_table_list
+
+
+@router.get("/{use_case_id}/deployments", response_model=DeploymentList)
+async def list_use_case_deployments(
+    request: Request,
+    use_case_id: PydanticObjectId,
+    page: int = PageQuery,
+    page_size: int = PageSizeQuery,
+) -> DeploymentList:
+    """
+    List Feature Tables associated with the Use Case
+    """
+    use_case_controller = request.state.app_container.use_case_controller
+    use_case: UseCaseModel = await use_case_controller.get(document_id=use_case_id)
+
+    deployment_controller = request.state.app_container.deployment_controller
+    deployment_list: DeploymentList = await deployment_controller.list(
+        query_filter={"use_case_id": use_case.id},
+        page=page,
+        page_size=page_size,
+    )
+    return deployment_list
 
 
 @router.patch("/{use_case_id}", response_model=UseCaseModel)

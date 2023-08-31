@@ -1,31 +1,7 @@
 """
 Unit test for UseCase class
 """
-import pytest
-
 from featurebyte import UseCase
-
-
-@pytest.fixture(name="use_case")
-def use_case_fixture(catalog, float_target, context):
-    """
-    UseCase fixture
-    """
-    _ = catalog
-    float_target.save()
-
-    use_case = UseCase(
-        name="test_use_case",
-        target_id=float_target.id,
-        context_id=context.id,
-        description="test_use_case description",
-    )
-    previous_id = use_case.id
-    assert use_case.saved is False
-    use_case.save()
-    assert use_case.saved is True
-    assert use_case.id == previous_id
-    yield use_case
 
 
 def test_create_use_case(catalog, float_target, context):
@@ -41,18 +17,18 @@ def test_create_use_case(catalog, float_target, context):
         float_target.save()
 
     use_case = UseCase.create(
-        name="test_use_case",
+        name="test_use_case_1",
         target_name=float_target.name,
         context_name=context.name,
-        description="test_use_case description",
+        description="test_use_case_1 description",
     )
 
     # Test get use case and verify attributes
     retrieved_use_case = UseCase.get_by_id(use_case.id)
-    assert retrieved_use_case.name == "test_use_case"
+    assert retrieved_use_case.name == "test_use_case_1"
     assert retrieved_use_case.target_id == float_target.id
     assert retrieved_use_case.context_id == context.id
-    assert retrieved_use_case.description == "test_use_case description"
+    assert retrieved_use_case.description == "test_use_case_1 description"
     assert retrieved_use_case.target.name == float_target.name
     assert retrieved_use_case.context.name == context.name
 
@@ -117,3 +93,14 @@ def test_update_default_eda_table(use_case, target_table):
     assert len(obs_table_df) == 1
     assert obs_table_df.iloc[0]["id"] == str(target_table.id)
     assert obs_table_df.iloc[0]["name"] == "my_target_table"
+
+
+def test_list_deployments(use_case, target_table, deployment):
+    """
+    Test UseCase.list_deployments( method
+    """
+
+    retrieved_use_case = UseCase.get(use_case.name)
+    deployments = retrieved_use_case.list_deployments()
+    assert len(deployments) == 1
+    assert deployments.iloc[0]["name"] == deployment.name

@@ -225,6 +225,24 @@ class UseCase(SavableApiObject, DeletableApiObject):
             list(iterate_api_object_using_paginated_routes(route))
         )
 
+    def list_deployments(self) -> pd.DataFrame:
+        """
+        List deployments associated with the Use Case.
+
+        Returns
+        -------
+        pd.DataFrame
+
+        Examples
+        --------
+        >>> use_case = catalog.get_use_case("use_case")
+        >>> use_case.list_deployments()  # doctest: +SKIP
+        """
+        route = f"{self._route}/{self.id}/deployments"
+        return self._construct_table_result_df(
+            list(iterate_api_object_using_paginated_routes(route))
+        )
+
     def _construct_table_result_df(self, result_dict: List[dict[str, Any]]) -> pd.DataFrame:
         """
         Construct a pandas DataFrame from the result_dict returned by the API.

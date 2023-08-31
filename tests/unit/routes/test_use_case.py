@@ -369,3 +369,38 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
 
         response = test_api_client.get(f"{self.base_route}/{use_case_id}")
         assert response.status_code == HTTPStatus.NOT_FOUND
+
+    @pytest.mark.asyncio
+    async def test_list_deployments(
+        self,
+        create_success_response,
+        test_api_client_persistent,
+        user_id,
+        default_catalog_id,
+    ):
+        """Test list deployments for use case"""
+        test_api_client, persistent = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        use_case_id = create_response_dict["_id"]
+
+        await persistent.insert_one(
+            collection_name="deployment",
+            document={
+                "name": "test_deployment",
+                "catalog_id": ObjectId(default_catalog_id),
+                "user_id": user_id,
+                "feature_list_id": ObjectId(),
+                "enabled": False,
+                "context_id": ObjectId(),
+                "use_case_id": ObjectId(use_case_id),
+            },
+            user_id=user_id,
+        )
+
+        response = test_api_client.get(f"{self.base_route}/{use_case_id}/deployments")
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json()["total"] == 1
+        data = response.json()["data"]
+        assert len(data) == 1
+        assert data[0]["name"] == "test_deployment"
+        assert data[0]["use_case_id"] == use_case_id

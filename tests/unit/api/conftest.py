@@ -10,7 +10,7 @@ import pytest
 from bson.objectid import ObjectId
 from pandas.testing import assert_frame_equal
 
-from featurebyte import Catalog
+from featurebyte import Catalog, UseCase
 from featurebyte.api.base_table import TableColumn
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_table import EventTable
@@ -369,10 +369,33 @@ def batch_request_table_from_view_fixture(
     return snowflake_event_view.create_batch_request_table("batch_request_table_from_event_view")
 
 
+@pytest.fixture(name="use_case")
+def use_case_fixture(catalog, float_target, context):
+    """
+    UseCase fixture
+    """
+    _ = catalog
+    float_target.save()
+
+    use_case = UseCase(
+        name="test_use_case",
+        target_id=float_target.id,
+        context_id=context.id,
+        description="test_use_case description",
+    )
+    previous_id = use_case.id
+    assert use_case.saved is False
+    use_case.save()
+    assert use_case.saved is True
+    assert use_case.id == previous_id
+    yield use_case
+
+
 @pytest.fixture(name="deployment")
-def deployment_fixture(float_feature):
+def deployment_fixture(float_feature, use_case):
     """Deployment fixture"""
     feature_list = FeatureList([float_feature], name="my_feature_list")
     feature_list.save()
-    deployment = feature_list.deploy(make_production_ready=True)
+
+    deployment = feature_list.deploy(make_production_ready=True, use_case_name=use_case.name)
     return deployment
