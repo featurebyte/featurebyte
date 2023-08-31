@@ -105,3 +105,42 @@ def test_combined_simple_aggregate_and_window_aggregate(event_table, item_table)
         }
     ]
     assert df_preview.to_dict("records") == expected
+
+
+def test_relative_frequency_with_filter(event_table, scd_table):
+    """
+    Test complex feature involving an aggregation feature and a lookup feature, one with filter and
+    another without
+    """
+    event_view = event_table.get_view()
+    scd_view = scd_table.get_view()
+
+    event_view = event_view.join(scd_view, on="ÜSER ID")
+    lookup_feature = event_view["User Status"].as_feature("User Status Feature")
+
+    filtered_view = event_view[event_view["ÀMOUNT"] > 2]
+    dict_feature = filtered_view.groupby("ÜSER ID", category="User Status").aggregate_over(
+        method="count",
+        windows=["7d"],
+        feature_names=["my_feature"],
+    )["my_feature"]
+
+    feature = dict_feature.cd.get_relative_frequency(lookup_feature)
+    feature.name = "complex_feature"
+    feature_list = FeatureList([feature], name="my_feature_list")
+    preview_param = {
+        "POINT_IN_TIME": "2002-01-02 10:00:00",
+        "order_id": "T4390",
+        "üser id": 1,
+    }
+    observations_set = pd.DataFrame([preview_param])
+    df = feature_list.compute_historical_features(observations_set)
+    expected = [
+        {
+            "POINT_IN_TIME": pd.Timestamp("2002-01-02 10:00:00"),
+            "order_id": "T4390",
+            "üser id": 1,
+            "complex_feature": 0.125,
+        }
+    ]
+    assert df.to_dict("records") == expected
