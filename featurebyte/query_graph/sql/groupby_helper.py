@@ -158,7 +158,9 @@ def get_vector_agg_column_snowflake(
         )
         for k in groupby_keys
     ]
-    keys = [get_qualified_column_identifier(k.name, initial_data_table_name) for k in groupby_keys]
+    partition_by_keys = [
+        get_qualified_column_identifier(k.name, initial_data_table_name) for k in groupby_keys
+    ]
 
     agg_name = f"AGG_{index}"
     # The VECTOR_AGG_RESULT column value here, is a constant and is the name of the return value defined in the
@@ -173,7 +175,7 @@ def get_vector_agg_column_snowflake(
     agg_func_expr = expressions.Anonymous(
         this=_get_vector_sql_func(agg_func), expressions=[groupby_column_parent_expr.name]
     )
-    window_expr = expressions.Window(this=agg_func_expr, partition_by=keys)
+    window_expr = expressions.Window(this=agg_func_expr, partition_by=partition_by_keys)
     table_expr = expressions.Anonymous(this="TABLE", expressions=[window_expr])
     aliased_table_expr = alias_(table_expr, alias=agg_name, quoted=True)
 
