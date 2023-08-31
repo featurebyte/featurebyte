@@ -1115,13 +1115,25 @@ class Feature(
     )
 
     @typechecked
-    def update_namespace_description(self, description: Optional[str]) -> None:
+    def update_description(self, description: Optional[str]) -> None:
         """
-        Update description of object namespace
+        Update feature description
 
         Parameters
         ----------
         description: Optional[str]
-            Description of the object namespace
+            Description of feature
         """
         self.feature_namespace.update_description(description=description)
+
+    @typechecked
+    def update_version_description(self, description: Optional[str]) -> None:
+        """
+        Update feature version description
+
+        Parameters
+        ----------
+        description: Optional[str]
+            Description of feature version
+        """
+        super().update_description(description=description)
