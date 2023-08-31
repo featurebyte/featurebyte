@@ -1336,21 +1336,21 @@ def test_feature_list_save__check_feature_list_ids_correctly_set(float_feature):
     assert float_feature.feature_list_ids == []
 
 
-def test_update_description(saved_feature_list):
-    """Test update description"""
+def test_update_version_description(saved_feature_list):
+    """Test update version description"""
     assert saved_feature_list.description is None
-    saved_feature_list.update_description("new description")
+    saved_feature_list.update_version_description("new description")
     assert saved_feature_list.description == "new description"
     assert saved_feature_list.info()["description"] == "new description"
-    saved_feature_list.update_description(None)
+    saved_feature_list.update_version_description(None)
     assert saved_feature_list.description is None
     assert saved_feature_list.info()["description"] is None
 
 
-def test_update_namespace_description(saved_feature_list):
-    """Test update namespace description"""
+def test_update_description(saved_feature_list):
+    """Test update description"""
     assert saved_feature_list.info()["namespace_description"] is None
-    saved_feature_list.update_namespace_description("new description")
+    saved_feature_list.update_description("new description")
     assert saved_feature_list.info()["namespace_description"] == "new description"
-    saved_feature_list.update_namespace_description(None)
+    saved_feature_list.update_description(None)
     assert saved_feature_list.info()["namespace_description"] is None
