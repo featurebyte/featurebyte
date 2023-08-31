@@ -178,10 +178,10 @@ def get_vector_agg_column_snowflake(
         alias=groupby_column.result_name,
         quoted=True,
     )
-    groupby_column_parent_expr = groupby_column.parent_expr
-    assert groupby_column_parent_expr is not None
+    parent_cols = groupby_column.parent_cols
+    assert len(parent_cols) == 1
     agg_func_expr = expressions.Anonymous(
-        this=_get_vector_sql_func(agg_func), expressions=[groupby_column_parent_expr.name]
+        this=_get_vector_sql_func(agg_func), expressions=[parent_cols[0].name]
     )
     window_expr = expressions.Window(this=agg_func_expr, partition_by=partition_by_keys)
     table_expr = expressions.Anonymous(this="TABLE", expressions=[window_expr])
@@ -190,9 +190,7 @@ def get_vector_agg_column_snowflake(
     updated_groupby_keys = []
     for key in groupby_keys:
         updated_groupby_keys.append(alias_(key.expr, alias=key.name, quoted=True))
-    updated_groupby_keys.append(
-        alias_(groupby_column.parent_expr, alias=groupby_column_parent_expr.name)
-    )
+    updated_groupby_keys.append(alias_(parent_cols[0], alias=parent_cols[0].name))
 
     updated_input_expr_with_select_keys = input_expr.select(*updated_groupby_keys)
     expr = select(
