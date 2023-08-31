@@ -1,7 +1,7 @@
 """
 Unit test for UseCase class
 """
-from featurebyte import Deployment, UseCase
+from featurebyte import UseCase
 
 
 def test_create_use_case(catalog, float_target, context):
@@ -102,6 +102,5 @@ def test_list_deployments(use_case, target_table, deployment):
 
     retrieved_use_case = UseCase.get(use_case.name)
     deployments = retrieved_use_case.list_deployments()
-    deployment = Deployment.get_by_id(deployment.id)
     assert len(deployments) == 1
     assert deployments.iloc[0]["name"] == deployment.name

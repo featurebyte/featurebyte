@@ -1417,7 +1417,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         ignore_guardrails: bool
             Whether to ignore guardrails when trying to promote features in the list to production ready status.
         use_case_name: Optional[str]
-            name of the use case associated with the deployment.
+            Name of the use case associated with the deployment.
 
         Returns
         -------

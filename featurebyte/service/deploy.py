@@ -340,9 +340,9 @@ class DeployService(OpsServiceMixin):
         update_progress: Callable[[int, str | None], Coroutine[Any, Any, None]]
             Update progress handler function
         use_case_id: ObjectId
-            Use case ID
+            Use Case ID
         context_id: ObjectId
-            Use case ID
+            Context ID
 
         Raises
         ------
