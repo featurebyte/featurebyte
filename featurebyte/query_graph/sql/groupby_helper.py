@@ -48,6 +48,29 @@ class GroupbyKey:
         return cast(Expression, alias_(self.expr, self.name, quoted=True))
 
 
+def _get_vector_sql_func(agg_func: AggFunc) -> str:
+    """
+    Helper function to get the SQL function name for an aggregate function.
+
+    Parameters
+    ----------
+    agg_func : AggFunc
+        Aggregate function
+
+    Returns
+    -------
+    str
+        This is the name of the aggregate function in SQL.
+    """
+    array_parent_agg_func_sql_mapping = {
+        AggFunc.MAX: "VECTOR_AGGREGATE_MAX",
+        AggFunc.AVG: "VECTOR_AGGREGATE_SIMPLE_AVERAGE",
+        AggFunc.SUM: "VECTOR_AGGREGATE_SUM",
+    }
+    assert agg_func in array_parent_agg_func_sql_mapping
+    return array_parent_agg_func_sql_mapping[agg_func]
+
+
 def get_aggregation_expression(
     agg_func: AggFunc, input_column: Optional[str | Expression], parent_dtype: Optional[DBVarType]
 ) -> Expression:
@@ -67,14 +90,17 @@ def get_aggregation_expression(
     -------
     Expression
     """
-    if input_column is not None:
-        if isinstance(input_column, str):
-            input_column_expr = quoted_identifier(input_column)
-        else:
-            input_column_expr = input_column
-    else:
-        input_column_expr = None
+    # Check if it's a count function
+    if agg_func == AggFunc.COUNT:
+        return expressions.Count(this="*")
 
+    # Get input_column_expr from input_column
+    assert input_column is not None
+    input_column_expr = input_column
+    if isinstance(input_column, str):
+        input_column_expr = quoted_identifier(input_column)
+
+    # Try to get a built-in SQL aggregate function
     agg_func_sql_mapping = {
         AggFunc.SUM: "SUM",
         AggFunc.AVG: "AVG",
@@ -82,31 +108,16 @@ def get_aggregation_expression(
         AggFunc.MAX: "MAX",
         AggFunc.STD: "STDDEV",
     }
-    array_parent_agg_func_sql_mapping = {
-        AggFunc.MAX: "VECTOR_AGGREGATE_MAX",
-        AggFunc.AVG: "VECTOR_AGGREGATE_SIMPLE_AVERAGE",
-        AggFunc.SUM: "VECTOR_AGGREGATE_SUM",
-    }
-    expr: Expression
     if agg_func in agg_func_sql_mapping:
-        assert input_column_expr is not None
         sql_func = agg_func_sql_mapping[agg_func]
         if parent_dtype is not None and parent_dtype == DBVarType.ARRAY:
-            assert agg_func in array_parent_agg_func_sql_mapping
-            sql_func = array_parent_agg_func_sql_mapping[agg_func]
-        expr = expressions.Anonymous(this=sql_func, expressions=[input_column_expr])
-    else:
-        if agg_func == AggFunc.COUNT:
-            expr = cast(Expression, parse_one("COUNT(*)"))
-        else:
-            # Must be NA_COUNT
-            assert agg_func == AggFunc.NA_COUNT
-            assert input_column_expr is not None
-            expr_is_null = expressions.Is(this=input_column_expr, expression=expressions.NULL)
-            expr = expressions.Sum(
-                this=expressions.Cast(this=expr_is_null, to=parse_one("INTEGER"))
-            )
-    return expr
+            sql_func = _get_vector_sql_func(agg_func)
+        return expressions.Anonymous(this=sql_func, expressions=[input_column_expr])
+
+    # Must be NA_COUNT
+    assert agg_func == AggFunc.NA_COUNT
+    expr_is_null = expressions.Is(this=input_column_expr, expression=expressions.NULL)
+    return expressions.Sum(this=expressions.Cast(this=expr_is_null, to=parse_one("INTEGER")))
 
 
 def get_vector_agg_column_snowflake(
@@ -138,14 +149,6 @@ def get_vector_agg_column_snowflake(
     VectorAggColumn
     """
     # pylint: disable=too-many-locals
-    array_parent_agg_func_sql_mapping = {
-        AggFunc.MAX: "VECTOR_AGGREGATE_MAX",
-        AggFunc.AVG: "VECTOR_AGGREGATE_SIMPLE_AVERAGE",
-        AggFunc.SUM: "VECTOR_AGGREGATE_SUM",
-    }
-    assert agg_func in array_parent_agg_func_sql_mapping
-    snowflake_agg_func = array_parent_agg_func_sql_mapping[agg_func]
-
     initial_data_table_name = "INITIAL_DATA"
     select_keys = [
         alias_(
@@ -155,7 +158,9 @@ def get_vector_agg_column_snowflake(
         )
         for k in groupby_keys
     ]
-    keys = [get_qualified_column_identifier(k.name, initial_data_table_name) for k in groupby_keys]
+    partition_by_keys = [
+        get_qualified_column_identifier(k.name, initial_data_table_name) for k in groupby_keys
+    ]
 
     agg_name = f"AGG_{index}"
     # The VECTOR_AGG_RESULT column value here, is a constant and is the name of the return value defined in the
@@ -168,9 +173,9 @@ def get_vector_agg_column_snowflake(
     groupby_column_parent_expr = groupby_column.parent_expr
     assert groupby_column_parent_expr is not None
     agg_func_expr = expressions.Anonymous(
-        this=snowflake_agg_func, expressions=[groupby_column_parent_expr.name]
+        this=_get_vector_sql_func(agg_func), expressions=[groupby_column_parent_expr.name]
     )
-    window_expr = expressions.Window(this=agg_func_expr, partition_by=keys)
+    window_expr = expressions.Window(this=agg_func_expr, partition_by=partition_by_keys)
     table_expr = expressions.Anonymous(this="TABLE", expressions=[window_expr])
     aliased_table_expr = alias_(table_expr, alias=agg_name, quoted=True)
 
