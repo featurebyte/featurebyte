@@ -592,6 +592,7 @@ class WindowAggregator(TileBasedAggregator):
             groupby_columns,
             None,
             self.adapter.source_type,
+            is_tile=True,
         )
         return self.adapter.group_by(
             req_joined_with_tiles,

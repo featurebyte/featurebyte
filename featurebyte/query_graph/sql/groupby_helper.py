@@ -214,6 +214,7 @@ def _split_agg_and_snowflake_vector_aggregation_columns(
     groupby_columns: list[GroupbyColumn],
     value_by: Optional[GroupbyKey],
     source_type: SourceType,
+    is_tile: bool,
 ) -> tuple[list[Expression], list[VectorAggColumn]]:
     """
     Split the list of groupby columns into normal aggregations, and snowflake vector aggregation columns.
@@ -234,6 +235,8 @@ def _split_agg_and_snowflake_vector_aggregation_columns(
         Value by key
     source_type: SourceType
         Source type
+    is_tile: bool
+        Whether the query is for a tile
 
     Returns
     -------
@@ -254,10 +257,14 @@ def _split_agg_and_snowflake_vector_aggregation_columns(
                 )
             )
         else:
-            # Use the parent expr passed in if it's a complex expression with more than 2 columns. Else, we can
-            # construct the aggregation expression from the agg_func and the parent column.
-            aggregation_expression = column.parent_expr
-            if len(column.parent_cols) <= 1:
+            # If the request is coming from a tiling aggregate, the parent expression will contain the aggregation
+            # expression that we want to use. If it's from a non-tiling aggregate, we will need to construct the
+            # aggregation expression to be used here via the `get_aggregation_expression` call. This is because
+            # in the former case, the aggregation expression can be a more complex expression, such as when we
+            # do an average aggregation, which combines the sum and count aggregations.
+            if is_tile:
+                aggregation_expression = column.parent_expr
+            else:
                 aggregation_expression = get_aggregation_expression(
                     agg_func=column.agg_func,
                     input_column=column.parent_cols[0] if column.parent_cols else None,
@@ -302,7 +309,7 @@ def get_groupby_expr(
     Select
     """
     agg_exprs, snowflake_vector_agg_cols = _split_agg_and_snowflake_vector_aggregation_columns(
-        input_expr, groupby_keys, groupby_columns, value_by, adapter.source_type
+        input_expr, groupby_keys, groupby_columns, value_by, adapter.source_type, is_tile=False
     )
 
     select_keys = [k.get_alias() for k in groupby_keys]
