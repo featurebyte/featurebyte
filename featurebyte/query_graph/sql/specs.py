@@ -211,21 +211,20 @@ class TileBasedAggregationSpec(AggregationSpec):
             spec.tile_column_name for spec in aggregator.tile(parent_column, aggregation_id)
         ]
         for window, feature_name in zip(groupby_node_params.windows, groupby_node_params.names):
-            if window is not None:
-                window = int(pd.Timedelta(window).total_seconds())
+            window_secs = int(pd.Timedelta(window).total_seconds()) if window is not None else None
             pruned_graph, pruned_node, dtype = cls._get_aggregation_column_type(
                 graph=graph,
                 groupby_node=groupby_node,
                 feature_name=feature_name,
             )
             agg_spec = cls(
-                window=window,
+                window=window_secs,
                 frequency=groupby_node_params.frequency,
                 time_modulo_frequency=groupby_node_params.time_modulo_frequency,
                 blind_spot=groupby_node_params.blind_spot,
                 tile_table_id=tile_table_id,
                 aggregation_id=aggregation_id,
-                keys=groupby_node_params.keys,
+                keys=groupby_node_params.keys,  # type: ignore[arg-type]
                 serving_names=groupby_node_params.serving_names,
                 serving_names_mapping=serving_names_mapping,
                 value_by=groupby_node_params.value_by,
@@ -233,7 +232,7 @@ class TileBasedAggregationSpec(AggregationSpec):
                 feature_name=feature_name,
                 is_order_dependent=aggregator.is_order_dependent,
                 tile_value_columns=tile_value_columns,
-                entity_ids=groupby_node_params.entity_ids,
+                entity_ids=groupby_node_params.entity_ids,  # type: ignore[arg-type]
                 dtype=dtype,
                 pruned_graph=pruned_graph,
                 pruned_node=pruned_node,
