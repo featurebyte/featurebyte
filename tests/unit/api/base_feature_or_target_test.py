@@ -91,20 +91,20 @@ class FeatureOrTargetBaseTestSuite:
             {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "catalog"}
         ]
 
-    def test_update_description(self, saved_item_under_test):
-        """Test update description"""
+    def test_update_version_description(self, saved_item_under_test):
+        """Test update version description"""
         assert saved_item_under_test.description is None
-        saved_item_under_test.update_description("new description")
+        saved_item_under_test.update_version_description("new description")
         assert saved_item_under_test.description == "new description"
         assert saved_item_under_test.info()["description"] == "new description"
-        saved_item_under_test.update_description(None)
+        saved_item_under_test.update_version_description(None)
         assert saved_item_under_test.description is None
         assert saved_item_under_test.info()["description"] is None
 
-    def test_update_namespace_description(self, saved_item_under_test):
-        """Test update namespace description"""
+    def test_update_description(self, saved_item_under_test):
+        """Test update description"""
         assert saved_item_under_test.info()["namespace_description"] is None
-        saved_item_under_test.update_namespace_description("new description")
+        saved_item_under_test.update_description("new description")
         assert saved_item_under_test.info()["namespace_description"] == "new description"
-        saved_item_under_test.update_namespace_description(None)
+        saved_item_under_test.update_description(None)
         assert saved_item_under_test.info()["namespace_description"] is None
