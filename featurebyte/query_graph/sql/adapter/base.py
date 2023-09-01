@@ -644,6 +644,7 @@ class BaseAdapter(ABC):  # pylint: disable=too-many-public-methods
         agg_exprs: List[Expression],
         keys: List[Expression],
         vector_aggregate_columns: Optional[List[VectorAggColumn]] = None,
+        quote_vector_agg_aliases: bool = True,
     ) -> Select:
         """
         Construct query to group by.
@@ -665,12 +666,14 @@ class BaseAdapter(ABC):  # pylint: disable=too-many-public-methods
             List of vector aggregate expressions. This should only be used if special handling is required to join
             vector aggregate functions, and that they're not usable as a normal function. This param is a no-op
             by default, and will only be used by specific data warehouses.
+        quote_vector_agg_aliases: bool
+            Whether to quote the vector aggregate aliases.
 
         Returns
         -------
         Select
         """
-        _ = vector_aggregate_columns
+        _ = vector_aggregate_columns, quote_vector_agg_aliases
         return input_expr.select(*select_keys, *agg_exprs).group_by(*keys)
 
     @classmethod

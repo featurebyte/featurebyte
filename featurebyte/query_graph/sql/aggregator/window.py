@@ -586,7 +586,7 @@ class WindowAggregator(TileBasedAggregator):
         Select
         """
         groupby_keys = [GroupbyKey(expr=key, name=key.name) for key in inner_group_by_keys]
-        agg_exprs, _ = _split_agg_and_snowflake_vector_aggregation_columns(
+        agg_exprs, vector_agg_exprs = _split_agg_and_snowflake_vector_aggregation_columns(
             req_joined_with_tiles,
             groupby_keys,
             groupby_columns,
@@ -598,6 +598,7 @@ class WindowAggregator(TileBasedAggregator):
             select_keys=inner_group_by_keys,
             agg_exprs=agg_exprs,
             keys=inner_group_by_keys,
+            vector_aggregate_columns=vector_agg_exprs,
         )
 
     @staticmethod

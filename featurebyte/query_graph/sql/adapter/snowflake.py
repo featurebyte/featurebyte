@@ -299,6 +299,7 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
         agg_exprs: List[Expression],
         keys: List[Expression],
         vector_aggregate_columns: Optional[List[VectorAggColumn]] = None,
+        quote_vector_agg_aliases: bool = True,
     ) -> Select:
         # pylint: disable=too-many-locals
         # If there are no vector aggregate expressions, we can use the standard group by.
@@ -315,7 +316,7 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
                         vector_agg_col.result_name, cls._get_groupby_table_alias(idx)
                     ),
                     alias=f"{vector_agg_col.result_name}",
-                    quoted=True,
+                    quoted=quote_vector_agg_aliases,
                 )
             )
 
@@ -339,9 +340,9 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
         for select_key in select_keys:
             renamed_table_select_keys.append(
                 alias_(
-                    get_qualified_column_identifier(select_key.alias, table_alias),
-                    alias=select_key.alias,
-                    quoted=True,
+                    get_qualified_column_identifier(select_key.alias_or_name, table_alias),
+                    alias=select_key.alias_or_name,
+                    quoted=quote_vector_agg_aliases,
                 )
             )
         left_expression = select(
@@ -357,10 +358,10 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
                 join_conditions.append(
                     expressions.EQ(
                         this=get_qualified_column_identifier(
-                            select_key.alias, cls._get_groupby_table_alias(idx)
+                            select_key.alias_or_name, cls._get_groupby_table_alias(idx)
                         ),
                         expression=get_qualified_column_identifier(
-                            select_key.alias, cls._get_groupby_table_alias(idx + 1)
+                            select_key.alias_or_name, cls._get_groupby_table_alias(idx + 1)
                         ),
                     )
                 )
@@ -377,10 +378,10 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
                 join_conditions.append(
                     expressions.EQ(
                         this=get_qualified_column_identifier(
-                            select_key.alias, groupby_subquery_alias
+                            select_key.alias_or_name, groupby_subquery_alias
                         ),
                         expression=get_qualified_column_identifier(
-                            select_key.alias,
+                            select_key.alias_or_name,
                             cls._get_groupby_table_alias(len(vector_aggregate_columns) - 1),
                         ),
                     )
