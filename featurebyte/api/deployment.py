@@ -301,7 +301,13 @@ class Deployment(ApiObject):
         job_duration_tolerance: int = 60,
     ) -> FeatureJobStatusResult:
         """
-        Get the status of feature jobs in the associated feature list used for the deployment.
+        Returns a report on the recent activity of scheduled feature jobs associated with a Deployment object.
+        The report includes recent runs for these jobs, whether they were successful, and the duration of the jobs.
+        This provides a summary of the health of the feature, and whether online features are updated in a timely manner
+
+        Failed and late jobs can occur due to various reasons, including insufficient compute capacity. Check your
+        data warehouse logs for more details on the errors. If the errors are due to insufficient compute capacity,
+        you can consider upsizing your instances.
 
         Parameters
         ----------
