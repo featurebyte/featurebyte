@@ -319,6 +319,11 @@ class Deployment(ApiObject):
         Returns
         -------
         FeatureJobStatusResult
+
+        Examples
+        --------
+        >>> deployment = catalog.get_deployment("feature_deployment")  # doctest: +SKIP
+        >>> deployment.get_feature_jobs_status()  # doctest: +SKIP
         """
         return FeatureList.get_by_id(self.feature_list_id).get_feature_jobs_status(
             job_history_window=job_history_window,
