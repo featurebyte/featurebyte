@@ -884,6 +884,7 @@ def _get_deployment_layout() -> List[DocLayoutItem]:
         DocLayoutItem([DEPLOYMENT, LINEAGE, "Deployment.feature_list_id"]),
         DocLayoutItem([DEPLOYMENT, MANAGE, "Deployment.enable"]),
         DocLayoutItem([DEPLOYMENT, MANAGE, "Deployment.disable"]),
+        DocLayoutItem([DEPLOYMENT, MANAGE, "Deployment.get_feature_jobs_status"]),
         DocLayoutItem([DEPLOYMENT, SERVE, "Deployment.compute_batch_feature_table"]),
         DocLayoutItem([DEPLOYMENT, SERVE, "Deployment.get_online_serving_code"]),
     ]
