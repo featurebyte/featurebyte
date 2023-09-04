@@ -566,7 +566,7 @@ def test_catalog_specific_service_requires_catalog_id(user, persistent):
         with pytest.raises(CatalogNotSpecifiedError) as exc:
             mock_is_catalog_specific.return_value = True
             DocumentService(user=user, persistent=persistent, catalog_id=None)
-        assert str(exc.value) == "No active catalog specified for service: DocumentService"
+        assert str(exc.value) == "Catalog not specified. Please specify a catalog."
 
 
 @pytest.mark.asyncio

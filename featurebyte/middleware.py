@@ -12,22 +12,12 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
 from featurebyte.exception import (
-    CatalogNotSpecifiedError,
+    BaseConflictError,
+    BaseFailedDependencyError,
+    BaseUnprocessableEntityError,
     ColumnNotFoundError,
-    CredentialsError,
-    DatabaseNotFoundError,
-    DocumentConflictError,
-    DocumentError,
     DocumentNotFoundError,
-    FeatureStoreSchemaCollisionError,
-    LimitExceededError,
-    NoFeatureStorePresentError,
     QueryNotSupportedError,
-    RequiredEntityNotProvidedError,
-    SchemaNotFoundError,
-    TableNotFoundError,
-    UnexpectedServingNamesMappingError,
-    UseCaseInvalidDataError,
 )
 from featurebyte.logging import get_logger
 
@@ -159,10 +149,7 @@ class ExecutionContext:
         return False
 
 
-ExecutionContext.register(CredentialsError, handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY)
-
-ExecutionContext.register(DocumentConflictError, handle_status_code=HTTPStatus.CONFLICT)
-
+# UNPROCESSABLE_ENTITY errors
 ExecutionContext.register(
     DocumentNotFoundError,
     handle_status_code=lambda req, exc: HTTPStatus.UNPROCESSABLE_ENTITY
@@ -177,65 +164,29 @@ ExecutionContext.register(
     else HTTPStatus.NOT_FOUND,
 )
 
-ExecutionContext.register(DocumentError, handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY)
-
 ExecutionContext.register(ValidationError, handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY)
 
-ExecutionContext.register(LimitExceededError, handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY)
-
-# error due to entity validation failure
 ExecutionContext.register(
-    RequiredEntityNotProvidedError, handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY
-)
-ExecutionContext.register(
-    UnexpectedServingNamesMappingError, handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY
+    BaseUnprocessableEntityError, handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY
 )
 
+
+# CONFLICT errors
+ExecutionContext.register(BaseConflictError, handle_status_code=HTTPStatus.CONFLICT)
+
+
+# NOT_IMPLEMENTED errors
 ExecutionContext.register(
     QueryNotSupportedError,
     handle_status_code=HTTPStatus.NOT_IMPLEMENTED,
     handle_message="Query not supported.",
 )
 
-ExecutionContext.register(
-    FeatureStoreSchemaCollisionError,
-    handle_status_code=HTTPStatus.CONFLICT,
-    handle_message="Feature Store ID is already in use.",
-)
 
+# FAILED_DEPENDENCY errors
 ExecutionContext.register(
-    NoFeatureStorePresentError,
+    BaseFailedDependencyError,
     handle_status_code=HTTPStatus.FAILED_DEPENDENCY,
-    handle_message="No feature store found. Please create one before trying to access this functionality.",
-)
-
-ExecutionContext.register(
-    DatabaseNotFoundError,
-    handle_status_code=HTTPStatus.FAILED_DEPENDENCY,
-    handle_message="Database not found. Please specify a valid database name.",
-)
-
-ExecutionContext.register(
-    SchemaNotFoundError,
-    handle_status_code=HTTPStatus.FAILED_DEPENDENCY,
-    handle_message="Schema not found. Please specify a valid schema name.",
-)
-
-ExecutionContext.register(
-    TableNotFoundError,
-    handle_status_code=HTTPStatus.FAILED_DEPENDENCY,
-    handle_message="Table not found. Please specify a valid table name.",
-)
-
-ExecutionContext.register(
-    CatalogNotSpecifiedError,
-    handle_status_code=HTTPStatus.FAILED_DEPENDENCY,
-    handle_message="Catalog not specified. Please specify a catalog.",
-)
-
-ExecutionContext.register(
-    UseCaseInvalidDataError,
-    handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
 )
 
 
