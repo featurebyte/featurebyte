@@ -87,6 +87,9 @@ class NodeType(StrEnum):
     GET_RANK = "get_rank"
     GET_RELATIVE_FREQUENCY = "get_relative_frequency"
 
+    # vector related operations
+    VECTOR_COSINE_SIMILARITY = "vector_cosine_similarity"
+
     # window functions related operations
     LAG = "lag"
 
