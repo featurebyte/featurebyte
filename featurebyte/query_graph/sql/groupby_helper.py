@@ -58,7 +58,7 @@ class GroupbyKey:
         return cast(Expression, alias_(self.expr, self.name, quoted=True))
 
 
-def _get_vector_sql_func(agg_func: AggFunc) -> str:
+def _get_vector_sql_func(agg_func: AggFunc, is_tile: bool) -> str:
     """
     Helper function to get the SQL function name for an aggregate function.
 
@@ -66,12 +66,16 @@ def _get_vector_sql_func(agg_func: AggFunc) -> str:
     ----------
     agg_func : AggFunc
         Aggregate function
+    is_tile : bool
+        Whether the aggregate function is for a tile column
 
     Returns
     -------
     str
         This is the name of the aggregate function in SQL.
     """
+    if is_tile and agg_func == AggFunc.AVG:
+        return "VECTOR_AGGREGATE_AVG"
     array_parent_agg_func_sql_mapping = {
         AggFunc.MAX: "VECTOR_AGGREGATE_MAX",
         AggFunc.AVG: "VECTOR_AGGREGATE_SIMPLE_AVERAGE",
@@ -121,7 +125,7 @@ def get_aggregation_expression(
     if agg_func in agg_func_sql_mapping:
         sql_func = agg_func_sql_mapping[agg_func]
         if parent_dtype is not None and parent_dtype == DBVarType.ARRAY:
-            sql_func = _get_vector_sql_func(agg_func)
+            sql_func = _get_vector_sql_func(agg_func, False)
         return expressions.Anonymous(this=sql_func, expressions=[input_column_expr])
 
     # Must be NA_COUNT
@@ -136,6 +140,7 @@ def get_vector_agg_column_snowflake(
     groupby_keys: List[GroupbyKey],
     groupby_column: GroupbyColumn,
     index: int,
+    is_tile: bool,
 ) -> VectorAggColumn:
     """
     Returns the vector aggregate expression for snowflake. This will call the vector aggregate function, and return its
@@ -153,6 +158,8 @@ def get_vector_agg_column_snowflake(
         Groupby column
     index : int
         Index of the vector aggregate column
+    is_tile : bool
+        Whether the aggregate function is for a tile column
 
     Returns
     -------
@@ -181,9 +188,9 @@ def get_vector_agg_column_snowflake(
         quoted=True,
     )
     parent_cols = groupby_column.parent_cols
-    assert len(parent_cols) == 1
     agg_func_expr = expressions.Anonymous(
-        this=_get_vector_sql_func(agg_func), expressions=[parent_cols[0].name]
+        this=_get_vector_sql_func(agg_func, is_tile),
+        expressions=[parent_col.name for parent_col in parent_cols],
     )
     window_expr = expressions.Window(this=agg_func_expr, partition_by=partition_by_keys)
     table_expr = expressions.Anonymous(this="TABLE", expressions=[window_expr])
@@ -192,7 +199,8 @@ def get_vector_agg_column_snowflake(
     updated_groupby_keys = []
     for key in groupby_keys:
         updated_groupby_keys.append(alias_(key.expr, alias=key.name, quoted=True))
-    updated_groupby_keys.append(alias_(parent_cols[0], alias=parent_cols[0].name))
+    for parent_col in parent_cols:
+        updated_groupby_keys.append(alias_(parent_col, alias=parent_col.name))
 
     updated_input_expr_with_select_keys = input_expr.select(*updated_groupby_keys)
     expr = select(
@@ -214,6 +222,7 @@ def _split_agg_and_snowflake_vector_aggregation_columns(
     groupby_columns: list[GroupbyColumn],
     value_by: Optional[GroupbyKey],
     source_type: SourceType,
+    is_tile: bool,
 ) -> tuple[list[Expression], list[VectorAggColumn]]:
     """
     Split the list of groupby columns into normal aggregations, and snowflake vector aggregation columns.
@@ -234,6 +243,8 @@ def _split_agg_and_snowflake_vector_aggregation_columns(
         Value by key
     source_type: SourceType
         Source type
+    is_tile: bool
+        Whether the query is for a tile
 
     Returns
     -------
@@ -251,6 +262,7 @@ def _split_agg_and_snowflake_vector_aggregation_columns(
                     groupby_keys=groupby_keys,
                     groupby_column=column,
                     index=index,
+                    is_tile=is_tile,
                 )
             )
         else:
@@ -327,7 +339,12 @@ def get_groupby_expr(
         groupby_columns, adapter.source_type
     )
     agg_exprs, snowflake_vector_agg_cols = _split_agg_and_snowflake_vector_aggregation_columns(
-        input_expr, groupby_keys, updated_groupby_columns, value_by, adapter.source_type
+        input_expr,
+        groupby_keys,
+        updated_groupby_columns,
+        value_by,
+        adapter.source_type,
+        is_tile=False,
     )
 
     select_keys = [k.get_alias() for k in groupby_keys]

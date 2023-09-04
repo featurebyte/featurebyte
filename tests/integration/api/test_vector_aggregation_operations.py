@@ -3,7 +3,6 @@ Test vector aggregation operations module
 """
 from typing import List
 
-import ast
 import json
 import os
 
@@ -248,14 +247,11 @@ TEST_CASES = [
     TEST_CASES,
 )
 def test_vector_aggregation_operations__aggregate_over(
-    event_table_with_array_column, agg_func, expected_results, vector_value_column, source_type
+    event_table_with_array_column, agg_func, expected_results, vector_value_column
 ):
     """
     Test vector aggregation operations
     """
-    # Skip the snowflake avg aggregation tests for now. We'll fix this in a follow-up.
-    if source_type == "snowflake" and agg_func == AggFunc.AVG:
-        return
     event_view = event_table_with_array_column.get_view()
     feature_name = "vector_agg"
     feature = event_view.groupby("USER_ID").aggregate_over(
@@ -358,7 +354,7 @@ def test_vector_aggregation_operations__aggregate_asat(
     }
 
 
-@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.parametrize("user_id", [2, 4])
 def test_vector_aggregation_operations_fails_for_vectors_of_different_lengths(
     event_table_with_array_column, user_id

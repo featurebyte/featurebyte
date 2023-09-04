@@ -311,8 +311,9 @@ class SnowflakeSession(BaseSession):
                 db_type = "INT"
             elif (
                 dataframe.shape[0] > 0
-                and dataframe[colname].apply(lambda x: isinstance(x, list)).all()
+                and dataframe[colname].apply(lambda x: x is None or isinstance(x, list)).all()
             ):
+                # Consider the type as an ARRAY if all elements are None, or a list.
                 db_type = "ARRAY"
             else:
                 db_type = "VARCHAR"

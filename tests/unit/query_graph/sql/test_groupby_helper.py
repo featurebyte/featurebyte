@@ -82,12 +82,18 @@ def test_get_vector_agg_column_snowflake(
                 groupby_keys=[groupby_key],
                 groupby_column=groupby_column,
                 index=0,
+                is_tile=False,
             )
         return
 
     # If no error expected, check the SQL.
     vector_agg_col = get_vector_agg_column_snowflake(
-        select_expr, agg_func, groupby_keys=[groupby_key], groupby_column=groupby_column, index=0
+        select_expr,
+        agg_func,
+        groupby_keys=[groupby_key],
+        groupby_column=groupby_column,
+        index=0,
+        is_tile=False,
     )
     expected = textwrap.dedent(
         f"""
