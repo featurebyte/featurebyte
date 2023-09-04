@@ -175,6 +175,7 @@ EXPECTED_FUNCTIONS = [
     "F_VECTOR_AGGREGATE_SUM",
     "F_VECTOR_AGGREGATE_AVG",
     "F_VECTOR_AGGREGATE_SIMPLE_AVERAGE",
+    "F_VECTOR_COSINE_SIMILARITY",
 ]
 
 EXPECTED_TABLES = [
@@ -346,6 +347,11 @@ def test_schema_initializer__sql_objects(
         {
             "filename": "F_VECTOR_AGGREGATE_SUM.sql",
             "identifier": "F_VECTOR_AGGREGATE_SUM",
+            "type": "function",
+        },
+        {
+            "filename": "F_VECTOR_COSINE_SIMILARITY.sql",
+            "identifier": "F_VECTOR_COSINE_SIMILARITY",
             "type": "function",
         },
         {

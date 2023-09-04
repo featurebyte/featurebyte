@@ -17,7 +17,7 @@ import pytest
     ],
 )
 @pytest.mark.asyncio
-async def test_vector_cosine_similarity(to_object, session, array1, array2, expected):
+async def test_vector_cosine_similarity(session, array1, array2, expected):
     """
     Test vector cosine similarity
     """
