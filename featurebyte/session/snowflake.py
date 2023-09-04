@@ -10,6 +10,7 @@ import datetime
 import json
 import logging
 
+import numpy as np
 import pandas as pd
 import pyarrow as pa
 from pydantic import Field
@@ -311,7 +312,9 @@ class SnowflakeSession(BaseSession):
                 db_type = "INT"
             elif (
                 dataframe.shape[0] > 0
-                and dataframe[colname].apply(lambda x: x is None or isinstance(x, list)).all()
+                and dataframe[colname]
+                .apply(lambda x: x is None or np.isnan(x) or isinstance(x, list))
+                .all()
             ):
                 # Consider the type as an ARRAY if all elements are None, or a list.
                 db_type = "ARRAY"
@@ -348,7 +351,7 @@ class SnowflakeSchemaInitializer(BaseSchemaInitializer):
 
     @property
     def current_working_schema_version(self) -> int:
-        return 27
+        return 26
 
     async def create_schema(self) -> None:
         create_schema_query = f'CREATE SCHEMA "{self.session.schema_name}"'
