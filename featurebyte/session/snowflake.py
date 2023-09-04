@@ -10,7 +10,6 @@ import datetime
 import json
 import logging
 
-import numpy as np
 import pandas as pd
 import pyarrow as pa
 from pydantic import Field
