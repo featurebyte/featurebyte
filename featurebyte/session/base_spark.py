@@ -402,6 +402,7 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
         # To ensure functionality is updated for a function we should create a new class
         # and re-register the function with the new class
         udf_functions = [
+            ("F_VECTOR_COSINE_SIMILARITY", "com.featurebyte.hive.udf.VectorCosineSimilarity"),
             ("VECTOR_AGGREGATE_MAX", "com.featurebyte.hive.udf.VectorAggregateMax"),
             ("VECTOR_AGGREGATE_SUM", "com.featurebyte.hive.udf.VectorAggregateSum"),
             ("VECTOR_AGGREGATE_AVG", "com.featurebyte.hive.udf.VectorAggregateAverage"),
