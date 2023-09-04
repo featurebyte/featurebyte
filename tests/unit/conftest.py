@@ -995,7 +995,7 @@ def observation_table_from_source_fixture(
     _ = catalog
     _ = patched_observation_table_service
     return snowflake_database_table.create_observation_table(
-        "observation_table_from_source_table", context_id=context.id
+        "observation_table_from_source_table", context_name=context.name
     )
 
 
