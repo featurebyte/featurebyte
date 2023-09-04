@@ -354,7 +354,7 @@ def test_vector_aggregation_operations__aggregate_asat(
     }
 
 
-@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.parametrize("user_id", [2, 4])
 def test_vector_aggregation_operations_fails_for_vectors_of_different_lengths(
     event_table_with_array_column, user_id
