@@ -66,5 +66,5 @@ class VectorAccessor:
             other=other,
             node_type=NodeType.VECTOR_COSINE_SIMILARITY,
             output_var_type=DBVarType.FLOAT,
-            additional_node_params={},  # TODO: add
+            additional_node_params={},
         )
