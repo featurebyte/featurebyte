@@ -41,7 +41,8 @@ class SparkAdapter(DatabricksAdapter):
     ) -> Expression:
         def _to_microseconds(expr: Expression) -> Expression:
             return expressions.Mul(
-                this=expressions.Cast(this=expr, to=expressions.DataType.build("DOUBLE")),
+                # this=expressions.Cast(this=expr, to=expressions.DataType.build("DOUBLE")),
+                this=cls.to_seconds_double(expr),
                 expression=make_literal_value(1e6),
             )
 

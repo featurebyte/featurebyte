@@ -77,6 +77,29 @@ class DatabricksAdapter(BaseAdapter):
         )
 
     @classmethod
+    def to_seconds_double(cls, expr: Expression) -> Expression:
+        """
+        Convert date or timestamp expression to floating point epoch seconds while preserving
+        sub-seconds component
+
+        Parameters
+        ----------
+        expr: Expression
+            Date or timestamp expression
+
+        Returns
+        -------
+        Expression
+        """
+        # Date type must be converted to TIMESTAMP type first before casting to double, else it
+        # returns NA.
+        timestamp_expr = expressions.Cast(this=expr, to=expressions.DataType.build("TIMESTAMP"))
+        timestamp_seconds = expressions.Cast(
+            this=timestamp_expr, to=expressions.DataType.build("DOUBLE")
+        )
+        return timestamp_seconds
+
+    @classmethod
     def _dateadd_by_casting_to_seconds(
         cls,
         quantity_expr: Expression,
@@ -86,9 +109,7 @@ class DatabricksAdapter(BaseAdapter):
         # DATEADD with a customisable unit is not supported in older versions of Spark (< 3.3). To
         # workaround that, convert to double (epoch seconds with sub-seconds preserved) to perform
         # the addition and then convert back to timestamp.
-        timestamp_seconds = expressions.Cast(
-            this=timestamp_expr, to=expressions.DataType.build("DOUBLE")
-        )
+        timestamp_seconds = cls.to_seconds_double(timestamp_expr)
         if quantity_scale is None:
             seconds_quantity = quantity_expr
         else:
