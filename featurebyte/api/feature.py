@@ -69,6 +69,7 @@ from featurebyte.schema.feature import (
 logger = get_logger(__name__)
 
 
+# pylint: disable=too-many-ancestors
 class Feature(
     Series,
     DeletableApiObject,
