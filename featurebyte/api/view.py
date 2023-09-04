@@ -1670,7 +1670,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             Rename columns in the view using this mapping from old column names to new column names
             when creating the observation table. If None, no columns are renamed.
         context_name: Optional[str]
-            context_name for the observation table.
+            Context name for the observation table.
 
         Returns
         -------
