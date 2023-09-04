@@ -6,7 +6,7 @@ from http import HTTPStatus
 
 import pytest
 
-from featurebyte.exception import DocumentConflictError, DocumentError
+from featurebyte.exception import DocumentConflictError, DocumentCreationError, DocumentError
 from featurebyte.middleware import ExecutionContext
 
 
@@ -68,11 +68,11 @@ async def test_register_exception_handler_register_before_super_class(mock_excep
     )
     with pytest.raises(ValueError) as excinfo:
         mock_exception_context.register(
-            DocumentConflictError, handle_status_code=HTTPStatus.CONFLICT
+            DocumentCreationError, handle_status_code=HTTPStatus.CONFLICT
         )
 
     assert (
         str(excinfo.value)
-        == "<class 'featurebyte.exception.DocumentConflictError'> must be registered before its super class "
+        == "<class 'featurebyte.exception.DocumentCreationError'> must be registered before its super class "
         "<class 'featurebyte.exception.DocumentError'>"
     )

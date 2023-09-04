@@ -82,6 +82,24 @@ class QueryNotSupportedError(NotImplementedError):
     """
 
 
+class BaseUnprocessableEntityError(FeatureByteException):
+    """
+    Base exception class for 422 Unprocessable Entity responses
+    """
+
+
+class BaseFailedDependencyError(FeatureByteException):
+    """
+    Base exception class for 424 Failed Dependency responses
+    """
+
+
+class BaseConflictError(FeatureByteException):
+    """
+    Base exception class for 409 Conflict responses
+    """
+
+
 class RecordCreationException(ResponseException):
     """
     General failure during creating an object to persistent layer
@@ -130,13 +148,13 @@ class TooRecentPointInTimeError(FeatureByteException):
     """
 
 
-class RequiredEntityNotProvidedError(FeatureByteException):
+class RequiredEntityNotProvidedError(BaseUnprocessableEntityError):
     """
     Raised when one or more required entities are not provided
     """
 
 
-class UnexpectedServingNamesMappingError(FeatureByteException):
+class UnexpectedServingNamesMappingError(BaseUnprocessableEntityError):
     """
     Raised when unexpected keys are provided in serving names mapping
     """
@@ -192,13 +210,13 @@ class TableSchemaHasBeenChangedError(FeatureByteException):
     """
 
 
-class CredentialsError(FeatureByteException):
+class CredentialsError(BaseUnprocessableEntityError):
     """
     Raise when the credentials used to access the resource is missing or invalid
     """
 
 
-class DocumentError(FeatureByteException):
+class DocumentError(BaseUnprocessableEntityError):
     """
     General exception raised when there are some issue at persistent layer operations
     """
@@ -210,7 +228,7 @@ class DocumentNotFoundError(DocumentError):
     """
 
 
-class DocumentConflictError(DocumentError):
+class DocumentConflictError(BaseConflictError):
     """
     Raise when there exists a conflicting document at the persistent
     """
@@ -258,17 +276,25 @@ class QueryExecutionTimeOut(DocumentError):
     """
 
 
-class FeatureStoreSchemaCollisionError(FeatureByteException):
+class FeatureStoreSchemaCollisionError(BaseConflictError):
     """
     Raise when the feature store ID is already in use by another
     working schema.
     """
 
+    def __str__(self) -> str:
+        return "Feature Store ID is already in use."
 
-class NoFeatureStorePresentError(FeatureByteException):
+
+class NoFeatureStorePresentError(BaseFailedDependencyError):
     """
     Raise when we cannot find a feature store, when we expect one to be there.
     """
+
+    def __str__(self) -> str:
+        return (
+            "No feature store found. Please create one before trying to access this functionality."
+        )
 
 
 class FeatureListNotOnlineEnabledError(FeatureByteException):
@@ -340,7 +366,7 @@ class NoChangesInFeatureVersionError(DocumentError):
     """
 
 
-class LimitExceededError(FeatureByteException):
+class LimitExceededError(BaseUnprocessableEntityError):
     """
     Raised when limit is exceeded
     """
@@ -358,31 +384,43 @@ class DockerError(FeatureByteException):
     """
 
 
-class DatabaseNotFoundError(FeatureByteException):
+class DatabaseNotFoundError(BaseFailedDependencyError):
     """
     Raise when the requested database does not exist in the data warehouse
     """
 
+    def __str__(self) -> str:
+        return "Database not found. Please specify a valid database name."
 
-class SchemaNotFoundError(FeatureByteException):
+
+class SchemaNotFoundError(BaseFailedDependencyError):
     """
     Raise when the requested schema does not exist in the data warehouse
     """
 
+    def __str__(self) -> str:
+        return "Schema not found. Please specify a valid schema name."
 
-class TableNotFoundError(FeatureByteException):
+
+class TableNotFoundError(BaseFailedDependencyError):
     """
     Raise when the requested table does not exist in the data warehouse
     """
 
+    def __str__(self) -> str:
+        return "Table not found. Please specify a valid table name."
 
-class CatalogNotSpecifiedError(FeatureByteException):
+
+class CatalogNotSpecifiedError(BaseFailedDependencyError):
     """
     Raise when the catalog is not specified in a catalog-specific request
     """
 
+    def __str__(self) -> str:
+        return "Catalog not specified. Please specify a catalog."
 
-class UseCaseInvalidDataError(FeatureByteException):
+
+class UseCaseInvalidDataError(BaseUnprocessableEntityError):
     """
     Raise when invalid observation table default is specified
     """
