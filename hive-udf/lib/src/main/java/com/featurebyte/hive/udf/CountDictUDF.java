@@ -8,8 +8,6 @@ import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.*;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector.PrimitiveCategory;
-import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
-import org.apache.hadoop.hive.serde2.objectinspector.primitive.WritableVoidObjectInspector;
 
 public abstract class CountDictUDF extends GenericUDF {
 
@@ -22,18 +20,11 @@ public abstract class CountDictUDF extends GenericUDF {
   protected final transient ObjectInspectorConverters.Converter[] converters =
       new ObjectInspectorConverters.Converter[2];
 
-  protected static final WritableVoidObjectInspector nullOI =
-      PrimitiveObjectInspectorFactory.writableVoidObjectInspector;
-
   protected static void checkIsMap(ObjectInspector[] arguments, int i)
       throws UDFArgumentTypeException {
     if (!(arguments[i] instanceof MapObjectInspector)) {
       throw new UDFArgumentTypeException(i, "Parameter must be a Map");
     }
-  }
-
-  protected static boolean isNullOI(ObjectInspector objectInspector) {
-    return objectInspector instanceof WritableVoidObjectInspector;
   }
 
   protected void checkTypesAndInitialize(ObjectInspector[] arguments) throws UDFArgumentException {
