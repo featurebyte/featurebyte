@@ -253,9 +253,6 @@ def test_vector_aggregation_operations__aggregate_over(
     """
     Test vector aggregation operations
     """
-    # Skip the snowflake avg aggregation tests for now. We'll fix this in a follow-up.
-    if source_type == "snowflake" and agg_func == AggFunc.AVG:
-        return
     event_view = event_table_with_array_column.get_view()
     feature_name = "vector_agg"
     feature = event_view.groupby("USER_ID").aggregate_over(

@@ -92,6 +92,7 @@ class BaseAdapterTest:
                     parent_cols=[(get_qualified_column_identifier("parent", "TABLE"))],
                 ),
                 0,
+                False,
             ),
             get_vector_agg_column_snowflake(
                 select(),
@@ -105,6 +106,7 @@ class BaseAdapterTest:
                     parent_cols=[(get_qualified_column_identifier("parent2", "TABLE"))],
                 ),
                 1,
+                False,
             ),
             get_vector_agg_column_snowflake(
                 select(),
@@ -118,6 +120,7 @@ class BaseAdapterTest:
                     parent_cols=[(get_qualified_column_identifier("parent3", "TABLE"))],
                 ),
                 2,
+                False,
             ),
         ]
         group_by_expr = adapter.group_by(

@@ -9,7 +9,7 @@ import re
 import string
 
 from sqlglot import expressions
-from sqlglot.expressions import Expression, Select, alias_, select
+from sqlglot.expressions import Expression, Identifier, Select, alias_, select
 
 from featurebyte.enum import DBVarType, InternalName, SourceType, StrEnum
 from featurebyte.query_graph.node.schema import TableDetails
@@ -326,9 +326,13 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
         for agg_expr in agg_exprs:
             new_groupby_exprs.append(
                 alias_(
-                    get_qualified_column_identifier(agg_expr.alias, groupby_subquery_alias),
+                    get_qualified_column_identifier(
+                        agg_expr.alias,
+                        groupby_subquery_alias,
+                        quote_column=quote_vector_agg_aliases,
+                    ),
                     alias=agg_expr.alias,
-                    quoted=True,
+                    quoted=quote_vector_agg_aliases,
                 )
             )
 
@@ -375,10 +379,15 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
         if agg_exprs:
             join_conditions = []
             for select_key in select_keys:
+                quote_column = True
+                if isinstance(select_key, Identifier):
+                    quote_column = select_key.quoted
                 join_conditions.append(
                     expressions.EQ(
                         this=get_qualified_column_identifier(
-                            select_key.alias_or_name, groupby_subquery_alias
+                            select_key.alias_or_name,
+                            groupby_subquery_alias,
+                            quote_column=quote_column,
                         ),
                         expression=get_qualified_column_identifier(
                             select_key.alias_or_name,

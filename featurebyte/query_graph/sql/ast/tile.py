@@ -204,6 +204,7 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
             groupby_columns,
             None,
             self.adapter.source_type,
+            is_tile=True,
         )
 
         return self.adapter.group_by(
