@@ -3,7 +3,6 @@ Test vector aggregation operations module
 """
 from typing import List
 
-import ast
 import json
 import os
 
@@ -248,7 +247,7 @@ TEST_CASES = [
     TEST_CASES,
 )
 def test_vector_aggregation_operations__aggregate_over(
-    event_table_with_array_column, agg_func, expected_results, vector_value_column, source_type
+    event_table_with_array_column, agg_func, expected_results, vector_value_column
 ):
     """
     Test vector aggregation operations
