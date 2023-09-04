@@ -23,11 +23,11 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 
 import pandas as pd
-from bson import ObjectId
 from pydantic import PrivateAttr
 from typeguard import typechecked
 
 from featurebyte.api.batch_request_table import BatchRequestTable
+from featurebyte.api.context import Context
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_group import FeatureGroup
@@ -1646,7 +1646,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         sample_rows: Optional[int] = None,
         columns: Optional[list[str]] = None,
         columns_rename_mapping: Optional[dict[str, str]] = None,
-        context_id: Optional[ObjectId] = None,
+        context_name: Optional[str] = None,
     ) -> ObservationTable:
         """
         Creates an ObservationTable from the View.
@@ -1669,8 +1669,8 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         columns_rename_mapping: Optional[dict[str, str]]
             Rename columns in the view using this mapping from old column names to new column names
             when creating the observation table. If None, no columns are renamed.
-        context_id: Optional[ObjectId]
-            context_id for the observation table.
+        context_name: Optional[str]
+            context_name for the observation table.
 
         Returns
         -------
@@ -1688,6 +1688,9 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         ... )
         """
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
+
+        context_id = Context.get(context_name).id if context_name else None
+
         payload = ObservationTableCreate(
             name=name,
             feature_store_id=self.feature_store.id,

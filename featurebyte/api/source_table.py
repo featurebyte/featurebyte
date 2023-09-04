@@ -14,6 +14,7 @@ from bson import ObjectId
 from pydantic import Field
 from typeguard import typechecked
 
+from featurebyte.api.context import Context
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.core.frame import BaseFrame
 from featurebyte.enum import DBVarType
@@ -965,7 +966,7 @@ class SourceTable(AbstractTableData):
         sample_rows: Optional[int] = None,
         columns: Optional[list[str]] = None,
         columns_rename_mapping: Optional[dict[str, str]] = None,
-        context_id: Optional[ObjectId] = None,
+        context_name: Optional[str] = None,
     ) -> ObservationTable:
         """
         Creates an ObservationTable from the SourceTable.
@@ -988,8 +989,8 @@ class SourceTable(AbstractTableData):
         columns_rename_mapping: Optional[dict[str, str]]
             Rename columns in the source table using this mapping from old column names to new
             column names when creating the observation table. If None, no columns are renamed.
-        context_id: Optional[ObjectId]
-            context_id for the observation table.
+        context_name: Optional[str]
+            context_name for the observation table.
 
         Returns
         -------
@@ -1016,6 +1017,8 @@ class SourceTable(AbstractTableData):
         """
         # pylint: disable=import-outside-toplevel
         from featurebyte.api.observation_table import ObservationTable
+
+        context_id = Context.get(context_name).id if context_name else None
 
         payload = ObservationTableCreate(
             name=name,
