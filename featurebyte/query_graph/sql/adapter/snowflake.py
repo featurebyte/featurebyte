@@ -301,6 +301,69 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
         vector_aggregate_columns: Optional[List[VectorAggColumn]] = None,
         quote_vector_agg_aliases: bool = True,
     ) -> Select:
+        """
+        group_by constructs a group by query for use in snowflake.
+
+        This method differs from the default implementation, primarily to support vector aggregations, which call out
+        to a snowflake UDTF. The structure of the query here changes to support this, as UDTFs essentially require a
+        TABLE function call, and in turn requires us to join with that table, instead of performing a normal
+        in-line aggregation like we do for other databases. Do note that if there are no vector aggregates, this
+        function will behave identically to the default implementation.
+
+        For example, a normal aggregation would look like
+
+        SELECT
+            key1,
+            key2,
+            SUM(value1) AS value1,
+            SUM(value2) AS value2
+        FROM
+            table
+        GROUP BY
+            key1,
+            key2
+
+        But a vector aggregation using a UDTF would look like:
+
+        SELECT
+            key1,
+            key2,
+            AGG."VECTOR_AGG_RESULT" AS "value1"
+        FROM (
+            SELECT
+                key1,
+                key2,
+            FROM
+                table
+        ) AS INITIAL_DATA, TABLE(
+            VECTOR_AGGREGATE_SUM(INITIAL_DATA.key2) OVER (PARTITION BY INITIAL_DATA.key1)
+        ) AS "AGG"
+
+        As such, we have to push the UDTF into a subquery in order to retrieve the aggregate results from it.
+
+        In order to handle multiple vector aggregations from UDTFs, and to ensure that we also support normal
+        aggregations, we have to generate a subquery for each vector aggregation, and then join them all together.
+
+        Parameters
+        ----------
+        input_expr: Select
+            The input expression to group by
+        select_keys: List[Expression]
+            The select keys to group by
+        agg_exprs: List[Expression]
+            The aggregate expressions to group by
+        keys: List[Expression]
+            The keys to group by
+        vector_aggregate_columns: Optional[List[VectorAggColumn]]
+            The vector aggregate columns to group by
+        quote_vector_agg_aliases: bool
+            Whether to quote the vector aggregate aliases
+
+        Returns
+        -------
+        Select
+            The group by query
+        """
         # pylint: disable=too-many-locals
         # If there are no vector aggregate expressions, we can use the standard group by.
         normal_groupby_expr = super().group_by(input_expr, select_keys, agg_exprs, keys)
