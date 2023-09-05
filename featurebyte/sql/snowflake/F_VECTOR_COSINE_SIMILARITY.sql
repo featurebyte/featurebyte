@@ -8,6 +8,9 @@ $$
 def cosine_similarity(vector1, vector2):
   import math
 
+  if len(vector1) != len(vector2):
+    raise ValueError("vectors are of different length")
+
   if len(vector1) == 0 or len(vector2) == 0:
     return 0
 
@@ -21,9 +24,8 @@ def cosine_similarity(vector1, vector2):
   norm_arr1 = euclidean_norm(vector1)
   norm_arr2 = euclidean_norm(vector2)
 
-  # Calculate the dot product using elements up to the length of the shorter array
-  shorter_array_length = min(len(vector1), len(vector1))
-  dot_product_value = dot_product(vector1[:shorter_array_length], vector2[:shorter_array_length])
+  # Calculate the dot product
+  dot_product_value = dot_product(vector1, vector2)
 
   return dot_product_value / (norm_arr1 * norm_arr2)
 $$

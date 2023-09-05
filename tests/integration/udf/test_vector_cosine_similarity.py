@@ -10,8 +10,8 @@ import pytest
     "array1, array2, expected",
     [
         ([], [], 0),
-        ([1], [], 0),
-        ([1, 2, 3], [4], 0.267261),
+        ([1], [], None),
+        ([1, 2, 3], [4], None),
         ([1, 2, 3], [1, 2, 3], 1.0),
         ([1, 2, 3], [3, 2, 1], 0.714286),
     ],
@@ -26,6 +26,14 @@ async def test_vector_cosine_similarity(to_array, session, array1, array2, expec
         array_expr_a = to_array(a)
         array_expr_b = to_array(b)
         query = f"SELECT F_VECTOR_COSINE_SIMILARITY({array_expr_a}, {array_expr_b}) AS OUT"
+
+        # If expected is None, this means we expect an error.
+        if expected is None:
+            with pytest.raises(Exception):
+                await session.execute_query(query)
+            return
+
+        # If expected is not None, proceed to assert the result.
         df = await session.execute_query(query)
         actual = df.iloc[0]["OUT"]
         if actual is None:
