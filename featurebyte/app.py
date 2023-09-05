@@ -181,8 +181,6 @@ def get_app() -> FastAPI:
         periodic_tasks_api,
         user_defined_function_api,
         use_case_api,
-        target_table_router,
-        static_source_table_router,
     ]
     resource_apis.extend(routers)  # type: ignore[arg-type]
     dependencies = _get_api_deps_with_catalog()
