@@ -226,6 +226,20 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
             [str(new_ob_table_id_1), str(new_ob_table_id_2), str(new_ob_table_id_3)]
         ) == sorted([data[0]["_id"], data[1]["_id"], data[2]["_id"]])
 
+        # test use case info endpoint
+        response = test_api_client.get(
+            f"{self.base_route}/{use_case_id}/info",
+        )
+        assert response.status_code == HTTPStatus.OK
+        data = response.json()
+        assert data["name"] == self.payload["name"]
+        assert data["description"] == self.payload["description"]
+        assert data["primary_entities"] == ["customer"]
+        assert data["context_name"] == "transaction_context"
+        assert data["target_name"] == "float_target"
+        assert data["default_eda_table"] == "observation_table_from_target_input"
+        assert data["default_preview_table"] == "observation_table_from_target_input"
+
     @pytest.mark.asyncio
     async def test_update_use_case_with_error(
         self,

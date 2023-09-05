@@ -1,7 +1,7 @@
 """
 UseCase API routes
 """
-from typing import Optional
+from typing import Optional, cast
 
 from http import HTTPStatus
 
@@ -22,6 +22,7 @@ from featurebyte.routes.common.schema import (
 from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.deployment import DeploymentList
 from featurebyte.schema.historical_feature_table import HistoricalFeatureTableList
+from featurebyte.schema.info import UseCaseInfo
 from featurebyte.schema.observation_table import ObservationTableList
 from featurebyte.schema.use_case import UseCaseCreate, UseCaseList, UseCaseUpdate
 
@@ -142,6 +143,15 @@ async def delete_use_case(request: Request, use_case_id: PydanticObjectId) -> No
     """
     controller = request.state.app_container.use_case_controller
     await controller.delete_use_case(document_id=use_case_id)
+
+
+@router.get("/{use_case_id}/info", response_model=UseCaseInfo, status_code=HTTPStatus.OK)
+async def use_case_info(request: Request, use_case_id: PydanticObjectId) -> UseCaseInfo:
+    """
+    Get Use Case Info
+    """
+    controller = request.state.app_container.use_case_controller
+    return cast(UseCaseInfo, await controller.get_info(use_case_id=use_case_id))
 
 
 @router.get("", response_model=UseCaseList)

@@ -491,3 +491,16 @@ class UserDefinedFunctionInfo(BaseInfo):
     output_dtype: DBVarType
     feature_store_name: str
     used_by_features: List[UserDefinedFunctionFeatureInfo]
+
+
+class UseCaseInfo(BaseInfo):
+    """
+    Use Case Info schema
+    """
+
+    author: Optional[str] = None
+    primary_entities: List[str]
+    context_name: str
+    target_name: str
+    default_eda_table: Optional[str] = None
+    default_preview_table: Optional[str] = None

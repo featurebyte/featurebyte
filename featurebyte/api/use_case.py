@@ -3,7 +3,7 @@ UseCase module
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 from typeguard import typechecked
@@ -242,6 +242,38 @@ class UseCase(SavableApiObject, DeletableApiObject):
         return self._construct_table_result_df(
             list(iterate_api_object_using_paginated_routes(route))
         )
+
+    @typechecked
+    def info(self, verbose: bool = False) -> Dict[str, Any]:
+        """
+        Returns a dictionary that summarizes the essential information of a UseCase object. The dictionary
+        contains the following keys:
+
+        - `author`: The name of the user who created the UseCase object.
+        - `name`: The name of the UseCase object.
+        - `created_at`: The timestamp indicating when the UseCase object was created.
+        - `updated_at`: The timestamp indicating when the UseCase object was last updated.
+        - `primary_entities`: List of primary entities of the use case.
+        - `description`: Description of the use case.
+        - `default_eda_table`: Default eda table of the use case.
+        - `default_preview_table`: Default preview table of the use case.
+
+        Parameters
+        ----------
+        verbose: bool
+            Control verbose level of the summary.
+
+        Returns
+        -------
+        Dict[str, Any]
+            Key-value mapping of properties of the object.
+
+        Examples
+        --------
+        >>> use_case = catalog.get_target("use_case")  # doctest: +SKIP
+        >>> info = use_case.info()  # doctest: +SKIP
+        """
+        return super().info(verbose)
 
     def _construct_table_result_df(self, result_dict: List[dict[str, Any]]) -> pd.DataFrame:
         """
