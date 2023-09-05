@@ -53,5 +53,5 @@ def to_array(array_obj: List[Any]) -> str:
     str
         sql str
     """
-    joined_string = ", ".join(array_obj)
+    joined_string = ", ".join([str(x) for x in array_obj])
     return f"ARRAY({joined_string})"
