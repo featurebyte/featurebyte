@@ -104,3 +104,18 @@ def test_list_deployments(use_case, target_table, deployment):
     deployments = retrieved_use_case.list_deployments()
     assert len(deployments) == 1
     assert deployments.iloc[0]["name"] == deployment.name
+
+
+def test_info(use_case, target_table, deployment):
+    """
+    Test UseCase.list_deployments( method
+    """
+
+    use_case.update_default_eda_table(target_table)
+    use_case.update_default_preview_table(target_table)
+
+    use_case_info = use_case.info()
+    assert use_case_info["name"] == use_case.name
+    assert use_case_info["description"] == use_case.description
+    assert use_case_info["default_eda_table"] == target_table.name
+    assert use_case_info["default_preview_table"] == target_table.name
