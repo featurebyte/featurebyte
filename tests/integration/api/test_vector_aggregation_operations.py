@@ -11,6 +11,7 @@ import pandas as pd
 import pytest
 import pytest_asyncio
 
+from featurebyte import FeatureGroup
 from featurebyte.api.aggregator.vector_validator import VECTOR_AGGREGATE_SUPPORTED_FUNCTIONS
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature_list import FeatureList
@@ -375,3 +376,31 @@ def test_vector_aggregation_operations_fails_for_vectors_of_different_lengths(
     preview_params = {"POINT_IN_TIME": "2022-06-06 00:58:00", "vector_user_id": f"{user_id}"}
     with pytest.raises(RecordRetrievalException):
         feature.preview(pd.DataFrame([preview_params]))
+
+
+@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
+def test_vector_cosine_similarity(item_table_with_array_column):
+    """
+    Test vector cosine similarity
+    """
+    item_view = item_table_with_array_column.get_view()
+    feature_name = "vector_agg"
+    feature = item_view.groupby("ORDER_ID").aggregate(
+        value_column=VECTOR_VALUE_FLOAT_COL,
+        method=AggFunc.MAX,
+        feature_name=feature_name,
+        skip_fill_na=True,
+    )
+    feature_group = FeatureGroup([feature])
+    cosine_similarity_feature_name = "vector_cosine_similarity"
+    feature_group[cosine_similarity_feature_name] = feature.vec.cosine_similarity(feature)
+
+    preview_params = {"POINT_IN_TIME": "2022-06-06 00:58:00", "vector_order_id": "1000"}
+    feature_preview = feature_group[cosine_similarity_feature_name].preview(
+        pd.DataFrame([preview_params])
+    )
+    assert feature_preview.shape[0] == 1
+    assert feature_preview.iloc[0].to_dict() == {
+        cosine_similarity_feature_name: 1.0,  # we expect cosine_similarity of 1 since the array is compared w/ itself
+        **convert_preview_param_dict_to_feature_preview_resp(preview_params),
+    }

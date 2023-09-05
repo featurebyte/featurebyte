@@ -16,6 +16,7 @@ from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.typing import Scalar, ScalarSequence, Timestamp, is_scalar_nan
 from featurebyte.core.accessor.datetime import DtAccessorMixin
 from featurebyte.core.accessor.string import StrAccessorMixin
+from featurebyte.core.accessor.vector import VectorAccessorMixin
 from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import OpsMixin, ParentMixin
 from featurebyte.core.util import SeriesBinaryOperator, series_unary_operation
@@ -77,7 +78,9 @@ class DefaultSeriesBinaryOperator(SeriesBinaryOperator):
             )
 
 
-class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMixin):
+class FrozenSeries(
+    QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMixin, VectorAccessorMixin
+):
     """
     FrozenSeries class used for representing a series in a query graph with the ability to perform
     certain column related operations and expressions. This class is immutable as it does not support

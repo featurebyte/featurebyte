@@ -1,5 +1,8 @@
 package com.featurebyte.hive.udf;
 
+import static com.featurebyte.hive.udf.UDFUtils.isNullOI;
+import static com.featurebyte.hive.udf.UDFUtils.nullOI;
+
 import java.util.Map;
 import java.util.Set;
 import org.apache.hadoop.hive.ql.exec.Description;
