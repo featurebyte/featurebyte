@@ -102,8 +102,9 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
         target = await self.target_service.get_document(document_id=use_case.target_id)
 
         author = None
-        if use_case.user_id and hasattr(self.user_service, "get_document"):
-            author = await self.user_service.get_document(document_id=use_case.user_id).name  # type: ignore[attr-defined]
+        if use_case.user_id:
+            author_doc = await self.user_service.get_document(document_id=use_case.user_id)
+            author = author_doc.name
 
         default_preview_table_name = None
         if use_case.default_preview_table_id:

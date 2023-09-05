@@ -3,7 +3,9 @@ User service module
 """
 from typing import Optional
 
-from featurebyte.models.base import PydanticObjectId
+from bson import ObjectId
+
+from featurebyte.models.base import FeatureByteBaseDocumentModel, PydanticObjectId
 
 
 class UserService:
@@ -28,3 +30,19 @@ class UserService:
         """
         _ = user_id
         return "default user"
+
+    async def get_document(self, document_id: ObjectId) -> FeatureByteBaseDocumentModel:
+        """
+        No-op get document method
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            The user id
+
+        Returns
+        -------
+        Dummy document
+        """
+        _ = document_id
+        return FeatureByteBaseDocumentModel(name=None)

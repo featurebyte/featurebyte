@@ -249,6 +249,7 @@ class UseCase(SavableApiObject, DeletableApiObject):
         Returns a dictionary that summarizes the essential information of a UseCase object. The dictionary
         contains the following keys:
 
+        - `author`: The name of the user who created the UseCase object.
         - `name`: The name of the UseCase object.
         - `created_at`: The timestamp indicating when the UseCase object was created.
         - `updated_at`: The timestamp indicating when the UseCase object was last updated.
