@@ -24,7 +24,7 @@ public class VectorCosineSimilarityTest {
 
   @Test
   public void testVectorCosineSimilarity() throws HiveException {
-    List<Double> inputOne = new ArrayList<>(Arrays.asList(1.0, 2.0, 3.0));
+    List<Integer> inputOne = new ArrayList<>(Arrays.asList(1, 2, 3));
     List<Double> inputTwo = new ArrayList<>(Arrays.asList(1.0, 2.0, 3.0));
 
     VectorCosineSimilarity udf = new VectorCosineSimilarity();

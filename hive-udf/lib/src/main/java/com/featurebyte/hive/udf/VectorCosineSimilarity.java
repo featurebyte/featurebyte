@@ -4,6 +4,7 @@ import static com.featurebyte.hive.udf.UDFUtils.isNullOI;
 import static com.featurebyte.hive.udf.UDFUtils.nullOI;
 import static org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector.Category.LIST;
 
+import java.util.ArrayList;
 import java.util.List;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
@@ -68,6 +69,14 @@ public class VectorCosineSimilarity extends GenericUDF {
     return Math.sqrt(sum);
   }
 
+  private static List<Double> convertToDouble(List<Object> list) {
+    List<Double> output = new ArrayList<>();
+    for (Object item : list) {
+      output.add(Double.valueOf(item.toString()));
+    }
+    return output;
+  }
+
   @Override
   public Object evaluate(DeferredObject[] arguments) throws HiveException {
     if (arguments[0].get() == null || arguments[1].get() == null) {
@@ -75,8 +84,11 @@ public class VectorCosineSimilarity extends GenericUDF {
     }
 
     // Convert parameters to List<Double>
-    List<Double> listOne = (List<Double>) firstListOI.getList(arguments[0].get());
-    List<Double> listTwo = (List<Double>) secondListOI.getList(arguments[1].get());
+    List<Object> objectListOne = (List<Object>) firstListOI.getList(arguments[0].get());
+    List<Object> objectListTwo = (List<Object>) secondListOI.getList(arguments[1].get());
+    List<Double> listOne = convertToDouble(objectListOne);
+    List<Double> listTwo = convertToDouble(objectListTwo);
+
     // Check if lists are empty
     if (listOne.isEmpty() || listTwo.isEmpty()) {
       return 0.0;
