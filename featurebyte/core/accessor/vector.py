@@ -60,7 +60,14 @@ class VectorAccessor:
         Returns
         -------
         FrozenSeries
+
+        Raises
+        ------
+        AttributeError
+            If the other series is not a vector series
         """
+        if other.dtype != DBVarType.ARRAY:
+            raise AttributeError("Other series should be of ARRAY dtype.")
         return series_binary_operation(
             input_series=self._obj,
             other=other,

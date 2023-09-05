@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.parametrize(
     "array1, array2, expected",
     [
