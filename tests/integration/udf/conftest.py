@@ -17,3 +17,15 @@ def to_object_fixture(source_type):
     if source_type == "spark":
         return spark_util.to_object
     raise NotImplementedError()
+
+
+@pytest.fixture(name="to_array", scope="session")
+def to_array_fixture(source_type):
+    """
+    Get function to construct an array object from an array for the given source_type
+    """
+    if source_type == "snowflake":
+        return snowflake_util.to_array
+    if source_type == "spark":
+        return spark_util.to_array
+    raise NotImplementedError()

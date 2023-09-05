@@ -17,13 +17,15 @@ import pytest
     ],
 )
 @pytest.mark.asyncio
-async def test_vector_cosine_similarity(session, array1, array2, expected):
+async def test_vector_cosine_similarity(to_array, session, array1, array2, expected):
     """
     Test vector cosine similarity
     """
 
     async def _check(a, b):
-        query = f"SELECT F_VECTOR_COSINE_SIMILARITY({a}, {b}) AS OUT"
+        array_expr_a = to_array(a)
+        array_expr_b = to_array(b)
+        query = f"SELECT F_VECTOR_COSINE_SIMILARITY({array_expr_a}, {array_expr_b}) AS OUT"
         df = await session.execute_query(query)
         actual = df.iloc[0]["OUT"]
         if actual is None:

@@ -19,6 +19,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     VariableNameGenerator,
     VariableNameStr,
 )
+from featurebyte.query_graph.node.vector import VectorCosineSimilarityNode
 
 
 @pytest.mark.parametrize(
@@ -147,6 +148,29 @@ def test_assign_node(node_inputs, required_copy, expected_statements, expected_i
     )
     assert statements == expected_statements
     assert info == expected_info
+
+
+def test_vector_node():
+    """
+    Test vector cosine similarity node
+    """
+    node = VectorCosineSimilarityNode(name="vector_cosine_similarity_1", parameters={})
+    statements, info = node.derive_sdk_code(
+        node_inputs=[
+            VariableNameStr("col1"),
+            VariableNameStr("col2"),
+        ],
+        var_name_generator=VariableNameGenerator(),
+        operation_structure=OperationStructure(
+            output_type=NodeOutputType.FRAME,
+            output_category=NodeOutputCategory.VIEW,
+            row_index_lineage=tuple(),
+        ),
+        config=CodeGenerationConfig(),
+        context=CodeGenerationContext(as_info_dict=False, required_copy=False),
+    )
+    assert statements == []
+    assert info == "col1.vec.cosine_similarity(other=col2)"
 
 
 @pytest.mark.parametrize(

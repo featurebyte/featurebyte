@@ -1,7 +1,7 @@
 """
 Snowflake UDF test util
 """
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 
@@ -33,3 +33,20 @@ def to_object(obj_dict: Optional[Dict[Any, Any]]) -> str:
         else:
             args.append(str(v))
     return f"OBJECT_CONSTRUCT_KEEP_NULL({', '.join(args)})"
+
+
+def to_array(array_obj: List[Any]) -> str:
+    """
+    Returns an expression converts the list to an array in Snowflake
+
+    Parameters
+    ----------
+    array_obj: List[Any]
+        python list
+
+    Returns
+    -------
+    str
+        sql str
+    """
+    return f"{array_obj}"

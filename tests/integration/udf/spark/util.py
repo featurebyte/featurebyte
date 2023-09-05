@@ -1,7 +1,7 @@
 """
 Spark UDF test util
 """
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 
@@ -37,3 +37,21 @@ def to_object(obj_dict: Optional[Dict[Any, Any]]) -> str:
         else:
             args.append(str(v))
     return f"MAP({', '.join(args)})"
+
+
+def to_array(array_obj: List[Any]) -> str:
+    """
+    Returns an expression converts the list to an array in Spark
+
+    Parameters
+    ----------
+    array_obj: List[Any]
+        python list
+
+    Returns
+    -------
+    str
+        sql str
+    """
+    joined_string = ", ".join(array_obj)
+    return f"ARRAY({joined_string})"
