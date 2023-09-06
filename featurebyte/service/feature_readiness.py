@@ -3,15 +3,15 @@ FeatureReadinessService
 """
 from __future__ import annotations
 
-from typing import Any, Optional, Sequence
+from typing import Any, Dict, Optional, Sequence
 
 from bson.objectid import ObjectId
 
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import (
-    FeatureListModel,
     FeatureListNamespaceModel,
+    FeatureReadinessDistribution,
     FeatureReadinessTransition,
 )
 from featurebyte.models.feature_namespace import (
@@ -21,7 +21,6 @@ from featurebyte.models.feature_namespace import (
 )
 from featurebyte.persistent import Persistent
 from featurebyte.schema.feature import FeatureServiceUpdate
-from featurebyte.schema.feature_list import FeatureListServiceUpdate
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
 from featurebyte.service.feature import FeatureService
@@ -53,9 +52,9 @@ class FeatureReadinessService:
         self.feature_list_namespace_service = feature_list_namespace_service
         self.production_ready_validator = production_ready_validator
 
-    async def _get_default_feature_list(
+    async def _get_default_feature_list_doc(
         self, feature_list_ids: Sequence[ObjectId]
-    ) -> FeatureListModel:
+    ) -> Dict[str, Any]:
         """
         Get default feature from list of feature IDs
 
@@ -66,22 +65,29 @@ class FeatureReadinessService:
 
         Returns
         -------
-        FeatureListModel
+        Dict[str, Any]
         """
         assert len(feature_list_ids) > 0, "feature_list_ids should not be empty"
-        default_feature_list: Optional[FeatureListModel] = None
-        async for feature_list in self.feature_list_service.list_documents_iterator(
+        default_feature_list: Optional[Dict[str, Any]] = None
+        async for feature_list in self.feature_list_service.list_documents_as_dict_iterator(
             query_filter={"_id": {"$in": feature_list_ids}}
         ):
+            readiness_dist = FeatureReadinessDistribution(
+                __root__=feature_list["readiness_distribution"]
+            )
             if default_feature_list is None:
                 default_feature_list = feature_list
-            elif feature_list.readiness_distribution > default_feature_list.readiness_distribution:
-                default_feature_list = feature_list
-            elif (
-                feature_list.readiness_distribution == default_feature_list.readiness_distribution
-                and feature_list.created_at > default_feature_list.created_at  # type: ignore[operator]
-            ):
-                default_feature_list = feature_list
+            else:
+                default_readiness_dist = FeatureReadinessDistribution(
+                    __root__=default_feature_list["readiness_distribution"]
+                )
+                if readiness_dist > default_readiness_dist:
+                    default_feature_list = feature_list
+                elif (
+                    readiness_dist == default_readiness_dist
+                    and feature_list.created_at > default_feature_list.created_at  # type: ignore[operator]
+                ):
+                    default_feature_list = feature_list
         assert default_feature_list is not None, "default_feature_list should not be None"
         return default_feature_list
 
@@ -118,9 +124,9 @@ class FeatureReadinessService:
             update_dict["feature_list_ids"] = feature_list_ids
 
         if feature_list_ids:
-            default_feature_list = await self._get_default_feature_list(feature_list_ids)
-            update_dict["default_feature_list_id"] = default_feature_list.id
-            update_dict["readiness_distribution"] = default_feature_list.readiness_distribution
+            default_feature_list = await self._get_default_feature_list_doc(feature_list_ids)
+            update_dict["default_feature_list_id"] = default_feature_list["_id"]
+            update_dict["readiness_distribution"] = default_feature_list["readiness_distribution"]
 
         if update_dict:
             await self.feature_list_namespace_service.update_document(
@@ -138,7 +144,7 @@ class FeatureReadinessService:
         feature_list_id: ObjectId,
         from_readiness: FeatureReadiness,
         to_readiness: FeatureReadiness,
-    ) -> FeatureListModel:
+    ) -> Dict[str, Any]:
         """
         Update FeatureReadiness distribution in feature list
 
@@ -153,25 +159,26 @@ class FeatureReadinessService:
 
         Returns
         -------
-        Optional[FeatureListModel]
+        Dict[str, Any]
         """
-        document = await self.feature_list_service.get_document(document_id=feature_list_id)
+        document = await self.feature_list_service.get_document_as_dict(document_id=feature_list_id)
         if from_readiness != to_readiness:
-            readiness_dist = document.readiness_distribution.update_readiness(
+            doc_readiness_dist = FeatureReadinessDistribution(
+                __root__=document["readiness_distribution"]
+            )
+            readiness_dist = doc_readiness_dist.update_readiness(
                 transition=FeatureReadinessTransition(
                     from_readiness=from_readiness, to_readiness=to_readiness
                 ),
             )
-            await self.feature_list_service.update_document(
+            await self.feature_list_service.update_readiness_distribution(
                 document_id=feature_list_id,
-                data=FeatureListServiceUpdate(readiness_distribution=readiness_dist),
-                document=document,
-                return_document=False,
+                readiness_distribution=readiness_dist,
             )
-            return await self.feature_list_service.get_document(document_id=feature_list_id)
+            return await self.feature_list_service.get_document_as_dict(document_id=feature_list_id)
         return document
 
-    async def _get_default_feature(self, feature_ids: Sequence[ObjectId]) -> FeatureModel:
+    async def _get_default_feature(self, feature_ids: Sequence[ObjectId]) -> Dict[str, Any]:
         """
         Get default feature from list of feature IDs
 
@@ -182,22 +189,24 @@ class FeatureReadinessService:
 
         Returns
         -------
-        FeatureModel
+        Dict[str, Any]
         """
         assert len(feature_ids) > 0, "feature_ids should not be empty"
-        default_feature: Optional[FeatureModel] = None
-        async for feature in self.feature_service.list_documents_iterator(
+        default_feature: Optional[Dict[str, Any]] = None
+        async for feature in self.feature_service.list_documents_as_dict_iterator(
             query_filter={"_id": {"$in": feature_ids}}
         ):
             if default_feature is None:
                 default_feature = feature
-            elif FeatureReadiness(feature.readiness) > FeatureReadiness(default_feature.readiness):
+            elif FeatureReadiness(feature["readiness"]) > FeatureReadiness(
+                default_feature["readiness"]
+            ):
                 # when doing non-equality comparison, must cast it explicitly to FeatureReadiness
                 # otherwise, it will become normal string comparison
                 default_feature = feature
             elif (
-                feature.readiness == default_feature.readiness
-                and feature.created_at > default_feature.created_at  # type: ignore[operator]
+                feature["readiness"] == default_feature["readiness"]
+                and feature["created_at"] > default_feature["created_at"]
             ):
                 default_feature = feature
         assert default_feature is not None, "default_feature should not be None"
@@ -239,18 +248,19 @@ class FeatureReadinessService:
             # when default version mode is AUTO & (feature is not specified or already in current namespace)
             if feature_ids:
                 default_feature = await self._get_default_feature(feature_ids=feature_ids)
-                update_dict["default_feature_id"] = default_feature.id
-                update_dict["readiness"] = default_feature.readiness
+                update_dict["default_feature_id"] = default_feature["_id"]
+                update_dict["readiness"] = default_feature["readiness"]
         else:
             assert (
                 document.default_feature_id not in excluded_feature_ids
             ), "default feature should not be deleted"
-            default_feature = await self.feature_service.get_document(
+            default_feature = await self.feature_service.get_document_as_dict(
                 document_id=document.default_feature_id
             )
-            if default_feature.readiness != document.readiness:
+            default_feature_readiness = FeatureReadiness(default_feature["readiness"])
+            if default_feature_readiness != document.readiness:
                 # when feature readiness get updated and feature namespace in manual default mode
-                update_dict["readiness"] = default_feature.readiness
+                update_dict["readiness"] = default_feature_readiness
 
         if update_dict:
             await self.feature_namespace_service.update_document(
@@ -322,25 +332,22 @@ class FeatureReadinessService:
         )
         if document.readiness != readiness:
             async with self.persistent.start_transaction():
-                feature = await self.feature_service.update_document(
-                    document_id=feature_id,
-                    data=FeatureServiceUpdate(readiness=readiness),
-                    document=document,
-                    return_document=True,
+                await self.feature_service.update_readiness(
+                    document_id=feature_id, readiness=readiness
                 )
-                assert isinstance(feature, FeatureModel)
+                feature = await self.feature_service.get_document_as_dict(document_id=feature_id)
                 await self.update_feature_namespace(
-                    feature_namespace_id=feature.feature_namespace_id,
+                    feature_namespace_id=feature["feature_namespace_id"],
                 )
-                for feature_list_id in feature.feature_list_ids:
+                for feature_list_id in feature["feature_list_ids"]:
                     feature_list = await self.update_feature_list(
                         feature_list_id=feature_list_id,
                         from_readiness=document.readiness,
-                        to_readiness=feature.readiness,
+                        to_readiness=FeatureReadiness(feature["readiness"]),
                     )
-                    assert isinstance(feature_list, FeatureListModel)
                     await self.update_feature_list_namespace(
-                        feature_list_namespace_id=feature_list.feature_list_namespace_id,
+                        feature_list_namespace_id=feature_list["feature_list_namespace_id"],
                     )
-                return await self.feature_service.get_document(document_id=feature_id)
+
+            return await self.feature_service.get_document(document_id=feature_id)
         return document

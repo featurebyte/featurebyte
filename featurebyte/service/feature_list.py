@@ -15,6 +15,7 @@ from featurebyte.models.feature_list import (
     EntityRelationshipInfo,
     FeatureListModel,
     FeatureListNamespaceModel,
+    FeatureReadinessDistribution,
 )
 from featurebyte.models.feature_namespace import DefaultVersionMode
 from featurebyte.persistent import Persistent
@@ -302,6 +303,29 @@ class FeatureListService(
             # update feature's feature_list_ids attribute
             await self._update_features(document.feature_ids, inserted_feature_list_id=insert_id)
         return await self.get_document(document_id=insert_id)
+
+    async def update_readiness_distribution(
+        self,
+        document_id: ObjectId,
+        readiness_distribution: FeatureReadinessDistribution,
+    ) -> None:
+        """
+        Update readiness distribution
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+        readiness_distribution: FeatureReadinessDistribution
+            Feature readiness distribution
+        """
+        await self.persistent.update_one(
+            collection_name=self.collection_name,
+            query_filter=self._construct_get_query_filter(document_id=document_id),
+            update={"$set": {"readiness_distribution": readiness_distribution.dict()["__root__"]}},
+            user_id=self.user.id,
+            disable_audit=self.should_disable_audit,
+        )
 
     async def delete_document(
         self,
