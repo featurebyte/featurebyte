@@ -15,8 +15,10 @@ from featurebyte.models.feature_list import (
     EntityRelationshipInfo,
     FeatureListModel,
     FeatureListNamespaceModel,
+    FeatureReadinessDistribution,
 )
 from featurebyte.models.feature_namespace import DefaultVersionMode
+from featurebyte.models.persistent import QueryFilter
 from featurebyte.persistent import Persistent
 from featurebyte.schema.feature_list import FeatureListServiceCreate, FeatureListServiceUpdate
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
@@ -30,6 +32,7 @@ from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
+from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
 from featurebyte.service.relationship_info import RelationshipInfoService
 
 
@@ -302,6 +305,40 @@ class FeatureListService(
             # update feature's feature_list_ids attribute
             await self._update_features(document.feature_ids, inserted_feature_list_id=insert_id)
         return await self.get_document(document_id=insert_id)
+
+    async def list_documents_iterator(  # type: ignore[override]
+        self,
+        query_filter: QueryFilter,
+        page_size: int = DEFAULT_PAGE_SIZE,
+        use_raw_query_filter: bool = False,
+    ) -> AsyncIterator[FeatureListModel]:
+        raise RuntimeError(
+            "Do not use this method as it takes long time to deserialize the data, "
+            "use list_documents_as_dict_iterator instead"
+        )
+
+    async def update_readiness_distribution(
+        self,
+        document_id: ObjectId,
+        readiness_distribution: FeatureReadinessDistribution,
+    ) -> None:
+        """
+        Update readiness distribution
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+        readiness_distribution: FeatureReadinessDistribution
+            Feature readiness distribution
+        """
+        await self.persistent.update_one(
+            collection_name=self.collection_name,
+            query_filter=self._construct_get_query_filter(document_id=document_id),
+            update={"$set": {"readiness_distribution": readiness_distribution.dict()["__root__"]}},
+            user_id=self.user.id,
+            disable_audit=self.should_disable_audit,
+        )
 
     async def delete_document(
         self,
