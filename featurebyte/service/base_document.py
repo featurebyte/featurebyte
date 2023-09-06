@@ -391,7 +391,7 @@ class BaseDocumentService(
         )
 
         # check if document is modifiable
-        self._check_document_modifiable(document=document)
+        self._check_document_modifiable(document=document.dict(by_alias=True))
 
         query_filter = self._construct_get_query_filter(
             document_id=document_id, use_raw_query_filter=use_raw_query_filter, **kwargs
@@ -889,18 +889,18 @@ class BaseDocumentService(
                 resolution_signature=resolution_signature,
             )
 
-    def _check_document_modifiable(self, document: Document) -> None:
+    def _check_document_modifiable(self, document: Dict[str, Any]) -> None:
         check_block_modification = True
         if self._check_block_modification_func:
             check_block_modification = self._check_block_modification_func()
 
-        if check_block_modification and document.block_modification_by:
+        if check_block_modification and document.get("block_modification_by"):
             block_modification_by = [
-                f"{item.asset_name}(id: {item.document_id})"
-                for item in document.block_modification_by
+                f"{item['asset_name']}(id: {item['document_id']})"
+                for item in document.get("block_modification_by", [])
             ]
             raise DocumentModificationBlockedError(
-                f"Document {document.id} is blocked from modification by {block_modification_by}"
+                f"Document {document['_id']} is blocked from modification by {block_modification_by}"
             )
 
     async def _update_document(
@@ -922,7 +922,7 @@ class BaseDocumentService(
             Document update schema class
         """
         # check if document is modifiable
-        self._check_document_modifiable(document=document)
+        self._check_document_modifiable(document=document.dict(by_alias=True))
 
         # check any conflict with existing documents
         updated_document = self.document_class(**{**document.dict(by_alias=True), **update_dict})
