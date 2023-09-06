@@ -1,7 +1,6 @@
 """
 Tests for FeatureReadinessService
 """
-
 import pytest
 
 from featurebyte.exception import DocumentUpdateError
