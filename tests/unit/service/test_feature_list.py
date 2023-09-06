@@ -5,8 +5,14 @@ import pytest
 from bson.objectid import ObjectId
 
 from featurebyte import FeatureJobSetting, TableFeatureJobSetting
-from featurebyte.exception import DocumentError, DocumentInconsistencyError
+from featurebyte.exception import (
+    DocumentError,
+    DocumentInconsistencyError,
+    DocumentModificationBlockedError,
+)
+from featurebyte.models.base import ReferenceInfo
 from featurebyte.models.entity import ParentEntity
+from featurebyte.models.feature_list import FeatureReadinessDistribution
 from featurebyte.schema.entity import EntityCreate
 from featurebyte.schema.feature import FeatureNewVersionCreate, FeatureServiceCreate
 from featurebyte.schema.feature_list import (
@@ -203,3 +209,20 @@ async def test_feature_list__contains_relationships_info(
     for relationship_info in relationships_info:
         assert relationship_info.entity_id in expected_entities
         assert relationship_info.related_entity_id in expected_entities
+
+
+@pytest.mark.asyncio
+async def test_update_readiness_distribution(feature_list_service, feature_list):
+    """Test update readiness distribution method checks for block modification by"""
+    reference_info = ReferenceInfo(asset_name="some_asset_name", document_id=ObjectId())
+    await feature_list_service.add_block_modification_by(
+        query_filter={"_id": feature_list.id}, reference_info=reference_info
+    )
+    updated_feature_list = await feature_list_service.get_document(document_id=feature_list.id)
+    assert updated_feature_list.block_modification_by == [reference_info]
+
+    with pytest.raises(DocumentModificationBlockedError):
+        await feature_list_service.update_readiness_distribution(
+            document_id=feature_list.id,
+            readiness_distribution=FeatureReadinessDistribution(__root__=[]),
+        )

@@ -188,6 +188,9 @@ class FeatureService(BaseNamespaceService[FeatureModel, FeatureServiceCreate]):
         readiness: FeatureReadiness
             Feature readiness
         """
+        document = await self.get_document_as_dict(document_id=document_id)
+        self._check_document_modifiable(document=document)
+
         await self.persistent.update_one(
             collection_name=self.collection_name,
             query_filter=self._construct_get_query_filter(document_id=document_id),
