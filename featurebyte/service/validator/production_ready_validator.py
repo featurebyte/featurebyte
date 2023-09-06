@@ -132,13 +132,14 @@ class ProductionReadyValidator:
             "name": promoted_feature.name,
             "readiness": FeatureReadiness.PRODUCTION_READY.value,
         }
-        async for feature in self.feature_service.list_documents_iterator(
+        async for feature in self.feature_service.list_documents_as_dict_iterator(
             query_filter=query_filter
         ):
-            if feature.id != promoted_feature.id:
+            feature_id = feature["_id"]
+            if feature_id != promoted_feature.id:
                 raise DocumentUpdateError(
                     f"Found another feature version that is already PRODUCTION_READY. Please deprecate the feature "
-                    f'"{promoted_feature.name}" with ID {feature.id} first before promoting the promoted '
+                    f'"{promoted_feature.name}" with ID {feature_id} first before promoting the promoted '
                     "version as there can only be one feature version that is production ready at any point in time. "
                     f"We are unable to promote the feature with ID {promoted_feature.id} right now."
                 )

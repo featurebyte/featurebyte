@@ -264,11 +264,11 @@ class AllDeploymentController(
             feature_list_ids.add(deployment_model.feature_list_id)
 
         with self.feature_list_service.allow_use_raw_query_filter():
-            async for feature_list in self.feature_list_service.list_documents_iterator(
+            async for feature_list in self.feature_list_service.list_documents_as_dict_iterator(
                 query_filter={"_id": {"$in": list(feature_list_ids)}},
                 use_raw_query_filter=True,
             ):
-                feature_ids.update(set(feature_list.feature_ids))
+                feature_ids.update(set(feature_list["feature_ids"]))
 
         return DeploymentSummary(
             num_feature_list=len(feature_list_ids),
