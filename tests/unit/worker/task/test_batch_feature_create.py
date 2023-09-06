@@ -13,6 +13,9 @@ from featurebyte import RecordRetrievalException
 from featurebyte.api.catalog import Catalog, Entity
 from featurebyte.models.base import activate_catalog
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model.common_table import TabularSource
+from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.schema.feature import BatchFeatureItem
 from featurebyte.worker.task.batch_feature_create import (
     BatchFeatureCreateTask,
     BatchFeatureCreateTaskPayload,
@@ -73,10 +76,30 @@ async def test_get_task_description():
     """
     Test get task description
     """
+    tabular_source = TabularSource(
+        feature_store_id=ObjectId(),
+        table_details=TableDetails(
+            database_name="test_database",
+            schema_name="test_schema",
+            table_name="test_table",
+        ),
+    )
     payload = BatchFeatureCreateTaskPayload(
-        output_feature_ids=[ObjectId(), ObjectId()],
         graph=QueryGraph(),
-        features=[],
+        features=[
+            BatchFeatureItem(
+                id=ObjectId(),
+                name="test_feature_1",
+                node_name="node_1",
+                tabular_source=tabular_source,
+            ),
+            BatchFeatureItem(
+                id=ObjectId(),
+                name="test_feature_2",
+                node_name="node_2",
+                tabular_source=tabular_source,
+            ),
+        ],
         catalog_id=ObjectId(),
         conflict_resolution="raise",
     )

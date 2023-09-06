@@ -89,7 +89,7 @@ class BatchFeatureCreateTask(BaseTask):
 
     async def get_task_description(self) -> str:
         payload = cast(BatchFeatureCreateTaskPayload, self.payload)
-        return f"Save {len(payload.output_feature_ids)} features"
+        return f"Save {len(payload.features)} features"
 
     async def identify_saved_feature_ids(self, feature_ids: Sequence[ObjectId]) -> Set[ObjectId]:
         """
