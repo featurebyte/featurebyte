@@ -32,7 +32,7 @@ from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
-from featurebyte.service.mixin import DEFAULT_PAGE_SIZE, Document
+from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
 from featurebyte.service.relationship_info import RelationshipInfoService
 
 
@@ -306,12 +306,12 @@ class FeatureListService(
             await self._update_features(document.feature_ids, inserted_feature_list_id=insert_id)
         return await self.get_document(document_id=insert_id)
 
-    async def list_documents_iterator(
+    async def list_documents_iterator(  # type: ignore[override]
         self,
         query_filter: QueryFilter,
         page_size: int = DEFAULT_PAGE_SIZE,
         use_raw_query_filter: bool = False,
-    ) -> AsyncIterator[Document]:
+    ) -> AsyncIterator[FeatureListModel]:
         raise RuntimeError(
             "Do not use this method as it takes long time to deserialize the data, "
             "use list_documents_as_dict_iterator instead"

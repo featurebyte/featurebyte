@@ -321,7 +321,7 @@ class BaseDocumentService(
                 f'{self.class_name} (id: "{document_id}") not found. Please save the {self.class_name} object first.'
             )
             raise DocumentNotFoundError(exception_detail)
-        return document_dict
+        return document_dict  # type: ignore
 
     async def get_document(
         self,

@@ -84,7 +84,7 @@ class FeatureReadinessService:
                     default_feature_list = feature_list
                 elif (
                     readiness_dist == default_readiness_dist
-                    and feature_list.created_at > default_feature_list.created_at  # type: ignore[operator]
+                    and feature_list["created_at"] > default_feature_list["created_at"]
                 ):
                     default_feature_list = feature_list
         assert default_feature_list is not None, "default_feature_list should not be None"
