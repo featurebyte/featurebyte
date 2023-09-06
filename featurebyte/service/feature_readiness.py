@@ -20,7 +20,6 @@ from featurebyte.models.feature_namespace import (
     FeatureReadiness,
 )
 from featurebyte.persistent import Persistent
-from featurebyte.schema.feature import FeatureServiceUpdate
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
 from featurebyte.service.feature import FeatureService
