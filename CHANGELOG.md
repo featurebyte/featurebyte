@@ -1,5 +1,71 @@
 # Changelog
 
+## v0.5.0 (2023-10-06)
+
+### 🛑 Breaking Changes
+
++ `Configurations` Configurations::use_profile() function is now a method rather than a classmethod
+  ```diff
+  - Configurations.use_profile("profile")
+  + Configurations().use_profile("profile")
+  ```
+
+### 💡 Enhancements
+
++ `service` Cache view created from query in Spark for better performance
++ `vector-aggregation` Add java UDAFs for sum and max for use in spark.
++ `vector-operations` Add cosine_similarity to compare two vector columns.
++ `vector-aggregation` Add integration test to test end to end for VECTOR_AGGREGATE_MAX.
++ `vector-aggregations` Enable vector aggregations for tiling aggregate - max and sum - functions
++ `middleware` Organize exceptions to reduce verbosity in middleware
++ `api` Add support for updating description of table columns in the python API
++ `vector-aggregation` Update groupby logic for non tile based aggregates
++ `api` Implement API object for Use Case component
++ `api` Use Context name instead of Context id for the API signature
++ `api` Implement API object for Context
++ `vector_aggregation` Add UDTF for max, sum and avg for snowflake.
++ `api` Integrate Context API object for UseCase
++ `vector-aggregation` Snowflake return values for vector aggregations should be a list now, instead of a string.
++ `vector-aggregation` Add java UDAFs for average for use in spark.
++ `vector_aggregation` Only return one row in table vector aggregate function per partition
++ `service` Support conditionally updating a feature using a mask derived from other feature(s)
++ `vector-aggregation` Add guardrails to prevent array aggregations if agg func is not max or avg.
++ `service` Tag semantics for all special columns during table creation
++ `api` Implement UseCase Info
++ `service` Change join type to inner when joining event and item tables
++ `vector-aggregation` Register vector aggregate max, and update parent dtype inference logic.
++ `service` Implement scheduled task to clean up stale versions and drop online store tables when possible
++ `use-case` Implement guardrail for use case's observation table not to be deleted
++ `vector-aggregations` Enable vector aggregations for tiling aggregate avg function
++ `api` Rename description update functions for versioned assets
++ `vector-aggregation` Support integer values in vectors; add support integration test for simple aggregates
++ `vector-aggregation` Update groupby_helper to take in parent_dtype.
++ `httpClient` added a ssl_verify value in Configurations to allow disabling of ssl certificate verification
++ `online-serving` Split online store compute and insert query to minimize table locking
++ `tests` Use the notebook as the test id in the notebook tests.
++ `vector-aggregation` Add simple average spark udaf.
++ `vector-aggregation` Add average snowflake udtf.
++ `api` Associate Deployment with UseCase
++ `service` Skip creating a data warehouse session when online disabling a feature
++ `use-case` implement use case model and its associated routes
++ `service` Apply event timestamp filter on EventTable directly in scheduled tile jobs when possible
+
+### 🐛 Bug Fixes
+
++ `worker` Block running multiple concurrent deployment create/update tasks for the same deployment
++ `service` Fix bug where feature job starts running while the feature is still being enabled
++ `dependencies` upgrading `scipy` dependency
++ `service` Fixes an invalid identifier error in sql when feature involves a mix of filtered and non-filtered versions of the same view.
++ `worker` Fixes a bug where scheduler does not work with certain mongodb uris.
++ `online-serving` Fix incompatible column types when inserting to online store tables
++ `service` Fix feature saving error due to tile generation bug
++ `service` Ensure row ordering of online serving output DataFrame matches input request data
++ `dependencies` Limiting python range to 3.8>=,<3.12 due to scipy constraint
++ `service` Use execute_query_long_running when inserting to online store tables to fix timeout errors
++ `model` Mongodb index on periodic task name conflicts with scheduler engine
++ `service` Fix conversion of date type to double in spark
+
+
 ## v0.4.4 (2023-09-29)
 
 ### 🐛 Bug Fixes
