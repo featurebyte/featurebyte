@@ -50,6 +50,7 @@ from featurebyte.api.table import Table
 from featurebyte.api.target import Target
 from featurebyte.api.target_namespace import TargetNamespace
 from featurebyte.api.use_case import UseCase
+from featurebyte.api.use_case_or_context_mixin import UseCaseOrContextMixin
 from featurebyte.api.user_defined_function import UserDefinedFunction
 from featurebyte.exception import (
     DuplicatedRecordException,
@@ -282,6 +283,7 @@ def test_all_methods_are_exposed_in_catalog(method_list):
         TargetNamespace,
         FeatureOrTargetMixin,
         FeatureOrTargetNamespaceMixin,
+        UseCaseOrContextMixin,
     }
     assert len(api_object_children) == len(method_list) + len(excluded_children)
 

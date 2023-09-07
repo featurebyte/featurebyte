@@ -11,6 +11,7 @@ from bson import ObjectId
 from featurebyte.enum import DBVarType, MaterializedTableNamePrefix, SpecialColumnName
 from featurebyte.exception import (
     MissingPointInTimeColumnError,
+    ObservationTableInvalidContextError,
     UnsupportedPointInTimeColumnTypeError,
 )
 from featurebyte.models.base import FeatureByteBaseDocumentModel
@@ -18,7 +19,7 @@ from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.materialisation import get_most_recent_point_in_time_sql
-from featurebyte.schema.observation_table import ObservationTableCreate
+from featurebyte.schema.observation_table import ObservationTableCreate, ObservationTableUpdate
 from featurebyte.schema.worker.task.observation_table import ObservationTableTaskPayload
 from featurebyte.service.context import ContextService
 from featurebyte.service.feature_store import FeatureStoreService
@@ -176,3 +177,41 @@ class ObservationTableService(
             "num_rows": num_rows,
             "most_recent_point_in_time": most_recent_point_in_time,
         }
+
+    async def update_observation_table(
+        self, observation_table_id: ObjectId, data: ObservationTableUpdate
+    ) -> Optional[ObservationTableModel]:
+        """
+        Update ObservationTable
+
+        Parameters
+        ----------
+        observation_table_id: ObjectId
+            ObservationTable document_id
+        data: ObservationTableUpdate
+            ObservationTable update payload
+
+        Returns
+        -------
+        Optional[ObservationTableModel]
+
+        Raises
+        ------
+        ObservationTableInvalidContextError
+            If the entity ids are different from the existing Context
+        """
+        exist_observation_table = await self.get_document(document_id=observation_table_id)
+        if exist_observation_table.context_id:
+            exist_context = await self.context_service.get_document(
+                document_id=exist_observation_table.context_id
+            )
+            new_context = await self.context_service.get_document(document_id=data.context_id)
+            if set(exist_context.entity_ids) != set(new_context.entity_ids):
+                raise ObservationTableInvalidContextError(
+                    "Cannot update Context as the entities are different from the existing Context."
+                )
+
+        observation_table: Optional[ObservationTableModel] = await self.update_document(
+            document_id=observation_table_id, data=data, return_document=True
+        )
+        return observation_table

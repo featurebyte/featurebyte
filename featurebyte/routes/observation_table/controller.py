@@ -7,7 +7,6 @@ from typing import Optional
 
 from bson import ObjectId
 
-from featurebyte.exception import ObservationTableInvalidContextError
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.routes.common.base_materialized_table import BaseMaterializedTableController
 from featurebyte.routes.task.controller import TaskController
@@ -123,28 +122,7 @@ class ObservationTableController(
         Returns
         -------
         Optional[ObservationTableModel]
-
-        Raises
-        ------
-        ObservationTableInvalidContextError
-            If the entity ids are different from the existing Context
         """
-        exist_observation_table = await self.observation_table_service.get_document(
-            document_id=observation_table_id
+        return await self.observation_table_service.update_observation_table(
+            observation_table_id, data
         )
-        if exist_observation_table.context_id:
-            exist_context = await self.context_service.get_document(
-                document_id=exist_observation_table.context_id
-            )
-            new_context = await self.context_service.get_document(document_id=data.context_id)
-            if set(exist_context.entity_ids) != set(new_context.entity_ids):
-                raise ObservationTableInvalidContextError(
-                    "Cannot update Context as the entity ids are different from the existing Context."
-                )
-
-        observation_table: Optional[
-            ObservationTableModel
-        ] = await self.observation_table_service.update_document(
-            document_id=observation_table_id, data=data, return_document=True
-        )
-        return observation_table

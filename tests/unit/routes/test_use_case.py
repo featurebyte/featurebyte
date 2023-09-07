@@ -89,11 +89,11 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         _, persistent = test_api_client_persistent
 
         async def create_observation_table(
-            ob_table_id, target_input=True, same_context=True, same_target=True
+            ob_table_id, target_input=True, same_context=True, same_target=True, new_context_id=None
         ):
             context_id = ObjectId(self.payload["context_id"])
             if not same_context:
-                context_id = ObjectId()
+                context_id = new_context_id
 
             target_id = ObjectId(self.payload["target_id"])
             if not same_target:
@@ -274,16 +274,35 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
             == "Inconsistent target_id between use case and observation table"
         )
 
+        new_entity_id = ObjectId()
+        entity_payload = self.load_payload("tests/fixtures/request_payloads/entity.json")
+        entity_payload["_id"] = str(new_entity_id)
+        entity_payload["name"] = "new_entity_name"
+        entity_payload["serving_name"] = "new_entity_serving_name"
+        response = test_api_client.post("/entity", json=entity_payload)
+        assert response.status_code == HTTPStatus.CREATED, response.json()
+
         different_context_ob_table_id = ObjectId()
-        await create_observation_table(different_context_ob_table_id, same_context=False)
+        context_payload = self.load_payload("tests/fixtures/request_payloads/context.json")
+        context_payload["_id"] = str(different_context_ob_table_id)
+        context_payload["entity_ids"] = [str(new_entity_id)]
+        context_payload["name"] = "new_context_name"
+        response = test_api_client.post("/context", json=context_payload)
+        assert response.status_code == HTTPStatus.CREATED, response.json()
+
+        await create_observation_table(
+            different_context_ob_table_id,
+            same_context=False,
+            new_context_id=different_context_ob_table_id,
+        )
         response = test_api_client.patch(
             f"{self.base_route}/{use_case_id}",
             json={"new_observation_table_id": str(different_context_ob_table_id)},
         )
-        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
         assert (
             response.json()["detail"]
-            == "Inconsistent context_id between use case and observation table"
+            == "Inconsistent entities between use case and observation table"
         )
 
     @pytest.mark.asyncio

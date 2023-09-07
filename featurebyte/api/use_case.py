@@ -219,17 +219,3 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
         >>> info = use_case.info()  # doctest: +SKIP
         """
         return super().info(verbose)
-
-    @typechecked
-    def _update_observation_table_context_id(self, observation_table: ObservationTable) -> None:
-        """
-        Update the context_id of the ObservationTable object.
-
-        Parameters
-        ----------
-        observation_table: ObservationTable
-            The ObservationTable object to be updated.
-        """
-        observation_table.update(
-            update_payload={"context_id": self.context_id}, allow_update_local=False
-        )

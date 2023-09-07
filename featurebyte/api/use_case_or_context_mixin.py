@@ -66,7 +66,7 @@ class UseCaseOrContextMixin(ApiObject):
         >>> use_case.add_observation_table(observation_table_name)  # doctest: +SKIP
         """
         observation_table = ObservationTable.get(observation_table_name)
-        self._update_observation_table_context_id(observation_table)
+        observation_table.update(update_payload={"context_id": self.id}, allow_update_local=False)
 
     @typechecked
     def update_default_preview_table(self, observation_table_name: str) -> None:
@@ -84,8 +84,6 @@ class UseCaseOrContextMixin(ApiObject):
         >>> use_case.update_default_preview_table(observation_table_name)  # doctest: +SKIP
         """
         observation_table = ObservationTable.get(observation_table_name)
-        self._update_observation_table_context_id(observation_table)
-
         self.update(
             update_payload={"default_preview_table_id": observation_table.id},
             allow_update_local=False,
@@ -108,8 +106,6 @@ class UseCaseOrContextMixin(ApiObject):
         >>> use_case.update_default_eda_table(observation_table_name)  # doctest: +SKIP
         """
         observation_table = ObservationTable.get(observation_table_name)
-        self._update_observation_table_context_id(observation_table)
-
         self.update(
             update_payload={"default_eda_table_id": observation_table.id}, allow_update_local=False
         )
@@ -155,15 +151,3 @@ class UseCaseOrContextMixin(ApiObject):
             dataframe_dict["description"].append(r_dict["description"])
 
         return pd.DataFrame.from_dict(dataframe_dict)
-
-    @typechecked
-    def _update_observation_table_context_id(self, observation_table: ObservationTable) -> None:
-        """
-        Update the context_id of the ObservationTable object.
-
-        Parameters
-        ----------
-        observation_table: ObservationTable
-            The ObservationTable object to be updated.
-        """
-        observation_table.update(update_payload={"context_id": self.id}, allow_update_local=False)

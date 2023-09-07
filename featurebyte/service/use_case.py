@@ -9,6 +9,7 @@ from featurebyte.exception import UseCaseInvalidDataError
 from featurebyte.models.observation_table import TargetInput
 from featurebyte.models.use_case import UseCaseModel
 from featurebyte.persistent import Persistent
+from featurebyte.schema.observation_table import ObservationTableUpdate
 from featurebyte.schema.use_case import (
     UseCaseCreate,
     UseCaseCreateTarget,
@@ -94,17 +95,23 @@ class UseCaseService(BaseDocumentService[UseCaseModel, UseCaseCreate, UseCaseUpd
 
         if data.default_preview_table_id:
             # validate and add default_preview_table_id
-            await self._validate_input_observation_table(use_case, data.default_preview_table_id)
+            await self._validate_and_update_input_observation_table(
+                use_case, data.default_preview_table_id
+            )
             data.observation_table_ids.append(data.default_preview_table_id)
 
         if data.default_eda_table_id:
             # validate and add default_eda_table_id
-            await self._validate_input_observation_table(use_case, data.default_eda_table_id)
+            await self._validate_and_update_input_observation_table(
+                use_case, data.default_eda_table_id
+            )
             data.observation_table_ids.append(data.default_eda_table_id)
 
         if data.new_observation_table_id:
             # validate and add new_observation_table_id
-            await self._validate_input_observation_table(use_case, data.new_observation_table_id)
+            await self._validate_and_update_input_observation_table(
+                use_case, data.new_observation_table_id
+            )
             data.observation_table_ids.append(data.new_observation_table_id)
 
         # remove duplicate observation_table_ids
@@ -117,7 +124,7 @@ class UseCaseService(BaseDocumentService[UseCaseModel, UseCaseCreate, UseCaseUpd
         )
         return cast(UseCaseModel, result_doc)
 
-    async def _validate_input_observation_table(
+    async def _validate_and_update_input_observation_table(
         self,
         use_case: UseCaseModel,
         input_observation_table_id: ObjectId,
@@ -137,27 +144,40 @@ class UseCaseService(BaseDocumentService[UseCaseModel, UseCaseCreate, UseCaseUpd
         UseCaseInvalidDataError
             if input observation table id is not consistent with use case entity_ids and target_id
         """
-        new_observation = await self.observation_table_service.get_document(
+        input_observation = await self.observation_table_service.get_document(
             document_id=input_observation_table_id
         )
 
         # check target_id
-        if not isinstance(new_observation.request_input, TargetInput):
+        if not isinstance(input_observation.request_input, TargetInput):
             raise UseCaseInvalidDataError("observation table request_input is not TargetInput")
 
         if (
-            isinstance(new_observation.request_input, TargetInput)
-            and new_observation.request_input.target_id != use_case.target_id
+            isinstance(input_observation.request_input, TargetInput)
+            and input_observation.request_input.target_id != use_case.target_id
         ):
             raise UseCaseInvalidDataError(
                 "Inconsistent target_id between use case and observation table"
             )
 
         # check context_id (entity_ids)
-        if not new_observation.context_id:
-            raise UseCaseInvalidDataError("observation table context_id is empty")
+        if not input_observation.context_id:
+            await self.observation_table_service.update_observation_table(
+                observation_table_id=input_observation_table_id,
+                data=ObservationTableUpdate(context_id=use_case.context_id),
+            )
 
-        if new_observation.context_id and new_observation.context_id != use_case.context_id:
-            raise UseCaseInvalidDataError(
-                "Inconsistent context_id between use case and observation table"
+        elif input_observation.context_id != use_case.context_id:
+            exist_context = await self.context_service.get_document(document_id=use_case.context_id)
+            new_context = await self.context_service.get_document(
+                document_id=input_observation.context_id
+            )
+            if set(exist_context.entity_ids) != set(new_context.entity_ids):
+                raise UseCaseInvalidDataError(
+                    "Inconsistent entities between use case and observation table"
+                )
+
+            await self.observation_table_service.update_observation_table(
+                observation_table_id=input_observation_table_id,
+                data=ObservationTableUpdate(context_id=use_case.context_id),
             )
