@@ -7,13 +7,14 @@ from typeguard import typechecked
 
 from featurebyte.api.entity import Entity
 from featurebyte.api.savable_api_object import SavableApiObject
+from featurebyte.api.use_case_or_context_mixin import UseCaseOrContextMixin
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.context import ContextModel
 from featurebyte.schema.context import ContextUpdate
 
 
-class Context(SavableApiObject):
+class Context(SavableApiObject, UseCaseOrContextMixin):
     """
     Context class to represent a Context in FeatureByte.
 

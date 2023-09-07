@@ -44,7 +44,7 @@ def test_add_observation_table(use_case, target_table):
     Test UseCase.add_observation_table method
     """
 
-    use_case.add_observation_table(target_table)
+    use_case.add_observation_table(target_table.name)
     retrieved_use_case = UseCase.get_by_id(use_case.id)
     assert retrieved_use_case.name == "test_use_case"
     assert retrieved_use_case.description == "test_use_case description"
@@ -60,7 +60,7 @@ def test_update_default_preview_table(use_case, target_table):
     Test UseCase.update_default_preview_table method
     """
 
-    use_case.update_default_preview_table(target_table)
+    use_case.update_default_preview_table(target_table.name)
 
     use_case_df = UseCase.list()
     assert len(use_case_df) == 1
@@ -80,7 +80,7 @@ def test_update_default_eda_table(use_case, target_table):
     Test UseCase.update_default_eda_table method
     """
 
-    use_case.update_default_eda_table(target_table)
+    use_case.update_default_eda_table(target_table.name)
 
     use_case_df = UseCase.list()
     assert len(use_case_df) == 1
@@ -111,8 +111,8 @@ def test_info(use_case, target_table, deployment):
     Test UseCase.list_deployments( method
     """
 
-    use_case.update_default_eda_table(target_table)
-    use_case.update_default_preview_table(target_table)
+    use_case.update_default_eda_table(target_table.name)
+    use_case.update_default_preview_table(target_table.name)
 
     use_case_info = use_case.info()
     assert use_case_info["name"] == use_case.name

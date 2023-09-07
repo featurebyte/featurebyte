@@ -424,3 +424,9 @@ class UseCaseInvalidDataError(BaseUnprocessableEntityError):
     """
     Raise when invalid observation table default is specified
     """
+
+
+class ObservationTableInvalidContextError(BaseUnprocessableEntityError):
+    """
+    Raise when invalid observation table context is specified
+    """

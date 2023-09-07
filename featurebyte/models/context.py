@@ -30,6 +30,9 @@ class ContextModel(FeatureByteCatalogBaseDocumentModel):
     graph: Optional[QueryGraph]
     node_name: Optional[str]
 
+    default_preview_table_id: Optional[PydanticObjectId]
+    default_eda_table_id: Optional[PydanticObjectId]
+
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
         MongoDB Settings

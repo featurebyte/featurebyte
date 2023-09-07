@@ -16,7 +16,7 @@ from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.materialized_table import MaterializedTableMixin
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.models.observation_table import ObservationTableModel
-from featurebyte.schema.observation_table import ObservationTableListRecord
+from featurebyte.schema.observation_table import ObservationTableListRecord, ObservationTableUpdate
 
 
 class ObservationTable(ObservationTableModel, ApiObject, MaterializedTableMixin):
@@ -29,6 +29,7 @@ class ObservationTable(ObservationTableModel, ApiObject, MaterializedTableMixin)
     _route = "/observation_table"
     _list_schema = ObservationTableListRecord
     _get_schema = ObservationTableModel
+    _update_schema_class = ObservationTableUpdate
     _list_fields = [
         "name",
         "type",

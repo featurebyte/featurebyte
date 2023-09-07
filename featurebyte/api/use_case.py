@@ -3,7 +3,7 @@ UseCase module
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 import pandas as pd
 from typeguard import typechecked
@@ -16,13 +16,14 @@ from featurebyte.api.context import Context
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.savable_api_object import DeletableApiObject, SavableApiObject
 from featurebyte.api.target import Target
+from featurebyte.api.use_case_or_context_mixin import UseCaseOrContextMixin
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.use_case import UseCaseModel
 from featurebyte.schema.use_case import UseCaseUpdate
 
 
-class UseCase(SavableApiObject, DeletableApiObject):
+class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
     """
     UseCase class to represent a Use Case in FeatureByte.
 
@@ -131,80 +132,24 @@ class UseCase(SavableApiObject, DeletableApiObject):
         return use_case
 
     @typechecked
-    def add_observation_table(self, new_observation_table: ObservationTable) -> None:
+    def add_observation_table(self, observation_table_name: str) -> None:
         """
         Add observation table for the Use Case.
 
         Parameters
         ----------
-        new_observation_table: ObservationTable
-            New observation table to be added.
+        observation_table_name: str
+            Name of new observation table to be added.
 
         Examples
         --------
         >>> use_case = catalog.get_use_case("use_case")
-        >>> use_case.add_observation_table(new_observation_table)  # doctest: +SKIP
+        >>> use_case.add_observation_table(observation_table_name)  # doctest: +SKIP
         """
+        observation_table = ObservationTable.get(observation_table_name)
         self.update(
-            update_payload={"new_observation_table_id": new_observation_table.id},
+            update_payload={"new_observation_table_id": observation_table.id},
             allow_update_local=False,
-        )
-
-    @typechecked
-    def update_default_preview_table(self, default_preview_table: ObservationTable) -> None:
-        """
-        Update default preview table for the Use Case.
-
-        Parameters
-        ----------
-        default_preview_table: ObservationTable
-            New default preview table.
-
-        Examples
-        --------
-        >>> use_case = catalog.get_use_case("use_case")
-        >>> use_case.update_default_preview_table(default_preview_table)  # doctest: +SKIP
-        """
-        self.update(
-            update_payload={"default_preview_table_id": default_preview_table.id},
-            allow_update_local=False,
-        )
-
-    @typechecked
-    def update_default_eda_table(self, default_eda_table: ObservationTable) -> None:
-        """
-        Update default eda table for the Use Case.
-
-        Parameters
-        ----------
-        default_eda_table: ObservationTable
-            New default eda table.
-
-        Examples
-        --------
-        >>> use_case = catalog.get_use_case("use_case")
-        >>> use_case.update_default_eda_table(default_eda_table)  # doctest: +SKIP
-        """
-        self.update(
-            update_payload={"default_eda_table_id": default_eda_table.id}, allow_update_local=False
-        )
-
-    def list_observation_tables(self) -> pd.DataFrame:
-        """
-        List observation tables associated with the Use Case.
-
-        Returns
-        -------
-        pd.DataFrame
-
-        Examples
-        --------
-        >>> use_case = catalog.get_use_case("use_case")
-        >>> use_case.list_observation_tables()  # doctest: +SKIP
-        """
-        route = f"{self._route}/{self.id}/observation_tables"
-        return self._construct_table_result_df(
-            list(iterate_api_object_using_paginated_routes(route))
         )
 
     def list_feature_tables(self) -> pd.DataFrame:
@@ -275,24 +220,16 @@ class UseCase(SavableApiObject, DeletableApiObject):
         """
         return super().info(verbose)
 
-    def _construct_table_result_df(self, result_dict: List[dict[str, Any]]) -> pd.DataFrame:
+    @typechecked
+    def _update_observation_table_context_id(self, observation_table: ObservationTable) -> None:
         """
-        Construct a pandas DataFrame from the result_dict returned by the API.
+        Update the context_id of the ObservationTable object.
 
         Parameters
         ----------
-        result_dict: dict[str, Any]
-            The result_dict returned by the API.
-
-        Returns
-        -------
-        pd.DataFrame
-            The pandas DataFrame constructed from the result_dict.
+        observation_table: ObservationTable
+            The ObservationTable object to be updated.
         """
-        dataframe_dict: dict[str, Any] = {"id": [], "name": [], "description": []}
-        for r_dict in result_dict:
-            dataframe_dict["id"].append(r_dict["_id"])
-            dataframe_dict["name"].append(r_dict["name"])
-            dataframe_dict["description"].append(r_dict["description"])
-
-        return pd.DataFrame.from_dict(dataframe_dict)
+        observation_table.update(
+            update_payload={"context_id": self.context_id}, allow_update_local=False
+        )

@@ -38,6 +38,9 @@ class ContextUpdate(BaseDocumentServiceUpdateSchema):
     graph: Optional[QueryGraph]
     node_name: Optional[StrictStr]
 
+    default_preview_table_id: Optional[PydanticObjectId]
+    default_eda_table_id: Optional[PydanticObjectId]
+
     @root_validator(pre=True)
     @classmethod
     def _validate_parameters(cls, values: Dict[str, Any]) -> Dict[str, Any]:
