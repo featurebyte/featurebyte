@@ -121,6 +121,7 @@ async def test_online_serving_sql(
     ):
         deployment = feature_list.deploy(make_production_ready=True)
         deployment.enable()
+        time.sleep(1)  # sleep 1s to invalidate cache
         assert deployment.enabled is True
 
     await sanity_check_online_store_tables(session, feature_list)
@@ -166,6 +167,7 @@ async def test_online_serving_sql(
         )
     finally:
         deployment.disable()
+        time.sleep(1)  # sleep 1s to invalidate cache
         assert deployment.enabled is False
 
 
