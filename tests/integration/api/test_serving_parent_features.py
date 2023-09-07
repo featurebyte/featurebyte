@@ -157,6 +157,7 @@ def feature_list_deployment_with_child_entities_fixture(country_feature, mock_ta
     try:
         deployment = feature_list.deploy(make_production_ready=True)
         deployment.enable()
+        time.sleep(1)  # sleep 1s to invalidate cache
         assert deployment.enabled is True
         yield feature_list, deployment
     finally:
@@ -180,6 +181,7 @@ def feature_list_with_parent_child_features_fixture(
     try:
         deployment = feature_list.deploy(make_production_ready=True)
         deployment.enable()
+        time.sleep(1)  # sleep 1s to invalidate cache
         assert deployment.enabled is True
         yield feature_list
     finally:
@@ -347,6 +349,7 @@ def test_online_serving_code_uses_primary_entity(
         deployment_name="deployment_for_testing_online_serving_uses_primary_entity",
     )
     deployment.enable()
+    time.sleep(1)  # sleep 1s to invalidate cache
     assert deployment.enabled is True
     online_serving_code = deployment.get_online_serving_code("python")
     expected_signature = 'request_features([{"serving_cust_id": 1000}])'

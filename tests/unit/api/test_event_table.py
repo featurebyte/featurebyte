@@ -928,8 +928,10 @@ def test_list_feature_job_setting_analysis(mock_list, saved_event_table):
     assert output == mock_list.return_value
 
 
-def test_event_table__entity_relation_auto_tagging(saved_event_table):
+def test_event_table__entity_relation_auto_tagging(saved_event_table, mock_api_object_cache):
     """Test event table update: entity relation will be created automatically"""
+    _ = mock_api_object_cache
+
     transaction_entity = Entity(name="transaction", serving_names=["transaction_id"])
     transaction_entity.save()
 

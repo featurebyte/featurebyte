@@ -41,6 +41,18 @@ ModelT = TypeVar("ModelT", bound=FeatureByteBaseDocumentModel)
 logger = get_logger(__name__)
 
 
+def _get_cache_collection_name(
+    obj: Union[ApiObjectT, FeatureByteBaseDocumentModel, Type[ApiObjectT]]
+) -> str:
+    if hasattr(obj, "_get_schema"):
+        collection_name = (
+            obj._get_schema.Settings.collection_name  # type: ignore # pylint: disable=protected-access
+        )
+    else:
+        collection_name = obj.Settings.collection_name
+    return collection_name
+
+
 def get_api_object_cache_key(
     obj: Union[ApiObjectT, FeatureByteBaseDocumentModel], *args: Any, **kwargs: Any
 ) -> Any:
@@ -61,12 +73,7 @@ def get_api_object_cache_key(
     Any
     """
     # Return a cache key for _cache key retrieval (only collection name & object ID are used)
-    if hasattr(obj, "_get_schema"):
-        collection_name = (
-            obj._get_schema.Settings.collection_name  # type: ignore # pylint: disable=protected-access
-        )
-    else:
-        collection_name = obj.Settings.collection_name
+    collection_name = _get_cache_collection_name(obj)
     return hashkey(collection_name, obj.id, *args, **kwargs)
 
 
@@ -278,8 +285,15 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
 
     @classmethod
     def _get_by_id(
-        cls: Type[ApiObjectT], id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
+        cls: Type[ApiObjectT],
+        id: ObjectId,  # pylint: disable=redefined-builtin,invalid-name
+        use_cache: bool = True,
     ) -> ApiObjectT:
+        if use_cache:
+            collection_name = _get_cache_collection_name(cls)
+            key = hashkey(collection_name, id)
+            if key in cls._cache:
+                return cls.from_persistent_object_dict(cls._cache[key].dict(by_alias=True))
         return cls.from_persistent_object_dict(cls._get_object_dict_by_id(id_value=id))
 
     @classmethod

@@ -333,8 +333,10 @@ def test_info(saved_scd_table):
     assert_info_helper(info)
 
 
-def test_scd_table__entity_relation_auto_tagging(saved_scd_table):
+def test_scd_table__entity_relation_auto_tagging(saved_scd_table, mock_api_object_cache):
     """Test scd table update: entity relation will be created automatically"""
+    _ = mock_api_object_cache
+
     entity_a = Entity(name="a", serving_names=["a_id"])
     entity_a.save()
 
