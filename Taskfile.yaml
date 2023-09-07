@@ -28,6 +28,17 @@ tasks:
     cmds:
       - poetry install -n --sync --extras=server
 
+  install-no-extras:
+    desc: "Install the project dependencies"
+    run: once
+    sources:
+      - pyproject.toml
+      - poetry.lock
+    deps:
+      - task: build-jar
+    cmds:
+      - poetry install -n --sync
+
   lint-java:
     desc: "Run linter for java"
     sources:

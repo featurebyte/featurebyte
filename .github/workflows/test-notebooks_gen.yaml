@@ -56,8 +56,8 @@ jobs:
       run: |-
         git config --global user.name "featurebyte[bot]"
         git config --global user.email "featurebyte[bot]@users.noreply.github.com"
-    - name: Run task install
-      run: task install
+    - name: Run task install-no-extras
+      run: task install-no-extras
     - name: Docker Login to Non-Prod Artifact Registry
       uses: docker/login-action@v2
       with:
@@ -103,8 +103,8 @@ jobs:
       run: |-
         git config --global user.name "featurebyte[bot]"
         git config --global user.email "featurebyte[bot]@users.noreply.github.com"
-    - name: Run task install
-      run: task install
+    - name: Run task install no extras
+      run: task install-no-extras
     - name: Docker Login to Non-Prod Artifact Registry
       uses: docker/login-action@v2
       with:
@@ -150,8 +150,8 @@ jobs:
       run: |-
         git config --global user.name "featurebyte[bot]"
         git config --global user.email "featurebyte[bot]@users.noreply.github.com"
-    - name: Run task install
-      run: task install
+    - name: Run task install no extras
+      run: task install-no-extras
     - name: Docker Login to Non-Prod Artifact Registry
       uses: docker/login-action@v2
       with:
