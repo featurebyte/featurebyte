@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.5.1 (2023-10-08)
+
+### 💡 Enhancements
+
++ `service` Optimize feature readiness service update runtime.
+
+### 🐛 Bug Fixes
+
++ `packaging` Restore cryptography package dependency [DEV-2233]
+
 ## v0.5.0 (2023-10-06)
 
 ### 🛑 Breaking Changes
