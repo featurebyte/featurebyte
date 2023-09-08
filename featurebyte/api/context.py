@@ -5,8 +5,8 @@ from typing import List
 
 from typeguard import typechecked
 
-from featurebyte import ObservationTable
 from featurebyte.api.entity import Entity
+from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.savable_api_object import SavableApiObject
 from featurebyte.api.use_case_or_context_mixin import UseCaseOrContextMixin
 from featurebyte.common.doc_util import FBAutoDoc
