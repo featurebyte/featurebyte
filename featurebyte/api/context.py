@@ -5,6 +5,7 @@ from typing import List
 
 from typeguard import typechecked
 
+from featurebyte import ObservationTable
 from featurebyte.api.entity import Entity
 from featurebyte.api.savable_api_object import SavableApiObject
 from featurebyte.api.use_case_or_context_mixin import UseCaseOrContextMixin
@@ -96,3 +97,21 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         context = Context(name=name, entity_ids=entity_ids)
         context.save()
         return context
+
+    @typechecked
+    def add_observation_table(self, observation_table_name: str) -> None:
+        """
+        Add observation table for the UseCase or Context.
+
+        Parameters
+        ----------
+        observation_table_name: str
+            New observation table to be added.
+
+        Examples
+        --------
+        >>> context = catalog.get_use_case("context")
+        >>> use_case.add_observation_table(observation_table_name)  # doctest: +SKIP
+        """
+        observation_table = ObservationTable.get(observation_table_name)
+        observation_table.update(update_payload={"context_id": self.id}, allow_update_local=False)

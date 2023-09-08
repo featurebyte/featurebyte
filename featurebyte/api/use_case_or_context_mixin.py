@@ -51,24 +51,6 @@ class UseCaseOrContextMixin(ApiObject):
         return None
 
     @typechecked
-    def add_observation_table(self, observation_table_name: str) -> None:
-        """
-        Add observation table for the UseCase or Context.
-
-        Parameters
-        ----------
-        observation_table_name: str
-            New observation table to be added.
-
-        Examples
-        --------
-        >>> use_case = catalog.get_use_case("use_case")
-        >>> use_case.add_observation_table(observation_table_name)  # doctest: +SKIP
-        """
-        observation_table = ObservationTable.get(observation_table_name)
-        observation_table.update(update_payload={"context_id": self.id}, allow_update_local=False)
-
-    @typechecked
     def update_default_preview_table(self, observation_table_name: str) -> None:
         """
         Update default preview table for the UseCase or Context.
