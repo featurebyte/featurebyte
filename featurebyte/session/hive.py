@@ -106,7 +106,7 @@ class HiveConnection(Connection):
             "port": port,
             "scheme": scheme,
             "username": username,
-            "database": database,
+            "database": f"{catalog}`.`{database}",
             "auth": auth,
             "configuration": configuration,
             "kerberos_service_name": kerberos_service_name,
