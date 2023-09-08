@@ -110,8 +110,8 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
 
         Examples
         --------
-        >>> context = catalog.get_use_case("context")
-        >>> use_case.add_observation_table(observation_table_name)  # doctest: +SKIP
+        >>> context = catalog.get_context("context")
+        >>> context.add_observation_table(observation_table_name)  # doctest: +SKIP
         """
         observation_table = ObservationTable.get(observation_table_name)
         observation_table.update(update_payload={"context_id": self.id}, allow_update_local=False)
