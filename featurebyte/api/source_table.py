@@ -14,7 +14,6 @@ from bson import ObjectId
 from pydantic import Field
 from typeguard import typechecked
 
-from featurebyte.api.context import Context
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.core.frame import BaseFrame
 from featurebyte.enum import DBVarType
@@ -1016,6 +1015,7 @@ class SourceTable(AbstractTableData):
         ... )
         """
         # pylint: disable=import-outside-toplevel
+        from featurebyte.api.context import Context
         from featurebyte.api.observation_table import ObservationTable
 
         context_id = Context.get(context_name).id if context_name else None

@@ -91,3 +91,26 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
             "updated_at": None,
             "description": None,
         }
+
+    def test_update_context(self, test_api_client_persistent, create_success_response):
+        """Test update context route"""
+        test_api_client, _ = test_api_client_persistent
+        doc_id = create_success_response.json()["_id"]
+
+        context_id = str(ObjectId())
+        context_payload = BaseMaterializedTableTestSuite.load_payload(
+            "tests/fixtures/request_payloads/context.json"
+        )
+        context_payload["_id"] = context_id
+        context_payload["name"] = "test_context"
+        response = test_api_client.post("/context", json=context_payload)
+        assert response.status_code == HTTPStatus.CREATED, response.json()
+
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}", json={"context_id": context_id}
+        )
+        assert response.status_code == HTTPStatus.OK
+
+        response = test_api_client.get(f"{self.base_route}/{doc_id}")
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["context_id"] == context_id

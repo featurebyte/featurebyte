@@ -6,14 +6,16 @@ from typing import List
 from typeguard import typechecked
 
 from featurebyte.api.entity import Entity
+from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.savable_api_object import SavableApiObject
+from featurebyte.api.use_case_or_context_mixin import UseCaseOrContextMixin
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.context import ContextModel
 from featurebyte.schema.context import ContextUpdate
 
 
-class Context(SavableApiObject):
+class Context(SavableApiObject, UseCaseOrContextMixin):
     """
     Context class to represent a Context in FeatureByte.
 
@@ -95,3 +97,21 @@ class Context(SavableApiObject):
         context = Context(name=name, entity_ids=entity_ids)
         context.save()
         return context
+
+    @typechecked
+    def add_observation_table(self, observation_table_name: str) -> None:
+        """
+        Add observation table for the UseCase or Context.
+
+        Parameters
+        ----------
+        observation_table_name: str
+            New observation table to be added.
+
+        Examples
+        --------
+        >>> context = catalog.get_context("context")
+        >>> context.add_observation_table(observation_table_name)  # doctest: +SKIP
+        """
+        observation_table = ObservationTable.get(observation_table_name)
+        observation_table.update(update_payload={"context_id": self.id}, allow_update_local=False)

@@ -7,8 +7,9 @@ from typing import List, Optional
 
 from pydantic import Field
 
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.observation_table import ObservationInput, ObservationTableModel
-from featurebyte.schema.common.base import PaginationMixin
+from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 from featurebyte.schema.request_table import BaseRequestTableCreate, BaseRequestTableListRecord
 
 
@@ -33,3 +34,11 @@ class ObservationTableListRecord(BaseRequestTableListRecord):
     """
     This model determines the schema when listing observation tables via ObservationTable.list()
     """
+
+
+class ObservationTableUpdate(BaseDocumentServiceUpdateSchema):
+    """
+    ObservationTable Update Context schema
+    """
+
+    context_id: PydanticObjectId

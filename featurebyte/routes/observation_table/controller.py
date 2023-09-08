@@ -3,14 +3,21 @@ ObservationTable API route controller
 """
 from __future__ import annotations
 
+from typing import Optional
+
 from bson import ObjectId
 
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.routes.common.base_materialized_table import BaseMaterializedTableController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.info import ObservationTableInfo
-from featurebyte.schema.observation_table import ObservationTableCreate, ObservationTableList
+from featurebyte.schema.observation_table import (
+    ObservationTableCreate,
+    ObservationTableList,
+    ObservationTableUpdate,
+)
 from featurebyte.schema.task import Task
+from featurebyte.service.context import ContextService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.preview import PreviewService
@@ -35,11 +42,14 @@ class ObservationTableController(
         task_controller: TaskController,
         feature_store_service: FeatureStoreService,
         observation_table_delete_validator: ObservationTableDeleteValidator,
+        context_service: ContextService,
     ):
         super().__init__(service=observation_table_service, preview_service=preview_service)
+        self.observation_table_service = observation_table_service
         self.task_controller = task_controller
         self.feature_store_service = feature_store_service
         self.observation_table_delete_validator = observation_table_delete_validator
+        self.context_service = context_service
 
     async def create_observation_table(
         self,
@@ -94,4 +104,25 @@ class ObservationTableController(
             created_at=observation_table.created_at,
             updated_at=observation_table.updated_at,
             description=observation_table.description,
+        )
+
+    async def update_observation_table(
+        self, observation_table_id: ObjectId, data: ObservationTableUpdate
+    ) -> Optional[ObservationTableModel]:
+        """
+        Update ObservationTable
+
+        Parameters
+        ----------
+        observation_table_id: ObjectId
+            ObservationTable document_id
+        data: ObservationTableUpdate
+            ObservationTable update payload
+
+        Returns
+        -------
+        Optional[ObservationTableModel]
+        """
+        return await self.observation_table_service.update_observation_table(
+            observation_table_id, data
         )

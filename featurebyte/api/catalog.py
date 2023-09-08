@@ -1084,13 +1084,13 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         Returns
         -------
         Any
-            Retrieved target.
+            Retrieved Context.
 
         Examples
         --------
         Get a saved Context.
 
-        >>> context = catalog.get_target("context_name")  # doctest: +SKIP
+        >>> context = catalog.get_context("context_name")  # doctest: +SKIP
         """
         return Context.get(name=name)
 

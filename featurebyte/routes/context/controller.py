@@ -8,7 +8,9 @@ from bson import ObjectId
 from featurebyte.models.context import ContextModel
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.context import ContextCreate, ContextList, ContextUpdate
+from featurebyte.schema.observation_table import ObservationTableUpdate
 from featurebyte.service.context import ContextService
+from featurebyte.service.observation_table import ObservationTableService
 
 
 class ContextController(BaseDocumentController[ContextModel, ContextService, ContextList]):
@@ -18,6 +20,15 @@ class ContextController(BaseDocumentController[ContextModel, ContextService, Con
 
     paginated_document_class = ContextList
     document_update_schema_class = ContextUpdate
+
+    def __init__(
+        self,
+        observation_table_service: ObservationTableService,
+        context_service: ContextService,
+    ):
+        super().__init__(service=context_service)
+        self.observation_table_service = observation_table_service
+        self.context_service = context_service
 
     async def create_context(self, data: ContextCreate) -> ContextModel:
         """
@@ -51,6 +62,18 @@ class ContextController(BaseDocumentController[ContextModel, ContextService, Con
         ContextModel
             Context object with updated attribute(s)
         """
+        if data.default_preview_table_id:
+            await self.observation_table_service.update_observation_table(
+                observation_table_id=data.default_preview_table_id,
+                data=ObservationTableUpdate(context_id=context_id),
+            )
+
+        if data.default_eda_table_id:
+            await self.observation_table_service.update_observation_table(
+                observation_table_id=data.default_eda_table_id,
+                data=ObservationTableUpdate(context_id=context_id),
+            )
+
         await self.service.update_document(
             document_id=context_id, data=ContextUpdate(**data.dict()), return_document=False
         )

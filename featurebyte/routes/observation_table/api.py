@@ -25,7 +25,11 @@ from featurebyte.routes.common.schema import (
 )
 from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.info import ObservationTableInfo
-from featurebyte.schema.observation_table import ObservationTableCreate, ObservationTableList
+from featurebyte.schema.observation_table import (
+    ObservationTableCreate,
+    ObservationTableList,
+    ObservationTableUpdate,
+)
 from featurebyte.schema.task import Task
 
 router = APIRouter(prefix="/observation_table")
@@ -162,5 +166,21 @@ async def update_observation_table_description(
     observation_table: ObservationTableModel = await controller.update_description(
         document_id=observation_table_id,
         description=data.description,
+    )
+    return observation_table
+
+
+@router.patch("/{observation_table_id}", response_model=ObservationTableModel)
+async def update_observation_table_context(
+    request: Request,
+    observation_table_id: PydanticObjectId,
+    data: ObservationTableUpdate,
+) -> ObservationTableModel:
+    """
+    Update observation_table description
+    """
+    controller = request.state.app_container.observation_table_controller
+    observation_table: ObservationTableModel = await controller.update_observation_table(
+        observation_table_id, data
     )
     return observation_table

@@ -27,7 +27,6 @@ from pydantic import PrivateAttr
 from typeguard import typechecked
 
 from featurebyte.api.batch_request_table import BatchRequestTable
-from featurebyte.api.context import Context
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_group import FeatureGroup
@@ -1687,9 +1686,12 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         ...   context_id=context_id,
         ... )
         """
-        pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
+        # pylint: disable=import-outside-toplevel
+        from featurebyte.api.context import Context
 
         context_id = Context.get(context_name).id if context_name else None
+
+        pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
 
         payload = ObservationTableCreate(
             name=name,

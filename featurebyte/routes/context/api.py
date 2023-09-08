@@ -23,6 +23,7 @@ from featurebyte.routes.common.schema import (
 )
 from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.context import ContextCreate, ContextList, ContextUpdate
+from featurebyte.schema.observation_table import ObservationTableList
 
 router = APIRouter(prefix="/context")
 
@@ -45,6 +46,25 @@ async def get_context(request: Request, context_id: PydanticObjectId) -> Context
     controller = request.state.app_container.context_controller
     context: ContextModel = await controller.get(document_id=context_id)
     return context
+
+
+@router.get("/{context_id}/observation_tables", response_model=ObservationTableList)
+async def list_context_observation_tables(
+    request: Request,
+    context_id: PydanticObjectId,
+    page: int = PageQuery,
+    page_size: int = PageSizeQuery,
+) -> ObservationTableList:
+    """
+    List Observation Tables associated with the Use Case
+    """
+    observation_table_controller = request.state.app_container.observation_table_controller
+    observation_table_list: ObservationTableList = await observation_table_controller.list(
+        query_filter={"context_id": context_id},
+        page=page,
+        page_size=page_size,
+    )
+    return observation_table_list
 
 
 @router.get("", response_model=ContextList)

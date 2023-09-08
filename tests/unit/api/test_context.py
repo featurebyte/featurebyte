@@ -61,3 +61,24 @@ def test_list_contexts(catalog, context_1, cust_id_entity):
     assert len(context_df) == 1
     assert context_df.iloc[0]["name"] == "test_context"
     assert context_df.iloc[0]["entity_ids"] == [str(cust_id_entity.id)]
+
+
+def test_update_context(catalog, cust_id_entity, target_table):
+    """
+    Test Context update methods
+    """
+    _ = catalog
+
+    entity_names = [cust_id_entity.name]
+    context = Context.create(name="test_context", entity_names=entity_names)
+
+    # Test get context by id and verify attributes
+    context.update_default_eda_table(target_table.name)
+    assert context.default_eda_table.name == target_table.name
+
+    context.update_default_preview_table(target_table.name)
+    assert context.default_preview_table.name == target_table.name
+
+    obs_tables = context.list_observation_tables()
+    assert len(obs_tables) == 1
+    assert obs_tables.iloc[0]["name"] == target_table.name
