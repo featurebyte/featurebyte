@@ -1,7 +1,6 @@
 """
 Tests for FeatureReadinessService
 """
-
 import pytest
 
 from featurebyte.exception import DocumentUpdateError
@@ -40,7 +39,7 @@ async def test_update_feature_list__no_update(feature_readiness_service, feature
         from_readiness="DRAFT",
         to_readiness="DRAFT",
     )
-    assert updated_feature_list == feature_list
+    assert updated_feature_list == feature_list.dict(by_alias=True)
 
 
 @pytest.mark.asyncio

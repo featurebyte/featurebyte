@@ -105,10 +105,10 @@ class FeatureNamespaceController(
         )
 
         feature_id_to_primary_table_ids = {}
-        async for feature in self.feature_service.list_documents_iterator(
+        async for feature in self.feature_service.list_documents_as_dict_iterator(
             query_filter={"_id": {"$in": list(default_feature_ids)}}
         ):
-            feature_id_to_primary_table_ids[feature.id] = feature.primary_table_ids
+            feature_id_to_primary_table_ids[feature["_id"]] = feature["primary_table_ids"]
 
         # construct primary entity IDs and primary table IDs & add these attributes to feature namespace docs
         output = []

@@ -278,6 +278,51 @@ class BaseDocumentService(
             kwargs = {**kwargs, "catalog_id": self.catalog_id}
         return kwargs
 
+    async def get_document_as_dict(
+        self,
+        document_id: ObjectId,
+        exception_detail: str | None = None,
+        use_raw_query_filter: bool = False,
+        **kwargs: Any,
+    ) -> Dict[str, Any]:
+        """
+        Retrieve document dictionary given document id
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+        exception_detail: str | None
+            Exception detail message
+        use_raw_query_filter: bool
+            Use only provided query filter
+        kwargs: Any
+            Additional keyword arguments
+
+        Returns
+        -------
+        Dict[str, Any]
+
+        Raises
+        ------
+        DocumentNotFoundError
+            If the requested document not found
+        """
+        query_filter = self._construct_get_query_filter(
+            document_id=document_id, use_raw_query_filter=use_raw_query_filter, **kwargs
+        )
+        document_dict = await self.persistent.find_one(
+            collection_name=self.collection_name,
+            query_filter=query_filter,
+            user_id=self.user.id,
+        )
+        if document_dict is None:
+            exception_detail = exception_detail or (
+                f'{self.class_name} (id: "{document_id}") not found. Please save the {self.class_name} object first.'
+            )
+            raise DocumentNotFoundError(exception_detail)
+        return document_dict  # type: ignore
+
     async def get_document(
         self,
         document_id: ObjectId,
@@ -302,25 +347,13 @@ class BaseDocumentService(
         Returns
         -------
         Document
-
-        Raises
-        ------
-        DocumentNotFoundError
-            If the requested document not found
         """
-        query_filter = self._construct_get_query_filter(
-            document_id=document_id, use_raw_query_filter=use_raw_query_filter, **kwargs
+        document_dict = await self.get_document_as_dict(
+            document_id=document_id,
+            exception_detail=exception_detail,
+            use_raw_query_filter=use_raw_query_filter,
+            **kwargs,
         )
-        document_dict = await self.persistent.find_one(
-            collection_name=self.collection_name,
-            query_filter=query_filter,
-            user_id=self.user.id,
-        )
-        if document_dict is None:
-            exception_detail = exception_detail or (
-                f'{self.class_name} (id: "{document_id}") not found. Please save the {self.class_name} object first.'
-            )
-            raise DocumentNotFoundError(exception_detail)
         return self.document_class(**document_dict)
 
     async def delete_document(
@@ -358,7 +391,7 @@ class BaseDocumentService(
         )
 
         # check if document is modifiable
-        self._check_document_modifiable(document=document)
+        self._check_document_modifiable(document=document.dict(by_alias=True))
 
         query_filter = self._construct_get_query_filter(
             document_id=document_id, use_raw_query_filter=use_raw_query_filter, **kwargs
@@ -856,18 +889,18 @@ class BaseDocumentService(
                 resolution_signature=resolution_signature,
             )
 
-    def _check_document_modifiable(self, document: Document) -> None:
+    def _check_document_modifiable(self, document: Dict[str, Any]) -> None:
         check_block_modification = True
         if self._check_block_modification_func:
             check_block_modification = self._check_block_modification_func()
 
-        if check_block_modification and document.block_modification_by:
+        if check_block_modification and document.get("block_modification_by"):
             block_modification_by = [
-                f"{item.asset_name}(id: {item.document_id})"
-                for item in document.block_modification_by
+                f"{item['asset_name']}(id: {item['document_id']})"
+                for item in document.get("block_modification_by", [])
             ]
             raise DocumentModificationBlockedError(
-                f"Document {document.id} is blocked from modification by {block_modification_by}"
+                f"Document {document['_id']} is blocked from modification by {block_modification_by}"
             )
 
     async def _update_document(
@@ -889,7 +922,7 @@ class BaseDocumentService(
             Document update schema class
         """
         # check if document is modifiable
-        self._check_document_modifiable(document=document)
+        self._check_document_modifiable(document=document.dict(by_alias=True))
 
         # check any conflict with existing documents
         updated_document = self.document_class(**{**document.dict(by_alias=True), **update_dict})

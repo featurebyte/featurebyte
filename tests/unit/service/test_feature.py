@@ -9,7 +9,12 @@ import pytest
 from bson import ObjectId
 
 from featurebyte import FeatureStore
-from featurebyte.exception import DocumentInconsistencyError, DocumentNotFoundError
+from featurebyte.exception import (
+    DocumentInconsistencyError,
+    DocumentModificationBlockedError,
+    DocumentNotFoundError,
+)
+from featurebyte.models.base import ReferenceInfo
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node.schema import SQLiteDetails
 from featurebyte.schema.feature import FeatureServiceCreate
@@ -148,3 +153,17 @@ async def test_feature_document_contains_raw_graph(feature_service, feature, api
         raw_groupby_node = raw_graph.get_node_by_name("groupby_1")
         assert groupby_node.dict() == expected_groupby_node
         assert raw_groupby_node.dict() == expected_raw_groupby_node
+
+
+@pytest.mark.asyncio
+async def test_update_readiness(feature_service, feature):
+    """Test update readiness method checks for block modification by"""
+    reference_info = ReferenceInfo(asset_name="some_asset_name", document_id=ObjectId())
+    await feature_service.add_block_modification_by(
+        query_filter={"_id": feature.id}, reference_info=reference_info
+    )
+    updated_feature = await feature_service.get_document(document_id=feature.id)
+    assert updated_feature.block_modification_by == [reference_info]
+
+    with pytest.raises(DocumentModificationBlockedError):
+        await feature_service.update_readiness(document_id=feature.id, readiness="production_ready")
