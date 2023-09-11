@@ -405,11 +405,15 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
         # Rename the TABLE that we're selecting the keys from to be the aggregated table, aliased by the subquery above.
         renamed_table_select_keys = []
         for select_key in select_keys:
+            # Keep quoting with the original select key that is passed in
+            should_quote_alias = quote_vector_agg_aliases
+            if isinstance(select_key, Identifier):
+                should_quote_alias = select_key.quoted
             renamed_table_select_keys.append(
                 alias_(
                     get_qualified_column_identifier(select_key.alias_or_name, table_alias),
                     alias=select_key.alias_or_name,
-                    quoted=quote_vector_agg_aliases,
+                    quoted=should_quote_alias,
                 )
             )
         left_expression = select(

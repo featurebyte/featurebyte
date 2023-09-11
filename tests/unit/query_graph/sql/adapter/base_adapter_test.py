@@ -8,12 +8,12 @@ import textwrap
 from select import select
 
 from sqlglot import select
-from sqlglot.expressions import Select, alias_
+from sqlglot.expressions import Identifier, Select, alias_
 
 from featurebyte import AggFunc
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.sql.adapter import BaseAdapter
-from featurebyte.query_graph.sql.common import get_qualified_column_identifier
+from featurebyte.query_graph.sql.common import get_qualified_column_identifier, quoted_identifier
 from featurebyte.query_graph.sql.groupby_helper import (
     GroupbyColumn,
     GroupbyKey,
@@ -41,6 +41,8 @@ class BaseAdapterTest:
                   b,
                   REQ."serving_name" AS "serving_name",
                   REQ."serving_name_2" AS "serving_name_2",
+                  entity_column,
+                  "entity_column_2",
                   SUM("parent") AS "sum_result",
                   AVG("parent_avg") AS "avg_result"
                 GROUP BY
@@ -66,6 +68,8 @@ class BaseAdapterTest:
             ),
         ]
         select_keys = [k.get_alias() for k in groupby_keys]
+        select_keys.append(Identifier(this="entity_column"))
+        select_keys.append(quoted_identifier("entity_column_2"))
         keys = [k.expr for k in groupby_keys]
         agg_exprs = [
             alias_(
