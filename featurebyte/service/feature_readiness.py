@@ -6,7 +6,9 @@ from __future__ import annotations
 from typing import Any, Dict, Optional, Sequence
 
 from bson.objectid import ObjectId
+from pymongo.errors import OperationFailure
 
+from featurebyte.common.retry import async_retry
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import (
@@ -301,6 +303,7 @@ class FeatureReadinessService:
                 "Please delete the feature instead if it is no longer needed."
             )
 
+    @async_retry(max_retries=3, exceptions=(OperationFailure,), backoff_factor=2)
     async def update_feature(
         self,
         feature_id: ObjectId,
