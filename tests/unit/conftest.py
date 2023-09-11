@@ -75,14 +75,17 @@ def mock_api_object_cache_fixture():
 
 
 @pytest.fixture(autouse=True)
-def mock_api_client_fixture():
+def mock_api_client_fixture(request):
     """
     Mock Configurations.get_client to use test client
     """
-    with mock.patch("featurebyte.config.BaseAPIClient.request") as mock_request:
-        with TestClient(app) as client:
-            mock_request.side_effect = client.request
-            yield mock_request
+    if "no_mock_api_client" in request.keywords:
+        yield
+    else:
+        with mock.patch("featurebyte.config.BaseAPIClient.request") as mock_request:
+            with TestClient(app) as client:
+                mock_request.side_effect = client.request
+                yield mock_request
 
 
 @pytest.fixture(autouse=True)

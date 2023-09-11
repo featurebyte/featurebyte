@@ -243,5 +243,6 @@ doctest_optionflags = ["NUMBER", "NORMALIZE_WHITESPACE", "IGNORE_EXCEPTION_DETAI
 markers = [
     "disable_task_manager_mock: disable use of autouse task manager fixture",
     "no_mock_websocket_client: skip mocking websocket client",
+    "no_mock_api_client: skip mocking api client",
 ]
 norecursedirs = ["hooks", "*.egg", ".eggs", "dist", "build", "docs", ".tox", ".git", "__pycache__"]
