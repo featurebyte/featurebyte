@@ -16,6 +16,8 @@ import websocket
 import yaml
 from pydantic import AnyHttpUrl, BaseModel, Field, validator
 from requests import Response
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 from websocket import WebSocketConnectionClosedException
 
 from featurebyte.common.doc_util import FBAutoDoc
@@ -23,6 +25,11 @@ from featurebyte.common.utils import get_version
 from featurebyte.enum import StrEnum
 from featurebyte.exception import InvalidSettingsError
 from featurebyte.models.base import get_active_catalog_id
+
+# http request settings
+HTTP_REQUEST_TIMEOUT: int = 180
+HTTP_REQUEST_MAX_RETRIES: int = 3
+HTTP_REQUEST_BACKOFF_FACTOR: float = 0.3
 
 # default local location
 DEFAULT_HOME_PATH: Path = Path.home().joinpath(".featurebyte")
@@ -144,6 +151,19 @@ class APIClient(BaseAPIClient):
 
         self.headers.update(additional_headers)
 
+        # add retry adapter
+        adapter = HTTPAdapter(
+            max_retries=Retry(
+                total=HTTP_REQUEST_MAX_RETRIES,
+                read=HTTP_REQUEST_MAX_RETRIES,
+                connect=HTTP_REQUEST_MAX_RETRIES,
+                backoff_factor=HTTP_REQUEST_BACKOFF_FACTOR,
+                status_forcelist=(),
+            )
+        )
+        self.mount("http://", adapter)
+        self.mount("https://", adapter)
+
     def request(
         self,
         method: Union[str, bytes],
@@ -180,6 +200,7 @@ class APIClient(BaseAPIClient):
             if active_catalog_id:
                 headers["active-catalog-id"] = str(active_catalog_id)
 
+            kwargs["timeout"] = HTTP_REQUEST_TIMEOUT
             kwargs["headers"] = headers
             kwargs["allow_redirects"] = False
             return super().request(
