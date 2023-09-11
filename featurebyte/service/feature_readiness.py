@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional, Sequence
 
 from bson.objectid import ObjectId
 from pymongo.errors import OperationFailure
-from tenacity import retry, retry_if_exception_type, wait_random
+from tenacity import retry, retry_if_exception_type, wait_chain, wait_random
 
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.feature import FeatureModel
@@ -305,7 +305,7 @@ class FeatureReadinessService:
 
     @retry(
         retry=retry_if_exception_type(OperationFailure),
-        wait=wait_random(min=0.1, max=0.5),
+        wait=wait_chain(*[wait_random(max=2) for _ in range(3)]),
     )
     async def update_feature(
         self,
