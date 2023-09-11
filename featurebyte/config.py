@@ -27,7 +27,7 @@ from featurebyte.exception import InvalidSettingsError
 from featurebyte.models.base import get_active_catalog_id
 
 # http request settings
-HTTP_REQUEST_TIMEOUT: int = 5
+HTTP_REQUEST_TIMEOUT: int = 180
 HTTP_REQUEST_MAX_RETRIES: int = 3
 HTTP_REQUEST_BACKOFF_FACTOR: float = 0.3
 

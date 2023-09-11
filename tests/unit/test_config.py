@@ -214,7 +214,7 @@ def test_client_redirection(mock_check_sdk_versions):
             "GET",
             "https://app1.featurebyte.com/api/v1/user/me",
             allow_redirects=False,
-            timeout=5,
+            timeout=180,
             headers={},
         )
 
