@@ -24,6 +24,8 @@ class TestSnowflakeAdapter(BaseAdapterTest):
                 SELECT
                   VECTOR_T0."serving_name" AS "serving_name",
                   VECTOR_T0."serving_name_2" AS "serving_name_2",
+                  VECTOR_T0."entity_column" AS entity_column,
+                  VECTOR_T0."entity_column_2" AS "entity_column_2",
                   GROUP_BY_RESULT."sum_result" AS "sum_result",
                   GROUP_BY_RESULT."avg_result" AS "avg_result",
                   VECTOR_T0."result" AS "result",
@@ -59,6 +61,8 @@ class TestSnowflakeAdapter(BaseAdapterTest):
                 ) AS VECTOR_T1
                   ON VECTOR_T0."serving_name" = VECTOR_T1."serving_name"
                   AND VECTOR_T0."serving_name_2" = VECTOR_T1."serving_name_2"
+                  AND VECTOR_T0."entity_column" = VECTOR_T1."entity_column"
+                  AND VECTOR_T0."entity_column_2" = VECTOR_T1."entity_column_2"
                 INNER JOIN (
                   SELECT
                     INITIAL_DATA."serving_name" AS "serving_name",
@@ -75,12 +79,16 @@ class TestSnowflakeAdapter(BaseAdapterTest):
                 ) AS VECTOR_T2
                   ON VECTOR_T1."serving_name" = VECTOR_T2."serving_name"
                   AND VECTOR_T1."serving_name_2" = VECTOR_T2."serving_name_2"
+                  AND VECTOR_T1."entity_column" = VECTOR_T2."entity_column"
+                  AND VECTOR_T1."entity_column_2" = VECTOR_T2."entity_column_2"
                 INNER JOIN (
                   SELECT
                     a,
                     b,
                     REQ."serving_name" AS "serving_name",
                     REQ."serving_name_2" AS "serving_name_2",
+                    entity_column,
+                    "entity_column_2",
                     SUM("parent") AS "sum_result",
                     AVG("parent_avg") AS "avg_result"
                   GROUP BY
@@ -89,5 +97,7 @@ class TestSnowflakeAdapter(BaseAdapterTest):
                 ) AS GROUP_BY_RESULT
                   ON GROUP_BY_RESULT."serving_name" = VECTOR_T2."serving_name"
                   AND GROUP_BY_RESULT."serving_name_2" = VECTOR_T2."serving_name_2"
+                  AND GROUP_BY_RESULT.entity_column = VECTOR_T2."entity_column"
+                  AND GROUP_BY_RESULT."entity_column_2" = VECTOR_T2."entity_column_2"
             """
         ).strip()
