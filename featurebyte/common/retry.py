@@ -31,6 +31,8 @@ def async_retry(
     Returns
     -------
     Callable[[Callable[..., Any]], Callable[..., Any]]
+
+    # noqa: DAR005
     """
 
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
@@ -42,7 +44,7 @@ def async_retry(
             while retries < max_retries:
                 try:
                     return await func(*args, **kwargs)
-                except exceptions as exc:  # noqa: DAR005
+                except exceptions as exc:
                     if exception_signature_check and not exception_signature_check(exc):
                         raise  # If the exception doesn't pass the check, re-raise it
                     retries += 1
