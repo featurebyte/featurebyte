@@ -22,17 +22,14 @@ class UseCaseModel(FeatureByteCatalogBaseDocumentModel):
         The context id of ContextModel
     target_id: PydanticObjectId
         The target id of TargetModel
-    observation_table_ids:  List[PydanticObjectId]
-        The observation table ids of ObservationTableModel
     default_preview_table_id: PydanticObjectId
-        The default preview table from observation_table_ids
+        The default preview observation table
     default_eda_table_id: PydanticObjectId
-        The default eda table id of from observation_table_ids
+        The default eda observation table
     """
 
     context_id: PydanticObjectId
     target_id: PydanticObjectId
-    observation_table_ids: List[PydanticObjectId] = Field(default=[])
     default_preview_table_id: Optional[PydanticObjectId] = Field(default=None)
     default_eda_table_id: Optional[PydanticObjectId] = Field(default=None)
 

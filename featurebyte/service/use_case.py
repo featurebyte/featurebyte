@@ -10,12 +10,7 @@ from featurebyte.models.observation_table import TargetInput
 from featurebyte.models.use_case import UseCaseModel
 from featurebyte.persistent import Persistent
 from featurebyte.schema.observation_table import ObservationTableUpdate
-from featurebyte.schema.use_case import (
-    UseCaseCreate,
-    UseCaseCreateTarget,
-    UseCaseUpdate,
-    UseCaseUpdateTarget,
-)
+from featurebyte.schema.use_case import UseCaseCreate, UseCaseUpdate
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.context import ContextService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
@@ -56,16 +51,6 @@ class UseCaseService(BaseDocumentService[UseCaseModel, UseCaseCreate, UseCaseUpd
         -------
         UseCaseModel
         """
-        data = UseCaseCreateTarget(**data.dict(), _id=data.id)
-
-        # automatically associate observation tables with the use case
-        # if they have the same context_id and target_id
-        obs_table_ids = []
-        async for obs_table in self.observation_table_service.list_documents_iterator(
-            query_filter={"context_id": data.context_id, "request_input.target_id": data.target_id},
-        ):
-            obs_table_ids.append(obs_table.id)
-        data.observation_table_ids = obs_table_ids
 
         return await self.create_document(data=data)
 
@@ -89,33 +74,24 @@ class UseCaseService(BaseDocumentService[UseCaseModel, UseCaseCreate, UseCaseUpd
         UseCaseModel
         """
         use_case: UseCaseModel = await self.get_document(document_id=document_id)
-        data = UseCaseUpdateTarget(
-            **data.dict(), observation_table_ids=use_case.observation_table_ids
-        )
 
         if data.default_preview_table_id:
             # validate and add default_preview_table_id
             await self._validate_and_update_input_observation_table(
                 use_case, data.default_preview_table_id
             )
-            data.observation_table_ids.append(data.default_preview_table_id)
 
         if data.default_eda_table_id:
             # validate and add default_eda_table_id
             await self._validate_and_update_input_observation_table(
                 use_case, data.default_eda_table_id
             )
-            data.observation_table_ids.append(data.default_eda_table_id)
 
         if data.new_observation_table_id:
             # validate and add new_observation_table_id
             await self._validate_and_update_input_observation_table(
                 use_case, data.new_observation_table_id
             )
-            data.observation_table_ids.append(data.new_observation_table_id)
-
-        # remove duplicate observation_table_ids
-        data.observation_table_ids = list(set(data.observation_table_ids))
 
         result_doc = await super().update_document(
             document_id=document_id,

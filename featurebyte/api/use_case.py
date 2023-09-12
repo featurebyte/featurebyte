@@ -41,7 +41,6 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
     _update_schema_class = UseCaseUpdate
     _list_fields = [
         "name",
-        "observation_table_ids",
         "default_preview_table_name",
         "default_eda_table_name",
         "description",

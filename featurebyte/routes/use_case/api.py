@@ -69,7 +69,10 @@ async def list_use_case_observation_tables(
 
     observation_table_controller = request.state.app_container.observation_table_controller
     observation_table_list: ObservationTableList = await observation_table_controller.list(
-        query_filter={"_id": {"$in": use_case.observation_table_ids}},
+        query_filter={
+            "context_id": use_case.context_id,
+            "request_input.target_id": use_case.target_id,
+        },
         page=page,
         page_size=page_size,
     )
@@ -87,19 +90,11 @@ async def list_use_case_feature_tables(
     List Feature Tables associated with the Use Case
     """
     use_case_controller = request.state.app_container.use_case_controller
-    use_case: UseCaseModel = await use_case_controller.get(document_id=use_case_id)
+    result: HistoricalFeatureTableList = await use_case_controller.list_feature_tables(
+        use_case_id=use_case_id, page=page, page_size=page_size
+    )
 
-    historical_feature_table_controller = (
-        request.state.app_container.historical_feature_table_controller
-    )
-    historical_feature_table_list: HistoricalFeatureTableList = (
-        await historical_feature_table_controller.list(
-            query_filter={"observation_table_id": {"$in": use_case.observation_table_ids}},
-            page=page,
-            page_size=page_size,
-        )
-    )
-    return historical_feature_table_list
+    return result
 
 
 @router.get("/{use_case_id}/deployments", response_model=DeploymentList)
