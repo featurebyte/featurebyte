@@ -22,14 +22,6 @@ class UseCaseCreate(FeatureByteBaseModel):
     description: Optional[StrictStr]
 
 
-class UseCaseCreateTarget(UseCaseCreate):
-    """
-    Use Case creation schema with observation_table_ids. Not exposed to API.
-    """
-
-    observation_table_ids: List[PydanticObjectId] = Field(default_factory=list)
-
-
 class UseCaseUpdate(BaseDocumentServiceUpdateSchema):
     """
     Use Case update schema
@@ -38,14 +30,6 @@ class UseCaseUpdate(BaseDocumentServiceUpdateSchema):
     new_observation_table_id: Optional[PydanticObjectId]
     default_preview_table_id: Optional[PydanticObjectId]
     default_eda_table_id: Optional[PydanticObjectId]
-
-
-class UseCaseUpdateTarget(UseCaseUpdate):
-    """
-    Use Case update schema with observation_table_ids. Not exposed to API.
-    """
-
-    observation_table_ids: List[PydanticObjectId] = Field(default_factory=list)
 
 
 class UseCaseList(PaginationMixin):

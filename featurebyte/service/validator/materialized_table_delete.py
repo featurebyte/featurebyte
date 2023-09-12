@@ -79,7 +79,7 @@ class ObservationTableDeleteValidator:
         use_case_ids = [
             str(doc["_id"])
             async for doc in self.use_case_service.list_documents_as_dict_iterator(
-                query_filter={"observation_table_ids": document.id}
+                query_filter={"context_id": document.context_id}
             )
         ]
         all_reference_ids = reference_ids + target_reference_ids + use_case_ids

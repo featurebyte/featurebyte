@@ -158,11 +158,16 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         response = test_api_client.post(self.base_route, json=self.payload)
         assert response.status_code == HTTPStatus.CREATED, response.json()
         created_use_case = response.json()
-        assert len(created_use_case["observation_table_ids"]) == 1
         assert created_use_case["context_id"] == self.payload["context_id"]
         assert created_use_case["target_id"] == self.payload["target_id"]
         assert created_use_case["description"] == self.payload["description"]
-        assert created_use_case["observation_table_ids"] == [str(target_ob_table_id)]
+
+        response = test_api_client.get(
+            f"{self.base_route}/{created_use_case['_id']}/observation_tables",
+        )
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["total"] == 1
+        assert response.json()["data"][0]["_id"] == str(target_ob_table_id)
 
     @pytest.mark.asyncio
     async def test_update_use_case(
@@ -188,8 +193,6 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         assert data["context_id"] == self.payload["context_id"]
         assert data["target_id"] == self.payload["target_id"]
         assert data["description"] == self.payload["description"]
-        assert len(data["observation_table_ids"]) == 1
-        assert data["observation_table_ids"] == [str(new_ob_table_id_1)]
 
         new_ob_table_id_2 = ObjectId()
         await create_observation_table(new_ob_table_id_2)
@@ -206,12 +209,6 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         )
         assert response.status_code == HTTPStatus.OK
         data = response.json()
-        assert len(data["observation_table_ids"]) == 3
-        assert set(data["observation_table_ids"]) == {
-            str(new_ob_table_id_1),
-            str(new_ob_table_id_2),
-            str(new_ob_table_id_3),
-        }
         assert data["default_preview_table_id"] == str(new_ob_table_id_2)
         assert data["default_eda_table_id"] == str(new_ob_table_id_3)
 
@@ -327,7 +324,6 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
             json={"new_observation_table_id": str(new_ob_table_id)},
         )
         assert response.status_code == HTTPStatus.OK
-        assert response.json()["observation_table_ids"] == [str(new_ob_table_id)]
 
         feature_table_payload = BaseCatalogApiTestSuite.load_payload(
             "tests/fixtures/request_payloads/historical_feature_table.json"
@@ -375,7 +371,6 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
             json={"new_observation_table_id": str(new_ob_table_id)},
         )
         assert response.status_code == HTTPStatus.OK
-        assert response.json()["observation_table_ids"] == [str(new_ob_table_id)]
 
         # delete the observation table that is associated with the use case
         response = test_api_client.delete(f"/observation_table/{str(new_ob_table_id)}")

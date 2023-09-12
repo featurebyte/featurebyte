@@ -1,6 +1,8 @@
 """
 UseCase API route controller
 """
+from typing import Any, Dict
+
 from bson import ObjectId
 
 from featurebyte.models.relationship_analysis import derive_primary_entity
@@ -10,6 +12,7 @@ from featurebyte.schema.info import UseCaseInfo
 from featurebyte.schema.use_case import UseCaseCreate, UseCaseList, UseCaseUpdate
 from featurebyte.service.context import ContextService
 from featurebyte.service.entity import EntityService
+from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.target import TargetService
 from featurebyte.service.use_case import UseCaseService
@@ -32,6 +35,7 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
         context_service: ContextService,
         entity_service: EntityService,
         observation_table_service: ObservationTableService,
+        historical_feature_table_service: HistoricalFeatureTableService,
     ):
         super().__init__(use_case_service)
         self.user_service = user_service
@@ -39,6 +43,7 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
         self.context_service = context_service
         self.entity_service = entity_service
         self.observation_table_service = observation_table_service
+        self.historical_feature_table_service = historical_feature_table_service
 
     async def create_use_case(self, data: UseCaseCreate) -> UseCaseModel:
         """
@@ -137,3 +142,43 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
             default_preview_table=default_preview_table_name,
             default_eda_table=default_eda_table_name,
         )
+
+    async def list_feature_tables(
+        self, use_case_id: ObjectId, page: int, page_size: int
+    ) -> Dict[str, Any]:
+        """
+        Delete UseCase from persistent
+
+        Parameters
+        ----------
+        use_case_id: ObjectId
+            UseCase id to be deleted
+        page: int
+            Page number
+        page_size: int
+            Number of items per page
+
+        Returns
+        -------
+        Dict[str, Any]
+        """
+        use_case: UseCaseModel = await self.service.get_document(document_id=use_case_id)
+
+        observation_table_ids = []
+        async for obs_table in self.observation_table_service.list_documents_iterator(
+            query_filter={
+                "context_id": use_case.context_id,
+                "request_input.target_id": use_case.target_id,
+            },
+        ):
+            observation_table_ids.append(obs_table.id)
+
+        historical_feature_table_list = (
+            await self.historical_feature_table_service.list_documents_as_dict(
+                query_filter={"observation_table_id": {"$in": observation_table_ids}},
+                page=page,
+                page_size=page_size,
+            )
+        )
+
+        return historical_feature_table_list
