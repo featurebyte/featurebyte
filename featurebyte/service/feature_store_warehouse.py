@@ -107,7 +107,7 @@ class FeatureStoreWarehouseService:
         )
         try:
             return await db_session.list_schemas(database_name=database_name)
-        except Exception as exc:
+        except db_session.no_schema_error as exc:
             raise DatabaseNotFoundError(f"Database {database_name} not found.") from exc
 
     async def list_tables(
@@ -157,10 +157,11 @@ class FeatureStoreWarehouseService:
             tables = await db_session.list_tables(
                 database_name=database_name, schema_name=schema_name
             )
-            # exclude tables with names that has a "__" prefix
-            return [table_name for table_name in tables if not table_name.startswith("__")]
-        except Exception as exc:
+        except db_session.no_schema_error as exc:
             raise SchemaNotFoundError(f"Schema {schema_name} not found.") from exc
+
+        # exclude tables with names that has a "__" prefix
+        return [table_name for table_name in tables if not table_name.startswith("__")]
 
     async def list_columns(
         self,
@@ -212,6 +213,7 @@ class FeatureStoreWarehouseService:
             table_schema = await db_session.list_table_schema(
                 database_name=database_name, schema_name=schema_name, table_name=table_name
             )
-            return [ColumnSpec(name=name, dtype=dtype) for name, dtype in table_schema.items()]
-        except Exception as exc:
+        except db_session.no_schema_error as exc:
             raise TableNotFoundError(f"Table {table_name} not found.") from exc
+
+        return [ColumnSpec(name=name, dtype=dtype) for name, dtype in table_schema.items()]

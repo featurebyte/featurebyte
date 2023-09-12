@@ -93,6 +93,10 @@ class BaseSession(BaseModel):
         # close connection
         self._connection.close()
 
+    @property
+    def no_schema_error(self):
+        return self._no_schema_error
+
     async def initialize(self) -> None:
         """
         Initialize session
