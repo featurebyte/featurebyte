@@ -88,14 +88,10 @@ def test_shape(static_source_table_from_source):
     assert static_source_table_from_source.shape() == (100, 2)
 
 
-@patch(
-    "featurebyte.service.feature_store_warehouse.FeatureStoreWarehouseService.check_table_exists"
-)
-def test_data_source(mock_check_table_exists, static_source_table_from_source):
+def test_data_source(static_source_table_from_source):
     """
     Test the underlying SourceTable is constructed properly
     """
-    _ = mock_check_table_exists
     static_source_table = static_source_table_from_source
     source_table = static_source_table._source_table
     assert source_table.feature_store.id == static_source_table.location.feature_store_id
