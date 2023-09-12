@@ -9,6 +9,7 @@ import pytest
 @pytest.mark.parametrize(
     "array1, array2, expected",
     [
+        (None, None, 0),
         ([], [], 0),
         ([1], [], None),
         ([1, 2, 3], [4], None),

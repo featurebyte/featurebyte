@@ -35,13 +35,13 @@ def to_object(obj_dict: Optional[Dict[Any, Any]]) -> str:
     return f"OBJECT_CONSTRUCT_KEEP_NULL({', '.join(args)})"
 
 
-def to_array(array_obj: List[Any]) -> str:
+def to_array(array_obj: Optional[List[Any]]) -> str:
     """
     Returns an expression converts the list to an array in Snowflake
 
     Parameters
     ----------
-    array_obj: List[Any]
+    array_obj: Optional[List[Any]]
         python list
 
     Returns
@@ -49,4 +49,6 @@ def to_array(array_obj: List[Any]) -> str:
     str
         sql str
     """
+    if array_obj is None:
+        return "null"
     return f"{array_obj}"

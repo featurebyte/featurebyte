@@ -8,6 +8,9 @@ $$
 def cosine_similarity(vector1, vector2):
   import math
 
+  if vector1 is None or vector2 is None:
+    return 0
+
   if len(vector1) != len(vector2):
     raise ValueError("vectors are of different length")
 
