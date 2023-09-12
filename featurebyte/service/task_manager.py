@@ -193,12 +193,16 @@ class TaskManager:
                 datetime.timedelta(**{str(interval.period): interval.every}).total_seconds()
             )
 
+        # Add is_scheduled_task flag
+        kwargs = payload.json_dict()
+        kwargs["is_scheduled_task"] = True
+
         periodic_task = PeriodicTask(
             name=name,
             task=payload.task,
             interval=interval,
             args=[],
-            kwargs=payload.json_dict(),
+            kwargs=kwargs,
             time_modulo_frequency_second=time_modulo_frequency_second,
             start_after=start_after,
             last_run_at=last_run_at,
@@ -243,12 +247,17 @@ class TaskManager:
             PeriodicTask ID
         """
         assert self.user.id == payload.user_id
+
+        # Add is_scheduled_task flag
+        kwargs = payload.json_dict()
+        kwargs["is_scheduled_task"] = True
+
         periodic_task = PeriodicTask(
             name=name,
             task=payload.task,
             crontab=crontab,
             args=[],
-            kwargs=payload.json_dict(),
+            kwargs=kwargs,
             start_after=start_after,
             soft_time_limit=time_limit,
         )
