@@ -3,7 +3,7 @@ Session class
 """
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator, ClassVar, Optional, OrderedDict
+from typing import Any, AsyncGenerator, ClassVar, Optional, OrderedDict, Type
 
 import asyncio
 import contextvars
@@ -87,11 +87,22 @@ class BaseSession(BaseModel):
     source_type: SourceType
     _connection: Any = PrivateAttr(default=None)
     _unique_id: int = PrivateAttr(default=0)
-    _no_schema_error: ClassVar[Any] = Exception
+    _no_schema_error: ClassVar[Type[Exception]] = Exception
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         # close connection
         self._connection.close()
+
+    @property
+    def no_schema_error(self) -> Type[Exception]:
+        """
+        Exception to raise when schema is not found
+
+        Returns
+        -------
+        Type[Exception]
+        """
+        return self._no_schema_error
 
     async def initialize(self) -> None:
         """
