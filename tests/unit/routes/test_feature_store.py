@@ -14,7 +14,7 @@ from pandas.testing import assert_frame_equal
 
 from featurebyte import FeatureStore
 from featurebyte.common.utils import dataframe_from_json
-from featurebyte.exception import CredentialsError
+from featurebyte.exception import CredentialsError, DatabaseNotFoundError, SchemaNotFoundError
 from featurebyte.models.credential import (
     CredentialModel,
     S3StorageCredential,
@@ -163,6 +163,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
         feature_store = create_success_response.json()
 
         mock_get_session.return_value.list_databases.return_value = ["database"]
+        mock_get_session.return_value.list_schemas.side_effect = DatabaseNotFoundError()
         response = test_api_client.post(
             f"{self.base_route}/schema/?database_name=some_database", json=feature_store
         )
@@ -227,6 +228,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
 
         mock_get_session.return_value.list_databases.return_value = ["database"]
         mock_get_session.return_value.list_schemas.return_value = ["schema"]
+        mock_get_session.return_value.list_tables.side_effect = SchemaNotFoundError()
         response = test_api_client.post(
             f"{self.base_route}/table/?database_name=database&schema_name=some_schema",
             json=feature_store,
