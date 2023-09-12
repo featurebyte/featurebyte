@@ -1,4 +1,4 @@
-<h1 align="center"> The modern Feature Engineering & Management platform</h1>
+<h1 align="center"> FeatureByte's Declarative Feature Engineering Framework</h1>
 <div align="center">
 
 [![Build status](https://github.com/featurebyte/featurebyte/workflows/build/badge.svg?branch=main&event=push)](https://github.com/featurebyte/featurebyte/actions?query=workflow%3Abuild)
@@ -14,7 +14,7 @@
 
 </div>
 
-FeatureByte is a **free and source available feature platform** designed to:
+FeatureByte SDK is the core engine of FeatureByte's [Self-Service Feature Platform](https://featurebyte.com/). It is a **free and source available feature platform** designed to:
 
 * **Create state-of-the-art features, not data pipelines:** Create features for Machine Learning with just a few lines of code. Leave the plumbing and pipelining to FeatureByte. We take care of orchestrating the data ops - whether it’s time-window aggs or backfilling, so you can deliver more value from data.
 * **Improve Accuracy through data:** Use the intuitive feature declaration framework to transform creative ideas into training data in minutes. Ditch the limitations of ad-hoc pipelines for features with much more scale, complexity and freshness.
