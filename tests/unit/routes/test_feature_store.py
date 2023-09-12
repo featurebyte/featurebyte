@@ -15,7 +15,7 @@ from snowflake.connector.errors import ProgrammingError
 
 from featurebyte import FeatureStore
 from featurebyte.common.utils import dataframe_from_json
-from featurebyte.exception import CredentialsError, DatabaseNotFoundError, SchemaNotFoundError
+from featurebyte.exception import CredentialsError
 from featurebyte.models.credential import (
     CredentialModel,
     S3StorageCredential,
