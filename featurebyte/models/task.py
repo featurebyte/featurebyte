@@ -41,13 +41,12 @@ class Task(FeatureByteBaseDocumentModel):
         indexes = [
             pymongo.operations.IndexModel("name"),
             pymongo.operations.IndexModel("start_time"),
+            pymongo.operations.IndexModel("kwargs.is_scheduled_task"),
             pymongo.operations.IndexModel("date_done"),
             [
                 ("name", pymongo.TEXT),
                 ("worker", pymongo.TEXT),
                 ("queue", pymongo.TEXT),
-                ("args", pymongo.TEXT),
-                ("kwargs", pymongo.TEXT),
                 ("description", pymongo.TEXT),
             ],
         ]

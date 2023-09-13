@@ -149,6 +149,25 @@ class TaskManager:
         ]
         return tasks, total
 
+    @staticmethod
+    def _get_kwargs_from_task_payload(payload: BaseTaskPayload) -> dict[str, Any]:
+        """
+        Get kwargs from task payload
+
+        Parameters
+        ----------
+        payload: BaseTaskPayload
+            Payload to use
+
+        Returns
+        -------
+        dict[str, Any]
+        """
+
+        # set is_scheduled_task to True
+        payload = type(payload)(**{**payload.json_dict(), "is_scheduled_task": True})
+        return payload.json_dict()
+
     async def schedule_interval_task(
         self,
         name: str,
@@ -193,16 +212,12 @@ class TaskManager:
                 datetime.timedelta(**{str(interval.period): interval.every}).total_seconds()
             )
 
-        # Add is_scheduled_task flag
-        kwargs = payload.json_dict()
-        kwargs["is_scheduled_task"] = True
-
         periodic_task = PeriodicTask(
             name=name,
             task=payload.task,
             interval=interval,
             args=[],
-            kwargs=kwargs,
+            kwargs=self._get_kwargs_from_task_payload(payload),
             time_modulo_frequency_second=time_modulo_frequency_second,
             start_after=start_after,
             last_run_at=last_run_at,
@@ -247,17 +262,12 @@ class TaskManager:
             PeriodicTask ID
         """
         assert self.user.id == payload.user_id
-
-        # Add is_scheduled_task flag
-        kwargs = payload.json_dict()
-        kwargs["is_scheduled_task"] = True
-
         periodic_task = PeriodicTask(
             name=name,
             task=payload.task,
             crontab=crontab,
             args=[],
-            kwargs=kwargs,
+            kwargs=self._get_kwargs_from_task_payload(payload),
             start_after=start_after,
             soft_time_limit=time_limit,
         )
