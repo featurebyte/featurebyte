@@ -143,6 +143,27 @@ def test_construction__build_with_missing_deps(app_container_constructor_params)
         _ = app_container.extra_deps
 
 
+def test_get(app_container_constructor_params):
+    """
+    Test different ways of getting an object from the app container.
+    """
+    app_container_config = AppContainerConfig()
+    app_container_config.register_class(TestService)
+
+    app_container = LazyAppContainer(
+        **app_container_constructor_params,
+        app_container_config=app_container_config,
+    )
+    service = app_container.get("test_service")
+    assert isinstance(service, TestService)
+
+    service = app_container.test_service
+    assert isinstance(service, TestService)
+
+    service = app_container.get(TestService)
+    assert isinstance(service, TestService)
+
+
 def test_construction__service_with_invalid_constructor(app_container_constructor_params):
     """
     Test that error is thrown if a service has been registered but doesn't have the right parameters required
