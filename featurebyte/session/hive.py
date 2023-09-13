@@ -106,7 +106,7 @@ class HiveConnection(Connection):
             "port": port,
             "scheme": scheme,
             "username": username,
-            "database": database,
+            "database": f"{catalog}`.`{database}",
             "auth": auth,
             "configuration": configuration,
             "kerberos_service_name": kerberos_service_name,
@@ -119,7 +119,7 @@ class HiveConnection(Connection):
             super().__init__(**params)
         except OperationalError:
             # retry using default database to create schema
-            params["database"] = "default"
+            params["database"] = f"{catalog}`.`default"
             super().__init__(**params)
             cursor = self.cursor()
             cursor.execute(f"CREATE SCHEMA `{catalog}`.`{database}`")

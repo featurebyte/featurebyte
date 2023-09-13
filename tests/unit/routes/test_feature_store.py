@@ -11,6 +11,7 @@ import pandas as pd
 import pytest
 from bson.objectid import ObjectId
 from pandas.testing import assert_frame_equal
+from snowflake.connector.errors import ProgrammingError
 
 from featurebyte import FeatureStore
 from featurebyte.common.utils import dataframe_from_json
@@ -162,7 +163,8 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
         assert create_success_response.status_code == HTTPStatus.CREATED
         feature_store = create_success_response.json()
 
-        mock_get_session.return_value.list_databases.return_value = ["database"]
+        mock_get_session.return_value.no_schema_error = ProgrammingError
+        mock_get_session.return_value.list_schemas.side_effect = ProgrammingError()
         response = test_api_client.post(
             f"{self.base_route}/schema/?database_name=some_database", json=feature_store
         )
@@ -225,8 +227,8 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
         assert create_success_response.status_code == HTTPStatus.CREATED
         feature_store = create_success_response.json()
 
-        mock_get_session.return_value.list_databases.return_value = ["database"]
-        mock_get_session.return_value.list_schemas.return_value = ["schema"]
+        mock_get_session.return_value.no_schema_error = ProgrammingError
+        mock_get_session.return_value.list_tables.side_effect = ProgrammingError()
         response = test_api_client.post(
             f"{self.base_route}/table/?database_name=database&schema_name=some_schema",
             json=feature_store,
@@ -297,9 +299,8 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
         assert create_success_response.status_code == HTTPStatus.CREATED
         feature_store = create_success_response.json()
 
-        mock_get_session.return_value.list_databases.return_value = ["database"]
-        mock_get_session.return_value.list_schemas.return_value = ["schema"]
-        mock_get_session.return_value.list_tables.return_value = ["table"]
+        mock_get_session.return_value.no_schema_error = ProgrammingError
+        mock_get_session.return_value.list_table_schema.side_effect = ProgrammingError()
         response = test_api_client.post(
             f"{self.base_route}/column?database_name=database&schema_name=schema&table_name=some_table",
             json=feature_store,
