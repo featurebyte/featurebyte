@@ -47,13 +47,12 @@ public class VectorCosineSimilarity extends GenericUDF {
     return PrimitiveObjectInspectorFactory.javaDoubleObjectInspector;
   }
 
-  /** Calculate the dot product between two lists. */
+  /**
+   * Calculate the dot product between two lists. We assume that the two lists are the same size.
+   */
   private static double dotProduct(List<Double> listOne, List<Double> listTwo) {
-    // Find length of shorter list.
-    int shorterLength = Math.min(listOne.size(), listTwo.size());
-    // Calculate dot product between shorter list size
     double sum = 0.0;
-    for (int i = 0; i < shorterLength; i++) {
+    for (int i = 0; i < listOne.size(); i++) {
       Double valueOne = listOne.get(i);
       Double valueTwo = listTwo.get(i);
       sum += valueOne * valueTwo;
@@ -88,6 +87,11 @@ public class VectorCosineSimilarity extends GenericUDF {
     List<Object> objectListTwo = (List<Object>) secondListOI.getList(arguments[1].get());
     List<Double> listOne = convertToDouble(objectListOne);
     List<Double> listTwo = convertToDouble(objectListTwo);
+
+    // Check if the lists are the same size
+    if (listOne.size() != listTwo.size()) {
+      throw new RuntimeException("vectors are of different size");
+    }
 
     // Check if lists are empty
     if (listOne.isEmpty() || listTwo.isEmpty()) {
