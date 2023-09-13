@@ -3,7 +3,7 @@ Lazy app container functions the same as the app_container, but only initializes
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Iterator, List, Optional
+from typing import Any, Dict, Iterator, List, Optional, Type, Union
 
 from contextlib import contextmanager
 
