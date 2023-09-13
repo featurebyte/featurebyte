@@ -12,7 +12,11 @@ from celery import Celery
 from redis.client import Redis
 
 from featurebyte.persistent import Persistent
-from featurebyte.routes.app_container_config import AppContainerConfig, ClassDefinition
+from featurebyte.routes.app_container_config import (
+    AppContainerConfig,
+    ClassDefinition,
+    _get_class_name,
+)
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.storage import Storage
 
@@ -230,20 +234,23 @@ class LazyAppContainer:
             instance.set_block_modification_check_callback(_check_block_modification)
         return instance
 
-    def get(self, key: str) -> Any:
+    def get(self, key: Union[str, Type[Any]]) -> Any:
         """
         Get an instance from the container.
 
         Parameters
         ----------
-        key: str
-            key of the instance to get
+        key: Union[str, Type[Any]]
+            key of the instance to get, or the type of the instance
 
         Returns
         -------
         Any
         """
-        return self._handle_block_modification_check(self._get_key(key))
+        key_to_use = key
+        if not isinstance(key, str):
+            key_to_use = _get_class_name(key.__name__)
+        return self._handle_block_modification_check(self._get_key(key_to_use))
 
     def __getattr__(self, key: str) -> Any:
         return self._handle_block_modification_check(self._get_key(key))
