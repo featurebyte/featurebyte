@@ -63,6 +63,7 @@ async def test_task_manager__long_running_tasks(task_manager, celery, user_id, p
                 "task_output_path": payload.task_output_path,
                 "task_type": "io_task",
                 "priority": 0,
+                "is_scheduled_task": False,
             },
         )
 
@@ -162,7 +163,7 @@ async def test_task_manager__schedule_interval_task(task_manager, user_id, catal
         periodic_task_id,
     )
     assert periodic_task.name == "test_interval_task"
-    assert periodic_task.kwargs == payload.json_dict()
+    assert periodic_task.kwargs == {**payload.json_dict(), "is_scheduled_task": True}
     assert periodic_task.interval == interval
     assert periodic_task.soft_time_limit == 60
 
@@ -187,7 +188,7 @@ async def test_task_manager__schedule_cron_task(task_manager, user_id, catalog):
         periodic_task_id,
     )
     assert periodic_task.name == "test_cron_task"
-    assert periodic_task.kwargs == payload.json_dict()
+    assert periodic_task.kwargs == {**payload.json_dict(), "is_scheduled_task": True}
     assert periodic_task.crontab == crontab
 
     await task_manager.delete_periodic_task(periodic_task_id)

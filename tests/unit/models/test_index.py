@@ -23,6 +23,9 @@ def test_indexes():
         Check pydantic resource has fields in attribute string in dot notation
         e.g. tabular_source.feature_store_id
         """
+        # only validate if resource is a pydantic model
+        if not hasattr(resource, "__fields__"):
+            return
         fields = attribute.split(".")
         assert fields[0] in resource.__fields__, f"{fields[0]} not in {resource}"
         if len(fields) > 1:
