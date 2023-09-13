@@ -247,9 +247,11 @@ class LazyAppContainer:
         -------
         Any
         """
-        key_to_use = key
-        if not isinstance(key, str):
+        if isinstance(key, str):
+            key_to_use = key
+        else:
             key_to_use = _get_class_name(key.__name__)
+        assert isinstance(key_to_use, str)
         return self._handle_block_modification_check(self._get_key(key_to_use))
 
     def __getattr__(self, key: str) -> Any:
