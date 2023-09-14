@@ -78,6 +78,78 @@ class CeilNode(BaseSeriesOutputWithSingleOperandNode):
         return f"{operand}.ceil()"
 
 
+class CosNode(BaseSeriesOutputWithSingleOperandNode):
+    """CosNode class"""
+
+    type: Literal[NodeType.COS] = Field(NodeType.COS, const=True)
+
+    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+        return DBVarType.FLOAT
+
+    def generate_expression(self, operand: str) -> str:
+        return f"{operand}.cos()"
+
+
+class SinNode(BaseSeriesOutputWithSingleOperandNode):
+    """SinNode class"""
+
+    type: Literal[NodeType.SIN] = Field(NodeType.SIN, const=True)
+
+    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+        return DBVarType.FLOAT
+
+    def generate_expression(self, operand: str) -> str:
+        return f"{operand}.sin()"
+
+
+class TanNode(BaseSeriesOutputWithSingleOperandNode):
+    """TanNode class"""
+
+    type: Literal[NodeType.TAN] = Field(NodeType.TAN, const=True)
+
+    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+        return DBVarType.FLOAT
+
+    def generate_expression(self, operand: str) -> str:
+        return f"{operand}.tan()"
+
+
+class AcosNode(BaseSeriesOutputWithSingleOperandNode):
+    """AcosNode class"""
+
+    type: Literal[NodeType.ACOS] = Field(NodeType.ACOS, const=True)
+
+    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+        return DBVarType.FLOAT
+
+    def generate_expression(self, operand: str) -> str:
+        return f"{operand}.acos()"
+
+
+class AsinNode(BaseSeriesOutputWithSingleOperandNode):
+    """AsinNode class"""
+
+    type: Literal[NodeType.ASIN] = Field(NodeType.ASIN, const=True)
+
+    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+        return DBVarType.FLOAT
+
+    def generate_expression(self, operand: str) -> str:
+        return f"{operand}.asin()"
+
+
+class AtanNode(BaseSeriesOutputWithSingleOperandNode):
+    """CeilNode class"""
+
+    type: Literal[NodeType.ATAN] = Field(NodeType.ATAN, const=True)
+
+    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+        return DBVarType.FLOAT
+
+    def generate_expression(self, operand: str) -> str:
+        return f"{operand}.atan()"
+
+
 class LogNode(BaseSeriesOutputWithSingleOperandNode):
     """LogNode class"""
 
