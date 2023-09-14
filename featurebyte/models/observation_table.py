@@ -63,13 +63,7 @@ class TargetInput(FeatureByteBaseModel):
             The destination table to materialize the target input to
         sample_rows: Optional[int]
             The number of rows to sample from the target input
-
-        Raises
-        ------
-        NotImplementedError
-            If this method is called
         """
-        raise NotImplementedError
 
 
 ObservationInput = Annotated[
