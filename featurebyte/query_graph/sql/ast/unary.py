@@ -57,9 +57,10 @@ class UnaryOp(ExpressionNode):
         input_expr_node = cast(ExpressionNode, context.input_sql_nodes[0])
         table_node = input_expr_node.table_node
         node_type = context.query_node.type
+        expr_cls: Union[type[expressions.Expression], str]
         if node_type in cls.node_type_to_expression_cls:
             expr_cls = cls.node_type_to_expression_cls[node_type]
-        elif node_type in cls.node_type_to_function:
+        else:
             expr_cls = cls.node_type_to_function[node_type]
 
         node = UnaryOp(

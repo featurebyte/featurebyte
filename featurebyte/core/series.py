@@ -78,150 +78,6 @@ class DefaultSeriesBinaryOperator(SeriesBinaryOperator):
             )
 
 
-class TrigoMixin:
-    """
-    Trigonometry mixin
-    """
-
-    @numeric_only
-    def cos(self: FrozenSeriesT) -> FrozenSeriesT:
-        """
-        Get the cos value of each element in the Series.
-
-        Returns
-        -------
-        FrozenSeriesT
-            Series or Feature with rounded values
-
-        Examples
-        --------
-        >>> view = catalog.get_view("GROCERYINVOICE")
-        >>> view["AmountCos"] = view["Amount"].cos()  # doctest: +SKIP
-        """
-        return series_unary_operation(
-            input_series=self,
-            node_type=NodeType.COS,
-            output_var_type=DBVarType.FLOAT,
-            node_params={},
-            **self.unary_op_series_params(),
-        )
-
-    @numeric_only
-    def sin(self: FrozenSeriesT) -> FrozenSeriesT:
-        """
-        Get the sin value of each element in the Series.
-
-        Returns
-        -------
-        FrozenSeriesT
-            Series or Feature with rounded values
-
-        Examples
-        --------
-        >>> view = catalog.get_view("GROCERYINVOICE")
-        >>> view["AmountCos"] = view["Amount"].sin()  # doctest: +SKIP
-        """
-        return series_unary_operation(
-            input_series=self,
-            node_type=NodeType.SIN,
-            output_var_type=DBVarType.FLOAT,
-            node_params={},
-            **self.unary_op_series_params(),
-        )
-
-    @numeric_only
-    def tan(self: FrozenSeriesT) -> FrozenSeriesT:
-        """
-        Get the tan value of each element in the Series.
-
-        Returns
-        -------
-        FrozenSeriesT
-            Series or Feature with rounded values
-
-        Examples
-        --------
-        >>> view = catalog.get_view("GROCERYINVOICE")
-        >>> view["AmountCos"] = view["Amount"].tan()  # doctest: +SKIP
-        """
-        return series_unary_operation(
-            input_series=self,
-            node_type=NodeType.TAN,
-            output_var_type=DBVarType.FLOAT,
-            node_params={},
-            **self.unary_op_series_params(),
-        )
-
-    @numeric_only
-    def acos(self: FrozenSeriesT) -> FrozenSeriesT:
-        """
-        Get the arccos value of each element in the Series.
-
-        Returns
-        -------
-        FrozenSeriesT
-            Series or Feature with rounded values
-
-        Examples
-        --------
-        >>> view = catalog.get_view("GROCERYINVOICE")
-        >>> view["AmountCos"] = view["Amount"].acos()  # doctest: +SKIP
-        """
-        return series_unary_operation(
-            input_series=self,
-            node_type=NodeType.ACOS,
-            output_var_type=DBVarType.FLOAT,
-            node_params={},
-            **self.unary_op_series_params(),
-        )
-
-    @numeric_only
-    def asin(self: FrozenSeriesT) -> FrozenSeriesT:
-        """
-        Get the arcsin value of each element in the Series.
-
-        Returns
-        -------
-        FrozenSeriesT
-            Series or Feature with rounded values
-
-        Examples
-        --------
-        >>> view = catalog.get_view("GROCERYINVOICE")
-        >>> view["AmountAsin"] = view["Amount"].asin()  # doctest: +SKIP
-        """
-        return series_unary_operation(
-            input_series=self,
-            node_type=NodeType.ASIN,
-            output_var_type=DBVarType.FLOAT,
-            node_params={},
-            **self.unary_op_series_params(),
-        )
-
-    @numeric_only
-    def atan(self: FrozenSeriesT) -> FrozenSeriesT:
-        """
-        Get the arctan value of each element in the Series.
-
-        Returns
-        -------
-        FrozenSeriesT
-            Series or Feature with rounded values
-
-        Examples
-        --------
-        >>> view = catalog.get_view("GROCERYINVOICE")
-        >>> view["AmountAtan"] = view["Amount"].atan()  # doctest: +SKIP
-        """
-        return series_unary_operation(
-            input_series=self,
-            node_type=NodeType.ATAN,
-            output_var_type=DBVarType.FLOAT,
-            node_params={},
-            **self.unary_op_series_params(),
-        )
-
-
 class FrozenSeries(
     QueryObject,
     OpsMixin,
@@ -229,7 +85,6 @@ class FrozenSeries(
     StrAccessorMixin,
     DtAccessorMixin,
     VectorAccessorMixin,
-    TrigoMixin,
 ):
     """
     FrozenSeries class used for representing a series in a query graph with the ability to perform
@@ -1113,6 +968,144 @@ class FrozenSeries(
             input_series=self,
             node_type=NodeType.CEIL,
             output_var_type=DBVarType.INT,
+            node_params={},
+            **self.unary_op_series_params(),
+        )
+
+    @numeric_only
+    def cos(self: FrozenSeriesT) -> FrozenSeriesT:
+        """
+        Get the cos value of each element in the Series.
+
+        Returns
+        -------
+        FrozenSeriesT
+            Series or Feature with rounded values
+
+        Examples
+        --------
+        >>> view = catalog.get_view("GROCERYINVOICE")
+        >>> view["AmountCos"] = view["Amount"].cos()  # doctest: +SKIP
+        """
+        return series_unary_operation(
+            input_series=self,
+            node_type=NodeType.COS,
+            output_var_type=DBVarType.FLOAT,
+            node_params={},
+            **self.unary_op_series_params(),
+        )
+
+    @numeric_only
+    def sin(self: FrozenSeriesT) -> FrozenSeriesT:
+        """
+        Get the sin value of each element in the Series.
+
+        Returns
+        -------
+        FrozenSeriesT
+            Series or Feature with rounded values
+
+        Examples
+        --------
+        >>> view = catalog.get_view("GROCERYINVOICE")
+        >>> view["AmountCos"] = view["Amount"].sin()  # doctest: +SKIP
+        """
+        return series_unary_operation(
+            input_series=self,
+            node_type=NodeType.SIN,
+            output_var_type=DBVarType.FLOAT,
+            node_params={},
+            **self.unary_op_series_params(),
+        )
+
+    @numeric_only
+    def tan(self: FrozenSeriesT) -> FrozenSeriesT:
+        """
+        Get the tan value of each element in the Series.
+
+        Returns
+        -------
+        FrozenSeriesT
+            Series or Feature with rounded values
+
+        Examples
+        --------
+        >>> view = catalog.get_view("GROCERYINVOICE")
+        >>> view["AmountCos"] = view["Amount"].tan()  # doctest: +SKIP
+        """
+        return series_unary_operation(
+            input_series=self,
+            node_type=NodeType.TAN,
+            output_var_type=DBVarType.FLOAT,
+            node_params={},
+            **self.unary_op_series_params(),
+        )
+
+    @numeric_only
+    def acos(self: FrozenSeriesT) -> FrozenSeriesT:
+        """
+        Get the arccos value of each element in the Series.
+
+        Returns
+        -------
+        FrozenSeriesT
+            Series or Feature with rounded values
+
+        Examples
+        --------
+        >>> view = catalog.get_view("GROCERYINVOICE")
+        >>> view["AmountCos"] = view["Amount"].acos()  # doctest: +SKIP
+        """
+        return series_unary_operation(
+            input_series=self,
+            node_type=NodeType.ACOS,
+            output_var_type=DBVarType.FLOAT,
+            node_params={},
+            **self.unary_op_series_params(),
+        )
+
+    @numeric_only
+    def asin(self: FrozenSeriesT) -> FrozenSeriesT:
+        """
+        Get the arcsin value of each element in the Series.
+
+        Returns
+        -------
+        FrozenSeriesT
+            Series or Feature with rounded values
+
+        Examples
+        --------
+        >>> view = catalog.get_view("GROCERYINVOICE")
+        >>> view["AmountAsin"] = view["Amount"].asin()  # doctest: +SKIP
+        """
+        return series_unary_operation(
+            input_series=self,
+            node_type=NodeType.ASIN,
+            output_var_type=DBVarType.FLOAT,
+            node_params={},
+            **self.unary_op_series_params(),
+        )
+
+    @numeric_only
+    def atan(self: FrozenSeriesT) -> FrozenSeriesT:
+        """
+        Get the arctan value of each element in the Series.
+
+        Returns
+        -------
+        FrozenSeriesT
+            Series or Feature with rounded values
+
+        Examples
+        --------
+        >>> view = catalog.get_view("GROCERYINVOICE")
+        >>> view["AmountAtan"] = view["Amount"].atan()  # doctest: +SKIP
+        """
+        return series_unary_operation(
+            input_series=self,
+            node_type=NodeType.ATAN,
+            output_var_type=DBVarType.FLOAT,
             node_params={},
             **self.unary_op_series_params(),
         )
