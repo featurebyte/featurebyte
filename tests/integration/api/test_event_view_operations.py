@@ -979,6 +979,14 @@ def check_numeric_operations(event_view, limit=100):
     event_view["AMOUNT_LOG"] = (event_view["ÀMOUNT"] + 1).log()
     event_view["AMOUNT_LOG_EXP"] = event_view["AMOUNT_LOG"].exp()
     event_view["ONE_MINUS_AMOUNT"] = 1 - event_view["ÀMOUNT"]
+
+    # Trigo functions
+    event_view["AMOUNT_COS"] = event_view["ÀMOUNT"].cos()
+    event_view["AMOUNT_SIN"] = event_view["ÀMOUNT"].sin()
+    event_view["AMOUNT_TAN"] = event_view["ÀMOUNT"].tan()
+    event_view["AMOUNT_ACOS"] = event_view["AMOUNT_COS"].acos()
+    event_view["AMOUNT_ASIN"] = event_view["AMOUNT_COS"].asin()
+    event_view["AMOUNT_ATAN"] = event_view["AMOUNT_COS"].atan()
     df = event_view.preview(limit=limit)
 
     pd.testing.assert_series_equal(df["AMOUNT_ABS"], (df["ÀMOUNT"] * (-1)).abs(), check_names=False)
@@ -998,6 +1006,18 @@ def check_numeric_operations(event_view, limit=100):
         df["AMOUNT_LOG_EXP"], np.exp(np.log(df["ÀMOUNT"] + 1)), check_names=False
     )
     pd.testing.assert_series_equal(df["ONE_MINUS_AMOUNT"], 1 - df["ÀMOUNT"], check_names=False)
+    pd.testing.assert_series_equal(df["AMOUNT_COS"], np.cos(df["ÀMOUNT"]), check_names=False)
+    pd.testing.assert_series_equal(df["AMOUNT_SIN"], np.sin(df["ÀMOUNT"]), check_names=False)
+    pd.testing.assert_series_equal(df["AMOUNT_TAN"], np.tan(df["ÀMOUNT"]), check_names=False)
+    pd.testing.assert_series_equal(
+        df["AMOUNT_ACOS"], np.arccos(df["AMOUNT_COS"]), check_names=False
+    )
+    pd.testing.assert_series_equal(
+        df["AMOUNT_ASIN"], np.arcsin(df["AMOUNT_COS"]), check_names=False
+    )
+    pd.testing.assert_series_equal(
+        df["AMOUNT_ATAN"], np.arctan(df["AMOUNT_COS"]), check_names=False
+    )
 
 
 def check_day_of_week_counts(event_view, preview_param):

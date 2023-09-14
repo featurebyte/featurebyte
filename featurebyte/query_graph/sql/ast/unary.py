@@ -3,7 +3,7 @@ Module for unary operations sql generation
 """
 from __future__ import annotations
 
-from typing import Literal, cast
+from typing import Literal, Union, cast
 
 from dataclasses import dataclass
 
@@ -24,7 +24,7 @@ class UnaryOp(ExpressionNode):
     """
 
     expr: ExpressionNode
-    operation: type[expressions.Expression]
+    operation: Union[type[expressions.Expression], str]
 
     node_type_to_expression_cls = {
         NodeType.SQRT: expressions.Sqrt,
@@ -36,17 +36,33 @@ class UnaryOp(ExpressionNode):
         NodeType.LOG: expressions.Ln,
         NodeType.EXP: expressions.Exp,
     }
-    query_node_type = list(node_type_to_expression_cls.keys())
+    node_type_to_function = {
+        NodeType.COS: "COS",
+        NodeType.SIN: "SIN",
+        NodeType.TAN: "TAN",
+        NodeType.ACOS: "ACOS",
+        NodeType.ASIN: "ASIN",
+        NodeType.ATAN: "ATAN",
+    }
+    query_node_type = list([*node_type_to_expression_cls.keys(), *node_type_to_function.keys()])
 
     @property
     def sql(self) -> Expression:
+        if isinstance(self.operation, str):
+            return expressions.Anonymous(this=self.operation, expressions=[self.expr.sql])
         return self.operation(this=self.expr.sql)
 
     @classmethod
     def build(cls, context: SQLNodeContext) -> UnaryOp:
         input_expr_node = cast(ExpressionNode, context.input_sql_nodes[0])
         table_node = input_expr_node.table_node
-        expr_cls = cls.node_type_to_expression_cls[context.query_node.type]
+        node_type = context.query_node.type
+        expr_cls: Union[type[expressions.Expression], str]
+        if node_type in cls.node_type_to_expression_cls:
+            expr_cls = cls.node_type_to_expression_cls[node_type]
+        else:
+            expr_cls = cls.node_type_to_function[node_type]
+
         node = UnaryOp(
             context=context, table_node=table_node, expr=input_expr_node, operation=expr_cls
         )

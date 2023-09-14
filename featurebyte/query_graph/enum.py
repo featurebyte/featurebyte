@@ -39,6 +39,12 @@ class NodeType(StrEnum):
     CEIL = "ceil"
     LOG = "log"
     EXP = "exp"
+    COS = "cos"
+    SIN = "sin"
+    TAN = "tan"
+    ACOS = "acos"
+    ASIN = "asin"
+    ATAN = "atan"
 
     # SQL operations
     PROJECT = "project"

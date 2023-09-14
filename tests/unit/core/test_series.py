@@ -1077,6 +1077,12 @@ def test_node_types_lineage(dataframe, float_series):
         (lambda s: s.exp(), NodeType.EXP, DBVarType.FLOAT, {}, 'EXP("VALUE")'),
         (lambda s: s.floor(), NodeType.FLOOR, DBVarType.INT, {}, 'FLOOR("VALUE")'),
         (lambda s: s.ceil(), NodeType.CEIL, DBVarType.INT, {}, 'CEIL("VALUE")'),
+        (lambda s: s.cos(), NodeType.COS, DBVarType.FLOAT, {}, 'COS("VALUE")'),
+        (lambda s: s.sin(), NodeType.SIN, DBVarType.FLOAT, {}, 'SIN("VALUE")'),
+        (lambda s: s.tan(), NodeType.TAN, DBVarType.FLOAT, {}, 'TAN("VALUE")'),
+        (lambda s: s.acos(), NodeType.ACOS, DBVarType.FLOAT, {}, 'ACOS("VALUE")'),
+        (lambda s: s.asin(), NodeType.ASIN, DBVarType.FLOAT, {}, 'ASIN("VALUE")'),
+        (lambda s: s.atan(), NodeType.ATAN, DBVarType.FLOAT, {}, 'ATAN("VALUE")'),
     ],
 )
 def test_numeric_operations(
