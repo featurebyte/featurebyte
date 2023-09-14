@@ -221,6 +221,7 @@ class PreviewService:
             from_timestamp=sample.from_timestamp,
             to_timestamp=sample.to_timestamp,
             timestamp_column=sample.timestamp_column,
+            stats_names=sample.stats_names,
         )
         logger.debug("Execute describe SQL", extra={"describe_sql": describe_sql})
         result = await session.execute_query(describe_sql)

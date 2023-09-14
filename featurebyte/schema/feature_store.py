@@ -57,6 +57,7 @@ class FeatureStoreSample(FeatureStorePreview):
     from_timestamp: Optional[datetime] = Field(default=None)
     to_timestamp: Optional[datetime] = Field(default=None)
     timestamp_column: Optional[str] = Field(default=None)
+    stats_names: Optional[List[str]] = Field(default=None)
 
     @root_validator()
     @classmethod

@@ -568,7 +568,10 @@ class PreviewMixin(BaseGraphInterpreter):
         )
 
     def _construct_stats_sql(
-        self, sql_tree: expressions.Select, columns: List[ViewDataColumn]
+        self,
+        sql_tree: expressions.Select,
+        columns: List[ViewDataColumn],
+        stats_names: Optional[List[str]] = None,
     ) -> Tuple[expressions.Select, List[str], List[ViewDataColumn]]:
         """
         Construct sql to retrieve statistics for an SQL view
@@ -579,6 +582,8 @@ class PreviewMixin(BaseGraphInterpreter):
             SQL Expression to describe
         columns: List[ViewDataColumn]
             List of columns
+        stats_names: Optional[List[str]]
+            List of statistics to compute
 
         Returns
         -------
@@ -634,6 +639,8 @@ class PreviewMixin(BaseGraphInterpreter):
 
             # stats
             for stats_name, (stats_func, supported_dtypes) in self.stats_expressions.items():
+                if stats_names is not None and stats_name not in stats_names:
+                    continue
                 if stats_func:
                     if self._is_dtype_supported(column.dtype, supported_dtypes):
                         stats_selections.append(
@@ -711,6 +718,7 @@ class PreviewMixin(BaseGraphInterpreter):
         from_timestamp: Optional[datetime] = None,
         to_timestamp: Optional[datetime] = None,
         timestamp_column: Optional[str] = None,
+        stats_names: Optional[List[str]] = None,
     ) -> Tuple[str, dict[Optional[str], DBVarType], List[str], List[ViewDataColumn]]:
         """Construct SQL to describe data from a given node
 
@@ -728,6 +736,8 @@ class PreviewMixin(BaseGraphInterpreter):
             End of date range to filter on
         timestamp_column: Optional[str]
             Column to apply date range filtering on
+        stats_names: Optional[List[str]]
+            List of statistics to compute. If None, compute all supported statistics.
 
         Returns
         -------
@@ -749,7 +759,7 @@ class PreviewMixin(BaseGraphInterpreter):
         )
 
         sql_tree, row_indices, columns = self._construct_stats_sql(
-            sql_tree=sql_tree, columns=operation_structure.columns
+            sql_tree=sql_tree, columns=operation_structure.columns, stats_names=stats_names
         )
         return (
             sql_to_string(sql_tree, source_type=self.source_type),
