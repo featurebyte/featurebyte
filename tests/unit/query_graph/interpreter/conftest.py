@@ -64,3 +64,15 @@ def simple_graph_fixture(graph, node_input):
         input_nodes=[node_input, proj_a],
     )
     return graph, assign
+
+
+@pytest.fixture(name="project_from_simple_graph", scope="function")
+def project_from_simple_graph_fixture(graph, node_input):
+    """Simple graph with a project node"""
+    proj_a = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[node_input],
+    )
+    return graph, proj_a

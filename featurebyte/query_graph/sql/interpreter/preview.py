@@ -19,6 +19,7 @@ from featurebyte.query_graph.sql.ast.base import ExpressionNode, TableNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import (
+    CteStatements,
     SQLType,
     construct_cte_sql,
     quoted_identifier,
@@ -469,6 +470,26 @@ class PreviewMixin(BaseGraphInterpreter):
             return True
         return dtype in supported_dtypes
 
+    @staticmethod
+    def _get_cat_counts(
+        col_expr: expressions.Expression,
+        num_categories_limit: int = 500,
+    ) -> expressions.Select:
+        return (
+            expressions.select(
+                col_expr,
+                expressions.alias_(
+                    expressions.Count(this=make_literal_value("*")),
+                    alias="COUNTS",
+                    quoted=True,
+                ),
+            )
+            .from_("casted_data")
+            .group_by(col_expr)
+            .order_by("COUNTS DESC")
+            .limit(num_categories_limit)
+        )
+
     def _construct_count_stats_sql(
         self, col_expr: expressions.Expression, column_idx: int, col_dtype: DBVarType
     ) -> expressions.Select:
@@ -488,20 +509,7 @@ class PreviewMixin(BaseGraphInterpreter):
         -------
         expressions.Select
         """
-        cat_counts = (
-            expressions.select(
-                col_expr,
-                expressions.alias_(
-                    expressions.Count(this=make_literal_value("*")),
-                    alias="COUNTS",
-                    quoted=True,
-                ),
-            )
-            .from_("casted_data")
-            .group_by(col_expr)
-            .order_by("COUNTS DESC")
-            .limit(500)
-        )
+        cat_counts = self._get_cat_counts(col_expr)
         cat_count_dict = expressions.select(
             expressions.alias_(
                 expression=expressions.Anonymous(
@@ -567,6 +575,29 @@ class PreviewMixin(BaseGraphInterpreter):
             expressions.Subquery(this=cat_count_dict, alias="count_dict")
         )
 
+    @staticmethod
+    def _get_ctes_with_casted_data(
+        sql_tree: expressions.Expression,
+    ) -> Tuple[expressions.Select, CteStatements]:
+        cte_statements = [("data", sql_tree)]
+
+        # get subquery with columns casted to string to compute value counts
+        casted_columns = []
+        for col_expr in sql_tree.expressions:
+            col_name = col_expr.alias or col_expr.name
+            # add casted columns
+            casted_columns.append(
+                expressions.alias_(
+                    expressions.Cast(this=quoted_identifier(col_name), to=parse_one("STRING")),
+                    col_name,
+                    quoted=True,
+                )
+            )
+        sql_tree = expressions.select(*casted_columns).from_("data")
+        cte_statements.append(("casted_data", sql_tree))
+
+        return sql_tree, cte_statements
+
     def _construct_stats_sql(
         self,
         sql_tree: expressions.Select,
@@ -593,22 +624,7 @@ class PreviewMixin(BaseGraphInterpreter):
         columns_info = {
             column.name: column for column in columns if column.name or len(columns) == 1
         }
-        cte_statements = [("data", sql_tree)]
-
-        # get subquery with columns casted to string to compute value counts
-        casted_columns = []
-        for col_expr in sql_tree.expressions:
-            col_name = col_expr.alias or col_expr.name
-            # add casted columns
-            casted_columns.append(
-                expressions.alias_(
-                    expressions.Cast(this=quoted_identifier(col_name), to=parse_one("STRING")),
-                    col_name,
-                    quoted=True,
-                )
-            )
-        sql_tree = expressions.select(*casted_columns).from_("data")
-        cte_statements.append(("casted_data", sql_tree))
+        sql_tree, cte_statements = self._get_ctes_with_casted_data(sql_tree)
 
         stats_selections = []
         count_tables = []
@@ -767,3 +783,48 @@ class PreviewMixin(BaseGraphInterpreter):
             row_indices,
             columns,
         )
+
+    def construct_value_counts_sql(
+        self,
+        node_name: str,
+        num_rows: int,
+        num_categories_limit: int,
+        seed: int = 1234,
+    ) -> str:
+        """
+        Construct SQL to get value counts for a given node.
+
+        Parameters
+        ----------
+        node_name : str
+            Query graph node name
+        num_rows : int
+            Number of rows to include when calculating the counts
+        num_categories_limit : int
+            Maximum number of categories to include in the result. If there are more categories in
+            the data, the result will include the most frequent categories up to this number.
+        seed: int
+            Random seed to use for sampling
+        """
+        sql_tree, _ = self._construct_sample_sql(
+            node_name=node_name,
+            num_rows=num_rows,
+            seed=seed,
+        )
+        sql_tree, cte_statements = self._get_ctes_with_casted_data(sql_tree)
+        # It's expected that this function is called on a node that is associated with a column and
+        # not a frame, so here we simply the first column.
+        col_expr = sql_tree.expressions[0]
+        col_name = col_expr.alias or col_expr.name
+        cat_counts = self._get_cat_counts(
+            quoted_identifier(col_name), num_categories_limit=num_categories_limit
+        )
+        output_expr = (
+            construct_cte_sql(cte_statements)
+            .select(
+                expressions.alias_(quoted_identifier(col_name), col_name, quoted=True),
+                expressions.alias_("COUNTS", "count", quoted=True),
+            )
+            .from_(cat_counts.subquery())
+        )
+        return sql_to_string(output_expr, source_type=self.source_type)
