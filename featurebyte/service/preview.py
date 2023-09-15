@@ -277,8 +277,8 @@ class PreviewService:
             seed=seed,
         )
         df_result = await session.execute_query(value_counts_sql)
-        assert df_result.columns.tolist() == ["key", "count"]
-        return df_result.set_index("key")["count"].to_dict()
+        assert df_result.columns.tolist() == ["key", "count"]  # type: ignore
+        return df_result.set_index("key")["count"].to_dict()  # type: ignore
 
     async def download_table(
         self,

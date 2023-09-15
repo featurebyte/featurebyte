@@ -12,7 +12,7 @@ from featurebyte.exception import MissingPointInTimeColumnError, RequiredEntityN
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_list import FeatureCluster
 from featurebyte.schema.feature_list import FeatureListPreview
-from featurebyte.schema.feature_store import FeatureStorePreview, FeatureStoreSample
+from featurebyte.schema.feature_store import FeatureStorePreview
 from featurebyte.schema.preview import FeatureOrTargetPreview
 
 

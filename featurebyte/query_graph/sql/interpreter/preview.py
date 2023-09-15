@@ -19,7 +19,7 @@ from featurebyte.query_graph.sql.ast.base import ExpressionNode, TableNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import (
-    CteStatements,
+    CteStatement,
     SQLType,
     construct_cte_sql,
     quoted_identifier,
@@ -582,8 +582,8 @@ class PreviewMixin(BaseGraphInterpreter):
     @staticmethod
     def _get_ctes_with_casted_data(
         sql_tree: expressions.Expression,
-    ) -> Tuple[expressions.Select, CteStatements]:
-        cte_statements = [("data", sql_tree)]
+    ) -> Tuple[expressions.Select, List[CteStatement]]:
+        cte_statements: List[CteStatement] = [("data", sql_tree)]
 
         # get subquery with columns casted to string to compute value counts
         casted_columns = []
@@ -809,6 +809,10 @@ class PreviewMixin(BaseGraphInterpreter):
             the data, the result will include the most frequent categories up to this number.
         seed: int
             Random seed to use for sampling
+
+        Returns
+        -------
+        str
         """
         sql_tree, _ = self._construct_sample_sql(
             node_name=node_name,
@@ -817,7 +821,7 @@ class PreviewMixin(BaseGraphInterpreter):
         )
         sql_tree, cte_statements = self._get_ctes_with_casted_data(sql_tree)
         # It's expected that this function is called on a node that is associated with a column and
-        # not a frame, so here we simply the first column.
+        # not a frame, so here we simply take the first column.
         col_expr = sql_tree.expressions[0]
         col_name = col_expr.alias or col_expr.name
         cat_counts = self._get_cat_counts(
