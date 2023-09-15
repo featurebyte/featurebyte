@@ -28,6 +28,7 @@ from featurebyte.query_graph.sql.common import (
 from featurebyte.query_graph.sql.interpreter.base import BaseGraphInterpreter
 
 CATEGORY_COUNT_COLUMN_NAME = "__FB_COUNTS"
+CASTED_DATA_TABLE_NAME = "casted_data"
 
 
 class PreviewMixin(BaseGraphInterpreter):
@@ -481,12 +482,12 @@ class PreviewMixin(BaseGraphInterpreter):
             expressions.select(
                 col_expr,
                 expressions.alias_(
-                    expressions.Count(this=make_literal_value("*")),
+                    expressions.Count(this=expressions.Star()),
                     alias=CATEGORY_COUNT_COLUMN_NAME,
                     quoted=True,
                 ),
             )
-            .from_("casted_data")
+            .from_(CASTED_DATA_TABLE_NAME)
             .group_by(col_expr)
             .order_by(
                 expressions.Ordered(this=quoted_identifier(CATEGORY_COUNT_COLUMN_NAME), desc=True)
@@ -588,17 +589,17 @@ class PreviewMixin(BaseGraphInterpreter):
         # get subquery with columns casted to string to compute value counts
         casted_columns = []
         for col_expr in sql_tree.expressions:
-            col_name = col_expr.alias or col_expr.name
+            alias_or_name = col_expr.alias or col_expr.name
             # add casted columns
             casted_columns.append(
                 expressions.alias_(
-                    expressions.Cast(this=quoted_identifier(col_name), to=parse_one("STRING")),
-                    col_name,
+                    expressions.Cast(this=quoted_identifier(alias_or_name), to=parse_one("STRING")),
+                    alias_or_name,
                     quoted=True,
                 )
             )
         sql_tree = expressions.select(*casted_columns).from_("data")
-        cte_statements.append(("casted_data", sql_tree))
+        cte_statements.append((CASTED_DATA_TABLE_NAME, sql_tree))
 
         return sql_tree, cte_statements
 
@@ -823,14 +824,14 @@ class PreviewMixin(BaseGraphInterpreter):
         # It's expected that this function is called on a node that is associated with a column and
         # not a frame, so here we simply take the first column.
         col_expr = sql_tree.expressions[0]
-        col_name = col_expr.alias or col_expr.name
+        alias_or_name = col_expr.alias or col_expr.name
         cat_counts = self._get_cat_counts(
-            quoted_identifier(col_name), num_categories_limit=num_categories_limit
+            quoted_identifier(alias_or_name), num_categories_limit=num_categories_limit
         )
         output_expr = (
             construct_cte_sql(cte_statements)
             .select(
-                expressions.alias_(quoted_identifier(col_name), "key", quoted=True),
+                expressions.alias_(quoted_identifier(alias_or_name), "key", quoted=True),
                 expressions.alias_(
                     quoted_identifier(CATEGORY_COUNT_COLUMN_NAME), "count", quoted=True
                 ),

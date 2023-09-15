@@ -16,7 +16,7 @@ SELECT
 FROM (
   SELECT
     "a",
-    COUNT('*') AS "__FB_COUNTS"
+    COUNT(*) AS "__FB_COUNTS"
   FROM casted_data
   GROUP BY
     "a"

@@ -21,7 +21,7 @@ WITH data AS (
     FROM (
       SELECT
         "col_float",
-        COUNT('*') AS "__FB_COUNTS"
+        COUNT(*) AS "__FB_COUNTS"
       FROM casted_data
       GROUP BY
         "col_float"
@@ -41,7 +41,7 @@ WITH data AS (
     FROM (
       SELECT
         "col_text",
-        COUNT('*') AS "__FB_COUNTS"
+        COUNT(*) AS "__FB_COUNTS"
       FROM casted_data
       GROUP BY
         "col_text"

@@ -27,7 +27,7 @@ WITH data AS (
     FROM (
       SELECT
         `ts`,
-        COUNT('*') AS `__FB_COUNTS`
+        COUNT(*) AS `__FB_COUNTS`
       FROM casted_data
       GROUP BY
         `ts`
@@ -47,7 +47,7 @@ WITH data AS (
     FROM (
       SELECT
         `cust_id`,
-        COUNT('*') AS `__FB_COUNTS`
+        COUNT(*) AS `__FB_COUNTS`
       FROM casted_data
       GROUP BY
         `cust_id`
@@ -66,7 +66,7 @@ WITH data AS (
     FROM (
       SELECT
         `a`,
-        COUNT('*') AS `__FB_COUNTS`
+        COUNT(*) AS `__FB_COUNTS`
       FROM casted_data
       GROUP BY
         `a`
@@ -85,7 +85,7 @@ WITH data AS (
     FROM (
       SELECT
         `b`,
-        COUNT('*') AS `__FB_COUNTS`
+        COUNT(*) AS `__FB_COUNTS`
       FROM casted_data
       GROUP BY
         `b`
@@ -104,7 +104,7 @@ WITH data AS (
     FROM (
       SELECT
         `a_copy`,
-        COUNT('*') AS `__FB_COUNTS`
+        COUNT(*) AS `__FB_COUNTS`
       FROM casted_data
       GROUP BY
         `a_copy`
