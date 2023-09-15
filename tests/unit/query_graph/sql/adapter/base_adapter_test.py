@@ -132,3 +132,31 @@ class BaseAdapterTest:
         )
         expected = self.get_group_by_expected_result()
         assert group_by_expr.sql(pretty=True) == expected
+
+    @classmethod
+    def get_expected_haversine_sql(cls) -> str:
+        """
+        Get expected haversine SQL string
+        """
+        return textwrap.dedent(
+            """
+            2 * ASIN(
+              SQRT(
+                POWER(SIN((
+                  RADIANS(TABLE."lat1") - RADIANS(TABLE."lat2")
+                ) / 2), 2) + COS(RADIANS(TABLE."lat1")) * COS(RADIANS(TABLE."lat2")) * POWER(SIN((
+                  RADIANS(TABLE."lon1") - RADIANS(TABLE."lon2")
+                ) / 2), 2)
+              )
+            ) * 6371
+        """
+        ).strip()
+
+    def test_haversine(self):
+        adapter = self.adapter
+        lat_node_1_expr = get_qualified_column_identifier("lat1", "TABLE")
+        lon_node_1_expr = get_qualified_column_identifier("lon1", "TABLE")
+        lat_node_2_expr = get_qualified_column_identifier("lat2", "TABLE")
+        lon_node_2_expr = get_qualified_column_identifier("lon2", "TABLE")
+        expr = adapter.haversine(lat_node_1_expr, lon_node_1_expr, lat_node_2_expr, lon_node_2_expr)
+        assert expr.sql(pretty=True) == self.get_expected_haversine_sql()

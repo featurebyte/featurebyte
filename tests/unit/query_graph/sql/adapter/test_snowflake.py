@@ -101,3 +101,7 @@ class TestSnowflakeAdapter(BaseAdapterTest):
                   AND GROUP_BY_RESULT."entity_column_2" = VECTOR_T2."entity_column_2"
             """
         ).strip()
+
+    @classmethod
+    def get_expected_haversine_sql(cls) -> str:
+        return 'HAVERSINE(TABLE."lat1", TABLE."lon1", TABLE."lat2", TABLE."lon2")'

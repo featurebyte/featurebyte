@@ -693,3 +693,109 @@ class BaseAdapter(ABC):  # pylint: disable=too-many-public-methods
         -------
         Expression
         """
+
+    @staticmethod
+    def _radian_expr(expr: Expression):
+        return expressions.Anonymous(this="RADIANS", expressions=[expr])
+
+    @staticmethod
+    def _square_expr(expr: Expression):
+        return expressions.Pow(this=expr, power=make_literal_value(2))
+
+    @staticmethod
+    def _sqrt_expr(expr: Expression):
+        return expressions.Anonymous(this="SQRT", expressions=[expr])
+
+    @staticmethod
+    def _asin_expr(expr: Expression):
+        return expressions.Anonymous(this="ASIN", expressions=[expr])
+
+    @staticmethod
+    def _cos_expr(expr: Expression):
+        return expressions.Anonymous(this="COS", expressions=[expr])
+
+    @classmethod
+    def haversine(
+        cls,
+        lat_expr_1: Expression,
+        lon_expr_1: Expression,
+        lat_expr_2: Expression,
+        lon_expr_2: Expression,
+    ) -> Expression:
+        """
+        Construct an expression that contains the haversine distances between two points.
+
+        By default, we use the formula defined as follows.
+
+        D(x,y) = 2 * arcsin( sqrt( sin^2( (lat1 - lat2) / 2 ) + cos(lat1) * cos(lat2) * sin^2( (lon1 - lon2) / 2 ) ) ) * 6371
+
+        6371 is the earth's radius.
+
+        The SQL version looks like
+
+        2 * ASIN(
+            SQRT(
+                POW(
+                    SIN((RADIANS(TAB.LAT_1) - RADIANS(TAB.LAT_2)) / 2), 2
+                )
+                + COS(RADIANS(TAB.LAT_1))
+                * COS(RADIANS(TAB.LAT_2))
+                * POW(
+                    SIN((RADIANS(TAB.LON_1) - RADIANS(TAB.LON_2)) / 2), 2
+                )
+            )
+        ) * 6371
+
+        Parameters
+        ----------
+        lat_expr_1: Expression
+            Expression representing the latitude of the first point
+        lon_expr_1: Expression
+            Expression representing the longitude of the first point
+        lat_expr_2: Expression
+            Expression representing the latitude of the second point
+        lon_expr_2: Expression
+            Expression representing the longitude of the second point
+
+        Returns
+        -------
+        Expression
+        """
+        radian_lat_1_expr = cls._radian_expr(lat_expr_1)
+        radian_lon_1_expr = cls._radian_expr(lon_expr_1)
+        radian_lat_2_expr = cls._radian_expr(lat_expr_2)
+        radian_lon_2_expr = cls._radian_expr(lon_expr_2)
+        pow_sin_lat_expr = cls._square_expr(
+            expressions.Anonymous(
+                this="SIN",
+                expressions=[
+                    expressions.Div(
+                        this=expressions.paren(
+                            expressions.Sub(this=radian_lat_1_expr, expression=radian_lat_2_expr)
+                        ),
+                        expression=make_literal_value(2),
+                    )
+                ],
+            )
+        )
+        pow_sin_lon_expr = cls._square_expr(
+            expressions.Anonymous(
+                this="SIN",
+                expressions=[
+                    expressions.Div(
+                        this=expressions.paren(
+                            expressions.Sub(this=radian_lon_1_expr, expression=radian_lon_2_expr)
+                        ),
+                        expression=make_literal_value(2),
+                    )
+                ],
+            )
+        )
+        mult_expr = expressions.Mul(
+            this=cls._cos_expr(radian_lat_1_expr), expression=cls._cos_expr(radian_lat_2_expr)
+        )
+        mult_expr = expressions.Mul(this=mult_expr, expression=pow_sin_lon_expr)
+        sqrt_expr = cls._sqrt_expr(expressions.Add(this=pow_sin_lat_expr, expression=mult_expr))
+        asin_expr = cls._asin_expr(sqrt_expr)
+        mult_by_2_expr = expressions.Mul(this=make_literal_value(2), expression=asin_expr)
+        return expressions.Mul(this=mult_by_2_expr, expression=make_literal_value(6371))

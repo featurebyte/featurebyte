@@ -46,6 +46,7 @@ from featurebyte.api.user_defined_function import UDF, UserDefinedFunction
 from featurebyte.common.env_util import is_notebook
 from featurebyte.common.utils import get_version
 from featurebyte.config import Configurations, Profile
+from featurebyte.core.distance import haversine
 from featurebyte.core.series import Series
 from featurebyte.core.timedelta import to_timedelta
 from featurebyte.datasets.app import import_dataset
@@ -461,6 +462,7 @@ __all__ = [
     "SparkDetails",
     "UserDefinedFunction",
     "to_timedelta",
+    "haversine",
     "Table",
     "TableFeatureJobSetting",
     "Target",

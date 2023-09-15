@@ -99,6 +99,9 @@ class NodeType(StrEnum):
     # window functions related operations
     LAG = "lag"
 
+    # distance operations
+    HAVERSINE = "haversine"
+
     # operations with side effect
     INPUT = "input"
     REQUEST_COLUMN = "request_column"
