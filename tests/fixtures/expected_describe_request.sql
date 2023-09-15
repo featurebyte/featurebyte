@@ -17,16 +17,16 @@ WITH data AS (
     F_COUNT_DICT_MOST_FREQUENT_VALUE(count_dict."COUNT_DICT") AS "freq__0"
   FROM (
     SELECT
-      OBJECT_AGG("col_float", "COUNTS") AS "COUNT_DICT"
+      OBJECT_AGG("col_float", "__FB_COUNTS") AS "COUNT_DICT"
     FROM (
       SELECT
         "col_float",
-        COUNT('*') AS "COUNTS"
+        COUNT(*) AS "__FB_COUNTS"
       FROM casted_data
       GROUP BY
         "col_float"
       ORDER BY
-        COUNTS DESC NULLS LAST
+        "__FB_COUNTS" DESC NULLS LAST
       LIMIT 500
     ) AS cat_counts
   ) AS count_dict
@@ -37,16 +37,16 @@ WITH data AS (
     F_COUNT_DICT_MOST_FREQUENT_VALUE(count_dict."COUNT_DICT") AS "freq__1"
   FROM (
     SELECT
-      OBJECT_AGG("col_text", "COUNTS") AS "COUNT_DICT"
+      OBJECT_AGG("col_text", "__FB_COUNTS") AS "COUNT_DICT"
     FROM (
       SELECT
         "col_text",
-        COUNT('*') AS "COUNTS"
+        COUNT(*) AS "__FB_COUNTS"
       FROM casted_data
       GROUP BY
         "col_text"
       ORDER BY
-        COUNTS DESC NULLS LAST
+        "__FB_COUNTS" DESC NULLS LAST
       LIMIT 500
     ) AS cat_counts
   ) AS count_dict

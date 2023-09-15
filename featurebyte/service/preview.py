@@ -221,6 +221,7 @@ class PreviewService:
             from_timestamp=sample.from_timestamp,
             to_timestamp=sample.to_timestamp,
             timestamp_column=sample.timestamp_column,
+            stats_names=sample.stats_names,
         )
         logger.debug("Execute describe SQL", extra={"describe_sql": describe_sql})
         result = await session.execute_query(describe_sql)
@@ -231,6 +232,53 @@ class PreviewService:
             columns=[str(column.name) for column in columns],
         ).dropna(axis=0, how="all")
         return dataframe_to_json(results, type_conversions, skip_prepare=True)
+
+    async def value_counts(
+        self,
+        preview: FeatureStorePreview,
+        num_rows: int,
+        num_categories_limit: int,
+        seed: int = 1234,
+        get_credential: Any = None,
+    ) -> dict[str, int]:
+        """
+        Get value counts for a column
+
+        Parameters
+        ----------
+        preview: FeatureStorePreview
+            FeatureStorePreview object
+        num_rows : int
+            Number of rows to include when calculating the counts
+        num_categories_limit : int
+            Maximum number of categories to include in the result. If there are more categories in
+            the data, the result will include the most frequent categories up to this number.
+        seed: int
+            Random seed to use for sampling
+        get_credential: Any
+            Get credential handler function
+
+        Returns
+        -------
+        dict[str, int]
+        """
+        feature_store, session = await self._get_feature_store_session(
+            graph=preview.graph,
+            node_name=preview.node_name,
+            feature_store_name=preview.feature_store_name,
+            get_credential=get_credential,
+        )
+        value_counts_sql = GraphInterpreter(
+            preview.graph, source_type=feature_store.type
+        ).construct_value_counts_sql(
+            node_name=preview.node_name,
+            num_rows=num_rows,
+            num_categories_limit=num_categories_limit,
+            seed=seed,
+        )
+        df_result = await session.execute_query(value_counts_sql)
+        assert df_result.columns.tolist() == ["key", "count"]  # type: ignore
+        return df_result.set_index("key")["count"].to_dict()  # type: ignore
 
     async def download_table(
         self,
