@@ -55,7 +55,7 @@ class Haversine(BaseSeriesOutputNode):
             node_output_category=operation_structure.output_category,
             node_name=self.name,
         )
-        obj = ClassEnum.TO_TIMEDELTA(
+        obj = ClassEnum.HAVERSINE(
             lat_series_1=var_name_expressions[0],
             lon_series_1=var_name_expressions[1],
             lat_series_2=var_name_expressions[2],
