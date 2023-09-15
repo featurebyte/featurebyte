@@ -26,14 +26,11 @@ class HaversineNode(ExpressionNode):
 
     @property
     def sql(self) -> Expression:
-        return expressions.Anonymous(
-            this="HAVERSINE",
-            expressions=[
-                self.lat_node_1_expr.sql,
-                self.lon_node_1_expr.sql,
-                self.lat_node_2_expr.sql,
-                self.lon_node_2_expr.sql,
-            ],
+        return self.context.adapter.haversine(
+            self.lat_node_1_expr.sql.expression,
+            self.lon_node_1_expr.sql.expression,
+            self.lat_node_2_expr.sql.expression,
+            self.lon_node_2_expr.sql.expression,
         )
 
     @classmethod
