@@ -1,7 +1,7 @@
 """
 Module for distance related operations
 """
-from typing import List
+from typing import Any, List, Optional
 
 from typeguard import typechecked
 
@@ -36,7 +36,7 @@ def _validate_series(series_list: List[Series]) -> None:
             )
 
     # Check all series are of the same type
-    series_type_to_check = None
+    series_type_to_check: Optional[Any] = None
     if isinstance(series_list[0], ViewColumn):
         series_type_to_check = ViewColumn
     elif isinstance(series_list[0], Feature):
