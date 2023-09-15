@@ -695,23 +695,23 @@ class BaseAdapter(ABC):  # pylint: disable=too-many-public-methods
         """
 
     @staticmethod
-    def _radian_expr(expr: Expression):
+    def _radian_expr(expr: Expression) -> Expression:
         return expressions.Anonymous(this="RADIANS", expressions=[expr])
 
     @staticmethod
-    def _square_expr(expr: Expression):
+    def _square_expr(expr: Expression) -> Expression:
         return expressions.Pow(this=expr, power=make_literal_value(2))
 
     @staticmethod
-    def _sqrt_expr(expr: Expression):
+    def _sqrt_expr(expr: Expression) -> Expression:
         return expressions.Anonymous(this="SQRT", expressions=[expr])
 
     @staticmethod
-    def _asin_expr(expr: Expression):
+    def _asin_expr(expr: Expression) -> Expression:
         return expressions.Anonymous(this="ASIN", expressions=[expr])
 
     @staticmethod
-    def _cos_expr(expr: Expression):
+    def _cos_expr(expr: Expression) -> Expression:
         return expressions.Anonymous(this="COS", expressions=[expr])
 
     @classmethod

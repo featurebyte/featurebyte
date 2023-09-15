@@ -7,7 +7,8 @@ from typing import cast
 
 from dataclasses import dataclass
 
-from sqlglot import Expression, expressions
+from sqlglot import expressions
+from sqlglot.expressions import Expression
 
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.ast.base import ExpressionNode, SQLNodeContext
