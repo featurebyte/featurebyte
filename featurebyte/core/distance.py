@@ -36,7 +36,7 @@ def _validate_series(series_list: List[Series]) -> None:
             )
 
     # Check all series are of the same type
-    series_type_to_check: Optional[Any] = None
+    series_type_to_check: Optional[Any] = Series
     if isinstance(series_list[0], ViewColumn):
         series_type_to_check = ViewColumn
     elif isinstance(series_list[0], Feature):
