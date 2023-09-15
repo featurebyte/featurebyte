@@ -33,7 +33,7 @@ def haversine(
     Raises
     ------
     ValueError
-        if any of the Series are not of FLOAT type
+        if any of the Series are not numeric
 
     Examples
     --------

@@ -703,10 +703,6 @@ class BaseAdapter(ABC):  # pylint: disable=too-many-public-methods
         return expressions.Pow(this=expr, power=make_literal_value(2))
 
     @staticmethod
-    def _sqrt_expr(expr: Expression) -> Expression:
-        return expressions.Anonymous(this="SQRT", expressions=[expr])
-
-    @staticmethod
     def _asin_expr(expr: Expression) -> Expression:
         return expressions.Anonymous(this="ASIN", expressions=[expr])
 
@@ -795,7 +791,9 @@ class BaseAdapter(ABC):  # pylint: disable=too-many-public-methods
             this=cls._cos_expr(radian_lat_1_expr), expression=cls._cos_expr(radian_lat_2_expr)
         )
         mult_expr = expressions.Mul(this=mult_expr, expression=pow_sin_lon_expr)
-        sqrt_expr = cls._sqrt_expr(expressions.Add(this=pow_sin_lat_expr, expression=mult_expr))
+        sqrt_expr = expressions.Sqrt(
+            this=expressions.Add(this=pow_sin_lat_expr, expression=mult_expr)
+        )
         asin_expr = cls._asin_expr(sqrt_expr)
         mult_by_2_expr = expressions.Mul(this=make_literal_value(2), expression=asin_expr)
         return expressions.Mul(this=mult_by_2_expr, expression=make_literal_value(6371))
