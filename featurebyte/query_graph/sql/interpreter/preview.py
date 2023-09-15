@@ -27,6 +27,8 @@ from featurebyte.query_graph.sql.common import (
 )
 from featurebyte.query_graph.sql.interpreter.base import BaseGraphInterpreter
 
+CATEGORY_COUNT_COLUMN_NAME = "__FB_COUNTS"
+
 
 class PreviewMixin(BaseGraphInterpreter):
     """
@@ -480,13 +482,15 @@ class PreviewMixin(BaseGraphInterpreter):
                 col_expr,
                 expressions.alias_(
                     expressions.Count(this=make_literal_value("*")),
-                    alias="COUNTS",
+                    alias=CATEGORY_COUNT_COLUMN_NAME,
                     quoted=True,
                 ),
             )
             .from_("casted_data")
             .group_by(col_expr)
-            .order_by("COUNTS DESC")
+            .order_by(
+                expressions.Ordered(this=quoted_identifier(CATEGORY_COUNT_COLUMN_NAME), desc=True)
+            )
             .limit(num_categories_limit)
         )
 
@@ -516,7 +520,7 @@ class PreviewMixin(BaseGraphInterpreter):
                     this="object_agg",
                     expressions=[
                         col_expr,
-                        quoted_identifier("COUNTS"),
+                        quoted_identifier(CATEGORY_COUNT_COLUMN_NAME),
                     ],
                 ),
                 alias="COUNT_DICT",
@@ -823,7 +827,9 @@ class PreviewMixin(BaseGraphInterpreter):
             construct_cte_sql(cte_statements)
             .select(
                 expressions.alias_(quoted_identifier(col_name), col_name, quoted=True),
-                expressions.alias_("COUNTS", "count", quoted=True),
+                expressions.alias_(
+                    quoted_identifier(CATEGORY_COUNT_COLUMN_NAME), "count", quoted=True
+                ),
             )
             .from_(cat_counts.subquery())
         )

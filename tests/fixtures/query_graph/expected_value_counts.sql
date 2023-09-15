@@ -12,15 +12,15 @@ WITH data AS (
 )
 SELECT
   "a" AS "a",
-  COUNTS AS "count"
+  "__FB_COUNTS" AS "count"
 FROM (
   SELECT
     "a",
-    COUNT('*') AS "COUNTS"
+    COUNT('*') AS "__FB_COUNTS"
   FROM casted_data
   GROUP BY
     "a"
   ORDER BY
-    COUNTS DESC NULLS LAST
+    "__FB_COUNTS" DESC NULLS LAST
   LIMIT 1000
 )
