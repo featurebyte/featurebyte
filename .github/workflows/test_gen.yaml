@@ -449,6 +449,7 @@ jobs:
       with:
         pytest-coverage-path: pytest-coverage.txt
         junitxml-path: pytest.xml
+        hide-report: true
     - name: Check test output
       run: |-
         if [ "${{ steps.coverageComment.outputs.errors }}" -gt '0' ] || [ "${{ steps.coverageComment.outputs.failures }}" -gt '0' ]; then

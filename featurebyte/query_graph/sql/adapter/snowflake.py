@@ -469,3 +469,16 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
             )
 
         return left_expression
+
+    @classmethod
+    def haversine(
+        cls,
+        lat_expr_1: Expression,
+        lon_expr_1: Expression,
+        lat_expr_2: Expression,
+        lon_expr_2: Expression,
+    ) -> Expression:
+        return expressions.Anonymous(
+            this="HAVERSINE",
+            expressions=[lat_expr_1, lon_expr_1, lat_expr_2, lon_expr_2],
+        )

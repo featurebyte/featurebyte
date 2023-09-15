@@ -246,6 +246,7 @@ class ClassEnum(Enum):
     COLUMN_CLEANING_OPERATION = ("featurebyte", "ColumnCleaningOperation")
     REQUEST_COLUMN = ("featurebyte.api.request_column", "RequestColumn")
     USER_DEFINED_FUNCTION = ("featurebyte", "UserDefinedFunction")
+    HAVERSINE = ("featurebyte", "haversine")
 
     def __call__(
         self, *args: Any, _method_name: Optional[str] = None, **kwargs: Any

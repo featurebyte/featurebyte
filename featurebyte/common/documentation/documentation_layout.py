@@ -742,6 +742,11 @@ def _get_utility_methods_layout() -> List[DocLayoutItem]:
             is_pure_method=True,
         ),
         DocLayoutItem(
+            [UTILITY_METHODS, TRANSFORM, "haversine"],
+            doc_path_override="core.distance.haversine.md",
+            is_pure_method=True,
+        ),
+        DocLayoutItem(
             [UTILITY_METHODS, LIST, "list_unsaved_features"],
             doc_path_override="list_utility.list_unsaved_features.md",
             is_pure_method=True,

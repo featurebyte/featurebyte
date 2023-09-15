@@ -7,6 +7,7 @@ import textwrap
 import pytest
 
 from featurebyte.query_graph.enum import NodeOutputType
+from featurebyte.query_graph.node.distance import Haversine
 from featurebyte.query_graph.node.generic import AliasNode, AssignNode, ConditionalNode
 from featurebyte.query_graph.node.metadata.operation import NodeOutputCategory, OperationStructure
 from featurebyte.query_graph.node.metadata.sdk_code import (
@@ -171,6 +172,36 @@ def test_vector_node():
     )
     assert statements == []
     assert info == "col1.vec.cosine_similarity(other=col2)"
+
+
+def test_haversine_node():
+    """
+    Test haversine node
+    """
+    node = Haversine(name="haversine_1", parameters={})
+    statements, info = node.derive_sdk_code(
+        node_inputs=[
+            VariableNameStr("col1"),
+            VariableNameStr("col2"),
+            VariableNameStr("col3"),
+            VariableNameStr("col4"),
+        ],
+        var_name_generator=VariableNameGenerator(),
+        operation_structure=OperationStructure(
+            output_type=NodeOutputType.SERIES,
+            output_category=NodeOutputCategory.VIEW,
+            row_index_lineage=tuple(),
+        ),
+        config=CodeGenerationConfig(),
+        context=CodeGenerationContext(as_info_dict=False, required_copy=False),
+    )
+    assert len(statements) == 1
+    assert statements[0][0] == "col"
+    assert (
+        str(statements[0][1])
+        == "haversine(lat_series_1=col1, lon_series_1=col2, lat_series_2=col3, lon_series_2=col4)"
+    )
+    assert info == "col"
 
 
 @pytest.mark.parametrize(
