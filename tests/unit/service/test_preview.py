@@ -3,6 +3,7 @@ Test preview service module
 """
 from unittest.mock import AsyncMock, patch
 
+import pandas as pd
 import pytest
 from bson import ObjectId
 
@@ -11,6 +12,7 @@ from featurebyte.exception import MissingPointInTimeColumnError, RequiredEntityN
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_list import FeatureCluster
 from featurebyte.schema.feature_list import FeatureListPreview
+from featurebyte.schema.feature_store import FeatureStorePreview, FeatureStoreSample
 from featurebyte.schema.preview import FeatureOrTargetPreview
 
 
@@ -30,6 +32,68 @@ def mock_get_feature_store_session_fixture():
         "featurebyte.service.online_enable.SessionManagerService.get_feature_store_session"
     ) as mock_get_feature_store_session:
         yield mock_get_feature_store_session
+
+
+@pytest.fixture(name="feature_store_preview")
+def feature_store_preview_fixture(feature_store):
+    """
+    Fixture for a FeatureStorePreview
+    """
+    return FeatureStorePreview(
+        feature_store_name=feature_store.name,
+        graph={
+            "edges": [{"source": "input_1", "target": "project_1"}],
+            "nodes": [
+                {
+                    "name": "input_1",
+                    "output_type": "frame",
+                    "parameters": {
+                        "type": "event_table",
+                        "id": "6332fdb21e8f0eeccc414512",
+                        "columns": [
+                            {"name": "col_int", "dtype": "INT"},
+                            {"name": "col_float", "dtype": "FLOAT"},
+                            {"name": "col_char", "dtype": "CHAR"},
+                            {"name": "col_text", "dtype": "VARCHAR"},
+                            {"name": "col_binary", "dtype": "BINARY"},
+                            {"name": "col_boolean", "dtype": "BOOL"},
+                            {"name": "event_timestamp", "dtype": "TIMESTAMP"},
+                            {"name": "created_at", "dtype": "TIMESTAMP"},
+                            {"name": "cust_id", "dtype": "VARCHAR"},
+                        ],
+                        "table_details": {
+                            "database_name": "sf_database",
+                            "schema_name": "sf_schema",
+                            "table_name": "sf_table",
+                        },
+                        "feature_store_details": feature_store.json_dict(),
+                        "timestamp_column": "event_timestamp",
+                        "id_column": "event_timestamp",
+                    },
+                    "type": "input",
+                },
+                {
+                    "name": "project_1",
+                    "output_type": "frame",
+                    "parameters": {
+                        "columns": [
+                            "col_int",
+                            "col_float",
+                            "col_char",
+                            "col_text",
+                            "col_binary",
+                            "col_boolean",
+                            "event_timestamp",
+                            "created_at",
+                            "cust_id",
+                        ]
+                    },
+                    "type": "project",
+                },
+            ],
+        },
+        node_name="project_1",
+    )
 
 
 @pytest.mark.asyncio
@@ -174,3 +238,28 @@ async def test_preview_featurelist__missing_entity(
         'Required entities are not provided in the request: customer (serving name: "cust_id")'
     )
     assert str(exc.value) == expected
+
+
+@pytest.mark.asyncio
+async def test_value_counts(
+    preview_service,
+    feature_store_preview,
+    get_credential,
+    mock_snowflake_session,
+):
+    """
+    Test value counts
+    """
+    mock_snowflake_session.execute_query.return_value = pd.DataFrame(
+        {
+            "key": ["a", "b"],
+            "count": [100, 50],
+        }
+    )
+    result = await preview_service.value_counts(
+        feature_store_preview,
+        num_rows=100000,
+        num_categories_limit=500,
+        get_credential=get_credential,
+    )
+    assert result == {"a": 100, "b": 50}

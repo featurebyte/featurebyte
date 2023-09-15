@@ -826,7 +826,7 @@ class PreviewMixin(BaseGraphInterpreter):
         output_expr = (
             construct_cte_sql(cte_statements)
             .select(
-                expressions.alias_(quoted_identifier(col_name), col_name, quoted=True),
+                expressions.alias_(quoted_identifier(col_name), "key", quoted=True),
                 expressions.alias_(
                     quoted_identifier(CATEGORY_COUNT_COLUMN_NAME), "count", quoted=True
                 ),

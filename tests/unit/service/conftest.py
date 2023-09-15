@@ -203,9 +203,11 @@ def online_enable_service_fixture(app_container):
 
 
 @pytest.fixture(name="preview_service")
-def preview_service_fixture(app_container):
+def preview_service_fixture(app_container, feature_store, mock_snowflake_session):
     """PreviewService fixture"""
-    return app_container.preview_service
+    with patch("featurebyte.service.preview.PreviewService._get_feature_store_session") as mocked:
+        mocked.return_value = feature_store, mock_snowflake_session
+        yield app_container.preview_service
 
 
 @pytest.fixture(name="feature_preview_service")

@@ -11,7 +11,7 @@ WITH data AS (
   FROM data
 )
 SELECT
-  "a" AS "a",
+  "a" AS "key",
   "__FB_COUNTS" AS "count"
 FROM (
   SELECT
