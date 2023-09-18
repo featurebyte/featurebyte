@@ -32,16 +32,16 @@ public class VectorAggregateAverageTest {
     eval2.init(GenericUDAFEvaluator.Mode.PARTIAL1, doubleOI);
 
     GenericUDAFEvaluator.AggregationBuffer buffer1 = eval1.getNewAggregationBuffer();
-    eval1.iterate(buffer1, new Object[] {Arrays.asList(1d, 2d, 3d), 1d});
-    eval1.iterate(buffer1, new Object[] {Arrays.asList(2d, 4d, 6d), 2d});
-    eval1.iterate(buffer1, new Object[] {Arrays.asList(3d, 6d, 9d), 3d});
+    eval1.iterate(buffer1, new Object[] {Arrays.asList(1d, 2d, 3d), 1f});
+    eval1.iterate(buffer1, new Object[] {Arrays.asList(2d, 4d, 6d), 2f});
+    eval1.iterate(buffer1, new Object[] {Arrays.asList(3d, 6d, 9d), 3f});
     Object object1 = eval1.terminatePartial(buffer1);
 
     GenericUDAFEvaluator.AggregationBuffer buffer2 = eval2.getNewAggregationBuffer();
-    eval2.iterate(buffer2, new Object[] {Arrays.asList(1d, 2d, 3d), 1d});
-    eval2.iterate(buffer2, new Object[] {Arrays.asList(1d, 2d, 3d), 1d});
-    eval2.iterate(buffer2, new Object[] {Arrays.asList(1d, 2d, 3d), 1d});
-    eval2.iterate(buffer2, new Object[] {Arrays.asList(4d, 8d, 12d), 4d});
+    eval2.iterate(buffer2, new Object[] {Arrays.asList(1d, 2d, 3d), 1f});
+    eval2.iterate(buffer2, new Object[] {Arrays.asList(1d, 2d, 3d), 1f});
+    eval2.iterate(buffer2, new Object[] {Arrays.asList(1d, 2d, 3d), 1f});
+    eval2.iterate(buffer2, new Object[] {Arrays.asList(4d, 8d, 12d), 4f});
     Object object2 = eval2.terminatePartial(buffer2);
 
     eval2.init(GenericUDAFEvaluator.Mode.FINAL, doubleOI);
