@@ -172,7 +172,7 @@ def make_expected_tile_spec(tile_expr, tile_column_name, tile_column_type=None):
                     tile_column_type="ARRAY",
                 ),
                 make_expected_tile_spec(
-                    tile_expr="COUNT(*)",
+                    tile_expr="CAST(COUNT(*) AS FLOAT)",
                     tile_column_name="count_value_1234beef",
                     tile_column_type="FLOAT",
                 ),
