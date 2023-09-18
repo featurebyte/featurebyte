@@ -82,20 +82,6 @@ class CredentialController(
         assert document is not None
         return CredentialRead(**document.dict(by_alias=True))
 
-    async def delete_credential(
-        self,
-        credential_id: PydanticObjectId,
-    ) -> None:
-        """
-        Delete credential
-
-        Parameters
-        ----------
-        credential_id: PydanticObjectId
-            ID of credential to update
-        """
-        await self.service.delete_document(document_id=credential_id)
-
     async def get_info(
         self,
         credential_id: ObjectId,

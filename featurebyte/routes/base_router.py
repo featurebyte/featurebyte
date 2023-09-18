@@ -18,6 +18,7 @@ from featurebyte.routes.common.schema import (
     SortByQuery,
     SortDirQuery,
 )
+from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.schema.common.base import DeleteResponse, DescriptionUpdate
 
 ObjectModelT = TypeVar("ObjectModelT")
@@ -105,11 +106,19 @@ class BaseApiRouter(
             response_model=self.object_model,
         )
 
+    @classmethod
+    def get_controller_for_request(cls, request: Request) -> ControllerT:
+        """
+        Get controller for request
+        """
+        app_container: LazyAppContainer = request.state.app_container
+        return cast(ControllerT, app_container.get(cls.controller))
+
     async def get_object(self, request: Request, object_id: PydanticObjectId) -> ObjectModelT:
         """
         Get table
         """
-        controller = request.state.app_container.get(self.controller)
+        controller = self.get_controller_for_request(request)
         object_model: ObjectModelT = await controller.get(document_id=object_id)
         return object_model
 
@@ -117,7 +126,7 @@ class BaseApiRouter(
         """
         Create object
         """
-        controller = request.state.app_container.get(self.controller)
+        controller = self.get_controller_for_request(request)
         result: ObjectModelT = await controller.service.create_document(
             data=data,
         )
@@ -136,7 +145,7 @@ class BaseApiRouter(
         """
         List objects
         """
-        controller = request.state.app_container.get(self.controller)
+        controller = self.get_controller_for_request(request)
         return cast(
             ObjectModelT,
             await controller.list(
@@ -153,7 +162,7 @@ class BaseApiRouter(
         """
         Delete object
         """
-        controller = request.state.app_container.get(self.controller)
+        controller = self.get_controller_for_request(request)
         await controller.delete(document_id=object_id)
         return DeleteResponse()
 
@@ -170,7 +179,7 @@ class BaseApiRouter(
         """
         List audit logs
         """
-        controller = request.state.app_container.get(self.controller)
+        controller = self.get_controller_for_request(request)
         audit_doc_list: AuditDocumentList = await controller.list_audit(
             document_id=object_id,
             page=page,
@@ -187,7 +196,7 @@ class BaseApiRouter(
         """
         Update description
         """
-        controller = request.state.app_container.get(self.controller)
+        controller = self.get_controller_for_request(request)
         object_model: ObjectModelT = await controller.update_description(
             document_id=object_id,
             description=data.description,
