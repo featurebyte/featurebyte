@@ -38,6 +38,8 @@ from featurebyte.models.base import FeatureByteBaseDocumentModel, FeatureByteBas
 ApiObjectT = TypeVar("ApiObjectT", bound="ApiObject")
 ModelT = TypeVar("ModelT", bound=FeatureByteBaseDocumentModel)
 
+CacheKeyNotFound = object()
+
 logger = get_logger(__name__)
 
 
@@ -292,8 +294,9 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
         if use_cache:
             collection_name = _get_cache_collection_name(cls)
             key = hashkey(collection_name, id)
-            if key in cls._cache:
-                return cls.from_persistent_object_dict(cls._cache[key].dict(by_alias=True))
+            cached_value = cls._cache.get(key, CacheKeyNotFound)
+            if cached_value is not CacheKeyNotFound:
+                return cls.from_persistent_object_dict(cached_value.dict(by_alias=True))
         return cls.from_persistent_object_dict(cls._get_object_dict_by_id(id_value=id))
 
     @classmethod
