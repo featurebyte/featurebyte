@@ -28,7 +28,7 @@ from featurebyte.schema.observation_table import ObservationTableList
 
 class ContextRouter(BaseApiRouter[ContextModel, ContextList, ContextCreate, ContextController]):
     """
-    Credential API router
+    Context API router
     """
 
     # pylint: disable=arguments-renamed

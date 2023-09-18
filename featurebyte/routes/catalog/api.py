@@ -29,7 +29,7 @@ from featurebyte.schema.info import CatalogInfo
 
 class CatalogRouter(BaseApiRouter[CatalogModel, CatalogList, CatalogCreate, CatalogController]):
     """
-    Credential API router
+    Catalog API router
     """
 
     # pylint: disable=arguments-renamed
