@@ -143,6 +143,10 @@ def get_app() -> FastAPI:
         temp_data_api,
         catalog_api,
     ]
+    routers = [
+        credential_api.CredentialRouter(),
+    ]
+    resource_apis.extend(routers)
     dependencies = _get_api_deps()
     for resource_api in resource_apis:
         _app.include_router(

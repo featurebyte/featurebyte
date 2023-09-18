@@ -155,6 +155,17 @@ class BaseDocumentController(Generic[Document, DocumentServiceT, PaginatedDocume
         )
         return cast(PaginatedDocument, self.paginated_document_class(**document_data))
 
+    async def delete(self, document_id: ObjectId) -> None:
+        """
+        Delete document.
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            ID of document to delete
+        """
+        await self.service.delete_document(document_id=document_id)
+
     async def list_audit(
         self,
         document_id: ObjectId,

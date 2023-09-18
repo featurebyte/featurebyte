@@ -1,0 +1,195 @@
+"""
+Base router
+"""
+from typing import Generic, Optional, Type, TypeVar, Union, cast
+
+from http import HTTPStatus
+
+from fastapi import APIRouter, Request
+
+from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.persistent import AuditDocumentList
+from featurebyte.routes.common.schema import (
+    AuditLogSortByQuery,
+    NameQuery,
+    PageQuery,
+    PageSizeQuery,
+    SearchQuery,
+    SortByQuery,
+    SortDirQuery,
+)
+from featurebyte.schema.common.base import DeleteResponse, DescriptionUpdate
+
+ObjectModelT = TypeVar("ObjectModelT")
+ListObjectModelT = TypeVar("ListObjectModelT")
+CreateObjectSchemaT = TypeVar("CreateObjectSchemaT")
+ControllerT = TypeVar("ControllerT")
+
+
+class BaseRouter:
+    """
+    BaseRouter class that just encapsulates the APIRouter object.
+    """
+
+    def __init__(self, router: APIRouter) -> None:
+        self.router = router
+
+
+class BaseApiRouter(
+    BaseRouter, Generic[ObjectModelT, ListObjectModelT, CreateObjectSchemaT, ControllerT]
+):
+    """
+    Base API router.
+
+    This class contains basic CRUD operations for a given model.
+    """
+
+    object_model: Type[ObjectModelT]
+    list_object_model: Type[ListObjectModelT]
+    create_object_schema: Type[CreateObjectSchemaT]
+    controller: Union[Type[ControllerT], str]
+
+    def __init__(self, prefix: str, skip_id_prefix: bool = False):
+        super().__init__(router=APIRouter(prefix=prefix))
+        base_name = prefix.lstrip("/")
+        api_id = f"{{{base_name}_id}}" if not skip_id_prefix else "{object_id}"
+
+        # Get object
+        self.router.add_api_route(
+            f"/{api_id}",
+            self.get_object,
+            methods=["GET"],
+            response_model=self.object_model,
+            status_code=HTTPStatus.OK,
+        )
+
+        # Create an object
+        self.router.add_api_route(
+            "",
+            self.create_object,
+            methods=["POST"],
+            response_model=self.object_model,
+            status_code=HTTPStatus.CREATED,
+        )
+
+        # List objects
+        self.router.add_api_route(
+            "",
+            self.list_objects,
+            methods=["GET"],
+            response_model=self.list_object_model,
+            status_code=HTTPStatus.OK,
+        )
+
+        # Delete objects
+        self.router.add_api_route(
+            f"/{api_id}",
+            self.delete_object,
+            methods=["DELETE"],
+            status_code=HTTPStatus.OK,
+        )
+
+        # List audit logs for object
+        self.router.add_api_route(
+            f"/audit/{api_id}",
+            self.list_audit_logs,
+            methods=["GET"],
+            response_model=AuditDocumentList,
+        )
+
+        # Update description for object
+        self.router.add_api_route(
+            f"/{api_id}/description",
+            self.update_description,
+            methods=["PATCH"],
+            response_model=self.object_model,
+        )
+
+    async def get_object(self, request: Request, object_id: PydanticObjectId) -> ObjectModelT:
+        """
+        Get table
+        """
+        controller = request.state.app_container.get(self.controller)
+        object_model: ObjectModelT = await controller.get(document_id=object_id)
+        return object_model
+
+    async def create_object(self, request: Request, data: CreateObjectSchemaT) -> ObjectModelT:
+        """
+        Create object
+        """
+        controller = request.state.app_container.get(self.controller)
+        result: ObjectModelT = await controller.service.create_document(
+            data=data,
+        )
+        return result
+
+    async def list_objects(
+        self,
+        request: Request,
+        page: int = PageQuery,
+        page_size: int = PageSizeQuery,
+        sort_by: Optional[str] = SortByQuery,
+        sort_dir: Optional[str] = SortDirQuery,
+        search: Optional[str] = SearchQuery,
+        name: Optional[str] = NameQuery,
+    ) -> ObjectModelT:
+        """
+        List objects
+        """
+        controller = request.state.app_container.get(self.controller)
+        return cast(
+            ObjectModelT,
+            await controller.list(
+                page=page,
+                page_size=page_size,
+                sort_by=sort_by,
+                sort_dir=sort_dir,
+                search=search,
+                name=name,
+            ),
+        )
+
+    async def delete_object(self, request: Request, object_id: PydanticObjectId) -> DeleteResponse:
+        """
+        Delete object
+        """
+        controller = request.state.app_container.get(self.controller)
+        await controller.delete(document_id=object_id)
+        return DeleteResponse()
+
+    async def list_audit_logs(
+        self,
+        request: Request,
+        object_id: PydanticObjectId,
+        page: int = PageQuery,
+        page_size: int = PageSizeQuery,
+        sort_by: Optional[str] = AuditLogSortByQuery,
+        sort_dir: Optional[str] = SortDirQuery,
+        search: Optional[str] = SearchQuery,
+    ) -> AuditDocumentList:
+        """
+        List audit logs
+        """
+        controller = request.state.app_container.get(self.controller)
+        audit_doc_list: AuditDocumentList = await controller.list_audit(
+            document_id=object_id,
+            page=page,
+            page_size=page_size,
+            sort_by=sort_by,
+            sort_dir=sort_dir,
+            search=search,
+        )
+        return audit_doc_list
+
+    async def update_description(
+        self, request: Request, object_id: PydanticObjectId, data: DescriptionUpdate
+    ) -> ObjectModelT:
+        """
+        Update description
+        """
+        controller = request.state.app_container.get(self.controller)
+        object_model: ObjectModelT = await controller.update_description(
+            document_id=object_id,
+            description=data.description,
+        )
+        return object_model
