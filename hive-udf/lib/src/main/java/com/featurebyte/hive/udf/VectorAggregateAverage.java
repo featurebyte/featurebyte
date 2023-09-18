@@ -77,11 +77,11 @@ public class VectorAggregateAverage extends AbstractGenericUDAFResolver {
   static class VectorAvgAggregationBuffer extends GenericUDAFEvaluator.AbstractAggregationBuffer {
 
     List<Double> sumList;
-    long count;
+    double count;
 
     public VectorAvgAggregationBuffer() {
       sumList = new ArrayList<>();
-      count = 0;
+      count = 0.0;
     }
   }
 
@@ -116,7 +116,7 @@ public class VectorAggregateAverage extends AbstractGenericUDAFResolver {
       return new VectorAvgAggregationBuffer();
     }
 
-    private void doIterate(VectorAvgAggregationBuffer myagg, List<Object> myList, long count) {
+    private void doIterate(VectorAvgAggregationBuffer myagg, List<Object> myList, double count) {
       List<Double> container = myagg.sumList;
 
       // If there's no current value in the buffer, just set the partial value into the buffer.
@@ -156,9 +156,9 @@ public class VectorAggregateAverage extends AbstractGenericUDAFResolver {
       // Cast current aggregation buffer, and partial value.
       VectorAvgAggregationBuffer myagg = (VectorAvgAggregationBuffer) agg;
       List<Object> myList = (List<Object>) partial;
-      Long count = (Long) parameters[1];
+      Double count = (Double) parameters[1];
 
-      doIterate(myagg, myList, count.longValue());
+      doIterate(myagg, myList, count.doubleValue());
     }
 
     @Override
@@ -167,7 +167,7 @@ public class VectorAggregateAverage extends AbstractGenericUDAFResolver {
       VectorAvgAggregationBuffer myagg = (VectorAvgAggregationBuffer) agg;
       Double[] doubleList = new Double[myagg.sumList.size() + 1];
       // Fill the first element with the count
-      doubleList[0] = (double) myagg.count;
+      doubleList[0] = myagg.count;
 
       // Convert sumList to double writable
       for (int i = 0; i < myagg.sumList.size(); i++) {
