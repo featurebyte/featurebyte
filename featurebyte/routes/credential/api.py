@@ -7,7 +7,7 @@ from typing import Optional, cast
 
 from http import HTTPStatus
 
-from fastapi import APIRouter, Request
+from fastapi import Request
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.persistent import AuditDocumentList
@@ -108,7 +108,7 @@ class CredentialRouter(
         """
         List credentials
         """
-        controller = request.state.app_container.credential_controller
+        controller = self.get_controller_for_request(request)
         return cast(
             CredentialList,
             await controller.list(
@@ -132,7 +132,7 @@ class CredentialRouter(
         """
         Create credential
         """
-        controller = request.state.app_container.credential_controller
+        controller = self.get_controller_for_request(request)
         return cast(CredentialRead, await controller.create_credential(data=data))
 
     @staticmethod
@@ -144,7 +144,7 @@ class CredentialRouter(
         """
         Update credential
         """
-        controller = request.state.app_container.credential_controller
+        controller = self.get_controller_for_request(request)
         return cast(
             CredentialRead,
             await controller.update_credential(
@@ -162,7 +162,7 @@ class CredentialRouter(
         """
         Retrieve catalog info
         """
-        controller = request.state.app_container.credential_controller
+        controller = self.get_controller_for_request(request)
         info = await controller.get_info(
             credential_id=credential_id,
             verbose=verbose,

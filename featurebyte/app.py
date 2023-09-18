@@ -10,7 +10,6 @@ from starlette.websockets import WebSocket
 
 import featurebyte.routes.batch_feature_table.api as batch_feature_table_api
 import featurebyte.routes.batch_request_table.api as batch_request_table_api
-import featurebyte.routes.context.api as context_api
 import featurebyte.routes.deployment.api as deployment_api
 import featurebyte.routes.dimension_table.api as dimension_table_api
 import featurebyte.routes.entity.api as entity_api
@@ -41,6 +40,7 @@ from featurebyte.logging import get_logger
 from featurebyte.middleware import ExceptionMiddleware
 from featurebyte.models.base import PydanticObjectId, User
 from featurebyte.routes.catalog.api import CatalogRouter
+from featurebyte.routes.context.api import ContextRouter
 from featurebyte.routes.credential.api import CredentialRouter
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
@@ -158,9 +158,9 @@ def get_app() -> FastAPI:
     routers = [
         TargetTableRouter(prefix="/target_table"),
         static_source_table_api.StaticSourceTableRouter(prefix="/static_source_table"),
+        ContextRouter(),
     ]
     resource_apis = [
-        context_api,
         deployment_api,
         dimension_table_api,
         event_table_api,
