@@ -9,6 +9,7 @@ from fastapi import APIRouter, Request
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.persistent import AuditDocumentList
+from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
     NameQuery,
@@ -24,7 +25,7 @@ from featurebyte.schema.common.base import DeleteResponse, DescriptionUpdate
 ObjectModelT = TypeVar("ObjectModelT")
 ListObjectModelT = TypeVar("ListObjectModelT")
 CreateObjectSchemaT = TypeVar("CreateObjectSchemaT")
-ControllerT = TypeVar("ControllerT")
+ControllerT = TypeVar("ControllerT", bound=BaseDocumentController)
 
 
 class BaseRouter:

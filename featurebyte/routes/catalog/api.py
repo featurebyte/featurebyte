@@ -116,7 +116,7 @@ class CatalogRouter(BaseApiRouter[CatalogModel, CatalogList, CatalogCreate, Cata
             document_id=catalog_id,
             verbose=verbose,
         )
-        return cast(CatalogInfo, info)
+        return info
 
     async def update_catalog(
         self,

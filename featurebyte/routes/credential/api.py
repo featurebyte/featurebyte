@@ -109,19 +109,14 @@ class CredentialRouter(
         List credentials
         """
         controller = self.get_controller_for_request(request)
-        return cast(
-            CredentialList,
-            await controller.list(
-                page=page,
-                page_size=page_size,
-                sort_by=sort_by,
-                sort_dir=sort_dir,
-                search=search,
-                name=name,
-                query_filter={}
-                if feature_store_id is None
-                else {"feature_store_id": feature_store_id},
-            ),
+        return await controller.list(
+            page=page,
+            page_size=page_size,
+            sort_by=sort_by,
+            sort_dir=sort_dir,
+            search=search,
+            name=name,
+            query_filter={} if feature_store_id is None else {"feature_store_id": feature_store_id},
         )
 
     async def create_object(
@@ -144,12 +139,9 @@ class CredentialRouter(
         Update credential
         """
         controller = self.get_controller_for_request(request)
-        return cast(
-            CredentialRead,
-            await controller.update_credential(
-                credential_id=credential_id,
-                data=data,
-            ),
+        return await controller.update_credential(
+            credential_id=credential_id,
+            data=data,
         )
 
     async def get_credential_info(

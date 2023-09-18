@@ -145,7 +145,7 @@ def get_app() -> FastAPI:
         CredentialRouter(),
         CatalogRouter(),
     ]
-    resource_apis.extend(routers)
+    resource_apis.extend(routers)  # type: ignore[arg-type]
     dependencies = _get_api_deps()
     for resource_api in resource_apis:
         _app.include_router(
