@@ -3,7 +3,7 @@ Context API routes
 """
 from __future__ import annotations
 
-from typing import Optional, cast
+from typing import Optional
 
 from http import HTTPStatus
 
@@ -88,8 +88,7 @@ class ContextRouter(BaseApiRouter[ContextModel, ContextList, ContextCreate, Cont
         """
         Create credential
         """
-        controller = self.get_controller_for_request(request)
-        return cast(ContextModel, await controller.create_context(data=data))
+        return await super().create_object(request, data)
 
     async def update_context(
         self, request: Request, context_id: PydanticObjectId, data: ContextUpdate

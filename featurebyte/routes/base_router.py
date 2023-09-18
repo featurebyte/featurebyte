@@ -127,9 +127,7 @@ class BaseApiRouter(
         Create object
         """
         controller = self.get_controller_for_request(request)
-        result: ObjectModelT = await controller.service.create_document(
-            data=data,
-        )
+        result: ObjectModelT = await controller.create(data=data)
         return result
 
     async def list_objects(

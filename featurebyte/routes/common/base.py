@@ -28,7 +28,7 @@ from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 from featurebyte.service.item_table import ItemTableService
-from featurebyte.service.mixin import DEFAULT_PAGE_SIZE, Document
+from featurebyte.service.mixin import DEFAULT_PAGE_SIZE, Document, DocumentCreateSchema
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.periodic_task import PeriodicTaskService
 from featurebyte.service.relationship import ParentT, RelationshipService
@@ -154,6 +154,17 @@ class BaseDocumentController(Generic[Document, DocumentServiceT, PaginatedDocume
             **kwargs,
         )
         return cast(PaginatedDocument, self.paginated_document_class(**document_data))
+
+    async def create(self, data: DocumentCreateSchema) -> Document:
+        """
+        Create document.
+
+        Parameters
+        ----------
+        data: DocumentCreateSchema
+            Document creation payload object
+        """
+        return await self.service.create_document(data)
 
     async def delete(self, document_id: ObjectId) -> None:
         """

@@ -100,8 +100,7 @@ class CatalogRouter(BaseApiRouter[CatalogModel, CatalogList, CatalogCreate, Cata
         """
         Create catalog
         """
-        controller = self.get_controller_for_request(request)
-        return cast(CatalogModel, await controller.create_catalog(data=data))
+        return await super().create_object(request, data)
 
     async def get_catalog_info(
         self,

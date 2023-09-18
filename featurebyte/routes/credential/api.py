@@ -132,11 +132,10 @@ class CredentialRouter(
         """
         Create credential
         """
-        controller = self.get_controller_for_request(request)
-        return cast(CredentialRead, await controller.create_credential(data=data))
+        return await super().create_object(request, data)
 
-    @staticmethod
     async def update_credential(
+        self,
         request: Request,
         credential_id: PydanticObjectId,
         data: CredentialUpdate,
@@ -153,8 +152,8 @@ class CredentialRouter(
             ),
         )
 
-    @staticmethod
     async def get_credential_info(
+        self,
         request: Request,
         credential_id: PydanticObjectId,
         verbose: bool = VerboseQuery,
