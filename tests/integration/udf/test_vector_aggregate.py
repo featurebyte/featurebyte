@@ -16,15 +16,15 @@ async def setup_test_data_fixture(session):
     """
     # Prepare test data
     input_data = [
-        (1, [4, 5, 6]),
-        (1, [1, 3, 3]),
-        (1, [7, 4, 9]),
-        (2, [7, 8, 9]),
-        (2, [4, 4, 10]),
-        (2, [1, 12, 2]),
+        (1, [4, 5, 6.0]),
+        (1, [1, 3, 3.0]),
+        (1, [7, 4, 9.0]),
+        (2, [7, 8, 9.0]),
+        (2, [4, 4, 10.0]),
+        (2, [1, 12, 2.0]),
     ]
     create_table_query = (
-        "CREATE OR REPLACE TABLE test_table (id_col number, array_col ARRAY, count number);"
+        "CREATE OR REPLACE TABLE test_table (id_col number, array_col ARRAY, count float);"
     )
     insert_values = []
     for id_col, array_col in input_data:
