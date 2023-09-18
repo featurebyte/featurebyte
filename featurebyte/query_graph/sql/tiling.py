@@ -332,9 +332,7 @@ class VectorAvgAggregator(OrderIndependentAggregator):
         cast_as_float = expressions.Cast(this=count, to="FLOAT")
         return [
             self.construct_array_tile_spec(sum_expression, f"sum_list_value_{agg_id}", AggFunc.SUM),
-            self.construct_numeric_tile_spec(
-                cast_as_float, f"count_value_{agg_id}", AggFunc.COUNT
-            ),
+            self.construct_numeric_tile_spec(cast_as_float, f"count_value_{agg_id}", AggFunc.COUNT),
         ]
 
     @staticmethod
