@@ -329,10 +329,12 @@ class VectorAvgAggregator(OrderIndependentAggregator):
             this="VECTOR_AGGREGATE_SUM", expressions=[quoted_identifier(col.name)]
         )
         count = expressions.Count(this=expressions.Star())
-        cast_as_float = expressions.Cast(this=count, to="FLOAT")
+        cast_as_integer = expressions.Cast(this=count, to="INTEGER")
         return [
             self.construct_array_tile_spec(sum_expression, f"sum_list_value_{agg_id}", AggFunc.SUM),
-            self.construct_numeric_tile_spec(cast_as_float, f"count_value_{agg_id}", AggFunc.COUNT),
+            self.construct_numeric_tile_spec(
+                cast_as_integer, f"count_value_{agg_id}", AggFunc.COUNT
+            ),
         ]
 
     @staticmethod
