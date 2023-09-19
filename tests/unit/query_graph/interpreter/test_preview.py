@@ -24,9 +24,11 @@ def test_describe_specify_stats_names(simple_graph, update_fixtures):
     graph, node = simple_graph
     interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
 
-    sql_code = interpreter.construct_describe_sql(
+    sql_code, _, rows, columns = interpreter.construct_describe_sql(
         node.name, num_rows=10, seed=1234, stats_names=["min", "max"]
-    )[0]
+    )
+    assert rows == ["dtype", "min", "max"]
+    assert [column.name for column in columns] == ["ts", "cust_id", "a", "b", "a_copy"]
     expected_filename = f"tests/fixtures/query_graph/expected_describe_stats_names.sql"
     assert_equal_with_expected_fixture(sql_code, expected_filename, update_fixtures)
 
