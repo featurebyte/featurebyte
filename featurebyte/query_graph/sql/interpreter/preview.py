@@ -631,6 +631,12 @@ class PreviewMixin(BaseGraphInterpreter):
         }
         sql_tree, cte_statements = self._get_ctes_with_casted_data(sql_tree)
 
+        # only extract requested stats if specified
+        required_stats_expressions = {}
+        for stats_name, stats_values in self.stats_expressions.items():
+            if stats_names is None or stats_name in stats_names:
+                required_stats_expressions[stats_name] = stats_values
+
         stats_selections = []
         count_tables = []
         final_selections = []
@@ -659,9 +665,7 @@ class PreviewMixin(BaseGraphInterpreter):
                 count_tables.append(table_name)
 
             # stats
-            for stats_name, (stats_func, supported_dtypes) in self.stats_expressions.items():
-                if stats_names is not None and stats_name not in stats_names:
-                    continue
+            for stats_name, (stats_func, supported_dtypes) in required_stats_expressions.items():
                 if stats_func:
                     if self._is_dtype_supported(column.dtype, supported_dtypes):
                         stats_selections.append(
@@ -729,7 +733,7 @@ class PreviewMixin(BaseGraphInterpreter):
         for table_name in count_tables:
             sql_tree = sql_tree.join(expression=table_name, join_type="LEFT")
 
-        return sql_tree, ["dtype"] + list(self.stats_expressions.keys()), output_columns
+        return sql_tree, ["dtype"] + list(required_stats_expressions.keys()), output_columns
 
     def construct_describe_sql(
         self,
