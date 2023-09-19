@@ -603,7 +603,7 @@ class PreviewMixin(BaseGraphInterpreter):
 
         return sql_tree, cte_statements
 
-    def _construct_stats_sql(
+    def _construct_stats_sql(  # pylint: disable=too-many-locals,too-many-branches
         self,
         sql_tree: expressions.Select,
         columns: List[ViewDataColumn],
@@ -654,9 +654,13 @@ class PreviewMixin(BaseGraphInterpreter):
                 )
             )
 
-            if self._is_dtype_supported(
-                column.dtype, self.stats_expressions["entropy"][1]
-            ) or self._is_dtype_supported(column.dtype, self.stats_expressions["top"][1]):
+            entropy_required = "entropy" in required_stats_expressions and self._is_dtype_supported(
+                column.dtype, required_stats_expressions["entropy"][1]
+            )
+            top_required = "top" in required_stats_expressions and self._is_dtype_supported(
+                column.dtype, required_stats_expressions["top"][1]
+            )
+            if entropy_required or top_required:
                 table_name = f"counts__{column_idx}"
                 count_stats_sql = self._construct_count_stats_sql(
                     col_expr=col_expr, column_idx=column_idx, col_dtype=column.dtype
