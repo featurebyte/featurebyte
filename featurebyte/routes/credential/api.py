@@ -113,7 +113,7 @@ class CredentialRouter(
             page=page,
             page_size=page_size,
             sort_by=sort_by,
-            sort_dir=sort_dir,
+            sort_dir=sort_dir,  # type: ignore[arg-type]
             search=search,
             name=name,
             query_filter={} if feature_store_id is None else {"feature_store_id": feature_store_id},
