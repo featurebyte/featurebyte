@@ -154,8 +154,7 @@ class CredentialRouter(
         Retrieve catalog info
         """
         controller = self.get_controller_for_request(request)
-        info = await controller.get_info(
+        return await controller.get_info(
             credential_id=credential_id,
             verbose=verbose,
         )
-        return cast(CredentialInfo, info)
