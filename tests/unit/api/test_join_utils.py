@@ -96,7 +96,7 @@ def test_prepend_rprefix_to_column_info():
         ColumnInfo(name=col_b_string, dtype=DBVarType.INT),
     )
 
-    # Append w/ suffix
+    # Add prefix
     prefix = "hello"
     output = apply_column_name_modifiers_columns_info([col_info_a, col_info_b], None, prefix)
     assert len(output) == 2
@@ -106,9 +106,9 @@ def test_prepend_rprefix_to_column_info():
     col_info_a.name = col_a_string
     col_info_b.name = col_b_string
 
-    # Append w/ suffix as empty string
+    # Add prefix as empty string
     prefix = ""
-    output = apply_column_name_modifiers_columns_info([col_info_a, col_info_b], prefix, None)
+    output = apply_column_name_modifiers_columns_info([col_info_a, col_info_b], None, prefix)
     assert len(output) == 2
     assert output[0].name == col_a_string
     assert output[1].name == col_b_string
