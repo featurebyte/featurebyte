@@ -9,7 +9,6 @@ from fastapi import APIRouter, Request
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.persistent import AuditDocumentList
-from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
     NameQuery,
@@ -25,7 +24,7 @@ from featurebyte.schema.common.base import DeleteResponse, DescriptionUpdate
 ObjectModelT = TypeVar("ObjectModelT")
 ListObjectModelT = TypeVar("ListObjectModelT")
 CreateObjectSchemaT = TypeVar("CreateObjectSchemaT")
-ControllerT = TypeVar("ControllerT", bound=BaseDocumentController)
+ControllerT = TypeVar("ControllerT")
 
 
 class BaseRouter:
@@ -140,18 +139,18 @@ class BaseApiRouter(
         sort_dir: Optional[str] = SortDirQuery,
         search: Optional[str] = SearchQuery,
         name: Optional[str] = NameQuery,
-    ) -> ObjectModelT:
+    ) -> ListObjectModelT:
         """
         List objects
         """
         controller = self.get_controller_for_request(request)
         return cast(
-            ObjectModelT,
+            ListObjectModelT,
             await controller.list(
                 page=page,
                 page_size=page_size,
                 sort_by=sort_by,
-                sort_dir=sort_dir,
+                sort_dir=sort_dir,  # type: ignore[arg-type]
                 search=search,
                 name=name,
             ),
@@ -184,7 +183,7 @@ class BaseApiRouter(
             page=page,
             page_size=page_size,
             sort_by=sort_by,
-            sort_dir=sort_dir,
+            sort_dir=sort_dir,  # type: ignore[arg-type]
             search=search,
         )
         return audit_doc_list
