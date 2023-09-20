@@ -8,7 +8,6 @@ import uvicorn
 from fastapi import Depends, FastAPI, Header, Request
 from starlette.websockets import WebSocket
 
-import featurebyte.routes.static_source_table.api as static_source_table_api
 from featurebyte.common.utils import get_version
 from featurebyte.logging import get_logger
 from featurebyte.middleware import ExceptionMiddleware
@@ -37,6 +36,7 @@ from featurebyte.routes.registry import app_container_config
 from featurebyte.routes.relationship_info.api import RelationshipInfoRouter
 from featurebyte.routes.scd_table.api import SCDTableRouter
 from featurebyte.routes.semantic.api import SemanticRouter
+from featurebyte.routes.static_source_table.api import StaticSourceTableRouter
 from featurebyte.routes.table.api import TableRouter
 from featurebyte.routes.target.api import TargetRouter
 from featurebyte.routes.target_namespace.api import TargetNamespaceRouter
@@ -151,10 +151,10 @@ def get_app() -> FastAPI:
             tags=[resource_api.router.prefix[1:]],
         )
 
-    # register routes that are catalog-specific
-    routers = [
+    # Register routes that are catalog-specific
+    catalog_specific_routers = [
         TargetTableRouter(prefix="/target_table"),
-        static_source_table_api.StaticSourceTableRouter(prefix="/static_source_table"),
+        StaticSourceTableRouter(prefix="/static_source_table"),
         BatchFeatureTableRouter(),
         BatchRequestTableRouter(),
         ContextRouter(),
@@ -179,12 +179,8 @@ def get_app() -> FastAPI:
         UseCaseRouter(),
         UserDefinedFunctionRouter(),
     ]
-    resource_apis = [
-        static_source_table_api,
-    ]
-    resource_apis.extend(routers)  # type: ignore[arg-type]
     dependencies = _get_api_deps_with_catalog()
-    for resource_api in resource_apis:
+    for resource_api in catalog_specific_routers:
         _app.include_router(
             resource_api.router,
             dependencies=[Depends(dependencies)],
