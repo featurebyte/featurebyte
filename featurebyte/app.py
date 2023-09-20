@@ -26,13 +26,10 @@ import featurebyte.routes.observation_table.api as observation_table_api
 import featurebyte.routes.periodic_tasks.api as periodic_tasks_api
 import featurebyte.routes.relationship_info.api as relationship_info_api
 import featurebyte.routes.scd_table.api as scd_table_api
-import featurebyte.routes.semantic.api as semantic_api
 import featurebyte.routes.static_source_table.api as static_source_table_api
 import featurebyte.routes.table.api as table_api
 import featurebyte.routes.target.api as target_api
 import featurebyte.routes.target_namespace.api as target_namespace_api
-import featurebyte.routes.task.api as task_api
-import featurebyte.routes.temp_data.api as temp_data_api
 import featurebyte.routes.use_case.api as use_case_api
 import featurebyte.routes.user_defined_function.api as user_defined_function_api
 from featurebyte.common.utils import get_version
@@ -44,7 +41,10 @@ from featurebyte.routes.context.api import ContextRouter
 from featurebyte.routes.credential.api import CredentialRouter
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
+from featurebyte.routes.semantic.api import SemanticRouter
 from featurebyte.routes.target_table.api import TargetTableRouter
+from featurebyte.routes.task.api import TaskRouter
+from featurebyte.routes.temp_data.api import TempDataRouter
 from featurebyte.schema import APIServiceStatus
 from featurebyte.schema.task import TaskId
 from featurebyte.utils.credential import MongoBackedCredentialProvider
@@ -137,13 +137,13 @@ def get_app() -> FastAPI:
     # register routes that are not catalog-specific
     resource_apis = [
         feature_store_api,
-        semantic_api,
-        task_api,
-        temp_data_api,
     ]
     routers = [
         CredentialRouter(),
         CatalogRouter(),
+        TaskRouter(),
+        SemanticRouter(),
+        TempDataRouter(),
     ]
     resource_apis.extend(routers)  # type: ignore[arg-type]
     dependencies = _get_api_deps()
