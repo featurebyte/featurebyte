@@ -7,12 +7,7 @@ from bson.objectid import ObjectId
 
 from featurebyte.models.catalog import CatalogModel
 from featurebyte.routes.common.base import BaseDocumentController
-from featurebyte.schema.catalog import (
-    CatalogCreate,
-    CatalogList,
-    CatalogServiceUpdate,
-    CatalogUpdate,
-)
+from featurebyte.schema.catalog import CatalogList, CatalogServiceUpdate, CatalogUpdate
 from featurebyte.schema.info import CatalogInfo
 from featurebyte.service.catalog import CatalogService
 
@@ -25,25 +20,6 @@ class CatalogController(
     """
 
     paginated_document_class = CatalogList
-
-    async def create_catalog(
-        self,
-        data: CatalogCreate,
-    ) -> CatalogModel:
-        """
-        Create Catalog at persistent
-
-        Parameters
-        ----------
-        data: CatalogCreate
-            Catalog creation payload
-
-        Returns
-        -------
-        CatalogModel
-            Newly created Catalog object
-        """
-        return await self.service.create_document(data)
 
     async def update_catalog(
         self,

@@ -9,7 +9,6 @@ from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.credential import CredentialModel
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.credential import (
-    CredentialCreate,
     CredentialList,
     CredentialRead,
     CredentialServiceUpdate,
@@ -34,26 +33,6 @@ class CredentialController(
     ):
         super().__init__(credential_service)
         self.feature_store_service = feature_store_service
-
-    async def create_credential(
-        self,
-        data: CredentialCreate,
-    ) -> CredentialRead:
-        """
-        Create credential
-
-        Parameters
-        ----------
-        data: CredentialCreate
-            CredentialCreate object
-
-        Returns
-        -------
-        CredentialRead
-            CredentialRead object
-        """
-        document = await self.service.create_document(data=data)
-        return CredentialRead(**document.dict(by_alias=True))
 
     async def update_credential(
         self,
@@ -81,20 +60,6 @@ class CredentialController(
         )
         assert document is not None
         return CredentialRead(**document.dict(by_alias=True))
-
-    async def delete_credential(
-        self,
-        credential_id: PydanticObjectId,
-    ) -> None:
-        """
-        Delete credential
-
-        Parameters
-        ----------
-        credential_id: PydanticObjectId
-            ID of credential to update
-        """
-        await self.service.delete_document(document_id=credential_id)
 
     async def get_info(
         self,
