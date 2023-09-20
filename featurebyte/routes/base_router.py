@@ -25,7 +25,7 @@ from featurebyte.schema.common.base import DeleteResponse, DescriptionUpdate
 ObjectModelT = TypeVar("ObjectModelT")
 ListObjectModelT = TypeVar("ListObjectModelT")
 CreateObjectSchemaT = TypeVar("CreateObjectSchemaT")
-ControllerT = TypeVar("ControllerT", bound=BaseDocumentController)
+ControllerT = TypeVar("ControllerT", bound=BaseDocumentController)  # type: ignore[type-arg]
 
 
 class BaseRouter:
