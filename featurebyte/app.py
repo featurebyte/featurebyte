@@ -19,7 +19,6 @@ import featurebyte.routes.feature_job_setting_analysis.api as feature_job_settin
 import featurebyte.routes.feature_list.api as feature_list_api
 import featurebyte.routes.feature_list_namespace.api as feature_list_namespace_api
 import featurebyte.routes.feature_namespace.api as feature_namespace_api
-import featurebyte.routes.feature_store.api as feature_store_api
 import featurebyte.routes.historical_feature_table.api as historical_feature_table_api
 import featurebyte.routes.item_table.api as item_table_api
 import featurebyte.routes.observation_table.api as observation_table_api
@@ -39,6 +38,7 @@ from featurebyte.models.base import PydanticObjectId, User
 from featurebyte.routes.catalog.api import CatalogRouter
 from featurebyte.routes.context.api import ContextRouter
 from featurebyte.routes.credential.api import CredentialRouter
+from featurebyte.routes.feature_store.api import FeatureStoreRouter
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
 from featurebyte.routes.semantic.api import SemanticRouter
@@ -134,20 +134,17 @@ def get_app() -> FastAPI:
     """
     _app = FastAPI()
 
-    # register routes that are not catalog-specific
-    resource_apis = [
-        feature_store_api,
-    ]
-    routers = [
-        CredentialRouter(),
+    # Register routers that are not catalog-specific
+    non_catalog_specific_routers = [
         CatalogRouter(),
-        TaskRouter(),
+        CredentialRouter(),
+        FeatureStoreRouter(),
         SemanticRouter(),
+        TaskRouter(),
         TempDataRouter(),
     ]
-    resource_apis.extend(routers)  # type: ignore[arg-type]
     dependencies = _get_api_deps()
-    for resource_api in resource_apis:
+    for resource_api in non_catalog_specific_routers:
         _app.include_router(
             resource_api.router,
             dependencies=[Depends(dependencies)],
