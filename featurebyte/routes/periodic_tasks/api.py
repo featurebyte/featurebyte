@@ -27,7 +27,7 @@ class PeriodicTaskRouter(BaseRouter):
     Periodic task router
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(router=APIRouter(prefix="/periodic_task"))
         self.router.add_api_route(
             "/{periodic_task_id}",

@@ -37,7 +37,7 @@ class FeatureListNamespaceRouter(BaseRouter):
     Feature list namespace router
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(router=router)
 
 

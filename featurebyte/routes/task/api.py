@@ -17,7 +17,7 @@ class TaskRouter(BaseRouter):
     Task router
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(router=APIRouter(prefix="/task"))
         self.router.add_api_route(
             "/{task_id}",

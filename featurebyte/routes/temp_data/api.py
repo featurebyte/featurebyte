@@ -17,7 +17,7 @@ class TempDataRouter(BaseRouter):
     Temp data router
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(router=APIRouter(prefix="/temp_data"))
         self.router.add_api_route(
             "",

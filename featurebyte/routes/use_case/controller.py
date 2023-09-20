@@ -19,7 +19,7 @@ from featurebyte.service.use_case import UseCaseService
 from featurebyte.service.user_service import UserService
 
 
-class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, UseCaseList]):  # type: ignore[type-var]
+class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, UseCaseList]):
     """
     UseCase controller
     """

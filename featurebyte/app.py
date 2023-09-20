@@ -1,7 +1,7 @@
 """
 FastAPI Application
 """
-from typing import Any, Callable, Coroutine, Optional
+from typing import Any, Callable, Coroutine, List, Optional
 
 import aioredis
 import uvicorn
@@ -12,6 +12,7 @@ from featurebyte.common.utils import get_version
 from featurebyte.logging import get_logger
 from featurebyte.middleware import ExceptionMiddleware
 from featurebyte.models.base import PydanticObjectId, User
+from featurebyte.routes.base_router import BaseRouter
 from featurebyte.routes.batch_feature_table.api import BatchFeatureTableRouter
 from featurebyte.routes.batch_request_table.api import BatchRequestTableRouter
 from featurebyte.routes.catalog.api import CatalogRouter
@@ -135,7 +136,7 @@ def get_app() -> FastAPI:
     _app = FastAPI()
 
     # Register routers that are not catalog-specific
-    non_catalog_specific_routers = [
+    non_catalog_specific_routers: List[BaseRouter] = [
         CatalogRouter(),
         CredentialRouter(),
         FeatureStoreRouter(),
@@ -152,7 +153,7 @@ def get_app() -> FastAPI:
         )
 
     # Register routes that are catalog-specific
-    catalog_specific_routers = [
+    catalog_specific_routers: List[BaseRouter] = [
         TargetTableRouter(prefix="/target_table"),
         StaticSourceTableRouter(prefix="/static_source_table"),
         BatchFeatureTableRouter(),
