@@ -1310,11 +1310,11 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             will have the same number of rows as the left view. If ‘inner’ is selected, the resulting view will only
             contain rows where there is a match between the columns in both tables.
         rsuffix: str
-            The argument is used if the two views have overlapping column names and disambiguates such column
-            names after join. The default rsuffix is an empty string - ''.
+            The argument is used to disambiguate overalapping column names after join by adding the
+            suffix to the right view's column names. The default rsuffix is an empty string.
         rprefix: str
-            The argument is used if the two views have overlapping column names and disambiguates such column
-            names after join. The default rprefix is an empty string - ''.
+            The argument is used to disambiguate overalapping column names after join by adding the
+            prefix to the right view's column names. The default rprefix is an empty string.
 
         Returns
         -------
