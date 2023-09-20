@@ -8,8 +8,33 @@ import copy
 from featurebyte.query_graph.model.column_info import ColumnInfo
 
 
-def append_rsuffix_to_column_info(
-    column_infos: List[ColumnInfo], rsuffix: Optional[str]
+def apply_modifiers_to_column_name(
+    column_name: str,
+    rsuffix: Optional[str],
+    rprefix: Optional[str],
+) -> str:
+    """
+    Updates the column name by including rsuffix and rprefix when provided
+
+    Parameters
+    ----------
+    column_name: str
+        column to update
+    rsuffix: Optional[str]
+        the suffix to attach on
+    rprefix: Optional[str]
+        the prefix to attach on
+
+    Returns
+    -------
+    str
+        Updated column name
+    """
+    return f"{rprefix if rprefix else ''}{column_name}{rsuffix if rsuffix else ''}"
+
+
+def apply_column_name_modifiers_columns_info(
+    column_infos: List[ColumnInfo], rsuffix: Optional[str], rprefix: Optional[str]
 ) -> List[ColumnInfo]:
     """
     Updates the column infos by appending the rsuffix to the column names.
@@ -20,17 +45,21 @@ def append_rsuffix_to_column_info(
         column infos to update
     rsuffix: Optional[str]
         the suffix to attach on
+    rprefix: Optional[str]
+        the prefix to attach on
 
     Returns
     -------
     List[ColumnInfo]
     """
-    if not rsuffix:
+    if rsuffix is None and rprefix is None:
         return column_infos
     updated_column_info = []
     for col_info in column_infos:
         new_col_info = col_info.copy()
-        new_col_info.name = f"{col_info.name}{rsuffix}"
+        new_col_info.name = apply_modifiers_to_column_name(
+            col_info.name, rsuffix=rsuffix, rprefix=rprefix
+        )
         updated_column_info.append(new_col_info)
     return updated_column_info
 
@@ -56,7 +85,9 @@ def filter_columns(columns: List[str], exclude_columns: List[str]) -> List[str]:
     return [col for col in columns if col not in exclude_columns_set]
 
 
-def append_rsuffix_to_columns(columns: List[str], rsuffix: Optional[str]) -> List[str]:
+def apply_column_name_modifiers(
+    columns: List[str], rsuffix: Optional[str], rprefix: Optional[str]
+) -> List[str]:
     """
     Appends the rsuffix to columns if a rsuffix is provided.
 
@@ -66,15 +97,19 @@ def append_rsuffix_to_columns(columns: List[str], rsuffix: Optional[str]) -> Lis
         columns to update
     rsuffix: Optional[str]
         the suffix to attach on
+    rprefix: Optional[str]
+        the prefix to attach on
 
     Returns
     -------
     List[str]
         updated columns with rsuffix, or original columns if none were provided
     """
-    if not rsuffix:
+    if not rsuffix and not rprefix:
         return columns
-    return [f"{col}{rsuffix}" for col in columns]
+    return [
+        apply_modifiers_to_column_name(col, rsuffix=rsuffix, rprefix=rprefix) for col in columns
+    ]
 
 
 def filter_columns_info(col_info: List[ColumnInfo], exclude_columns: List[str]) -> List[ColumnInfo]:

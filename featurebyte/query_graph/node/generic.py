@@ -953,6 +953,14 @@ class JoinMetadata(BaseModel):
 
     type: str = Field("join", const=True)
     rsuffix: str
+    rprefix: str
+
+    @root_validator(pre=True)
+    @classmethod
+    def _backward_compat_fill_rprefix(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        if values.get("rprefix") is None:
+            values["rprefix"] = ""
+        return values
 
 
 class JoinEventTableAttributesMetadata(BaseModel):
@@ -1173,7 +1181,8 @@ class JoinNode(BasePrunableNode):
                 f"{var_name}.join({other_var_name}, "
                 f"on={ValueStr.create(self.parameters.left_on)}, "
                 f"how={ValueStr.create(self.parameters.join_type)}, "
-                f"rsuffix={ValueStr.create(self.parameters.metadata.rsuffix)})"
+                f"rsuffix={ValueStr.create(self.parameters.metadata.rsuffix)}, "
+                f"rprefix={ValueStr.create(self.parameters.metadata.rprefix)})"
             )
         else:
             expression = ExpressionStr(

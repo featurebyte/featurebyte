@@ -4,8 +4,8 @@ Test join utils class
 from bson import ObjectId
 
 from featurebyte.common.join_utils import (
-    append_rsuffix_to_column_info,
-    append_rsuffix_to_columns,
+    apply_column_name_modifiers,
+    apply_column_name_modifiers_columns_info,
     combine_column_info_of_views,
     filter_columns,
     filter_columns_info,
@@ -52,7 +52,7 @@ def test_filter_join_key_from_column_info():
 
 def test_append_rsuffix_to_column_info():
     """
-    Test append_rsuffix_to_column_info
+    Test apply_column_name_modifiers_columns_info
     """
     col_a_string = "colA"
     col_b_string = "colB"
@@ -63,7 +63,7 @@ def test_append_rsuffix_to_column_info():
 
     # Append w/ suffix
     suffix = "hello"
-    output = append_rsuffix_to_column_info([col_info_a, col_info_b], suffix)
+    output = apply_column_name_modifiers_columns_info([col_info_a, col_info_b], suffix, None)
     assert len(output) == 2
     assert output[0].name == f"{col_a_string}{suffix}"
     assert output[1].name == f"{col_b_string}{suffix}"
@@ -73,28 +73,60 @@ def test_append_rsuffix_to_column_info():
 
     # Append w/ suffix as empty string
     suffix = ""
-    output = append_rsuffix_to_column_info([col_info_a, col_info_b], suffix)
+    output = apply_column_name_modifiers_columns_info([col_info_a, col_info_b], suffix, None)
     assert len(output) == 2
     assert output[0].name == col_a_string
     assert output[1].name == col_b_string
 
     # Append w/ suffix as None
-    output = append_rsuffix_to_column_info([col_info_a, col_info_b], None)
+    output = apply_column_name_modifiers_columns_info([col_info_a, col_info_b], None, None)
     assert len(output) == 2
     assert output[0].name == col_a_string
     assert output[1].name == col_b_string
 
 
-def test_append_rsuffix_to_columns():
+def test_prepend_rprefix_to_column_info():
     """
-    Test _append_rsuffix_to_columns
+    Test apply_column_name_modifiers_columns_info
+    """
+    col_a_string = "colA"
+    col_b_string = "colB"
+    col_info_a, col_info_b = (
+        ColumnInfo(name=col_a_string, dtype=DBVarType.INT),
+        ColumnInfo(name=col_b_string, dtype=DBVarType.INT),
+    )
+
+    # Add prefix
+    prefix = "hello"
+    output = apply_column_name_modifiers_columns_info([col_info_a, col_info_b], None, prefix)
+    assert len(output) == 2
+    assert output[0].name == f"{prefix}{col_a_string}"
+    assert output[1].name == f"{prefix}{col_b_string}"
+    # Assert that original col_info's aren't changed
+    col_info_a.name = col_a_string
+    col_info_b.name = col_b_string
+
+    # Add prefix as empty string
+    prefix = ""
+    output = apply_column_name_modifiers_columns_info([col_info_a, col_info_b], None, prefix)
+    assert len(output) == 2
+    assert output[0].name == col_a_string
+    assert output[1].name == col_b_string
+
+
+def test_apply_column_name_modifiers():
+    """
+    Test apply_column_name_modifiers
     """
     columns = ["col_a", "col_b", "col_c"]
-    results = append_rsuffix_to_columns(columns, "")
+    results = apply_column_name_modifiers(columns, "", None)
     assert columns == results
 
-    results = append_rsuffix_to_columns(columns, "r")
+    results = apply_column_name_modifiers(columns, "r", None)
     assert results == ["col_ar", "col_br", "col_cr"]
+
+    results = apply_column_name_modifiers(columns, "_r", "l_")
+    assert results == ["l_col_a_r", "l_col_b_r", "l_col_c_r"]
 
 
 def get_pydantic_object_id(id_str: str) -> PydanticObjectId:
