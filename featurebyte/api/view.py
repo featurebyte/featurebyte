@@ -1314,7 +1314,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             names after join. The default rsuffix is an empty string - ''.
         rprefix: str
             The argument is used if the two views have overlapping column names and disambiguates such column
-            names after join. The default rsuffix is an empty string - ''.
+            names after join. The default rprefix is an empty string - ''.
 
         Returns
         -------
