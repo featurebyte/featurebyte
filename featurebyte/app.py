@@ -154,8 +154,6 @@ def get_app() -> FastAPI:
 
     # Register routes that are catalog-specific
     catalog_specific_routers: List[BaseRouter] = [
-        TargetTableRouter(prefix="/target_table"),
-        StaticSourceTableRouter(prefix="/static_source_table"),
         BatchFeatureTableRouter(),
         BatchRequestTableRouter(),
         ContextRouter(),
@@ -174,9 +172,11 @@ def get_app() -> FastAPI:
         PeriodicTaskRouter(),
         RelationshipInfoRouter(),
         SCDTableRouter(),
+        StaticSourceTableRouter(prefix="/static_source_table"),
         TableRouter(),
         TargetRouter(),
         TargetNamespaceRouter(),
+        TargetTableRouter(prefix="/target_table"),
         UseCaseRouter(),
         UserDefinedFunctionRouter(),
     ]
