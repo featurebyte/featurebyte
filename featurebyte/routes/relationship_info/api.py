@@ -10,6 +10,7 @@ from fastapi import APIRouter, Request
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.models.relationship import RelationshipInfoModel
+from featurebyte.routes.base_router import BaseRouter
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
     NameQuery,
@@ -27,6 +28,15 @@ from featurebyte.schema.relationship_info import (
 )
 
 router = APIRouter(prefix="/relationship_info")
+
+
+class RelationshipInfoRouter(BaseRouter):
+    """
+    Relationship info router
+    """
+
+    def __init__(self):
+        super().__init__(router=router)
 
 
 @router.get("", response_model=RelationshipInfoList)

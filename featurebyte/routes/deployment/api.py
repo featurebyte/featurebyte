@@ -11,6 +11,7 @@ from fastapi.responses import ORJSONResponse
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.deployment import DeploymentModel
 from featurebyte.models.persistent import AuditDocumentList
+from featurebyte.routes.base_router import BaseRouter
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
     NameQuery,
@@ -34,6 +35,15 @@ from featurebyte.schema.info import DeploymentInfo
 from featurebyte.schema.task import Task
 
 router = APIRouter(prefix="/deployment")
+
+
+class DeploymentRouter(BaseRouter):
+    """
+    Deployment router
+    """
+
+    def __init__(self):
+        super().__init__(router=router)
 
 
 @router.post("", response_model=Task, status_code=HTTPStatus.CREATED)

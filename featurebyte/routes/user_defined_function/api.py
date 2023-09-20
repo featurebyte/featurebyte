@@ -10,6 +10,7 @@ from fastapi import APIRouter, Request
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.models.user_defined_function import UserDefinedFunctionModel
+from featurebyte.routes.base_router import BaseRouter
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
     NameQuery,
@@ -29,6 +30,15 @@ from featurebyte.schema.user_defined_function import (
 )
 
 router = APIRouter(prefix="/user_defined_function")
+
+
+class UserDefinedFunctionRouter(BaseRouter):
+    """
+    User defined function router
+    """
+
+    def __init__(self):
+        super().__init__(router=router)
 
 
 @router.post("", response_model=UserDefinedFunctionModel, status_code=HTTPStatus.CREATED)

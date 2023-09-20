@@ -13,6 +13,7 @@ from starlette.responses import StreamingResponse
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.batch_feature_table import BatchFeatureTableModel
 from featurebyte.models.persistent import AuditDocumentList
+from featurebyte.routes.base_router import BaseRouter
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
     NameQuery,
@@ -29,6 +30,15 @@ from featurebyte.schema.info import BatchFeatureTableInfo
 from featurebyte.schema.task import Task
 
 router = APIRouter(prefix="/batch_feature_table")
+
+
+class BatchFeatureTableRouter(BaseRouter):
+    """
+    Batch feature table router
+    """
+
+    def __init__(self):
+        super().__init__(router=router)
 
 
 @router.post("", response_model=Task, status_code=HTTPStatus.CREATED)

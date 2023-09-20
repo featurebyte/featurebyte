@@ -10,6 +10,7 @@ from fastapi import APIRouter, Request
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.models.use_case import UseCaseModel
+from featurebyte.routes.base_router import BaseRouter
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
     NameQuery,
@@ -27,6 +28,15 @@ from featurebyte.schema.observation_table import ObservationTableList
 from featurebyte.schema.use_case import UseCaseCreate, UseCaseList, UseCaseUpdate
 
 router = APIRouter(prefix="/use_case")
+
+
+class UseCaseRouter(BaseRouter):
+    """
+    Use case router
+    """
+
+    def __init__(self):
+        super().__init__(router=router)
 
 
 @router.post("", response_model=UseCaseModel, status_code=HTTPStatus.CREATED)

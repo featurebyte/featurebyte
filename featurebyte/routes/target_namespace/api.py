@@ -12,6 +12,7 @@ from fastapi import APIRouter, Request
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.models.target_namespace import TargetNamespaceModel
+from featurebyte.routes.base_router import BaseRouter
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
     NameQuery,
@@ -31,6 +32,15 @@ from featurebyte.schema.target_namespace import (
 )
 
 router = APIRouter(prefix="/target_namespace")
+
+
+class TargetNamespaceRouter(BaseRouter):
+    """
+    Target namespace router
+    """
+
+    def __init__(self):
+        super().__init__(router=router)
 
 
 @router.post("", response_model=TargetNamespaceModel, status_code=HTTPStatus.CREATED)

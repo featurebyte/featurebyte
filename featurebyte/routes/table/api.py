@@ -9,6 +9,7 @@ from fastapi import APIRouter, Request
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.proxy_table import ProxyTableModel
+from featurebyte.routes.base_router import BaseRouter
 from featurebyte.routes.common.schema import (
     NameQuery,
     PageQuery,
@@ -20,6 +21,15 @@ from featurebyte.routes.common.schema import (
 from featurebyte.schema.table import TableList
 
 router = APIRouter(prefix="/table")
+
+
+class TableRouter(BaseRouter):
+    """
+    Table router
+    """
+
+    def __init__(self):
+        super().__init__(router=router)
 
 
 @router.get("", response_model=TableList)

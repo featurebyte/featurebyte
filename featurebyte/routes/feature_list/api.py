@@ -13,6 +13,7 @@ from fastapi import APIRouter, File, Form, Query, Request, UploadFile
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.persistent import AuditDocumentList
+from featurebyte.routes.base_router import BaseRouter
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
     NameQuery,
@@ -40,6 +41,15 @@ from featurebyte.schema.info import FeatureListInfo
 from featurebyte.schema.task import Task
 
 router = APIRouter(prefix="/feature_list")
+
+
+class FeatureListRouter(BaseRouter):
+    """
+    Feature list router
+    """
+
+    def __init__(self):
+        super().__init__(router=router)
 
 
 @router.post("", response_model=FeatureListModelResponse, status_code=HTTPStatus.CREATED)
