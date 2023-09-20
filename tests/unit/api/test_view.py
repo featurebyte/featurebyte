@@ -343,15 +343,15 @@ def test_join__left_join(generic_input_node_params, join_type_param):
 
     # do the join
     joined_view = current_view.join(
-        other_view, on=col_info_a.name, how=join_type_param, rsuffix="suffix"
+        other_view, on=col_info_a.name, how=join_type_param, rsuffix="suffix", rprefix="_"
     )
 
     # assert updated view params
     assert joined_view.columns_info == [
         col_info_a,
         col_info_b,
-        ColumnInfo(name="colDsuffix", dtype=DBVarType.INT),
-        ColumnInfo(name="colEsuffix", dtype=DBVarType.INT),
+        ColumnInfo(name="_colDsuffix", dtype=DBVarType.INT),
+        ColumnInfo(name="_colEsuffix", dtype=DBVarType.INT),
     ]
     assert joined_view.node_name == "join_1"
 
@@ -368,9 +368,9 @@ def test_join__left_join(generic_input_node_params, join_type_param):
             "left_output_columns": ["colA", "colB"],
             "right_input_columns": ["colD", "colE"],
             "right_on": "colC",
-            "right_output_columns": ["colDsuffix", "colEsuffix"],
+            "right_output_columns": ["_colDsuffix", "_colEsuffix"],
             "scd_parameters": None,
-            "metadata": {"type": "join", "rsuffix": "suffix"},
+            "metadata": {"type": "join", "rsuffix": "suffix", "rprefix": "_"},
         },
         "type": "join",
     }

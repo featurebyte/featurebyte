@@ -16,9 +16,11 @@ event_view = event_table.get_view(
     drop_column_names=["created_at"],
     column_cleaning_operations=[],
 )
-joined_view = event_view.join(view, on="col_int", how="left", rsuffix="")
-col = joined_view["tz_offset"]
-col_1 = joined_view["event_timestamp"]
+joined_view = event_view.join(
+    view, on="col_int", how="left", rsuffix="", rprefix=""
+)
+col = joined_view["event_timestamp"]
+col_1 = joined_view["tz_offset"]
 view_1 = joined_view.copy()
-view_1["event_timestamp_hour"] = col_1.dt.tz_offset(col).hour
+view_1["event_timestamp_hour"] = col.dt.tz_offset(col_1).hour
 output = view_1
