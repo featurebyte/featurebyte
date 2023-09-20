@@ -22,7 +22,6 @@ import featurebyte.routes.feature_namespace.api as feature_namespace_api
 import featurebyte.routes.historical_feature_table.api as historical_feature_table_api
 import featurebyte.routes.item_table.api as item_table_api
 import featurebyte.routes.observation_table.api as observation_table_api
-import featurebyte.routes.periodic_tasks.api as periodic_tasks_api
 import featurebyte.routes.relationship_info.api as relationship_info_api
 import featurebyte.routes.scd_table.api as scd_table_api
 import featurebyte.routes.static_source_table.api as static_source_table_api
@@ -40,6 +39,7 @@ from featurebyte.routes.context.api import ContextRouter
 from featurebyte.routes.credential.api import CredentialRouter
 from featurebyte.routes.feature_store.api import FeatureStoreRouter
 from featurebyte.routes.lazy_app_container import LazyAppContainer
+from featurebyte.routes.periodic_tasks.api import PeriodicTaskRouter
 from featurebyte.routes.registry import app_container_config
 from featurebyte.routes.semantic.api import SemanticRouter
 from featurebyte.routes.target_table.api import TargetTableRouter
@@ -156,6 +156,7 @@ def get_app() -> FastAPI:
         TargetTableRouter(prefix="/target_table"),
         static_source_table_api.StaticSourceTableRouter(prefix="/static_source_table"),
         ContextRouter(),
+        PeriodicTaskRouter(),
     ]
     resource_apis = [
         deployment_api,
@@ -178,7 +179,6 @@ def get_app() -> FastAPI:
         batch_feature_table_api,
         target_api,
         target_namespace_api,
-        periodic_tasks_api,
         user_defined_function_api,
         use_case_api,
     ]
