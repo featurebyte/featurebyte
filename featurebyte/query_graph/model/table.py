@@ -10,8 +10,8 @@ from bson import ObjectId
 from pydantic import Field, StrictStr, parse_obj_as
 
 from featurebyte.common.join_utils import (
-    append_rsuffix_to_column_info,
-    append_rsuffix_to_columns,
+    apply_column_name_modifiers,
+    apply_column_name_modifiers_columns_info,
     combine_column_info_of_views,
     filter_columns,
 )
@@ -171,8 +171,8 @@ class ItemTableData(BaseTableData):
         # ItemView's event_id_column. There is no need to specify event_suffix if the
         # event_id_column is the only common column name between EventTable and ItemView.
         columns_excluding_event_id = filter_columns(columns_to_join, [right_on])
-        renamed_event_view_columns = append_rsuffix_to_columns(
-            columns_excluding_event_id, event_suffix
+        renamed_event_view_columns = apply_column_name_modifiers(
+            columns_excluding_event_id, rsuffix=event_suffix, rprefix=None
         )
         right_output_columns = renamed_event_view_columns
 
@@ -257,7 +257,9 @@ class ItemTableData(BaseTableData):
         renamed_event_view_columns = join_parameters.right_output_columns
         joined_columns_info = combine_column_info_of_views(
             item_view_columns_info,
-            append_rsuffix_to_column_info(event_view_columns_info, rsuffix=event_suffix),
+            apply_column_name_modifiers_columns_info(
+                event_view_columns_info, rsuffix=event_suffix, rprefix=None
+            ),
             filter_set=set(renamed_event_view_columns),
         )
         return node, joined_columns_info, join_parameters

@@ -15,7 +15,7 @@ from featurebyte.api.api_object import ApiObjectT, get_api_object_cache_key
 from featurebyte.api.base_table import TableApiObject
 from featurebyte.api.event_table import EventTable
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.join_utils import append_rsuffix_to_columns
+from featurebyte.common.join_utils import apply_column_name_modifiers
 from featurebyte.common.validator import construct_data_model_root_validator
 from featurebyte.enum import DBVarType, TableDataType, ViewMode
 from featurebyte.exception import RecordRetrievalException
@@ -288,12 +288,14 @@ class ItemTable(TableApiObject):
                 event_table_id=event_table.id,
             ),
         )
-        timestamp_column = append_rsuffix_to_columns([event_view.timestamp_column], event_suffix)[0]
+        timestamp_column = apply_column_name_modifiers(
+            [event_view.timestamp_column], rsuffix=event_suffix, rprefix=None
+        )[0]
         if event_view.timestamp_timezone_offset_column is None:
             timestamp_timezone_offset_column = None
         else:
-            timestamp_timezone_offset_column = append_rsuffix_to_columns(
-                [event_view.timestamp_timezone_offset_column], event_suffix
+            timestamp_timezone_offset_column = apply_column_name_modifiers(
+                [event_view.timestamp_timezone_offset_column], rsuffix=event_suffix, rprefix=None
             )[0]
         inserted_graph_node = GlobalQueryGraph().add_node(
             view_graph_node, input_nodes=[data_node, event_view.node]

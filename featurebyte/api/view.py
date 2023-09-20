@@ -36,8 +36,8 @@ from featurebyte.api.target import Target
 from featurebyte.api.window_validator import validate_offset
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.join_utils import (
-    append_rsuffix_to_column_info,
-    append_rsuffix_to_columns,
+    apply_column_name_modifiers,
+    apply_column_name_modifiers_columns_info,
     combine_column_info_of_views,
     filter_columns,
     filter_columns_info,
@@ -1191,6 +1191,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         other_view: View,
         rsuffix: str = "",
         on: Optional[str] = None,  # pylint: disable=invalid-name
+        rprefix: str = "",
     ) -> None:
         """
         Main validate call for the join. This checks that
@@ -1206,6 +1207,8 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             a suffix to append on to the right columns
         on: Optional[str]
             the column to join on
+        rprefix: str
+            a prefix to prepend on to the right columns
 
         Raises
         ------
@@ -1218,7 +1221,9 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         left_join_key, _ = self._get_join_keys(other_view, on)
         current_column_names = {col.name for col in self.columns_info}
         repeated_column_names = []
-        for other_col in append_rsuffix_to_column_info(other_view.columns_info, rsuffix):
+        for other_col in apply_column_name_modifiers_columns_info(
+            other_view.columns_info, rsuffix, rprefix
+        ):
             # Raise an error if the name is repeated, but it is not a join key
             if other_col.name in current_column_names and other_col.name != left_join_key:
                 repeated_column_names.append(other_col.name)
@@ -1272,6 +1277,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         on: Optional[str] = None,  # pylint: disable=invalid-name
         how: Literal["left", "inner"] = "left",
         rsuffix: str = "",
+        rprefix: str = "",
     ) -> ViewT:
         """
         To join two views, use the join() method of the left view and specify the right view object in the other_view
@@ -1304,6 +1310,9 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             will have the same number of rows as the left view. If ‘inner’ is selected, the resulting view will only
             contain rows where there is a match between the columns in both tables.
         rsuffix: str
+            The argument is used if the two views have overlapping column names and disambiguates such column
+            names after join. The default rsuffix is an empty string - ''.
+        rprefix: str
             The argument is used if the two views have overlapping column names and disambiguates such column
             names after join. The default rsuffix is an empty string - ''.
 
@@ -1355,7 +1364,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             other_view.columns, exclude_columns=other_view_excluded_columns
         )
         right_input_columns = filtered_other_columns
-        right_output_columns = append_rsuffix_to_columns(filtered_other_columns, rsuffix)
+        right_output_columns = apply_column_name_modifiers(filtered_other_columns, rsuffix, rprefix)
 
         node_params = {
             "left_on": left_on,
@@ -1383,7 +1392,8 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             other_view.columns_info, other_view_excluded_columns
         )
         joined_columns_info = combine_column_info_of_views(
-            self.columns_info, append_rsuffix_to_column_info(filtered_column_infos, rsuffix)
+            self.columns_info,
+            apply_column_name_modifiers_columns_info(filtered_column_infos, rsuffix, rprefix),
         )
 
         # create a new view and return it

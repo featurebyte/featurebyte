@@ -454,6 +454,9 @@ def test_validate_join__multiple_overlapping_columns():
     # multiple overlapping column names should not throw an error if suffix is provided
     base_view._validate_join(view_with_multiple_overlapping, rsuffix="suffix")
 
+    # also ok if prefix is provided
+    base_view._validate_join(view_with_multiple_overlapping, rprefix="prefix")
+
 
 def test_validate_join__check_on_column():
     """
