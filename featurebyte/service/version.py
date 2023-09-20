@@ -325,6 +325,9 @@ class VersionService:
 
         feature_ids = [feat.id for feat in features]
         if set(feature_list.feature_ids) == set(feature_ids):
+            if data.allow_unchanged_feature_list_version:
+                return feature_list
+
             raise DocumentError("No change detected on the new feature list version.")
 
         return FeatureListModel(
@@ -365,6 +368,9 @@ class VersionService:
         new_feature_list = await self._create_new_feature_list_version(
             feature_list, feature_namespaces["data"], data
         )
+        if new_feature_list.id == feature_list.id:
+            return feature_list
+
         return await self.feature_list_service.create_document(
             data=FeatureListServiceCreate(**new_feature_list.dict(by_alias=True)),
         )

@@ -225,7 +225,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
         response = test_api_client.post(
-            f"{self.base_route}",
+            self.base_route,
             json={"source_feature_id": create_response_dict["_id"]},
         )
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY

@@ -1354,3 +1354,9 @@ def test_update_description(saved_feature_list):
     assert saved_feature_list.info()["namespace_description"] == "new description"
     saved_feature_list.update_description(None)
     assert saved_feature_list.info()["namespace_description"] is None
+
+
+def test_create_new_version__no_new_version_created(saved_feature_list):
+    """Test create new version when no new version is created"""
+    feature_list = saved_feature_list.create_new_version(features=[])
+    assert feature_list.id == saved_feature_list.id

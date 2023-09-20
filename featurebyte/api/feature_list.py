@@ -1346,6 +1346,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
             json={
                 "source_feature_list_id": str(self.id),
                 "features": [feature.dict() for feature in features] if features else [],
+                "allow_unchanged_feature_list_version": True,
             },
         )
         if response.status_code != HTTPStatus.CREATED:

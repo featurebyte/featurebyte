@@ -92,6 +92,7 @@ class FeatureListNewVersionCreate(FeatureByteBaseModel):
 
     source_feature_list_id: PydanticObjectId
     features: List[FeatureVersionInfo]
+    allow_unchanged_feature_list_version: bool = Field(default=False)
 
     # pydantic validators
     _validate_unique_feat_name = validator("features", allow_reuse=True)(
