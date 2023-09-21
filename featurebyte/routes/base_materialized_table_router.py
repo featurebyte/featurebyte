@@ -7,11 +7,12 @@ from fastapi import APIRouter, Request
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.materialized_table import MaterializedTableModel
+from featurebyte.routes.base_router import BaseRouter
 
 MaterializedTableModelT = TypeVar("MaterializedTableModelT", bound=MaterializedTableModel)
 
 
-class BaseMaterializedTableRouter(Generic[MaterializedTableModelT]):
+class BaseMaterializedTableRouter(Generic[MaterializedTableModelT], BaseRouter):
     """
     Base materialized table router.
 
@@ -22,7 +23,7 @@ class BaseMaterializedTableRouter(Generic[MaterializedTableModelT]):
     controller: str
 
     def __init__(self, prefix: str):
-        self.router = APIRouter(prefix=prefix)
+        super().__init__(router=APIRouter(prefix=prefix))
         base_name = prefix.lstrip("/")
         api_id = f"{{{base_name}_id}}"
         self.router.add_api_route(

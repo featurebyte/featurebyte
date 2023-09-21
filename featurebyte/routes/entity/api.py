@@ -12,6 +12,7 @@ from fastapi import APIRouter, Request
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.entity import EntityModel, EntityNameHistoryEntry
 from featurebyte.models.persistent import AuditDocumentList
+from featurebyte.routes.base_router import BaseRouter
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
     NameQuery,
@@ -27,6 +28,15 @@ from featurebyte.schema.entity import EntityCreate, EntityList, EntityUpdate
 from featurebyte.schema.info import EntityInfo
 
 router = APIRouter(prefix="/entity")
+
+
+class EntityRouter(BaseRouter):
+    """
+    Entity router
+    """
+
+    def __init__(self) -> None:
+        super().__init__(router=router)
 
 
 @router.post("", response_model=EntityModel, status_code=HTTPStatus.CREATED)

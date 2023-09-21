@@ -12,6 +12,7 @@ from fastapi import APIRouter, Request
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.models.scd_table import SCDTableModel
+from featurebyte.routes.base_router import BaseRouter
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
     NameQuery,
@@ -33,6 +34,15 @@ from featurebyte.schema.table import (
 )
 
 router = APIRouter(prefix="/scd_table")
+
+
+class SCDTableRouter(BaseRouter):
+    """
+    SCD table router
+    """
+
+    def __init__(self) -> None:
+        super().__init__(router=router)
 
 
 @router.post("", response_model=SCDTableModel, status_code=HTTPStatus.CREATED)

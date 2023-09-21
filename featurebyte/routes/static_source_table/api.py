@@ -29,6 +29,8 @@ from featurebyte.schema.info import StaticSourceTableInfo
 from featurebyte.schema.static_source_table import StaticSourceTableCreate, StaticSourceTableList
 from featurebyte.schema.task import Task
 
+router = APIRouter(prefix="/static_source_table")
+
 
 class StaticSourceTableRouter(BaseMaterializedTableRouter[StaticSourceTableModel]):
     """
@@ -42,14 +44,12 @@ class StaticSourceTableRouter(BaseMaterializedTableRouter[StaticSourceTableModel
 
     def __init__(self, prefix: str):
         super().__init__(prefix=prefix)
+        self.add_router(router)
 
     async def get_table(
         self, request: Request, static_source_table_id: PydanticObjectId
     ) -> StaticSourceTableModel:
         return await super().get_table(request, static_source_table_id)
-
-
-router = APIRouter(prefix="/static_source_table")
 
 
 @router.post("", response_model=Task, status_code=HTTPStatus.CREATED)

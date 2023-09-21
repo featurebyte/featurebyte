@@ -1,50 +1,51 @@
 """
 FastAPI Application
 """
-from typing import Any, Callable, Coroutine, Optional
+from typing import Any, Callable, Coroutine, List, Optional
 
 import aioredis
 import uvicorn
 from fastapi import Depends, FastAPI, Header, Request
 from starlette.websockets import WebSocket
 
-import featurebyte.routes.batch_feature_table.api as batch_feature_table_api
-import featurebyte.routes.batch_request_table.api as batch_request_table_api
-import featurebyte.routes.deployment.api as deployment_api
-import featurebyte.routes.dimension_table.api as dimension_table_api
-import featurebyte.routes.entity.api as entity_api
-import featurebyte.routes.event_table.api as event_table_api
-import featurebyte.routes.feature.api as feature_api
-import featurebyte.routes.feature_job_setting_analysis.api as feature_job_setting_analysis_api
-import featurebyte.routes.feature_list.api as feature_list_api
-import featurebyte.routes.feature_list_namespace.api as feature_list_namespace_api
-import featurebyte.routes.feature_namespace.api as feature_namespace_api
-import featurebyte.routes.feature_store.api as feature_store_api
-import featurebyte.routes.historical_feature_table.api as historical_feature_table_api
-import featurebyte.routes.item_table.api as item_table_api
-import featurebyte.routes.observation_table.api as observation_table_api
-import featurebyte.routes.periodic_tasks.api as periodic_tasks_api
-import featurebyte.routes.relationship_info.api as relationship_info_api
-import featurebyte.routes.scd_table.api as scd_table_api
-import featurebyte.routes.semantic.api as semantic_api
-import featurebyte.routes.static_source_table.api as static_source_table_api
-import featurebyte.routes.table.api as table_api
-import featurebyte.routes.target.api as target_api
-import featurebyte.routes.target_namespace.api as target_namespace_api
-import featurebyte.routes.task.api as task_api
-import featurebyte.routes.temp_data.api as temp_data_api
-import featurebyte.routes.use_case.api as use_case_api
-import featurebyte.routes.user_defined_function.api as user_defined_function_api
 from featurebyte.common.utils import get_version
 from featurebyte.logging import get_logger
 from featurebyte.middleware import ExceptionMiddleware
 from featurebyte.models.base import PydanticObjectId, User
+from featurebyte.routes.base_router import BaseRouter
+from featurebyte.routes.batch_feature_table.api import BatchFeatureTableRouter
+from featurebyte.routes.batch_request_table.api import BatchRequestTableRouter
 from featurebyte.routes.catalog.api import CatalogRouter
 from featurebyte.routes.context.api import ContextRouter
 from featurebyte.routes.credential.api import CredentialRouter
+from featurebyte.routes.deployment.api import DeploymentRouter
+from featurebyte.routes.dimension_table.api import DimensionTableRouter
+from featurebyte.routes.entity.api import EntityRouter
+from featurebyte.routes.event_table.api import EventTableRouter
+from featurebyte.routes.feature.api import FeatureRouter
+from featurebyte.routes.feature_job_setting_analysis.api import FeatureJobSettingAnalysisRouter
+from featurebyte.routes.feature_list.api import FeatureListRouter
+from featurebyte.routes.feature_list_namespace.api import FeatureListNamespaceRouter
+from featurebyte.routes.feature_namespace.api import FeatureNamespaceRouter
+from featurebyte.routes.feature_store.api import FeatureStoreRouter
+from featurebyte.routes.historical_feature_table.api import HistoricalFeatureTableRouter
+from featurebyte.routes.item_table.api import ItemTableRouter
 from featurebyte.routes.lazy_app_container import LazyAppContainer
+from featurebyte.routes.observation_table.api import ObservationTableRouter
+from featurebyte.routes.periodic_tasks.api import PeriodicTaskRouter
 from featurebyte.routes.registry import app_container_config
+from featurebyte.routes.relationship_info.api import RelationshipInfoRouter
+from featurebyte.routes.scd_table.api import SCDTableRouter
+from featurebyte.routes.semantic.api import SemanticRouter
+from featurebyte.routes.static_source_table.api import StaticSourceTableRouter
+from featurebyte.routes.table.api import TableRouter
+from featurebyte.routes.target.api import TargetRouter
+from featurebyte.routes.target_namespace.api import TargetNamespaceRouter
 from featurebyte.routes.target_table.api import TargetTableRouter
+from featurebyte.routes.task.api import TaskRouter
+from featurebyte.routes.temp_data.api import TempDataRouter
+from featurebyte.routes.use_case.api import UseCaseRouter
+from featurebyte.routes.user_defined_function.api import UserDefinedFunctionRouter
 from featurebyte.schema import APIServiceStatus
 from featurebyte.schema.task import TaskId
 from featurebyte.utils.credential import MongoBackedCredentialProvider
@@ -134,60 +135,53 @@ def get_app() -> FastAPI:
     """
     _app = FastAPI()
 
-    # register routes that are not catalog-specific
-    resource_apis = [
-        feature_store_api,
-        semantic_api,
-        task_api,
-        temp_data_api,
-    ]
-    routers = [
-        CredentialRouter(),
+    # Register routers that are not catalog-specific
+    non_catalog_specific_routers: List[BaseRouter] = [
         CatalogRouter(),
+        CredentialRouter(),
+        FeatureStoreRouter(),
+        SemanticRouter(),
+        TaskRouter(),
+        TempDataRouter(),
     ]
-    resource_apis.extend(routers)  # type: ignore[arg-type]
     dependencies = _get_api_deps()
-    for resource_api in resource_apis:
+    for resource_api in non_catalog_specific_routers:
         _app.include_router(
             resource_api.router,
             dependencies=[Depends(dependencies)],
             tags=[resource_api.router.prefix[1:]],
         )
 
-    # register routes that are catalog-specific
-    routers = [
-        TargetTableRouter(prefix="/target_table"),
-        static_source_table_api.StaticSourceTableRouter(prefix="/static_source_table"),
+    # Register routes that are catalog-specific
+    catalog_specific_routers: List[BaseRouter] = [
+        BatchFeatureTableRouter(),
+        BatchRequestTableRouter(),
         ContextRouter(),
+        DeploymentRouter(),
+        DimensionTableRouter(),
+        EntityRouter(),
+        EventTableRouter(),
+        FeatureRouter(),
+        FeatureJobSettingAnalysisRouter(),
+        FeatureListRouter(),
+        FeatureListNamespaceRouter(),
+        FeatureNamespaceRouter(),
+        HistoricalFeatureTableRouter(),
+        ItemTableRouter(),
+        ObservationTableRouter(),
+        PeriodicTaskRouter(),
+        RelationshipInfoRouter(),
+        SCDTableRouter(),
+        StaticSourceTableRouter(prefix="/static_source_table"),
+        TableRouter(),
+        TargetRouter(),
+        TargetNamespaceRouter(),
+        TargetTableRouter(prefix="/target_table"),
+        UseCaseRouter(),
+        UserDefinedFunctionRouter(),
     ]
-    resource_apis = [
-        deployment_api,
-        dimension_table_api,
-        event_table_api,
-        item_table_api,
-        entity_api,
-        feature_api,
-        feature_job_setting_analysis_api,
-        feature_list_api,
-        feature_list_namespace_api,
-        feature_namespace_api,
-        relationship_info_api,
-        scd_table_api,
-        static_source_table_api,
-        table_api,
-        observation_table_api,
-        historical_feature_table_api,
-        batch_request_table_api,
-        batch_feature_table_api,
-        target_api,
-        target_namespace_api,
-        periodic_tasks_api,
-        user_defined_function_api,
-        use_case_api,
-    ]
-    resource_apis.extend(routers)  # type: ignore[arg-type]
     dependencies = _get_api_deps_with_catalog()
-    for resource_api in resource_apis:
+    for resource_api in catalog_specific_routers:
         _app.include_router(
             resource_api.router,
             dependencies=[Depends(dependencies)],

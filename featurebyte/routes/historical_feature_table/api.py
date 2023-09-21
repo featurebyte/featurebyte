@@ -14,6 +14,7 @@ from starlette.responses import StreamingResponse
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
 from featurebyte.models.persistent import AuditDocumentList
+from featurebyte.routes.base_router import BaseRouter
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
     NameQuery,
@@ -33,6 +34,15 @@ from featurebyte.schema.info import HistoricalFeatureTableInfo
 from featurebyte.schema.task import Task
 
 router = APIRouter(prefix="/historical_feature_table")
+
+
+class HistoricalFeatureTableRouter(BaseRouter):
+    """
+    Historical feature table router
+    """
+
+    def __init__(self) -> None:
+        super().__init__(router=router)
 
 
 @router.post("", response_model=Task, status_code=HTTPStatus.CREATED)

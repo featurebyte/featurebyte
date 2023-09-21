@@ -36,6 +36,17 @@ class BaseRouter:
     def __init__(self, router: APIRouter) -> None:
         self.router = router
 
+    def add_router(self, router: APIRouter) -> None:
+        """
+        add_router will add all the routes from another router, into the current router.
+
+        Parameters
+        ----------
+        router: APIRouter
+            The router to add to the current router.
+        """
+        self.router.routes.extend(router.routes)
+
 
 class BaseApiRouter(
     BaseRouter, Generic[ObjectModelT, ListObjectModelT, CreateObjectSchemaT, ControllerT]

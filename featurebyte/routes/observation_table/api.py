@@ -13,6 +13,7 @@ from starlette.responses import StreamingResponse
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.persistent import AuditDocumentList
+from featurebyte.routes.base_router import BaseRouter
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
     NameQuery,
@@ -33,6 +34,15 @@ from featurebyte.schema.observation_table import (
 from featurebyte.schema.task import Task
 
 router = APIRouter(prefix="/observation_table")
+
+
+class ObservationTableRouter(BaseRouter):
+    """
+    Observation table router
+    """
+
+    def __init__(self) -> None:
+        super().__init__(router=router)
 
 
 @router.post("", response_model=Task, status_code=HTTPStatus.CREATED)

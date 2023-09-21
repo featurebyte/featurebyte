@@ -12,6 +12,7 @@ from fastapi import APIRouter, Request
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.models.target import TargetModel
+from featurebyte.routes.base_router import BaseRouter
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
     PageQuery,
@@ -26,6 +27,15 @@ from featurebyte.schema.preview import FeatureOrTargetPreview
 from featurebyte.schema.target import TargetCreate, TargetInfo, TargetList, TargetUpdate
 
 router = APIRouter(prefix="/target")
+
+
+class TargetRouter(BaseRouter):
+    """
+    Target router
+    """
+
+    def __init__(self) -> None:
+        super().__init__(router=router)
 
 
 @router.post("", response_model=TargetModel, status_code=HTTPStatus.CREATED)

@@ -40,6 +40,7 @@ from featurebyte.service.table import TableService
 from featurebyte.service.target import TargetService
 from featurebyte.service.target_namespace import TargetNamespaceService
 from featurebyte.service.target_table import TargetTableService
+from featurebyte.service.use_case import UseCaseService
 from featurebyte.service.user_defined_function import UserDefinedFunctionService
 
 PaginatedDocument = TypeVar("PaginatedDocument", bound=PaginationMixin)
@@ -74,6 +75,7 @@ DocumentServiceT = TypeVar(
     TargetTableService,
     UserDefinedFunctionService,
     AllDeploymentService,
+    UseCaseService,
 )
 
 

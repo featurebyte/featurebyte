@@ -13,6 +13,7 @@ from fastapi.responses import StreamingResponse
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_job_setting_analysis import FeatureJobSettingAnalysisModel
 from featurebyte.models.persistent import AuditDocumentList
+from featurebyte.routes.base_router import BaseRouter
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
     NameQuery,
@@ -33,6 +34,15 @@ from featurebyte.schema.info import FeatureJobSettingAnalysisInfo
 from featurebyte.schema.task import Task
 
 router = APIRouter(prefix="/feature_job_setting_analysis")
+
+
+class FeatureJobSettingAnalysisRouter(BaseRouter):
+    """
+    Feature job setting analysis router
+    """
+
+    def __init__(self) -> None:
+        super().__init__(router=router)
 
 
 @router.post("", response_model=Task, status_code=HTTPStatus.CREATED)
