@@ -174,16 +174,16 @@ async def test_update_readiness(feature_service, feature):
 async def test_update_last_updated_date(feature_service, feature):
     """Test update_last_updated_date method"""
     updated_feature = await feature_service.get_document(document_id=feature.id)
-    assert updated_feature.last_updated_at is None
+    assert updated_feature.last_updated_by_scheduled_task_at is None
 
     last_updated_date = datetime.utcnow()
     aggregation_ids = updated_feature.aggregation_ids
     await feature_service.update_last_updated_date(
-        aggregation_id=aggregation_ids[0], last_updated_at=last_updated_date
+        aggregation_id=aggregation_ids[0], last_updated_by_scheduled_task_at=last_updated_date
     )
 
     new_updated_feature = await feature_service.get_document(document_id=feature.id)
     date_format = "%Y-%m-%d %H:%M:%S"
-    assert new_updated_feature.last_updated_at.strftime(date_format) == last_updated_date.strftime(
+    assert new_updated_feature.last_updated_by_scheduled_task_at.strftime(
         date_format
-    )
+    ) == last_updated_date.strftime(date_format)

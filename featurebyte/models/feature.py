@@ -244,7 +244,7 @@ class FeatureModel(BaseFeatureModel):
         Datetime when the Feature was first saved
     updated_at: Optional[datetime]
         When the Feature get updated
-    last_updated_at: Optional[datetime]
+    last_updated_by_scheduled_task_at: Optional[datetime]
         Datetime when the Feature value was last updated
     """
 
@@ -260,7 +260,9 @@ class FeatureModel(BaseFeatureModel):
     aggregation_ids: List[str] = Field(allow_mutation=False, default_factory=list)
     aggregation_result_names: List[str] = Field(allow_mutation=False, default_factory=list)
     online_store_table_names: List[str] = Field(allow_mutation=False, default_factory=list)
-    last_updated_at: Optional[datetime] = Field(allow_mutation=False, default=None)
+    last_updated_by_scheduled_task_at: Optional[datetime] = Field(
+        allow_mutation=False, default=None
+    )
 
     @root_validator
     @classmethod

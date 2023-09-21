@@ -522,7 +522,7 @@ def test_get_feature(saved_feature):
         "aggregation_result_names",
         "description",
         "online_store_table_names",
-        "last_updated_at",
+        "last_updated_by_scheduled_task_at",
     }
 
     with pytest.raises(RecordRetrievalException) as exc:

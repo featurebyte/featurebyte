@@ -202,7 +202,7 @@ class FeatureService(BaseNamespaceService[FeatureModel, FeatureServiceCreate]):
         )
 
     async def update_last_updated_date(
-        self, aggregation_id: str, last_updated_at: datetime
+        self, aggregation_id: str, last_updated_by_scheduled_task_at: datetime
     ) -> None:
         """
         Update last updated date for features with the given aggregation id
@@ -211,10 +211,12 @@ class FeatureService(BaseNamespaceService[FeatureModel, FeatureServiceCreate]):
         ----------
         aggregation_id: str
             aggregation id
-        last_updated_at: datetime
+        last_updated_by_scheduled_task_at: datetime
             last updated date
         """
         await self.update_documents(
             query_filter={"aggregation_ids": aggregation_id},
-            update={"$set": {"last_updated_at": last_updated_at}},
+            update={
+                "$set": {"last_updated_by_scheduled_task_at": last_updated_by_scheduled_task_at}
+            },
         )

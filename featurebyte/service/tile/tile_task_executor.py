@@ -248,7 +248,8 @@ class TileTaskExecutor:
 
         logger.debug("Start updating feature last updated date")
         await self.feature_service.update_last_updated_date(
-            aggregation_id=params.aggregation_id, last_updated_at=datetime.utcnow()
+            aggregation_id=params.aggregation_id,
+            last_updated_by_scheduled_task_at=datetime.utcnow(),
         )
         logger.info("End of TileSchedule.execute")
 
