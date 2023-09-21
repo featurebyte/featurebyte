@@ -201,7 +201,7 @@ class FeatureService(BaseNamespaceService[FeatureModel, FeatureServiceCreate]):
             disable_audit=self.should_disable_audit,
         )
 
-    async def update_last_updated_date(
+    async def update_last_updated_by_scheduled_task_at(
         self, aggregation_id: str, last_updated_by_scheduled_task_at: datetime
     ) -> None:
         """

@@ -172,13 +172,13 @@ async def test_update_readiness(feature_service, feature):
 
 @pytest.mark.asyncio
 async def test_update_last_updated_date(feature_service, feature):
-    """Test update_last_updated_date method"""
+    """Test update_last_updated_by_scheduled_task_at method"""
     updated_feature = await feature_service.get_document(document_id=feature.id)
     assert updated_feature.last_updated_by_scheduled_task_at is None
 
     last_updated_date = datetime.utcnow()
     aggregation_ids = updated_feature.aggregation_ids
-    await feature_service.update_last_updated_date(
+    await feature_service.update_last_updated_by_scheduled_task_at(
         aggregation_id=aggregation_ids[0], last_updated_by_scheduled_task_at=last_updated_date
     )
 

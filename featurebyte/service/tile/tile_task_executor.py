@@ -247,7 +247,7 @@ class TileTaskExecutor:
             await _add_log_entry(success_code, "", duration=duration)
 
         logger.debug("Start updating feature last updated date")
-        await self.feature_service.update_last_updated_date(
+        await self.feature_service.update_last_updated_by_scheduled_task_at(
             aggregation_id=params.aggregation_id,
             last_updated_by_scheduled_task_at=datetime.utcnow(),
         )
