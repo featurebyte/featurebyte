@@ -354,6 +354,18 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
             },
         ]
 
+        # test create a new version with allow_unchanged_feature_list_version
+        response = test_api_client.post(
+            self.base_route,
+            json={
+                "source_feature_list_id": create_response_dict["_id"],
+                "features": [],
+                "allow_unchanged_feature_list_version": True,
+            },
+        )
+        assert response.status_code == HTTPStatus.CREATED
+        assert response.json()["_id"] == create_response_dict["_id"]
+
     def test_list_200__filter_by_name_and_version(
         self, test_api_client_persistent, create_multiple_success_responses
     ):
