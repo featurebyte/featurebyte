@@ -23,7 +23,7 @@ from featurebyte.routes.common.schema import (
     VerboseQuery,
 )
 from featurebyte.schema.catalog import CatalogCreate, CatalogList, CatalogUpdate
-from featurebyte.schema.common.base import DeleteResponse, DescriptionUpdate
+from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.info import CatalogInfo
 
 
