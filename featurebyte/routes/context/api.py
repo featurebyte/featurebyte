@@ -58,6 +58,12 @@ class ContextRouter(BaseApiRouter[ContextModel, ContextList, ContextCreate, Cont
             response_model=ObservationTableList,
         )
 
+        self.remove_routes(
+            {
+                "/context/{context_id}": ["DELETE"],
+            }
+        )
+
     async def get_object(self, request: Request, context_id: PydanticObjectId) -> ContextModel:
         return await super().get_object(request, context_id)
 
