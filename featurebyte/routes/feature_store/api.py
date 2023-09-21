@@ -21,7 +21,7 @@ from featurebyte.routes.common.schema import (
     VerboseQuery,
 )
 from featurebyte.routes.feature_store.controller import FeatureStoreController
-from featurebyte.schema.common.base import DeleteResponse, DescriptionUpdate
+from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.feature_store import (
     FeatureStoreCreate,
     FeatureStoreList,
