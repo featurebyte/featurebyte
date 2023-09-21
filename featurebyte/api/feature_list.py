@@ -1321,16 +1321,15 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         ... )
 
         Reset the default version mode of the feature to make original feature as default. Create a new version
-        of feature list using original feature list should throw an error due to no change in feature list is detected.
+        of feature list using original feature list without changing any feature will return the same feature list.
 
         >>> current_feature.update_readiness("PRODUCTION_READY")
         >>> current_feature.update_default_version_mode("AUTO")
         >>> current_feature.is_default
         True
-        >>> feature_list.create_new_version()  # doctest: +ELLIPSIS
-        Traceback (most recent call last):
-        ...
-        RecordCreationException: No change detected on the new feature list version.
+        >>> same_feature_list = feature_list.create_new_version()
+        >>> same_feature_list.id == feature_list.id
+        True
 
         See Also
         --------
