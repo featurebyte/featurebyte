@@ -23,7 +23,7 @@ from featurebyte.routes.common.schema import (
     VerboseQuery,
 )
 from featurebyte.schema.catalog import CatalogCreate, CatalogList, CatalogUpdate
-from featurebyte.schema.common.base import DeleteResponse, DescriptionUpdate
+from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.info import CatalogInfo
 
 
@@ -66,12 +66,14 @@ class CatalogRouter(BaseApiRouter[CatalogModel, CatalogList, CatalogCreate, Cata
             methods=["GET"],
             response_model=List[CatalogNameHistoryEntry],
         )
+        self.remove_routes(
+            {
+                "/catalog/{catalog_id}": ["DELETE"],
+            }
+        )
 
     async def get_object(self, request: Request, catalog_id: PydanticObjectId) -> CatalogModel:
         return await super().get_object(request, catalog_id)
-
-    async def delete_object(self, request: Request, catalog_id: PydanticObjectId) -> DeleteResponse:
-        return await super().delete_object(request, catalog_id)
 
     async def list_audit_logs(
         self,

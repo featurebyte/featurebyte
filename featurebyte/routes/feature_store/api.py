@@ -21,7 +21,7 @@ from featurebyte.routes.common.schema import (
     VerboseQuery,
 )
 from featurebyte.routes.feature_store.controller import FeatureStoreController
-from featurebyte.schema.common.base import DeleteResponse, DescriptionUpdate
+from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.feature_store import (
     FeatureStoreCreate,
     FeatureStoreList,
@@ -102,6 +102,11 @@ class FeatureStoreRouter(
             methods=["POST"],
             response_model=Dict[str, Any],
         )
+        self.remove_routes(
+            {
+                "/feature_store/{feature_store_id}": ["DELETE"],
+            }
+        )
 
     async def create_object(
         self,
@@ -119,11 +124,6 @@ class FeatureStoreRouter(
         self, request: Request, feature_store_id: PydanticObjectId
     ) -> FeatureStoreModel:
         return await super().get_object(request, feature_store_id)
-
-    async def delete_object(
-        self, request: Request, credential_id: PydanticObjectId
-    ) -> DeleteResponse:
-        raise NotImplementedError()
 
     async def list_audit_logs(
         self,
