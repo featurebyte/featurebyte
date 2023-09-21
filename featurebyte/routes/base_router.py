@@ -1,11 +1,13 @@
 """
 Base router
 """
-from typing import Generic, Optional, Type, TypeVar, Union, cast
+from typing import Dict, Generic, List, Optional, Type, TypeVar, Union, cast
 
 from http import HTTPStatus
 
 from fastapi import APIRouter, Request
+from fastapi.routing import APIRoute
+from starlette.routing import BaseRoute
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.persistent import AuditDocumentList
@@ -46,6 +48,23 @@ class BaseRouter:
             The router to add to the current router.
         """
         self.router.routes.extend(router.routes)
+
+    def remove_routes(self, unwanted_path_to_method: Dict[str, List[str]]) -> None:
+        """
+        Remove routes from router
+
+        Parameters
+        ----------
+        unwanted_path_to_method: Dict[str, List[str]]
+            Dictionary of paths to methods to be removed from the router
+        """
+        routes_to_keep: List[BaseRoute] = []
+        for route in self.router.routes:
+            route = cast(APIRoute, route)
+            if set(route.methods).issubset(unwanted_path_to_method.get(route.path, [])):
+                continue
+            routes_to_keep.append(route)
+        self.router.routes = routes_to_keep
 
 
 class BaseApiRouter(
