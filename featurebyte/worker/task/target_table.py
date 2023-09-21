@@ -67,8 +67,10 @@ class TargetTableTask(DataWarehouseMixin, BaseTask):
                 progress_callback=self.update_progress,
             )
 
-            additional_metadata = await self.app_container.observation_table_service.validate_materialized_table_and_get_metadata(
-                db_session, location.table_details
+            additional_metadata = (
+                await observation_table_service.validate_materialized_table_and_get_metadata(
+                    db_session, location.table_details
+                )
             )
 
             observation_table = ObservationTableModel(
@@ -78,6 +80,7 @@ class TargetTableTask(DataWarehouseMixin, BaseTask):
                 location=location,
                 context_id=payload.context_id,
                 request_input=payload.request_input,
+                entity_ids=payload.entity_ids,
                 **additional_metadata,
             )
-            await self.app_container.observation_table_service.create_document(observation_table)
+            await observation_table_service.create_document(observation_table)

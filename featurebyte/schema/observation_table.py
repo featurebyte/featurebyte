@@ -20,6 +20,7 @@ class ObservationTableCreate(BaseRequestTableCreate):
 
     sample_rows: Optional[int] = Field(ge=0)
     request_input: ObservationInput
+    entity_ids: List[PydanticObjectId] = Field(default_factory=list)
 
 
 class ObservationTableList(PaginationMixin):

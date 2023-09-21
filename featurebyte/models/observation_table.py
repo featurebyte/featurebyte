@@ -3,7 +3,7 @@ ObservationTableModel models
 """
 from __future__ import annotations
 
-from typing import Optional, Union
+from typing import List, Optional, Union
 from typing_extensions import Annotated, Literal
 
 from datetime import datetime  # pylint: disable=wrong-import-order
@@ -85,6 +85,7 @@ class ObservationTableModel(MaterializedTableModel):
     request_input: ObservationInput
     most_recent_point_in_time: StrictStr
     context_id: Optional[PydanticObjectId] = Field(default=None)
+    entity_ids: List[PydanticObjectId] = Field(default_factory=list)
 
     @validator("most_recent_point_in_time")
     @classmethod
