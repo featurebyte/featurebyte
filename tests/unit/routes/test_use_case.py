@@ -140,9 +140,10 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         self,
         test_api_client_persistent,
         create_observation_table,
+        create_success_response,
     ):
         """Test automated assign observation table when creating use case"""
-
+        _ = create_success_response
         test_api_client, _ = test_api_client_persistent
         target_ob_table_id = ObjectId()
         non_target_ob_table_id = ObjectId()
@@ -155,7 +156,10 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         # create observation table with different context
         await create_observation_table(different_context_ob_table_id, same_context=False)
 
-        response = test_api_client.post(self.base_route, json=self.payload)
+        payload = self.payload.copy()
+        payload["_id"] = str(ObjectId())
+        payload["name"] = payload["name"] + "_1"
+        response = test_api_client.post(self.base_route, json=payload)
         assert response.status_code == HTTPStatus.CREATED, response.json()
         created_use_case = response.json()
         assert created_use_case["context_id"] == self.payload["context_id"]
@@ -173,9 +177,10 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
     async def test_create_use_case_with_non_existent_target_and_context(
         self,
         test_api_client_persistent,
+        create_success_response,
     ):
-        """Test update use case"""
-
+        """Test create use case with non-existent target and context"""
+        _ = create_success_response
         test_api_client, _ = test_api_client_persistent
 
         target_id = str(ObjectId())
