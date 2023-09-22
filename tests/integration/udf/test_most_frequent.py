@@ -16,6 +16,7 @@ import pytest
         ({"a": 1, "b": 2, "c": 3}, "c"),
         ({"a": 1, "b": np.nan, "c": 3}, "c"),
         ({"a": np.nan}, None),
+        ({"a": -1, "b": np.nan, "c": -3}, "a"),
     ],
 )
 @pytest.mark.asyncio

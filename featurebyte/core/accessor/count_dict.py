@@ -450,3 +450,19 @@ class CountDictAccessor:
             output_var_type=DBVarType.FLOAT,
             additional_node_params=additional_node_params,
         )
+
+    def get_key_with_highest_value(self) -> Feature:
+        """
+        Retrieves the key with the highest value in the Cross Aggregate feature. When there are
+        ties, the lexicographically smallest key is returned.
+
+        This is an alias for `most_frequent()`.
+        """
+        return self._make_operation("get_key_with_highest_value", DBVarType.VARCHAR)
+
+    def get_key_with_lowest_value(self) -> Feature:
+        """
+        Retrieves the key with the lowest value in the Cross Aggregate feature. When there are
+        ties, the lexicographically smallest key is returned.
+        """
+        return self._make_operation("get_key_with_lowest_value", DBVarType.VARCHAR)

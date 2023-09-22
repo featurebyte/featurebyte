@@ -166,6 +166,7 @@ EXPECTED_FUNCTIONS = [
     "F_COUNT_DICT_MOST_FREQUENT",
     "F_COUNT_DICT_MOST_FREQUENT_KEY_VALUE",
     "F_COUNT_DICT_MOST_FREQUENT_VALUE",
+    "F_COUNT_DICT_LEAST_FREQUENT",
     "F_COUNT_DICT_NUM_UNIQUE",
     "F_COUNT_DICT_COSINE_SIMILARITY",
     "F_GET_RANK",
@@ -306,6 +307,11 @@ def test_schema_initializer__sql_objects(
         {
             "filename": "F_COUNT_DICT_MOST_FREQUENT_VALUE.sql",
             "identifier": "F_COUNT_DICT_MOST_FREQUENT_VALUE",
+            "type": "function",
+        },
+        {
+            "filename": "F_COUNT_DICT_LEAST_FREQUENT.sql",
+            "identifier": "F_COUNT_DICT_LEAST_FREQUENT",
             "type": "function",
         },
         {

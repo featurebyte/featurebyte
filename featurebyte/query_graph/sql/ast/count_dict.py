@@ -11,6 +11,9 @@ from sqlglot import expressions
 from sqlglot.expressions import Expression
 
 from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.node.count_dict import (
+    CountDictTransformNode as CountDictTransformQueryGraphNode,
+)
 from featurebyte.query_graph.sql.ast.base import ExpressionNode, SQLNodeContext
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.ast.util import (
@@ -34,6 +37,8 @@ class CountDictTransformNode(ExpressionNode):
         function_name = {
             "entropy": "F_COUNT_DICT_ENTROPY",
             "most_frequent": "F_COUNT_DICT_MOST_FREQUENT",
+            "get_key_with_highest_value": "F_COUNT_DICT_MOST_FREQUENT",
+            "get_key_with_lowest_value": "F_COUNT_DICT_LEAST_FREQUENT",
             "unique_count": "F_COUNT_DICT_NUM_UNIQUE",
         }[self.transform_type]
         if self.include_missing:
@@ -46,7 +51,7 @@ class CountDictTransformNode(ExpressionNode):
         output_expr = expressions.Anonymous(
             this=function_name, expressions=[counts_expr]
         )  # type: Expression
-        if self.transform_type == "most_frequent":
+        if self.transform_type in CountDictTransformQueryGraphNode.varchar_transform_types:
             # The F_COUNT_DICT_MOST_FREQUENT UDF produces a VARIANT type. Cast to string to prevent
             # double quoting in the feature output ('remove' vs '"remove"')
             output_expr = expressions.Cast(

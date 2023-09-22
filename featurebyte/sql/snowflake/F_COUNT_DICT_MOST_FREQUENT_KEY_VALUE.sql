@@ -7,8 +7,11 @@ $$
     return [null, null];
   }
   var most_frequent_key = null;
-  var most_frequent_count = 0;
+  var most_frequent_count = -Infinity;
   for (const k in COUNTS) {
+    if (!COUNTS[k]) {
+      continue;
+    }
     if (COUNTS[k] > most_frequent_count) {
       most_frequent_count = COUNTS[k];
       most_frequent_key = k;
