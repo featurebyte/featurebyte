@@ -168,7 +168,7 @@ class OnlineEnableService(OpsServiceMixin):
             await feature_manager_service.online_disable(session, online_feature_spec)
 
     async def update_data_warehouse(
-        self, updated_feature: FeatureModel, online_enabled_before_update: bool, get_credential: Any
+        self, updated_feature: FeatureModel, online_enabled_before_update: bool
     ) -> None:
         """
         Update data warehouse registry upon changes to online enable status, such as enabling or
@@ -180,8 +180,6 @@ class OnlineEnableService(OpsServiceMixin):
             Updated Feature
         online_enabled_before_update: bool
             Online enabled status
-        get_credential: Any
-            Get credential handler function
 
         Raises
         ------
@@ -198,7 +196,7 @@ class OnlineEnableService(OpsServiceMixin):
         )
         try:
             session = await self.session_manager_service.get_feature_store_session(
-                feature_store_model, get_credential
+                feature_store_model
             )
         except CredentialsError as exc:
             if updated_feature.online_enabled:

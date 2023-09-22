@@ -178,7 +178,6 @@ class DeployService(OpsServiceMixin):
         feature_list_id: ObjectId,
         deployed: bool,
         feature_online_enabled_map: dict[PydanticObjectId, bool],
-        get_credential: Any,
     ) -> None:
         # revert feature list deploy status
         feature_list = await self.feature_list_service.update_document(
@@ -198,7 +197,6 @@ class DeployService(OpsServiceMixin):
             await self.online_enable_service.update_data_warehouse(
                 updated_feature=document,
                 online_enabled_before_update=online_enabled,
-                get_credential=get_credential,
             )
 
         # update feature list namespace again
@@ -211,7 +209,6 @@ class DeployService(OpsServiceMixin):
     async def _update_feature_list(
         self,
         feature_list_id: ObjectId,
-        get_credential: Any,
         update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
     ) -> FeatureListModel:
         """
@@ -221,8 +218,6 @@ class DeployService(OpsServiceMixin):
         ----------
         feature_list_id: ObjectId
             Target feature list ID
-        get_credential: Any
-            Get credential handler function
         update_progress: Callable[[int, str | None], Coroutine[Any, Any, None]]
             Update progress handler function
 
@@ -278,7 +273,6 @@ class DeployService(OpsServiceMixin):
                         await self.online_enable_service.update_data_warehouse(
                             updated_feature=updated_feature,
                             online_enabled_before_update=feature.online_enabled,
-                            get_credential=get_credential,
                         )
 
                     if update_progress:
@@ -303,7 +297,6 @@ class DeployService(OpsServiceMixin):
                         feature_list_id=feature_list_id,
                         deployed=original_deployed,
                         feature_online_enabled_map=feature_online_enabled_map,
-                        get_credential=get_credential,
                     )
                 except Exception as revert_exc:
                     raise revert_exc from exc
@@ -317,7 +310,6 @@ class DeployService(OpsServiceMixin):
         deployment_id: ObjectId,
         deployment_name: Optional[str],
         to_enable_deployment: bool,
-        get_credential: Any,
         update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
         use_case_id: Optional[ObjectId] = None,
         context_id: Optional[ObjectId] = None,
@@ -335,8 +327,6 @@ class DeployService(OpsServiceMixin):
             Deployment name
         to_enable_deployment: bool
             Whether to enable deployment
-        get_credential: Any
-            Get credential handler function
         update_progress: Callable[[int, str | None], Coroutine[Any, Any, None]]
             Update progress handler function
         use_case_id: ObjectId
@@ -366,7 +356,6 @@ class DeployService(OpsServiceMixin):
             )
             await self._update_feature_list(
                 feature_list_id=feature_list_id,
-                get_credential=get_credential,
                 update_progress=update_progress,
             )
         except Exception as exc:
@@ -382,7 +371,6 @@ class DeployService(OpsServiceMixin):
         self,
         deployment_id: ObjectId,
         enabled: bool,
-        get_credential: Any,
         update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
     ) -> None:
         """
@@ -394,8 +382,6 @@ class DeployService(OpsServiceMixin):
             Deployment ID
         enabled: bool
             Enabled status
-        get_credential: Any
-            Get credential handler function
         update_progress: Callable[[int, str | None], Coroutine[Any, Any, None]]
             Update progress handler function
 
@@ -414,7 +400,6 @@ class DeployService(OpsServiceMixin):
                 )
                 await self._update_feature_list(
                     feature_list_id=deployment.feature_list_id,
-                    get_credential=get_credential,
                     update_progress=update_progress,
                 )
             except Exception as exc:

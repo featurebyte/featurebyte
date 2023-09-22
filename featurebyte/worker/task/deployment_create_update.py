@@ -75,7 +75,6 @@ class DeploymentCreateUpdateTask(BaseLockTask):
                 deployment_id=payload.output_document_id,
                 deployment_name=create_deployment_payload.name,
                 to_enable_deployment=create_deployment_payload.enabled,
-                get_credential=self.get_credential,
                 update_progress=self.update_progress,
                 use_case_id=create_deployment_payload.use_case_id,
                 context_id=create_deployment_payload.context_id,
@@ -86,6 +85,5 @@ class DeploymentCreateUpdateTask(BaseLockTask):
             await self.app_container.deploy_service.update_deployment(
                 deployment_id=payload.output_document_id,
                 enabled=update_deployment_payload.enabled,
-                get_credential=self.get_credential,
                 update_progress=self.update_progress,
             )

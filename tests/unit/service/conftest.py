@@ -608,7 +608,6 @@ async def deployed_feature_list_fixture(
         deployment_id=ObjectId(),
         deployment_name="test-deployment",
         to_enable_deployment=True,
-        get_credential=Mock(),
     )
     updated_feature_list = await feature_list_service.get_document(
         document_id=production_ready_feature_list.id

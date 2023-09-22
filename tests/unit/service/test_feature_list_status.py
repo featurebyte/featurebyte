@@ -1,7 +1,6 @@
 """
 Test the feature list status service.
 """
-from unittest.mock import Mock
 
 import pytest
 import pytest_asyncio
@@ -37,7 +36,6 @@ async def feature_list_namespace_deployed_fixture(
         deployment_id=ObjectId(),
         deployment_name="test_deployment",
         to_enable_deployment=True,
-        get_credential=Mock(),
     )
     namespace = await feature_list_namespace_service.get_document(document_id=namespace.id)
     assert namespace.status == FeatureListStatus.DEPLOYED
@@ -153,7 +151,6 @@ async def test_feature_list_status__deployed_feature_namespace_transit_to_public
         await deploy_service.update_deployment(
             deployment_id=deployment["_id"],
             enabled=False,
-            get_credential=Mock(),
         )
 
     namespace = await feature_list_namespace_service.get_document(
