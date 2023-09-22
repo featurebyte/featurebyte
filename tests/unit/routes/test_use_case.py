@@ -172,9 +172,7 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
     @pytest.mark.asyncio
     async def test_create_use_case_with_non_existent_target_and_context(
         self,
-        create_success_response,
         test_api_client_persistent,
-        create_observation_table,
     ):
         """Test update use case"""
 
