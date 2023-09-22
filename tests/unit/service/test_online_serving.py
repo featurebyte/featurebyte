@@ -39,7 +39,6 @@ async def test_feature_list_not_deployed(
         await online_serving_service.get_online_features_from_feature_list(
             feature_list=feature_list,
             request_data=entity_serving_names,
-            get_credential=Mock(),
         )
     assert str(exc.value) == "Feature List is not online enabled"
 
@@ -53,7 +52,6 @@ async def test_missing_entity_error(online_serving_service, deployed_feature_lis
         await online_serving_service.get_online_features_from_feature_list(
             feature_list=deployed_feature_list,
             request_data=[{"wrong_entity": 123}],
-            get_credential=Mock(),
         )
     expected = (
         'Required entities are not provided in the request: customer (serving name: "cust_id")'
@@ -161,7 +159,6 @@ async def test_feature_list_deployed(
         result = await online_serving_service.get_online_features_from_feature_list(
             feature_list=deployed_feature_list,
             request_data=entity_serving_names,
-            get_credential=Mock(),
         )
 
     # Check result
@@ -191,7 +188,6 @@ async def test_feature_list_deployed_with_output_table(
         await online_serving_service.get_online_features_from_feature_list(
             feature_list=deployed_feature_list,
             request_data=entity_serving_names,
-            get_credential=Mock(),
             output_table_details=TableDetails(
                 database_name="output_db_name",
                 schema_name="output_schema_name",
@@ -249,7 +245,6 @@ async def test_feature_list_deployed_with_batch_request_table(
         await online_serving_service.get_online_features_from_feature_list(
             feature_list=deployed_feature_list,
             request_data=batch_request_table,
-            get_credential=Mock(),
             output_table_details=TableDetails(
                 database_name="some_database", schema_name="some_schema", table_name="some_table"
             ),
