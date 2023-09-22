@@ -59,6 +59,11 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
         UseCaseModel
 
         """
+        # validate both target and context exists
+        await self.target_service.get_document(document_id=data.target_id)
+        if data.context_id:
+            await self.context_service.get_document(document_id=data.context_id)
+
         return await self.service.create_use_case(data)
 
     async def update_use_case(self, use_case_id: ObjectId, data: UseCaseUpdate) -> UseCaseModel:
