@@ -97,6 +97,7 @@ def test_feature_model(feature_model_dict, api_object_to_id):
         ],
         "description": None,
         "online_store_table_names": ["online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c"],
+        "last_updated_by_scheduled_task_at": None,
     }
 
 

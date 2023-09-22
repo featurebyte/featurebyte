@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
+from datetime import datetime
+
 from bson import ObjectId
 
 from featurebyte.exception import DocumentNotFoundError
@@ -197,4 +199,24 @@ class FeatureService(BaseNamespaceService[FeatureModel, FeatureServiceCreate]):
             update={"$set": {"readiness": str(readiness)}},
             user_id=self.user.id,
             disable_audit=self.should_disable_audit,
+        )
+
+    async def update_last_updated_by_scheduled_task_at(
+        self, aggregation_id: str, last_updated_by_scheduled_task_at: datetime
+    ) -> None:
+        """
+        Update last updated date for features with the given aggregation id
+
+        Parameters
+        ----------
+        aggregation_id: str
+            aggregation id
+        last_updated_by_scheduled_task_at: datetime
+            last updated date
+        """
+        await self.update_documents(
+            query_filter={"aggregation_ids": aggregation_id},
+            update={
+                "$set": {"last_updated_by_scheduled_task_at": last_updated_by_scheduled_task_at}
+            },
         )

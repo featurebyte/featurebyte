@@ -14,6 +14,7 @@ from featurebyte.enum import InternalName
 from featurebyte.logging import get_logger
 from featurebyte.models.tile import TileScheduledJobParameters, TileType
 from featurebyte.models.tile_job_log import TileJobLogModel
+from featurebyte.service.feature import FeatureService
 from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.tile_job_log import TileJobLogService
@@ -39,11 +40,13 @@ class TileTaskExecutor:
         online_store_compute_query_service: OnlineStoreComputeQueryService,
         tile_registry_service: TileRegistryService,
         tile_job_log_service: TileJobLogService,
+        feature_service: FeatureService,
     ):
         self.online_store_table_version_service = online_store_table_version_service
         self.online_store_compute_query_service = online_store_compute_query_service
         self.tile_registry_service = tile_registry_service
         self.tile_job_log_service = tile_job_log_service
+        self.feature_service = feature_service
 
     # pylint: disable=too-many-locals,too-many-statements
     async def execute(self, session: BaseSession, params: TileScheduledJobParameters) -> None:
@@ -242,6 +245,13 @@ class TileTaskExecutor:
 
             success_code = spec["status"]["success"]
             await _add_log_entry(success_code, "", duration=duration)
+
+        logger.debug("Start updating feature last updated date")
+        await self.feature_service.update_last_updated_by_scheduled_task_at(
+            aggregation_id=params.aggregation_id,
+            last_updated_by_scheduled_task_at=datetime.utcnow(),
+        )
+        logger.info("End of TileSchedule.execute")
 
     def _derive_correct_job_ts(
         self, input_dt: datetime, frequency_minutes: int, time_modulo_frequency_seconds: int
