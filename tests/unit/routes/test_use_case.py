@@ -170,6 +170,33 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         assert response.json()["data"][0]["_id"] == str(target_ob_table_id)
 
     @pytest.mark.asyncio
+    async def test_create_use_case_with_non_existent_target_and_context(
+        self,
+        create_success_response,
+        test_api_client_persistent,
+        create_observation_table,
+    ):
+        """Test update use case"""
+
+        test_api_client, _ = test_api_client_persistent
+
+        target_id = str(ObjectId())
+        payload = self.payload.copy()
+        payload["_id"] = str(ObjectId())
+        payload["target_id"] = target_id
+        response = test_api_client.post(self.base_route, json=payload)
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert f'Target (id: "{target_id}") not found' in response.json()["detail"]
+
+        context_id = str(ObjectId())
+        payload = self.payload.copy()
+        payload["_id"] = str(ObjectId())
+        payload["context_id"] = context_id
+        response = test_api_client.post(self.base_route, json=payload)
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert f'Context (id: "{context_id}") not found' in response.json()["detail"]
+
+    @pytest.mark.asyncio
     async def test_update_use_case(
         self,
         create_success_response,
