@@ -161,7 +161,6 @@ async def compute_online_features(
     result = await controller.compute_online_features(
         deployment_id=deployment_id,
         data=data,
-        get_credential=request.state.get_credential,
     )
     return cast(OnlineFeaturesResponseModel, result)
 

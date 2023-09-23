@@ -40,7 +40,6 @@ class OnlineServingService:
         self,
         feature_list: FeatureListModel,
         request_data: Union[List[Dict[str, Any]], BatchRequestTableModel],
-        get_credential: Any,
         output_table_details: Optional[TableDetails] = None,
     ) -> Optional[OnlineFeaturesResponseModel]:
         """
@@ -52,8 +51,6 @@ class OnlineServingService:
             Feature List
         request_data: Union[List[Dict[str, Any]], BatchRequestTableModel]
             Request data containing entity serving names
-        get_credential: Any
-            Get credential handler
         output_table_details: Optional[TableDetails]
             Output table details
 
@@ -98,7 +95,6 @@ class OnlineServingService:
 
         db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store,
-            get_credential=get_credential,
         )
         features = await get_online_features(
             session=db_session,

@@ -3,7 +3,7 @@ Deployment API route controller
 """
 from __future__ import annotations
 
-from typing import Any, Literal, Optional
+from typing import Literal, Optional
 
 from http import HTTPStatus
 
@@ -180,7 +180,6 @@ class DeploymentController(
         self,
         deployment_id: ObjectId,
         data: OnlineFeaturesRequestPayload,
-        get_credential: Any,
     ) -> OnlineFeaturesResponseModel:
         """
         Compute online features for a given deployment ID.
@@ -191,8 +190,6 @@ class DeploymentController(
             ID of deployment to compute online features
         data: OnlineFeaturesRequestPayload
             Online features request payload
-        get_credential: Any
-            Get credential handler function
 
         Returns
         -------
@@ -209,7 +206,6 @@ class DeploymentController(
             result = await self.online_serving_service.get_online_features_from_feature_list(
                 feature_list=feature_list,
                 request_data=data.entity_serving_names,
-                get_credential=get_credential,
             )
         except (FeatureListNotOnlineEnabledError, RuntimeError) as exc:
             raise HTTPException(

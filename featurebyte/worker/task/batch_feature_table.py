@@ -71,7 +71,6 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask):
             await online_serving_service.get_online_features_from_feature_list(
                 feature_list=feature_list,
                 request_data=batch_request_table_model,
-                get_credential=self.get_credential,
                 output_table_details=location.table_details,
             )
             (

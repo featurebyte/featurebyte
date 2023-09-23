@@ -1,7 +1,7 @@
 """
 Tests for DeployService
 """
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 import pytest_asyncio
@@ -21,7 +21,6 @@ async def disabled_deployment_fixture(app_container, feature_list):
         deployment_id=deployment_id,
         deployment_name=None,
         to_enable_deployment=False,
-        get_credential=Mock(),
     )
     deployment = await app_container.deployment_service.get_document(document_id=deployment_id)
     assert deployment.enabled is False
@@ -49,7 +48,6 @@ async def test_create_enabled_deployment__not_all_features_are_online_enabled(
             deployment_id=deployment_id,
             deployment_name=None,
             to_enable_deployment=True,
-            get_credential=Mock(),
         )
 
     expected_msg = "Only FeatureList object of all production ready features can be deployed."
@@ -67,7 +65,7 @@ async def test_update_deployment__not_all_features_are_online_enabled(
     """Test update deployment (not all features are online enabled validation error)"""
     with pytest.raises(DocumentError) as exc:
         await app_container.deploy_service.update_deployment(
-            deployment_id=disabled_deployment.id, enabled=True, get_credential=Mock()
+            deployment_id=disabled_deployment.id, enabled=True
         )
 
     expected_msg = "Only FeatureList object of all production ready features can be deployed."
@@ -84,7 +82,7 @@ async def test_update_deployment__not_all_features_are_online_enabled(
 async def test_update_deployment__no_update(app_container, disabled_deployment):
     """Test update feature list when deployed status is the same"""
     await app_container.deploy_service.update_deployment(
-        deployment_id=disabled_deployment.id, enabled=False, get_credential=Mock()
+        deployment_id=disabled_deployment.id, enabled=False
     )
 
     # check that deployment is not updated
@@ -137,7 +135,6 @@ async def disabled_deployment_with_prod_ready_features(
         deployment_id=deployment_id,
         deployment_name=None,
         to_enable_deployment=False,
-        get_credential=Mock(),
     )
     deployment = await app_container.deployment_service.get_document(document_id=deployment_id)
     assert deployment.enabled is False
@@ -159,7 +156,6 @@ async def test_update_deployment(
         deployment_id=deployment_id,
         deployment_name=None,
         to_enable_deployment=True,
-        get_credential=Mock(),
     )
     deployment = await app_container.deployment_service.get_document(document_id=deployment_id)
     deployed_feature_list = await app_container.feature_list_service.get_document(
@@ -182,7 +178,6 @@ async def test_update_deployment(
     await app_container.deploy_service.update_deployment(
         deployment_id=deployment_id,
         enabled=False,
-        get_credential=Mock(),
     )
     deployed_disabled_feature_list = await app_container.feature_list_service.get_document(
         document_id=deployment.feature_list_id
@@ -215,7 +210,6 @@ async def test_update_deployment(
         await app_container.deploy_service.update_deployment(
             deployment_id=deployment.id,
             enabled=True,
-            get_credential=Mock(),
         )
 
     expected_msg = "Deprecated feature list cannot be deployed."
@@ -240,7 +234,6 @@ async def test_update_deployment_error__state_is_reverted_when_update_feature_li
             _ = await app_container.deploy_service.update_deployment(
                 deployment_id=disabled_deployment_with_production_ready_features.id,
                 enabled=True,
-                get_credential=Mock(),
             )
 
         # check exception message
@@ -280,7 +273,6 @@ async def test_update_deployment_error__state_is_reverted_when_update_feature_is
             _ = await app_container.deploy_service.update_deployment(
                 deployment_id=disabled_deployment_with_production_ready_features.id,
                 enabled=True,
-                get_credential=Mock(),
             )
 
         # check exception message
@@ -334,7 +326,6 @@ async def test_update_feature_list_error__state_is_reverted_after_feature_list_n
     with pytest.raises(ValueError) as exc:
         _ = await deploy_service._update_feature_list(
             feature_list_id=feature_list.id,
-            get_credential=AsyncMock(),
             update_progress=fake_update_progress,
         )
 
@@ -357,7 +348,6 @@ async def test_update_feature_list_error__state_is_reverted_after_feature_list_n
             mock_update_feature.side_effect = Exception("Error during revert changes")
             _ = await deploy_service._update_feature_list(
                 feature_list_id=feature_list.id,
-                get_credential=AsyncMock(),
                 update_progress=fake_update_progress,
             )
 
