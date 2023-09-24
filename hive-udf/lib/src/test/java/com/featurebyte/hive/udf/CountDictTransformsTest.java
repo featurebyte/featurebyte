@@ -78,6 +78,16 @@ public class CountDictTransformsTest {
   }
 
   @Test
+  public void testCountDictLeastFrequent() throws HiveException {
+    CountDictLeastFrequent udf = new CountDictLeastFrequent();
+    ObjectInspector[] arguments = {mapValueOI};
+    udf.initialize(arguments);
+    GenericUDF.DeferredObject[] args = {new GenericUDF.DeferredJavaObject(countDict)};
+    Text output = (Text) udf.evaluate(args);
+    assertEquals(output, new Text("apple"));
+  }
+
+  @Test
   public void testCountDictNumUnique() throws HiveException {
     CountDictNumUnique udf = new CountDictNumUnique();
     ObjectInspector[] arguments = {mapValueOI};
