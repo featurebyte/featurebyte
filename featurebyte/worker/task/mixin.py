@@ -12,6 +12,7 @@ from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.schema.worker.task.base import BaseTaskPayload
+from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.session.base import BaseSession
 
 logger = get_logger(__name__)
@@ -39,9 +40,8 @@ class DataWarehouseMixin:
         -------
         BaseSession
         """
-        return await self.app_container.session_manager_service.get_feature_store_session(
-            feature_store
-        )
+        session_manager_service: SessionManagerService = self.app_container.session_manager_service
+        return await session_manager_service.get_feature_store_session(feature_store)
 
     @asynccontextmanager
     async def drop_table_on_error(
