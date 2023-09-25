@@ -5,11 +5,11 @@ from typing import Any, Dict
 
 from bson import ObjectId
 
-from featurebyte.models.relationship_analysis import derive_primary_entity
 from featurebyte.models.use_case import UseCaseModel
 from featurebyte.routes.common.base import BaseDocumentController
-from featurebyte.schema.info import UseCaseInfo
+from featurebyte.schema.info import EntityBriefInfo, EntityBriefInfoList, UseCaseInfo
 from featurebyte.schema.use_case import UseCaseCreate, UseCaseList, UseCaseUpdate
+from featurebyte.service.catalog import CatalogService
 from featurebyte.service.context import ContextService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
@@ -36,6 +36,7 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
         entity_service: EntityService,
         observation_table_service: ObservationTableService,
         historical_feature_table_service: HistoricalFeatureTableService,
+        catalog_service: CatalogService,
     ):
         super().__init__(use_case_service)
         self.user_service = user_service
@@ -44,6 +45,7 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
         self.entity_service = entity_service
         self.observation_table_service = observation_table_service
         self.historical_feature_table_service = historical_feature_table_service
+        self.catalog_service = catalog_service
 
     async def create_use_case(self, data: UseCaseCreate) -> UseCaseModel:
         """
@@ -130,18 +132,21 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
             )
             default_eda_table_name = default_eda_table.name
 
-        entities = [
-            entity
+        entity_briefs = [
+            EntityBriefInfo(
+                name=entity.name,
+                serving_names=entity.serving_names,
+                catalog_name=(await self.catalog_service.get_document(entity.catalog_id)).name,
+            )
             async for entity in self.entity_service.list_documents_iterator(
                 query_filter={"_id": {"$in": context.entity_ids}},
             )
         ]
-        primary_entity_names = [entity.name for entity in derive_primary_entity(entities=entities)]
 
         return UseCaseInfo(
             **use_case.dict(),
             author=author,
-            primary_entities=primary_entity_names,
+            primary_entities=EntityBriefInfoList(__root__=entity_briefs),
             context_name=context.name,
             target_name=target.name,
             default_preview_table=default_preview_table_name,

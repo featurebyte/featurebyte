@@ -103,7 +103,13 @@ def test_info(context_1, float_target, target_table, cust_id_entity):
     context_info = context_1.info()
     assert context_info["name"] == context_1.name
     assert context_info["description"] == context_1.description
-    assert context_info["entities"] == [cust_id_entity.name]
+    assert context_info["entities"] == [
+        {
+            "name": cust_id_entity.name,
+            "serving_names": cust_id_entity.serving_names,
+            "catalog_name": "catalog",
+        }
+    ]
     assert context_info["default_eda_table"] == target_table.name
     assert context_info["default_preview_table"] == target_table.name
     assert context_info["associated_use_cases"] == [use_case.name]

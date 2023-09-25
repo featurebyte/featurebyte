@@ -106,7 +106,7 @@ def test_list_deployments(use_case, target_table, deployment):
     assert deployments.iloc[0]["name"] == deployment.name
 
 
-def test_info(use_case, target_table):
+def test_info(use_case, target_table, cust_id_entity):
     """
     Test UseCase.info method
     """
@@ -119,3 +119,10 @@ def test_info(use_case, target_table):
     assert use_case_info["description"] == use_case.description
     assert use_case_info["default_eda_table"] == target_table.name
     assert use_case_info["default_preview_table"] == target_table.name
+    assert use_case_info["primary_entities"] == [
+        {
+            "name": cust_id_entity.name,
+            "serving_names": cust_id_entity.serving_names,
+            "catalog_name": "catalog",
+        }
+    ]
