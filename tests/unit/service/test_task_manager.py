@@ -8,7 +8,6 @@ from unittest.mock import Mock
 from uuid import UUID, uuid4
 
 import pytest
-from bson.objectid import ObjectId
 
 from featurebyte.exception import DocumentNotFoundError
 from featurebyte.models.base import User
