@@ -12,6 +12,7 @@ from pydantic import ValidationError
 from featurebyte.common.model_util import get_version
 from featurebyte.exception import (
     DocumentError,
+    DocumentNotFoundError,
     NoChangesInFeatureVersionError,
     NoFeatureJobSettingInSourceError,
 )
@@ -782,3 +783,24 @@ async def test_feature_and_feature_list_version__catalog_id_used_in_query(
         )
     )
     assert new_feat_list_version.version.suffix == 2
+
+
+@pytest.mark.asyncio
+async def test_feature_create_new_version_without_save(app_container, feature, event_table):
+    """Test feature create new version without saving the newly created feature"""
+    new_feat_version = await app_container.version_service.create_new_feature_version(
+        data=FeatureNewVersionCreate(
+            source_feature_id=feature.id,
+            table_feature_job_settings=[
+                TableFeatureJobSetting(
+                    table_name=event_table.name,
+                    feature_job_setting=FeatureJobSetting(
+                        blind_spot="1d", frequency="1d", time_modulo_frequency="1h"
+                    ),
+                )
+            ],
+        ),
+        to_save=False,
+    )
+    with pytest.raises(DocumentNotFoundError):
+        await app_container.feature_service.get_document(document_id=new_feat_version.id)

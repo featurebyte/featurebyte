@@ -237,6 +237,7 @@ class VersionService:
     async def create_new_feature_version(
         self,
         data: FeatureNewVersionCreate,
+        to_save: bool = True,
     ) -> FeatureModel:
         """
         Create new feature version based on given source feature
@@ -246,6 +247,8 @@ class VersionService:
         ----------
         data: FeatureNewVersionCreate
             Version creation payload
+        to_save: bool
+            Whether to save the newly created feature to the persistent
 
         Returns
         -------
@@ -258,9 +261,11 @@ class VersionService:
             data.table_cleaning_operations,
             use_source_settings=False,
         )
-        return await self.feature_service.create_document(
-            data=FeatureServiceCreate(**new_feature.dict(by_alias=True))
-        )
+        if to_save:
+            return await self.feature_service.create_document(
+                data=FeatureServiceCreate(**new_feature.dict(by_alias=True))
+            )
+        return new_feature
 
     async def create_new_feature_version_using_source_settings(
         self, document_id: ObjectId

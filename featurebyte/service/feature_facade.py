@@ -64,7 +64,9 @@ class FeatureFacadeService:
         output = await self.feature_service.get_document(document_id=document.id)
         return output
 
-    async def create_new_version(self, data: FeatureNewVersionCreate) -> FeatureModel:
+    async def create_new_version(
+        self, data: FeatureNewVersionCreate, to_save: bool = True
+    ) -> FeatureModel:
         """
         Create a new version of a feature
 
@@ -72,17 +74,21 @@ class FeatureFacadeService:
         ----------
         data: FeatureNewVersionCreate
             Feature new version create payload
+        to_save: bool
+            Whether to save the new version
 
         Returns
         -------
         FeatureModel
         """
-        document = await self.version_service.create_new_feature_version(data=data)
-        await self.feature_readiness_service.update_feature_namespace(
-            feature_namespace_id=document.feature_namespace_id,
-        )
-        output = await self.feature_service.get_document(document_id=document.id)
-        return output
+        document = await self.version_service.create_new_feature_version(data=data, to_save=to_save)
+        if to_save:
+            await self.feature_readiness_service.update_feature_namespace(
+                feature_namespace_id=document.feature_namespace_id,
+            )
+            output = await self.feature_service.get_document(document_id=document.id)
+            return output
+        return document
 
     async def update_readiness(
         self, feature_id: ObjectId, readiness: FeatureReadiness, ignore_guardrails: bool = False
