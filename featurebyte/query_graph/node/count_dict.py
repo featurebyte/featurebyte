@@ -79,7 +79,7 @@ class CountDictTransformNode(BaseCountDictOpNode):
         """Parameters"""
 
         transform_type: Literal[
-            "entropy", "most_frequent", "get_key_with_highest_value", "get_key_with_lowest_value"
+            "entropy", "most_frequent", "key_with_highest_value", "key_with_lowest_value"
         ]
 
     class UniqueCountParameters(BaseModel):
@@ -95,8 +95,8 @@ class CountDictTransformNode(BaseCountDictOpNode):
 
     transform_types_with_varchar_output: ClassVar[Set[str]] = {
         "most_frequent",
-        "get_key_with_highest_value",
-        "get_key_with_lowest_value",
+        "key_with_highest_value",
+        "key_with_lowest_value",
     }
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:

@@ -16,7 +16,7 @@ component: service
 issues: []
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Add get_key_with_highest_value() and get_key_with_lowest_value() for cross aggregates"
+note: "Add key_with_highest_value() and key_with_lowest_value() for cross aggregates"
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.

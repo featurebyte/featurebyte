@@ -173,6 +173,84 @@ class CountDictAccessor:
         """
         return self._make_operation("most_frequent", DBVarType.VARCHAR)
 
+    def key_with_highest_value(self) -> Feature:
+        """
+        Retrieves the key with the highest value in the Cross Aggregate feature. When there are
+        ties, the lexicographically smallest key is returned.
+
+        This is an alias for `most_frequent()`.
+
+        Returns
+        -------
+        Feature
+            A new feature object.
+
+        Examples
+        --------
+
+        Create a new feature by retrieving the key with the highest value of the dictionary feature:
+
+        >>> counts = catalog.get_feature("CustomerProductGroupTotalCost_7d")
+        >>> new_feature = counts.cd.key_with_highest_value()
+        >>> new_feature.name = "CustomerProductGroupWithHighestTotalCost_7d"
+
+
+        Preview the features:
+
+        >>> features = fb.FeatureGroup([counts, new_feature])
+        >>> df = features.preview(pd.DataFrame([{"POINT_IN_TIME": "2022-04-15 10:00:00", "GROCERYCUSTOMERGUID": "2f4c1578-29d6-44b7-83da-7c5bfb981fa0"}]))
+
+
+        Dictionary feature:
+
+        >>> df["CustomerProductGroupTotalCost_7d"].iloc[0]
+        '{"Chips et Tortillas":2.0,"Colas, Thés glacés et Sodas":10.0,"Crèmes et Chantilly":0.75,"Pains":1.09,"Œufs":1.19}'
+
+        New feature:
+
+        >>> df["CustomerProductGroupWithHighestTotalCost_7d"].iloc[0]
+        'Colas, Thés glacés et Sodas'
+        """
+        return self._make_operation("key_with_highest_value", DBVarType.VARCHAR)
+
+    def key_with_lowest_value(self) -> Feature:
+        """
+        Retrieves the key with the lowest value in the Cross Aggregate feature. When there are
+        ties, the lexicographically smallest key is returned.
+
+        Returns
+        -------
+        Feature
+            A new feature object.
+
+        Examples
+        --------
+
+        Create a new feature by retrieving the key with the lowest value of the dictionary feature:
+
+        >>> counts = catalog.get_feature("CustomerProductGroupTotalCost_7d")
+        >>> new_feature = counts.cd.key_with_lowest_value()
+        >>> new_feature.name = "CustomerProductGroupWithLowestTotalCost_7d"
+
+
+        Preview the features:
+
+        >>> features = fb.FeatureGroup([counts, new_feature])
+        >>> df = features.preview(pd.DataFrame([{"POINT_IN_TIME": "2022-04-15 10:00:00", "GROCERYCUSTOMERGUID": "2f4c1578-29d6-44b7-83da-7c5bfb981fa0"}]))
+
+
+        Dictionary feature:
+
+        >>> df["CustomerProductGroupTotalCost_7d"].iloc[0]
+        '{"Chips et Tortillas":2.0,"Colas, Thés glacés et Sodas":10.0,"Crèmes et Chantilly":0.75,"Pains":1.09,"Œufs":1.19}'
+
+        New feature:
+
+        >>> df["CustomerProductGroupWithLowestTotalCost_7d"].iloc[0]
+        'Crèmes et Chantilly'
+        """
+        return self._make_operation("key_with_lowest_value", DBVarType.VARCHAR)
+
     @typechecked()
     def unique_count(self, include_missing: bool = True) -> Feature:
         """
@@ -450,81 +528,3 @@ class CountDictAccessor:
             output_var_type=DBVarType.FLOAT,
             additional_node_params=additional_node_params,
         )
-
-    def get_key_with_highest_value(self) -> Feature:
-        """
-        Retrieves the key with the highest value in the Cross Aggregate feature. When there are
-        ties, the lexicographically smallest key is returned.
-
-        This is an alias for `most_frequent()`.
-
-        Returns
-        -------
-        Feature
-            A new feature object.
-
-        Examples
-        --------
-
-        Create a new feature by retrieving the key with the highest value of the dictionary feature:
-
-        >>> counts = catalog.get_feature("CustomerProductGroupTotalCost_7d")
-        >>> new_feature = counts.cd.get_key_with_highest_value()
-        >>> new_feature.name = "CustomerProductGroupWithHighestTotalCost_7d"
-
-
-        Preview the features:
-
-        >>> features = fb.FeatureGroup([counts, new_feature])
-        >>> df = features.preview(pd.DataFrame([{"POINT_IN_TIME": "2022-04-15 10:00:00", "GROCERYCUSTOMERGUID": "2f4c1578-29d6-44b7-83da-7c5bfb981fa0"}]))
-
-
-        Dictionary feature:
-
-        >>> df["CustomerProductGroupTotalCost_7d"].iloc[0]
-        '{"Chips et Tortillas":2.0,"Colas, Thés glacés et Sodas":10.0,"Crèmes et Chantilly":0.75,"Pains":1.09,"Œufs":1.19}'
-
-        New feature:
-
-        >>> df["CustomerProductGroupWithHighestTotalCost_7d"].iloc[0]
-        'Colas, Thés glacés et Sodas'
-        """
-        return self._make_operation("get_key_with_highest_value", DBVarType.VARCHAR)
-
-    def get_key_with_lowest_value(self) -> Feature:
-        """
-        Retrieves the key with the lowest value in the Cross Aggregate feature. When there are
-        ties, the lexicographically smallest key is returned.
-
-        Returns
-        -------
-        Feature
-            A new feature object.
-
-        Examples
-        --------
-
-        Create a new feature by retrieving the key with the lowest value of the dictionary feature:
-
-        >>> counts = catalog.get_feature("CustomerProductGroupTotalCost_7d")
-        >>> new_feature = counts.cd.get_key_with_lowest_value()
-        >>> new_feature.name = "CustomerProductGroupWithLowestTotalCost_7d"
-
-
-        Preview the features:
-
-        >>> features = fb.FeatureGroup([counts, new_feature])
-        >>> df = features.preview(pd.DataFrame([{"POINT_IN_TIME": "2022-04-15 10:00:00", "GROCERYCUSTOMERGUID": "2f4c1578-29d6-44b7-83da-7c5bfb981fa0"}]))
-
-
-        Dictionary feature:
-
-        >>> df["CustomerProductGroupTotalCost_7d"].iloc[0]
-        '{"Chips et Tortillas":2.0,"Colas, Thés glacés et Sodas":10.0,"Crèmes et Chantilly":0.75,"Pains":1.09,"Œufs":1.19}'
-
-        New feature:
-
-        >>> df["CustomerProductGroupWithLowestTotalCost_7d"].iloc[0]
-        'Crèmes et Chantilly'
-        """
-        return self._make_operation("get_key_with_lowest_value", DBVarType.VARCHAR)

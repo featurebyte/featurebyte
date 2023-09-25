@@ -15,16 +15,16 @@ from tests.util.helper import check_sdk_code_generation, get_node
         ("entropy", {}, DBVarType.FLOAT, {"transform_type": "entropy"}),
         ("most_frequent", {}, DBVarType.VARCHAR, {"transform_type": "most_frequent"}),
         (
-            "get_key_with_highest_value",
+            "key_with_highest_value",
             {},
             DBVarType.VARCHAR,
-            {"transform_type": "get_key_with_highest_value"},
+            {"transform_type": "key_with_highest_value"},
         ),
         (
-            "get_key_with_lowest_value",
+            "key_with_lowest_value",
             {},
             DBVarType.VARCHAR,
-            {"transform_type": "get_key_with_lowest_value"},
+            {"transform_type": "key_with_lowest_value"},
         ),
         (
             "unique_count",

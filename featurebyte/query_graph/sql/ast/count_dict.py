@@ -37,8 +37,8 @@ class CountDictTransformNode(ExpressionNode):
         function_name = {
             "entropy": "F_COUNT_DICT_ENTROPY",
             "most_frequent": "F_COUNT_DICT_MOST_FREQUENT",
-            "get_key_with_highest_value": "F_COUNT_DICT_MOST_FREQUENT",
-            "get_key_with_lowest_value": "F_COUNT_DICT_LEAST_FREQUENT",
+            "key_with_highest_value": "F_COUNT_DICT_MOST_FREQUENT",
+            "key_with_lowest_value": "F_COUNT_DICT_LEAST_FREQUENT",
             "unique_count": "F_COUNT_DICT_NUM_UNIQUE",
         }[self.transform_type]
         if self.include_missing:
