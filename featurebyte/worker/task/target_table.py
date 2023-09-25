@@ -63,7 +63,6 @@ class TargetTableTask(DataWarehouseMixin, BaseTask):
                     serving_names_mapping=payload.serving_names_mapping,
                     target_id=payload.target_id,
                 ),
-                get_credential=self.get_credential,
                 output_table_details=location.table_details,
                 progress_callback=self.update_progress,
             )

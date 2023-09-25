@@ -1,7 +1,7 @@
 """
 Test preview service module
 """
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 import pandas as pd
 import pytest
@@ -242,7 +242,6 @@ async def test_preview_featurelist__missing_entity(
 async def test_value_counts(
     preview_service,
     feature_store_preview,
-    get_credential,
     mock_snowflake_session,
 ):
     """
