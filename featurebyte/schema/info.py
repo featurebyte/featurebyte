@@ -504,3 +504,15 @@ class UseCaseInfo(BaseInfo):
     target_name: str
     default_eda_table: Optional[str] = None
     default_preview_table: Optional[str] = None
+
+
+class ContextInfo(BaseInfo):
+    """
+    Context Info schema
+    """
+
+    author: Optional[str] = None
+    entities: List[str]
+    default_eda_table: Optional[str] = None
+    default_preview_table: Optional[str] = None
+    associated_use_cases: Optional[List[str]] = None

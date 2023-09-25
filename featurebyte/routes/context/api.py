@@ -23,6 +23,7 @@ from featurebyte.routes.common.schema import (
 from featurebyte.routes.context.controller import ContextController
 from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.context import ContextCreate, ContextList, ContextUpdate
+from featurebyte.schema.info import ContextInfo
 from featurebyte.schema.observation_table import ObservationTableList
 
 
@@ -56,6 +57,14 @@ class ContextRouter(BaseApiRouter[ContextModel, ContextList, ContextCreate, Cont
             self.list_context_observation_tables,
             methods=["GET"],
             response_model=ObservationTableList,
+        )
+
+        # context info
+        self.router.add_api_route(
+            "/{context_id}/info",
+            self.context_info,
+            methods=["GET"],
+            response_model=ContextInfo,
         )
 
         self.remove_routes(
@@ -123,3 +132,10 @@ class ContextRouter(BaseApiRouter[ContextModel, ContextList, ContextCreate, Cont
             page_size=page_size,
         )
         return observation_table_list
+
+    async def context_info(self, request: Request, context_id: PydanticObjectId) -> ContextInfo:
+        """
+        Get Context Info
+        """
+        controller = self.get_controller_for_request(request)
+        return await controller.get_info(context_id=context_id)

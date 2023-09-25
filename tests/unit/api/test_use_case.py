@@ -106,9 +106,9 @@ def test_list_deployments(use_case, target_table, deployment):
     assert deployments.iloc[0]["name"] == deployment.name
 
 
-def test_info(use_case, target_table, deployment):
+def test_info(use_case, target_table):
     """
-    Test UseCase.list_deployments( method
+    Test UseCase.info method
     """
 
     use_case.update_default_eda_table(target_table.name)

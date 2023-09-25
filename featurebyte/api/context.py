@@ -1,7 +1,7 @@
 """
 Context module
 """
-from typing import List
+from typing import Any, Dict, List
 
 from typeguard import typechecked
 
@@ -115,3 +115,36 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         """
         observation_table = ObservationTable.get(observation_table_name)
         observation_table.update(update_payload={"context_id": self.id}, allow_update_local=False)
+
+    @typechecked
+    def info(self, verbose: bool = False) -> Dict[str, Any]:
+        """
+        Returns a dictionary that summarizes the essential information of a Context object. The dictionary
+        contains the following keys:
+
+        - `author`: The name of the user who created the Context object.
+        - `name`: The name of the Context object.
+        - `created_at`: The timestamp indicating when the Context object was created.
+        - `updated_at`: The timestamp indicating when the Context object was last updated.
+        - `entities`: List of primary entities of the Context.
+        - `description`: Description of the Context.
+        - `default_eda_table`: Default eda table of the Context.
+        - `default_preview_table`: Default preview table of the Context.
+        - `associated_use_cases`: UseCases associated of the Context.
+
+        Parameters
+        ----------
+        verbose: bool
+            Control verbose level of the summary.
+
+        Returns
+        -------
+        Dict[str, Any]
+            Key-value mapping of properties of the object.
+
+        Examples
+        --------
+        >>> context = catalog.get_target("context")  # doctest: +SKIP
+        >>> info = context.info()  # doctest: +SKIP
+        """
+        return super().info(verbose)

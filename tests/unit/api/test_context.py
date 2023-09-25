@@ -3,7 +3,7 @@ Unit test for Context class
 """
 import pytest
 
-from featurebyte import Context
+from featurebyte import Context, UseCase
 
 
 @pytest.fixture(name="context_1")
@@ -82,3 +82,28 @@ def test_update_context(catalog, cust_id_entity, target_table):
     obs_tables = context.list_observation_tables()
     assert len(obs_tables) == 1
     assert obs_tables.iloc[0]["name"] == target_table.name
+
+
+def test_info(context_1, float_target, target_table, cust_id_entity):
+    """
+    Test Context.info method
+    """
+
+    use_case = UseCase(
+        name="test_use_case",
+        target_id=float_target.id,
+        context_id=context_1.id,
+        description="test_use_case description",
+    )
+    use_case.save()
+
+    context_1.update_default_eda_table(target_table.name)
+    context_1.update_default_preview_table(target_table.name)
+
+    context_info = context_1.info()
+    assert context_info["name"] == context_1.name
+    assert context_info["description"] == context_1.description
+    assert context_info["entities"] == [cust_id_entity.name]
+    assert context_info["default_eda_table"] == target_table.name
+    assert context_info["default_preview_table"] == target_table.name
+    assert context_info["associated_use_cases"] == [use_case.name]
