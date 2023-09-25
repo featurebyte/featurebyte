@@ -32,7 +32,6 @@ class FeatureStoreWarehouseService:
         self,
         user_defined_function: UserDefinedFunctionModel,
         feature_store: FeatureStoreModel,
-        get_credential: Any,
     ) -> None:
         """
         Check whether user defined function in feature store
@@ -43,11 +42,9 @@ class FeatureStoreWarehouseService:
             User defined function model
         feature_store: FeatureStoreModel
             Feature store model
-        get_credential: Any
-            Get credential handler function
         """
         db_session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store, get_credential=get_credential
+            feature_store=feature_store
         )
         await db_session.check_user_defined_function(user_defined_function=user_defined_function)
 

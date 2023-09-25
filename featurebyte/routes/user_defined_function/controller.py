@@ -53,7 +53,6 @@ class UserDefinedFunctionController(
         self,
         user_defined_function: UserDefinedFunctionModel,
         feature_store: FeatureStoreModel,
-        get_credential: Any,
         exception_class: type[DocumentCreationError] | type[DocumentUpdateError],
         to_delete: bool,
     ) -> None:
@@ -62,7 +61,6 @@ class UserDefinedFunctionController(
             await self.feature_store_warehouse_service.check_user_defined_function_exists(
                 user_defined_function=user_defined_function,
                 feature_store=feature_store,
-                get_credential=get_credential,
             )
         except Exception as exc:
             if to_delete:
@@ -87,7 +85,6 @@ class UserDefinedFunctionController(
     async def create_user_defined_function(
         self,
         data: UserDefinedFunctionCreate,
-        get_credential: Any,
     ) -> UserDefinedFunctionModel:
         """
         Create UserDefinedFunction at persistent
@@ -96,8 +93,6 @@ class UserDefinedFunctionController(
         ----------
         data: UserDefinedFunctionCreate
             UserDefinedFunction creation payload
-        get_credential: Any
-            Function to get credential
 
         Returns
         -------
@@ -114,7 +109,6 @@ class UserDefinedFunctionController(
         await self._validate_user_defined_function(
             user_defined_function=user_defined_function,
             feature_store=feature_store,
-            get_credential=get_credential,
             exception_class=DocumentCreationError,
             to_delete=True,
         )
@@ -124,7 +118,6 @@ class UserDefinedFunctionController(
         self,
         document_id: PydanticObjectId,
         data: UserDefinedFunctionUpdate,
-        get_credential: Any,
     ) -> UserDefinedFunctionModel:
         """
         Update UserDefinedFunction at persistent
@@ -135,8 +128,6 @@ class UserDefinedFunctionController(
             UserDefinedFunction id
         data: UserDefinedFunctionUpdate
             UserDefinedFunction update payload
-        get_credential: Any
-            Function to get credential
 
         Returns
         -------
@@ -173,7 +164,6 @@ class UserDefinedFunctionController(
         await self._validate_user_defined_function(
             user_defined_function=updated_document,
             feature_store=feature_store,
-            get_credential=get_credential,
             exception_class=DocumentUpdateError,
             to_delete=False,
         )
