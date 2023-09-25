@@ -1505,7 +1505,7 @@ def api_object_to_id_fixture():
 
 
 @pytest.fixture(scope="session")
-def user(user_id):
+def user():
     """
     Mock user
     """
