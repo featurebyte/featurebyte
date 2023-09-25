@@ -499,7 +499,7 @@ class UseCaseInfo(BaseInfo):
     """
 
     author: Optional[str] = None
-    primary_entities: List[str]
+    primary_entities: EntityBriefInfoList
     context_name: str
     target_name: str
     default_eda_table: Optional[str] = None
@@ -512,7 +512,7 @@ class ContextInfo(BaseInfo):
     """
 
     author: Optional[str] = None
-    entities: List[str]
+    entities: EntityBriefInfoList
     default_eda_table: Optional[str] = None
     default_preview_table: Optional[str] = None
     associated_use_cases: Optional[List[str]] = None

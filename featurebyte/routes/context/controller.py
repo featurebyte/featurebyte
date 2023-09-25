@@ -8,8 +8,9 @@ from bson import ObjectId
 from featurebyte.models.context import ContextModel
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.context import ContextList, ContextUpdate
-from featurebyte.schema.info import ContextInfo
+from featurebyte.schema.info import ContextInfo, EntityBriefInfo, EntityBriefInfoList
 from featurebyte.schema.observation_table import ObservationTableUpdate
+from featurebyte.service.catalog import CatalogService
 from featurebyte.service.context import ContextService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.observation_table import ObservationTableService
@@ -32,6 +33,7 @@ class ContextController(BaseDocumentController[ContextModel, ContextService, Con
         user_service: UserService,
         entity_service: EntityService,
         use_case_service: UseCaseService,
+        catalog_service: CatalogService,
     ):
         super().__init__(service=context_service)
         self.observation_table_service = observation_table_service
@@ -39,6 +41,7 @@ class ContextController(BaseDocumentController[ContextModel, ContextService, Con
         self.user_service = user_service
         self.entity_service = entity_service
         self.use_case_service = use_case_service
+        self.catalog_service = catalog_service
 
     async def update_context(self, context_id: ObjectId, data: ContextUpdate) -> ContextModel:
         """
@@ -107,8 +110,12 @@ class ContextController(BaseDocumentController[ContextModel, ContextService, Con
             )
             default_eda_table_name = default_eda_table.name
 
-        entities = [
-            entity.name
+        entity_briefs = [
+            EntityBriefInfo(
+                name=entity.name,
+                serving_names=entity.serving_names,
+                catalog_name=(await self.catalog_service.get_document(entity.catalog_id)).name,
+            )
             async for entity in self.entity_service.list_documents_iterator(
                 query_filter={"_id": {"$in": context.entity_ids}},
             )
@@ -124,7 +131,7 @@ class ContextController(BaseDocumentController[ContextModel, ContextService, Con
         return ContextInfo(
             **context.dict(),
             author=author,
-            entities=entities,
+            entities=EntityBriefInfoList(__root__=entity_briefs),
             default_preview_table=default_preview_table_name,
             default_eda_table=default_eda_table_name,
             associated_use_cases=use_cases,
