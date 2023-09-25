@@ -10,6 +10,7 @@ from contextlib import asynccontextmanager
 from featurebyte.logging import get_logger
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.session.base import BaseSession
 from featurebyte.session.manager import SessionManager
@@ -23,6 +24,7 @@ class DataWarehouseMixin:
     """
 
     payload: BaseTaskPayload
+    app_container: LazyAppContainer
     get_credential: Callable[..., Any]
 
     async def get_db_session(self, feature_store: FeatureStoreModel) -> BaseSession:
@@ -38,15 +40,9 @@ class DataWarehouseMixin:
         -------
         BaseSession
         """
-        session_manager = SessionManager(
-            credentials={
-                feature_store.name: await self.get_credential(
-                    user_id=self.payload.user_id,
-                    feature_store_name=feature_store.name,
-                )
-            }
+        return await self.app_container.session_manager_service.get_feature_store_session(
+            feature_store
         )
-        return await session_manager.get_session(feature_store)
 
     @asynccontextmanager
     async def drop_table_on_error(

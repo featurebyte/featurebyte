@@ -19,12 +19,6 @@ from featurebyte.service.task_manager import TaskManager
 from tests.util.task import LongRunningPayload
 
 
-@pytest.fixture(name="user_id")
-def user_id_fixture():
-    """User ID fixture"""
-    return ObjectId()
-
-
 @pytest.fixture(name="celery")
 def celery_fixture():
     """Celery fixture"""

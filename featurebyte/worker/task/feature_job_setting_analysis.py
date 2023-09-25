@@ -26,7 +26,6 @@ from featurebyte.schema.worker.task.feature_job_setting_analysis import (
     FeatureJobSettingAnalysisBackTestTaskPayload,
     FeatureJobSettingAnalysisTaskPayload,
 )
-from featurebyte.session.manager import SessionManager
 from featurebyte.worker.task.base import BaseTask
 
 logger = get_logger(__name__)
@@ -84,14 +83,9 @@ class FeatureJobSettingAnalysisTask(BaseTask):
         )
 
         # establish database session
-        session_manager = SessionManager(
-            credentials={
-                feature_store.name: await self.get_credential(
-                    user_id=payload.user_id, feature_store_name=feature_store.name
-                )
-            }
+        db_session = await self.app_container.session_manager_service.get_feature_store_session(
+            feature_store
         )
-        db_session = await session_manager.get_session(feature_store)
 
         event_dataset = EventDataset(
             database_type=feature_store.type,

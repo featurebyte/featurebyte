@@ -48,7 +48,7 @@ class TargetTableTask(DataWarehouseMixin, BaseTask):
             self.app_container.observation_table_service
         )
         location = await observation_table_service.generate_materialized_table_location(
-            self.get_credential, payload.feature_store_id
+            payload.feature_store_id
         )
         async with self.drop_table_on_error(
             db_session=db_session, table_details=location.table_details

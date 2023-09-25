@@ -62,9 +62,16 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
 
     @pytest_asyncio.fixture(autouse=True)
     async def setup(  # pylint: disable=W0221
-        self, mongo_persistent, storage, temp_storage, mock_event_dataset, get_credential, catalog
+        self,
+        mongo_persistent,
+        storage,
+        temp_storage,
+        mock_event_dataset,
+        get_credential,
+        catalog,
+        insert_credential,
     ):
-        _ = mock_event_dataset
+        _ = mock_event_dataset, insert_credential
         persistent, _ = mongo_persistent
         await self.setup_persistent_storage(persistent, storage, temp_storage, catalog)
 

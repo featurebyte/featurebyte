@@ -53,7 +53,7 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask):
             app_container.batch_feature_table_service
         )
         location = await batch_feature_table_service.generate_materialized_table_location(
-            self.get_credential, payload.feature_store_id
+            payload.feature_store_id
         )
 
         # retrieve feature list from deployment

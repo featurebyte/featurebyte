@@ -40,14 +40,9 @@ class TileTask(BaseTask):
         )
 
         # establish database session
-        session_manager = SessionManager(
-            credentials={
-                feature_store.name: await self.get_credential(
-                    user_id=payload.user_id, feature_store_name=feature_store.name
-                )
-            }
+        db_session = await self.app_container.session_manager_service.get_feature_store_session(
+            feature_store
         )
-        db_session = await session_manager.get_session(feature_store)
 
         await self.app_container.tile_task_executor.execute(
             session=db_session, params=payload.parameters
