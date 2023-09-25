@@ -660,9 +660,7 @@ class Feature(
                 traceback_message = exc.response.json()["traceback"]
                 has_dup_exception = False
                 if traceback_message:
-                    has_dup_exception = (
-                        "featurebyte.exception.DuplicatedRecordException" in traceback_message
-                    )
+                    has_dup_exception = "DuplicatedRecordException" in traceback_message
                 if conflict_resolution == "retrieve" and has_dup_exception:
                     object_dict = self._get_object_dict_by_name(name=feature_item.name)
                 else:
