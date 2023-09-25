@@ -158,9 +158,7 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
             description=target_doc.description,
         )
 
-    async def preview(
-        self, target_preview: FeatureOrTargetPreview, get_credential: Any
-    ) -> dict[str, Any]:
+    async def preview(self, target_preview: FeatureOrTargetPreview) -> dict[str, Any]:
         """
         Preview a Target
 
@@ -168,8 +166,6 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
         ----------
         target_preview: FeatureOrTargetPreview
             Target preview payload
-        get_credential: Any
-            Get credential handler function
 
         Returns
         -------
@@ -183,7 +179,7 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
         """
         try:
             return await self.feature_preview_service.preview_target_or_feature(
-                feature_or_target_preview=target_preview, get_credential=get_credential
+                feature_or_target_preview=target_preview
             )
         except (MissingPointInTimeColumnError, RequiredEntityNotProvidedError) as exc:
             raise HTTPException(

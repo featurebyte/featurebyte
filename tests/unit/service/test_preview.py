@@ -110,18 +110,18 @@ async def test_preview_feature__time_based_feature_without_point_in_time_errors(
         node_name=float_feature.node_name,
     )
     with pytest.raises(MissingPointInTimeColumnError) as exc:
-        await feature_preview_service.preview_target_or_feature(feature_preview, AsyncMock())
+        await feature_preview_service.preview_target_or_feature(feature_preview)
     assert "Point in time column not provided" in str(exc)
 
 
 @pytest.mark.asyncio
 async def test_preview_feature__non_time_based_feature_without_point_in_time_doesnt_error(
-    feature_preview_service, transaction_entity, non_time_based_feature, get_credential
+    feature_preview_service, transaction_entity, non_time_based_feature, insert_credential
 ):
     """
     Test preview feature
     """
-    _ = transaction_entity
+    _ = transaction_entity, insert_credential
     feature_preview = FeatureOrTargetPreview(
         feature_store_name="sf_featurestore",
         point_in_time_and_serving_name_list=[
@@ -132,14 +132,12 @@ async def test_preview_feature__non_time_based_feature_without_point_in_time_doe
         graph=non_time_based_feature.graph,
         node_name=non_time_based_feature.node_name,
     )
-    await feature_preview_service.preview_target_or_feature(feature_preview, get_credential)
+    await feature_preview_service.preview_target_or_feature(feature_preview)
 
 
 @pytest.mark.usefixtures("mock_get_feature_store_session")
 @pytest.mark.asyncio
-async def test_preview_feature__missing_entity(
-    feature_preview_service, production_ready_feature, get_credential
-):
+async def test_preview_feature__missing_entity(feature_preview_service, production_ready_feature):
     """
     Test preview feature but without providing the required entity
     """
@@ -155,7 +153,7 @@ async def test_preview_feature__missing_entity(
         node_name=production_ready_feature.node_name,
     )
     with pytest.raises(RequiredEntityNotProvidedError) as exc:
-        await feature_preview_service.preview_target_or_feature(feature_preview, get_credential)
+        await feature_preview_service.preview_target_or_feature(feature_preview)
     expected = (
         'Required entities are not provided in the request: customer (serving name: "cust_id")'
     )
@@ -260,6 +258,5 @@ async def test_value_counts(
         feature_store_preview,
         num_rows=100000,
         num_categories_limit=500,
-        get_credential=get_credential,
     )
     assert result == {"a": 100, "b": 50}

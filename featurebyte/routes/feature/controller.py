@@ -362,9 +362,7 @@ class FeatureController(
         document_data["data"] = output
         return self.paginated_document_class(**document_data)
 
-    async def preview(
-        self, feature_preview: FeatureOrTargetPreview, get_credential: Any
-    ) -> dict[str, Any]:
+    async def preview(self, feature_preview: FeatureOrTargetPreview) -> dict[str, Any]:
         """
         Preview a Feature
 
@@ -372,8 +370,6 @@ class FeatureController(
         ----------
         feature_preview: FeatureOrTargetPreview
             FeatureOrTargetPreview object
-        get_credential: Any
-            Get credential handler function
 
         Returns
         -------
@@ -387,7 +383,7 @@ class FeatureController(
         """
         try:
             return await self.feature_preview_service.preview_target_or_feature(
-                feature_or_target_preview=feature_preview, get_credential=get_credential
+                feature_or_target_preview=feature_preview
             )
         except (MissingPointInTimeColumnError, RequiredEntityNotProvidedError) as exc:
             raise HTTPException(

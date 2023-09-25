@@ -49,7 +49,7 @@ class PreviewService:
         self.session_manager_service = session_manager_service
 
     async def _get_feature_store_session(
-        self, graph: QueryGraph, node_name: str, feature_store_name: str, get_credential: Any
+        self, graph: QueryGraph, node_name: str, feature_store_name: str
     ) -> Tuple[FeatureStoreModel, BaseSession]:
         """
         Get feature store and session from a graph
@@ -62,8 +62,6 @@ class PreviewService:
             Name of node to use
         feature_store_name: str
             Name of feature store
-        get_credential: Any
-            Get credential handler function
 
         Returns
         -------
@@ -73,7 +71,6 @@ class PreviewService:
         feature_store = FeatureStoreModel(**feature_store_dict, name=feature_store_name)
         session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store,
-            get_credential=get_credential,
         )
         return feature_store, session
 
@@ -93,11 +90,11 @@ class PreviewService:
         FeatureStoreShape
             Row and column counts
         """
+        _ = get_credential
         feature_store, session = await self._get_feature_store_session(
             graph=preview.graph,
             node_name=preview.node_name,
             feature_store_name=preview.feature_store_name,
-            get_credential=get_credential,
         )
         shape_sql, num_cols = GraphInterpreter(
             preview.graph, source_type=feature_store.type
@@ -130,11 +127,11 @@ class PreviewService:
         dict[str, Any]
             Dataframe converted to json string
         """
+        _ = get_credential
         feature_store, session = await self._get_feature_store_session(
             graph=preview.graph,
             node_name=preview.node_name,
             feature_store_name=preview.feature_store_name,
-            get_credential=get_credential,
         )
         preview_sql, type_conversions = GraphInterpreter(
             preview.graph, source_type=feature_store.type
@@ -164,11 +161,11 @@ class PreviewService:
         dict[str, Any]
             Dataframe converted to json string
         """
+        _ = get_credential
         feature_store, session = await self._get_feature_store_session(
             graph=sample.graph,
             node_name=sample.node_name,
             feature_store_name=sample.feature_store_name,
-            get_credential=get_credential,
         )
         sample_sql, type_conversions = GraphInterpreter(
             sample.graph, source_type=feature_store.type
@@ -205,11 +202,11 @@ class PreviewService:
         dict[str, Any]
             Dataframe converted to json string
         """
+        _ = get_credential
         feature_store, session = await self._get_feature_store_session(
             graph=sample.graph,
             node_name=sample.node_name,
             feature_store_name=sample.feature_store_name,
-            get_credential=get_credential,
         )
 
         describe_sql, type_conversions, row_names, columns = GraphInterpreter(
@@ -239,7 +236,6 @@ class PreviewService:
         num_rows: int,
         num_categories_limit: int,
         seed: int = 1234,
-        get_credential: Any = None,
     ) -> dict[str, int]:
         """
         Get value counts for a column
@@ -255,8 +251,6 @@ class PreviewService:
             the data, the result will include the most frequent categories up to this number.
         seed: int
             Random seed to use for sampling
-        get_credential: Any
-            Get credential handler function
 
         Returns
         -------
@@ -266,7 +260,6 @@ class PreviewService:
             graph=preview.graph,
             node_name=preview.node_name,
             feature_store_name=preview.feature_store_name,
-            get_credential=get_credential,
         )
         value_counts_sql = GraphInterpreter(
             preview.graph, source_type=feature_store.type

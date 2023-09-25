@@ -92,7 +92,7 @@ class FeaturePreviewService(PreviewService):
         return point_in_time_and_serving_name_list, updated
 
     async def preview_target_or_feature(
-        self, feature_or_target_preview: FeatureOrTargetPreview, get_credential: Any
+        self, feature_or_target_preview: FeatureOrTargetPreview
     ) -> dict[str, Any]:
         """
         Preview a Feature or Target
@@ -101,8 +101,6 @@ class FeaturePreviewService(PreviewService):
         ----------
         feature_or_target_preview: FeatureOrTargetPreview
             TargetPreview object
-        get_credential: Any
-            Get credential handler function
 
         Returns
         -------
@@ -130,7 +128,6 @@ class FeaturePreviewService(PreviewService):
             graph=graph,
             node_name=feature_or_target_preview.node_name,
             feature_store_name=feature_or_target_preview.feature_store_name,
-            get_credential=get_credential,
         )
         parent_serving_preparation = (
             await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
