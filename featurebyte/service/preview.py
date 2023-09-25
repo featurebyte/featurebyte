@@ -49,7 +49,7 @@ class PreviewService:
         self.session_manager_service = session_manager_service
 
     async def _get_feature_store_session(
-        self, graph: QueryGraph, node_name: str, feature_store_name: str, get_credential: Any
+        self, graph: QueryGraph, node_name: str, feature_store_name: str
     ) -> Tuple[FeatureStoreModel, BaseSession]:
         """
         Get feature store and session from a graph
@@ -62,8 +62,6 @@ class PreviewService:
             Name of node to use
         feature_store_name: str
             Name of feature store
-        get_credential: Any
-            Get credential handler function
 
         Returns
         -------
@@ -73,11 +71,10 @@ class PreviewService:
         feature_store = FeatureStoreModel(**feature_store_dict, name=feature_store_name)
         session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store,
-            get_credential=get_credential,
         )
         return feature_store, session
 
-    async def shape(self, preview: FeatureStorePreview, get_credential: Any) -> FeatureStoreShape:
+    async def shape(self, preview: FeatureStorePreview) -> FeatureStoreShape:
         """
         Get the shape of a QueryObject that is not a Feature (e.g. SourceTable, EventTable, EventView, etc)
 
@@ -85,8 +82,6 @@ class PreviewService:
         ----------
         preview: FeatureStorePreview
             FeatureStorePreview object
-        get_credential: Any
-            Get credential handler function
 
         Returns
         -------
@@ -97,7 +92,6 @@ class PreviewService:
             graph=preview.graph,
             node_name=preview.node_name,
             feature_store_name=preview.feature_store_name,
-            get_credential=get_credential,
         )
         shape_sql, num_cols = GraphInterpreter(
             preview.graph, source_type=feature_store.type
@@ -110,9 +104,7 @@ class PreviewService:
             num_cols=num_cols,
         )
 
-    async def preview(
-        self, preview: FeatureStorePreview, limit: int, get_credential: Any
-    ) -> dict[str, Any]:
+    async def preview(self, preview: FeatureStorePreview, limit: int) -> dict[str, Any]:
         """
         Preview a QueryObject that is not a Feature (e.g. SourceTable, EventTable, EventView, etc)
 
@@ -122,8 +114,6 @@ class PreviewService:
             FeatureStorePreview object
         limit: int
             Row limit on preview results
-        get_credential: Any
-            Get credential handler function
 
         Returns
         -------
@@ -134,7 +124,6 @@ class PreviewService:
             graph=preview.graph,
             node_name=preview.node_name,
             feature_store_name=preview.feature_store_name,
-            get_credential=get_credential,
         )
         preview_sql, type_conversions = GraphInterpreter(
             preview.graph, source_type=feature_store.type
@@ -142,9 +131,7 @@ class PreviewService:
         result = await session.execute_query(preview_sql)
         return dataframe_to_json(result, type_conversions)
 
-    async def sample(
-        self, sample: FeatureStoreSample, size: int, seed: int, get_credential: Any
-    ) -> dict[str, Any]:
+    async def sample(self, sample: FeatureStoreSample, size: int, seed: int) -> dict[str, Any]:
         """
         Sample a QueryObject that is not a Feature (e.g. SourceTable, EventTable, EventView, etc)
 
@@ -156,8 +143,6 @@ class PreviewService:
             Maximum rows to sample
         seed: int
             Random seed to use for sampling
-        get_credential: Any
-            Get credential handler function
 
         Returns
         -------
@@ -168,7 +153,6 @@ class PreviewService:
             graph=sample.graph,
             node_name=sample.node_name,
             feature_store_name=sample.feature_store_name,
-            get_credential=get_credential,
         )
         sample_sql, type_conversions = GraphInterpreter(
             sample.graph, source_type=feature_store.type
@@ -183,9 +167,7 @@ class PreviewService:
         result = await session.execute_query(sample_sql)
         return dataframe_to_json(result, type_conversions)
 
-    async def describe(
-        self, sample: FeatureStoreSample, size: int, seed: int, get_credential: Any
-    ) -> dict[str, Any]:
+    async def describe(self, sample: FeatureStoreSample, size: int, seed: int) -> dict[str, Any]:
         """
         Sample a QueryObject that is not a Feature (e.g. SourceTable, EventTable, EventView, etc)
 
@@ -197,8 +179,6 @@ class PreviewService:
             Maximum rows to sample
         seed: int
             Random seed to use for sampling
-        get_credential: Any
-            Get credential handler function
 
         Returns
         -------
@@ -209,7 +189,6 @@ class PreviewService:
             graph=sample.graph,
             node_name=sample.node_name,
             feature_store_name=sample.feature_store_name,
-            get_credential=get_credential,
         )
 
         describe_sql, type_conversions, row_names, columns = GraphInterpreter(
@@ -239,7 +218,6 @@ class PreviewService:
         num_rows: int,
         num_categories_limit: int,
         seed: int = 1234,
-        get_credential: Any = None,
     ) -> dict[str, int]:
         """
         Get value counts for a column
@@ -255,8 +233,6 @@ class PreviewService:
             the data, the result will include the most frequent categories up to this number.
         seed: int
             Random seed to use for sampling
-        get_credential: Any
-            Get credential handler function
 
         Returns
         -------
@@ -266,7 +242,6 @@ class PreviewService:
             graph=preview.graph,
             node_name=preview.node_name,
             feature_store_name=preview.feature_store_name,
-            get_credential=get_credential,
         )
         value_counts_sql = GraphInterpreter(
             preview.graph, source_type=feature_store.type

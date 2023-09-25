@@ -188,7 +188,6 @@ class FeatureStoreRouter(
         result: List[str] = await controller.list_schemas(
             feature_store=feature_store,
             database_name=database_name,
-            get_credential=request.state.get_credential,
         )
         return result
 
@@ -207,7 +206,6 @@ class FeatureStoreRouter(
             feature_store=feature_store,
             database_name=database_name,
             schema_name=schema_name,
-            get_credential=request.state.get_credential,
         )
         return result
 
@@ -228,7 +226,6 @@ class FeatureStoreRouter(
             database_name=database_name,
             schema_name=schema_name,
             table_name=table_name,
-            get_credential=request.state.get_credential,
         )
         return result
 
@@ -243,7 +240,7 @@ class FeatureStoreRouter(
         controller = request.state.app_container.feature_store_controller
         return cast(
             FeatureStoreShape,
-            await controller.shape(preview=preview, get_credential=request.state.get_credential),
+            await controller.shape(preview=preview),
         )
 
     @staticmethod
@@ -258,9 +255,7 @@ class FeatureStoreRouter(
         controller = request.state.app_container.feature_store_controller
         return cast(
             Dict[str, Any],
-            await controller.preview(
-                preview=preview, limit=limit, get_credential=request.state.get_credential
-            ),
+            await controller.preview(preview=preview, limit=limit),
         )
 
     @staticmethod
@@ -276,9 +271,7 @@ class FeatureStoreRouter(
         controller = request.state.app_container.feature_store_controller
         return cast(
             Dict[str, Any],
-            await controller.sample(
-                sample=sample, size=size, seed=seed, get_credential=request.state.get_credential
-            ),
+            await controller.sample(sample=sample, size=size, seed=seed),
         )
 
     @staticmethod
@@ -294,7 +287,5 @@ class FeatureStoreRouter(
         controller = request.state.app_container.feature_store_controller
         return cast(
             Dict[str, Any],
-            await controller.describe(
-                sample=sample, size=size, seed=seed, get_credential=request.state.get_credential
-            ),
+            await controller.describe(sample=sample, size=size, seed=seed),
         )

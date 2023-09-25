@@ -55,7 +55,6 @@ def mocked_session_fixture():
 async def test_get_historical_features__feature_list_not_deployed(
     historical_features_service,
     production_ready_feature_list,
-    get_credential,
     mock_get_historical_features,
     output_table_details,
 ):
@@ -71,7 +70,6 @@ async def test_get_historical_features__feature_list_not_deployed(
     await historical_features_service.compute(
         training_events,
         featurelist_get_historical_features,
-        get_credential,
         output_table_details=output_table_details,
     )
     assert mock_get_historical_features.assert_called_once
@@ -83,7 +81,6 @@ async def test_get_historical_features__feature_list_not_deployed(
 async def test_get_historical_features__feature_list_not_saved(
     historical_features_service,
     production_ready_feature,
-    get_credential,
     mock_get_historical_features,
     output_table_details,
 ):
@@ -102,7 +99,6 @@ async def test_get_historical_features__feature_list_not_saved(
     await historical_features_service.compute(
         training_events,
         featurelist_get_historical_features,
-        get_credential,
         output_table_details=output_table_details,
     )
     assert mock_get_historical_features.assert_called_once
@@ -114,7 +110,6 @@ async def test_get_historical_features__feature_list_not_saved(
 async def test_get_historical_features__feature_list_deployed(
     historical_features_service,
     deployed_feature_list,
-    get_credential,
     mock_get_historical_features,
     output_table_details,
 ):
@@ -130,7 +125,6 @@ async def test_get_historical_features__feature_list_deployed(
     await historical_features_service.compute(
         training_events,
         featurelist_get_historical_features,
-        get_credential,
         output_table_details=output_table_details,
     )
     assert mock_get_historical_features.assert_called_once

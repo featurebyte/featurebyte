@@ -137,7 +137,7 @@ async def list_target_audit_logs(
 
 
 @router.post("/preview", response_model=Dict[str, Any])
-async def get_feature_preview(
+async def get_target_preview(
     request: Request,
     target_preview: FeatureOrTargetPreview,
 ) -> Dict[str, Any]:
@@ -147,9 +147,7 @@ async def get_feature_preview(
     controller = request.state.app_container.target_controller
     return cast(
         Dict[str, Any],
-        await controller.preview(
-            target_preview=target_preview, get_credential=request.state.get_credential
-        ),
+        await controller.preview(target_preview=target_preview),
     )
 
 

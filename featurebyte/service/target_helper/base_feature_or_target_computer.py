@@ -143,7 +143,6 @@ class Computer(Generic[ComputeRequestT, ExecutorParamsT]):
         self,
         observation_set: Union[pd.DataFrame, ObservationTableModel],
         compute_request: ComputeRequestT,
-        get_credential: Any,
         output_table_details: TableDetails,
         progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
     ) -> None:
@@ -156,8 +155,6 @@ class Computer(Generic[ComputeRequestT, ExecutorParamsT]):
             Observation set data
         compute_request: ComputeRequestT
             Compute request
-        get_credential: Any
-            Get credential handler function
         output_table_details: TableDetails
             Table details to write the results to
         progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
@@ -181,7 +178,6 @@ class Computer(Generic[ComputeRequestT, ExecutorParamsT]):
         )
         db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=validation_parameters.feature_store,
-            get_credential=get_credential,
         )
         params = await self.get_executor_params(
             request=compute_request,
