@@ -74,7 +74,7 @@ class PreviewService:
         )
         return feature_store, session
 
-    async def shape(self, preview: FeatureStorePreview, get_credential: Any) -> FeatureStoreShape:
+    async def shape(self, preview: FeatureStorePreview) -> FeatureStoreShape:
         """
         Get the shape of a QueryObject that is not a Feature (e.g. SourceTable, EventTable, EventView, etc)
 
@@ -82,15 +82,12 @@ class PreviewService:
         ----------
         preview: FeatureStorePreview
             FeatureStorePreview object
-        get_credential: Any
-            Get credential handler function
 
         Returns
         -------
         FeatureStoreShape
             Row and column counts
         """
-        _ = get_credential
         feature_store, session = await self._get_feature_store_session(
             graph=preview.graph,
             node_name=preview.node_name,
@@ -107,9 +104,7 @@ class PreviewService:
             num_cols=num_cols,
         )
 
-    async def preview(
-        self, preview: FeatureStorePreview, limit: int, get_credential: Any
-    ) -> dict[str, Any]:
+    async def preview(self, preview: FeatureStorePreview, limit: int) -> dict[str, Any]:
         """
         Preview a QueryObject that is not a Feature (e.g. SourceTable, EventTable, EventView, etc)
 
@@ -119,15 +114,12 @@ class PreviewService:
             FeatureStorePreview object
         limit: int
             Row limit on preview results
-        get_credential: Any
-            Get credential handler function
 
         Returns
         -------
         dict[str, Any]
             Dataframe converted to json string
         """
-        _ = get_credential
         feature_store, session = await self._get_feature_store_session(
             graph=preview.graph,
             node_name=preview.node_name,
@@ -139,9 +131,7 @@ class PreviewService:
         result = await session.execute_query(preview_sql)
         return dataframe_to_json(result, type_conversions)
 
-    async def sample(
-        self, sample: FeatureStoreSample, size: int, seed: int, get_credential: Any
-    ) -> dict[str, Any]:
+    async def sample(self, sample: FeatureStoreSample, size: int, seed: int) -> dict[str, Any]:
         """
         Sample a QueryObject that is not a Feature (e.g. SourceTable, EventTable, EventView, etc)
 
@@ -153,15 +143,12 @@ class PreviewService:
             Maximum rows to sample
         seed: int
             Random seed to use for sampling
-        get_credential: Any
-            Get credential handler function
 
         Returns
         -------
         dict[str, Any]
             Dataframe converted to json string
         """
-        _ = get_credential
         feature_store, session = await self._get_feature_store_session(
             graph=sample.graph,
             node_name=sample.node_name,
@@ -180,9 +167,7 @@ class PreviewService:
         result = await session.execute_query(sample_sql)
         return dataframe_to_json(result, type_conversions)
 
-    async def describe(
-        self, sample: FeatureStoreSample, size: int, seed: int, get_credential: Any
-    ) -> dict[str, Any]:
+    async def describe(self, sample: FeatureStoreSample, size: int, seed: int) -> dict[str, Any]:
         """
         Sample a QueryObject that is not a Feature (e.g. SourceTable, EventTable, EventView, etc)
 
@@ -194,15 +179,12 @@ class PreviewService:
             Maximum rows to sample
         seed: int
             Random seed to use for sampling
-        get_credential: Any
-            Get credential handler function
 
         Returns
         -------
         dict[str, Any]
             Dataframe converted to json string
         """
-        _ = get_credential
         feature_store, session = await self._get_feature_store_session(
             graph=sample.graph,
             node_name=sample.node_name,
