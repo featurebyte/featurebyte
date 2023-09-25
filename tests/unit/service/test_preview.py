@@ -164,7 +164,7 @@ async def test_preview_feature__missing_entity(
 
 @pytest.mark.asyncio
 async def test_preview_featurelist__time_based_feature_errors_without_time(
-    feature_preview_service, float_feature, get_credential
+    feature_preview_service, float_feature
 ):
     """
     Test preview featurelist
@@ -185,18 +185,18 @@ async def test_preview_featurelist__time_based_feature_errors_without_time(
         ],
     )
     with pytest.raises(MissingPointInTimeColumnError) as exc:
-        await feature_preview_service.preview_featurelist(feature_list_preview, get_credential)
+        await feature_preview_service.preview_featurelist(feature_list_preview)
     assert "Point in time column not provided" in str(exc)
 
 
 @pytest.mark.asyncio
 async def test_preview_featurelist__non_time_based_feature_no_error_without_time(
-    feature_preview_service, transaction_entity, non_time_based_feature, get_credential
+    feature_preview_service, transaction_entity, non_time_based_feature, insert_credential
 ):
     """
     Test preview featurelist
     """
-    _ = transaction_entity
+    _ = transaction_entity, insert_credential
     store = FeatureStore.get("sf_featurestore")
     feature_list_preview = FeatureListPreview(
         feature_clusters=[
@@ -212,12 +212,12 @@ async def test_preview_featurelist__non_time_based_feature_no_error_without_time
             }
         ],
     )
-    await feature_preview_service.preview_featurelist(feature_list_preview, get_credential)
+    await feature_preview_service.preview_featurelist(feature_list_preview)
 
 
 @pytest.mark.asyncio
 async def test_preview_featurelist__missing_entity(
-    feature_preview_service, production_ready_feature_list, get_credential
+    feature_preview_service, production_ready_feature_list
 ):
     """
     Test preview featurelist but without providing the required entity
@@ -233,7 +233,7 @@ async def test_preview_featurelist__missing_entity(
         ],
     )
     with pytest.raises(RequiredEntityNotProvidedError) as exc:
-        await feature_preview_service.preview_featurelist(feature_list_preview, get_credential)
+        await feature_preview_service.preview_featurelist(feature_list_preview)
     expected = (
         'Required entities are not provided in the request: customer (serving name: "cust_id")'
     )

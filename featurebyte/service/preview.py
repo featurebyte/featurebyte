@@ -283,7 +283,6 @@ class PreviewService:
     async def download_table(
         self,
         location: TabularSource,
-        get_credential: Any,
     ) -> Optional[AsyncGenerator[bytes, None]]:
         """
         Download table from location.
@@ -292,8 +291,6 @@ class PreviewService:
         ----------
         location: TabularSource
             Location to download from
-        get_credential: Any
-            Get credential handler function
 
         Returns
         -------
@@ -310,7 +307,6 @@ class PreviewService:
         )
         db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store,
-            get_credential=get_credential,
         )
 
         # check size of the table

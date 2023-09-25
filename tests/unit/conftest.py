@@ -12,6 +12,7 @@ from uuid import UUID, uuid4
 
 import pandas as pd
 import pytest
+import pytest_asyncio
 from bson.objectid import ObjectId
 from cachetools import TTLCache
 from fastapi.testclient import TestClient
@@ -1535,6 +1536,28 @@ def app_container_fixture(persistent, user, catalog):
         storage=LocalTempStorage(),
         catalog_id=catalog.id,
         app_container_config=app_container_config,
+    )
+
+
+@pytest_asyncio.fixture(name="insert_credential")
+async def insert_credential_fixture(persistent, user, snowflake_feature_store_id):
+    """
+    Calling this fixture will insert the credential into the database.
+    """
+    credential_model = CredentialModel(
+        name="sf_featurestore",
+        feature_store_id=snowflake_feature_store_id,
+        database_credential=UsernamePasswordCredential(
+            username="sf_user",
+            password="sf_password",
+        ),
+        user_id=user.id,
+    )
+    credential_model.encrypt()
+    await persistent.insert_one(
+        collection_name=CredentialModel.collection_name(),
+        document=credential_model.dict(by_alias=True),
+        user_id=user.id,
     )
 
 

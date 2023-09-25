@@ -155,9 +155,7 @@ class FeaturePreviewService(PreviewService):
             result = result.drop(SpecialColumnName.POINT_IN_TIME, axis="columns")
         return dataframe_to_json(result)
 
-    async def preview_featurelist(
-        self, featurelist_preview: FeatureListPreview, get_credential: Any
-    ) -> dict[str, Any]:
+    async def preview_featurelist(self, featurelist_preview: FeatureListPreview) -> dict[str, Any]:
         """
         Preview a FeatureList
 
@@ -165,8 +163,6 @@ class FeaturePreviewService(PreviewService):
         ----------
         featurelist_preview: FeatureListPreview
             FeatureListPreview object
-        get_credential: Any
-            Get credential handler function
 
         Returns
         -------
@@ -207,7 +203,6 @@ class FeaturePreviewService(PreviewService):
             )
             db_session = await self.session_manager_service.get_feature_store_session(
                 feature_store=feature_store,
-                get_credential=get_credential,
             )
             preview_sql = get_feature_or_target_preview_sql(
                 request_table_name=f"{REQUEST_TABLE_NAME}_{db_session.generate_session_unique_id()}",
