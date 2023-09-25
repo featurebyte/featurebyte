@@ -13,7 +13,7 @@ $$
       continue;
     }
     v = COUNTS[k];
-    if (REVERSED) {
+    if (REVERSED) {  // Set reversed as true to obtain the least frequent key
       v = -1 * v;
     }
     if (v > most_frequent_count) {

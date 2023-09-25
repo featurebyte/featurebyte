@@ -93,14 +93,14 @@ class CountDictTransformNode(BaseCountDictOpNode):
         Union[Parameters, UniqueCountParameters], Field(discriminator="transform_type")
     ]
 
-    varchar_transform_types: ClassVar[Set[str]] = {
+    transform_types_with_varchar_output: ClassVar[Set[str]] = {
         "most_frequent",
         "get_key_with_highest_value",
         "get_key_with_lowest_value",
     }
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        if self.parameters.transform_type in self.varchar_transform_types:
+        if self.parameters.transform_type in self.transform_types_with_varchar_output:
             return DBVarType.VARCHAR
         return DBVarType.FLOAT
 

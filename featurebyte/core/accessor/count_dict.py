@@ -499,6 +499,7 @@ class CountDictAccessor:
         Returns
         -------
         Feature
+            A new feature object.
 
         Examples
         --------

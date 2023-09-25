@@ -51,9 +51,12 @@ class CountDictTransformNode(ExpressionNode):
         output_expr = expressions.Anonymous(
             this=function_name, expressions=[counts_expr]
         )  # type: Expression
-        if self.transform_type in CountDictTransformQueryGraphNode.varchar_transform_types:
-            # The F_COUNT_DICT_MOST_FREQUENT UDF produces a VARIANT type. Cast to string to prevent
-            # double quoting in the feature output ('remove' vs '"remove"')
+        if (
+            self.transform_type
+            in CountDictTransformQueryGraphNode.transform_types_with_varchar_output
+        ):
+            # Some UDFs such as F_COUNT_DICT_MOST_FREQUENT produce a VARIANT type. Cast to string to
+            # prevent double quoting in the feature output ('remove' vs '"remove"')
             output_expr = expressions.Cast(
                 this=output_expr, to=expressions.DataType.build("VARCHAR")
             )

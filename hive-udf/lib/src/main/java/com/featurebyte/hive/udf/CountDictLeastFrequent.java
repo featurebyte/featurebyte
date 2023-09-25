@@ -7,7 +7,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.io.Text;
 
 @Description(
-    name = "F_COUNT_DICT_LEQST_FREQUENT",
+    name = "F_COUNT_DICT_LEAST_FREQUENT",
     value =
         "_FUNC_(counts) - compute least frequent key / key with lowest value from count dictionary")
 public class CountDictLeastFrequent extends CountDictMostFrequentKeyValue {

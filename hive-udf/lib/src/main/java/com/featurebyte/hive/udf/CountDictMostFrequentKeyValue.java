@@ -27,6 +27,8 @@ public abstract class CountDictMostFrequentKeyValue extends CountDictUDF {
 
   public abstract ObjectInspector getOutputOI();
 
+  // Whether to invert the count values before comparison. If true, the result will be the least
+  // frequent key.
   public abstract boolean isReversed();
 
   public Object evaluateAsKeyValue(DeferredObject[] arguments) throws HiveException {
@@ -59,10 +61,5 @@ public abstract class CountDictMostFrequentKeyValue extends CountDictUDF {
     outputValue.set(mostFrequentValue);
 
     return mostFrequentKey;
-  }
-
-  @Override
-  public String getDisplayString(String[] children) {
-    return "F_COUNT_DICT_MOST_FREQUENT";
   }
 }
