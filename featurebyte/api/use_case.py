@@ -278,7 +278,7 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
 
         Examples
         --------
-        >>> use_case = catalog.get_context("use_case")
+        >>> use_case = catalog.get_context("use_case")  # doctest: +SKIP
         >>> use_case.default_eda_table  # doctest: +SKIP
         """
         return super().default_eda_table
@@ -295,7 +295,7 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
 
         Examples
         --------
-        >>> use_case = catalog.get_context("use_case")
+        >>> use_case = catalog.get_context("use_case")  # doctest: +SKIP
         >>> use_case.default_preview_table  # doctest: +SKIP
         """
         return super().default_preview_table
@@ -312,7 +312,7 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
 
         Examples
         --------
-        >>> use_case = catalog.get_context("use_case")
+        >>> use_case = catalog.get_context("use_case")  # doctest: +SKIP
         >>> use_case.update_default_preview_table(observation_table_name)  # doctest: +SKIP
         """
         super().update_default_preview_table(observation_table_name)
@@ -329,7 +329,7 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
 
         Examples
         --------
-        >>> use_case = catalog.get_context("use_case")
+        >>> use_case = catalog.get_context("use_case")  # doctest: +SKIP
         >>> use_case.update_default_eda_table(observation_table_name)  # doctest: +SKIP
         """
         super().update_default_eda_table(observation_table_name)
@@ -344,7 +344,7 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
 
         Examples
         --------
-        >>> use_case = catalog.get_context("use_case")
+        >>> use_case = catalog.get_context("use_case")  # doctest: +SKIP
         >>> use_case.list_observation_tables()  # doctest: +SKIP
         """
         return super().list_observation_tables()
