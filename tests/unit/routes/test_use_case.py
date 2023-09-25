@@ -261,7 +261,9 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         data = response.json()
         assert data["name"] == self.payload["name"]
         assert data["description"] == self.payload["description"]
-        assert data["primary_entities"] == ["customer"]
+        assert data["primary_entities"] == [
+            {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "grocery"}
+        ]
         assert data["context_name"] == "transaction_context"
         assert data["target_name"] == "float_target"
         assert data["default_eda_table"] == "observation_table_from_target_input"
