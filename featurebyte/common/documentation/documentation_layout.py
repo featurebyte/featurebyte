@@ -13,6 +13,7 @@ from featurebyte.common.documentation.constants import (
     CLASS_METHODS,
     CLEANING_OPERATION,
     CONSTRUCTOR,
+    CONTEXT,
     CREATE,
     CREATE_FEATURE,
     CREATE_FEATURE_GROUP,
@@ -52,6 +53,7 @@ from featurebyte.common.documentation.constants import (
     TARGET,
     TRANSFORM,
     TYPE,
+    USE_CASE,
     USER_DEFINED_FUNCTION,
     UTILITY_CLASSES,
     UTILITY_METHODS,
@@ -1037,6 +1039,70 @@ def _get_target_layout() -> List[DocLayoutItem]:
     ]
 
 
+def _get_use_case_layout() -> List[DocLayoutItem]:
+    """
+    Get use case layout
+
+    Returns
+    -------
+    List[DocLayoutItem]
+        The layout for the UseCase module.
+    """
+    return [
+        DocLayoutItem([USE_CASE]),
+        DocLayoutItem([USE_CASE, ADD_METADATA, "UseCase.add_observation_table"]),
+        DocLayoutItem([USE_CASE, CLASS_METHODS, "UseCase.get"]),
+        DocLayoutItem([USE_CASE, CLASS_METHODS, "UseCase.get_by_id"]),
+        DocLayoutItem([USE_CASE, CLASS_METHODS, "UseCase.list"]),
+        DocLayoutItem([USE_CASE, CREATE, "UseCase.create"]),
+        DocLayoutItem([USE_CASE, INFO, "UseCase.target"]),
+        DocLayoutItem([USE_CASE, INFO, "UseCase.context"]),
+        DocLayoutItem([USE_CASE, INFO, "UseCase.created_at"]),
+        DocLayoutItem([USE_CASE, INFO, "UseCase.info"]),
+        DocLayoutItem([USE_CASE, INFO, "UseCase.name"]),
+        DocLayoutItem([USE_CASE, INFO, "UseCase.updated_at"]),
+        DocLayoutItem([USE_CASE, LINEAGE, "UseCase.id"]),
+        DocLayoutItem([USE_CASE, LINEAGE, "UseCase.default_eda_table"]),
+        DocLayoutItem([USE_CASE, LINEAGE, "UseCase.default_preview_table"]),
+        DocLayoutItem([USE_CASE, LINEAGE, "UseCase.update_default_preview_table"]),
+        DocLayoutItem([USE_CASE, LINEAGE, "UseCase.update_default_eda_table"]),
+        DocLayoutItem([USE_CASE, LIST, "UseCase.list_feature_tables"]),
+        DocLayoutItem([USE_CASE, LIST, "UseCase.list_deployments"]),
+        DocLayoutItem([USE_CASE, LIST, "UseCase.list_observation_tables"]),
+        DocLayoutItem([USE_CASE, SAVE, "UseCase.save"]),
+    ]
+
+
+def _get_context_layout() -> List[DocLayoutItem]:
+    """
+    Get context layout
+
+    Returns
+    -------
+    List[DocLayoutItem]
+        The layout for the Context module.
+    """
+    return [
+        DocLayoutItem([CONTEXT]),
+        DocLayoutItem([CONTEXT, ADD_METADATA, "Context.add_observation_table"]),
+        DocLayoutItem([CONTEXT, CLASS_METHODS, "Context.get"]),
+        DocLayoutItem([CONTEXT, CLASS_METHODS, "Context.get_by_id"]),
+        DocLayoutItem([CONTEXT, CLASS_METHODS, "Context.list"]),
+        DocLayoutItem([CONTEXT, CREATE, "Context.create"]),
+        DocLayoutItem([CONTEXT, INFO, "Context.entities"]),
+        DocLayoutItem([CONTEXT, INFO, "Context.created_at"]),
+        DocLayoutItem([CONTEXT, INFO, "Context.name"]),
+        DocLayoutItem([CONTEXT, INFO, "Context.updated_at"]),
+        DocLayoutItem([CONTEXT, LINEAGE, "Context.id"]),
+        DocLayoutItem([CONTEXT, LINEAGE, "Context.default_eda_table"]),
+        DocLayoutItem([CONTEXT, LINEAGE, "Context.default_preview_table"]),
+        DocLayoutItem([CONTEXT, LINEAGE, "Context.update_default_preview_table"]),
+        DocLayoutItem([CONTEXT, LINEAGE, "Context.update_default_eda_table"]),
+        DocLayoutItem([CONTEXT, LIST, "Context.list_observation_tables"]),
+        DocLayoutItem([CONTEXT, SAVE, "Context.save"]),
+    ]
+
+
 def get_overall_layout() -> List[DocLayoutItem]:
     """
     The overall layout for the documentation.
@@ -1070,4 +1136,6 @@ def get_overall_layout() -> List[DocLayoutItem]:
         *_get_historical_feature_table_layout(),
         *_get_user_defined_function_layout(),
         *_get_target_layout(),
+        *_get_use_case_layout(),
+        *_get_context_layout(),
     ]

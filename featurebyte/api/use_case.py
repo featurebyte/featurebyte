@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Any, Dict, Optional
 
 import pandas as pd
+from pandas import DataFrame
 from typeguard import typechecked
 
 from featurebyte.api.api_object_util import (
@@ -218,3 +219,132 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
         >>> info = use_case.info()  # doctest: +SKIP
         """
         return super().info(verbose)
+
+    @classmethod
+    def get(cls, name: str) -> UseCase:
+        """
+        Gets a UseCase object by its name.
+
+        Parameters
+        ----------
+        name: str
+            Name of the deployment to retrieve.
+
+        Returns
+        -------
+        UseCase
+            UseCase object.
+
+        Examples
+        --------
+        Get a UseCase object that is already saved.
+
+        >>> use_case = fb.UseCase.get("use_case")  # doctest: +SKIP
+        """
+        return super().get(name)
+
+    @classmethod
+    def list(cls, include_id: Optional[bool] = True) -> DataFrame:
+        """
+        Returns a DataFrame that lists the use cases by their names, types and creation dates.
+
+        Parameters
+        ----------
+        include_id: Optional[bool]
+            Whether to include id in the list.
+
+        Returns
+        -------
+        DataFrame
+            Table of objects.
+
+        Examples
+        --------
+        List all use cases.
+
+        >>> use_cases = fb.UseCase.list()
+        """
+        return super().list(include_id=include_id)
+
+    @property
+    def default_eda_table(self) -> Optional[ObservationTable]:
+        """
+        Returns the EDA table of the use case.
+
+        Returns
+        -------
+        ObservationTable
+            The ObservationTable object of the use case.
+
+        Examples
+        --------
+        >>> use_case = catalog.get_context("use_case")  # doctest: +SKIP
+        >>> use_case.default_eda_table  # doctest: +SKIP
+        """
+        return super().default_eda_table
+
+    @property
+    def default_preview_table(self) -> Optional[ObservationTable]:
+        """
+        Returns the preview table object of the use case.
+
+        Returns
+        -------
+        ObservationTable
+            The ObservationTable object of the use case.
+
+        Examples
+        --------
+        >>> use_case = catalog.get_context("use_case")  # doctest: +SKIP
+        >>> use_case.default_preview_table  # doctest: +SKIP
+        """
+        return super().default_preview_table
+
+    @typechecked
+    def update_default_preview_table(self, observation_table_name: str) -> None:
+        """
+        Update default preview table for the use case.
+
+        Parameters
+        ----------
+        observation_table_name: str
+            Name of default preview table.
+
+        Examples
+        --------
+        >>> use_case = catalog.get_context("use_case")  # doctest: +SKIP
+        >>> use_case.update_default_preview_table(observation_table_name)  # doctest: +SKIP
+        """
+        super().update_default_preview_table(observation_table_name)
+
+    @typechecked
+    def update_default_eda_table(self, observation_table_name: str) -> None:
+        """
+        Update default eda table for the use case.
+
+        Parameters
+        ----------
+        observation_table_name: str
+            Name of default eda table.
+
+        Examples
+        --------
+        >>> use_case = catalog.get_context("use_case")  # doctest: +SKIP
+        >>> use_case.update_default_eda_table(observation_table_name)  # doctest: +SKIP
+        """
+        super().update_default_eda_table(observation_table_name)
+
+    def list_observation_tables(self) -> pd.DataFrame:
+        """
+        List observation tables associated with the use case.
+
+        Returns
+        -------
+        pd.DataFrame
+
+        Examples
+        --------
+        >>> use_case = catalog.get_context("use_case")  # doctest: +SKIP
+        >>> use_case.list_observation_tables()  # doctest: +SKIP
+        """
+        return super().list_observation_tables()

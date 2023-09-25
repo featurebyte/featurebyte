@@ -85,6 +85,7 @@ pydantic_field_doc_overrides = {
     "BatchFeatureTable": _get_doc_overrides("BatchFeatureTable"),
     "BatchRequestTable": _get_doc_overrides("BatchRequestTable"),
     "Catalog": _get_doc_overrides("Catalog"),
+    "Context": _get_doc_overrides("Context"),
     "DisguisedValueImputation": {
         "imputed_value": "The value that will be used to replace any element that matches one of the values in the "
         "disguised_values list.",
@@ -135,6 +136,7 @@ pydantic_field_doc_overrides = {
         "in the table and the default cleaning operations set for each column in the table.",
         "feature_store": "Provides information about the feature store that the view is connected to.",
     },
+    "UseCase": _get_doc_overrides("UseCase"),
     "UnexpectedValueImputation": {
         "imputed_value": "The value that will be used to replace any value that does not match the expected values "
         "in the expected_values list.",
