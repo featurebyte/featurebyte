@@ -188,7 +188,6 @@ class FeatureStoreRouter(
         result: List[str] = await controller.list_schemas(
             feature_store=feature_store,
             database_name=database_name,
-            get_credential=request.state.get_credential,
         )
         return result
 
@@ -207,7 +206,6 @@ class FeatureStoreRouter(
             feature_store=feature_store,
             database_name=database_name,
             schema_name=schema_name,
-            get_credential=request.state.get_credential,
         )
         return result
 
@@ -228,7 +226,6 @@ class FeatureStoreRouter(
             database_name=database_name,
             schema_name=schema_name,
             table_name=table_name,
-            get_credential=request.state.get_credential,
         )
         return result
 

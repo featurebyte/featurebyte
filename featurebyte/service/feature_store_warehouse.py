@@ -75,7 +75,6 @@ class FeatureStoreWarehouseService:
         self,
         feature_store: FeatureStoreModel,
         database_name: str,
-        get_credential: Any,
     ) -> List[str]:
         """
         List schemas in feature store
@@ -86,8 +85,6 @@ class FeatureStoreWarehouseService:
             FeatureStoreModel object
         database_name: str
             Name of database to use
-        get_credential: Any
-            Get credential handler function
 
         Raises
         ------
@@ -100,7 +97,7 @@ class FeatureStoreWarehouseService:
             List of schema names
         """
         db_session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store, get_credential=get_credential
+            feature_store=feature_store
         )
         try:
             return await db_session.list_schemas(database_name=database_name)
@@ -112,7 +109,6 @@ class FeatureStoreWarehouseService:
         feature_store: FeatureStoreModel,
         database_name: str,
         schema_name: str,
-        get_credential: Any,
     ) -> List[str]:
         """
         List tables in feature store
@@ -125,8 +121,6 @@ class FeatureStoreWarehouseService:
             Name of database to use
         schema_name: str
             Name of schema to use
-        get_credential: Any
-            Get credential handler function
 
         Raises
         ------
@@ -140,14 +134,13 @@ class FeatureStoreWarehouseService:
         """
 
         db_session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store, get_credential=get_credential
+            feature_store=feature_store
         )
 
         # check database exists
         await self.list_schemas(
             feature_store=feature_store,
             database_name=database_name,
-            get_credential=get_credential,
         )
 
         try:
@@ -166,7 +159,6 @@ class FeatureStoreWarehouseService:
         database_name: str,
         schema_name: str,
         table_name: str,
-        get_credential: Any,
     ) -> List[ColumnSpec]:
         """
         List columns in database table
@@ -181,8 +173,6 @@ class FeatureStoreWarehouseService:
             Name of schema to use
         table_name: str
             Name of table to use
-        get_credential: Any
-            Get credential handler function
 
         Raises
         ------
@@ -195,7 +185,7 @@ class FeatureStoreWarehouseService:
             List of ColumnSpec object
         """
         db_session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store, get_credential=get_credential
+            feature_store=feature_store
         )
 
         # check database and schema exists
@@ -203,7 +193,6 @@ class FeatureStoreWarehouseService:
             feature_store=feature_store,
             database_name=database_name,
             schema_name=schema_name,
-            get_credential=get_credential,
         )
 
         try:
