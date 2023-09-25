@@ -65,7 +65,7 @@ class FeatureFacadeService:
         return output
 
     async def create_new_version(
-        self, data: FeatureNewVersionCreate, to_save: bool
+        self, data: FeatureNewVersionCreate, to_save: bool = True
     ) -> FeatureModel:
         """
         Create a new version of a feature
