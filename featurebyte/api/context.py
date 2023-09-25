@@ -1,8 +1,10 @@
 """
 Context module
 """
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
+import pandas as pd
+from pandas import DataFrame
 from typeguard import typechecked
 
 from featurebyte.api.entity import Entity
@@ -148,3 +150,122 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         >>> info = context.info()  # doctest: +SKIP
         """
         return super().info(verbose)
+
+    @classmethod
+    def get(cls, name: str) -> "Context":
+        """
+        Gets a Context object by its name.
+
+        Parameters
+        ----------
+        name: str
+            Name of the deployment to retrieve.
+
+        Returns
+        -------
+        Context
+            Context object.
+
+        Examples
+        --------
+        Get a Context object that is already saved.
+
+        >>> context = fb.Context.get("context")  # doctest: +SKIP
+        """
+        return super().get(name)
+
+    @classmethod
+    def list(cls, include_id: Optional[bool] = True) -> DataFrame:
+        """
+        Returns a DataFrame that lists the contexts by their names, types and creation dates.
+
+        Parameters
+        ----------
+        include_id: Optional[bool]
+            Whether to include id in the list.
+
+        Returns
+        -------
+        DataFrame
+            Table of objects.
+
+        Examples
+        --------
+        List all context.
+
+        >>> contexts = fb.Context.list()
+        """
+        return super().list(include_id=include_id)
+
+    @property
+    def default_eda_table(self) -> Optional[ObservationTable]:
+        """
+        Returns the EDA table of the Context.
+
+        Returns
+        -------
+        ObservationTable
+            The ObservationTable object of the Context.
+        """
+        return super().default_eda_table
+
+    @property
+    def default_preview_table(self) -> Optional[ObservationTable]:
+        """
+        Returns the preview table object of the Context.
+
+        Returns
+        -------
+        ObservationTable
+            The ObservationTable object of the Context.
+        """
+        return super().default_preview_table
+
+    @typechecked
+    def update_default_preview_table(self, observation_table_name: str) -> None:
+        """
+        Update default preview table for the Context.
+
+        Parameters
+        ----------
+        observation_table_name: str
+            Name of default preview table.
+
+        Examples
+        --------
+        >>> context = catalog.get_context("context")
+        >>> context.update_default_preview_table(observation_table_name)  # doctest: +SKIP
+        """
+        super().update_default_preview_table(observation_table_name)
+
+    @typechecked
+    def update_default_eda_table(self, observation_table_name: str) -> None:
+        """
+        Update default eda table for the Context.
+
+        Parameters
+        ----------
+        observation_table_name: str
+            Name of default eda table.
+
+        Examples
+        --------
+        >>> context = catalog.get_context("context")
+        >>> context.update_default_eda_table(observation_table_name)  # doctest: +SKIP
+        """
+        super().update_default_eda_table(observation_table_name)
+
+    def list_observation_tables(self) -> pd.DataFrame:
+        """
+        List observation tables associated with the Context.
+
+        Returns
+        -------
+        pd.DataFrame
+
+        Examples
+        --------
+        >>> context = catalog.get_context("context")
+        >>> context.list_observation_tables()  # doctest: +SKIP
+        """
+        return super().list_observation_tables()
