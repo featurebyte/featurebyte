@@ -91,7 +91,6 @@ class BaseMaterializedTableController(
     async def download_materialized_table(
         self,
         document_id: ObjectId,
-        get_credential: Any,
     ) -> StreamingResponse:
         """
         Download materialized table as pyarrow table
@@ -100,8 +99,6 @@ class BaseMaterializedTableController(
         ----------
         document_id: ObjectId
             ID of materialized table to download
-        get_credential: Any
-            Get credential handler function
 
         Returns
         -------
@@ -111,7 +108,6 @@ class BaseMaterializedTableController(
         table = await self.service.get_document(document_id=document_id)
         bytestream = await self.preview_service.download_table(
             location=table.location,
-            get_credential=get_credential,
         )
         assert bytestream is not None
 

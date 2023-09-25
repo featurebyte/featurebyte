@@ -190,7 +190,6 @@ class TargetTableRouter(BaseMaterializedTableRouter[TargetTableModel]):
         controller = request.state.app_container.target_table_controller
         result: StreamingResponse = await controller.download_materialized_table(
             document_id=target_table_id,
-            get_credential=request.state.get_credential,
         )
         return result
 

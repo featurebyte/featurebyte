@@ -156,7 +156,6 @@ async def download_table_as_pyarrow_table(
     controller = request.state.app_container.batch_request_table_controller
     result: StreamingResponse = await controller.download_materialized_table(
         document_id=batch_request_table_id,
-        get_credential=request.state.get_credential,
     )
     return result
 
