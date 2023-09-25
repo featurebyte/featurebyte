@@ -2,14 +2,15 @@ package com.featurebyte.hive.udf;
 
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
-import org.apache.hadoop.hive.serde2.objectinspector.*;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.Text;
 
 @Description(
-    name = "F_COUNT_DICT_MOST_FREQUENT",
-    value = "_FUNC_(counts) - compute most frequent value from count dictionary")
-public class CountDictMostFrequent extends CountDictMostFrequentKeyValue {
+    name = "F_COUNT_DICT_LEAST_FREQUENT",
+    value =
+        "_FUNC_(counts) - compute least frequent key / key with lowest value from count dictionary")
+public class CountDictLeastFrequent extends CountDictMostFrequentKeyValue {
   private final Text output = new Text();
 
   public ObjectInspector getOutputOI() {
@@ -17,7 +18,7 @@ public class CountDictMostFrequent extends CountDictMostFrequentKeyValue {
   }
 
   public boolean isReversed() {
-    return false;
+    return true;
   }
 
   @Override

@@ -2,7 +2,7 @@
 This module contains datetime operation related node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import List, Literal, Optional, Sequence, Tuple, Union
+from typing import ClassVar, List, Literal, Optional, Sequence, Set, Tuple, Union
 from typing_extensions import Annotated
 
 from abc import ABC, abstractmethod  # pylint: disable=wrong-import-order
@@ -78,7 +78,9 @@ class CountDictTransformNode(BaseCountDictOpNode):
     class Parameters(BaseModel):
         """Parameters"""
 
-        transform_type: Literal["entropy", "most_frequent"]
+        transform_type: Literal[
+            "entropy", "most_frequent", "key_with_highest_value", "key_with_lowest_value"
+        ]
 
     class UniqueCountParameters(BaseModel):
         """UniqueCountParameters"""
@@ -91,8 +93,14 @@ class CountDictTransformNode(BaseCountDictOpNode):
         Union[Parameters, UniqueCountParameters], Field(discriminator="transform_type")
     ]
 
+    transform_types_with_varchar_output: ClassVar[Set[str]] = {
+        "most_frequent",
+        "key_with_highest_value",
+        "key_with_lowest_value",
+    }
+
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        if self.parameters.transform_type == "most_frequent":
+        if self.parameters.transform_type in self.transform_types_with_varchar_output:
             return DBVarType.VARCHAR
         return DBVarType.FLOAT
 

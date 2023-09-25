@@ -1,0 +1,7 @@
+CREATE OR REPLACE FUNCTION F_COUNT_DICT_LEAST_FREQUENT(counts variant)
+  RETURNS string
+  AS
+$$
+  CAST(GET(F_COUNT_DICT_MOST_FREQUENT_KEY_VALUE(counts, true), 0) AS string)
+$$
+;

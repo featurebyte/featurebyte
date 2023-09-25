@@ -312,7 +312,7 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
 
     @property
     def current_working_schema_version(self) -> int:
-        return 9
+        return 10
 
     @property
     def sql_directory_name(self) -> str:
@@ -424,6 +424,7 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
                 "F_COUNT_DICT_MOST_FREQUENT_VALUE",
                 "com.featurebyte.hive.udf.CountDictMostFrequentValue",
             ),
+            ("F_COUNT_DICT_LEAST_FREQUENT", "com.featurebyte.hive.udf.CountDictLeastFrequent"),
             ("F_COUNT_DICT_NUM_UNIQUE", "com.featurebyte.hive.udf.CountDictNumUnique"),
             ("F_GET_RELATIVE_FREQUENCY", "com.featurebyte.hive.udf.CountDictRelativeFrequency"),
             ("F_GET_RANK", "com.featurebyte.hive.udf.CountDictRank"),

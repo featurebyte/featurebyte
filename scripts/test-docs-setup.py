@@ -157,6 +157,16 @@ def setup() -> None:
     feature_group["CustomerProductGroupCounts_7d"].save(conflict_resolution="retrieve")
     feature_group["CustomerProductGroupCounts_90d"].save(conflict_resolution="retrieve")
 
+    feature_group = grocery_item_view.groupby(
+        "GroceryCustomerGuid", category="ProductGroup"
+    ).aggregate_over(
+        value_column="TotalCost",
+        method="sum",
+        feature_names=["CustomerProductGroupTotalCost_7d"],
+        windows=["7d"],
+    )
+    feature_group["CustomerProductGroupTotalCost_7d"].save(conflict_resolution="retrieve")
+
     # Feature: ProductGroup (lookup feature)
     product_group_feature = grocery_product_view["ProductGroup"].as_feature(
         feature_name="ProductGroupLookup"
