@@ -86,6 +86,10 @@ async def invoke_tile_manager_and_check_tracker_table(session, tile_cache, reque
 
         # The üser id column should be the primary key (unique) of the tracker table
         assert (df_entity_tracker["üser id".upper()].value_counts(dropna=False) == 1).all()
+        assert df_entity_tracker.columns.tolist() == [
+            "üser id".upper(),
+            InternalName.TILE_LAST_START_DATE.value,
+        ]
 
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
