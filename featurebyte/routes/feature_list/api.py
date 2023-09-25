@@ -199,9 +199,7 @@ async def get_feature_list_preview(
     controller = request.state.app_container.feature_list_controller
     return cast(
         Dict[str, Any],
-        await controller.preview(
-            featurelist_preview=featurelist_preview, get_credential=request.state.get_credential
-        ),
+        await controller.preview(featurelist_preview=featurelist_preview),
     )
 
 
