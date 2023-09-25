@@ -289,7 +289,7 @@ class FeatureListController(
         """
         try:
             return await self.feature_preview_service.preview_featurelist(
-                featurelist_preview=featurelist_preview, get_credential=get_credential
+                featurelist_preview=featurelist_preview
             )
         except (MissingPointInTimeColumnError, RequiredEntityNotProvidedError) as exc:
             raise HTTPException(
