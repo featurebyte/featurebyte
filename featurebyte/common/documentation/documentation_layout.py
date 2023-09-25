@@ -1042,6 +1042,11 @@ def _get_target_layout() -> List[DocLayoutItem]:
 def _get_use_case_layout() -> List[DocLayoutItem]:
     """
     Get use case layout
+
+    Returns
+    -------
+    List[DocLayoutItem]
+        The layout for the UseCase module.
     """
     return [
         DocLayoutItem([USE_CASE]),
@@ -1071,6 +1076,11 @@ def _get_use_case_layout() -> List[DocLayoutItem]:
 def _get_context_layout() -> List[DocLayoutItem]:
     """
     Get context layout
+
+    Returns
+    -------
+    List[DocLayoutItem]
+        The layout for the Context module.
     """
     return [
         DocLayoutItem([CONTEXT]),
