@@ -50,7 +50,7 @@ class TargetNamespace(FeatureOrTargetNamespaceMixin, SavableApiObject):
 
     @classmethod
     def create(
-        cls, name: str, entities: Optional[List[str]] = None, window: Optional[str] = None
+        cls, name: str, primary_entity: List[str], window: Optional[str] = None
     ) -> TargetNamespace:
         """
         Create a new TargetNamespace.
@@ -59,7 +59,7 @@ class TargetNamespace(FeatureOrTargetNamespaceMixin, SavableApiObject):
         ----------
         name: str
             Name of the TargetNamespace
-        entities: Optional[List[str]]
+        primary_entity: List[str]
             List of entities.
         window: Optional[str]
             Window of the TargetNamespace
@@ -74,12 +74,10 @@ class TargetNamespace(FeatureOrTargetNamespaceMixin, SavableApiObject):
         >>> target_namespace = fb.TargetNamespace.create(  # doctest: +SKIP
         ...     name="amount_7d_target",
         ...     window="7d",
-        ...     entities=["customer"]
+        ...     primary_entity=["customer"]
         ... )
         """
-        entity_ids = None
-        if entities:
-            entity_ids = [Entity.get(entity_name).id for entity_name in entities]
+        entity_ids = [Entity.get(entity_name).id for entity_name in primary_entity]
         target_namespace = TargetNamespace(name=name, entity_ids=entity_ids, window=window)
         target_namespace.save()
         return target_namespace

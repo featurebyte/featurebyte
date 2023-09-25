@@ -67,7 +67,7 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
     def create(
         cls,
         name: str,
-        entity_names: List[str],
+        primary_entity: List[str],
     ) -> "Context":
         """
         Create a new Context.
@@ -76,7 +76,7 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         ----------
         name: str
             Name of the UseCase.
-        entity_names: List[str]
+        primary_entity: List[str]
             List of entity names.
 
         Returns
@@ -88,12 +88,12 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         --------
         >>> fb.Context.create(  # doctest: +SKIP
         ...     name="context_1",
-        ...     entity_names=entity_names,
+        ...     primary_entity=primary_entity,
         ... )
         >>> context_1 = catalog.get_context("context_1")  # doctest: +SKIP
         """
         entity_ids = []
-        for entity_name in entity_names:
+        for entity_name in primary_entity:
             entity_ids.append(Entity.get(entity_name).id)
 
         context = Context(name=name, entity_ids=entity_ids)

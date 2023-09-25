@@ -35,7 +35,7 @@ def test_create_context(catalog, cust_id_entity):
 
     entity_ids = [cust_id_entity.id]
     entity_names = [cust_id_entity.name]
-    context = Context.create(name="test_context", entity_names=entity_names)
+    context = Context.create(name="test_context", primary_entity=entity_names)
 
     # Test get context by id and verify attributes
     retrieved_context = Context.get_by_id(context.id)
@@ -70,7 +70,7 @@ def test_update_context(catalog, cust_id_entity, target_table):
     _ = catalog
 
     entity_names = [cust_id_entity.name]
-    context = Context.create(name="test_context", entity_names=entity_names)
+    context = Context.create(name="test_context", primary_entity=entity_names)
 
     # Test get context by id and verify attributes
     context.update_default_eda_table(target_table.name)
