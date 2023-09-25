@@ -7,7 +7,6 @@ from typing import Any, cast
 
 from featurebyte.logging import get_logger
 from featurebyte.schema.worker.task.tile import TileTaskPayload
-from featurebyte.session.manager import SessionManager
 from featurebyte.worker.task.base import BaseTask
 
 logger = get_logger(__name__)

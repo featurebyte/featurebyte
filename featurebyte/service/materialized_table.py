@@ -21,7 +21,6 @@ from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.mixin import Document, DocumentCreateSchema
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.session.base import BaseSession
-from featurebyte.session.manager import SessionManager
 
 
 class BaseMaterializedTableService(

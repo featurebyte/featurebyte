@@ -13,7 +13,6 @@ from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.session.base import BaseSession
-from featurebyte.session.manager import SessionManager
 
 logger = get_logger(__name__)
 
