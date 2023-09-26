@@ -13,7 +13,6 @@ from featurebyte.migration.service.data_warehouse import (
 )
 from featurebyte.migration.service.mixin import DataWarehouseMigrationMixin
 from featurebyte.models.base import User
-from featurebyte.persistent import Persistent
 from featurebyte.routes.app_container_config import AppContainerConfig
 from featurebyte.routes.batch_feature_table.controller import BatchFeatureTableController
 from featurebyte.routes.batch_request_table.controller import BatchRequestTableController
