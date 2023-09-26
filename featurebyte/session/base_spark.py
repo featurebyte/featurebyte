@@ -430,6 +430,7 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
             ("F_GET_RANK", "com.featurebyte.hive.udf.CountDictRank"),
             ("F_TIMEZONE_OFFSET_TO_SECOND", "com.featurebyte.hive.udf.TimezoneOffsetToSecond"),
             ("F_SBERT_EMBEDDING", "com.featurebyte.hive.udf.EmbeddingUDF"),
+            ("F_SBERT_EMBEDDING_GCP", "com.featurebyte.hive.udf.EmbeddingUDFGoogleFunction"),
         ]
         for function_name, class_name in udf_functions:
             logger.debug(
