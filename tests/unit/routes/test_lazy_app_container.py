@@ -9,6 +9,7 @@ from bson import ObjectId
 from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.routes.app_container_config import AppContainerConfig, ClassDefinition
 from featurebyte.routes.lazy_app_container import LazyAppContainer, get_all_deps_for_key
+from featurebyte.utils.persistent import MongoDBImpl
 from featurebyte.utils.storage import get_storage, get_temp_storage
 from featurebyte.worker import get_celery, get_redis
 
@@ -62,7 +63,6 @@ def app_container_constructor_params_fixture(persistent):
     user = User()
     return {
         "user": user,
-        "persistent": persistent,
         "temp_storage": get_temp_storage(),
         "storage": get_storage(),
         "celery": get_celery(),
@@ -81,6 +81,7 @@ def test_app_config_fixture():
     app_container_config.register_class(TestService)
     app_container_config.register_class(TestServiceWithOtherDeps, {"other_dep": "test_service"})
     app_container_config.register_class(TestController)
+    app_container_config.register_class(MongoDBImpl, name_override="persistent")
     return app_container_config
 
 
@@ -120,7 +121,7 @@ def test_construction__get_attr(app_container_constructor_params):
         app_container_config=app_container_config,
     )
     # This has been initialized
-    assert app_container.persistent is not None
+    assert app_container.redis is not None
 
     # random_item has not been initialized
     with pytest.raises(KeyError):
