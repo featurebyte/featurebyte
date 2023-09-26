@@ -48,7 +48,6 @@ from featurebyte.routes.use_case.api import UseCaseRouter
 from featurebyte.routes.user_defined_function.api import UserDefinedFunctionRouter
 from featurebyte.schema import APIServiceStatus
 from featurebyte.schema.task import TaskId
-from featurebyte.utils.credential import MongoBackedCredentialProvider
 from featurebyte.utils.messaging import REDIS_URI
 from featurebyte.utils.persistent import get_persistent
 from featurebyte.utils.storage import get_storage, get_temp_storage
