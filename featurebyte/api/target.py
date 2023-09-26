@@ -377,7 +377,7 @@ class Target(
         include_id: Optional[bool] = False,
     ) -> pd.DataFrame:
         """
-        List saved features
+        List saved targets.
 
         Parameters
         ----------
