@@ -39,13 +39,13 @@ class TargetNamespace(FeatureOrTargetNamespaceMixin, SavableApiObject):
     _list_fields = [
         "name",
         "dtype",
-        "tables",
+        # "tables",
         "entities",
         "created_at",
     ]
     _list_foreign_keys = [
         ForeignKeyMapping("entity_ids", Entity, "entities"),
-        ForeignKeyMapping("table_ids", TableApiObject, "tables"),
+        # ForeignKeyMapping("table_ids", TableApiObject, "tables"),
     ]
 
     @classmethod

@@ -371,6 +371,26 @@ class Target(
         )
         return ObservationTable.get_by_id(observation_table_doc["_id"])
 
+    @classmethod
+    def list(
+        cls,
+        include_id: Optional[bool] = False,
+    ) -> pd.DataFrame:
+        """
+        List saved features
+
+        Parameters
+        ----------
+        include_id: Optional[bool]
+            Whether to include id in the list
+
+        Returns
+        -------
+        pd.DataFrame
+            Table of targets
+        """
+        return TargetNamespace.list(include_id=include_id)
+
     @property
     def target_namespace(self) -> TargetNamespace:
         """
