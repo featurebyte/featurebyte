@@ -10,7 +10,6 @@ from pydantic import Field
 from featurebyte.api.api_handler.base import ListHandler
 from featurebyte.api.api_handler.target_namespace import TargetNamespaceListHandler
 from featurebyte.api.api_object_util import ForeignKeyMapping
-from featurebyte.api.base_table import TableApiObject
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature_or_target_namespace_mixin import FeatureOrTargetNamespaceMixin
 from featurebyte.api.savable_api_object import SavableApiObject
@@ -39,13 +38,11 @@ class TargetNamespace(FeatureOrTargetNamespaceMixin, SavableApiObject):
     _list_fields = [
         "name",
         "dtype",
-        "tables",
         "entities",
         "created_at",
     ]
     _list_foreign_keys = [
         ForeignKeyMapping("entity_ids", Entity, "entities"),
-        ForeignKeyMapping("table_ids", TableApiObject, "tables"),
     ]
 
     @classmethod

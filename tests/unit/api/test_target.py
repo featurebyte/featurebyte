@@ -1,10 +1,14 @@
 """
 Test target module
 """
+import pandas as pd
 import pytest
 
 import featurebyte
+from featurebyte.api.target import Target
+from featurebyte.api.target_namespace import TargetNamespace
 from tests.unit.api.base_feature_or_target_test import FeatureOrTargetBaseTestSuite, TestItemType
+from tests.util.helper import fb_assert_frame_equal
 
 
 class TestTargetTestSuite(FeatureOrTargetBaseTestSuite):
@@ -92,3 +96,28 @@ class TestTargetTestSuite(FeatureOrTargetBaseTestSuite):
         # Assigning a target to a target is ok
         new_target = float_target + 1
         float_target[arbitrary_mask] = new_target
+
+    def test_list_includes_namespace(self, float_target, cust_id_entity):
+        """
+        Test list includes namespace targets.
+        """
+        # Persist a target from an aggregation
+        float_target.save()
+        # Persist a target that has no recipe.
+        TargetNamespace.create(
+            name="target_without_recipe", primary_entity=[cust_id_entity.name], window="7d"
+        )
+
+        # List out the targets
+        lists = Target.list()
+
+        # Verify that there are 2 targets in the list.
+        expected_df = pd.DataFrame(
+            {
+                "name": ["float_target", "target_without_recipe"],
+                "dtype": ["FLOAT", None],
+                "entities": [["customer"], ["customer"]],
+            }
+        )
+        actual_df = lists[["name", "dtype", "entities"]]
+        fb_assert_frame_equal(actual_df, expected_df, sort_by_columns=["name"])
