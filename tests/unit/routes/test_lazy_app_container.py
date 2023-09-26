@@ -56,7 +56,7 @@ class TestController:
 
 
 @pytest.fixture(name="app_container_constructor_params")
-def app_container_constructor_params_fixture(persistent):
+def app_container_constructor_params_fixture():
     """
     Get app container constructor params
     """
