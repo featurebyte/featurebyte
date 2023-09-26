@@ -198,7 +198,7 @@ class TableIdFeatureJobSetting(FeatureByteBaseModel):
     def __hash__(self) -> int:
         return hash(f"{self.table_id}_{self.feature_job_setting.to_seconds()}")
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         if not isinstance(other, (TableIdFeatureJobSetting, dict)):
             return NotImplemented
 
