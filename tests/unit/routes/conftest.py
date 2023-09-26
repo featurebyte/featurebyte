@@ -10,9 +10,11 @@ import pytest
 from bson.objectid import ObjectId
 from fastapi.testclient import TestClient
 
+from featurebyte import UsernamePasswordCredential
 from featurebyte.app import app
 from featurebyte.enum import SourceType
 from featurebyte.session.base import BaseSession
+from featurebyte.session.snowflake import SnowflakeSession
 
 
 @pytest.fixture(scope="session")
@@ -21,23 +23,6 @@ def user_id():
     Mock user id
     """
     return ObjectId()
-
-
-@pytest.fixture(name="mock_get_session", autouse=True)
-def get_mock_get_session_fixture(session_manager, snowflake_execute_query):
-    """
-    Returns a mocked get_feature_store_session.
-    """
-    _, _ = session_manager, snowflake_execute_query
-    with patch(
-        "featurebyte.service.session_manager.SessionManagerService.get_feature_store_session"
-    ) as mocked_get_session:
-        mocked_get_session.return_value = Mock(
-            name="MockedSession",
-            spec=BaseSession,
-            source_type=SourceType.SNOWFLAKE,
-        )
-        yield mocked_get_session
 
 
 @pytest.fixture()
@@ -53,6 +38,48 @@ def api_client_persistent(persistent, user_id, temp_storage):
                 mock_get_temp_storage.return_value = temp_storage
                 with TestClient(app) as client:
                     yield client, persistent
+
+
+@pytest.fixture(name="mock_get_session")
+def get_mocked_get_session_fixture(session_manager, snowflake_execute_query):
+    """
+    Returns a mocked get_feature_store_session.
+    """
+    _, _ = session_manager, snowflake_execute_query
+    with patch(
+        "featurebyte.service.session_manager.SessionManagerService.get_feature_store_session"
+    ) as mocked_get_session:
+        mocked_get_session.return_value = Mock(
+            name="MockedSession",
+            spec=BaseSession,
+            source_type=SourceType.SNOWFLAKE,
+            database_name="sf_database",
+            schema_name="sf_schema",
+        )
+        yield mocked_get_session
+
+
+@pytest.fixture(autouse=True)
+def get_mock_get_session_fixture(session_manager, snowflake_execute_query):
+    """
+    Returns a mocked get_feature_store_session.
+    """
+    _, _ = session_manager, snowflake_execute_query
+    with patch(
+        "featurebyte.service.session_manager.SessionManagerService.get_feature_store_session"
+    ) as mocked_get_session:
+        mocked_get_session.return_value = SnowflakeSession(
+            source_type=SourceType.SNOWFLAKE,
+            account="sf_account",
+            warehouse="sf_warehouse",
+            database="sf_database",
+            sf_schema="sf_schema",
+            database_credential=UsernamePasswordCredential(
+                username="username",
+                password="password",
+            ),
+        )
+        yield mocked_get_session
 
 
 @pytest.fixture(name="get_credential")

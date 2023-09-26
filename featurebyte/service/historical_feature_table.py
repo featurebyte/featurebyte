@@ -20,6 +20,7 @@ from featurebyte.schema.worker.task.historical_feature_table import (
 )
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.materialized_table import BaseMaterializedTableService
+from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.storage import Storage
 
 
@@ -36,9 +37,12 @@ class HistoricalFeatureTableService(
         persistent: Persistent,
         catalog_id: ObjectId,
         feature_store_service: FeatureStoreService,
+        session_manager_service: SessionManagerService,
         temp_storage: Storage,
     ):
-        super().__init__(user, persistent, catalog_id, feature_store_service)
+        super().__init__(
+            user, persistent, catalog_id, session_manager_service, feature_store_service
+        )
         self.temp_storage = temp_storage
 
     document_class = HistoricalFeatureTableModel

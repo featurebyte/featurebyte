@@ -16,6 +16,7 @@ from featurebyte.schema.worker.task.batch_request_table import BatchRequestTable
 from featurebyte.service.context import ContextService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.materialized_table import BaseMaterializedTableService
+from featurebyte.service.session_manager import SessionManagerService
 
 
 class BatchRequestTableService(
@@ -34,9 +35,12 @@ class BatchRequestTableService(
         persistent: Persistent,
         catalog_id: Optional[ObjectId],
         feature_store_service: FeatureStoreService,
+        session_manager_service: SessionManagerService,
         context_service: ContextService,
     ):
-        super().__init__(user, persistent, catalog_id, feature_store_service)
+        super().__init__(
+            user, persistent, catalog_id, session_manager_service, feature_store_service
+        )
         self.context_service = context_service
 
     @property

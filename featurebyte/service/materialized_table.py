@@ -19,8 +19,8 @@ from featurebyte.schema.worker.task.materialized_table_delete import (
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.mixin import Document, DocumentCreateSchema
+from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.session.base import BaseSession
-from featurebyte.session.manager import SessionManager
 
 
 class BaseMaterializedTableService(
@@ -37,9 +37,11 @@ class BaseMaterializedTableService(
         user: Any,
         persistent: Persistent,
         catalog_id: Optional[ObjectId],
+        session_manager_service: SessionManagerService,
         feature_store_service: FeatureStoreService,
     ):
         super().__init__(user, persistent, catalog_id)
+        self.session_manager_service = session_manager_service
         self.feature_store_service = feature_store_service
 
     async def get_materialized_table_delete_task_payload(
@@ -65,15 +67,13 @@ class BaseMaterializedTableService(
         )
 
     async def generate_materialized_table_location(
-        self, get_credential: Any, feature_store_id: ObjectId
+        self, feature_store_id: ObjectId
     ) -> TabularSource:
         """
         Generate a TabularSource object for a new materialized table to be created
 
         Parameters
         ----------
-        get_credential: Any
-            Function to get credential for a feature store
         feature_store_id: ObjectId
             Feature store id
 
@@ -82,14 +82,7 @@ class BaseMaterializedTableService(
         TabularSource
         """
         feature_store = await self.feature_store_service.get_document(document_id=feature_store_id)
-        session_manager = SessionManager(
-            credentials={
-                feature_store.name: await get_credential(
-                    user_id=self.user.id, feature_store_name=feature_store.name
-                )
-            }
-        )
-        db_session = await session_manager.get_session(feature_store)
+        db_session = await self.session_manager_service.get_feature_store_session(feature_store)
 
         destination_table_name = f"{self.materialized_table_name_prefix}_{ObjectId()}"
         location = TabularSource(

@@ -36,7 +36,6 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask):
         db_session = await self.get_db_session(feature_store)
         location = (
             await self.app_container.observation_table_service.generate_materialized_table_location(
-                self.get_credential,
                 payload.feature_store_id,
             )
         )

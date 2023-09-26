@@ -143,7 +143,7 @@ async def test_task_executor(random_task_class, persistent):
     assert document["description"] == "Execute random task"
 
 
-def test_task_has_been_implemented(app_container, random_task_class, command_class):
+def test_task_has_been_implemented(app_container, random_task_class, command_class, get_credential):
     """
     Test implement a task whose command has been implemented before
     """
@@ -188,8 +188,8 @@ def test_task_has_been_implemented(app_container, random_task_class, command_cla
             task_id=uuid4(),
             payload={},
             progress=None,
-            get_credential=None,
             app_container=app_container,
+            get_credential=get_credential,
         )
 
 

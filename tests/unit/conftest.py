@@ -1504,13 +1504,21 @@ def api_object_to_id_fixture():
     return output
 
 
+@pytest.fixture(name="user_id", scope="session")
+def user_id_fixture():
+    """
+    User ID fixture
+    """
+    return ObjectId("63f9506dd478b94127123456")
+
+
 @pytest.fixture(scope="session")
-def user():
+def user(user_id):
     """
     Mock user
     """
     user = User()
-    user.id = ObjectId()
+    user.id = user_id
     return user
 
 
