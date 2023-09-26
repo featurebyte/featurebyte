@@ -3,7 +3,7 @@ This module contains Feature related models
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 from datetime import datetime
 
@@ -23,8 +23,16 @@ from featurebyte.models.base import (
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
+from featurebyte.query_graph.model.feature_job_setting import (
+    TableFeatureJobSetting,
+    TableIdFeatureJobSetting,
+)
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.node.cleaning_operation import (
+    TableCleaningOperation,
+    TableIdCleaningOperation,
+)
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.sql.online_store_compute_query import (
@@ -169,6 +177,114 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
             self.node, keep_all_source_columns=keep_all_source_columns
         )
         return operation_structure.to_group_operation_structure()
+
+    def extract_table_id_feature_job_settings(
+        self, keep_first_only: bool = False
+    ) -> List[TableIdFeatureJobSetting]:
+        """
+        Extract table id feature job settings
+
+        Parameters
+        ----------
+        keep_first_only: bool
+            Whether to keep only the first table id feature job setting
+
+        Returns
+        -------
+        List[TableIdFeatureJobSetting]
+            List of table id feature job settings
+        """
+        table_id_feature_job_settings = self.graph.extract_table_id_feature_job_settings(
+            target_node=self.node
+        )
+        if not keep_first_only:
+            return table_id_feature_job_settings
+
+        output = []
+        found_table_ids = set()
+        for setting in table_id_feature_job_settings:
+            if setting.table_id not in found_table_ids:
+                output.append(setting)
+                found_table_ids.add(setting.table_id)
+        return output
+
+    def extract_table_feature_job_settings(
+        self, table_id_to_name: Dict[ObjectId, str], keep_first_only: bool = False
+    ) -> List[TableFeatureJobSetting]:
+        """
+        Extract table feature job settings
+
+        Parameters
+        ----------
+        table_id_to_name: Dict[ObjectId, str]
+            Table id to table name mapping
+        keep_first_only: bool
+            Whether to keep only the first table feature job setting
+
+        Returns
+        -------
+        List[TableFeatureJobSetting]
+            List of table feature job settings
+        """
+        output = []
+        for setting in self.extract_table_id_feature_job_settings(keep_first_only=keep_first_only):
+            output.append(
+                TableFeatureJobSetting(
+                    table_name=table_id_to_name[setting.table_id],
+                    feature_job_setting=setting.feature_job_setting,
+                )
+            )
+        return output
+
+    def extract_table_id_cleaning_operations(
+        self, keep_all_columns: bool = True
+    ) -> List[TableIdCleaningOperation]:
+        """
+        Extract table cleaning operations
+
+        Parameters
+        ----------
+        keep_all_columns: bool
+            Whether to keep all columns
+
+        Returns
+        -------
+        List[TableIdCleaningOperation]
+            List of table cleaning operations
+        """
+        return self.graph.extract_table_id_cleaning_operations(
+            target_node=self.node, keep_all_columns=keep_all_columns
+        )
+
+    def extract_table_cleaning_operations(
+        self, table_id_to_name: Dict[ObjectId, str], keep_all_columns: bool = True
+    ) -> List[TableCleaningOperation]:
+        """
+        Extract table cleaning operations
+
+        Parameters
+        ----------
+        table_id_to_name: Dict[ObjectId, str]
+            Table id to table name mapping
+        keep_all_columns: bool
+            Whether to keep all columns
+
+        Returns
+        -------
+        List[TableCleaningOperation]
+            List of table cleaning operations
+        """
+        output = []
+        for cleaning_operation in self.extract_table_id_cleaning_operations(
+            keep_all_columns=keep_all_columns
+        ):
+            output.append(
+                TableCleaningOperation(
+                    table_name=table_id_to_name[cleaning_operation.table_id],
+                    column_cleaning_operations=cleaning_operation.column_cleaning_operations,
+                )
+            )
+        return output
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """

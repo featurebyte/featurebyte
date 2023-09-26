@@ -13,7 +13,7 @@ from pydantic import Field, validator
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.typing import Numeric, OptionalScalar
 from featurebyte.enum import DBVarType, StrEnum
-from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.metadata.sdk_code import ClassEnum, ObjectClass
 from featurebyte.query_graph.node.validator import construct_unique_name_validator
@@ -469,6 +469,20 @@ class TableCleaningOperation(FeatureByteBaseModel):
         "ColumnCleaningOperation constructor. This constructor takes two inputs: the name of the column and the "
         "cleaning operations that should be applied to that column."
     )
+
+    # pydantic validators
+    _validate_unique_column_name = validator("column_cleaning_operations", allow_reuse=True)(
+        construct_unique_name_validator(field="column_name")
+    )
+
+
+class TableIdCleaningOperation(FeatureByteBaseModel):
+    """
+    The TableIdCleaningOperation object serves as a link between a table ID and cleaning configurations for the columns
+    """
+
+    table_id: PydanticObjectId
+    column_cleaning_operations: List[ColumnCleaningOperation]
 
     # pydantic validators
     _validate_unique_column_name = validator("column_cleaning_operations", allow_reuse=True)(

@@ -15,12 +15,6 @@ from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_namespace import FeatureReadiness
-from featurebyte.query_graph.enum import GraphNodeType
-from featurebyte.query_graph.model.feature_job_setting import (
-    FeatureJobSetting,
-    TableFeatureJobSetting,
-)
-from featurebyte.query_graph.node.cleaning_operation import TableCleaningOperation
 from featurebyte.routes.common.base import BaseDocumentController, DerivePrimaryEntityHelper
 from featurebyte.routes.common.feature_metadata_extractor import FeatureOrTargetMetadataExtractor
 from featurebyte.routes.feature_namespace.controller import FeatureNamespaceController
@@ -48,75 +42,6 @@ from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_preview import FeaturePreviewService
 from featurebyte.service.table import TableService
 from featurebyte.service.tile_job_log import TileJobLogService
-
-
-def _extract_feature_table_cleaning_operations(
-    feature: FeatureModel, table_id_to_name: dict[ObjectId, str]
-) -> list[TableCleaningOperation]:
-    """
-    Helper method to extract table cleaning operations from a feature model.
-
-    Parameters
-    ----------
-    feature: FeatureModel
-        Feature model
-    table_id_to_name: dict[ObjectId, str]
-        Table ID to table name mapping
-
-    Returns
-    -------
-    list[TableCleaningOperation]
-    """
-    table_cleaning_operations: list[TableCleaningOperation] = []
-    for view_graph_node in feature.graph.iterate_sorted_graph_nodes(
-        graph_node_types=GraphNodeType.view_graph_node_types()
-    ):
-        view_metadata = view_graph_node.parameters.metadata  # type: ignore
-        if view_metadata.column_cleaning_operations:
-            table_cleaning_operations.append(
-                TableCleaningOperation(
-                    table_name=table_id_to_name[view_metadata.table_id],
-                    column_cleaning_operations=view_metadata.column_cleaning_operations,
-                )
-            )
-    return table_cleaning_operations
-
-
-def _extract_table_feature_job_settings(
-    feature: FeatureModel, table_id_to_name: dict[ObjectId, str]
-) -> list[TableFeatureJobSetting]:
-    """
-    Helper method to extract table feature job settings from a feature model.
-
-    Parameters
-    ----------
-    feature: FeatureModel
-        Feature model
-    table_id_to_name: dict[ObjectId, str]
-        Table ID to table name mapping
-
-    Returns
-    -------
-    list[TableFeatureJobSetting]
-    """
-    table_feature_job_settings = []
-    for group_by_node, data_id in feature.graph.iterate_group_by_node_and_table_id_pairs(
-        target_node=feature.node
-    ):
-        assert data_id is not None, "Event table ID not found"
-        table_name = table_id_to_name[data_id]
-        group_by_node_params = group_by_node.parameters
-        table_feature_job_settings.append(
-            TableFeatureJobSetting(
-                table_name=table_name,
-                feature_job_setting=FeatureJobSetting(
-                    blind_spot=f"{group_by_node_params.blind_spot}s",
-                    frequency=f"{group_by_node_params.frequency}s",
-                    time_modulo_frequency=f"{group_by_node_params.time_modulo_frequency}s",
-                ),
-            )
-        )
-    return table_feature_job_settings
 
 
 # pylint: disable=too-many-instance-attributes
@@ -449,19 +374,19 @@ class FeatureController(
             version={"this": feature.version.to_str(), "default": default_feature.version.to_str()},
             readiness={"this": feature.readiness, "default": default_feature.readiness},
             table_feature_job_setting={
-                "this": _extract_table_feature_job_settings(
-                    feature=feature, table_id_to_name=data_id_to_name
+                "this": feature.extract_table_feature_job_settings(
+                    table_id_to_name=data_id_to_name, keep_first_only=True
                 ),
-                "default": _extract_table_feature_job_settings(
-                    feature=default_feature, table_id_to_name=data_id_to_name
+                "default": default_feature.extract_table_feature_job_settings(
+                    table_id_to_name=data_id_to_name, keep_first_only=True
                 ),
             },
             table_cleaning_operation={
-                "this": _extract_feature_table_cleaning_operations(
-                    feature=feature, table_id_to_name=data_id_to_name
+                "this": feature.extract_table_cleaning_operations(
+                    table_id_to_name=data_id_to_name, keep_all_columns=False
                 ),
-                "default": _extract_feature_table_cleaning_operations(
-                    feature=default_feature, table_id_to_name=data_id_to_name
+                "default": default_feature.extract_table_cleaning_operations(
+                    table_id_to_name=data_id_to_name, keep_all_columns=False
                 ),
             },
             versions_info=versions_info,

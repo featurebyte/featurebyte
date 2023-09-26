@@ -64,6 +64,8 @@ class DefaultSeriesBinaryOperator(SeriesBinaryOperator):
         ------
         TypeError
             If the other series has incompatible type
+        ValueError
+            If the feature job settings of both series are inconsistent
         """
         if (
             isinstance(self.other, Series)
@@ -76,6 +78,37 @@ class DefaultSeriesBinaryOperator(SeriesBinaryOperator):
                 f"Operation between {self.input_series.__class__.__name__} and {self.other.__class__.__name__} is not"
                 " supported"
             )
+
+        if isinstance(self.other, Series):
+            # Check that the feature job settings of both series are consistent
+            table_id_feature_job_settings = (
+                self.input_series.graph.extract_table_id_feature_job_settings(
+                    target_node=self.input_series.node
+                )
+            )
+            other_table_id_feature_job_settings = (
+                self.other.graph.extract_table_id_feature_job_settings(target_node=self.other.node)
+            )
+            table_id_to_feature_job_settings = {
+                table_id_feature_job_setting.table_id: table_id_feature_job_setting.feature_job_setting
+                for table_id_feature_job_setting in table_id_feature_job_settings
+            }
+            for table_id_feature_job_setting in other_table_id_feature_job_settings:
+                table_id = table_id_feature_job_setting.table_id
+                other_feature_job_setting = table_id_feature_job_setting.feature_job_setting
+                this_feature_job_setting = table_id_to_feature_job_settings.get(table_id)
+                if (
+                    this_feature_job_setting
+                    and this_feature_job_setting.to_seconds()
+                    != other_feature_job_setting.to_seconds()
+                ):
+                    error_message = (
+                        f"Feature job setting (table ID: {table_id}) of "
+                        f"feature {self.input_series.name} ({this_feature_job_setting}) "
+                        f"and feature {self.other.name} ({other_feature_job_setting}) are not consistent. "
+                        "Binary feature operations are only supported when the feature job settings are consistent."
+                    )
+                    raise ValueError(error_message)
 
 
 class FrozenSeries(

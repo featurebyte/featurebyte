@@ -11,11 +11,15 @@ from bson import ObjectId
 
 from featurebyte import FeatureStore
 from featurebyte.exception import (
+    DocumentCreationError,
     DocumentInconsistencyError,
     DocumentModificationBlockedError,
     DocumentNotFoundError,
 )
+from featurebyte.models import FeatureModel
 from featurebyte.models.base import ReferenceInfo
+from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node.schema import SQLiteDetails
 from featurebyte.schema.feature import FeatureServiceCreate
@@ -187,3 +191,60 @@ async def test_update_last_updated_date(feature_service, feature):
     assert new_updated_feature.last_updated_by_scheduled_task_at.strftime(
         date_format
     ) == last_updated_date.strftime(date_format)
+
+
+def test_validate_feature(feature_service, feature, snowflake_event_table_id):
+    """Test validate feature method"""
+    feature_dict = feature.dict(by_alias=True)
+
+    # construct a feature with inconsistent feature job setting
+    query_graph = QueryGraph(**feature_dict["graph"])
+    view_node = query_graph.get_node_by_name(node_name="graph_1")
+    groupby_node = query_graph.get_node_by_name(node_name="groupby_1")
+    feature_node = query_graph.get_node_by_name(node_name="project_1")
+    node_params = groupby_node.dict(by_alias=True)["parameters"]
+    node_params["names"] = ["sum_1w"]
+    node_params["windows"] = ["1w"]
+    node_params["frequency"] = 3600
+    another_groupby_node = query_graph.add_operation(
+        node_type=NodeType.GROUPBY,
+        node_params=node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[view_node],
+    )
+    another_feature = query_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["sum_1w"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[another_groupby_node],
+    )
+    divide_node = query_graph.add_operation(
+        node_type=NodeType.DIV,
+        node_params={},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[feature_node, another_feature],
+    )
+    alias_node = query_graph.add_operation(
+        node_type=NodeType.ALIAS,
+        node_params={"name": "sum_1w_div_sum_30m"},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[divide_node],
+    )
+
+    # prepare new feature model
+    feature_dict["graph"] = query_graph
+    feature_dict["node_name"] = alias_node.name
+    feature_dict["name"] = alias_node.parameters.name
+    new_feature = FeatureModel(**feature_dict)
+    assert new_feature.name == "sum_1w_div_sum_30m"
+
+    # validate feature
+    with pytest.raises(DocumentCreationError) as exc:
+        feature_service.validate_feature(feature=new_feature)
+
+    expected_message = (
+        f"Feature job settings for table {snowflake_event_table_id} are not consistent. "
+        "Two different feature job settings are found: blind_spot='600s' frequency='1800s' "
+        "time_modulo_frequency='300s' and blind_spot='600s' frequency='3600s' time_modulo_frequency='300s'"
+    )
+    assert expected_message in str(exc.value)

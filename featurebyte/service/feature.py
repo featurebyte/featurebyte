@@ -9,7 +9,7 @@ from datetime import datetime
 
 from bson import ObjectId
 
-from featurebyte.exception import DocumentNotFoundError
+from featurebyte.exception import DocumentCreationError, DocumentNotFoundError
 from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_namespace import DefaultVersionMode, FeatureReadiness
@@ -89,8 +89,44 @@ class FeatureService(BaseNamespaceService[FeatureModel, FeatureServiceCreate]):
             }
         )
 
+    @staticmethod
+    def validate_feature(feature: FeatureModel) -> None:
+        """
+        Validate feature model before saving
+
+        Parameters
+        ----------
+        feature: FeatureModel
+            Feature model to validate
+
+        Raises
+        ------
+        DocumentCreationError
+            If the feature's feature job settings are not consistent
+        """
+        # validate feature model
+        table_id_feature_job_settings = feature.extract_table_id_feature_job_settings()
+        table_id_to_feature_job_setting = {}
+        for table_id_feature_job_setting in table_id_feature_job_settings:
+            table_id = table_id_feature_job_setting.table_id
+            feature_job_setting = table_id_feature_job_setting.feature_job_setting
+            if table_id not in table_id_to_feature_job_setting:
+                table_id_to_feature_job_setting[table_id] = feature_job_setting
+            else:
+                if (
+                    table_id_to_feature_job_setting[table_id].to_seconds()
+                    != feature_job_setting.to_seconds()
+                ):
+                    raise DocumentCreationError(
+                        f"Feature job settings for table {table_id} are not consistent. "
+                        f"Two different feature job settings are found: "
+                        f"{table_id_to_feature_job_setting[table_id]} and {feature_job_setting}"
+                    )
+
     async def create_document(self, data: FeatureServiceCreate) -> FeatureModel:
         document = await self.prepare_feature_model(data=data, sanitize_for_definition=False)
+        self.validate_feature(feature=document)
+
         async with self.persistent.start_transaction() as session:
             # check any conflict with existing documents
             await self._check_document_unique_constraints(document=document)
