@@ -10,6 +10,7 @@ from freezegun import freeze_time
 
 import featurebyte as fb
 from featurebyte.api.deployment import Deployment
+from featurebyte.common.utils import dataframe_to_json
 from featurebyte.config import Configurations
 from featurebyte.exception import FeatureListNotOnlineEnabledError
 
@@ -113,8 +114,8 @@ def test_get_online_serving_code(deployment, catalog, config_file):
     url = f"http://localhost:8080/deployment/{deployment.id}/online_features"
 
     with patch("featurebyte.service.preview.PreviewService.preview") as mock_preview:
-        mock_preview.return_value = pd.DataFrame(
-            {"col_int": ["sample_col_int"], "cust_id": ["sample_cust_id"]}
+        mock_preview.return_value = dataframe_to_json(
+            pd.DataFrame({"col_int": ["sample_col_int"], "cust_id": ["sample_cust_id"]})
         )
         assert (
             deployment.get_online_serving_code().strip()
