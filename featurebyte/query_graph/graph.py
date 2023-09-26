@@ -304,7 +304,7 @@ class QueryGraph(QueryGraphModel):
         return table_feature_job_settings
 
     def extract_table_id_cleaning_operations(
-        self, target_node, keep_all_columns: bool = True
+        self, target_node: Node, keep_all_columns: bool = True
     ) -> List[TableIdCleaningOperation]:
         """
         Extract table ID cleaning operations from the query graph given the target node name

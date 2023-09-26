@@ -98,6 +98,11 @@ class FeatureService(BaseNamespaceService[FeatureModel, FeatureServiceCreate]):
         ----------
         feature: FeatureModel
             Feature model to validate
+
+        Raises
+        ------
+        DocumentCreationError
+            If the feature's feature job settings are not consistent
         """
         # validate feature model
         table_id_feature_job_settings = feature.extract_table_id_feature_job_settings()
