@@ -3,7 +3,7 @@ FeatureStore API route controller
 """
 from __future__ import annotations
 
-from typing import Any, List
+from typing import Any, List, Optional
 
 from bson.objectid import ObjectId
 
@@ -159,7 +159,7 @@ class FeatureStoreController(
     async def list_databases(
         self,
         feature_store: FeatureStoreModel,
-        get_credential: Any,
+        get_credential: Optional[Any] = None,
     ) -> List[str]:
         """
         List databases accessible by the feature store
@@ -168,7 +168,7 @@ class FeatureStoreController(
         ----------
         feature_store: FeatureStoreModel
             FeatureStoreModel object
-        get_credential: Any
+        get_credential: Optional[Any]
             Get credential handler function
 
         Returns

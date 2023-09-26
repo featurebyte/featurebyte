@@ -1583,7 +1583,7 @@ def get_credential_fixture(credentials):
 
 
 @pytest.fixture(autouse=True, scope="function")
-def mock_task_manager(request, persistent, storage, temp_storage, get_credential):
+def mock_task_manager(request, persistent, storage, temp_storage):
     """
     Mock celery task manager for testing
     """
@@ -1602,7 +1602,6 @@ def mock_task_manager(request, persistent, storage, temp_storage, get_credential
                     task_id=UUID(task_id),
                     payload=kwargs,
                     progress=Mock(),
-                    get_credential=get_credential,
                     app_container=LazyAppContainer(
                         user=user,
                         persistent=persistent,

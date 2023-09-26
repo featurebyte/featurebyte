@@ -48,7 +48,6 @@ from featurebyte.routes.use_case.api import UseCaseRouter
 from featurebyte.routes.user_defined_function.api import UserDefinedFunctionRouter
 from featurebyte.schema import APIServiceStatus
 from featurebyte.schema.task import TaskId
-from featurebyte.utils.credential import MongoBackedCredentialProvider
 from featurebyte.utils.messaging import REDIS_URI
 from featurebyte.utils.persistent import get_persistent
 from featurebyte.utils.storage import get_storage, get_temp_storage
@@ -72,9 +71,6 @@ def _dep_injection_func(
     """
     request.state.persistent = get_persistent()
     request.state.user = User()
-    request.state.get_credential = MongoBackedCredentialProvider(
-        persistent=request.state.persistent
-    ).get_credential
     request.state.app_container = LazyAppContainer(
         user=request.state.user,
         persistent=request.state.persistent,

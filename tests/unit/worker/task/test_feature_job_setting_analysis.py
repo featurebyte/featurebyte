@@ -145,9 +145,7 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         )
 
     @pytest.mark.asyncio
-    async def test_execute_fail(
-        self, mongo_persistent, progress, storage, temp_storage, get_credential
-    ):
+    async def test_execute_fail(self, mongo_persistent, progress, storage, temp_storage):
         """
         Test failed task execution
         """
@@ -165,7 +163,6 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
                 progress=progress,
                 storage=storage,
                 temp_storage=temp_storage,
-                get_credential=get_credential,
             )
         assert (
             str(excinfo.value)
@@ -186,7 +183,6 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         update_fixtures,
         storage,
         temp_storage,
-        get_credential,
     ):
         """
         Test successful task execution without using existing event table
@@ -213,7 +209,6 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
             progress=progress,
             storage=storage,
             temp_storage=temp_storage,
-            get_credential=get_credential,
         )
 
         output_document_id = payload["output_document_id"]
@@ -236,7 +231,6 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
             task_id=uuid4(),
             payload=payload.dict(by_alias=True),
             progress=Mock(),
-            get_credential=Mock(),
             app_container=LazyAppContainer(
                 user=Mock(),
                 persistent=persistent,

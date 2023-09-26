@@ -34,7 +34,6 @@ async def test_get_task_description_create():
         task_id=uuid4(),
         payload=payload.dict(by_alias=True),
         progress=Mock(),
-        get_credential=Mock(),
         app_container=Mock(),
     )
     assert await task.get_task_description() == 'Create deployment "Test deployment"'
@@ -74,7 +73,6 @@ async def test_get_task_description_update(persistent, enabled, expected):
         task_id=uuid4(),
         payload=payload.dict(by_alias=True),
         progress=Mock(),
-        get_credential=Mock(),
         app_container=LazyAppContainer(
             user=Mock(),
             persistent=persistent,

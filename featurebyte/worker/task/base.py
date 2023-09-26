@@ -36,14 +36,12 @@ class BaseTask:  # pylint: disable=too-many-instance-attributes
         task_id: UUID,
         payload: dict[str, Any],
         progress: Any,
-        get_credential: Any,
         app_container: LazyAppContainer,
     ):
         if self.payload_class == BaseTaskPayload:
             raise NotImplementedError
         self.task_id = task_id
         self.payload = self.payload_class(**payload)
-        self.get_credential = get_credential
         self.progress = progress
         self.app_container = app_container
 

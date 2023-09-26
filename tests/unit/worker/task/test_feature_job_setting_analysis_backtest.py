@@ -67,7 +67,6 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
         storage,
         temp_storage,
         mock_event_dataset,
-        get_credential,
         catalog,
         insert_credential,
     ):
@@ -87,7 +86,6 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
             progress=None,
             storage=storage,
             temp_storage=temp_storage,
-            get_credential=get_credential,
         )
 
     @pytest.mark.asyncio
@@ -158,9 +156,7 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
         }
 
     @pytest.mark.asyncio
-    async def test_execute_fail(
-        self, mongo_persistent, progress, storage, temp_storage, get_credential
-    ):
+    async def test_execute_fail(self, mongo_persistent, progress, storage, temp_storage):
         """
         Test failed task execution
         """
@@ -179,7 +175,6 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
                 progress=progress,
                 storage=storage,
                 temp_storage=temp_storage,
-                get_credential=get_credential,
             )
         assert str(excinfo.value) == (
             f'FeatureJobSettingAnalysis (id: "{feature_job_setting_analysis_id}") not found. '
@@ -201,7 +196,6 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
             task_id=uuid4(),
             payload=payload.dict(by_alias=True),
             progress=Mock(),
-            get_credential=Mock(),
             app_container=LazyAppContainer(
                 user=Mock(),
                 persistent=persistent,
