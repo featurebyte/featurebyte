@@ -460,8 +460,8 @@ def expected_feature_iet_info_fixture(feature_iet):
         ),
         readiness=ReadinessComparison(this="DRAFT", default="DRAFT"),
         table_feature_job_setting={
-            "this": [table_feature_job_setting, table_feature_job_setting],
-            "default": [table_feature_job_setting, table_feature_job_setting],
+            "this": [table_feature_job_setting],
+            "default": [table_feature_job_setting],
         },
         table_cleaning_operation={"this": [], "default": []},
         metadata=expected_metadata,
