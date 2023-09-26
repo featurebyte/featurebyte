@@ -194,3 +194,18 @@ class TableIdFeatureJobSetting(FeatureByteBaseModel):
 
     table_id: PydanticObjectId
     feature_job_setting: FeatureJobSetting
+
+    def __hash__(self) -> int:
+        return hash(f"{self.table_id}_{self.feature_job_setting.to_seconds()}")
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, (TableIdFeatureJobSetting, dict)):
+            return NotImplemented
+
+        if isinstance(other, dict):
+            other = TableIdFeatureJobSetting(**other)
+
+        return (
+            self.table_id == other.table_id
+            and self.feature_job_setting == other.feature_job_setting
+        )
