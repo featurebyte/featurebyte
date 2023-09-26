@@ -8,7 +8,6 @@ from unittest.mock import Mock
 from uuid import UUID, uuid4
 
 import pytest
-from bson.objectid import ObjectId
 
 from featurebyte.exception import DocumentNotFoundError
 from featurebyte.models.base import User
@@ -17,12 +16,6 @@ from featurebyte.models.task import Task
 from featurebyte.schema.task import TaskStatus
 from featurebyte.service.task_manager import TaskManager
 from tests.util.task import LongRunningPayload
-
-
-@pytest.fixture(name="user_id")
-def user_id_fixture():
-    """User ID fixture"""
-    return ObjectId()
 
 
 @pytest.fixture(name="celery")
