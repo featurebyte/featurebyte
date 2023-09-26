@@ -290,8 +290,8 @@ def mock_get_persistent_fixture(persistent):
     """
     Mock get_persistent in featurebyte/app.py
     """
-    with mock.patch("featurebyte.app.get_persistent") as mock_persistent, mock.patch(
-        "featurebyte.worker.task_executor.get_persistent"
+    with mock.patch("featurebyte.app.MongoDBImpl") as mock_persistent, mock.patch(
+        "featurebyte.worker.task_executor.MongoDBImpl"
     ) as mock_persistent_worker:
         mock_persistent.return_value = persistent
         mock_persistent_worker.return_value = persistent

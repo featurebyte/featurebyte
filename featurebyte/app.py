@@ -49,7 +49,7 @@ from featurebyte.routes.user_defined_function.api import UserDefinedFunctionRout
 from featurebyte.schema import APIServiceStatus
 from featurebyte.schema.task import TaskId
 from featurebyte.utils.messaging import REDIS_URI
-from featurebyte.utils.persistent import get_persistent
+from featurebyte.utils.persistent import MongoDBImpl
 from featurebyte.utils.storage import get_storage, get_temp_storage
 from featurebyte.worker import get_celery, get_redis
 
@@ -69,11 +69,10 @@ def _dep_injection_func(
     active_catalog_id: Optional[PydanticObjectId]
         Catalog ID to be used for the request
     """
-    request.state.persistent = get_persistent()
     request.state.user = User()
     request.state.app_container = LazyAppContainer(
         user=request.state.user,
-        persistent=request.state.persistent,
+        persistent=MongoDBImpl(),
         temp_storage=get_temp_storage(),
         celery=get_celery(),
         redis=get_redis(),

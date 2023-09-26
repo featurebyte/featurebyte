@@ -7,7 +7,7 @@ from featurebyte.app import User
 from featurebyte.logging import get_logger
 from featurebyte.migration.run import run_migration
 from featurebyte.utils.credential import MongoBackedCredentialProvider
-from featurebyte.utils.persistent import get_persistent
+from featurebyte.utils.persistent import MongoDBImpl
 from featurebyte.worker import get_celery
 
 logger = get_logger(__name__)
@@ -15,11 +15,11 @@ logger = get_logger(__name__)
 
 if __name__ == "__main__":
     logger.info("Running database migration")
-    credential_provider = MongoBackedCredentialProvider(persistent=get_persistent())
+    credential_provider = MongoBackedCredentialProvider(persistent=MongoDBImpl())
     # Note that the user ID here is an arbitrary one. For collections that have user specific data, special handling
     # will be required.
     asyncio.run(
-        run_migration(user=User(), persistent=get_persistent(), get_credential=credential_provider.get_credential, celery=get_celery())
+        run_migration(user=User(), persistent=MongoDBImpl(), get_credential=credential_provider.get_credential, celery=get_celery())
     )
 
     logger.info("Database migration completed")

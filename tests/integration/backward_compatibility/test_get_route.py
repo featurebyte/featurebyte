@@ -39,7 +39,7 @@ def test_api_client_fixture(mongo_persistent):
     """
     Test API client
     """
-    with mock.patch("featurebyte.app.get_persistent") as mock_get_persistent:
+    with mock.patch("featurebyte.app.MongoDBImpl") as mock_get_persistent:
         with mock.patch("featurebyte.app.User") as mock_user:
             mock_user.return_value.id = ObjectId()
             mock_get_persistent.return_value = mongo_persistent

@@ -13,7 +13,7 @@ from pymongo.errors import DuplicateKeyError
 
 from featurebyte.models.persistent import AuditActionType
 from featurebyte.persistent import DuplicateDocumentError
-from featurebyte.utils.persistent import get_persistent
+from featurebyte.utils.persistent import MongoDBImpl
 
 
 @pytest.mark.parametrize("disable_audit", [False, True])
@@ -467,6 +467,6 @@ async def test_get_audit_logs(mongo_persistent, test_document):
 
 def test_check_mongo_persistent_is_not_shared():
     """Test that get_persistent is not shared"""
-    persistent1 = get_persistent()
-    persistent2 = get_persistent()
+    persistent1 = MongoDBImpl()
+    persistent2 = MongoDBImpl()
     assert id(persistent1) != id(persistent2)
