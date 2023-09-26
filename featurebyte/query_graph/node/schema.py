@@ -9,7 +9,7 @@ from pydantic import Field, StrictStr
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import DBVarType, SourceType, StorageType
-from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 
 
 class BaseDatabaseDetails(FeatureByteBaseModel):
@@ -186,3 +186,4 @@ class ColumnSpec(FeatureByteBaseModel):
 
     name: StrictStr
     dtype: DBVarType
+    entity_id: Optional[PydanticObjectId] = Field(default=None)

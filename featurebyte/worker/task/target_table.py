@@ -80,7 +80,6 @@ class TargetTableTask(DataWarehouseMixin, BaseTask):
                 location=location,
                 context_id=payload.context_id,
                 request_input=payload.request_input,
-                entity_ids=payload.entity_ids,
                 **additional_metadata,
             )
             await observation_table_service.create_document(observation_table)
