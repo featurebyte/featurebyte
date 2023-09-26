@@ -27,7 +27,6 @@ async def test_get_task_description(catalog):
         task_id=uuid4(),
         payload=payload.dict(by_alias=True),
         progress=Mock(),
-        get_credential=Mock(),
         app_container=Mock(),
     )
     assert await task.get_task_description() == 'Save batch feature table "Test Features"'

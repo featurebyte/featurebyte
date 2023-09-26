@@ -71,7 +71,6 @@ async def test_get_task_description(persistent, collection_name, expected_descri
         task_id=uuid4(),
         payload=payload.dict(by_alias=True),
         progress=Mock(),
-        get_credential=Mock(),
         app_container=LazyAppContainer(
             user=Mock(),
             persistent=persistent,

@@ -33,7 +33,6 @@ async def test_get_task_description():
         task_id=uuid4(),
         payload=payload.dict(by_alias=True),
         progress=Mock(),
-        get_credential=Mock(),
         app_container=Mock(),
     )
     assert await task.get_task_description() == 'Save feature list "Test Feature list"'

@@ -3,7 +3,7 @@ Mixin classes for tasks
 """
 from __future__ import annotations
 
-from typing import Any, AsyncIterator, Callable
+from typing import AsyncIterator
 
 from contextlib import asynccontextmanager
 
@@ -25,7 +25,6 @@ class DataWarehouseMixin:
 
     payload: BaseTaskPayload
     app_container: LazyAppContainer
-    get_credential: Callable[..., Any]
 
     async def get_db_session(self, feature_store: FeatureStoreModel) -> BaseSession:
         """

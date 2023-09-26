@@ -24,7 +24,6 @@ from featurebyte.models.base import User
 from featurebyte.models.task import Task as TaskModel
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
-from featurebyte.utils.credential import MongoBackedCredentialProvider
 from featurebyte.utils.messaging import Progress
 from featurebyte.utils.persistent import get_persistent
 from featurebyte.utils.storage import get_storage, get_temp_storage
@@ -103,7 +102,6 @@ class TaskExecutor:
     def __init__(self, payload: dict[str, Any], task_id: UUID, progress: Any = None) -> None:
         self.task_id = task_id
         command = self.command_type(payload["command"])
-        credential_provider = MongoBackedCredentialProvider(persistent=get_persistent())
         user = User(id=payload.get("user_id"))
         task_class = TASK_MAP[command]
         payload_object = task_class.payload_class(**payload)
@@ -121,7 +119,6 @@ class TaskExecutor:
             task_id=task_id,
             payload=payload,
             progress=progress,
-            get_credential=credential_provider.get_credential,
             app_container=app_container,
         )
         self._setup_worker_config()

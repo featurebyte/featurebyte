@@ -74,9 +74,7 @@ class BaseTaskTestSuite:
         """
         yield Mock()
 
-    async def execute_task(
-        self, task_class, payload, persistent, progress, storage, temp_storage, get_credential
-    ):
+    async def execute_task(self, task_class, payload, persistent, progress, storage, temp_storage):
         """
         Execute task with payload
         """
@@ -86,7 +84,6 @@ class BaseTaskTestSuite:
             task_id=uuid4(),
             payload=payload,
             progress=progress,
-            get_credential=get_credential,
             app_container=LazyAppContainer(
                 user=user,
                 persistent=persistent,
@@ -102,9 +99,7 @@ class BaseTaskTestSuite:
         await task.execute()
 
     @pytest_asyncio.fixture()
-    async def task_completed(
-        self, mongo_persistent, progress, storage, temp_storage, get_credential, catalog
-    ):
+    async def task_completed(self, mongo_persistent, progress, storage, temp_storage, catalog):
         """
         Test execution of the task
         """
@@ -117,5 +112,4 @@ class BaseTaskTestSuite:
             progress=progress,
             storage=storage,
             temp_storage=temp_storage,
-            get_credential=get_credential,
         )
