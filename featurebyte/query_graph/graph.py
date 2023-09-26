@@ -22,11 +22,19 @@ from bson import ObjectId
 from pydantic import Field
 
 from featurebyte.common.singleton import SingletonMeta
-from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.enum import GraphNodeType, NodeType
 from featurebyte.query_graph.graph_node.base import GraphNode
+from featurebyte.query_graph.model.feature_job_setting import (
+    FeatureJobSetting,
+    TableIdFeatureJobSetting,
+)
 from featurebyte.query_graph.model.graph import Edge, GraphNodeNameMap, QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.base import NodeT
+from featurebyte.query_graph.node.cleaning_operation import (
+    ColumnCleaningOperation,
+    TableIdCleaningOperation,
+)
 from featurebyte.query_graph.node.function import GenericFunctionNode
 from featurebyte.query_graph.node.generic import (
     ForwardAggregateNode,
@@ -41,6 +49,7 @@ from featurebyte.query_graph.node.metadata.operation import (
     SourceDataColumn,
 )
 from featurebyte.query_graph.node.mixin import BaseGroupbyParameters
+from featurebyte.query_graph.node.nested import BaseGraphNode, BaseViewGraphNodeParameters
 from featurebyte.query_graph.transform.entity_extractor import EntityExtractor
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
@@ -260,6 +269,96 @@ class QueryGraph(QueryGraphModel):
 
             assert table_id is not None, "Table ID not found"
             yield group_by_node, table_id
+
+    def extract_table_id_feature_job_settings(
+        self, target_node: Node
+    ) -> List[TableIdFeatureJobSetting]:
+        """
+        Extract table ID feature job settings of the query graph given the target node name
+
+        Parameters
+        ----------
+        target_node: Node
+            Node from which to start the backward search
+
+        Returns
+        -------
+        List[TableIdFeatureJobSetting]
+            List of table ID feature job settings in the query graph
+        """
+        table_feature_job_settings = []
+        node_table_id_iterator = self.iterate_group_by_node_and_table_id_pairs(
+            target_node=target_node
+        )
+        for group_by_node, table_id in node_table_id_iterator:
+            table_feature_job_settings.append(
+                TableIdFeatureJobSetting(
+                    table_id=table_id,
+                    feature_job_setting=FeatureJobSetting(
+                        blind_spot=f"{group_by_node.parameters.blind_spot}s",
+                        frequency=f"{group_by_node.parameters.frequency}s",
+                        time_modulo_frequency=f"{group_by_node.parameters.time_modulo_frequency}s",
+                    ),
+                )
+            )
+        return table_feature_job_settings
+
+    def extract_table_id_cleaning_operations(self, target_node) -> List[TableIdCleaningOperation]:
+        """
+        Extract table ID cleaning operations from the query graph given the target node name
+
+        Parameters
+        ----------
+        target_node: Node
+            Node from which to start the backward search
+
+        Returns
+        -------
+        List[TableIdCleaningOperation]
+            List of table cleaning operations
+        """
+        table_column_operations = []
+        found_table_ids = set()
+        table_id_to_col_names = self.extract_table_id_to_table_column_names(node=target_node)
+        for node in self.iterate_nodes(target_node=target_node, node_type=NodeType.GRAPH):
+            assert isinstance(node, BaseGraphNode)
+            if node.parameters.type in GraphNodeType.view_graph_node_types():
+                node_params = node.parameters
+                assert isinstance(node_params, BaseViewGraphNodeParameters)
+                col_to_clean_ops = {
+                    col_clean_op.column_name: col_clean_op.cleaning_operations
+                    for col_clean_op in node_params.metadata.column_cleaning_operations
+                }
+                table_column_operations.append(
+                    TableIdCleaningOperation(
+                        table_id=node_params.metadata.table_id,
+                        column_cleaning_operations=[
+                            ColumnCleaningOperation(
+                                column_name=col_name,
+                                cleaning_operations=col_to_clean_ops.get(col_name, []),
+                            )
+                            for col_name in sorted(
+                                table_id_to_col_names[node_params.metadata.table_id]
+                            )
+                        ],
+                    )
+                )
+                found_table_ids.add(node_params.metadata.table_id)
+
+        # prepare column name to column cleaning operations mapping
+        for table_id, column_names in table_id_to_col_names.items():
+            if table_id not in found_table_ids:
+                column_clean_ops = [
+                    ColumnCleaningOperation(column_name=column_name, cleaning_operations=[])
+                    for column_name in sorted(column_names)
+                ]
+                table_column_operations.append(
+                    TableIdCleaningOperation(
+                        table_id=table_id, column_cleaning_operations=column_clean_ops
+                    )
+                )
+
+        return table_column_operations
 
     def load(self, graph: QueryGraphModel) -> Tuple["QueryGraph", Dict[str, str]]:
         """

@@ -7,7 +7,7 @@ from pydantic import Field, root_validator
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.model_util import parse_duration_string, validate_job_setting_parameters
-from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 
 
 class FeatureJobSetting(FeatureByteBaseModel):
@@ -185,3 +185,12 @@ class TableFeatureJobSetting(FeatureByteBaseModel):
         description="Feature class that contains specific settings that should be applied to feature jobs that "
         "involve time aggregate operations and use timestamps from the table specified in the table_name parameter."
     )
+
+
+class TableIdFeatureJobSetting(FeatureByteBaseModel):
+    """
+    The TableIdFeatureJobSetting object serves as a link between a table ID and a specific feature job setting.
+    """
+
+    table_id: PydanticObjectId
+    feature_job_setting: FeatureJobSetting
