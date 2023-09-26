@@ -329,6 +329,9 @@ class QueryGraph(QueryGraphModel):
             if node.parameters.type in GraphNodeType.view_graph_node_types():
                 node_params = node.parameters
                 assert isinstance(node_params, BaseViewGraphNodeParameters)
+                if not keep_all_columns and not node_params.metadata.column_cleaning_operations:
+                    continue
+
                 col_to_clean_ops = {
                     col_clean_op.column_name: col_clean_op.cleaning_operations
                     for col_clean_op in node_params.metadata.column_cleaning_operations
@@ -344,6 +347,7 @@ class QueryGraph(QueryGraphModel):
                             for col_name in sorted(
                                 table_id_to_col_names[node_params.metadata.table_id]
                             )
+                            if keep_all_columns or col_to_clean_ops.get(col_name)
                         ],
                     )
                 )
