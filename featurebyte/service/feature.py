@@ -90,7 +90,15 @@ class FeatureService(BaseNamespaceService[FeatureModel, FeatureServiceCreate]):
         )
 
     @staticmethod
-    def _validate_feature(feature: FeatureModel) -> None:
+    def validate_feature(feature: FeatureModel) -> None:
+        """
+        Validate feature model before saving
+
+        Parameters
+        ----------
+        feature: FeatureModel
+            Feature model to validate
+        """
         # validate feature model
         table_id_feature_job_settings = feature.extract_table_id_feature_job_settings()
         table_id_to_feature_job_setting = {}
@@ -112,7 +120,7 @@ class FeatureService(BaseNamespaceService[FeatureModel, FeatureServiceCreate]):
 
     async def create_document(self, data: FeatureServiceCreate) -> FeatureModel:
         document = await self.prepare_feature_model(data=data, sanitize_for_definition=False)
-        self._validate_feature(feature=document)
+        self.validate_feature(feature=document)
 
         async with self.persistent.start_transaction() as session:
             # check any conflict with existing documents

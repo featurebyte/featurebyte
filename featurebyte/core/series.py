@@ -64,6 +64,8 @@ class DefaultSeriesBinaryOperator(SeriesBinaryOperator):
         ------
         TypeError
             If the other series has incompatible type
+        ValueError
+            If the feature job settings of both series are inconsistent
         """
         if (
             isinstance(self.other, Series)
