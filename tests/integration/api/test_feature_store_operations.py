@@ -17,9 +17,7 @@ from featurebyte.service.session_validator import SessionValidatorService
 @pytest.mark.skip(reason="skipping while we rollback the default state")
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_feature_store_create__no_writes_on_error(
-    mongo_persistent, feature_store_details, get_cred
-):
+async def test_feature_store_create__no_writes_on_error(mongo_persistent, feature_store_details):
     """
     Test that nothing is written to mongo if we error halfway through
     while interacting with snowflake
@@ -30,7 +28,6 @@ async def test_feature_store_create__no_writes_on_error(
         feature_store_name: str,
         session_type: SourceType,
         details: DatabaseDetails,
-        get_credential: Any,
         users_feature_store_id: Optional[PydanticObjectId],
     ):
         raise FeatureStoreSchemaCollisionError

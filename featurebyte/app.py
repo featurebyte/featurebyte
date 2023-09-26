@@ -72,9 +72,6 @@ def _dep_injection_func(
     """
     request.state.persistent = get_persistent()
     request.state.user = User()
-    request.state.get_credential = MongoBackedCredentialProvider(
-        persistent=request.state.persistent
-    ).get_credential
     request.state.app_container = LazyAppContainer(
         user=request.state.user,
         persistent=request.state.persistent,

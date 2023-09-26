@@ -5,7 +5,7 @@ We split this into a separate service, as these typically require a session obje
 """
 from __future__ import annotations
 
-from typing import Any, List
+from typing import Any, List, Optional
 
 from featurebyte.exception import DatabaseNotFoundError, SchemaNotFoundError, TableNotFoundError
 from featurebyte.models.feature_store import FeatureStoreModel
@@ -49,7 +49,7 @@ class FeatureStoreWarehouseService:
         await db_session.check_user_defined_function(user_defined_function=user_defined_function)
 
     async def list_databases(
-        self, feature_store: FeatureStoreModel, get_credential: Any
+        self, feature_store: FeatureStoreModel, get_credential: Optional[Any]
     ) -> List[str]:
         """
         List databases in feature store
@@ -58,7 +58,7 @@ class FeatureStoreWarehouseService:
         ----------
         feature_store: FeatureStoreModel
             FeatureStoreModel object
-        get_credential: Any
+        get_credential: Optional[Any]
             Get credential handler function
 
         Returns

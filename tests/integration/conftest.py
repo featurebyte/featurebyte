@@ -1327,7 +1327,7 @@ def mock_app_callbacks(storage, temp_storage):
 
 
 @pytest.fixture(autouse=True, scope="module")
-def mock_task_manager(request, persistent, storage, temp_storage, get_cred, mock_app_callbacks):
+def mock_task_manager(request, persistent, storage, temp_storage, mock_app_callbacks):
     """
     Mock celery task manager for testing
     """
@@ -1347,7 +1347,6 @@ def mock_task_manager(request, persistent, storage, temp_storage, get_cred, mock
                     task_id=UUID(task_id),
                     payload=kwargs,
                     progress=Mock(),
-                    get_credential=get_cred,
                     app_container=LazyAppContainer(
                         user=user,
                         persistent=persistent,

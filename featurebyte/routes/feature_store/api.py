@@ -171,7 +171,6 @@ class FeatureStoreRouter(
         controller = request.state.app_container.feature_store_controller
         result: List[str] = await controller.list_databases(
             feature_store=feature_store,
-            get_credential=request.state.get_credential,
         )
         return result
 
