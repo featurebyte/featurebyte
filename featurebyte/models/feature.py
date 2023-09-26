@@ -23,8 +23,10 @@ from featurebyte.models.base import (
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
+from featurebyte.query_graph.model.feature_job_setting import TableIdFeatureJobSetting
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.node.cleaning_operation import TableIdCleaningOperation
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.sql.online_store_compute_query import (
@@ -169,6 +171,28 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
             self.node, keep_all_source_columns=keep_all_source_columns
         )
         return operation_structure.to_group_operation_structure()
+
+    def extract_table_id_feature_job_settings(self) -> List[TableIdFeatureJobSetting]:
+        """
+        Extract table id feature job settings
+
+        Returns
+        -------
+        List[TableIdFeatureJobSetting]
+            List of table id feature job settings
+        """
+        return self.graph.extract_table_id_feature_job_settings(target_node=self.node)
+
+    def extract_table_id_cleaning_operations(self) -> List[TableIdCleaningOperation]:
+        """
+        Extract table cleaning operations
+
+        Returns
+        -------
+        List[TableIdCleaningOperation]
+            List of table cleaning operations
+        """
+        return self.graph.extract_table_id_cleaning_operations(target_node=self.node)
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
