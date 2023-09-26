@@ -103,69 +103,70 @@ def test_list_deployment(deployment, snowflake_feature_store):
     assert response.json() == {"num_feature_list": 1, "num_feature": 1}
 
 
-@patch("featurebyte.core.mixin.SampleMixin.preview")
-def test_get_online_serving_code(mock_preview, deployment, catalog, config_file):
+def test_get_online_serving_code(deployment, catalog, config_file):
     """Test feature get_online_serving_code"""
-    mock_preview.return_value = pd.DataFrame(
-        {"col_int": ["sample_col_int"], "cust_id": ["sample_cust_id"]}
-    )
     # Use config
     Configurations(config_file, force=True)
 
     deployment.enable()
     assert deployment.enabled is True
     url = f"http://localhost:8080/deployment/{deployment.id}/online_features"
-    assert (
-        deployment.get_online_serving_code().strip()
-        == textwrap.dedent(
-            f'''
-            from typing import Any, Dict
 
-            import pandas as pd
-            import requests
+    with patch("featurebyte.service.preview.PreviewService.preview") as mock_preview:
+        mock_preview.return_value = pd.DataFrame(
+            {"col_int": ["sample_col_int"], "cust_id": ["sample_cust_id"]}
+        )
+        assert (
+            deployment.get_online_serving_code().strip()
+            == textwrap.dedent(
+                f'''
+                from typing import Any, Dict
+
+                import pandas as pd
+                import requests
 
 
-            def request_features(entity_serving_names: Dict[str, Any]) -> pd.DataFrame:
+                def request_features(entity_serving_names: Dict[str, Any]) -> pd.DataFrame:
+                    """
+                    Send POST request to online serving endpoint
+
+                    Parameters
+                    ----------
+                    entity_serving_names: Dict[str, Any]
+                        Entity serving name values to used for serving request
+
+                    Returns
+                    -------
+                    pd.DataFrame
+                    """
+                    response = requests.post(
+                        url="{url}",
+                        headers={{"Content-Type": "application/json", "active-catalog-id": "{catalog.id}", "Authorization": "Bearer token"}},
+                        json={{"entity_serving_names": entity_serving_names}},
+                    )
+                    assert response.status_code == 200, response.json()
+                    return pd.DataFrame.from_dict(response.json()["features"])
+
+
+                request_features([{{"cust_id": "sample_cust_id"}}])
+                '''
+            ).strip()
+        )
+        assert (
+            deployment.get_online_serving_code(language="sh").strip()
+            == textwrap.dedent(
+                f"""
+                #!/bin/sh
+
+                curl -X POST \\
+                    -H 'Content-Type: application/json' \\
+                    -H 'active-catalog-id: {catalog.id}' \\
+                    -H 'Authorization: Bearer token' \\
+                    -d '{{"entity_serving_names": [{{"cust_id": "sample_cust_id"}}]}}' \\
+                    {url}
                 """
-                Send POST request to online serving endpoint
-
-                Parameters
-                ----------
-                entity_serving_names: Dict[str, Any]
-                    Entity serving name values to used for serving request
-
-                Returns
-                -------
-                pd.DataFrame
-                """
-                response = requests.post(
-                    url="{url}",
-                    headers={{"Content-Type": "application/json", "active-catalog-id": "{catalog.id}", "Authorization": "Bearer token"}},
-                    json={{"entity_serving_names": entity_serving_names}},
-                )
-                assert response.status_code == 200, response.json()
-                return pd.DataFrame.from_dict(response.json()["features"])
-
-
-            request_features([{{"cust_id": "sample_cust_id"}}])
-            '''
-        ).strip()
-    )
-    assert (
-        deployment.get_online_serving_code(language="sh").strip()
-        == textwrap.dedent(
-            f"""
-            #!/bin/sh
-
-            curl -X POST \\
-                -H 'Content-Type: application/json' \\
-                -H 'active-catalog-id: {catalog.id}' \\
-                -H 'Authorization: Bearer token' \\
-                -d '{{"entity_serving_names": [{{"cust_id": "sample_cust_id"}}]}}' \\
-                {url}
-            """
-        ).strip()
-    )
+            ).strip()
+        )
 
 
 @freeze_time("2023-01-20 03:20:00")

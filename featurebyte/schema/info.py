@@ -441,6 +441,15 @@ class DeploymentInfo(BaseInfo):
     use_case_name: Optional[str]
 
 
+class DeploymentRequestCodeTemplate(FeatureByteBaseModel):
+    """
+    Schema for deployment request code template
+    """
+
+    code_template: str
+    language: str
+
+
 class BatchRequestTableInfo(BaseInfo):
     """
     BatchRequestTable info schema

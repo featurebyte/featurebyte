@@ -25,7 +25,7 @@ from featurebyte.schema.deployment import (
     OnlineFeaturesResponseModel,
 )
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
-from featurebyte.schema.info import DeploymentInfo
+from featurebyte.schema.info import DeploymentInfo, DeploymentRequestCodeTemplate
 from featurebyte.schema.task import Task
 from featurebyte.schema.worker.task.deployment_create_update import (
     CreateDeploymentPayload,
@@ -213,6 +213,43 @@ class DeploymentController(
             ) from exc
         assert result is not None, result
         return result
+
+    async def get_request_code_template(
+        self, deployment_id: ObjectId, language: Literal["python", "sh"]
+    ) -> DeploymentRequestCodeTemplate:
+        """
+        Get request code template for a given deployment ID.
+
+        Parameters
+        ----------
+        deployment_id: ObjectId
+            ID of deployment to get request code template
+        language: Literal["python", "sh"]
+            Language of request code template
+
+        Returns
+        -------
+        DeploymentRequestCodeTemplate
+            Request code template
+
+        Raises
+        ------
+        FeatureListNotOnlineEnabledError
+            Feature list is not online enabled
+        """
+        deployment: DeploymentModel = await self.service.get_document(deployment_id)
+
+        if not deployment.enabled:
+            raise FeatureListNotOnlineEnabledError("Deployment is not enabled.")
+
+        feature_list = await self.feature_list_service.get_document(
+            document_id=deployment.feature_list_id
+        )
+        return await self.online_serving_service.get_request_code_template(
+            deployment=deployment,
+            feature_list=feature_list,
+            language=language,
+        )
 
 
 class AllDeploymentController(

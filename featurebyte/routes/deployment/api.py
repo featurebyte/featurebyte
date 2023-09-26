@@ -1,7 +1,7 @@
 """
 Deployment API routes
 """
-from typing import Optional, cast
+from typing import Literal, Optional, cast
 
 from http import HTTPStatus
 
@@ -31,7 +31,7 @@ from featurebyte.schema.deployment import (
     OnlineFeaturesResponseModel,
 )
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
-from featurebyte.schema.info import DeploymentInfo
+from featurebyte.schema.info import DeploymentInfo, DeploymentRequestCodeTemplate
 from featurebyte.schema.task import Task
 
 router = APIRouter(prefix="/deployment")
@@ -215,3 +215,22 @@ async def update_deployment_description(
         description=data.description,
     )
     return deployment
+
+
+@router.get("/{deployment_id}/request_code_template", response_model=DeploymentRequestCodeTemplate)
+async def get_deployment_request_code_template(
+    request: Request,
+    deployment_id: PydanticObjectId,
+    language: Literal["python", "sh"] = Query(default="python"),
+) -> DeploymentRequestCodeTemplate:
+    """
+    Get Deployment Request Code Template
+    """
+    controller = request.state.app_container.deployment_controller
+    request_code_template: DeploymentRequestCodeTemplate = (
+        await controller.get_request_code_template(
+            deployment_id=deployment_id,
+            language=language,
+        )
+    )
+    return request_code_template

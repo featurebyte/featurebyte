@@ -5,18 +5,34 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Union
 
-import pandas as pd
+import json
+import os
 
-from featurebyte.exception import FeatureListNotOnlineEnabledError
+import pandas as pd
+from jinja2 import Template
+
+from featurebyte.common.utils import dataframe_from_json
+from featurebyte.exception import (
+    FeatureListNotOnlineEnabledError,
+    UnsupportedRequestCodeTemplateLanguage,
+)
 from featurebyte.models.batch_request_table import BatchRequestTableModel
+from featurebyte.models.deployment import DeploymentModel
 from featurebyte.models.feature_list import FeatureListModel
+from featurebyte.models.feature_store import FeatureStoreModel, TableModel
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.online_serving import get_online_features
 from featurebyte.schema.deployment import OnlineFeaturesResponseModel
+from featurebyte.schema.feature_store import FeatureStorePreview
+from featurebyte.schema.info import DeploymentRequestCodeTemplate
+from featurebyte.service.entity import EntityService, get_primary_entity_from_entities
 from featurebyte.service.entity_validation import EntityValidationService
+from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
+from featurebyte.service.preview import PreviewService
 from featurebyte.service.session_manager import SessionManagerService
+from featurebyte.service.table import TableService
 
 
 class OnlineServingService:
@@ -30,11 +46,19 @@ class OnlineServingService:
         entity_validation_service: EntityValidationService,
         online_store_table_version_service: OnlineStoreTableVersionService,
         feature_store_service: FeatureStoreService,
+        feature_list_namespace_service: FeatureListNamespaceService,
+        entity_service: EntityService,
+        table_service: TableService,
+        preview_service: PreviewService,
     ):
         self.feature_store_service = feature_store_service
         self.session_manager_service = session_manager_service
         self.entity_validation_service = entity_validation_service
         self.online_store_table_version_service = online_store_table_version_service
+        self.feature_list_namespace_service = feature_list_namespace_service
+        self.entity_service = entity_service
+        self.table_service = table_service
+        self.preview_service = preview_service
 
     async def get_online_features_from_feature_list(
         self,
@@ -109,3 +133,124 @@ class OnlineServingService:
         if features is None:
             return None
         return OnlineFeaturesResponseModel(features=features)
+
+    async def get_request_code_template(  # pylint: disable=too-many-locals
+        self,
+        deployment: DeploymentModel,
+        feature_list: FeatureListModel,
+        language: str,
+    ) -> DeploymentRequestCodeTemplate:
+        """
+        Get request code template for a deployment
+
+        Parameters
+        ----------
+        deployment: DeploymentModel
+            Deployment model
+        feature_list: FeatureListModel
+            Feature List model
+        language: str
+            Language of the template
+
+        Returns
+        -------
+        DeploymentRequestCodeTemplate
+
+        Raises
+        ------
+        UnsupportedRequestCodeTemplateLanguage
+            When the provided language is not supported
+        """
+
+        template_file_path = os.path.join(
+            os.path.dirname(__file__), f"templates/online_serving/{language}.tpl"
+        )
+        if not os.path.exists(template_file_path):
+            raise UnsupportedRequestCodeTemplateLanguage("Supported languages: ['python', 'sh']")
+
+        # get entities and tables used for the feature list
+        num_rows = 1
+        feature_list_namespace = await self.feature_list_namespace_service.get_document(
+            document_id=feature_list.feature_list_namespace_id
+        )
+        entities_docs = await self.entity_service.list_documents_as_dict(
+            page=1, page_size=0, query_filter={"_id": {"$in": feature_list_namespace.entity_ids}}
+        )
+        primary_entity = get_primary_entity_from_entities(entities_docs)
+        entities = {
+            entity["_id"]: {"serving_name": entity["serving_names"]}
+            for entity in primary_entity["data"]
+        }
+        tables = self.table_service.list_documents_iterator(
+            query_filter={"_id": {"$in": feature_list_namespace.table_ids}}
+        )
+
+        feature_store: Optional[FeatureStoreModel] = None
+        async for table in tables:
+            assert isinstance(table, TableModel)
+            if not feature_store:
+                feature_store = await self.feature_store_service.get_document(
+                    document_id=table.tabular_source.feature_store_id
+                )
+            else:
+                assert (
+                    feature_store.id == table.tabular_source.feature_store_id
+                ), "Feature List tables must be in the same feature store"
+
+            entity_columns = [
+                column for column in table.columns_info if column.entity_id in entities
+            ]
+            if entity_columns:
+                graph, node = table.construct_graph_and_node(
+                    feature_store_details=feature_store.get_feature_store_details(),
+                    table_data_dict=table.dict(by_alias=True),
+                )
+                sample_data = dataframe_from_json(
+                    await self.preview_service.preview(
+                        preview=FeatureStorePreview(
+                            feature_store_name=feature_store.name,
+                            graph=graph,
+                            node_name=node.name,
+                        ),
+                        limit=num_rows,
+                    )
+                )
+                for column in entity_columns:
+                    entities[column.entity_id]["sample_value"] = sample_data[column.name].to_list()
+
+        entity_serving_names = json.dumps(
+            [
+                {
+                    entity["serving_name"][0]: entity["sample_value"][row_idx]
+                    for entity in entities.values()
+                }
+                for row_idx in range(num_rows)
+            ]
+        )
+
+        # construct serving url
+        headers = {
+            "Content-Type": "application/json",
+            "active-catalog-id": str(feature_list.catalog_id),
+            "Authorization": "Bearer <API_TOKEN>",
+        }
+
+        # populate template
+        with open(
+            file=template_file_path,
+            mode="r",
+            encoding="utf-8",
+        ) as file_object:
+            template = Template(file_object.read())
+
+        return DeploymentRequestCodeTemplate(
+            code_template=template.render(
+                headers=json.dumps(headers),
+                header_params=" \\\n    ".join(
+                    [f"-H '{key}: {value}'" for key, value in headers.items()]
+                ),
+                serving_url=f"<FEATUREBYTE_SERVICE_URL>/deployment/{deployment.id}/online_features",
+                entity_serving_names=entity_serving_names,
+            ),
+            language=language,
+        )
