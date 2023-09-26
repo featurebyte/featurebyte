@@ -113,7 +113,7 @@ async def test_task_executor(random_task_class, persistent):
     # run executor
     user_id = ObjectId()
     document_id = ObjectId()
-    with patch("featurebyte.worker.task_executor.get_persistent") as mock_get_persistent:
+    with patch("featurebyte.worker.task_executor.MongoDBImpl") as mock_get_persistent:
         mock_get_persistent.return_value = persistent
         await TaskExecutor(
             payload={

@@ -30,7 +30,7 @@ def api_client_persistent(persistent, user_id, temp_storage):
     """
     Test API client
     """
-    with patch("featurebyte.app.get_persistent") as mock_get_persistent:
+    with patch("featurebyte.app.MongoDBImpl") as mock_get_persistent:
         with patch("featurebyte.app.get_temp_storage") as mock_get_temp_storage:
             with patch("featurebyte.app.User") as mock_user:
                 mock_user.return_value.id = user_id

@@ -136,7 +136,7 @@ def mock_get_persistent_function(mongo_persistent):
     """
     Mock get_persistent in featurebyte.app
     """
-    with mock.patch("featurebyte.app.get_persistent") as mock_persistent:
+    with mock.patch("featurebyte.app.MongoDBImpl") as mock_persistent:
         persistent, _ = mongo_persistent
         mock_persistent.return_value = persistent
         yield mock_persistent

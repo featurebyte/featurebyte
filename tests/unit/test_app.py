@@ -21,10 +21,10 @@ def test_get_persistent():
     Test get_persistent works as expected
     """
     importlib.reload(persistent)
-    with patch("featurebyte.utils.persistent.MongoDB") as mock_mongodb:
+    with patch("featurebyte.utils.persistent.MongoDB.__init__") as mock_mongodb:
         with pytest.raises(ValueError):
             mock_mongodb.side_effect = ValueError()
-            persistent.get_persistent()
+            persistent.MongoDBImpl()
     mock_mongodb.assert_called_once_with(uri="mongodb://localhost:27022", database="featurebyte")
 
 

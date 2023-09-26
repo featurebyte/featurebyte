@@ -25,7 +25,7 @@ from featurebyte.models.task import Task as TaskModel
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
 from featurebyte.utils.messaging import Progress
-from featurebyte.utils.persistent import get_persistent
+from featurebyte.utils.persistent import MongoDBImpl
 from featurebyte.utils.storage import get_storage, get_temp_storage
 from featurebyte.worker import get_celery, get_redis
 from featurebyte.worker.task.base import TASK_MAP
@@ -107,7 +107,7 @@ class TaskExecutor:
         payload_object = task_class.payload_class(**payload)
         app_container = LazyAppContainer(
             user=user,
-            persistent=get_persistent(),
+            persistent=MongoDBImpl(),
             temp_storage=get_temp_storage(),
             celery=get_celery(),
             redis=get_redis(),

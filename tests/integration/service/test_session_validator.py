@@ -43,7 +43,7 @@ async def get_reset_session_fixture(session_manager, feature_store_details, feat
 @pytest.mark.skip(reason="skipping while we rollback the default state")
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
-@mock.patch("featurebyte.app.get_persistent")
+@mock.patch("featurebyte.app.MongoDBImpl")
 async def test_validate_feature_store_id_not_used_in_warehouse(
     mock_persistent,
     session_validator_service,
