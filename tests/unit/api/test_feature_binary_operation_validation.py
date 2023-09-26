@@ -72,13 +72,14 @@ def test_feature_binary_operation_validation__feature_job_settings(
 ):
     """Test feature binary operation validation"""
     event_view = snowflake_event_table_with_entity.get_view()
-    feature_sum_30m = event_view.groupby("cust_id").aggregate_over(
+    feature_group = event_view.groupby("cust_id").aggregate_over(
         value_column="col_float",
         method="sum",
-        windows=["30m"],
+        windows=["30m", "1w"],
         feature_job_setting=feature_group_feature_job_setting,
-        feature_names=["sum_30m"],
-    )["sum_30m"]
+        feature_names=["sum_30m", "sum_1w"],
+    )
+    feature_sum_30m = feature_group["sum_30m"]
 
     # construct a feature with different feature job setting
     assert feature_group_feature_job_setting.frequency == "30m"
@@ -102,3 +103,28 @@ def test_feature_binary_operation_validation__feature_job_settings(
         "Binary feature operations are only supported when the feature job settings are consistent."
     )
     assert expected_message in str(exc.value)
+
+    # test feature info (no duplicate feature job setting, 1 feature job setting per table)
+    feat_ratio = feature_sum_30m / feature_group["sum_1w"]
+    feat_ratio.name = "sum_30m_over_sum_1w"
+    feat_ratio.save()
+    table_feature_job_setting = feat_ratio.info()["table_feature_job_setting"]
+    feature_job_setting = {
+        "blind_spot": "600s",
+        "frequency": "1800s",
+        "time_modulo_frequency": "300s",
+    }
+    assert table_feature_job_setting == {
+        "this": [
+            {
+                "table_name": "sf_event_table",
+                "feature_job_setting": feature_job_setting,
+            }
+        ],
+        "default": [
+            {
+                "table_name": "sf_event_table",
+                "feature_job_setting": feature_job_setting,
+            }
+        ],
+    }

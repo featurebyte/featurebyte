@@ -303,7 +303,9 @@ class QueryGraph(QueryGraphModel):
             )
         return table_feature_job_settings
 
-    def extract_table_id_cleaning_operations(self, target_node) -> List[TableIdCleaningOperation]:
+    def extract_table_id_cleaning_operations(
+        self, target_node, keep_all_columns: bool = True
+    ) -> List[TableIdCleaningOperation]:
         """
         Extract table ID cleaning operations from the query graph given the target node name
 
@@ -311,6 +313,8 @@ class QueryGraph(QueryGraphModel):
         ----------
         target_node: Node
             Node from which to start the backward search
+        keep_all_columns: bool
+            Whether to keep all columns in the table
 
         Returns
         -------
@@ -345,18 +349,19 @@ class QueryGraph(QueryGraphModel):
                 )
                 found_table_ids.add(node_params.metadata.table_id)
 
-        # prepare column name to column cleaning operations mapping
-        for table_id, column_names in table_id_to_col_names.items():
-            if table_id not in found_table_ids:
-                column_clean_ops = [
-                    ColumnCleaningOperation(column_name=column_name, cleaning_operations=[])
-                    for column_name in sorted(column_names)
-                ]
-                table_column_operations.append(
-                    TableIdCleaningOperation(
-                        table_id=table_id, column_cleaning_operations=column_clean_ops
+        if keep_all_columns:
+            # prepare column name to column cleaning operations mapping
+            for table_id, column_names in table_id_to_col_names.items():
+                if table_id not in found_table_ids:
+                    column_clean_ops = [
+                        ColumnCleaningOperation(column_name=column_name, cleaning_operations=[])
+                        for column_name in sorted(column_names)
+                    ]
+                    table_column_operations.append(
+                        TableIdCleaningOperation(
+                            table_id=table_id, column_cleaning_operations=column_clean_ops
+                        )
                     )
-                )
 
         return table_column_operations
 
