@@ -430,3 +430,9 @@ class ObservationTableInvalidContextError(BaseUnprocessableEntityError):
     """
     Raise when invalid observation table context is specified
     """
+
+
+class UnsupportedRequestCodeTemplateLanguage(BaseUnprocessableEntityError):
+    """
+    Raise when the language for request code template is not supported
+    """

@@ -5,26 +5,22 @@ from __future__ import annotations
 
 from typing import Literal, Optional
 
-import json
-import os
+from http import HTTPStatus
 
 import pandas as pd
 from bson import ObjectId
-from jinja2 import Template
 from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.api_object_util import ForeignKeyMapping
 from featurebyte.api.batch_feature_table import BatchFeatureTable
 from featurebyte.api.batch_request_table import BatchRequestTable
-from featurebyte.api.entity import Entity
 from featurebyte.api.feature_job import FeatureJobStatusResult
 from featurebyte.api.feature_list import FeatureList
-from featurebyte.api.table import Table
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.formatting_util import CodeStr
 from featurebyte.config import Configurations
-from featurebyte.exception import FeatureListNotOnlineEnabledError
+from featurebyte.exception import FeatureListNotOnlineEnabledError, RecordRetrievalException
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.deployment import DeploymentModel
 from featurebyte.schema.batch_feature_table import BatchFeatureTableCreate
@@ -174,6 +170,8 @@ class Deployment(ApiObject):
             Feature list not deployed
         NotImplementedError
             Serving code not available
+        RecordRetrievalException
+            Failed to retrieve serving code
 
         Examples
         --------
@@ -225,74 +223,32 @@ class Deployment(ApiObject):
         - [FeatureList.deploy](/reference/featurebyte.api.feature_list.FeatureList.deploy/)
         - [Deployment.enable](/reference/featurebyte.api.deployment.Deployment.enable/)
         """
-        # pylint: disable=too-many-locals
-        if not self.enabled:
-            raise FeatureListNotOnlineEnabledError("Deployment is not enabled.")
+        config = Configurations()
+        current_profile = config.profile
+        api_client = config.get_client()
 
-        templates = {"python": "python.tpl", "sh": "shell.tpl"}
-        template_file = templates.get(language)
-        if not template_file:
-            raise NotImplementedError(f"Supported languages: {list(templates.keys())}")
-
-        # get entities and tables used for the feature list
-        num_rows = 1
-        feature_list = FeatureList.get_by_id(self.feature_list_id)
-        feature_list_info = feature_list.info()
-        entities = {
-            Entity.get(entity["name"]).id: {"serving_name": entity["serving_names"]}
-            for entity in feature_list_info["primary_entity"]
-        }
-        for tabular_source in feature_list_info["tables"]:
-            data = Table.get(tabular_source["name"])
-            entity_columns = [
-                column for column in data.columns_info if column.entity_id in entities
-            ]
-            if entity_columns:
-                sample_data = data.preview(num_rows)
-                for column in entity_columns:
-                    entities[column.entity_id]["sample_value"] = sample_data[column.name].to_list()
-
-        entity_serving_names = json.dumps(
-            [
-                {
-                    entity["serving_name"][0]: entity["sample_value"][row_idx]
-                    for entity in entities.values()
-                }
-                for row_idx in range(num_rows)
-            ]
+        response = api_client.get(
+            f"/deployment/{self.id}/request_code_template?language={language}"
         )
+        response_dict = response.json()
+        if response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY and response_dict["detail"][
+            0
+        ].get("loc") == ["query", "language"]:
+            message = response_dict["detail"][0]["ctx"]["permitted"]
+            raise NotImplementedError(f"Supported languages: {message}")
+        if (
+            response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
+            and response_dict["detail"] == "Deployment is not enabled."
+        ):
+            raise FeatureListNotOnlineEnabledError(response_dict["detail"])
+        if response.status_code != HTTPStatus.OK:
+            raise RecordRetrievalException(response)
 
-        # construct serving url
-        current_profile = Configurations().profile
-        assert current_profile
-        info = self.info()
-        serving_endpoint = info["serving_endpoint"]
-        headers = {
-            "Content-Type": "application/json",
-            "active-catalog-id": str(feature_list.catalog_id),
-        }
-        if current_profile.api_token:
-            headers["Authorization"] = f"Bearer {current_profile.api_token}"
-        header_params = " \\\n    ".join([f"-H '{key}: {value}'" for key, value in headers.items()])
-        serving_url = f"{current_profile.api_url}{serving_endpoint}"
-
-        # populate template
-        with open(
-            file=os.path.join(
-                os.path.dirname(__file__), f"templates/online_serving/{template_file}"
-            ),
-            mode="r",
-            encoding="utf-8",
-        ) as file_object:
-            template = Template(file_object.read())
-
+        code_template = response_dict["code_template"]
         return CodeStr(
-            template.render(
-                headers=json.dumps(headers),
-                header_params=header_params,
-                serving_url=serving_url,
-                entity_serving_names=entity_serving_names,
-            )
+            code_template.replace(
+                "<FEATUREBYTE_SERVICE_URL>", str(current_profile.api_url)
+            ).replace("<API_TOKEN>", str(current_profile.api_token)),
         )
 
     def get_feature_jobs_status(
