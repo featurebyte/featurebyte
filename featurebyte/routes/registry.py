@@ -13,7 +13,6 @@ from featurebyte.migration.service.data_warehouse import (
 )
 from featurebyte.migration.service.mixin import DataWarehouseMigrationMixin
 from featurebyte.models.base import User
-from featurebyte.persistent import Persistent
 from featurebyte.routes.app_container_config import AppContainerConfig
 from featurebyte.routes.batch_feature_table.controller import BatchFeatureTableController
 from featurebyte.routes.batch_request_table.controller import BatchRequestTableController
@@ -126,6 +125,7 @@ from featurebyte.service.view_construction import ViewConstructionService
 from featurebyte.service.working_schema import WorkingSchemaService
 from featurebyte.storage import Storage
 from featurebyte.utils.credential import MongoBackedCredentialProvider
+from featurebyte.utils.persistent import MongoDBImpl
 from featurebyte.worker.util.observation_set_helper import ObservationSetHelper
 
 app_container_config = AppContainerConfig()
@@ -271,10 +271,10 @@ app_container_config.register_class(WorkingSchemaService)
 
 app_container_config.register_class(UseCaseService)
 app_container_config.register_class(UseCaseController)
+app_container_config.register_class(MongoDBImpl, name_override="persistent")
 
 # These have force_no_deps set as True, as they are manually initialized.
 app_container_config.register_class(Celery, force_no_deps=True)
-app_container_config.register_class(Persistent, force_no_deps=True)
 app_container_config.register_class(Storage, force_no_deps=True)
 app_container_config.register_class(Storage, force_no_deps=True, name_override="temp_storage")
 app_container_config.register_class(User, force_no_deps=True)

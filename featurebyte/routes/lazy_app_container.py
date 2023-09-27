@@ -153,13 +153,13 @@ class LazyAppContainer:
     def __init__(
         self,
         user: Any,
-        persistent: Persistent,
         temp_storage: Storage,
         celery: Celery,
         redis: Redis[Any],
         storage: Storage,
         catalog_id: Optional[ObjectId],
         app_container_config: AppContainerConfig,
+        persistent: Optional[Persistent] = None,
     ):
         self.app_container_config = app_container_config
         self._enable_block_modification_check = True
