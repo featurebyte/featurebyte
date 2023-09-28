@@ -8,7 +8,6 @@ from __future__ import annotations
 from typing import Any, AsyncGenerator, Optional, OrderedDict, Union
 from typing_extensions import Annotated
 
-import ast
 import collections
 import os
 import subprocess
@@ -23,6 +22,7 @@ from pyhive.exc import OperationalError
 from pyhive.hive import Cursor
 from thrift.transport.TTransport import TTransportException
 
+from featurebyte.common.utils import literal_eval
 from featurebyte.enum import DBVarType, SourceType, StorageType
 from featurebyte.logging import get_logger
 from featurebyte.models.credential import AccessTokenCredential, KerberosKeytabCredential
@@ -289,7 +289,7 @@ class SparkSession(BaseSparkSession):
                 # Check if column is string. If so, convert to a list.
                 is_string_series = data[column].apply(lambda x: isinstance(x, str))
                 if is_string_series.any():
-                    data[column] = data[column].apply(ast.literal_eval)
+                    data[column] = data[column].apply(literal_eval)
         return data
 
     def _read_batch(self, cursor: Cursor, schema: Schema, batch_size: int = 1000) -> pa.RecordBatch:
