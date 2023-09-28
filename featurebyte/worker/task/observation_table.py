@@ -8,6 +8,7 @@ from typing import Any, cast
 from featurebyte.logging import get_logger
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.schema.worker.task.observation_table import ObservationTableTaskPayload
+from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin
 
@@ -34,10 +35,11 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask):
             document_id=payload.feature_store_id
         )
         db_session = await self.get_db_session(feature_store)
-        location = (
-            await self.app_container.observation_table_service.generate_materialized_table_location(
-                payload.feature_store_id,
-            )
+        observation_table_service: ObservationTableService = (
+            self.app_container.observation_table_service
+        )
+        location = await observation_table_service.generate_materialized_table_location(
+            payload.feature_store_id,
         )
         await payload.request_input.materialize(
             session=db_session,
@@ -46,8 +48,10 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask):
         )
 
         async with self.drop_table_on_error(db_session, location.table_details):
-            additional_metadata = await self.app_container.observation_table_service.validate_materialized_table_and_get_metadata(
-                db_session, location.table_details
+            additional_metadata = (
+                await observation_table_service.validate_materialized_table_and_get_metadata(
+                    db_session, location.table_details
+                )
             )
             logger.debug("Creating a new ObservationTable", extra=location.table_details.dict())
             observation_table = ObservationTableModel(
@@ -59,4 +63,4 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask):
                 request_input=payload.request_input,
                 **additional_metadata,
             )
-            await self.app_container.observation_table_service.create_document(observation_table)
+            await observation_table_service.create_document(observation_table)
