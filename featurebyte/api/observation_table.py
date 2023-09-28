@@ -46,6 +46,11 @@ class ObservationTable(ObservationTableModel, ApiObject, MaterializedTableMixin)
     def entity_ids(self) -> List[PydanticObjectId]:
         """
         Returns the entity ids of the observation table.
+
+        Returns
+        -------
+        List[PydanticObjectId]
+            List of entity ids.
         """
         entity_ids = []
         for col in self.columns_info:
