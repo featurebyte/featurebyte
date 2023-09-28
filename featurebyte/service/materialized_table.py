@@ -11,7 +11,7 @@ from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.materialized_table import ColumnSpecWithEntityId
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.model.common_table import TabularSource
-from featurebyte.query_graph.node.schema import ColumnSpec, TableDetails
+from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.materialisation import get_source_count_expr
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
@@ -144,7 +144,7 @@ class BaseMaterializedTableService(
 
         Returns
         -------
-        Tuple[List[ColumnSpec], int]
+        Tuple[List[ColumnSpecWithEntityId], int]
             The columns info and number of rows
         """
         table_schema = await db_session.list_table_schema(
