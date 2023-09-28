@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from bson import ObjectId
 
 from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.materialized_table import ColumnSpecWithEntityId
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import ColumnSpec, TableDetails
@@ -128,7 +129,7 @@ class BaseMaterializedTableService(
         db_session: BaseSession,
         table_details: TableDetails,
         serving_names_remapping: Optional[Dict[str, str]] = None,
-    ) -> Tuple[List[ColumnSpec], int]:
+    ) -> Tuple[List[ColumnSpecWithEntityId], int]:
         """
         Get the columns info and number of rows from a materialized table
 
@@ -167,7 +168,9 @@ class BaseMaterializedTableService(
         )
 
         columns_info = [
-            ColumnSpec(name=name, dtype=var_type, entity_id=col_name_to_entity_ids.get(name, None))
+            ColumnSpecWithEntityId(
+                name=name, dtype=var_type, entity_id=col_name_to_entity_ids.get(name, None)
+            )
             for name, var_type in table_schema.items()
         ]
         return columns_info, num_rows

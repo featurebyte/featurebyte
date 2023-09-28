@@ -172,10 +172,6 @@ class ObservationTableService(
         )
         columns_info_mapping = {info.name: info for info in columns_info}
 
-        # Check that there's at least one entity mapped in the columns info
-        if not any(info.entity_id is not None for info in columns_info):
-            raise ValueError("At least one entity column should be provided.")
-
         if SpecialColumnName.POINT_IN_TIME not in columns_info_mapping:
             raise MissingPointInTimeColumnError(
                 f"Point in time column not provided: {SpecialColumnName.POINT_IN_TIME}"
@@ -189,6 +185,10 @@ class ObservationTableService(
             raise UnsupportedPointInTimeColumnTypeError(
                 f"Point in time column should have timestamp type; got {point_in_time_dtype}"
             )
+
+        # Check that there's at least one entity mapped in the columns info
+        if not any(info.entity_id is not None for info in columns_info):
+            raise ValueError("At least one entity column should be provided.")
 
         most_recent_point_in_time = await ObservationTableService.get_most_recent_point_in_time(
             db_session=db_session,

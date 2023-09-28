@@ -8,6 +8,7 @@ from unittest.mock import patch
 import numpy as np
 import pandas as pd
 import pytest
+from bson import ObjectId
 
 from featurebyte import AggFunc, FeatureList, HistoricalFeatureTable, SourceType, to_timedelta
 from featurebyte.exception import RecordCreationException
@@ -1264,23 +1265,27 @@ def test_non_float_tile_value_added_to_tile_table(event_view, source_type):
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_create_observation_table(event_view):
-    event_view["POINT_IN_TIME"] = event_view["ËVENT_TIMESTAMP"]
-    observation_table = event_view.create_observation_table(
-        "observation_table_name",
+    new_event_view = event_view.copy()
+    new_event_view["POINT_IN_TIME"] = new_event_view["ËVENT_TIMESTAMP"]
+    observation_table = new_event_view.create_observation_table(
+        f"observation_table_name_{ObjectId()}",
         columns_rename_mapping={
             "CUST_ID": "cust_id",
             "ÜSER ID": "üser id",
             "TRANSACTION_ID": "order_id",
         },
     )
-    expected_entity_ids = {col.entity_id for col in event_view.columns_info if col.entity_id}
+    expected_entity_ids = {col.entity_id for col in new_event_view.columns_info if col.entity_id}
     assert set(observation_table.entity_ids) == expected_entity_ids
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_create_observation_table__errors_with_no_entities(event_view):
-    event_view["POINT_IN_TIME"] = event_view["ËVENT_TIMESTAMP"]
-    new_event_view = event_view[["POINT_IN_TIME", "SESSION_ID"]]
+    new_event_view = event_view.copy()
+    new_event_view["POINT_IN_TIME"] = new_event_view["ËVENT_TIMESTAMP"]
+    new_event_view = new_event_view[["POINT_IN_TIME", "SESSION_ID"]]
     with pytest.raises(RecordCreationException) as exc:
-        new_event_view.create_observation_table("observation_table_name")
+        new_event_view.create_observation_table(
+            f"observation_table_name_{ObjectId()}",
+        )
     assert "At least one entity column" in str(exc)
