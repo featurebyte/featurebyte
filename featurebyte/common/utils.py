@@ -139,6 +139,24 @@ def dataframe_from_arrow_stream(buffer: Any) -> pd.DataFrame:
     return reader.read_all().to_pandas()
 
 
+def literal_eval(value: Any) -> Any:
+    """
+    Runs ast.literal_eval on value, if it fails, return value
+
+    Parameters
+    ----------
+    value: Any
+        Value to evaluate
+
+    Returns
+    -------
+    Any
+    """
+    if value is None:
+        return value
+    return ast.literal_eval(value)
+
+
 def _update_batches_for_types(
     batches: List[pa.RecordBatch], col_name_to_db_var_type: dict[str, DBVarType]
 ) -> List[pa.RecordBatch]:
@@ -155,7 +173,7 @@ def _update_batches_for_types(
                 if is_string_dtype(curr_df[col_name]):
                     # Apply a transformation to the column if the type is an array of strings, to convert them to list
                     # type.
-                    curr_df[col_name] = curr_df[col_name].apply(ast.literal_eval)
+                    curr_df[col_name] = curr_df[col_name].apply(literal_eval)
         output_list.append(pa.RecordBatch.from_pandas(curr_df))
 
     return output_list
