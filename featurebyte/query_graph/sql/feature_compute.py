@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import Iterable, Optional, Sequence, Type, Union
 
+import sys
+
 from bson import ObjectId
 from sqlglot import expressions
 from sqlglot.expressions import select
@@ -58,6 +60,8 @@ AggregatorType = Union[
     ForwardAggregator,
 ]
 AggregationSpecType = Union[TileBasedAggregationSpec, NonTileBasedAggregationSpec]
+
+sys.setrecursionlimit(10000)
 
 
 class FeatureExecutionPlan:
