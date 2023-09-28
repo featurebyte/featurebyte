@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import Any, cast
 
 from featurebyte.logging import get_logger
-from featurebyte.models.observation_table import ObservationTableModel
+from featurebyte.models.observation_table import ObservationTableModel, TargetInput
 from featurebyte.schema.worker.task.observation_table import ObservationTableTaskPayload
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.worker.task.base import BaseTask
@@ -48,9 +48,11 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask):
         )
 
         async with self.drop_table_on_error(db_session, location.table_details):
+            payload_input = payload.request_input
+            assert not isinstance(payload_input, TargetInput)
             additional_metadata = (
                 await observation_table_service.validate_materialized_table_and_get_metadata(
-                    db_session, location.table_details, payload.request_input.columns_rename_mapping
+                    db_session, location.table_details, payload_input.columns_rename_mapping
                 )
             )
             logger.debug("Creating a new ObservationTable", extra=location.table_details.dict())
