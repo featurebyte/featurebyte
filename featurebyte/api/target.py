@@ -357,7 +357,6 @@ class Target(
                 type=input_type,
             ),
             context_id=observation_table.context_id if is_input_observation_table else None,
-            entity_ids=self.entity_ids,
         )
         if is_input_observation_table:
             files = None

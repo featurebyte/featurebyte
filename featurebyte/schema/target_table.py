@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from pydantic import Field, StrictStr, root_validator
+from pydantic import StrictStr, root_validator
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.observation_table import ObservationInput
@@ -28,7 +28,6 @@ class TargetTableCreate(FeatureOrTargetTableCreate):
     node_names: List[StrictStr]
     request_input: ObservationInput
     context_id: Optional[PydanticObjectId]
-    entity_ids: List[PydanticObjectId] = Field(default_factory=list)
 
     @property
     def nodes(self) -> List[Node]:
