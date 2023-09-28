@@ -523,11 +523,12 @@ def patched_num_features_per_query():
 @pytest.mark.usefixtures("patched_num_features_per_query")
 @pytest.mark.asyncio
 async def test_get_historical_features(
-    session, data_source, feature_group, feature_group_per_category, in_out_formats
+    session, data_source, feature_group, feature_group_per_category, in_out_formats, user_entity
 ):
     """
     Test getting historical features from FeatureList
     """
+    _ = user_entity
     input_format, output_format = in_out_formats
     assert input_format in {"dataframe", "table"}
     assert output_format in {"dataframe", "table"}
@@ -669,9 +670,12 @@ async def _test_get_historical_features_with_serving_names(
     mapping = {"üser id": "new_user id"}
 
     # Instead of providing the default serving name "user id", provide "new_user id" in table
-    df_training_events = df_training_events.rename(mapping, axis=1)
+    if not (input_format == "table" and output_format == "table"):
+        # When both input and output are tables, we can let the creation of the observation table helper handle
+        # the column remapping.
+        df_training_events = df_training_events.rename(mapping, axis=1)
+        assert "new_user id" in df_training_events
     df_historical_expected = df_historical_expected.rename(mapping, axis=1)
-    assert "new_user id" in df_training_events
     assert "new_user id" in df_historical_expected
 
     if output_format == "table":

@@ -350,7 +350,9 @@ def make_online_request(client, deployment, entity_serving_names):
     return res
 
 
-async def create_observation_table_from_dataframe(session, df, data_source):
+async def create_observation_table_from_dataframe(
+    session, df, data_source, serving_names_mapping=None
+):
     """
     Create an ObservationTable from a pandas DataFrame
     """
@@ -361,7 +363,9 @@ async def create_observation_table_from_dataframe(session, df, data_source):
         db_table_name,
         database_name=session.database_name,
         schema_name=session.schema_name,
-    ).create_observation_table(f"observation_table_{unique_id}")
+    ).create_observation_table(
+        f"observation_table_{unique_id}", columns_rename_mapping=serving_names_mapping
+    )
 
 
 async def create_batch_request_table_from_dataframe(session, df, data_source):
@@ -400,7 +404,10 @@ async def compute_historical_feature_table_dataframe_helper(
     """
     if input_format == "table":
         observation_table = await create_observation_table_from_dataframe(
-            session, df_observation_set, data_source
+            session,
+            df_observation_set,
+            data_source,
+            serving_names_mapping=kwargs.get("serving_names_mapping"),
         )
     else:
         observation_table = df_observation_set

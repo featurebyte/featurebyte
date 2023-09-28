@@ -50,7 +50,7 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask):
         async with self.drop_table_on_error(db_session, location.table_details):
             additional_metadata = (
                 await observation_table_service.validate_materialized_table_and_get_metadata(
-                    db_session, location.table_details
+                    db_session, location.table_details, payload.request_input.columns_rename_mapping
                 )
             )
             logger.debug("Creating a new ObservationTable", extra=location.table_details.dict())
