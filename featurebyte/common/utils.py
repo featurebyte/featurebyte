@@ -146,6 +146,11 @@ def _update_batches_for_types(
     if DBVarType.ARRAY not in col_name_to_db_var_type.values():
         return batches
 
+    def _literal_eval(value: Any) -> Any:
+        if value is None:
+            return value
+        return ast.literal_eval(value)
+
     output_list = []
     for batch in batches:
         curr_df = batch.to_pandas()
@@ -155,7 +160,7 @@ def _update_batches_for_types(
                 if is_string_dtype(curr_df[col_name]):
                     # Apply a transformation to the column if the type is an array of strings, to convert them to list
                     # type.
-                    curr_df[col_name] = curr_df[col_name].apply(ast.literal_eval)
+                    curr_df[col_name] = curr_df[col_name].apply(_literal_eval)
         output_list.append(pa.RecordBatch.from_pandas(curr_df))
 
     return output_list
