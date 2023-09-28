@@ -3,10 +3,11 @@ BaseMaterializedTableService contains common functionality for materialized tabl
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from bson import ObjectId
 
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import ColumnSpec, TableDetails
@@ -17,6 +18,7 @@ from featurebyte.schema.worker.task.materialized_table_delete import (
     MaterializedTableDeleteTaskPayload,
 )
 from featurebyte.service.base_document import BaseDocumentService
+from featurebyte.service.entity import EntityService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.mixin import Document, DocumentCreateSchema
 from featurebyte.service.session_manager import SessionManagerService
@@ -39,10 +41,12 @@ class BaseMaterializedTableService(
         catalog_id: Optional[ObjectId],
         session_manager_service: SessionManagerService,
         feature_store_service: FeatureStoreService,
+        entity_service: EntityService,
     ):
         super().__init__(user, persistent, catalog_id)
         self.session_manager_service = session_manager_service
         self.feature_store_service = feature_store_service
+        self.entity_service = entity_service
 
     async def get_materialized_table_delete_task_payload(
         self, document_id: ObjectId
@@ -95,9 +99,35 @@ class BaseMaterializedTableService(
         )
         return location
 
-    @staticmethod
+    async def _get_column_name_to_entity_ids(
+        self, column_names: List[str], serving_names_remapping: Optional[Dict[str, str]]
+    ) -> Dict[str, PydanticObjectId]:
+        serving_names_remapping = {} if serving_names_remapping is None else serving_names_remapping
+        serving_names_reverse_lookup = {
+            value: key for key, value in serving_names_remapping.items()
+        }
+
+        # Build mapping of entity serving name to entity id
+        entity_serving_name_to_entity_id = {}
+        async for entity in self.entity_service.list_documents_iterator(query_filter={}):
+            for serving_name in entity.serving_names:
+                entity_serving_name_to_entity_id[serving_name] = entity.id
+
+        # Build output of column name to entity id
+        name_to_entity_id = {}
+        for col_name in column_names:
+            base_serving_name = serving_names_reverse_lookup.get(col_name, col_name)
+            if base_serving_name in entity_serving_name_to_entity_id:
+                name_to_entity_id[col_name] = entity_serving_name_to_entity_id[
+                    str(base_serving_name)
+                ]
+        return name_to_entity_id
+
     async def get_columns_info_and_num_rows(
-        db_session: BaseSession, table_details: TableDetails
+        self,
+        db_session: BaseSession,
+        table_details: TableDetails,
+        serving_names_remapping: Optional[Dict[str, str]] = None,
     ) -> Tuple[List[ColumnSpec], int]:
         """
         Get the columns info and number of rows from a materialized table
@@ -108,6 +138,8 @@ class BaseMaterializedTableService(
             The database session
         table_details: TableDetails
             The table details of the materialized table
+        serving_names_remapping: Dict[str, str]
+            Remapping of serving names
 
         Returns
         -------
@@ -127,7 +159,15 @@ class BaseMaterializedTableService(
         )
         assert df_row_count is not None
         num_rows = df_row_count.iloc[0]["row_count"]
+
+        # Get name to entity id mapping
+        column_names = [name for name, _ in table_schema.items()]
+        col_name_to_entity_ids = await self._get_column_name_to_entity_ids(
+            column_names, serving_names_remapping
+        )
+
         columns_info = [
-            ColumnSpec(name=name, dtype=var_type) for name, var_type in table_schema.items()
+            ColumnSpec(name=name, dtype=var_type, entity_id=col_name_to_entity_ids.get(name, None))
+            for name, var_type in table_schema.items()
         ]
         return columns_info, num_rows
