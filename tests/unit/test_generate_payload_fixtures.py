@@ -125,7 +125,9 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         late_data_allowance=5e-05,
     )
     context = ContextCreate(
-        _id="646f6c1c0ed28a5271fb02d5", name="transaction_context", entity_ids=[cust_id_entity.id]
+        _id="646f6c1c0ed28a5271fb02d5",
+        name="transaction_context",
+        primary_entity_ids=[cust_id_entity.id],
     )
     deployment = DeploymentCreate(
         _id="646f6c1c0ed28a5271fb02d6", name="my_deployment", feature_list_id=feature_list.id

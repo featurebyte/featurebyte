@@ -1126,7 +1126,7 @@ def context_fixture(cust_id_entity):
     """
     Context fixture
     """
-    context = Context(name="context", entity_ids=[cust_id_entity.id])
+    context = Context(name="context", primary_entity_ids=[cust_id_entity.id])
     if not context.saved:
         context.save()
     return context

@@ -37,10 +37,10 @@ class ContextService(BaseDocumentService[ContextModel, ContextCreate, ContextUpd
 
     async def create_document(self, data: ContextCreate) -> ContextModel:
         entities = await self.entity_service.list_documents_as_dict(
-            page=1, page_size=0, query_filter={"_id": {"$in": data.entity_ids}}
+            page=1, page_size=0, query_filter={"_id": {"$in": data.primary_entity_ids}}
         )
         found_entity_ids = set(doc["_id"] for doc in entities["data"])
-        not_found_entity_ids = set(data.entity_ids).difference(found_entity_ids)
+        not_found_entity_ids = set(data.primary_entity_ids).difference(found_entity_ids)
         if not_found_entity_ids:
             # trigger entity not found error
             await self.entity_service.get_document(document_id=list(not_found_entity_ids)[0])
@@ -101,7 +101,7 @@ class ContextService(BaseDocumentService[ContextModel, ContextCreate, ContextUpd
             if column_info.entity_id:
                 found_entity_ids.add(column_info.entity_id)
 
-        missing_entity_ids = list(set(context.entity_ids).difference(found_entity_ids))
+        missing_entity_ids = list(set(context.primary_entity_ids).difference(found_entity_ids))
         if missing_entity_ids:
             missing_entities = await self.entity_service.list_documents_as_dict(
                 query_filter={"_id": {"$in": missing_entity_ids}}

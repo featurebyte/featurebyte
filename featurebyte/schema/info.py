@@ -521,7 +521,7 @@ class ContextInfo(BaseInfo):
     """
 
     author: Optional[str] = None
-    entities: EntityBriefInfoList
+    primary_entities: EntityBriefInfoList
     default_eda_table: Optional[str] = None
     default_preview_table: Optional[str] = None
     associated_use_cases: Optional[List[str]] = None

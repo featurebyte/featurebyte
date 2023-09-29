@@ -33,32 +33,32 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
     _update_schema_class = ContextUpdate
     _list_fields = [
         "name",
-        "entity_ids",
+        "primary_entity_ids",
         "description",
     ]
 
     # pydantic instance variable (public)
-    entity_ids: List[PydanticObjectId]
+    primary_entity_ids: List[PydanticObjectId]
 
     @property
-    def entities(self) -> List[Entity]:
+    def primary_entities(self) -> List[Entity]:
         """
         Returns the history of the entity name of the Entity object.
 
         Returns
         -------
         list[Entity]
-            list of Entity objects.
+            list of Primary Entity objects.
 
         Examples
         --------
-        Get the enitity objects of the Context object:
+        Get the primary enitity objects of the Context object:
 
         >>> context_1 = catalog.get_context("context_1")  # doctest: +SKIP
-        >>> context_1.entities  # doctest: +SKIP
+        >>> context_1.primary_entities  # doctest: +SKIP
         """
         entities = []
-        for entity_id in self.entity_ids:
+        for entity_id in self.primary_entity_ids:
             entities.append(Entity.get_by_id(entity_id))
         return entities
 
@@ -96,7 +96,7 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         for entity_name in primary_entity:
             entity_ids.append(Entity.get(entity_name).id)
 
-        context = Context(name=name, entity_ids=entity_ids)
+        context = Context(name=name, primary_entity_ids=entity_ids)
         context.save()
         return context
 
@@ -128,7 +128,7 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         - `name`: The name of the Context object.
         - `created_at`: The timestamp indicating when the Context object was created.
         - `updated_at`: The timestamp indicating when the Context object was last updated.
-        - `entities`: List of primary entities of the Context.
+        - `primary_entities`: List of primary entities of the Context.
         - `description`: Description of the Context.
         - `default_eda_table`: Default eda table of the Context.
         - `default_preview_table`: Default preview table of the Context.

@@ -153,7 +153,7 @@ def generic_view_graph_fixture(source_table_node):
 
 def test_context_creation__success(context, entity, user):
     """Check that context fixture is created as expected"""
-    assert context.entity_ids == [entity.id]
+    assert context.primary_entity_ids == [entity.id]
     assert context.user_id == user.id
 
 
@@ -163,7 +163,7 @@ async def test_context_creation__unknown_entity_ids(context_service):
     random_id = ObjectId()
     with pytest.raises(DocumentNotFoundError) as exc:
         await context_service.create_document(
-            data=ContextCreate(name="a_context", entity_ids=[random_id])
+            data=ContextCreate(name="a_context", primary_entity_ids=[random_id])
         )
     expected_msg = f'Entity (id: "{random_id}") not found. Please save the Entity object first.'
     assert expected_msg in str(exc)

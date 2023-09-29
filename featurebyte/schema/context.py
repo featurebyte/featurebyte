@@ -19,7 +19,7 @@ class ContextCreate(FeatureByteBaseModel):
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
-    entity_ids: List[PydanticObjectId]
+    primary_entity_ids: List[PydanticObjectId]
 
 
 class ContextList(PaginationMixin):

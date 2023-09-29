@@ -26,14 +26,14 @@ class TestContextApi(BaseCatalogApiTestSuite):
             {"name": "some_context"},
             [
                 {
-                    "loc": ["body", "entity_ids"],
+                    "loc": ["body", "primary_entity_ids"],
                     "msg": "field required",
                     "type": "value_error.missing",
                 }
             ],
         ),
         (
-            {**payload, "entity_ids": [str(unknown_id)]},
+            {**payload, "primary_entity_ids": [str(unknown_id)]},
             f'Entity (id: "{unknown_id}") not found. Please save the Entity object first.',
         ),
     ]

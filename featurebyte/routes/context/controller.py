@@ -117,7 +117,7 @@ class ContextController(BaseDocumentController[ContextModel, ContextService, Con
                 catalog_name=(await self.catalog_service.get_document(entity.catalog_id)).name,
             )
             async for entity in self.entity_service.list_documents_iterator(
-                query_filter={"_id": {"$in": context.entity_ids}},
+                query_filter={"_id": {"$in": context.primary_entity_ids}},
             )
         ]
 
@@ -131,7 +131,7 @@ class ContextController(BaseDocumentController[ContextModel, ContextService, Con
         return ContextInfo(
             **context.dict(),
             author=author,
-            entities=EntityBriefInfoList(__root__=entity_briefs),
+            primary_entities=EntityBriefInfoList(__root__=entity_briefs),
             default_preview_table=default_preview_table_name,
             default_eda_table=default_eda_table_name,
             associated_use_cases=use_cases,

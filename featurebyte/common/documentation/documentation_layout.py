@@ -1089,7 +1089,7 @@ def _get_context_layout() -> List[DocLayoutItem]:
         DocLayoutItem([CONTEXT, CLASS_METHODS, "Context.get_by_id"]),
         DocLayoutItem([CONTEXT, CLASS_METHODS, "Context.list"]),
         DocLayoutItem([CONTEXT, CREATE, "Context.create"]),
-        DocLayoutItem([CONTEXT, INFO, "Context.entities"]),
+        DocLayoutItem([CONTEXT, INFO, "Context.primary_entities"]),
         DocLayoutItem([CONTEXT, INFO, "Context.created_at"]),
         DocLayoutItem([CONTEXT, INFO, "Context.name"]),
         DocLayoutItem([CONTEXT, INFO, "Context.updated_at"]),

@@ -148,7 +148,7 @@ class UseCaseService(BaseDocumentService[UseCaseModel, UseCaseCreate, UseCaseUpd
             new_context = await self.context_service.get_document(
                 document_id=input_observation.context_id
             )
-            if set(exist_context.entity_ids) != set(new_context.entity_ids):
+            if set(exist_context.primary_entity_ids) != set(new_context.primary_entity_ids):
                 raise UseCaseInvalidDataError(
                     "Inconsistent entities between use case and observation table"
                 )
