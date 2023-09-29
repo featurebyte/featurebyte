@@ -11,7 +11,6 @@ import pytest
 from bson import ObjectId
 
 from featurebyte import AggFunc, FeatureList, HistoricalFeatureTable, SourceType, to_timedelta
-from featurebyte.exception import RecordCreationException
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from tests.util.helper import (
     assert_preview_result_equal,
