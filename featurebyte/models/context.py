@@ -18,7 +18,7 @@ class ContextModel(FeatureByteCatalogBaseDocumentModel):
     """
     Context is used to define the circumstances in which features are expected to be materialized.
 
-    entity_ids: List[PydanticObjectId]
+    primary_entity_ids: List[PydanticObjectId]
         List of entity ids associated with this context
     graph: Optional[QueryGraph]
         Graph to store the context view
@@ -26,7 +26,7 @@ class ContextModel(FeatureByteCatalogBaseDocumentModel):
 
     # TODO: make graph attribute lazy
 
-    entity_ids: List[PydanticObjectId]
+    primary_entity_ids: List[PydanticObjectId]
     graph: Optional[QueryGraph]
     node_name: Optional[str]
 

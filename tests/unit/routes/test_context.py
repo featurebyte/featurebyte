@@ -2,6 +2,7 @@
 Tests for Context route
 """
 from http import HTTPStatus
+from unittest import mock
 
 import pytest
 from bson.objectid import ObjectId
@@ -26,14 +27,14 @@ class TestContextApi(BaseCatalogApiTestSuite):
             {"name": "some_context"},
             [
                 {
-                    "loc": ["body", "entity_ids"],
+                    "loc": ["body", "primary_entity_ids"],
                     "msg": "field required",
                     "type": "value_error.missing",
                 }
             ],
         ),
         (
-            {**payload, "entity_ids": [str(unknown_id)]},
+            {**payload, "primary_entity_ids": [str(unknown_id)]},
             f'Entity (id: "{unknown_id}") not found. Please save the Entity object first.',
         ),
     ]
@@ -195,3 +196,26 @@ class TestContextApi(BaseCatalogApiTestSuite):
         )
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json()["detail"] == expected_message
+
+    def test_create_context__not_all_primary_entity_ids(
+        self,
+        create_success_response,
+        test_api_client_persistent,
+    ):
+        """
+        Test context update (unprocessable)
+        """
+        test_api_client, _ = test_api_client_persistent
+        _ = create_success_response.json()
+
+        payload = self.payload.copy()
+        payload["_id"] = str(ObjectId())
+        payload["name"] = f"{payload['name']}_1"
+
+        with mock.patch(
+            "featurebyte.routes.common.base.DerivePrimaryEntityHelper.derive_primary_entity_ids"
+        ) as mock_derive:
+            mock_derive.return_value = [ObjectId()]
+            response = test_api_client.post(f"{self.base_route}", json=payload)
+            assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+            assert "Context entity ids must all be primary entity ids" in response.json()["detail"]

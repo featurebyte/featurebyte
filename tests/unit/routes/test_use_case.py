@@ -314,7 +314,7 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         different_context_ob_table_id = ObjectId()
         context_payload = self.load_payload("tests/fixtures/request_payloads/context.json")
         context_payload["_id"] = str(different_context_ob_table_id)
-        context_payload["entity_ids"] = [str(new_entity_id)]
+        context_payload["primary_entity_ids"] = [str(new_entity_id)]
         context_payload["name"] = "new_context_name"
         response = test_api_client.post("/context", json=context_payload)
         assert response.status_code == HTTPStatus.CREATED, response.json()

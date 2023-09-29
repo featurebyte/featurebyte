@@ -2,14 +2,13 @@
 Test ContextService
 """
 import pytest
-from bson import ObjectId
 
-from featurebyte.exception import DocumentNotFoundError, DocumentUpdateError
+from featurebyte.exception import DocumentUpdateError
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node.generic import JoinNode
 from featurebyte.query_graph.node.input import InputNode
-from featurebyte.schema.context import ContextCreate, ContextUpdate
+from featurebyte.schema.context import ContextUpdate
 
 
 @pytest.fixture(name="input_event_table_node")
@@ -153,20 +152,8 @@ def generic_view_graph_fixture(source_table_node):
 
 def test_context_creation__success(context, entity, user):
     """Check that context fixture is created as expected"""
-    assert context.entity_ids == [entity.id]
+    assert context.primary_entity_ids == [entity.id]
     assert context.user_id == user.id
-
-
-@pytest.mark.asyncio
-async def test_context_creation__unknown_entity_ids(context_service):
-    """Check unknown entity ids throws error"""
-    random_id = ObjectId()
-    with pytest.raises(DocumentNotFoundError) as exc:
-        await context_service.create_document(
-            data=ContextCreate(name="a_context", entity_ids=[random_id])
-        )
-    expected_msg = f'Entity (id: "{random_id}") not found. Please save the Entity object first.'
-    assert expected_msg in str(exc)
 
 
 @pytest.mark.asyncio

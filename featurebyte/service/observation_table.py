@@ -229,7 +229,7 @@ class ObservationTableService(
                 document_id=exist_observation_table.context_id
             )
             new_context = await self.context_service.get_document(document_id=data.context_id)
-            if set(exist_context.entity_ids) != set(new_context.entity_ids):
+            if set(exist_context.primary_entity_ids) != set(new_context.primary_entity_ids):
                 raise ObservationTableInvalidContextError(
                     "Cannot update Context as the entities are different from the existing Context."
                 )

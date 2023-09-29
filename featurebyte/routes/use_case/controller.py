@@ -139,7 +139,7 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
                 catalog_name=(await self.catalog_service.get_document(entity.catalog_id)).name,
             )
             async for entity in self.entity_service.list_documents_iterator(
-                query_filter={"_id": {"$in": context.entity_ids}},
+                query_filter={"_id": {"$in": context.primary_entity_ids}},
             )
         ]
 

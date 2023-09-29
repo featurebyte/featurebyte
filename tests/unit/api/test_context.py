@@ -17,7 +17,7 @@ def context_fixture(catalog, cust_id_entity):
 
     context = Context(
         name="test_context",
-        entity_ids=entity_ids,
+        primary_entity_ids=entity_ids,
     )
     previous_id = context.id
     assert context.saved is False
@@ -40,14 +40,14 @@ def test_create_context(catalog, cust_id_entity):
     # Test get context by id and verify attributes
     retrieved_context = Context.get_by_id(context.id)
     assert retrieved_context.name == "test_context"
-    assert retrieved_context.entity_ids == entity_ids
-    assert retrieved_context.entities == [cust_id_entity]
+    assert retrieved_context.primary_entity_ids == entity_ids
+    assert retrieved_context.primary_entities == [cust_id_entity]
 
     # Test get context by name and verify attributes
     retrieved_context2 = Context.get(context.name)
     assert retrieved_context2.name == "test_context"
-    assert retrieved_context2.entity_ids == entity_ids
-    assert retrieved_context2.entities == [cust_id_entity]
+    assert retrieved_context2.primary_entity_ids == entity_ids
+    assert retrieved_context2.primary_entities == [cust_id_entity]
 
 
 def test_list_contexts(catalog, context_1, cust_id_entity):
@@ -60,7 +60,7 @@ def test_list_contexts(catalog, context_1, cust_id_entity):
     context_df = Context.list()
     assert len(context_df) == 1
     assert context_df.iloc[0]["name"] == "test_context"
-    assert context_df.iloc[0]["entity_ids"] == [str(cust_id_entity.id)]
+    assert context_df.iloc[0]["primary_entity_ids"] == [str(cust_id_entity.id)]
 
 
 def test_update_context(catalog, cust_id_entity, target_table):
@@ -103,7 +103,7 @@ def test_info(context_1, float_target, target_table, cust_id_entity):
     context_info = context_1.info()
     assert context_info["name"] == context_1.name
     assert context_info["description"] == context_1.description
-    assert context_info["entities"] == [
+    assert context_info["primary_entities"] == [
         {
             "name": cust_id_entity.name,
             "serving_names": cust_id_entity.serving_names,

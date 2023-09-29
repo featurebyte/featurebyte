@@ -5,9 +5,10 @@ from __future__ import annotations
 
 from bson import ObjectId
 
+from featurebyte.exception import DocumentCreationError
 from featurebyte.models.context import ContextModel
-from featurebyte.routes.common.base import BaseDocumentController
-from featurebyte.schema.context import ContextList, ContextUpdate
+from featurebyte.routes.common.base import BaseDocumentController, DerivePrimaryEntityHelper
+from featurebyte.schema.context import ContextCreate, ContextList, ContextUpdate
 from featurebyte.schema.info import ContextInfo, EntityBriefInfo, EntityBriefInfoList
 from featurebyte.schema.observation_table import ObservationTableUpdate
 from featurebyte.service.catalog import CatalogService
@@ -34,6 +35,7 @@ class ContextController(BaseDocumentController[ContextModel, ContextService, Con
         entity_service: EntityService,
         use_case_service: UseCaseService,
         catalog_service: CatalogService,
+        derive_primary_entity_helper: DerivePrimaryEntityHelper,
     ):
         super().__init__(service=context_service)
         self.observation_table_service = observation_table_service
@@ -42,6 +44,42 @@ class ContextController(BaseDocumentController[ContextModel, ContextService, Con
         self.entity_service = entity_service
         self.use_case_service = use_case_service
         self.catalog_service = catalog_service
+        self.derive_primary_entity_helper = derive_primary_entity_helper
+
+    async def create_context(
+        self,
+        data: ContextCreate,
+    ) -> ContextModel:
+        """
+        Create Context
+
+        Parameters
+        ----------
+        data: ContextCreate
+            Context creation payload
+
+        Raises
+        ------
+        DocumentCreationError
+            raise when context entity ids are not all primary entity ids
+
+        Returns
+        -------
+        ContextModel
+        """
+        # validate entity ids exist
+        for entity_id in data.primary_entity_ids:
+            await self.entity_service.get_document(document_id=entity_id)
+
+        # validate all entity ids are primary entity ids
+        primary_entity_ids = await self.derive_primary_entity_helper.derive_primary_entity_ids(
+            entity_ids=data.primary_entity_ids
+        )
+        if set(primary_entity_ids) != set(data.primary_entity_ids):
+            raise DocumentCreationError("Context entity ids must all be primary entity ids")
+
+        result: ContextModel = await self.context_service.create_document(data=data)
+        return result
 
     async def update_context(self, context_id: ObjectId, data: ContextUpdate) -> ContextModel:
         """
@@ -117,7 +155,7 @@ class ContextController(BaseDocumentController[ContextModel, ContextService, Con
                 catalog_name=(await self.catalog_service.get_document(entity.catalog_id)).name,
             )
             async for entity in self.entity_service.list_documents_iterator(
-                query_filter={"_id": {"$in": context.entity_ids}},
+                query_filter={"_id": {"$in": context.primary_entity_ids}},
             )
         ]
 
@@ -131,7 +169,7 @@ class ContextController(BaseDocumentController[ContextModel, ContextService, Con
         return ContextInfo(
             **context.dict(),
             author=author,
-            entities=EntityBriefInfoList(__root__=entity_briefs),
+            primary_entities=EntityBriefInfoList(__root__=entity_briefs),
             default_preview_table=default_preview_table_name,
             default_eda_table=default_eda_table_name,
             associated_use_cases=use_cases,
