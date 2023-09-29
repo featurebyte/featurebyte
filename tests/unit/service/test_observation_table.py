@@ -134,11 +134,12 @@ async def test_validate__missing_point_in_time(observation_table_service, table_
 
 @pytest.mark.asyncio
 async def test_validate__most_recent_point_in_time(
-    observation_table_service, db_session, table_details
+    observation_table_service, db_session, table_details, cust_id_entity
 ):
     """
     Test validate_materialized_table_and_get_metadata triggers expected query
     """
+    _ = cust_id_entity
     metadata = await observation_table_service.validate_materialized_table_and_get_metadata(
         db_session, table_details
     )
@@ -155,8 +156,12 @@ async def test_validate__most_recent_point_in_time(
 
     assert metadata == {
         "columns_info": [
-            {"name": "POINT_IN_TIME", "dtype": "TIMESTAMP"},
-            {"name": "cust_id", "dtype": "VARCHAR"},
+            {"name": "POINT_IN_TIME", "dtype": "TIMESTAMP", "entity_id": None},
+            {
+                "name": "cust_id",
+                "dtype": "VARCHAR",
+                "entity_id": cust_id_entity.id,
+            },
         ],
         "most_recent_point_in_time": "2023-01-15T02:00:00",
         "num_rows": 1000,

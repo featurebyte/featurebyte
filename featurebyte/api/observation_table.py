@@ -4,7 +4,7 @@ ObservationTable class
 # pylint: disable=duplicate-code
 from __future__ import annotations
 
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 from pathlib import Path
 
@@ -15,6 +15,7 @@ from featurebyte.api.api_object_util import ForeignKeyMapping
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.materialized_table import MaterializedTableMixin
 from featurebyte.common.doc_util import FBAutoDoc
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.schema.observation_table import ObservationTableListRecord, ObservationTableUpdate
 
@@ -40,6 +41,22 @@ class ObservationTable(ObservationTableModel, ApiObject, MaterializedTableMixin)
     _list_foreign_keys = [
         ForeignKeyMapping("feature_store_id", FeatureStore, "feature_store_name"),
     ]
+
+    @property
+    def entity_ids(self) -> List[PydanticObjectId]:
+        """
+        Returns the entity ids of the observation table.
+
+        Returns
+        -------
+        List[PydanticObjectId]
+            List of entity ids.
+        """
+        entity_ids = []
+        for col in self.columns_info:
+            if col.entity_id is not None:
+                entity_ids.append(col.entity_id)
+        return entity_ids
 
     def to_pandas(self) -> pd.DataFrame:
         """

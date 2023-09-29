@@ -8,6 +8,7 @@ from typing import Any, cast
 from featurebyte.logging import get_logger
 from featurebyte.models.static_source_table import StaticSourceTableModel
 from featurebyte.schema.worker.task.static_source_table import StaticSourceTableTaskPayload
+from featurebyte.service.static_source_table import StaticSourceTableService
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin
 
@@ -34,7 +35,10 @@ class StaticSourceTableTask(DataWarehouseMixin, BaseTask):
             document_id=payload.feature_store_id
         )
         db_session = await self.get_db_session(feature_store)
-        location = await self.app_container.static_source_table_service.generate_materialized_table_location(
+        static_source_table_service: StaticSourceTableService = (
+            self.app_container.static_source_table_service
+        )
+        location = await static_source_table_service.generate_materialized_table_location(
             payload.feature_store_id,
         )
         await payload.request_input.materialize(
@@ -44,8 +48,10 @@ class StaticSourceTableTask(DataWarehouseMixin, BaseTask):
         )
 
         async with self.drop_table_on_error(db_session, location.table_details):
-            additional_metadata = await self.app_container.static_source_table_service.validate_materialized_table_and_get_metadata(
-                db_session, location.table_details
+            additional_metadata = (
+                await static_source_table_service.validate_materialized_table_and_get_metadata(
+                    db_session, location.table_details
+                )
             )
             logger.debug("Creating a new StaticSourceTable", extra=location.table_details.dict())
             static_source_table = StaticSourceTableModel(
@@ -56,6 +62,4 @@ class StaticSourceTableTask(DataWarehouseMixin, BaseTask):
                 request_input=payload.request_input,
                 **additional_metadata,
             )
-            await self.app_container.static_source_table_service.create_document(
-                static_source_table
-            )
+            await static_source_table_service.create_document(static_source_table)

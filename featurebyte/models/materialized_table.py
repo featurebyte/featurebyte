@@ -3,17 +3,29 @@ MaterializedTable model
 """
 from __future__ import annotations
 
-from typing import List
+from typing import List, Optional
 
 import pymongo
+from pydantic import Field
 
 from featurebyte.models.base import (
     FeatureByteCatalogBaseDocumentModel,
+    PydanticObjectId,
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
 )
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import ColumnSpec
+
+
+class ColumnSpecWithEntityId(ColumnSpec):
+    """
+    Column spec with entity ID.
+
+    We only add entity ID here so that we don't have to add it to all other callers which use ColumnSpec too.
+    """
+
+    entity_id: Optional[PydanticObjectId] = Field(default=None)
 
 
 class MaterializedTableModel(FeatureByteCatalogBaseDocumentModel):
@@ -28,7 +40,7 @@ class MaterializedTableModel(FeatureByteCatalogBaseDocumentModel):
     """
 
     location: TabularSource
-    columns_info: List[ColumnSpec]
+    columns_info: List[ColumnSpecWithEntityId]
     num_rows: int
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):

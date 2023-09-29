@@ -158,7 +158,7 @@ def get_expected_target_values(
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_forward_aggregate(
-    event_table, target_parameters, transaction_data_upper_case, observation_set
+    event_table, target_parameters, transaction_data_upper_case, observation_set, user_entity
 ):
     """
     Test forward aggregate.
@@ -213,5 +213,6 @@ def test_forward_aggregate(
         target_observation_table = target.compute_target_table(
             observation_set, observation_table_name, serving_names_mapping={"üser id": "ÜSER ID"}
         )
+        assert target_observation_table.entity_ids == [user_entity.id]
         dataframe = target_observation_table.to_pandas()
         fb_assert_frame_equal(dataframe, expected_values, sort_by_columns=["POINT_IN_TIME"])

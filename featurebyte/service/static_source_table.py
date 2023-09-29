@@ -63,9 +63,8 @@ class StaticSourceTableService(
             output_document_id=output_document_id,
         )
 
-    @staticmethod
     async def validate_materialized_table_and_get_metadata(
-        db_session: BaseSession, table_details: TableDetails
+        self, db_session: BaseSession, table_details: TableDetails
     ) -> Dict[str, Any]:
         """
         Validate and get additional metadata for the materialized static source table.
@@ -81,7 +80,7 @@ class StaticSourceTableService(
         -------
         dict[str, Any]
         """
-        columns_info, num_rows = await StaticSourceTableService.get_columns_info_and_num_rows(
+        columns_info, num_rows = await self.get_columns_info_and_num_rows(
             db_session=db_session,
             table_details=table_details,
         )

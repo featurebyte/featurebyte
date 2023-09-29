@@ -22,6 +22,7 @@ from featurebyte.query_graph.sql.materialisation import get_most_recent_point_in
 from featurebyte.schema.observation_table import ObservationTableCreate, ObservationTableUpdate
 from featurebyte.schema.worker.task.observation_table import ObservationTableTaskPayload
 from featurebyte.service.context import ContextService
+from featurebyte.service.entity import EntityService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.materialized_table import BaseMaterializedTableService
 from featurebyte.service.session_manager import SessionManagerService
@@ -45,10 +46,16 @@ class ObservationTableService(
         catalog_id: Optional[ObjectId],
         session_manager_service: SessionManagerService,
         feature_store_service: FeatureStoreService,
+        entity_service: EntityService,
         context_service: ContextService,
     ):
         super().__init__(
-            user, persistent, catalog_id, session_manager_service, feature_store_service
+            user,
+            persistent,
+            catalog_id,
+            session_manager_service,
+            feature_store_service,
+            entity_service,
         )
         self.context_service = context_service
 
@@ -127,9 +134,11 @@ class ObservationTableService(
 
         return cast(str, most_recent_point_in_time)
 
-    @staticmethod
     async def validate_materialized_table_and_get_metadata(
-        db_session: BaseSession, table_details: TableDetails
+        self,
+        db_session: BaseSession,
+        table_details: TableDetails,
+        serving_names_remapping: Optional[Dict[str, str]] = None,
     ) -> Dict[str, Any]:
         """
         Validate and get additional metadata for the materialized observation table.
@@ -140,6 +149,8 @@ class ObservationTableService(
             Database session
         table_details: TableDetails
             Table details of the materialized table
+        serving_names_remapping: Dict[str, str]
+            Remapping of serving names
 
         Returns
         -------
@@ -152,9 +163,10 @@ class ObservationTableService(
         UnsupportedPointInTimeColumnTypeError
             If the point in time column is not of timestamp type.
         """
-        columns_info, num_rows = await ObservationTableService.get_columns_info_and_num_rows(
+        columns_info, num_rows = await self.get_columns_info_and_num_rows(
             db_session=db_session,
             table_details=table_details,
+            serving_names_remapping=serving_names_remapping,
         )
         columns_info_mapping = {info.name: info for info in columns_info}
 

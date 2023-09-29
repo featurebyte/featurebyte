@@ -18,6 +18,7 @@ from featurebyte.schema.historical_feature_table import HistoricalFeatureTableCr
 from featurebyte.schema.worker.task.historical_feature_table import (
     HistoricalFeatureTableTaskPayload,
 )
+from featurebyte.service.entity import EntityService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.materialized_table import BaseMaterializedTableService
 from featurebyte.service.session_manager import SessionManagerService
@@ -38,10 +39,16 @@ class HistoricalFeatureTableService(
         catalog_id: ObjectId,
         feature_store_service: FeatureStoreService,
         session_manager_service: SessionManagerService,
+        entity_service: EntityService,
         temp_storage: Storage,
     ):
         super().__init__(
-            user, persistent, catalog_id, session_manager_service, feature_store_service
+            user,
+            persistent,
+            catalog_id,
+            session_manager_service,
+            feature_store_service,
+            entity_service,
         )
         self.temp_storage = temp_storage
 
