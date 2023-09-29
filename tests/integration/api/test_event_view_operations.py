@@ -518,7 +518,7 @@ def patched_num_features_per_query():
             yield
 
 
-@pytest.fixture(name="new_user_id_entity")
+@pytest.fixture(name="new_user_id_entity", scope="session")
 def new_user_id_entity_fixture():
     """
     Fixture for a new user id entity
@@ -536,7 +536,7 @@ def new_user_id_entity_fixture():
         ("table", "table"),
     ],
 )
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 @pytest.mark.usefixtures("patched_num_features_per_query")
 @pytest.mark.asyncio
 async def test_get_historical_features(
