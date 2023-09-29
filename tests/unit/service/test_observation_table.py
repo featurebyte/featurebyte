@@ -161,7 +161,7 @@ async def test_validate__most_recent_point_in_time(
             {
                 "name": "cust_id",
                 "dtype": "VARCHAR",
-                "entity_id": ObjectId("63f94ed6ea1f050131379214"),
+                "entity_id": cust_id_entity.id,
             },
         ],
         "most_recent_point_in_time": "2023-01-15T02:00:00",
