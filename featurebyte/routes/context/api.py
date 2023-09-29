@@ -101,9 +101,11 @@ class ContextRouter(BaseApiRouter[ContextModel, ContextList, ContextCreate, Cont
         data: ContextCreate,
     ) -> ContextModel:
         """
-        Create credential
+        Create Context
         """
-        return await super().create_object(request, data)
+        controller = self.get_controller_for_request(request)
+        result: ContextModel = await controller.create_context(data=data)
+        return result
 
     async def update_context(
         self, request: Request, context_id: PydanticObjectId, data: ContextUpdate
