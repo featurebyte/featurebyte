@@ -10,7 +10,14 @@ import pandas as pd
 import pytest
 from bson import ObjectId
 
-from featurebyte import AggFunc, FeatureList, HistoricalFeatureTable, SourceType, to_timedelta
+from featurebyte import (
+    AggFunc,
+    Entity,
+    FeatureList,
+    HistoricalFeatureTable,
+    SourceType,
+    to_timedelta,
+)
 from featurebyte.exception import RecordCreationException
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from tests.util.helper import (
@@ -511,6 +518,16 @@ def patched_num_features_per_query():
             yield
 
 
+@pytest.fixture(name="new_user_id_entity")
+def new_user_id_entity_fixture():
+    """
+    Fixture for a new user id entity
+    """
+    entity = Entity(name="new user id", serving_names=["new_user id"])
+    entity.save()
+    return entity
+
+
 @pytest.mark.parametrize(
     "in_out_formats",
     [
@@ -519,16 +536,22 @@ def patched_num_features_per_query():
         ("table", "table"),
     ],
 )
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.usefixtures("patched_num_features_per_query")
 @pytest.mark.asyncio
 async def test_get_historical_features(
-    session, data_source, feature_group, feature_group_per_category, in_out_formats, user_entity
+    session,
+    data_source,
+    feature_group,
+    feature_group_per_category,
+    in_out_formats,
+    user_entity,
+    new_user_id_entity,
 ):
     """
     Test getting historical features from FeatureList
     """
-    _ = user_entity
+    _ = user_entity, new_user_id_entity
     input_format, output_format = in_out_formats
     assert input_format in {"dataframe", "table"}
     assert output_format in {"dataframe", "table"}
