@@ -6,7 +6,6 @@ from unittest.mock import AsyncMock, Mock
 
 import pandas as pd
 import pytest
-from bson import ObjectId
 
 from featurebyte.enum import SourceType
 from featurebyte.exception import (
