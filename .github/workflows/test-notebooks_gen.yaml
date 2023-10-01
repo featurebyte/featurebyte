@@ -23,7 +23,7 @@ jobs:
   test-deep-dive-notebooks:
     runs-on: ubuntu-latest-4-cores
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
     - uses: arduino/setup-task@v1
@@ -70,7 +70,7 @@ jobs:
   test-quick-start-notebooks:
     runs-on: ubuntu-latest-4-cores
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
     - uses: arduino/setup-task@v1
@@ -117,7 +117,7 @@ jobs:
   test-playground-notebooks:
     runs-on: ubuntu-latest-4-cores
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
     - uses: arduino/setup-task@v1
@@ -169,7 +169,7 @@ jobs:
     - test-deep-dive-notebooks
     - test-playground-notebooks
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
     - if: ${{ github.event_name == 'pull_request' }}

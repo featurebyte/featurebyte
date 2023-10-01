@@ -38,7 +38,7 @@ jobs:
             })
           }
           console.log("Clear completed")
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: arduino/setup-task@v1
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -65,7 +65,7 @@ jobs:
   tags:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
     - name: Set Github Committer Settings
