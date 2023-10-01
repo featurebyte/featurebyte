@@ -44,7 +44,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: arduino/setup-task@v1
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -76,7 +76,7 @@ jobs:
         python-version:
         - 3.8.12
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: arduino/setup-task@v1
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -136,7 +136,7 @@ jobs:
         python-version:
         - 3.8.12
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: arduino/setup-task@v1
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -195,7 +195,7 @@ jobs:
         python-version:
         - 3.8.12
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: arduino/setup-task@v1
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -276,7 +276,7 @@ jobs:
         python-version:
         - 3.8.12
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: arduino/setup-task@v1
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -334,7 +334,7 @@ jobs:
         python-version:
         - 3.8.12
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: arduino/setup-task@v1
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -384,7 +384,7 @@ jobs:
         python-version:
         - 3.8.12
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
     - uses: arduino/setup-task@v1
@@ -477,7 +477,7 @@ jobs:
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
     - if: ${{ github.event_name == 'pull_request' }}
