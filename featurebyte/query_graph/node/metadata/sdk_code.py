@@ -399,6 +399,8 @@ class VariableNameGenerator(BaseModel):
                 pre_variable_name = "view"
             else:
                 pre_variable_name = "col"
+        elif node_output_category == NodeOutputCategory.TARGET:
+            pre_variable_name = "target"
         else:
             if node_output_type == NodeOutputType.FRAME:
                 pre_variable_name = "grouped"

@@ -947,6 +947,36 @@ class LookupTargetNode(BaseLookupNode):
     type: Literal[NodeType.LOOKUP_TARGET] = Field(NodeType.LOOKUP_TARGET, const=True)
     parameters: LookupTargetParameters
 
+    def _derive_sdk_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+        context: CodeGenerationContext,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        var_name_expressions = self._assert_no_info_dict(node_inputs)
+        statements, var_name = self._convert_expression_to_variable(
+            var_name_expression=var_name_expressions[0],
+            var_name_generator=var_name_generator,
+            node_output_type=NodeOutputType.FRAME,
+            node_output_category=NodeOutputCategory.TARGET,
+            to_associate_with_node_name=False,
+        )
+        feature_names = self.parameters.feature_names
+        offset = self.parameters.offset
+        lookup_target_str = (
+            f"{var_name}.as_target(target_name={ValueStr.create(feature_names[0])}, "
+            f"offset={ValueStr.create(offset)})"
+        )
+        out_var_name = var_name_generator.generate_variable_name(
+            node_output_type=operation_structure.output_type,
+            node_output_category=operation_structure.output_category,
+            node_name=self.name,
+        )
+        statements.append((out_var_name, ExpressionStr(lookup_target_str)))
+        return statements, out_var_name
+
 
 class JoinMetadata(BaseModel):
     """Metadata to track general `view.join(...)` operation"""
