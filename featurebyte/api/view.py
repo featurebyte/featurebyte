@@ -155,7 +155,7 @@ class ViewColumn(Series, SampleMixin):
         Parameters
         ----------
         size: int
-            Maximum number of rows to sample.
+            Maximum number of rows to sample, with an upper bound of 10,000 rows.
         seed: int
             Seed to use for random sampling.
         from_timestamp: Optional[datetime]
@@ -879,7 +879,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         Parameters
         ----------
         size: int
-            Maximum number of rows to sample.
+            Maximum number of rows to sample, with an upper bound of 10,000 rows.
         seed: int
             Seed to use for random sampling.
         from_timestamp: Optional[datetime]
