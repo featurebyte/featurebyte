@@ -259,6 +259,7 @@ class Target(
         self,
         observation_table: Union[ObservationTable, pd.DataFrame],
         serving_names_mapping: Optional[Dict[str, str]] = None,
+        skip_entity_validation_checks: bool = False,
     ) -> pd.DataFrame:
         """
         Returns a DataFrame with target values for analysis, model training, or evaluation. The target
@@ -277,6 +278,8 @@ class Target(
         serving_names_mapping : Optional[Dict[str, str]]
             Optional serving names mapping if the training events table has different serving name columns than those
             defined in Entities, mapping from original serving name to new name.
+        skip_entity_validation_checks: bool
+            Whether to skip entity validation checks.
 
         Returns
         -------
@@ -295,6 +298,7 @@ class Target(
             observation_table=observation_table,
             observation_table_name=temp_target_table_name,
             serving_names_mapping=serving_names_mapping,
+            skip_entity_validation_checks=skip_entity_validation_checks,
         )
         try:
             return temp_target_table.to_pandas()
@@ -307,6 +311,7 @@ class Target(
         observation_table: Union[ObservationTable, pd.DataFrame],
         observation_table_name: str,
         serving_names_mapping: Optional[Dict[str, str]] = None,
+        skip_entity_validation_checks: bool = False,
     ) -> ObservationTable:
         """
         Materialize feature list using an observation table asynchronously. The targets
@@ -320,7 +325,9 @@ class Target(
         observation_table_name: str
             Name of the observation table to be created with the target values
         serving_names_mapping : Optional[Dict[str, str]]
-            Optional serving names mapping if the training events table has different serving name
+            Optional serving names mapping if the training events table has different serving name.
+        skip_entity_validation_checks: bool
+            Whether to skip entity validation checks
 
         Returns
         -------
@@ -352,6 +359,7 @@ class Target(
                 type=input_type,
             ),
             context_id=observation_table.context_id if is_input_observation_table else None,
+            skip_entity_validation_checks=skip_entity_validation_checks,
         )
         if is_input_observation_table:
             files = None

@@ -69,7 +69,10 @@ class TargetTableTask(DataWarehouseMixin, BaseTask):
 
             additional_metadata = (
                 await observation_table_service.validate_materialized_table_and_get_metadata(
-                    db_session, location.table_details, payload.serving_names_mapping
+                    db_session,
+                    location.table_details,
+                    payload.serving_names_mapping,
+                    skip_entity_validation_checks=payload.skip_entity_validation_checks,
                 )
             )
 

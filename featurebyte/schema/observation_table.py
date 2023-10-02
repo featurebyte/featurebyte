@@ -20,6 +20,7 @@ class ObservationTableCreate(BaseRequestTableCreate):
 
     sample_rows: Optional[int] = Field(ge=0)
     request_input: ObservationInput
+    skip_entity_validation_checks: bool = Field(default=False)
 
 
 class ObservationTableList(PaginationMixin):

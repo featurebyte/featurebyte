@@ -4,6 +4,7 @@ Integration tests for ObservationTable
 import pytest
 from sqlglot import parse_one
 
+from featurebyte.api.entity import Entity
 from featurebyte.exception import RecordCreationException
 from featurebyte.query_graph.sql.common import sql_to_string
 
@@ -58,13 +59,25 @@ def check_materialized_table_preview_methods(table, expected_columns):
     assert set(df_describe.index).issuperset(["top", "min", "max"])
 
 
+@pytest.fixture(name="normal_user_id_entity", scope="session")
+def new_user_id_entity_fixture():
+    """
+    Fixture for a new user id entity
+    """
+    entity = Entity(name="normal user id", serving_names=["User ID"])
+    entity.save()
+    return entity
+
+
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_observation_table_from_source_table(
-    data_source, feature_store, session, source_type
+    data_source, feature_store, session, source_type, catalog, normal_user_id_entity
 ):
     """
     Test creating an observation table from a source table
     """
+    _ = normal_user_id_entity
     source_table = data_source.get_source_table(
         database_name=session.database_name,
         schema_name=session.schema_name,
@@ -84,10 +97,13 @@ async def test_observation_table_from_source_table(
 
 
 @pytest.mark.asyncio
-async def test_observation_table_from_view(event_table, scd_table, session, source_type):
+async def test_observation_table_from_view(
+    event_table, scd_table, session, source_type, user_entity
+):
     """
     Test creating an observation table from a view
     """
+    _ = user_entity
     view = event_table.get_view()
     scd_view = scd_table.get_view()
     view = view.join(scd_view, on="ÜSER ID")
@@ -96,7 +112,7 @@ async def test_observation_table_from_view(event_table, scd_table, session, sour
         f"MY_OBSERVATION_TABLE_FROM_VIEW_{source_type}",
         sample_rows=sample_rows,
         columns=[view.timestamp_column, "ÜSER ID"],
-        columns_rename_mapping={view.timestamp_column: "POINT_IN_TIME"},
+        columns_rename_mapping={view.timestamp_column: "POINT_IN_TIME", "ÜSER ID": "üser id"},
     )
     assert observation_table.name == f"MY_OBSERVATION_TABLE_FROM_VIEW_{source_type}"
     check_location_valid(observation_table, session)
@@ -104,7 +120,7 @@ async def test_observation_table_from_view(event_table, scd_table, session, sour
 
     check_materialized_table_preview_methods(
         observation_table,
-        expected_columns=["POINT_IN_TIME", "ÜSER ID"],
+        expected_columns=["POINT_IN_TIME", "üser id"],
     )
 
 

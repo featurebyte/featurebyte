@@ -139,6 +139,7 @@ class ObservationTableService(
         db_session: BaseSession,
         table_details: TableDetails,
         serving_names_remapping: Optional[Dict[str, str]] = None,
+        skip_entity_validation_checks: bool = False,
     ) -> Dict[str, Any]:
         """
         Validate and get additional metadata for the materialized observation table.
@@ -151,6 +152,8 @@ class ObservationTableService(
             Table details of the materialized table
         serving_names_remapping: Dict[str, str]
             Remapping of serving names
+        skip_entity_validation_checks: bool
+            Whether to skip entity validation checks
 
         Returns
         -------
@@ -162,6 +165,8 @@ class ObservationTableService(
             If the point in time column is missing.
         UnsupportedPointInTimeColumnTypeError
             If the point in time column is not of timestamp type.
+        ValueError
+            If no entity column is provided.
         """
         columns_info, num_rows = await self.get_columns_info_and_num_rows(
             db_session=db_session,
@@ -183,6 +188,11 @@ class ObservationTableService(
             raise UnsupportedPointInTimeColumnTypeError(
                 f"Point in time column should have timestamp type; got {point_in_time_dtype}"
             )
+
+        if not skip_entity_validation_checks:
+            # Check that there's at least one entity mapped in the columns info
+            if not any(info.entity_id is not None for info in columns_info):
+                raise ValueError("At least one entity column should be provided.")
 
         most_recent_point_in_time = await ObservationTableService.get_most_recent_point_in_time(
             db_session=db_session,

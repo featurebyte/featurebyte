@@ -1656,6 +1656,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         columns: Optional[list[str]] = None,
         columns_rename_mapping: Optional[dict[str, str]] = None,
         context_name: Optional[str] = None,
+        skip_entity_validation_checks: Optional[bool] = False,
     ) -> ObservationTable:
         """
         Creates an ObservationTable from the View.
@@ -1680,6 +1681,8 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             when creating the observation table. If None, no columns are renamed.
         context_name: Optional[str]
             Context name for the observation table.
+        skip_entity_validation_checks: Optional[bool]
+            Skip entity validation checks when creating the observation table.
 
         Returns
         -------
@@ -1714,6 +1717,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             ),
             sample_rows=sample_rows,
             context_id=context_id,
+            skip_entity_validation_checks=skip_entity_validation_checks,
         )
         observation_table_doc = ObservationTable.post_async_task(
             route="/observation_table", payload=payload.json_dict()
