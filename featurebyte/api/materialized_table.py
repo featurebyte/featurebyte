@@ -116,7 +116,7 @@ class MaterializedTableMixin(MaterializedTableModel):
         Parameters
         ----------
         size: int
-            Maximum number of rows to sample.
+            Maximum number of rows to sample, with an upper bound to 10,000 rows.
         seed: int
             Seed to use for random sampling.
 
