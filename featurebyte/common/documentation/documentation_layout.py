@@ -347,6 +347,8 @@ def _get_feature_layout() -> List[DocLayoutItem]:
         DocLayoutItem([FEATURE, TRANSFORM, "Feature.cd.get_value"]),
         DocLayoutItem([FEATURE, TRANSFORM, "Feature.cd.most_frequent"]),
         DocLayoutItem([FEATURE, TRANSFORM, "Feature.cd.unique_count"]),
+        DocLayoutItem([FEATURE, TRANSFORM, "Feature.cd.key_with_lowest_value"]),
+        DocLayoutItem([FEATURE, TRANSFORM, "Feature.cd.key_with_highest_value"]),
     ]
 
 
