@@ -70,14 +70,22 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
         UseCaseModel
         """
         # validate both target and context exists
-        target = await self.target_service.get_document(document_id=data.target_id)
         context = await self.context_service.get_document(document_id=data.context_id)
 
+        target_namespace = None
+        if data.target_id:
+            target = await self.target_service.get_document(document_id=data.target_id)
+            target_namespace = await self.target_namespace_service.get_document(
+                document_id=target.target_namespace_id
+            )
+        elif data.target_namespace_id:
+            target_namespace = await self.target_namespace_service.get_document(
+                document_id=data.target_namespace_id
+            )
+            data.target_id = target_namespace.default_target_id
+
         # validate target and context have the same entities
-        target_namespace = await self.target_namespace_service.get_document(
-            document_id=target.target_namespace_id
-        )
-        if set(target_namespace.entity_ids) != set(context.primary_entity_ids):
+        if target_namespace and set(target_namespace.entity_ids) != set(context.primary_entity_ids):
             raise DocumentCreationError("Target and context must have the same entities")
 
         return await self.service.create_use_case(data)
@@ -125,7 +133,11 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
         """
         use_case = await self.service.get_document(document_id=use_case_id)
         context = await self.context_service.get_document(document_id=use_case.context_id)
-        target = await self.target_service.get_document(document_id=use_case.target_id)
+
+        target_name = None
+        if use_case.target_id:
+            target = await self.target_service.get_document(document_id=use_case.target_id)
+            target_name = target.name
 
         author = None
         if use_case.user_id:
@@ -162,7 +174,7 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
             author=author,
             primary_entities=EntityBriefInfoList(__root__=entity_briefs),
             context_name=context.name,
-            target_name=target.name,
+            target_name=target_name,
             default_preview_table=default_preview_table_name,
             default_eda_table=default_eda_table_name,
         )

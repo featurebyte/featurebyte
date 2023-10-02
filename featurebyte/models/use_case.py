@@ -1,10 +1,10 @@
 """
 Use Case model
 """
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 import pymongo
-from pydantic import Field
+from pydantic import Field, root_validator
 
 from featurebyte.models.base import (
     FeatureByteCatalogBaseDocumentModel,
@@ -20,8 +20,10 @@ class UseCaseModel(FeatureByteCatalogBaseDocumentModel):
 
     context_id: PydanticObjectId
         The context id of ContextModel
-    target_id: PydanticObjectId
+    target_id: Optional[PydanticObjectId]
         The target id of TargetModel
+    target_namespace_id: Optional[PydanticObjectId]
+        The target namespace id of TargetModel
     default_preview_table_id: PydanticObjectId
         The default preview observation table
     default_eda_table_id: PydanticObjectId
@@ -29,9 +31,19 @@ class UseCaseModel(FeatureByteCatalogBaseDocumentModel):
     """
 
     context_id: PydanticObjectId
-    target_id: PydanticObjectId
+    target_id: Optional[PydanticObjectId]
+    target_namespace_id: Optional[PydanticObjectId]
     default_preview_table_id: Optional[PydanticObjectId] = Field(default=None)
     default_eda_table_id: Optional[PydanticObjectId] = Field(default=None)
+
+    @root_validator(pre=True)
+    @classmethod
+    def _validate_target(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        target_id = values.get("target_id", None)
+        target_namespace_id = values.get("target_namespace_id", None)
+        if not target_id and not target_namespace_id:
+            raise ValueError("Either target_id or target_namespace_id must be specified.")
+        return values
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """

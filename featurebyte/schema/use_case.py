@@ -17,7 +17,8 @@ class UseCaseCreate(FeatureByteBaseModel):
 
     id: Optional[PydanticObjectId] = Field(default_factory=PydanticObjectId, alias="_id")
     name: StrictStr
-    target_id: PydanticObjectId
+    target_id: Optional[PydanticObjectId]
+    target_namespace_id: Optional[PydanticObjectId]
     context_id: PydanticObjectId
     description: Optional[StrictStr]
 

@@ -498,3 +498,33 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         response = test_api_client.post("/use_case", json=use_case_payload)
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
         assert "Target and context must have the same entities" in response.json()["detail"]
+
+    @pytest.mark.asyncio
+    async def test_create_use_case__with_target_namespace_id(
+        self,
+        test_api_client_persistent,
+        create_success_response,
+    ):
+        """Test create use case with target and context having different entities"""
+
+        _ = create_success_response
+        test_api_client, _ = test_api_client_persistent
+
+        target_id = create_success_response.json()["target_id"]
+        response = test_api_client.get(f"/target/{target_id}")
+        assert response.status_code == HTTPStatus.OK, response.json()
+        target_namespace_id = response.json()["target_namespace_id"]
+
+        use_case_payload = self.load_payload("tests/fixtures/request_payloads/use_case.json")
+        use_case_payload["_id"] = str(ObjectId())
+        use_case_payload["name"] = use_case_payload["name"] + "_1"
+        use_case_payload["context_id"] = create_success_response.json()["context_id"]
+        use_case_payload["target_namespace_id"] = target_namespace_id
+        use_case_payload["target_id"] = None
+        response = test_api_client.post("/use_case", json=use_case_payload)
+        assert response.status_code == HTTPStatus.CREATED, response.json()
+        response_dict = response.json()
+        assert response_dict["name"] == use_case_payload["name"]
+        assert response_dict["context_id"] == use_case_payload["context_id"]
+        assert response_dict["target_namespace_id"] == target_namespace_id
+        assert response_dict["target_id"] == target_id

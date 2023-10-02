@@ -510,7 +510,7 @@ class UseCaseInfo(BaseInfo):
     author: Optional[str] = None
     primary_entities: EntityBriefInfoList
     context_name: str
-    target_name: str
+    target_name: Optional[str]
     default_eda_table: Optional[str] = None
     default_preview_table: Optional[str] = None
 
