@@ -5,10 +5,18 @@ import ast
 import textwrap
 
 import pytest
+from bson import ObjectId
 
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType
 from featurebyte.query_graph.node.distance import Haversine
-from featurebyte.query_graph.node.generic import AliasNode, AssignNode, ConditionalNode
+from featurebyte.query_graph.node.generic import (
+    AliasNode,
+    AssignNode,
+    ConditionalNode,
+    LookupTargetNode,
+    LookupTargetParameters,
+)
 from featurebyte.query_graph.node.metadata.operation import NodeOutputCategory, OperationStructure
 from featurebyte.query_graph.node.metadata.sdk_code import (
     CodeGenerationConfig,
@@ -172,6 +180,38 @@ def test_vector_node():
     )
     assert statements == []
     assert info == "col1.vec.cosine_similarity(other=col2)"
+
+
+def test_lookup_target_node():
+    """
+    Test lookup target node
+    """
+    lookup_target_node = LookupTargetNode(
+        name="lookup_target",
+        parameters=LookupTargetParameters(
+            offset="7d",
+            input_column_names=["target_col"],
+            feature_names=["target"],
+            entity_column="",
+            serving_name="serving_name",
+            entity_id=PydanticObjectId(ObjectId()),
+        ),
+    )
+    statements, info = lookup_target_node.derive_sdk_code(
+        node_inputs=[
+            VariableNameStr("col1"),
+        ],
+        var_name_generator=VariableNameGenerator(),
+        operation_structure=OperationStructure(
+            output_type=NodeOutputType.FRAME,
+            output_category=NodeOutputCategory.TARGET,
+            row_index_lineage=tuple(),
+        ),
+        config=CodeGenerationConfig(),
+        context=CodeGenerationContext(as_info_dict=False, required_copy=False),
+    )
+    assert info == "target"
+    assert statements == [("target", 'col1.as_target(target_name="target", offset="7d")')]
 
 
 def test_haversine_node():
