@@ -7,6 +7,8 @@ from unittest import mock
 import pytest
 from bson.objectid import ObjectId
 
+from featurebyte.models import EntityModel
+from featurebyte.models.entity import ParentEntity
 from tests.unit.routes.base import BaseCatalogApiTestSuite
 
 
@@ -218,4 +220,42 @@ class TestContextApi(BaseCatalogApiTestSuite):
             mock_derive.return_value = [ObjectId()]
             response = test_api_client.post(f"{self.base_route}", json=payload)
             assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
-            assert "Context entity ids must all be primary entity ids" in response.json()["detail"]
+            assert (
+                f"Context entity ids must all be primary entity ids: {payload['primary_entity_ids']}"
+                in response.json()["detail"]
+            )
+
+    def test_create_context__entity_parent_id_in_the_list(
+        self,
+        create_success_response,
+        test_api_client_persistent,
+    ):
+        """
+        Test context update (unprocessable)
+        """
+        test_api_client, _ = test_api_client_persistent
+        _ = create_success_response.json()
+        entity_payload = self.load_payload("tests/fixtures/request_payloads/entity.json")
+        entity_payload["serving_names"] = [entity_payload["serving_name"]]
+
+        payload = self.payload.copy()
+        payload["_id"] = str(ObjectId())
+        payload["name"] = f"{payload['name']}_1"
+
+        with mock.patch("featurebyte.service.entity.EntityService.get_document") as mock_get_doc:
+            mock_get_doc.return_value = EntityModel(
+                **entity_payload,
+                parents=[
+                    ParentEntity(
+                        id=ObjectId(entity_payload["_id"]),
+                        table_type="event_table",
+                        table_id=ObjectId(),
+                    )
+                ],
+            )
+            response = test_api_client.post(f"{self.base_route}", json=payload)
+            assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+            assert (
+                "Context entity ids must not include any parent entity ids"
+                in response.json()["detail"]
+            )

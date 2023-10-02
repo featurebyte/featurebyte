@@ -16,6 +16,7 @@ from featurebyte.persistent import Persistent
 from featurebyte.schema.target import TargetCreate
 from featurebyte.schema.target_namespace import TargetNamespaceCreate, TargetNamespaceServiceUpdate
 from featurebyte.service.base_namespace_service import BaseNamespaceService
+from featurebyte.service.entity import EntityService
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.namespace_handler import (
@@ -43,6 +44,7 @@ class TargetService(BaseNamespaceService[TargetModel, TargetCreate]):
         feature_store_service: FeatureStoreService,
         entity_validation_service: EntityValidationService,
         session_manager_service: SessionManagerService,
+        entity_service: EntityService,
     ):
         super().__init__(user=user, persistent=persistent, catalog_id=catalog_id)
         self.target_namespace_service = target_namespace_service
@@ -50,6 +52,7 @@ class TargetService(BaseNamespaceService[TargetModel, TargetCreate]):
         self.feature_store_service = feature_store_service
         self.entity_validation_service = entity_validation_service
         self.session_manager_service = session_manager_service
+        self.entity_service = entity_service
 
     async def prepare_target_model(
         self, data: TargetCreate, sanitize_for_definition: bool
@@ -124,6 +127,23 @@ class TargetService(BaseNamespaceService[TargetModel, TargetCreate]):
         return namespace.window
 
     async def create_document(self, data: TargetCreate) -> TargetModel:
+        """
+        Create a new target document
+
+        Parameters
+        ----------
+        data: TargetCreate
+            Target creation data
+
+        Returns
+        -------
+        TargetModel
+
+        Raises
+        ------
+        DocumentCreationError
+            If Target entity ids include any parent entity id
+        """
         document = await self.prepare_target_model(data=data, sanitize_for_definition=False)
         async with self.persistent.start_transaction() as session:
             # check any conflict with existing documents
@@ -161,8 +181,21 @@ class TargetService(BaseNamespaceService[TargetModel, TargetCreate]):
                     ),
                     return_document=True,
                 )
-            except DocumentNotFoundError:
+            except DocumentNotFoundError as exc:
                 entity_ids = document.entity_ids or []
+
+                # validate that each entity id's parents must not be in the entity ids
+                all_parents_ids = []
+                for entity_id in entity_ids:
+                    entity = await self.entity_service.get_document(document_id=entity_id)
+                    for parent in entity.parents:
+                        all_parents_ids.append(parent.id)
+
+                if set(all_parents_ids).intersection(set(entity_ids)):
+                    raise DocumentCreationError(
+                        "Target entity ids must not include any parent entity ids"
+                    ) from exc
+
                 await self.target_namespace_service.create_document(
                     data=TargetNamespaceCreate(
                         _id=document.target_namespace_id,

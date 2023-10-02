@@ -5,6 +5,7 @@ from typing import Any, Dict
 
 from bson import ObjectId
 
+from featurebyte.exception import DocumentCreationError
 from featurebyte.models.use_case import UseCaseModel
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.info import EntityBriefInfo, EntityBriefInfoList, UseCaseInfo
@@ -15,6 +16,7 @@ from featurebyte.service.entity import EntityService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.target import TargetService
+from featurebyte.service.target_namespace import TargetNamespaceService
 from featurebyte.service.use_case import UseCaseService
 from featurebyte.service.user_service import UserService
 
@@ -37,6 +39,7 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
         observation_table_service: ObservationTableService,
         historical_feature_table_service: HistoricalFeatureTableService,
         catalog_service: CatalogService,
+        target_namespace_service: TargetNamespaceService,
     ):
         super().__init__(use_case_service)
         self.user_service = user_service
@@ -46,6 +49,7 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
         self.observation_table_service = observation_table_service
         self.historical_feature_table_service = historical_feature_table_service
         self.catalog_service = catalog_service
+        self.target_namespace_service = target_namespace_service
 
     async def create_use_case(self, data: UseCaseCreate) -> UseCaseModel:
         """
@@ -56,15 +60,25 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
         data: UseCaseCreate
             use case creation data
 
+        Raises
+        ------
+        DocumentCreationError
+            if target and context have different primary entities
+
         Returns
         -------
         UseCaseModel
-
         """
         # validate both target and context exists
-        await self.target_service.get_document(document_id=data.target_id)
-        if data.context_id:
-            await self.context_service.get_document(document_id=data.context_id)
+        target = await self.target_service.get_document(document_id=data.target_id)
+        context = await self.context_service.get_document(document_id=data.context_id)
+
+        # validate target and context have the same entities
+        target_namespace = await self.target_namespace_service.get_document(
+            document_id=target.target_namespace_id
+        )
+        if set(target_namespace.entity_ids) != set(context.primary_entity_ids):
+            raise DocumentCreationError("Target and context must have the same entities")
 
         return await self.service.create_use_case(data)
 

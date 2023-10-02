@@ -67,16 +67,25 @@ class ContextController(BaseDocumentController[ContextModel, ContextService, Con
         -------
         ContextModel
         """
-        # validate entity ids exist
+        # validate entity ids exist and each entity id's parents must not be in the entity ids
+        all_parents_ids = []
         for entity_id in data.primary_entity_ids:
-            await self.entity_service.get_document(document_id=entity_id)
+            entity = await self.entity_service.get_document(document_id=entity_id)
+            for parent in entity.parents:
+                all_parents_ids.append(parent.id)
+
+        if set(all_parents_ids).intersection(set(data.primary_entity_ids)):
+            raise DocumentCreationError("Context entity ids must not include any parent entity ids")
 
         # validate all entity ids are primary entity ids
         primary_entity_ids = await self.derive_primary_entity_helper.derive_primary_entity_ids(
             entity_ids=data.primary_entity_ids
         )
         if set(primary_entity_ids) != set(data.primary_entity_ids):
-            raise DocumentCreationError("Context entity ids must all be primary entity ids")
+            not_primary = set(data.primary_entity_ids).difference(set(primary_entity_ids))
+            raise DocumentCreationError(
+                f"Context entity ids must all be primary entity ids: {[str(x) for x in not_primary]}"
+            )
 
         result: ContextModel = await self.context_service.create_document(data=data)
         return result
