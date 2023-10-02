@@ -1316,3 +1316,8 @@ def test_create_observation_table__errors_with_no_entities(event_view):
             f"observation_table_name_{ObjectId()}",
         )
     assert "At least one entity column" in str(exc)
+
+    # Test that no error if we skip the entity validation check
+    new_event_view.create_observation_table(
+        f"observation_table_name_{ObjectId()}", skip_entity_validation_checks=True
+    )
