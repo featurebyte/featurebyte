@@ -97,6 +97,13 @@ class TestTargetTestSuite(FeatureOrTargetBaseTestSuite):
         new_target = float_target + 1
         float_target[arbitrary_mask] = new_target
 
+    def test_window(self, float_target):
+        """
+        Test window is present
+        """
+        float_target.save()
+        assert float_target.window == "1d"
+
     def test_list_includes_namespace(self, float_target, cust_id_entity):
         """
         Test list includes namespace targets.

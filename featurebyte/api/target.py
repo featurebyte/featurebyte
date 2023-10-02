@@ -33,7 +33,6 @@ from featurebyte.common.utils import dataframe_to_arrow_bytes, enforce_observati
 from featurebyte.core.accessor.target_datetime import TargetDtAccessorMixin
 from featurebyte.core.accessor.target_string import TargetStrAccessorMixin
 from featurebyte.core.series import Series
-from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.observation_table import TargetInput
 from featurebyte.models.request_input import RequestInputType
@@ -189,11 +188,7 @@ class Target(
         ValueError
             If the target does not have a window.
         """
-        try:
-            # TODO: Should use window value from TargetNamespace once it is available
-            window = self.cached_model.graph.get_forward_aggregate_window(self.node_name)
-        except RecordRetrievalException:
-            window = self.graph.get_forward_aggregate_window(self.node_name)
+        window = self.target_namespace.window
         if window is None:
             raise ValueError("Target does not have a window")
         return window
