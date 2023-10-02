@@ -176,28 +176,6 @@ class QueryGraph(QueryGraphModel):
             output.append(node.parameters.function_id)
         return sorted(set(output))
 
-    def get_forward_aggregate_window(self, node_name: str) -> Optional[str]:
-        """
-        Get the window of the forward aggregate node
-
-        Parameters
-        ----------
-        node_name: str
-            Name of the node to get the window for
-
-        Returns
-        -------
-        Optional[str]
-            window of the forward aggregate node
-        """
-        target_node = self.get_node_by_name(node_name)
-        for node in self.iterate_nodes(
-            target_node=target_node, node_type=NodeType.FORWARD_AGGREGATE
-        ):
-            assert isinstance(node, ForwardAggregateNode)
-            return node.parameters.window
-        return None
-
     def get_entity_columns(self, node_name: str) -> List[str]:
         """
         Get entity columns of the query graph given the target node name

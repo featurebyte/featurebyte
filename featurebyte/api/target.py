@@ -189,11 +189,7 @@ class Target(
         ValueError
             If the target does not have a window.
         """
-        try:
-            # TODO: Should use window value from TargetNamespace once it is available
-            window = self.cached_model.graph.get_forward_aggregate_window(self.node_name)
-        except RecordRetrievalException:
-            window = self.graph.get_forward_aggregate_window(self.node_name)
+        window = self.target_namespace.window
         if window is None:
             raise ValueError("Target does not have a window")
         return window
