@@ -52,7 +52,9 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask):
             assert not isinstance(payload_input, TargetInput)
             additional_metadata = (
                 await observation_table_service.validate_materialized_table_and_get_metadata(
-                    db_session, location.table_details
+                    db_session,
+                    location.table_details,
+                    skip_entity_validation_checks=payload.skip_entity_validation_checks,
                 )
             )
             logger.debug("Creating a new ObservationTable", extra=location.table_details.dict())
