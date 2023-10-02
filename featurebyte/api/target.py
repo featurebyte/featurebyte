@@ -33,7 +33,6 @@ from featurebyte.common.utils import dataframe_to_arrow_bytes, enforce_observati
 from featurebyte.core.accessor.target_datetime import TargetDtAccessorMixin
 from featurebyte.core.accessor.target_string import TargetStrAccessorMixin
 from featurebyte.core.series import Series
-from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.observation_table import TargetInput
 from featurebyte.models.request_input import RequestInputType

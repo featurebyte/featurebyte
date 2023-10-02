@@ -36,12 +36,7 @@ from featurebyte.query_graph.node.cleaning_operation import (
     TableIdCleaningOperation,
 )
 from featurebyte.query_graph.node.function import GenericFunctionNode
-from featurebyte.query_graph.node.generic import (
-    ForwardAggregateNode,
-    GroupByNode,
-    LookupNode,
-    LookupTargetNode,
-)
+from featurebyte.query_graph.node.generic import GroupByNode, LookupNode, LookupTargetNode
 from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.metadata.operation import (
     DerivedDataColumn,
