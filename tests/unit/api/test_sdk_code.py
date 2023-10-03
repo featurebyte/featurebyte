@@ -204,6 +204,46 @@ def test_sdk_code_generation__complex_feature(
     assert feat_empty_keys.entity_ids == []
 
 
+def test_sdk_code_generation__lookup_target(
+    saved_event_table, cust_id_entity, transaction_entity, update_fixtures
+):
+    """Test SDK code generation for lookup target"""
+    saved_event_table.col_int.as_entity(cust_id_entity.name)
+    saved_event_table.col_float.as_entity(transaction_entity.name)
+    event_view = saved_event_table.get_view()
+    forward_aggregate_target = event_view.groupby("col_int").forward_aggregate(
+        value_column="col_float",
+        method="sum",
+        window="1d",
+        target_name="forward_aggregate_target",
+    )
+    check_sdk_code_generation(
+        forward_aggregate_target,
+        to_use_saved_data=True,
+        to_format=True,
+        fixture_path="tests/fixtures/sdk_code/forward_aggregate_target_code_generation.py",
+        update_fixtures=True,
+        table_id=saved_event_table.id,
+    )
+
+
+def test_sdk_code_generation__forward_aggregate_target(
+    saved_event_table, cust_id_entity, update_fixtures
+):
+    """Test SDK code generation for lookup target"""
+    saved_event_table.col_int.as_entity(cust_id_entity.name)
+    event_view = saved_event_table.get_view()
+    lookup_target = event_view["col_int"].as_target("lookup_target")
+    check_sdk_code_generation(
+        lookup_target,
+        to_use_saved_data=True,
+        to_format=True,
+        fixture_path="tests/fixtures/sdk_code/lookup_target_code_generation.py",
+        update_fixtures=update_fixtures,
+        table_id=saved_event_table.id,
+    )
+
+
 def test_sdk_code_generation__multi_table_feature(
     saved_event_table, saved_item_table, transaction_entity, cust_id_entity, update_fixtures
 ):

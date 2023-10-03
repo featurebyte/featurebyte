@@ -199,7 +199,7 @@ def test_lookup_target_node():
     )
     statements, info = lookup_target_node.derive_sdk_code(
         node_inputs=[
-            VariableNameStr("col1"),
+            VariableNameStr("view"),
         ],
         var_name_generator=VariableNameGenerator(),
         operation_structure=OperationStructure(
@@ -210,8 +210,8 @@ def test_lookup_target_node():
         config=CodeGenerationConfig(),
         context=CodeGenerationContext(as_info_dict=False, required_copy=False),
     )
-    assert info == "target"
-    assert statements == [("target", 'col1.as_target(target_name="target", offset="7d")')]
+    assert info == 'view.target_col.as_target(target_name="target", offset="7d")'
+    assert statements == []
 
 
 def test_haversine_node():

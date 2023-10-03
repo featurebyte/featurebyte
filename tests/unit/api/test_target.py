@@ -37,8 +37,7 @@ class TestTargetTestSuite(FeatureOrTargetBaseTestSuite):
         target_name="float_target",
         skip_fill_na=True,
     )
-    target_1 = target["float_target"]
-    output = target_1
+    output = target
     """
     )
     expected_saved_item_definition = (
@@ -65,8 +64,7 @@ class TestTargetTestSuite(FeatureOrTargetBaseTestSuite):
         target_name="float_target",
         skip_fill_na=True,
     )
-    target_1 = target["float_target"]
-    output = target_1
+    output = target
     output.save(_id=ObjectId("{item_id}"))
     """
     )

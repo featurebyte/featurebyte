@@ -112,10 +112,14 @@ class SDKCodeGlobalState(BaseModel):
             Backward nodes of the node
         """
         if node.type == NodeType.PROJECT and backward_nodes[0].type in (
+            NodeType.FORWARD_AGGREGATE,
+            NodeType.LOOKUP_TARGET,
             NodeType.ITEM_GROUPBY,
             NodeType.AGGREGATE_AS_AT,
         ):
-            # ItemGroupByNode's & AggregateAsAtNode's SDK code like
+            # ForwardAggregateNode's, LookupTargetNode's, ItemGroupByNode's & AggregateAsAtNode's SDK code like
+            # * `view.groupby(...).forward_aggregate(...)`
+            # * `view.as_target(...)`
             # * `view.groupby(...).aggregate(...)`
             # * `view.groupby(...).aggregate_as_at(...)`
             # already return a series, there is no operation for project node to generate any SDK code.
