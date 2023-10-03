@@ -490,6 +490,8 @@ class ForwardAggregateNode(AggregationOpStructMixin, BaseNode):
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: ForwardAggregateParameters
 
+    _auto_convert_expression_to_variable: ClassVar[bool] = False
+
     @property
     def max_input_count(self) -> int:
         return 1
