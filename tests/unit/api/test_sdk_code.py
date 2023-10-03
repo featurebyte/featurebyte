@@ -204,6 +204,21 @@ def test_sdk_code_generation__complex_feature(
     assert feat_empty_keys.entity_ids == []
 
 
+def test_sdk_code_generation__lookup_target(saved_event_table, cust_id_entity, update_fixtures):
+    """Test SDK code generation for lookup target"""
+    saved_event_table.col_int.as_entity(cust_id_entity.name)
+    event_view = saved_event_table.get_view()
+    lookup_target = event_view["col_int"].as_target("lookup_target")
+    check_sdk_code_generation(
+        lookup_target,
+        to_use_saved_data=True,
+        to_format=True,
+        fixture_path="tests/fixtures/sdk_code/lookup_target_code_generation.py",
+        update_fixtures=True,
+        table_id=saved_event_table.id,
+    )
+
+
 def test_sdk_code_generation__multi_table_feature(
     saved_event_table, saved_item_table, transaction_entity, cust_id_entity, update_fixtures
 ):
