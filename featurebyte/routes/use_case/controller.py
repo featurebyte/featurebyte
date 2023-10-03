@@ -63,20 +63,32 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
         Raises
         ------
         DocumentCreationError
-            if target and context have different primary entities
+            if target and context have different primary entities or target and target namespace have different target
 
         Returns
         -------
         UseCaseModel
         """
         # validate both target and context exists
-        target = await self.target_service.get_document(document_id=data.target_id)
         context = await self.context_service.get_document(document_id=data.context_id)
 
-        # validate target and context have the same entities
+        if not data.target_namespace_id and data.target_id:
+            target = await self.target_service.get_document(document_id=data.target_id)
+            data.target_namespace_id = target.target_namespace_id
+
         target_namespace = await self.target_namespace_service.get_document(
-            document_id=target.target_namespace_id
+            document_id=data.target_namespace_id  # type: ignore
         )
+
+        if data.target_id:
+            if data.target_id != target_namespace.default_target_id:
+                raise DocumentCreationError(
+                    "Input target_id and target namespace default_target_id must be the same"
+                )
+        else:
+            data.target_id = target_namespace.default_target_id
+
+        # validate target and context have the same entities
         if set(target_namespace.entity_ids) != set(context.primary_entity_ids):
             raise DocumentCreationError("Target and context must have the same entities")
 
@@ -125,7 +137,12 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
         """
         use_case = await self.service.get_document(document_id=use_case_id)
         context = await self.context_service.get_document(document_id=use_case.context_id)
-        target = await self.target_service.get_document(document_id=use_case.target_id)
+
+        target_name = (
+            await self.target_namespace_service.get_document(
+                document_id=use_case.target_namespace_id
+            )
+        ).name
 
         author = None
         if use_case.user_id:
@@ -162,7 +179,7 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
             author=author,
             primary_entities=EntityBriefInfoList(__root__=entity_briefs),
             context_name=context.name,
-            target_name=target.name,
+            target_name=target_name,
             default_preview_table=default_preview_table_name,
             default_eda_table=default_eda_table_name,
         )

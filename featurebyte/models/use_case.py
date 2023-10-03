@@ -20,8 +20,10 @@ class UseCaseModel(FeatureByteCatalogBaseDocumentModel):
 
     context_id: PydanticObjectId
         The context id of ContextModel
-    target_id: PydanticObjectId
+    target_id: Optional[PydanticObjectId]
         The target id of TargetModel
+    target_namespace_id: Optional[PydanticObjectId]
+        The target namespace id of TargetModel
     default_preview_table_id: PydanticObjectId
         The default preview observation table
     default_eda_table_id: PydanticObjectId
@@ -29,7 +31,8 @@ class UseCaseModel(FeatureByteCatalogBaseDocumentModel):
     """
 
     context_id: PydanticObjectId
-    target_id: PydanticObjectId
+    target_id: Optional[PydanticObjectId]
+    target_namespace_id: PydanticObjectId
     default_preview_table_id: Optional[PydanticObjectId] = Field(default=None)
     default_eda_table_id: Optional[PydanticObjectId] = Field(default=None)
 
