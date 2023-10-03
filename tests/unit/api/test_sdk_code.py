@@ -214,7 +214,7 @@ def test_sdk_code_generation__lookup_target(saved_event_table, cust_id_entity, u
         to_use_saved_data=True,
         to_format=True,
         fixture_path="tests/fixtures/sdk_code/lookup_target_code_generation.py",
-        update_fixtures=True,
+        update_fixtures=update_fixtures,
         table_id=saved_event_table.id,
     )
 
