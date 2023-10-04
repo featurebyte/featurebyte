@@ -65,6 +65,7 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask):
                 location=location,
                 context_id=payload.context_id,
                 request_input=payload.request_input,
+                purpose=payload.purpose,
                 **additional_metadata,
             )
             await observation_table_service.create_document(observation_table)

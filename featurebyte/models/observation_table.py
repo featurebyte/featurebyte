@@ -11,6 +11,7 @@ from datetime import datetime  # pylint: disable=wrong-import-order
 import pymongo
 from pydantic import Field, StrictStr, validator
 
+from featurebyte.enum import StrEnum
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.materialized_table import MaterializedTableModel
 from featurebyte.models.request_input import (
@@ -72,6 +73,18 @@ ObservationInput = Annotated[
 ]
 
 
+class Purpose(StrEnum):
+    """
+    Purpose of the observation table
+    """
+
+    PREVIEW = "preview"
+    EDA = "eda"
+    TRAINING = "training"
+    VALIDATION_TEST = "validation_test"
+    OTHER = "other"
+
+
 class ObservationTableModel(MaterializedTableModel):
     """
     ObservationTableModel is a table that can be used to request historical features
@@ -85,6 +98,7 @@ class ObservationTableModel(MaterializedTableModel):
     request_input: ObservationInput
     most_recent_point_in_time: StrictStr
     context_id: Optional[PydanticObjectId] = Field(default=None)
+    purpose: Optional[Purpose] = Field(default=None)
 
     @validator("most_recent_point_in_time")
     @classmethod

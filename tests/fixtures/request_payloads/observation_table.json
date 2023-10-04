@@ -21,5 +21,6 @@
         },
         "type": "source_table"
     },
-    "sample_rows": null
+    "sample_rows": null,
+    "purpose": "other"
 }
