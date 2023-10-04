@@ -128,7 +128,7 @@ class UseCaseService(BaseDocumentService[UseCaseModel, UseCaseCreate, UseCaseUpd
         if not isinstance(input_observation.request_input, TargetInput):
             raise UseCaseInvalidDataError("observation table request_input is not TargetInput")
 
-        if (
+        if not use_case.target_id or (
             isinstance(input_observation.request_input, TargetInput)
             and input_observation.request_input.target_id != use_case.target_id
         ):
