@@ -3,9 +3,8 @@ ObservationTableService class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple, cast
-
 from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 import pandas as pd
 from bson import ObjectId
@@ -26,8 +25,15 @@ from featurebyte.persistent import Persistent
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.feature_store import FeatureStoreSample
-from featurebyte.schema.observation_table import ObservationTableCreate, ObservationTableUpdate
+from featurebyte.schema.observation_table import (
+    ObservationTableCreate,
+    ObservationTableUpdate,
+    ObservationTableUpload,
+)
 from featurebyte.schema.worker.task.observation_table import ObservationTableTaskPayload
+from featurebyte.schema.worker.task.observation_table_upload import (
+    ObservationTableUploadTaskPayload,
+)
 from featurebyte.service.context import ContextService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature_store import FeatureStoreService
@@ -164,6 +170,36 @@ class ObservationTableService(
             await self.context_service.get_document(document_id=data.context_id)
 
         return ObservationTableTaskPayload(
+            **data.dict(by_alias=True),
+            user_id=self.user.id,
+            catalog_id=self.catalog_id,
+            output_document_id=output_document_id,
+        )
+
+    async def get_observation_table_upload_task_payload(
+            self, data: ObservationTableUpload
+    ) -> ObservationTableUploadTaskPayload:
+        """
+        Validate and convert a ObservationTableUpload schema to a ObservationTableUploadTaskPayload schema
+        which will be used to initiate the ObservationTable upload task.
+
+        Parameters
+        ----------
+        data: ObservationTableUpload
+            ObservationTable upload payload
+
+        Returns
+        -------
+        ObservationTableUploadTaskPayload
+        """
+
+        # Check any conflict with existing documents
+        output_document_id = data.id or ObjectId()
+        await self._check_document_unique_constraints(
+            document=FeatureByteBaseDocumentModel(_id=output_document_id, name=data.name),
+        )
+
+        return ObservationTableUploadTaskPayload(
             **data.dict(by_alias=True),
             user_id=self.user.id,
             catalog_id=self.catalog_id,

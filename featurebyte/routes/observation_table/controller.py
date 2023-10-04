@@ -15,12 +15,14 @@ from featurebyte.schema.observation_table import (
     ObservationTableCreate,
     ObservationTableList,
     ObservationTableUpdate,
+    ObservationTableUpload,
 )
 from featurebyte.schema.task import Task
 from featurebyte.service.context import ContextService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.preview import PreviewService
+from featurebyte.service.task_manager import TaskManager
 from featurebyte.service.validator.materialized_table_delete import ObservationTableDeleteValidator
 
 
@@ -43,6 +45,7 @@ class ObservationTableController(
         feature_store_service: FeatureStoreService,
         observation_table_delete_validator: ObservationTableDeleteValidator,
         context_service: ContextService,
+        task_manager: TaskManager,
     ):
         super().__init__(service=observation_table_service, preview_service=preview_service)
         self.observation_table_service = observation_table_service
@@ -50,6 +53,7 @@ class ObservationTableController(
         self.feature_store_service = feature_store_service
         self.observation_table_delete_validator = observation_table_delete_validator
         self.context_service = context_service
+        self.task_manager = task_manager
 
     async def create_observation_table(
         self,
@@ -68,7 +72,24 @@ class ObservationTableController(
         Task
         """
         payload = await self.service.get_observation_table_task_payload(data=data)
-        task_id = await self.task_controller.task_manager.submit(payload=payload)
+        task_id = await self.task_manager.submit(payload=payload)
+        return await self.task_controller.get_task(task_id=str(task_id))
+
+    async def upload_observation_table_csv(self, data: ObservationTableUpload) -> Task:
+        """
+        Create ObservationTable by submitting a materialization task
+
+        Parameters
+        ----------
+        data: ObservationTableUpload
+            ObservationTableUpload creation payload
+
+        Returns
+        -------
+        Task
+        """
+        payload = await self.service.get_observation_table_upload_task_payload(data=data)
+        task_id = await self.task_manager.submit(payload=payload)
         return await self.task_controller.get_task(task_id=str(task_id))
 
     async def _verify_delete_operation(self, document_id: ObjectId) -> None:

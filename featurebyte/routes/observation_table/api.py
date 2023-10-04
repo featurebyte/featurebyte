@@ -24,12 +24,14 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
     VerboseQuery,
 )
+from featurebyte.routes.observation_table.controller import ObservationTableController
 from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.info import ObservationTableInfo
 from featurebyte.schema.observation_table import (
     ObservationTableCreate,
     ObservationTableList,
     ObservationTableUpdate,
+    ObservationTableUpload,
 )
 from featurebyte.schema.task import Task
 
@@ -58,6 +60,17 @@ async def create_observation_table(
         data=data,
     )
     return task_submit
+
+
+@router.put("", response_model=Task, status_code=HTTPStatus.CREATED)
+async def upload_observation_table_csv(request: Request, data: ObservationTableUpload) -> Task:
+    """
+    Create observation table by uploading a CSV file.
+    """
+    controller: ObservationTableController = (
+        request.state.app_container.observation_table_controller
+    )
+    return await controller.upload_observation_table_csv(data)
 
 
 @router.get("/{observation_table_id}", response_model=ObservationTableModel)
