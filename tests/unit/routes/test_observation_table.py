@@ -92,6 +92,14 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
             "description": None,
         }
 
+    def test_get_purpose(self, test_api_client_persistent, create_success_response):
+        """Test get purpose"""
+        test_api_client, _ = test_api_client_persistent
+        doc_id = create_success_response.json()["_id"]
+        response = test_api_client.get(f"{self.base_route}/{doc_id}")
+        response_dict = response.json()
+        assert response_dict["purpose"] == "other"
+
     def test_update_context(self, test_api_client_persistent, create_success_response):
         """Test update context route"""
         test_api_client, _ = test_api_client_persistent
