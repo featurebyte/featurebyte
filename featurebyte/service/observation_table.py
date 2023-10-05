@@ -253,9 +253,11 @@ class ObservationTableService(
         column_name_to_count = {}
         for col in entity_cols:
             col_name = col.name
-            column_name_to_count[col_name] = describe_stats_dataframe.loc[
+            column_name_to_count[
+                col_name
+            ] = describe_stats_dataframe.loc[  # pylint: disable=no-member
                 "unique", col_name
-            ]  # pylint: disable=no-member
+            ]
         return column_name_to_count
 
     async def validate_materialized_table_and_get_metadata(
