@@ -3,7 +3,7 @@ ObservationTableModel models
 """
 from __future__ import annotations
 
-from typing import Optional, Union
+from typing import Dict, Optional, Union
 from typing_extensions import Annotated, Literal
 
 from datetime import datetime  # pylint: disable=wrong-import-order
@@ -99,10 +99,14 @@ class ObservationTableModel(MaterializedTableModel):
     most_recent_point_in_time: StrictStr
     context_id: Optional[PydanticObjectId] = Field(default=None)
     purpose: Optional[Purpose] = Field(default=None)
+    earliest_point_in_time: Optional[StrictStr] = Field(default=None)
+    entity_column_name_to_count: Optional[Dict[str, int]] = Field(default_factory=dict)
 
-    @validator("most_recent_point_in_time")
+    @validator("most_recent_point_in_time", "earliest_point_in_time")
     @classmethod
-    def _validate_most_recent_point_in_time(cls, value: str) -> str:
+    def _validate_most_recent_point_in_time(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
         # Check that most_recent_point_in_time is a valid ISO 8601 datetime
         _ = datetime.fromisoformat(value)
         return value

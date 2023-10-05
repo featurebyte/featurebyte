@@ -94,6 +94,8 @@ async def test_observation_table_from_source_table(
     check_materialized_table_preview_methods(
         observation_table, expected_columns=["POINT_IN_TIME", "User ID"]
     )
+    assert observation_table.earliest_point_in_time is not None
+    assert "User ID" in observation_table.entity_column_name_to_count
 
 
 @pytest.mark.asyncio
