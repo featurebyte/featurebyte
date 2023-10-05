@@ -3,6 +3,8 @@ Test view class
 """
 from typing import Any, Dict, List
 
+from unittest.mock import MagicMock, Mock, patch
+
 import pytest
 from bson import ObjectId
 
@@ -42,6 +44,14 @@ class SimpleTestView(View):
     )
 
     join_col = ""
+
+    @property
+    def node(self):
+        if self.node_name == "random_node":
+            node = MagicMock()
+            node.name = "random_node"
+            return node
+        return super().node
 
     def protected_attributes(self) -> List[str]:
         return []
@@ -380,6 +390,20 @@ def test_join__left_join(generic_input_node_params, join_type_param):
     ]
 
 
+@pytest.fixture(name="patch_graph_operations")
+def patch_graph_operations_fixture():
+    """
+    Patch graph related operations unrelated to join validation logic
+    """
+    mocked_new_node = MagicMock()
+    mocked_new_node.name = "new_node"
+    with patch(
+        "featurebyte.query_graph.graph.GlobalQueryGraph.add_operation", return_value=mocked_new_node
+    ):
+        yield
+
+
+@pytest.mark.usefixtures("patch_graph_operations")
 def test_validate_join__no_overlapping_columns():
     """
     Test validate join helper method
@@ -394,13 +418,14 @@ def test_validate_join__no_overlapping_columns():
 
     # joining two views with no overlapping columns should have an error
     with pytest.raises(NoJoinKeyFoundError) as exc_info:
-        base_view._validate_join(view_without_overlap)
+        base_view.join(view_without_overlap)
     assert "Unable to automatically find a default join column key" in str(exc_info)
 
     # no overlap should have no error with suffix, since we'll use primary keys to join
-    base_view._validate_join(view_without_overlap, on="colA", rsuffix="suffix")
+    base_view.join(view_without_overlap, on="colA", rsuffix="suffix")
 
 
+@pytest.mark.usefixtures("patch_graph_operations")
 def test_validate_join__one_overlapping_column():
     """
     Test validate join helper method
@@ -420,15 +445,16 @@ def test_validate_join__one_overlapping_column():
 
     # overlapping column names here should have error since the overlapping name is not the join key
     with pytest.raises(NoJoinKeyFoundError):
-        base_view._validate_join(view_with_overlap_not_join_key)
+        base_view.join(view_with_overlap_not_join_key)
 
     # overlapping column names here should have no error since the overlapping names are the join keys
-    base_view._validate_join(view_with_overlap)
+    base_view.join(view_with_overlap)
 
     # no overlap should have no error with suffix and overlap
-    base_view._validate_join(view_with_overlap, rsuffix="suffix")
+    base_view.join(view_with_overlap, rsuffix="suffix")
 
 
+@pytest.mark.usefixtures("patch_graph_operations")
 def test_validate_join__multiple_overlapping_columns():
     """
     Test validate join helper method
@@ -448,16 +474,17 @@ def test_validate_join__multiple_overlapping_columns():
 
     # multiple overlapping column names should throw an error if no suffix is provided
     with pytest.raises(RepeatedColumnNamesError) as exc_info:
-        base_view._validate_join(view_with_multiple_overlapping)
+        base_view.join(view_with_multiple_overlapping)
     assert "Duplicate column names ['colA', 'colD'] found" in str(exc_info.value)
 
     # multiple overlapping column names should not throw an error if suffix is provided
-    base_view._validate_join(view_with_multiple_overlapping, rsuffix="suffix")
+    base_view.join(view_with_multiple_overlapping, rsuffix="suffix")
 
     # also ok if prefix is provided
-    base_view._validate_join(view_with_multiple_overlapping, rprefix="prefix")
+    base_view.join(view_with_multiple_overlapping, rprefix="prefix")
 
 
+@pytest.mark.usefixtures("patch_graph_operations")
 def test_validate_join__check_on_column():
     """
     Test validate join method for on column.
@@ -471,9 +498,9 @@ def test_validate_join__check_on_column():
     other_view = SimpleTestView(columns_info=[col_info_c], join_col=col_info_c.name)
 
     # `on` provided for column in calling view should have no error
-    base_view._validate_join(other_view, on=col_info_a.name, rsuffix="_suffix")
+    base_view.join(other_view, on=col_info_a.name, rsuffix="_suffix")
 
     # `on` provided for column not in calling view should have an error
     with pytest.raises(NoJoinKeyFoundError) as exc_info:
-        base_view._validate_join(other_view, on=col_info_c.name, rsuffix="_suffix")
+        base_view.join(other_view, on=col_info_c.name, rsuffix="_suffix")
     assert "The `on` column name provided 'colC' is not found in the calling view" in str(exc_info)

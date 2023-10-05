@@ -1353,7 +1353,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         ...   product_view, on="GroceryProductGuid", how="inner"
         ... )
         """
-        self._validate_join(other_view, rsuffix, on=on)
+        self._validate_join(other_view, rsuffix, on=on, rprefix=rprefix)
 
         left_input_columns = self.columns
         left_output_columns = self.columns
