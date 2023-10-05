@@ -4,6 +4,7 @@ Context module
 from typing import Any, Dict, List, Optional
 
 import pandas as pd
+from bson import ObjectId
 from pandas import DataFrame
 from typeguard import typechecked
 
@@ -12,6 +13,7 @@ from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.savable_api_object import SavableApiObject
 from featurebyte.api.use_case_or_context_mixin import UseCaseOrContextMixin
 from featurebyte.common.doc_util import FBAutoDoc
+from featurebyte.enum import ConflictResolution
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.context import ContextModel
 from featurebyte.schema.context import ContextUpdate
@@ -43,7 +45,7 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
     @property
     def primary_entities(self) -> List[Entity]:
         """
-        Returns the history of the entity name of the Entity object.
+        Returns the list of primary Entity objects from the context.
 
         Returns
         -------
@@ -269,3 +271,53 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         >>> context.list_observation_tables()  # doctest: +SKIP
         """
         return super().list_observation_tables()
+
+    @classmethod
+    def get_by_id(cls, id: ObjectId) -> "Context":  # pylint: disable=redefined-builtin,invalid-name
+        """
+        Returns a Context object by its unique identifier (ID).
+
+        Parameters
+        ----------
+        id: ObjectId
+            Context unique identifier ID.
+
+        Returns
+        -------
+        Context
+            Context object.
+
+        Examples
+        --------
+        Get a Context object that is already saved.
+
+        >>> fb.Context.get_by_id(<context_id>)  # doctest: +SKIP
+        """
+        return cls._get_by_id(id=id)
+
+    @typechecked
+    def save(
+        self, conflict_resolution: ConflictResolution = "raise", _id: Optional[ObjectId] = None
+    ) -> None:
+        """
+        Adds a Context object to the catalog.
+
+        A conflict could be triggered when the object being saved has violated a uniqueness check at the catalog.
+        If uniqueness is violated, you can either raise an error or retrieve the object with the same name, depending
+        on the conflict resolution parameter passed in. The default behavior is to raise an error.
+
+        Parameters
+        ----------
+        conflict_resolution: ConflictResolution
+            "raise" will raise an error when we encounter a conflict error.
+            "retrieve" will handle the conflict error by retrieving the object with the same name.
+        _id: Optional[ObjectId]
+            The object ID to be used when saving the object. If not provided, a new object ID will be generated.
+
+        Examples
+        --------
+        >>> context = Context(name=name, primary_entity_ids=entity_ids)  # doctest: +SKIP
+        >>> context.save()  # doctest: +SKIP
+        """
+
+        super().save(conflict_resolution=conflict_resolution, _id=_id)
