@@ -10,7 +10,7 @@ from dataclasses import dataclass
 import pandas as pd
 from bson import ObjectId
 
-from featurebyte import SourceTable
+from featurebyte.api.source_table import SourceTable
 from featurebyte.common.utils import dataframe_from_json
 from featurebyte.enum import DBVarType, MaterializedTableNamePrefix, SpecialColumnName
 from featurebyte.exception import (
@@ -18,8 +18,8 @@ from featurebyte.exception import (
     ObservationTableInvalidContextError,
     UnsupportedPointInTimeColumnTypeError,
 )
-from featurebyte.models import FeatureStoreModel
 from featurebyte.models.base import FeatureByteBaseDocumentModel
+from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.materialized_table import ColumnSpecWithEntityId
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.persistent import Persistent
