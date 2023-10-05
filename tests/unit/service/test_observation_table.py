@@ -2,6 +2,7 @@
 Test for ObservationTableService
 """
 import textwrap
+from unittest import mock
 from unittest.mock import AsyncMock, Mock
 
 import pandas as pd
@@ -77,9 +78,16 @@ def db_session_fixture():
         query = args[0]
         _ = kwargs
         if "MAX" in query:
-            return pd.DataFrame({"max_time": ["2023-01-15T10:00:00+08:00"]})
+            return pd.DataFrame(
+                {
+                    "min_time": ["2023-01-01T10:00:00+08:00"],
+                    "max_time": ["2023-01-15T10:00:00+08:00"],
+                }
+            )
         if "COUNT(*)" in query:
             return pd.DataFrame({"row_count": [1000]})
+        if "stats" in query:
+            return pd.DataFrame({"cust_id": ["int", 5], "POINT_IN_TIME": ["timestamp", 2]})
         raise NotImplementedError(f"Unexpected query: {query}")
 
     mock_db_session = Mock(
@@ -110,7 +118,9 @@ async def test_create_observation_table_from_source_table(
 
 
 @pytest.mark.asyncio
-async def test_validate__missing_point_in_time(observation_table_service, table_details):
+async def test_validate__missing_point_in_time(
+    observation_table_service, snowflake_feature_store, table_details
+):
     """
     Test validation of missing point in time
     """
@@ -128,48 +138,80 @@ async def test_validate__missing_point_in_time(observation_table_service, table_
     )
     with pytest.raises(MissingPointInTimeColumnError):
         await observation_table_service.validate_materialized_table_and_get_metadata(
-            mock_db_session, table_details
+            mock_db_session, table_details, snowflake_feature_store
         )
 
 
 @pytest.mark.asyncio
 async def test_validate__most_recent_point_in_time(
-    observation_table_service, db_session, table_details, cust_id_entity
+    observation_table_service,
+    db_session,
+    table_details,
+    cust_id_entity,
+    snowflake_feature_store,
+    insert_credential,
 ):
     """
     Test validate_materialized_table_and_get_metadata triggers expected query
     """
-    _ = cust_id_entity
-    metadata = await observation_table_service.validate_materialized_table_and_get_metadata(
-        db_session, table_details
-    )
+    _ = cust_id_entity, insert_credential
+    with mock.patch(
+        "featurebyte.service.preview.PreviewService._get_feature_store_session"
+    ) as mock_get_feature_store_session:
+        mock_get_feature_store_session.return_value = (snowflake_feature_store, db_session)
+        metadata = await observation_table_service.validate_materialized_table_and_get_metadata(
+            db_session, table_details, snowflake_feature_store
+        )
 
-    expected_query = textwrap.dedent(
-        """
-        SELECT
-          MAX("POINT_IN_TIME")
-        FROM "fb_database"."fb_schema"."fb_table"
-        """
-    ).strip()
-    query = db_session.execute_query.call_args[0][0]
-    assert query == expected_query
+        expected_query = textwrap.dedent(
+            """
+            WITH data AS (
+              SELECT
+                "POINT_IN_TIME" AS "POINT_IN_TIME",
+                "cust_id" AS "cust_id"
+              FROM "fb_database"."fb_schema"."fb_table"
+            ), casted_data AS (
+              SELECT
+                CAST("POINT_IN_TIME" AS STRING) AS "POINT_IN_TIME",
+                CAST("cust_id" AS STRING) AS "cust_id"
+              FROM data
+            ), stats AS (
+              SELECT
+                COUNT(DISTINCT "POINT_IN_TIME") AS "unique__0",
+                COUNT(DISTINCT "cust_id") AS "unique__1"
+              FROM data
+            )
+            SELECT
+              'TIMESTAMP' AS "dtype__0",
+              stats."unique__0",
+              'VARCHAR' AS "dtype__1",
+              stats."unique__1"
+            FROM stats
+            """
+        ).strip()
+        query = db_session.execute_query.call_args[0][0]
+        assert query == expected_query
 
-    assert metadata == {
-        "columns_info": [
-            {"name": "POINT_IN_TIME", "dtype": "TIMESTAMP", "entity_id": None},
-            {
-                "name": "cust_id",
-                "dtype": "VARCHAR",
-                "entity_id": cust_id_entity.id,
-            },
-        ],
-        "most_recent_point_in_time": "2023-01-15T02:00:00",
-        "num_rows": 1000,
-    }
+        assert metadata == {
+            "columns_info": [
+                {"name": "POINT_IN_TIME", "dtype": "TIMESTAMP", "entity_id": None},
+                {
+                    "name": "cust_id",
+                    "dtype": "VARCHAR",
+                    "entity_id": cust_id_entity.id,
+                },
+            ],
+            "earliest_point_in_time": "2023-01-01T02:00:00",
+            "most_recent_point_in_time": "2023-01-15T02:00:00",
+            "num_rows": 1000,
+            "entity_column_name_to_count": {"cust_id": 2},
+        }
 
 
 @pytest.mark.asyncio
-async def test_validate__supported_type_point_in_time(observation_table_service, table_details):
+async def test_validate__supported_type_point_in_time(
+    observation_table_service, table_details, snowflake_feature_store
+):
     """
     Test validate_materialized_table_and_get_metadata validates the type of point in time column
     """
@@ -187,7 +229,7 @@ async def test_validate__supported_type_point_in_time(observation_table_service,
     )
     with pytest.raises(UnsupportedPointInTimeColumnTypeError) as exc:
         await observation_table_service.validate_materialized_table_and_get_metadata(
-            mock_db_session, table_details
+            mock_db_session, table_details, snowflake_feature_store
         )
 
     assert str(exc.value) == "Point in time column should have timestamp type; got VARCHAR"
