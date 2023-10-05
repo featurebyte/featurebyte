@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Any, Dict, Optional
 
 import pandas as pd
+from bson import ObjectId
 from pandas import DataFrame
 from typeguard import typechecked
 
@@ -19,6 +20,7 @@ from featurebyte.api.savable_api_object import DeletableApiObject, SavableApiObj
 from featurebyte.api.target import Target
 from featurebyte.api.use_case_or_context_mixin import UseCaseOrContextMixin
 from featurebyte.common.doc_util import FBAutoDoc
+from featurebyte.enum import ConflictResolution
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.use_case import UseCaseModel
 from featurebyte.schema.use_case import UseCaseUpdate
@@ -348,3 +350,53 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
         >>> use_case.list_observation_tables()  # doctest: +SKIP
         """
         return super().list_observation_tables()
+
+    @classmethod
+    def get_by_id(cls, id: ObjectId) -> "UseCase":  # pylint: disable=redefined-builtin,invalid-name
+        """
+        Returns a UseCase object by its unique identifier (ID).
+
+        Parameters
+        ----------
+        id: ObjectId
+            UseCase unique identifier ID.
+
+        Returns
+        -------
+        UseCase
+            UseCase object.
+
+        Examples
+        --------
+        Get a UseCase object that is already saved.
+
+        >>> fb.UseCase.get_by_id(<use_case_id>)  # doctest: +SKIP
+        """
+        return cls._get_by_id(id=id)
+
+    @typechecked
+    def save(
+        self, conflict_resolution: ConflictResolution = "raise", _id: Optional[ObjectId] = None
+    ) -> None:
+        """
+        Adds a UseCase object to the catalog.
+
+        A conflict could be triggered when the object being saved has violated a uniqueness check at the catalog.
+        If uniqueness is violated, you can either raise an error or retrieve the object with the same name, depending
+        on the conflict resolution parameter passed in. The default behavior is to raise an error.
+
+        Parameters
+        ----------
+        conflict_resolution: ConflictResolution
+            "raise" will raise an error when we encounter a conflict error.
+            "retrieve" will handle the conflict error by retrieving the object with the same name.
+        _id: Optional[ObjectId]
+            The object ID to be used when saving the object. If not provided, a new object ID will be generated.
+
+        Examples
+        --------
+        >>> use_case = UseCase(name="use_case", target_id=target_id, context_id=context_id) # doctest: +SKIP
+        >>> use_case.save()  # doctest: +SKIP
+        """
+
+        super().save(conflict_resolution=conflict_resolution, _id=_id)
