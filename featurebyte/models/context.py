@@ -1,9 +1,10 @@
 """
 This module contains context related models.
 """
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 import pymongo
+from pydantic import root_validator
 
 from featurebyte.models.base import (
     FeatureByteCatalogBaseDocumentModel,
@@ -32,6 +33,15 @@ class ContextModel(FeatureByteCatalogBaseDocumentModel):
 
     default_preview_table_id: Optional[PydanticObjectId]
     default_eda_table_id: Optional[PydanticObjectId]
+
+    @root_validator(pre=True)
+    @classmethod
+    def _set_primary_entity_ids(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        entity_ids = values.get("entity_ids", None)
+        primary_entity_ids = values.get("primary_entity_ids", None)
+        if entity_ids and not primary_entity_ids:
+            values["primary_entity_ids"] = entity_ids
+        return values
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
