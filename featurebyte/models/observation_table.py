@@ -99,10 +99,10 @@ class ObservationTableModel(MaterializedTableModel):
     most_recent_point_in_time: StrictStr
     context_id: Optional[PydanticObjectId] = Field(default=None)
     purpose: Optional[Purpose] = Field(default=None)
-    earliest_point_in_time: Optional[StrictStr] = Field(default=None)
+    least_recent_point_in_time: Optional[StrictStr] = Field(default=None)
     entity_column_name_to_count: Optional[Dict[str, int]] = Field(default_factory=dict)
 
-    @validator("most_recent_point_in_time", "earliest_point_in_time")
+    @validator("most_recent_point_in_time", "least_recent_point_in_time")
     @classmethod
     def _validate_most_recent_point_in_time(cls, value: Optional[str]) -> Optional[str]:
         if value is None:

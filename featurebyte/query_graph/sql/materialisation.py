@@ -85,12 +85,12 @@ def get_view_expr(
     return table_expr
 
 
-def get_earliest_and_most_recent_point_in_time_sql(
+def get_least_and_most_recent_point_in_time_sql(
     destination: TableDetails,
     source_type: SourceType,
 ) -> str:
     """
-    Construct SQL query to get the most recent point in time
+    Construct SQL query to get the least and most recent point in time
 
     Parameters
     ----------

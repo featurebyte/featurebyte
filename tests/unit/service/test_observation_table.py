@@ -201,7 +201,7 @@ async def test_validate__most_recent_point_in_time(
                     "entity_id": cust_id_entity.id,
                 },
             ],
-            "earliest_point_in_time": "2023-01-01T02:00:00",
+            "least_recent_point_in_time": "2023-01-01T02:00:00",
             "most_recent_point_in_time": "2023-01-15T02:00:00",
             "num_rows": 1000,
             "entity_column_name_to_count": {"cust_id": 2},

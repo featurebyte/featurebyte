@@ -25,9 +25,7 @@ from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.query_graph.sql.materialisation import (
-    get_earliest_and_most_recent_point_in_time_sql,
-)
+from featurebyte.query_graph.sql.materialisation import get_least_and_most_recent_point_in_time_sql
 from featurebyte.schema.feature_store import FeatureStoreSample
 from featurebyte.schema.observation_table import ObservationTableCreate, ObservationTableUpdate
 from featurebyte.schema.worker.task.observation_table import ObservationTableTaskPayload
@@ -46,7 +44,7 @@ class PointInTimeStats:
     Point in time stats
     """
 
-    earliest: str
+    least_recent: str
     most_recent: str
 
 
@@ -69,12 +67,12 @@ async def get_point_in_time_stats(
     str
     """
     res = await db_session.execute_query(
-        get_earliest_and_most_recent_point_in_time_sql(
+        get_least_and_most_recent_point_in_time_sql(
             destination=destination,
             source_type=db_session.source_type,
         )
     )
-    earliest_point_in_time = res.iloc[0, 0]  # type: ignore[union-attr]
+    least_recent_point_in_time = res.iloc[0, 0]  # type: ignore[union-attr]
     most_recent_point_in_time = res.iloc[0, 1]  # type: ignore[union-attr]
 
     def _convert_ts_to_str(timestamp_str: str) -> str:
@@ -85,8 +83,8 @@ async def get_point_in_time_stats(
         return cast(str, current_timestamp)
 
     most_recent_point_in_time_str = _convert_ts_to_str(most_recent_point_in_time)
-    earliest_str = _convert_ts_to_str(earliest_point_in_time)
-    return PointInTimeStats(most_recent=most_recent_point_in_time_str, earliest=earliest_str)
+    earliest_str = _convert_ts_to_str(least_recent_point_in_time)
+    return PointInTimeStats(most_recent=most_recent_point_in_time_str, least_recent=earliest_str)
 
 
 def validate_columns_info(
@@ -309,7 +307,7 @@ class ObservationTableService(
             "columns_info": columns_info,
             "num_rows": num_rows,
             "most_recent_point_in_time": point_in_time_stats.most_recent,
-            "earliest_point_in_time": point_in_time_stats.earliest,
+            "least_recent_point_in_time": point_in_time_stats.least_recent,
             "entity_column_name_to_count": column_name_to_count,
         }
 
