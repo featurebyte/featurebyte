@@ -290,6 +290,11 @@ class OnlineServingService:
             ]
             if entity_columns:
                 for column in entity_columns:
+                    # skip if sample values already exists unless column is a primary key for the table
+                    existing_sample_values = entities[column.entity_id].get("sample_value")
+                    if existing_sample_values and column.name not in table.primary_key_columns:
+                        continue
+
                     entities[column.entity_id][
                         "sample_value"
                     ] = await self.get_table_column_unique_values(
