@@ -3,7 +3,7 @@ Info related schema
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 from datetime import datetime
 
@@ -439,6 +439,14 @@ class DeploymentInfo(BaseInfo):
     enabled: bool
     serving_endpoint: Optional[str]
     use_case_name: Optional[str]
+
+
+class DeploymentSampleEntityServingNames(FeatureByteBaseModel):
+    """
+    Schema for deployment sample entity serving names
+    """
+
+    entity_serving_names: List[Dict[str, str]]
 
 
 class DeploymentRequestCodeTemplate(FeatureByteBaseModel):

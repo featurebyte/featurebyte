@@ -11,7 +11,6 @@ import os
 import pandas as pd
 from jinja2 import Template
 
-from featurebyte.common.utils import dataframe_from_json
 from featurebyte.exception import (
     FeatureListNotOnlineEnabledError,
     UnsupportedRequestCodeTemplateLanguage,
@@ -21,16 +20,15 @@ from featurebyte.models.deployment import DeploymentModel
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.feature_store import FeatureStoreModel, TableModel
 from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.sql.online_serving import get_online_features
 from featurebyte.schema.deployment import OnlineFeaturesResponseModel
-from featurebyte.schema.feature_store import FeatureStorePreview
 from featurebyte.schema.info import DeploymentRequestCodeTemplate
 from featurebyte.service.entity import EntityService, get_primary_entity_from_entities
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
-from featurebyte.service.preview import PreviewService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.table import TableService
 
@@ -49,7 +47,6 @@ class OnlineServingService:
         feature_list_namespace_service: FeatureListNamespaceService,
         entity_service: EntityService,
         table_service: TableService,
-        preview_service: PreviewService,
     ):
         self.feature_store_service = feature_store_service
         self.session_manager_service = session_manager_service
@@ -58,7 +55,6 @@ class OnlineServingService:
         self.feature_list_namespace_service = feature_list_namespace_service
         self.entity_service = entity_service
         self.table_service = table_service
-        self.preview_service = preview_service
 
     async def get_online_features_from_feature_list(
         self,
@@ -134,6 +130,48 @@ class OnlineServingService:
             return None
         return OnlineFeaturesResponseModel(features=features)
 
+    async def get_table_column_unique_values(
+        self,
+        feature_store: FeatureStoreModel,
+        table: TableModel,
+        column_name: str,
+        num_rows: int,
+    ) -> List[Any]:
+        """
+        Get unique values for a column in a table
+
+        Parameters
+        ----------
+        feature_store: FeatureStoreModel
+            Feature store
+        table: TableModel
+            Table
+        column_name: str
+            Column name
+        num_rows: int
+            Number of rows to return
+
+        Returns
+        -------
+        List[Any]
+        """
+        graph, node = table.construct_graph_and_node(
+            feature_store_details=feature_store.get_feature_store_details(),
+            table_data_dict=table.dict(by_alias=True),
+        )
+        db_session = await self.session_manager_service.get_feature_store_session(
+            feature_store=feature_store,
+        )
+        unique_values_sql = GraphInterpreter(
+            graph, source_type=feature_store.type
+        ).construct_unique_values_sql(
+            node_name=node.name, column_name=column_name, num_rows=num_rows
+        )
+        result = await db_session.execute_query(unique_values_sql)
+        assert result is not None
+        unique_values: List[Any] = result[column_name].to_list()
+        return unique_values
+
     async def get_request_code_template(  # pylint: disable=too-many-locals
         self,
         deployment: DeploymentModel,
@@ -168,8 +206,63 @@ class OnlineServingService:
         if not os.path.exists(template_file_path):
             raise UnsupportedRequestCodeTemplateLanguage("Supported languages: ['python', 'sh']")
 
+        # construct entity serving names
+        entity_serving_names = await self.get_sample_entity_serving_names(
+            feature_list=feature_list,
+            count=1,
+        )
+
+        # construct serving url
+        headers = {
+            "Content-Type": "application/json",
+            "active-catalog-id": str(feature_list.catalog_id),
+            "Authorization": "Bearer <API_TOKEN>",
+        }
+
+        # populate template
+        with open(
+            file=template_file_path,
+            mode="r",
+            encoding="utf-8",
+        ) as file_object:
+            template = Template(file_object.read())
+
+        return DeploymentRequestCodeTemplate(
+            code_template=template.render(
+                headers=json.dumps(headers),
+                header_params=" \\\n    ".join(
+                    [f"-H '{key}: {value}'" for key, value in headers.items()]
+                ),
+                serving_url=f"<FEATUREBYTE_SERVICE_URL>/deployment/{deployment.id}/online_features",
+                entity_serving_names=json.dumps(entity_serving_names),
+            ),
+            entity_serving_names=entity_serving_names,
+            language=language,
+        )
+
+    async def get_sample_entity_serving_names(  # pylint: disable=too-many-locals
+        self, feature_list: FeatureListModel, count: int
+    ) -> List[Dict[str, str]]:
+        """
+        Get request code template for a deployment
+
+        Parameters
+        ----------
+        feature_list: FeatureListModel
+            Feature List model
+        count: int
+            Number of sample entity serving names to return
+
+        Returns
+        -------
+        List[Dict[str, str]]
+
+        Raises
+        ------
+        UnsupportedRequestCodeTemplateLanguage
+            When the provided language is not supported
+        """
         # get entities and tables used for the feature list
-        num_rows = 1
         feature_list_namespace = await self.feature_list_namespace_service.get_document(
             document_id=feature_list.feature_list_namespace_id
         )
@@ -201,56 +294,20 @@ class OnlineServingService:
                 column for column in table.columns_info if column.entity_id in entities
             ]
             if entity_columns:
-                graph, node = table.construct_graph_and_node(
-                    feature_store_details=feature_store.get_feature_store_details(),
-                    table_data_dict=table.dict(by_alias=True),
-                )
-                sample_data = dataframe_from_json(
-                    await self.preview_service.preview(
-                        preview=FeatureStorePreview(
-                            feature_store_name=feature_store.name,
-                            graph=graph,
-                            node_name=node.name,
-                        ),
-                        limit=num_rows,
-                    )
-                )
                 for column in entity_columns:
-                    entities[column.entity_id]["sample_value"] = sample_data[column.name].to_list()
+                    entities[column.entity_id][
+                        "sample_value"
+                    ] = await self.get_table_column_unique_values(
+                        feature_store=feature_store,
+                        table=table,
+                        column_name=column.name,
+                        num_rows=count,
+                    )
 
-        entity_serving_names = json.dumps(
-            [
-                {
-                    entity["serving_name"][0]: entity["sample_value"][row_idx]
-                    for entity in entities.values()
-                }
-                for row_idx in range(num_rows)
-            ]
-        )
-
-        # construct serving url
-        headers = {
-            "Content-Type": "application/json",
-            "active-catalog-id": str(feature_list.catalog_id),
-            "Authorization": "Bearer <API_TOKEN>",
-        }
-
-        # populate template
-        with open(
-            file=template_file_path,
-            mode="r",
-            encoding="utf-8",
-        ) as file_object:
-            template = Template(file_object.read())
-
-        return DeploymentRequestCodeTemplate(
-            code_template=template.render(
-                headers=json.dumps(headers),
-                header_params=" \\\n    ".join(
-                    [f"-H '{key}: {value}'" for key, value in headers.items()]
-                ),
-                serving_url=f"<FEATUREBYTE_SERVICE_URL>/deployment/{deployment.id}/online_features",
-                entity_serving_names=entity_serving_names,
-            ),
-            language=language,
-        )
+        return [
+            {
+                entity["serving_name"][0]: entity["sample_value"][row_idx]
+                for entity in entities.values()
+            }
+            for row_idx in range(count)
+        ]

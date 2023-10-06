@@ -430,11 +430,11 @@ def feature_store_fixture(
 
 
 @pytest.fixture(name="data_source", scope="session")
-def data_source_fixture(feature_store):
+def data_source_fixture(catalog):
     """
     Data source fixture
     """
-    return feature_store.get_data_source()
+    return catalog.get_data_source()
 
 
 @pytest.fixture(name="catalog", scope="session")

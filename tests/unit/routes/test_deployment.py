@@ -429,3 +429,46 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
 
         # Check result
         assert response.json() == {"features": [{"cust_id": 1.0, "feature_value": None}]}
+
+    def test_request_sample_entity_serving_names(
+        self,
+        test_api_client_persistent,
+        create_success_response,
+        mock_get_session,
+        default_catalog_id,
+    ):
+        """Test feature list request_code_template"""
+        test_api_client, _ = test_api_client_persistent
+        deployment_doc = create_success_response.json()
+        self.update_deployment_enabled(test_api_client, deployment_doc["_id"], default_catalog_id)
+
+        async def mock_execute_query(query):
+            _ = query
+            return pd.DataFrame(
+                [
+                    {
+                        "cust_id": 1,
+                    },
+                    {
+                        "cust_id": 2,
+                    },
+                    {
+                        "cust_id": 3,
+                    },
+                ]
+            )
+
+        mock_session = mock_get_session.return_value
+        mock_session.execute_query = mock_execute_query
+
+        # Request code template
+        deployment_id = deployment_doc["_id"]
+        response = test_api_client.get(
+            f"{self.base_route}/{deployment_id}/sample_entity_serving_names?count=3",
+        )
+
+        # Check result
+        assert response.status_code == HTTPStatus.OK, response.content
+        assert response.json() == {
+            "entity_serving_names": [{"cust_id": "1"}, {"cust_id": "2"}, {"cust_id": "3"}],
+        }
