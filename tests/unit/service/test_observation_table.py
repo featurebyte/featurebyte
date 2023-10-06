@@ -77,17 +77,17 @@ def db_session_fixture():
     async def execute_query(*args, **kwargs):
         query = args[0]
         _ = kwargs
-        if "MAX" in query:
-            return pd.DataFrame(
-                {
-                    "min_time": ["2023-01-01T10:00:00+08:00"],
-                    "max_time": ["2023-01-15T10:00:00+08:00"],
-                }
-            )
         if "COUNT(*)" in query:
             return pd.DataFrame({"row_count": [1000]})
         if "stats" in query:
-            return pd.DataFrame({"cust_id": ["int", 5], "POINT_IN_TIME": ["timestamp", 2]})
+            return pd.DataFrame(
+                {
+                    "dtype": ["timestamp", "int"],
+                    "unique": [5, 2],
+                    "min": ["2023-01-01T10:00:00+08:00", 1],
+                    "max": ["2023-01-15T10:00:00+08:00", 10],
+                },
+            )
         raise NotImplementedError(f"Unexpected query: {query}")
 
     mock_db_session = Mock(
@@ -178,14 +178,22 @@ async def test_validate__most_recent_point_in_time(
             ), stats AS (
               SELECT
                 COUNT(DISTINCT "POINT_IN_TIME") AS "unique__0",
-                COUNT(DISTINCT "cust_id") AS "unique__1"
+                MIN("POINT_IN_TIME") AS "min__0",
+                MAX("POINT_IN_TIME") AS "max__0",
+                COUNT(DISTINCT "cust_id") AS "unique__1",
+                NULL AS "min__1",
+                NULL AS "max__1"
               FROM data
             )
             SELECT
               'TIMESTAMP' AS "dtype__0",
               stats."unique__0",
+              stats."min__0",
+              stats."max__0",
               'VARCHAR' AS "dtype__1",
-              stats."unique__1"
+              stats."unique__1",
+              stats."min__1",
+              stats."max__1"
             FROM stats
             """
         ).strip()

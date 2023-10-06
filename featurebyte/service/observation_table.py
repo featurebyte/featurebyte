@@ -3,7 +3,7 @@ ObservationTableService class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 from dataclasses import dataclass
 
@@ -25,7 +25,6 @@ from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.query_graph.sql.materialisation import get_least_and_most_recent_point_in_time_sql
 from featurebyte.schema.feature_store import FeatureStoreSample
 from featurebyte.schema.observation_table import ObservationTableCreate, ObservationTableUpdate
 from featurebyte.schema.worker.task.observation_table import ObservationTableTaskPayload
@@ -48,43 +47,12 @@ class PointInTimeStats:
     most_recent: str
 
 
-async def get_point_in_time_stats(
-    db_session: BaseSession,
-    destination: TableDetails,
-) -> PointInTimeStats:
-    """
-    Get the most recent point in time from the destination table.
-
-    Parameters
-    ----------
-    db_session: BaseSession
-        Database session
-    destination: TableDetails
-        Table details of the materialized table
-
-    Returns
-    -------
-    str
-    """
-    res = await db_session.execute_query(
-        get_least_and_most_recent_point_in_time_sql(
-            destination=destination,
-            source_type=db_session.source_type,
-        )
-    )
-    least_recent_point_in_time = res.iloc[0, 0]  # type: ignore[union-attr]
-    most_recent_point_in_time = res.iloc[0, 1]  # type: ignore[union-attr]
-
-    def _convert_ts_to_str(timestamp_str: str) -> str:
-        current_timestamp = pd.Timestamp(timestamp_str)
-        if current_timestamp.tzinfo is not None:
-            current_timestamp = current_timestamp.tz_convert("UTC").tz_localize(None)
-        current_timestamp = current_timestamp.isoformat()
-        return cast(str, current_timestamp)
-
-    most_recent_point_in_time_str = _convert_ts_to_str(most_recent_point_in_time)
-    earliest_str = _convert_ts_to_str(least_recent_point_in_time)
-    return PointInTimeStats(most_recent=most_recent_point_in_time_str, least_recent=earliest_str)
+def _convert_ts_to_str(timestamp_str: str) -> str:
+    current_timestamp = pd.Timestamp(timestamp_str)
+    if current_timestamp.tzinfo is not None:
+        current_timestamp = current_timestamp.tz_convert("UTC").tz_localize(None)
+    current_timestamp = current_timestamp.isoformat()
+    return cast(str, current_timestamp)
 
 
 def validate_columns_info(
@@ -208,7 +176,7 @@ class ObservationTableService(
         feature_store: FeatureStoreModel,
         table_details: TableDetails,
         columns_info: List[ColumnSpecWithEntityId],
-    ) -> Dict[str, int]:
+    ) -> Tuple[Dict[str, int], PointInTimeStats]:
         """
         Get the entity column name to unique entity count mapping.
 
@@ -223,7 +191,7 @@ class ObservationTableService(
 
         Returns
         -------
-        Dict[str, int]
+        Tuple[Dict[str, int], PointInTimeStats]
         """
         # Get describe statistics
         source_table = SourceTable(
@@ -243,7 +211,7 @@ class ObservationTableService(
             feature_store_name=feature_store.name,
             graph=graph,
             node_name=node.name,
-            stats_names=["unique"],
+            stats_names=["unique", "max", "min"],
         )
         describe_stats_json = await self.preview_service.describe(sample, 0, 1234)
         describe_stats_dataframe = dataframe_from_json(describe_stats_json)
@@ -256,7 +224,13 @@ class ObservationTableService(
             ] = describe_stats_dataframe.loc[  # pylint: disable=no-member
                 "unique", col_name
             ]
-        return column_name_to_count
+        least_recent_time_str = describe_stats_dataframe.loc["min", "POINT_IN_TIME"]
+        least_recent_time_str = _convert_ts_to_str(least_recent_time_str)
+        most_recent_time_str = describe_stats_dataframe.loc["max", "POINT_IN_TIME"]
+        most_recent_time_str = _convert_ts_to_str(most_recent_time_str)
+        return column_name_to_count, PointInTimeStats(
+            least_recent=least_recent_time_str, most_recent=most_recent_time_str
+        )
 
     async def validate_materialized_table_and_get_metadata(
         self,
@@ -295,12 +269,12 @@ class ObservationTableService(
         # Perform validation on column info
         validate_columns_info(columns_info, skip_entity_validation_checks)
         # Get point in time metadata
-        point_in_time_stats = await get_point_in_time_stats(
-            db_session=db_session,
-            destination=table_details,
-        )
+        # point_in_time_stats = await get_point_in_time_stats(
+        #     db_session=db_session,
+        #     destination=table_details,
+        # )
         # Get entity statistics metadata
-        column_name_to_count = await self._get_column_name_to_entity_count(
+        column_name_to_count, point_in_time_stats = await self._get_column_name_to_entity_count(
             feature_store, table_details, columns_info
         )
         return {
