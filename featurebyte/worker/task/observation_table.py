@@ -54,9 +54,11 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask):
                 await observation_table_service.validate_materialized_table_and_get_metadata(
                     db_session,
                     location.table_details,
+                    feature_store=feature_store,
                     skip_entity_validation_checks=payload.skip_entity_validation_checks,
                 )
             )
+
             logger.debug("Creating a new ObservationTable", extra=location.table_details.dict())
             observation_table = ObservationTableModel(
                 _id=self.payload.output_document_id,

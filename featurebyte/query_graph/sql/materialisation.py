@@ -85,12 +85,12 @@ def get_view_expr(
     return table_expr
 
 
-def get_most_recent_point_in_time_sql(
+def get_least_and_most_recent_point_in_time_sql(
     destination: TableDetails,
     source_type: SourceType,
 ) -> str:
     """
-    Construct SQL query to get the most recent point in time
+    Construct SQL query to get the least and most recent point in time
 
     Parameters
     ----------
@@ -104,7 +104,8 @@ def get_most_recent_point_in_time_sql(
     str
     """
     query = expressions.select(
-        expressions.Max(this=quoted_identifier(SpecialColumnName.POINT_IN_TIME))
+        expressions.Min(this=quoted_identifier(SpecialColumnName.POINT_IN_TIME)),
+        expressions.Max(this=quoted_identifier(SpecialColumnName.POINT_IN_TIME)),
     ).from_(get_fully_qualified_table_name(destination.dict()))
     return sql_to_string(query, source_type=source_type)
 
