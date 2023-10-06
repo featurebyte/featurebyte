@@ -113,10 +113,10 @@ def test_get_online_serving_code(deployment, catalog, config_file):
     assert deployment.enabled is True
     url = f"http://localhost:8080/deployment/{deployment.id}/online_features"
 
-    with patch("featurebyte.service.preview.PreviewService.preview") as mock_preview:
-        mock_preview.return_value = dataframe_to_json(
-            pd.DataFrame({"col_int": ["sample_col_int"], "cust_id": ["sample_cust_id"]})
-        )
+    with patch(
+        "featurebyte.service.online_serving.OnlineServingService.get_table_column_unique_values"
+    ) as mock_preview:
+        mock_preview.return_value = ["sample_cust_id"]
         assert (
             deployment.get_online_serving_code().strip()
             == textwrap.dedent(

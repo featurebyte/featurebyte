@@ -239,6 +239,35 @@ class PreviewMixin(BaseGraphInterpreter):
         )
         return sql_to_string(sql_tree, source_type=self.source_type), type_conversions
 
+    def construct_unique_values_sql(
+        self, node_name: str, column_name: str, num_rows: int = 10
+    ) -> str:
+        """Construct SQL to get unique values in a column from a given node
+
+        Parameters
+        ----------
+        node_name : str
+            Query graph node name
+        column_name : str
+            Column name to get unique values for
+        num_rows : int
+            Number of rows to include in the preview
+
+        Returns
+        -------
+        str
+            SQL code for getting unique column values and type conversions to apply on results
+        """
+        sql_tree, _ = self._construct_sample_sql(node_name=node_name, num_rows=0)
+        output_expr = (
+            construct_cte_sql([("data", sql_tree)])
+            .select(
+                expressions.Distinct(expressions=[quoted_identifier(column_name)]),
+            )
+            .from_("data")
+        )
+        return sql_to_string(output_expr.limit(num_rows), source_type=self.source_type)
+
     @staticmethod
     def _empty_value_expr(column_name: str) -> expressions.Expression:
         """

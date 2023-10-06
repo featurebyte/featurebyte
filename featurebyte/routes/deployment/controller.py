@@ -25,7 +25,11 @@ from featurebyte.schema.deployment import (
     OnlineFeaturesResponseModel,
 )
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
-from featurebyte.schema.info import DeploymentInfo, DeploymentRequestCodeTemplate
+from featurebyte.schema.info import (
+    DeploymentInfo,
+    DeploymentRequestCodeTemplate,
+    DeploymentSampleEntityServingNames,
+)
 from featurebyte.schema.task import Task
 from featurebyte.schema.worker.task.deployment_create_update import (
     CreateDeploymentPayload,
@@ -250,6 +254,42 @@ class DeploymentController(
             feature_list=feature_list,
             language=language,
         )
+
+    async def get_sample_entity_serving_names(
+        self, deployment_id: ObjectId, count: int
+    ) -> DeploymentSampleEntityServingNames:
+        """
+        Get request code template for a given deployment ID.
+
+        Parameters
+        ----------
+        deployment_id: ObjectId
+            ID of deployment to get request code template
+        count: int
+            Number of sample entity serving names to return
+
+        Returns
+        -------
+        DeploymentSampleEntityServingNames
+            Sample entity serving names
+
+        Raises
+        ------
+        FeatureListNotOnlineEnabledError
+            Feature list is not online enabled
+        """
+        deployment: DeploymentModel = await self.service.get_document(deployment_id)
+
+        if not deployment.enabled:
+            raise FeatureListNotOnlineEnabledError("Deployment is not enabled.")
+
+        feature_list = await self.feature_list_service.get_document(
+            document_id=deployment.feature_list_id
+        )
+        entity_serving_names = await self.online_serving_service.get_sample_entity_serving_names(
+            feature_list=feature_list, count=count
+        )
+        return DeploymentSampleEntityServingNames(entity_serving_names=entity_serving_names)
 
 
 class AllDeploymentController(

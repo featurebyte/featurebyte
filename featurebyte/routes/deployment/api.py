@@ -31,7 +31,11 @@ from featurebyte.schema.deployment import (
     OnlineFeaturesResponseModel,
 )
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
-from featurebyte.schema.info import DeploymentInfo, DeploymentRequestCodeTemplate
+from featurebyte.schema.info import (
+    DeploymentInfo,
+    DeploymentRequestCodeTemplate,
+    DeploymentSampleEntityServingNames,
+)
 from featurebyte.schema.task import Task
 
 router = APIRouter(prefix="/deployment")
@@ -234,3 +238,22 @@ async def get_deployment_request_code_template(
         )
     )
     return request_code_template
+
+
+@router.get(
+    "/{deployment_id}/sample_entity_serving_names",
+    response_model=DeploymentSampleEntityServingNames,
+)
+async def get_deployment_sample_entity_serving_names(
+    request: Request,
+    deployment_id: PydanticObjectId,
+    count: int = Query(default=1, gt=0, le=10),
+) -> DeploymentSampleEntityServingNames:
+    """
+    Get Deployment Request Sample Entity Serving Names
+    """
+    controller = request.state.app_container.deployment_controller
+    sample_entity_serving_names: DeploymentSampleEntityServingNames = (
+        await controller.get_sample_entity_serving_names(deployment_id=deployment_id, count=count)
+    )
+    return sample_entity_serving_names
