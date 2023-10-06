@@ -437,7 +437,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         mock_get_session,
         default_catalog_id,
     ):
-        """Test feature list request_code_template"""
+        """Test getting sample entity serving names for a deployment"""
         test_api_client, _ = test_api_client_persistent
         deployment_doc = create_success_response.json()
         self.update_deployment_enabled(test_api_client, deployment_doc["_id"], default_catalog_id)

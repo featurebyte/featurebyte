@@ -256,11 +256,6 @@ class OnlineServingService:
         Returns
         -------
         List[Dict[str, str]]
-
-        Raises
-        ------
-        UnsupportedRequestCodeTemplateLanguage
-            When the provided language is not supported
         """
         # get entities and tables used for the feature list
         feature_list_namespace = await self.feature_list_namespace_service.get_document(
