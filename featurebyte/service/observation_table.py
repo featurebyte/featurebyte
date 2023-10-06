@@ -48,11 +48,10 @@ class PointInTimeStats:
 
 
 def _convert_ts_to_str(timestamp_str: str) -> str:
-    current_timestamp = pd.Timestamp(timestamp_str)
-    if current_timestamp.tzinfo is not None:
-        current_timestamp = current_timestamp.tz_convert("UTC").tz_localize(None)
-    current_timestamp = current_timestamp.isoformat()
-    return cast(str, current_timestamp)
+    timestamp_obj = pd.Timestamp(timestamp_str)
+    if timestamp_obj.tzinfo is not None:
+        timestamp_obj = timestamp_obj.tz_convert("UTC").tz_localize(None)
+    return cast(str, timestamp_obj.isoformat())
 
 
 def validate_columns_info(
@@ -225,11 +224,11 @@ class ObservationTableService(
                 "unique", col_name
             ]
         least_recent_time_str = describe_stats_dataframe.loc[  # pylint: disable=no-member
-            "min", "POINT_IN_TIME"
+            "min", SpecialColumnName.POINT_IN_TIME
         ]
         least_recent_time_str = _convert_ts_to_str(least_recent_time_str)
         most_recent_time_str = describe_stats_dataframe.loc[  # pylint: disable=no-member
-            "max", "POINT_IN_TIME"
+            "max", SpecialColumnName.POINT_IN_TIME
         ]
         most_recent_time_str = _convert_ts_to_str(most_recent_time_str)
         return column_name_to_count, PointInTimeStats(
@@ -272,11 +271,6 @@ class ObservationTableService(
         )
         # Perform validation on column info
         validate_columns_info(columns_info, skip_entity_validation_checks)
-        # Get point in time metadata
-        # point_in_time_stats = await get_point_in_time_stats(
-        #     db_session=db_session,
-        #     destination=table_details,
-        # )
         # Get entity statistics metadata
         column_name_to_count, point_in_time_stats = await self._get_column_name_to_entity_count(
             feature_store, table_details, columns_info
