@@ -224,13 +224,13 @@ class ObservationTableService(
             ] = describe_stats_dataframe.loc[  # pylint: disable=no-member
                 "unique", col_name
             ]
-        least_recent_time_str = describe_stats_dataframe.loc[
+        least_recent_time_str = describe_stats_dataframe.loc[  # pylint: disable=no-member
             "min", "POINT_IN_TIME"
-        ]  # pylint: disable=no-member
+        ]
         least_recent_time_str = _convert_ts_to_str(least_recent_time_str)
-        most_recent_time_str = describe_stats_dataframe.loc[
+        most_recent_time_str = describe_stats_dataframe.loc[  # pylint: disable=no-member
             "max", "POINT_IN_TIME"
-        ]  # pylint: disable=no-member
+        ]
         most_recent_time_str = _convert_ts_to_str(most_recent_time_str)
         return column_name_to_count, PointInTimeStats(
             least_recent=least_recent_time_str, most_recent=most_recent_time_str
