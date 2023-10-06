@@ -8,7 +8,7 @@ from typing import Optional
 from sqlglot import expressions
 from sqlglot.expressions import Select, alias_, select
 
-from featurebyte.enum import SourceType, SpecialColumnName
+from featurebyte.enum import SourceType
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.common import (
@@ -83,31 +83,6 @@ def get_view_expr(
     interpreter = GraphInterpreter(query_graph=graph, source_type=source_type)
     table_expr = interpreter.construct_materialize_expr(node_name)
     return table_expr
-
-
-def get_least_and_most_recent_point_in_time_sql(
-    destination: TableDetails,
-    source_type: SourceType,
-) -> str:
-    """
-    Construct SQL query to get the least and most recent point in time
-
-    Parameters
-    ----------
-    destination: TableDetails
-        Destination table details
-    source_type: SourceType
-        Source type information
-
-    Returns
-    -------
-    str
-    """
-    query = expressions.select(
-        expressions.Min(this=quoted_identifier(SpecialColumnName.POINT_IN_TIME)),
-        expressions.Max(this=quoted_identifier(SpecialColumnName.POINT_IN_TIME)),
-    ).from_(get_fully_qualified_table_name(destination.dict()))
-    return sql_to_string(query, source_type=source_type)
 
 
 def get_row_count_sql(table_expr: Select, source_type: SourceType) -> str:
