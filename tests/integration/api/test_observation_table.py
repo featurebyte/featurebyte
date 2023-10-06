@@ -1,6 +1,7 @@
 """
 Integration tests for ObservationTable
 """
+import pandas as pd
 import pytest
 from sqlglot import parse_one
 
@@ -91,11 +92,31 @@ async def test_observation_table_from_source_table(
     check_location_valid(observation_table, session)
     await check_materialized_table_accessible(observation_table, session, source_type, sample_rows)
 
+    user_id_entity_col_name = "User ID"
     check_materialized_table_preview_methods(
-        observation_table, expected_columns=["POINT_IN_TIME", "User ID"]
+        observation_table, expected_columns=["POINT_IN_TIME", user_id_entity_col_name]
     )
     assert observation_table.least_recent_point_in_time is not None
     assert "User ID" in observation_table.entity_column_name_to_count
+    df = observation_table.to_pandas()
+    expected_min = df["POINT_IN_TIME"].min()
+    expected_max = df["POINT_IN_TIME"].max()
+    expected_cust_id_unique_count = df[user_id_entity_col_name].nunique()
+    assert observation_table.entity_column_name_to_count["User ID"] == expected_cust_id_unique_count
+
+    def _convert_timestamp_for_timezones(timestamp_str):
+        current_timestamp = pd.Timestamp(timestamp_str)
+        if current_timestamp.tzinfo is not None:
+            current_timestamp = current_timestamp.tz_convert("UTC").tz_localize(None)
+        current_timestamp = current_timestamp.isoformat()
+        return str(current_timestamp)
+
+    assert _convert_timestamp_for_timezones(
+        observation_table.least_recent_point_in_time
+    ) == _convert_timestamp_for_timezones(str(expected_min))
+    assert _convert_timestamp_for_timezones(
+        observation_table.most_recent_point_in_time
+    ) == _convert_timestamp_for_timezones(str(expected_max))
 
 
 @pytest.mark.asyncio
