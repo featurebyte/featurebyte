@@ -464,11 +464,22 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         # Request code template
         deployment_id = deployment_doc["_id"]
         response = test_api_client.get(
-            f"{self.base_route}/{deployment_id}/sample_entity_serving_names?count=3",
+            f"{self.base_route}/{deployment_id}/sample_entity_serving_names?count=10",
         )
 
         # Check result
         assert response.status_code == HTTPStatus.OK, response.content
         assert response.json() == {
-            "entity_serving_names": [{"cust_id": "1"}, {"cust_id": "2"}, {"cust_id": "3"}],
+            "entity_serving_names": [
+                {"cust_id": "1"},
+                {"cust_id": "2"},
+                {"cust_id": "3"},
+                {"cust_id": "1"},
+                {"cust_id": "2"},
+                {"cust_id": "3"},
+                {"cust_id": "1"},
+                {"cust_id": "2"},
+                {"cust_id": "3"},
+                {"cust_id": "1"},
+            ],
         }
