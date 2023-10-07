@@ -306,7 +306,9 @@ class OnlineServingService:
 
         return [
             {
-                entity["serving_name"][0]: entity["sample_value"][row_idx]
+                entity["serving_name"][0]: entity["sample_value"][
+                    row_idx % len(entity["sample_value"])
+                ]
                 for entity in entities.values()
             }
             for row_idx in range(count)
