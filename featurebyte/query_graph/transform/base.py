@@ -45,7 +45,10 @@ class BaseGraphExtractor(Generic[OutputT, BranchStateT, GlobalStateT]):
 
         Returns
         -------
-        Tuple[List[str], bool]
+        List[str]
+            List of input node names to traverse
+        bool
+            Whether to skip post computation after traversing input nodes
         """
 
     @abstractmethod
@@ -69,6 +72,7 @@ class BaseGraphExtractor(Generic[OutputT, BranchStateT, GlobalStateT]):
         Returns
         -------
         BranchStateT
+            Updated branch state
         """
 
     @abstractmethod

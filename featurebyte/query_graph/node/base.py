@@ -562,6 +562,31 @@ class BaseNode(BaseModel):
         assert len(input_columns) == 0
         return input_columns
 
+    def convert_to_column_remapped_node(
+        self: NodeT,
+        input_node_hashes: List[str],
+        input_node_column_remaps: List[Dict[str, str]],
+    ) -> Tuple[NodeT, Dict[str, str]]:
+        """
+        Convert current node to a column remapped node
+
+        Parameters
+        ----------
+        input_node_hashes: List[str]
+            List of input node hashes
+        input_node_column_remaps: List[Dict[str, str]]
+            List of input node column remaps
+
+        Returns
+        -------
+        NodeT
+            Node with column remapped
+        Dict[str, str]
+            Original column name to remapped column name mapping
+        """
+        _ = input_node_hashes, input_node_column_remaps
+        return self, {}
+
 
 class SeriesOutputNodeOpStructMixin:
     """SeriesOutputNodeOpStructMixin class"""

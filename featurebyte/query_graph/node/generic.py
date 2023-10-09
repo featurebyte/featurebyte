@@ -7,6 +7,7 @@ from typing import Any, ClassVar, Dict, List, Literal, Optional, Sequence, Set, 
 
 from pydantic import BaseModel, Field, root_validator, validator
 
+from featurebyte.common.model_util import parse_duration_string
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -44,7 +45,11 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     get_object_class_from_function_call,
 )
 from featurebyte.query_graph.node.mixin import AggregationOpStructMixin, BaseGroupbyParameters
-from featurebyte.query_graph.util import append_to_lineage
+from featurebyte.query_graph.util import (
+    append_to_lineage,
+    hash_input_node_hashes,
+    sort_lists_by_first_list,
+)
 
 
 class ProjectNode(BaseNode):
@@ -153,6 +158,26 @@ class ProjectNode(BaseNode):
         statements.append((out_var_name, expression))
         return statements, out_var_name
 
+    def convert_to_column_remapped_node(
+        self: NodeT,
+        input_node_hashes: List[str],
+        input_node_column_remaps: List[Dict[str, str]],
+    ) -> Tuple[NodeT, Dict[str, str]]:
+        assert len(input_node_column_remaps) == 1
+        input_node_column_remap = input_node_column_remaps[0]
+        output_remap_columns = []
+        output_col_name_remap = {}
+        for column in self.parameters.columns:  # type: ignore
+            if column in input_node_column_remap:
+                output_remap_columns.append(input_node_column_remap[column])
+                output_col_name_remap[column] = input_node_column_remap[column]
+            else:
+                output_remap_columns.append(column)
+
+        remapped_node = self.clone()
+        remapped_node.parameters.columns = sorted(output_remap_columns)  # type: ignore
+        return remapped_node, output_col_name_remap
+
 
 class FilterNode(BaseNode):
     """FilterNode class"""
@@ -236,6 +261,14 @@ class FilterNode(BaseNode):
         expression = ExpressionStr(f"{var_name}[{mask_name}]")
         return statements, expression
 
+    def convert_to_column_remapped_node(
+        self: NodeT,
+        input_node_hashes: List[str],
+        input_node_column_remaps: List[Dict[str, str]],
+    ) -> Tuple[NodeT, Dict[str, str]]:
+        _ = input_node_hashes
+        return self, input_node_column_remaps[0]
+
 
 class AssignColumnMixin:
     """AssignColumnMixin class"""
@@ -307,6 +340,35 @@ class AssignColumnMixin:
             output_category=NodeOutputCategory.VIEW,
             row_index_lineage=input_operation_info.row_index_lineage,
         )
+
+    def convert_to_column_remapped_node(  # type: ignore
+        self: NodeT,
+        input_node_hashes: List[str],
+        input_node_column_remaps: List[Dict[str, str]],
+    ) -> Tuple[NodeT, Dict[str, str]]:
+        """
+        Convert the node to a column-remapped node for generating feature definition hash
+
+        Parameters
+        ----------
+        input_node_hashes: List[str]
+            List of input node hashes
+        input_node_column_remaps: List[Dict[str, str]]
+            List of input node column remaps
+
+        Returns
+        -------
+        Tuple[NodeT, Dict[str, str]]
+            Tuple of the column-remapped node and the column name remap
+        """
+        _ = input_node_column_remaps
+        input_nodes_hash = hash_input_node_hashes(input_node_hashes)
+        remapped_col_name = f"column_{input_nodes_hash}"
+        assert hasattr(self.parameters, "name")
+        column_name_remap = {self.parameters.name: remapped_col_name}  # type: ignore
+        remapped_node = self.clone()
+        remapped_node.parameters.name = remapped_col_name  # type: ignore
+        return remapped_node, column_name_remap
 
 
 class AssignNode(AssignColumnMixin, BasePrunableNode):
@@ -693,6 +755,44 @@ class GroupByNode(AggregationOpStructMixin, BaseNode):
         statements.append((out_var_name, expression))
         return statements, out_var_name
 
+    def convert_to_column_remapped_node(
+        self: NodeT,
+        input_node_hashes: List[str],
+        input_node_column_remaps: List[Dict[str, str]],
+    ) -> Tuple[NodeT, Dict[str, str]]:
+        remapped_node = self.clone()
+        column_name_remap = {}
+        input_nodes_hash = hash_input_node_hashes(input_node_hashes)
+
+        windows: List[Optional[str]] = []
+        names = []
+        assert isinstance(self.parameters, GroupByNodeParameters)
+        for name, window in zip(self.parameters.names, self.parameters.windows):
+            assert isinstance(window, str)
+            window_secs = parse_duration_string(window)
+            windows.append(f"{window_secs}s")
+            feat_name = f"feat_{input_nodes_hash}_{window_secs}s"
+            names.append(OutColumnStr(feat_name))
+            column_name_remap[str(name)] = feat_name
+
+        assert isinstance(remapped_node.parameters, GroupByNodeParameters)
+        names, windows = sort_lists_by_first_list(names, windows)
+        remapped_node.parameters.names = names
+        remapped_node.parameters.windows = windows
+
+        input_node_column_remap = input_node_column_remaps[0]
+        if remapped_node.parameters.parent in input_node_column_remap:
+            remapped_parent = input_node_column_remap[remapped_node.parameters.parent]
+            remapped_node.parameters.parent = InColumnStr(remapped_parent)
+        if remapped_node.parameters.value_by in input_node_column_remap:
+            remapped_value_by = input_node_column_remap[remapped_node.parameters.value_by]
+            remapped_node.parameters.value_by = InColumnStr(remapped_value_by)
+
+        # remove tile_id and aggregation_id so that the definition hash will not be affected by them
+        remapped_node.parameters.tile_id = None
+        remapped_node.parameters.aggregation_id = None
+        return remapped_node, column_name_remap
+
 
 class ItemGroupbyParameters(BaseGroupbyParameters):
     """ItemGroupbyNode parameters"""
@@ -782,6 +882,30 @@ class ItemGroupbyNode(AggregationOpStructMixin, BaseNode):
             f"skip_fill_na=True)"
         )
         return statements, ExpressionStr(f"{grouped}.{agg}")
+
+    def convert_to_column_remapped_node(
+        self: NodeT,
+        input_node_hashes: List[str],
+        input_node_column_remaps: List[Dict[str, str]],
+    ) -> Tuple[NodeT, Dict[str, str]]:
+        remapped_node = self.clone()
+        column_name_remap = {}
+        input_nodes_hash = hash_input_node_hashes(input_node_hashes)
+
+        assert isinstance(self.parameters, ItemGroupbyParameters)
+        assert isinstance(remapped_node.parameters, ItemGroupbyParameters)
+        feat_name = f"feat_{input_nodes_hash}"
+        column_name_remap[str(self.parameters.name)] = feat_name
+        remapped_node.parameters.name = OutColumnStr(feat_name)
+
+        input_node_column_remap = input_node_column_remaps[0]
+        if remapped_node.parameters.parent in input_node_column_remap:
+            remapped_parent = input_node_column_remap[remapped_node.parameters.parent]
+            remapped_node.parameters.parent = InColumnStr(remapped_parent)
+        if remapped_node.parameters.value_by in input_node_column_remap:
+            remapped_value_by = input_node_column_remap[remapped_node.parameters.value_by]
+            remapped_node.parameters.value_by = InColumnStr(remapped_value_by)
+        return remapped_node, column_name_remap
 
 
 class SCDBaseParameters(BaseModel):
@@ -895,6 +1019,39 @@ class BaseLookupNode(AggregationOpStructMixin, BaseNode):
 
     def _exclude_source_columns(self) -> List[str]:
         return [self.parameters.entity_column]
+
+    def convert_to_column_remapped_node(
+        self: NodeT,
+        input_node_hashes: List[str],
+        input_node_column_remaps: List[Dict[str, str]],
+    ) -> Tuple[NodeT, Dict[str, str]]:
+        remapped_node = self.clone()
+        column_name_remap = {}
+        input_nodes_hash = hash_input_node_hashes(input_node_hashes)
+        input_node_column_remap = input_node_column_remaps[0]
+
+        assert isinstance(self.parameters, LookupParameters)
+        assert isinstance(remapped_node.parameters, LookupParameters)
+        remapped_input_column_names = []
+        remapped_feature_names = []
+        for input_col_name, feat_name in zip(
+            self.parameters.input_column_names, self.parameters.feature_names
+        ):
+            remapped_input_col = input_node_column_remap.get(input_col_name, input_col_name)
+            remapped_input_column_names.append(input_col_name)
+
+            remapped_feat_name = f"feat_{input_nodes_hash}_{remapped_input_col}"
+            remapped_feature_names.append(OutColumnStr(remapped_feat_name))
+            column_name_remap[str(feat_name)] = remapped_feat_name
+
+        # sort the lists by feature names
+        remapped_feature_names, remapped_input_column_names = sort_lists_by_first_list(
+            remapped_feature_names,
+            remapped_input_column_names,
+        )
+        remapped_node.parameters.input_column_names = remapped_input_column_names
+        remapped_node.parameters.feature_names = remapped_feature_names
+        return remapped_node, column_name_remap
 
 
 class LookupNode(BaseLookupNode):
@@ -1227,6 +1384,52 @@ class JoinNode(BasePrunableNode):
         statements.append((var_name, expression))
         return statements, var_name
 
+    def convert_to_column_remapped_node(
+        self: NodeT,
+        input_node_hashes: List[str],
+        input_node_column_remaps: List[Dict[str, str]],
+    ) -> Tuple[NodeT, Dict[str, str]]:
+        remapped_node = self.clone()
+        column_name_remap = {}
+        input_nodes_hash = hash_input_node_hashes(input_node_hashes)
+        assert isinstance(self.parameters, JoinNodeParameters)
+        assert isinstance(remapped_node.parameters, JoinNodeParameters)
+
+        remapped_left_output_columns = []
+        remapped_right_output_columns = []
+        for left_in_col, left_out_cols in zip(
+            self.parameters.left_input_columns, self.parameters.left_output_columns
+        ):
+            remapped_left_out_col = f"left_{input_nodes_hash}_{left_in_col}"
+            remapped_left_output_columns.append(OutColumnStr(remapped_left_out_col))
+            column_name_remap[str(left_out_cols)] = remapped_left_out_col
+
+        for right_in_col, right_out_cols in zip(
+            self.parameters.right_input_columns, self.parameters.right_output_columns
+        ):
+            remapped_right_out_col = f"right_{input_nodes_hash}_{right_in_col}"
+            remapped_right_output_columns.append(OutColumnStr(remapped_right_out_col))
+            column_name_remap[str(right_out_cols)] = remapped_right_out_col
+
+        # remap the left & right columns
+        left_in_cols, left_out_cols = sort_lists_by_first_list(  # type: ignore
+            self.parameters.left_input_columns,
+            remapped_left_output_columns,
+        )
+        right_in_cols, right_out_cols = sort_lists_by_first_list(  # type: ignore
+            self.parameters.right_input_columns,
+            remapped_right_output_columns,
+        )
+        remapped_node.parameters.left_input_columns = left_in_cols
+        remapped_node.parameters.left_output_columns = left_out_cols  # type: ignore
+        remapped_node.parameters.right_input_columns = right_in_cols
+        remapped_node.parameters.right_output_columns = right_out_cols  # type: ignore
+
+        # reset metadata
+        remapped_node.parameters.metadata = None
+        remapped_node.parameters.scd_parameters = None
+        return remapped_node, column_name_remap
+
 
 class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
     """JoinFeatureNode class
@@ -1337,6 +1540,27 @@ class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
         statements.append((out_var_name, expression))
         return statements, out_var_name
 
+    def convert_to_column_remapped_node(
+        self: NodeT,
+        input_node_hashes: List[str],
+        input_node_column_remaps: List[Dict[str, str]],
+    ) -> Tuple[NodeT, Dict[str, str]]:
+        remapped_node, column_name_remap = super().convert_to_column_remapped_node(  # type: ignore
+            input_node_hashes=input_node_hashes,
+            input_node_column_remaps=input_node_column_remaps,
+        )
+        view_input_node_column_remap = input_node_column_remaps[0]
+        if remapped_node.parameters.view_entity_column in view_input_node_column_remap:
+            remapped_node.parameters.view_entity_column = view_input_node_column_remap[
+                remapped_node.parameters.view_entity_column
+            ]
+        if remapped_node.parameters.view_point_in_time_column in view_input_node_column_remap:
+            remapped_node.parameters.view_point_in_time_column = view_input_node_column_remap[
+                remapped_node.parameters.view_point_in_time_column
+            ]
+
+        return remapped_node, column_name_remap
+
 
 class TrackChangesNodeParameters(BaseModel):
     """Parameters for TrackChangesNode"""
@@ -1425,6 +1649,35 @@ class TrackChangesNode(BaseNode):
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         raise NotImplementedError()
+
+    def convert_to_column_remapped_node(
+        self: NodeT,
+        input_node_hashes: List[str],
+        input_node_column_remaps: List[Dict[str, str]],
+    ) -> Tuple[NodeT, Dict[str, str]]:
+        remapped_node = self.clone()
+        column_name_remap = {}
+        input_nodes_hash = hash_input_node_hashes(input_node_hashes)
+        assert isinstance(self.parameters, TrackChangesNodeParameters)
+        assert isinstance(remapped_node.parameters, TrackChangesNodeParameters)
+
+        params = self.parameters
+        remapped_params = remapped_node.parameters
+        remapped_prev_tracked_col = f"prev_{input_nodes_hash}_{params.tracked_column}"
+        remapped_new_tracked_col = f"new_{input_nodes_hash}_{params.tracked_column}"
+        remapped_prev_from_col = f"prev_from_{input_nodes_hash}_{params.effective_timestamp_column}"
+        remapped_new_from_col = f"new_from_{input_nodes_hash}_{params.effective_timestamp_column}"
+
+        column_name_remap[str(params.previous_tracked_column_name)] = remapped_prev_tracked_col
+        column_name_remap[str(params.new_tracked_column_name)] = remapped_new_tracked_col
+        column_name_remap[str(params.previous_valid_from_column_name)] = remapped_prev_from_col
+        column_name_remap[str(params.new_valid_from_column_name)] = remapped_new_from_col
+
+        remapped_params.previous_tracked_column_name = OutColumnStr(remapped_prev_tracked_col)
+        remapped_params.new_tracked_column_name = OutColumnStr(remapped_new_tracked_col)
+        remapped_params.previous_valid_from_column_name = OutColumnStr(remapped_prev_from_col)
+        remapped_params.new_valid_from_column_name = OutColumnStr(remapped_new_from_col)
+        return remapped_node, column_name_remap
 
 
 class AggregateAsAtParameters(BaseGroupbyParameters, SCDBaseParameters):
@@ -1522,6 +1775,30 @@ class AggregateAsAtNode(AggregationOpStructMixin, BaseNode):
         )
         return statements, ExpressionStr(f"{grouped}.{agg}")
 
+    def convert_to_column_remapped_node(
+        self: NodeT,
+        input_node_hashes: List[str],
+        input_node_column_remaps: List[Dict[str, str]],
+    ) -> Tuple[NodeT, Dict[str, str]]:
+        remapped_node = self.clone()
+        column_name_remap = {}
+        input_nodes_hash = hash_input_node_hashes(input_node_hashes)
+
+        assert isinstance(self.parameters, AggregateAsAtParameters)
+        assert isinstance(remapped_node.parameters, AggregateAsAtParameters)
+        feat_name = f"feat_{input_nodes_hash}"
+        column_name_remap[str(self.parameters.name)] = feat_name
+        remapped_node.parameters.name = OutColumnStr(feat_name)
+
+        input_node_column_remap = input_node_column_remaps[0]
+        if remapped_node.parameters.parent in input_node_column_remap:
+            remapped_parent = input_node_column_remap[remapped_node.parameters.parent]
+            remapped_node.parameters.parent = InColumnStr(remapped_parent)
+        if remapped_node.parameters.value_by in input_node_column_remap:
+            remapped_value_by = input_node_column_remap[remapped_node.parameters.value_by]
+            remapped_node.parameters.value_by = InColumnStr(remapped_value_by)
+        return remapped_node, column_name_remap
+
 
 class AliasNode(BaseNode):
     """AliasNode class"""
@@ -1613,6 +1890,16 @@ class AliasNode(BaseNode):
             (VariableNameStr(f"{output_var_name}.name"), ValueStr.create(self.parameters.name))
         )
         return statements, output_var_name
+
+    def convert_to_column_remapped_node(
+        self: NodeT,
+        input_node_hashes: List[str],
+        input_node_column_remaps: List[Dict[str, str]],
+    ) -> Tuple[NodeT, Dict[str, str]]:
+        input_nodes_hash = hash_input_node_hashes(input_node_hashes)
+        column_name = self.parameters.name  # type: ignore
+        remapped_col_name = f"column_{input_nodes_hash}"
+        return self, {column_name: remapped_col_name}
 
 
 class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
