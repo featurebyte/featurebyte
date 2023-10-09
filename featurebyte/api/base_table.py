@@ -70,6 +70,17 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
         return cast(ColumnInfo, column_info)
 
     @property
+    def description(self) -> Optional[str]:
+        """
+        Description of the column.
+
+        Returns
+        -------
+        Optional[str]
+        """
+        return self.info.description
+
+    @property
     def cleaning_operations(self) -> List[CleaningOperation]:
         """
         Cleaning operations applied to the column of the table.
