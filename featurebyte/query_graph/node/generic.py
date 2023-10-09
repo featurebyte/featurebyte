@@ -756,13 +756,14 @@ class GroupByNode(AggregationOpStructMixin, BaseNode):
         return statements, out_var_name
 
     def convert_to_column_remapped_node(
-        self: NodeT,
+        self,
         input_node_hashes: List[str],
         input_node_column_remaps: List[Dict[str, str]],
-    ) -> Tuple[NodeT, Dict[str, str]]:
-        remapped_node, column_name_remap = self._convert_to_column_remapped_node(
+    ) -> Tuple["GroupByNode", Dict[str, str]]:
+        remapped_node = self._convert_to_column_remapped_node(
             input_node_column_remaps=input_node_column_remaps,
         )
+        column_name_remap = {}
 
         # remap windows and names
         input_nodes_hash = hash_input_node_hashes(input_node_hashes)
@@ -878,13 +879,14 @@ class ItemGroupbyNode(AggregationOpStructMixin, BaseNode):
         return statements, ExpressionStr(f"{grouped}.{agg}")
 
     def convert_to_column_remapped_node(
-        self: NodeT,
+        self,
         input_node_hashes: List[str],
         input_node_column_remaps: List[Dict[str, str]],
-    ) -> Tuple[NodeT, Dict[str, str]]:
-        remapped_node, column_name_remap = self._convert_to_column_remapped_node(
+    ) -> Tuple["ItemGroupbyNode", Dict[str, str]]:
+        remapped_node = self._convert_to_column_remapped_node(
             input_node_column_remaps=input_node_column_remaps,
         )
+        column_name_remap = {}
 
         # remap name
         assert isinstance(self.parameters, ItemGroupbyParameters)
@@ -1044,7 +1046,7 @@ class BaseLookupNode(AggregationOpStructMixin, BaseNode):
         remapped_entity_column = input_node_column_remap.get(
             self.parameters.entity_column, self.parameters.entity_column
         )
-        remapped_node.parameters.entity_column = remapped_entity_column
+        remapped_node.parameters.entity_column = InColumnStr(remapped_entity_column)
         return remapped_node, column_name_remap
 
 
@@ -1770,13 +1772,14 @@ class AggregateAsAtNode(AggregationOpStructMixin, BaseNode):
         return statements, ExpressionStr(f"{grouped}.{agg}")
 
     def convert_to_column_remapped_node(
-        self: NodeT,
+        self,
         input_node_hashes: List[str],
         input_node_column_remaps: List[Dict[str, str]],
-    ) -> Tuple[NodeT, Dict[str, str]]:
-        remapped_node, column_name_remap = self._convert_to_column_remapped_node(
+    ) -> Tuple["AggregateAsAtNode", Dict[str, str]]:
+        remapped_node = self._convert_to_column_remapped_node(
             input_node_column_remaps=input_node_column_remaps,
         )
+        column_name_remap = {}
 
         # remap input_column_names and feature_names
         assert isinstance(self.parameters, AggregateAsAtParameters)

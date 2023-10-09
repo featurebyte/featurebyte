@@ -1,7 +1,7 @@
 """
 This module contains mixins used in node classes
 """
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set
 
 from abc import abstractmethod
 
@@ -227,12 +227,11 @@ class AggregationOpStructMixin:
             is_time_based=is_time_based,
         )
 
-    def _convert_to_column_remapped_node(
+    def _convert_to_column_remapped_node(  # type: ignore
         self: NodeT,
         input_node_column_remaps: List[Dict[str, str]],
-    ) -> Tuple[NodeT, Dict[str, str]]:
+    ) -> NodeT:
         remapped_node = self.clone()
-        column_name_remap = {}
 
         assert isinstance(self.parameters, BaseGroupbyParameters)
         assert isinstance(remapped_node.parameters, BaseGroupbyParameters)
@@ -252,4 +251,4 @@ class AggregationOpStructMixin:
         if remapped_node.parameters.value_by in input_node_column_remap:
             remapped_value_by = input_node_column_remap[remapped_node.parameters.value_by]
             remapped_node.parameters.value_by = InColumnStr(remapped_value_by)
-        return remapped_node, column_name_remap
+        return remapped_node
