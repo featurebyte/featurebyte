@@ -64,6 +64,9 @@ class BaseNode(BaseModel):
     # variable to limit the line width of the generated SDK code.
     _auto_convert_expression_to_variable: ClassVar[bool] = True
 
+    # whether the node is commutative, i.e. the order of the inputs does not matter
+    is_commutative: ClassVar[bool] = False
+
     class Config:
         """Model configuration"""
 

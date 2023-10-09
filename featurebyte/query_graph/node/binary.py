@@ -22,6 +22,9 @@ class AndNode(BinaryLogicalOpNode):
 
     type: Literal[NodeType.AND] = Field(NodeType.AND, const=True)
 
+    # AND operation is commutative
+    is_commutative = True
+
     def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand} & {right_operand}"
 
@@ -30,6 +33,9 @@ class OrNode(BinaryLogicalOpNode):
     """OrNode class"""
 
     type: Literal[NodeType.OR] = Field(NodeType.OR, const=True)
+
+    # OR operation is commutative
+    is_commutative = True
 
     def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand} | {right_operand}"
@@ -40,6 +46,9 @@ class EqualNode(BinaryRelationalOpNode):
 
     type: Literal[NodeType.EQ] = Field(NodeType.EQ, const=True)
 
+    # Equality operation is commutative
+    is_commutative = True
+
     def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand} == {right_operand}"
 
@@ -48,6 +57,9 @@ class NotEqualNode(BinaryRelationalOpNode):
     """NotEqualNode class"""
 
     type: Literal[NodeType.NE] = Field(NodeType.NE, const=True)
+
+    # Equality operation is commutative
+    is_commutative = True
 
     def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand} != {right_operand}"
@@ -94,6 +106,9 @@ class AddNode(BinaryArithmeticOpNode):
 
     type: Literal[NodeType.ADD] = Field(NodeType.ADD, const=True)
 
+    # Addition operation is commutative
+    is_commutative = True
+
     def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand} + {right_operand}"
 
@@ -111,6 +126,9 @@ class MultiplyNode(BinaryArithmeticOpNode):
     """MultiplyNode class"""
 
     type: Literal[NodeType.MUL] = Field(NodeType.MUL, const=True)
+
+    # Multiplication operation is commutative
+    is_commutative = True
 
     def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand} * {right_operand}"
