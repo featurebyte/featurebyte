@@ -355,6 +355,7 @@ def test_info(saved_event_table, cust_id_entity):
 
     # update column description
     saved_event_table.col_int.update_description("new description")
+    assert saved_event_table.col_int.description == "new description"
 
     verbose_info_dict = saved_event_table.info(verbose=True)
     assert verbose_info_dict.items() > expected_info.items(), info_dict
