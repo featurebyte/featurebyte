@@ -1,7 +1,7 @@
 """
 This module contains mixins used in node classes
 """
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from abc import abstractmethod
 
@@ -11,6 +11,7 @@ from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.agg_func import construct_agg_func
+from featurebyte.query_graph.node.base import NodeT
 from featurebyte.query_graph.node.metadata.column import InColumnStr
 from featurebyte.query_graph.node.metadata.operation import (
     AggregationColumn,
@@ -225,3 +226,30 @@ class AggregationOpStructMixin:
             row_index_lineage=(self.name,),
             is_time_based=is_time_based,
         )
+
+    def _convert_to_column_remapped_node(
+        self: NodeT,
+        input_node_column_remaps: List[Dict[str, str]],
+    ) -> Tuple[NodeT, Dict[str, str]]:
+        remapped_node = self.clone()
+        column_name_remap = {}
+
+        assert isinstance(self.parameters, BaseGroupbyParameters)
+        assert isinstance(remapped_node.parameters, BaseGroupbyParameters)
+
+        input_node_column_remap = input_node_column_remaps[0]
+        # remap keys
+        remapped_keys = []
+        for key in self.parameters.keys:
+            remapped_key = input_node_column_remap.get(key, key)
+            remapped_keys.append(InColumnStr(remapped_key))
+        remapped_node.parameters.keys = remapped_keys
+
+        # remap parent and value_by
+        if remapped_node.parameters.parent in input_node_column_remap:
+            remapped_parent = input_node_column_remap[remapped_node.parameters.parent]
+            remapped_node.parameters.parent = InColumnStr(remapped_parent)
+        if remapped_node.parameters.value_by in input_node_column_remap:
+            remapped_value_by = input_node_column_remap[remapped_node.parameters.value_by]
+            remapped_node.parameters.value_by = InColumnStr(remapped_value_by)
+        return remapped_node, column_name_remap

@@ -760,10 +760,12 @@ class GroupByNode(AggregationOpStructMixin, BaseNode):
         input_node_hashes: List[str],
         input_node_column_remaps: List[Dict[str, str]],
     ) -> Tuple[NodeT, Dict[str, str]]:
-        remapped_node = self.clone()
-        column_name_remap = {}
-        input_nodes_hash = hash_input_node_hashes(input_node_hashes)
+        remapped_node, column_name_remap = self._convert_to_column_remapped_node(
+            input_node_column_remaps=input_node_column_remaps,
+        )
 
+        # remap windows and names
+        input_nodes_hash = hash_input_node_hashes(input_node_hashes)
         windows: List[Optional[str]] = []
         names = []
         assert isinstance(self.parameters, GroupByNodeParameters)
@@ -779,14 +781,6 @@ class GroupByNode(AggregationOpStructMixin, BaseNode):
         names, windows = sort_lists_by_first_list(names, windows)
         remapped_node.parameters.names = names
         remapped_node.parameters.windows = windows
-
-        input_node_column_remap = input_node_column_remaps[0]
-        if remapped_node.parameters.parent in input_node_column_remap:
-            remapped_parent = input_node_column_remap[remapped_node.parameters.parent]
-            remapped_node.parameters.parent = InColumnStr(remapped_parent)
-        if remapped_node.parameters.value_by in input_node_column_remap:
-            remapped_value_by = input_node_column_remap[remapped_node.parameters.value_by]
-            remapped_node.parameters.value_by = InColumnStr(remapped_value_by)
 
         # remove tile_id and aggregation_id so that the definition hash will not be affected by them
         remapped_node.parameters.tile_id = None
@@ -888,23 +882,17 @@ class ItemGroupbyNode(AggregationOpStructMixin, BaseNode):
         input_node_hashes: List[str],
         input_node_column_remaps: List[Dict[str, str]],
     ) -> Tuple[NodeT, Dict[str, str]]:
-        remapped_node = self.clone()
-        column_name_remap = {}
-        input_nodes_hash = hash_input_node_hashes(input_node_hashes)
+        remapped_node, column_name_remap = self._convert_to_column_remapped_node(
+            input_node_column_remaps=input_node_column_remaps,
+        )
 
+        # remap name
         assert isinstance(self.parameters, ItemGroupbyParameters)
         assert isinstance(remapped_node.parameters, ItemGroupbyParameters)
+        input_nodes_hash = hash_input_node_hashes(input_node_hashes)
         feat_name = f"feat_{input_nodes_hash}"
         column_name_remap[str(self.parameters.name)] = feat_name
         remapped_node.parameters.name = OutColumnStr(feat_name)
-
-        input_node_column_remap = input_node_column_remaps[0]
-        if remapped_node.parameters.parent in input_node_column_remap:
-            remapped_parent = input_node_column_remap[remapped_node.parameters.parent]
-            remapped_node.parameters.parent = InColumnStr(remapped_parent)
-        if remapped_node.parameters.value_by in input_node_column_remap:
-            remapped_value_by = input_node_column_remap[remapped_node.parameters.value_by]
-            remapped_node.parameters.value_by = InColumnStr(remapped_value_by)
         return remapped_node, column_name_remap
 
 
@@ -1051,6 +1039,12 @@ class BaseLookupNode(AggregationOpStructMixin, BaseNode):
         )
         remapped_node.parameters.input_column_names = remapped_input_column_names
         remapped_node.parameters.feature_names = remapped_feature_names
+
+        # remap entity_column
+        remapped_entity_column = input_node_column_remap.get(
+            self.parameters.entity_column, self.parameters.entity_column
+        )
+        remapped_node.parameters.entity_column = remapped_entity_column
         return remapped_node, column_name_remap
 
 
@@ -1780,23 +1774,17 @@ class AggregateAsAtNode(AggregationOpStructMixin, BaseNode):
         input_node_hashes: List[str],
         input_node_column_remaps: List[Dict[str, str]],
     ) -> Tuple[NodeT, Dict[str, str]]:
-        remapped_node = self.clone()
-        column_name_remap = {}
-        input_nodes_hash = hash_input_node_hashes(input_node_hashes)
+        remapped_node, column_name_remap = self._convert_to_column_remapped_node(
+            input_node_column_remaps=input_node_column_remaps,
+        )
 
+        # remap input_column_names and feature_names
         assert isinstance(self.parameters, AggregateAsAtParameters)
         assert isinstance(remapped_node.parameters, AggregateAsAtParameters)
+        input_nodes_hash = hash_input_node_hashes(input_node_hashes)
         feat_name = f"feat_{input_nodes_hash}"
         column_name_remap[str(self.parameters.name)] = feat_name
         remapped_node.parameters.name = OutColumnStr(feat_name)
-
-        input_node_column_remap = input_node_column_remaps[0]
-        if remapped_node.parameters.parent in input_node_column_remap:
-            remapped_parent = input_node_column_remap[remapped_node.parameters.parent]
-            remapped_node.parameters.parent = InColumnStr(remapped_parent)
-        if remapped_node.parameters.value_by in input_node_column_remap:
-            remapped_value_by = input_node_column_remap[remapped_node.parameters.value_by]
-            remapped_node.parameters.value_by = InColumnStr(remapped_value_by)
         return remapped_node, column_name_remap
 
 

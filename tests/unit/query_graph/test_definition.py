@@ -43,19 +43,22 @@ def prune_graph_and_check_definition(graph, first_target_node, second_target_nod
 
     # check that the definition hash is the same even
     first_definition_extractor = DefinitionHashExtractor(graph=first_pruned_graph)
-    first_definition_hash = first_definition_extractor.extract(node=first_mapped_node)
+    first_output = first_definition_extractor.extract(node=first_mapped_node)
     second_definition_extractor = DefinitionHashExtractor(graph=second_pruned_graph)
-    second_definition_hash = second_definition_extractor.extract(node=second_mapped_node)
-    assert first_definition_hash == second_definition_hash
+    second_output = second_definition_extractor.extract(node=second_mapped_node)
+    assert first_output.definition_hash == second_output.definition_hash, (
+        first_output,
+        second_output,
+    )
 
 
 def test_extract_definition__simple(graph_three_nodes):
     """Test extract definition (without column name remap)"""
     graph, _, _, target_node = graph_three_nodes
     definition_extractor = DefinitionHashExtractor(graph=graph)
-    definition_hash = definition_extractor.extract(node=target_node)
+    output = definition_extractor.extract(node=target_node)
     expected_hash = graph.node_name_to_ref[target_node.name]
-    assert definition_hash == expected_hash
+    assert output.definition_hash == expected_hash, output
 
 
 def test_extract_definition__assign_column_remapped(query_graph_and_assign_nodes):
