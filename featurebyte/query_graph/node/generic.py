@@ -771,10 +771,14 @@ class GroupByNode(AggregationOpStructMixin, BaseNode):
         names = []
         assert isinstance(self.parameters, GroupByNodeParameters)
         for name, window in zip(self.parameters.names, self.parameters.windows):
-            assert isinstance(window, str)
-            window_secs = parse_duration_string(window)
-            windows.append(f"{window_secs}s")
-            feat_name = f"feat_{input_nodes_hash}_{window_secs}s"
+            if window:
+                window_secs = parse_duration_string(window)
+                windows.append(f"{window_secs}s")
+                feat_name = f"feat_{input_nodes_hash}_{window_secs}s"
+            else:
+                windows.append(window)
+                feat_name = f"feat_{input_nodes_hash}"
+
             names.append(OutColumnStr(feat_name))
             column_name_remap[str(name)] = feat_name
 

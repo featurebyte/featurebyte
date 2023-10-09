@@ -41,7 +41,7 @@ def prune_graph_and_check_definition(graph, first_target_node, second_target_nod
         node_name_map[second_target_node.name]
     )
 
-    # check that the definition hash is the same even
+    # check that the definition hash is the same
     first_definition_extractor = DefinitionHashExtractor(graph=first_pruned_graph)
     first_output = first_definition_extractor.extract(node=first_mapped_node)
     second_definition_extractor = DefinitionHashExtractor(graph=second_pruned_graph)
@@ -355,8 +355,8 @@ def test_extract_definition__join_with_groupby(
         "frequency": 3600,  # 1h
         "blind_spot": 900,  # 15m
         "timestamp": "ts",
-        "names": ["item_type_count_30d"],
-        "windows": ["30d"],
+        "names": ["aggregated_item_type_count"],
+        "windows": [None],
     }
     groupby_node = add_groupby_operation(
         graph=global_graph,
@@ -365,7 +365,7 @@ def test_extract_definition__join_with_groupby(
     )
     feature_node = global_graph.add_operation(
         node_type=NodeType.PROJECT,
-        node_params={"columns": ["item_type_count_30d"]},
+        node_params={"columns": ["aggregated_item_type_count"]},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[groupby_node],
     )
@@ -386,8 +386,8 @@ def test_extract_definition__join_with_groupby(
     )
     groupby_node_params["parent"] = "item_id_right"
     groupby_node_params["value_by"] = "item_type_right"
-    groupby_node_params["windows"] = ["720h"]
-    groupby_node_params["names"] = ["item_type_count_720h"]
+    groupby_node_params["windows"] = [None]
+    groupby_node_params["names"] = ["item_type_count_aggregated"]
     another_groupby_node = add_groupby_operation(
         graph=global_graph,
         groupby_node_params=groupby_node_params,
@@ -395,7 +395,7 @@ def test_extract_definition__join_with_groupby(
     )
     another_feature_node = global_graph.add_operation(
         node_type=NodeType.PROJECT,
-        node_params={"columns": ["item_type_count_720h"]},
+        node_params={"columns": ["item_type_count_aggregated"]},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[another_groupby_node],
     )
