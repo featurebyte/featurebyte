@@ -156,17 +156,11 @@ def test_extract_definition__simple(graph_three_nodes):
 def test_extract_definition__assign_column_remapped(query_graph_and_assign_nodes):
     """Test extract definition (with column name remap)"""
     graph, assign_node, another_assign_node = query_graph_and_assign_nodes
-    first_target_node = graph.add_operation(
-        node_type=NodeType.PROJECT,
-        node_params={"columns": ["c"]},
-        node_output_type=NodeOutputType.SERIES,
-        input_nodes=[assign_node],
+    first_target_node = add_project_operation(
+        graph=graph, input_node=assign_node, column_names=["c"]
     )
-    second_target_node = graph.add_operation(
-        node_type=NodeType.PROJECT,
-        node_params={"columns": ["d"]},
-        node_output_type=NodeOutputType.SERIES,
-        input_nodes=[another_assign_node],
+    second_target_node = add_project_operation(
+        graph=graph, input_node=another_assign_node, column_names=["d"]
     )
 
     # check definition
@@ -178,11 +172,8 @@ def test_extract_definition__join_feature_column_remapped(
 ):
     """Test extract definition (with column name remap)"""
     # create the first pruned graph
-    first_target_node = global_graph.add_operation(
-        node_type=NodeType.PROJECT,
-        node_params={"columns": ["ord_size"]},
-        node_output_type=NodeOutputType.SERIES,
-        input_nodes=[order_size_feature_join_node],
+    first_target_node = add_project_operation(
+        graph=global_graph, input_node=order_size_feature_join_node, column_names=["ord_size"]
     )
 
     # create the second pruned graph
@@ -197,11 +188,8 @@ def test_extract_definition__join_feature_column_remapped(
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[event_table_input_node, order_size_feature_node],
     )
-    second_target_node = global_graph.add_operation(
-        node_type=NodeType.PROJECT,
-        node_params={"columns": ["another_ord_size"]},
-        node_output_type=NodeOutputType.SERIES,
-        input_nodes=[join_feature_node],
+    second_target_node = add_project_operation(
+        graph=global_graph, input_node=join_feature_node, column_names=["another_ord_size"]
     )
 
     # check definition
@@ -210,12 +198,7 @@ def test_extract_definition__join_feature_column_remapped(
 
 def test_extract_definition__alias_node_handling(global_graph, input_node):
     """Test extract definition for alias node"""
-    proj_a = global_graph.add_operation(
-        node_type=NodeType.PROJECT,
-        node_params={"columns": ["a"]},
-        node_output_type=NodeOutputType.SERIES,
-        input_nodes=[input_node],
-    )
+    proj_a = add_project_operation(graph=global_graph, input_node=input_node, column_names=["a"])
     alias_node = global_graph.add_operation(
         node_type=NodeType.ALIAS,
         node_params={"name": "renamed_a"},
@@ -255,11 +238,8 @@ def test_extract_definition__filter_node(query_graph_and_assign_nodes):
     """Test extract definition for filtering node"""
     graph, assign_node, another_assign_node = query_graph_and_assign_nodes
     node_input = graph.get_input_node(assign_node.name)
-    proj_cust_id = graph.add_operation(
-        node_type=NodeType.PROJECT,
-        node_params={"columns": ["cust_id"]},
-        node_output_type=NodeOutputType.SERIES,
-        input_nodes=[node_input],
+    proj_cust_id = add_project_operation(
+        graph=graph, input_node=node_input, column_names=["cust_id"]
     )
     node_eq = graph.add_operation(
         node_type=NodeType.EQ,
@@ -279,17 +259,11 @@ def test_extract_definition__filter_node(query_graph_and_assign_nodes):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[another_assign_node, node_eq],
     )
-    first_target_node = graph.add_operation(
-        node_type=NodeType.PROJECT,
-        node_params={"columns": ["c"]},
-        node_output_type=NodeOutputType.SERIES,
-        input_nodes=[first_filter_node],
+    first_target_node = add_project_operation(
+        graph=graph, input_node=first_filter_node, column_names=["c"]
     )
-    second_target_node = graph.add_operation(
-        node_type=NodeType.PROJECT,
-        node_params={"columns": ["d"]},
-        node_output_type=NodeOutputType.SERIES,
-        input_nodes=[second_filter_node],
+    second_target_node = add_project_operation(
+        graph=graph, input_node=second_filter_node, column_names=["d"]
     )
 
     # check definition
@@ -308,11 +282,8 @@ def test_extract_definition__aggregate_over(query_graph_and_assign_nodes, groupb
         groupby_node_params=groupby_node_params,
         input_node=assign_node,
     )
-    first_target_node = graph.add_operation(
-        node_type=NodeType.PROJECT,
-        node_params={"columns": ["feat_48h"]},
-        node_output_type=NodeOutputType.SERIES,
-        input_nodes=[groupby_node],
+    first_target_node = add_project_operation(
+        graph=graph, input_node=groupby_node, column_names=["feat_48h"]
     )
 
     groupby_node_params["parent"] = "d"
@@ -324,11 +295,8 @@ def test_extract_definition__aggregate_over(query_graph_and_assign_nodes, groupb
         groupby_node_params=groupby_node_params,
         input_node=another_assign_node,
     )
-    second_target_node = graph.add_operation(
-        node_type=NodeType.PROJECT,
-        node_params={"columns": ["feat_2d"]},
-        node_output_type=NodeOutputType.SERIES,
-        input_nodes=[another_groupby_node],
+    second_target_node = add_project_operation(
+        graph=graph, input_node=another_groupby_node, column_names=["feat_2d"]
     )
 
     # check definition
@@ -352,11 +320,8 @@ def test_extract_definition__aggregate(query_graph_and_assign_nodes, entity_id):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[assign_node],
     )
-    first_target_node = graph.add_operation(
-        node_type=NodeType.PROJECT,
-        node_params={"columns": ["some_feature_name"]},
-        node_output_type=NodeOutputType.SERIES,
-        input_nodes=[first_item_groupby_node],
+    first_target_node = add_project_operation(
+        graph=graph, input_node=first_item_groupby_node, column_names=["some_feature_name"]
     )
 
     node_params["parent"] = "d"
@@ -367,11 +332,8 @@ def test_extract_definition__aggregate(query_graph_and_assign_nodes, entity_id):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[another_assign_node],
     )
-    second_target_node = graph.add_operation(
-        node_type=NodeType.PROJECT,
-        node_params={"columns": ["another_feature_name"]},
-        node_output_type=NodeOutputType.SERIES,
-        input_nodes=[second_item_groupby_node],
+    second_target_node = add_project_operation(
+        graph=graph, input_node=second_item_groupby_node, column_names=["another_feature_name"]
     )
 
     # check definition
@@ -396,17 +358,11 @@ def test_extract_definition__lookup(
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[dimension_table_input_node],
     )
-    feat_node_1 = global_graph.add_operation(
-        node_type=NodeType.PROJECT,
-        node_params={"columns": ["cust_attr_1"]},
-        node_output_type=NodeOutputType.SERIES,
-        input_nodes=[another_lookup_node],
+    feat_node_1 = add_project_operation(
+        graph=global_graph, input_node=another_lookup_node, column_names=["cust_attr_1"]
     )
-    feat_node_2 = global_graph.add_operation(
-        node_type=NodeType.PROJECT,
-        node_params={"columns": ["cust_attr_2"]},
-        node_output_type=NodeOutputType.SERIES,
-        input_nodes=[another_lookup_node],
+    feat_node_2 = add_project_operation(
+        graph=global_graph, input_node=another_lookup_node, column_names=["cust_attr_2"]
     )
     another_lookup_feature_node = global_graph.add_operation(
         node_type=NodeType.ADD,
@@ -455,11 +411,8 @@ def test_extract_definition__join_with_groupby(
         groupby_node_params=groupby_node_params,
         input_node=item_table_join_event_table_node,
     )
-    feature_node = global_graph.add_operation(
-        node_type=NodeType.PROJECT,
-        node_params={"columns": ["aggregated_item_type_count"]},
-        node_output_type=NodeOutputType.SERIES,
-        input_nodes=[groupby_node],
+    feature_node = add_project_operation(
+        graph=global_graph, input_node=groupby_node, column_names=["aggregated_item_type_count"]
     )
 
     # construct another equivalent groupby feature with different user specified column names
@@ -485,11 +438,10 @@ def test_extract_definition__join_with_groupby(
         groupby_node_params=groupby_node_params,
         input_node=another_join_node,
     )
-    another_feature_node = global_graph.add_operation(
-        node_type=NodeType.PROJECT,
-        node_params={"columns": ["item_type_count_aggregated"]},
-        node_output_type=NodeOutputType.SERIES,
-        input_nodes=[another_groupby_node],
+    another_feature_node = add_project_operation(
+        graph=global_graph,
+        input_node=another_groupby_node,
+        column_names=["item_type_count_aggregated"],
     )
 
     # check feature definition
@@ -504,17 +456,11 @@ def compute_aggregate_over_changes(
     graph, input_node, prev_col, next_col, diff_column, feat_name, groupby_node_params
 ):
     """Compute aggregate over changes"""
-    proj_prev_node = graph.add_operation(
-        node_type=NodeType.PROJECT,
-        node_params={"columns": [prev_col]},
-        node_output_type=NodeOutputType.SERIES,
-        input_nodes=[input_node],
+    proj_prev_node = add_project_operation(
+        graph=graph, input_node=input_node, column_names=[prev_col]
     )
-    proj_next_node = graph.add_operation(
-        node_type=NodeType.PROJECT,
-        node_params={"columns": [next_col]},
-        node_output_type=NodeOutputType.SERIES,
-        input_nodes=[input_node],
+    proj_next_node = add_project_operation(
+        graph=graph, input_node=input_node, column_names=[next_col]
     )
     subtract_node = graph.add_operation(
         node_type=NodeType.SUB,
@@ -536,11 +482,8 @@ def compute_aggregate_over_changes(
         groupby_node_params=groupby_node_params,
         input_node=assign_node,
     )
-    feature_node = graph.add_operation(
-        node_type=NodeType.PROJECT,
-        node_params={"columns": [feat_name]},
-        node_output_type=NodeOutputType.SERIES,
-        input_nodes=[groupby_node],
+    feature_node = add_project_operation(
+        graph=graph, input_node=groupby_node, column_names=[feat_name]
     )
     return feature_node
 
@@ -636,11 +579,8 @@ def test_extract_definition__aggregate_asat(
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[scd_table_input_node],
     )
-    another_feature_node = global_graph.add_operation(
-        node_type=NodeType.PROJECT,
-        node_params={"columns": ["another_asat_feature"]},
-        node_output_type=NodeOutputType.SERIES,
-        input_nodes=[another_asat_node],
+    another_feature_node = add_project_operation(
+        graph=global_graph, input_node=another_asat_node, column_names=["another_asat_feature"]
     )
 
     # check feature definition
