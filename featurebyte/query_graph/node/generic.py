@@ -1032,7 +1032,7 @@ class BaseLookupNode(AggregationOpStructMixin, BaseNode):
             self.parameters.input_column_names, self.parameters.feature_names
         ):
             remapped_input_col = input_node_column_remap.get(input_col_name, input_col_name)
-            remapped_input_column_names.append(input_col_name)
+            remapped_input_column_names.append(InColumnStr(remapped_input_col))
 
             remapped_feat_name = f"feat_{input_nodes_hash}_{remapped_input_col}"
             remapped_feature_names.append(OutColumnStr(remapped_feat_name))
