@@ -20,6 +20,7 @@ class DefinitionHashOutput:
     DefinitionOutput class
     """
 
+    graph: QueryGraphModel
     output_node_name: str
     node_name_to_hash: Dict[str, DefinitionHash]
 
@@ -134,6 +135,8 @@ class DefinitionHashExtractor(
         )
         mapped_node_name = global_state.node_name_map[node.name]
         output = DefinitionHashOutput(
-            output_node_name=mapped_node_name, node_name_to_hash=global_state.graph.node_name_to_ref
+            graph=global_state.graph,
+            output_node_name=mapped_node_name,
+            node_name_to_hash=global_state.graph.node_name_to_ref,
         )
         return output

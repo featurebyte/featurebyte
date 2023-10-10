@@ -123,6 +123,19 @@ def add_groupby_operation(
     return node
 
 
+def add_project_operation(graph, column_names, input_node, node_output_type=None):
+    """
+    Helper function to add a project node
+    """
+    node = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": column_names},
+        node_output_type=node_output_type or NodeOutputType.SERIES,
+        input_nodes=[input_node],
+    )
+    return node
+
+
 def check_aggressively_pruned_graph(left_obj_dict, right_obj_dict):
     """
     Check aggressively pruned graph of the left & right graphs

@@ -211,27 +211,9 @@ def test_extract_operation__filter(graph_four_nodes):
     assert grp_op_struct.row_index_lineage == ("input_1", "filter_1")
 
 
-def test_extract_operation__lag(global_graph, input_node):
+def test_extract_operation__lag(query_graph_with_lag_node, input_node):
     """Test extract_operation_structure: lag"""
-    project_map = {}
-    for col in ["cust_id", "a", "ts"]:
-        project_map[col] = global_graph.add_operation(
-            node_type=NodeType.PROJECT,
-            node_params={"columns": [col]},
-            node_output_type="series",
-            input_nodes=[input_node],
-        )
-
-    lag_node = global_graph.add_operation(
-        node_type=NodeType.LAG,
-        node_params={
-            "entity_columns": ["cust_id"],
-            "timestamp_column": "ts",
-            "offset": 1,
-        },
-        node_output_type=NodeOutputType.SERIES,
-        input_nodes=[project_map["a"], project_map["cust_id"], project_map["ts"]],
-    )
+    global_graph, lag_node = query_graph_with_lag_node
     op_struct = global_graph.extract_operation_structure(
         node=lag_node, keep_all_source_columns=True
     )

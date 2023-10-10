@@ -2,11 +2,12 @@
 Unit tests for query graph definition extractor
 """
 import pytest
+from bson import ObjectId
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.transform.definition import DefinitionHashExtractor
-from tests.util.helper import add_groupby_operation
+from tests.util.helper import add_groupby_operation, add_project_operation
 
 
 @pytest.fixture(name="query_graph_and_assign_nodes")
@@ -29,6 +30,97 @@ def query_graph_and_assign_nodes(query_graph_and_assign_node):
         input_nodes=[input_node, sum_node],
     )
     return graph, assign_node, another_assign_node
+
+
+@pytest.fixture(name="lookup_assign_feature_node")
+def lookup_assign_feature_node_fixture(global_graph, dimension_table_input_node, entity_id):
+    """Fixture of a lookup feature"""
+    proj_cust_value_1 = add_project_operation(
+        graph=global_graph, input_node=dimension_table_input_node, column_names=["cust_value_1"]
+    )
+    proj_cust_value_2 = add_project_operation(
+        graph=global_graph, input_node=dimension_table_input_node, column_names=["cust_value_2"]
+    )
+    concat_node = global_graph.add_operation(
+        node_type=NodeType.CONCAT,
+        node_params={},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[proj_cust_value_1, proj_cust_value_2],
+    )
+    assign_concat_node = global_graph.add_operation(
+        node_type=NodeType.ASSIGN,
+        node_params={"name": "cust_attr"},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[dimension_table_input_node, concat_node],
+    )
+    assign_entity_node = global_graph.add_operation(
+        node_type=NodeType.ASSIGN,
+        node_params={"name": "assign_cust_id", "value": entity_id},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[assign_concat_node],
+    )
+    lookup_node = global_graph.add_operation(
+        node_type=NodeType.LOOKUP,
+        node_params={
+            "input_column_names": ["cust_attr"],
+            "feature_names": ["cust_attr"],
+            "entity_column": "assign_cust_id",
+            "serving_name": "CUSTOMER_ID",
+            "entity_id": entity_id,
+        },
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[assign_entity_node],
+    )
+    feature_node = add_project_operation(
+        graph=global_graph, input_node=lookup_node, column_names=["cust_attr"]
+    )
+    return feature_node
+
+
+@pytest.fixture(name="assign_join_feature_node")
+def assign_join_feature_node_fixture(
+    global_graph,
+    item_table_input_node,
+    event_table_input_node,
+    join_node_params,
+    groupby_node_params,
+):
+    """Fixture of a join feature"""
+    assign_event_table_node = global_graph.add_operation(
+        node_type=NodeType.ASSIGN,
+        node_params={"name": "event_assign_col", "value": 1234},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[event_table_input_node],
+    )
+    assign_item_table_node = global_graph.add_operation(
+        node_type=NodeType.ASSIGN,
+        node_params={"name": "item_assign_col", "value": 1234},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[item_table_input_node],
+    )
+    join_node_params["left_input_columns"].append("event_assign_col")
+    join_node_params["left_output_columns"].append("event_assign_col_left")
+    join_node_params["right_input_columns"].append("item_assign_col")
+    join_node_params["right_output_columns"].append("item_assign_col_right")
+    join_node = global_graph.add_operation(
+        node_type=NodeType.JOIN,
+        node_params=join_node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[assign_event_table_node, assign_item_table_node],
+    )
+    groupby_node_params["parent"] = "event_assign_col_left"
+    groupby_node_params["value_by"] = "item_assign_col_right"
+    groupby_node_params["names"] = ["event_item_type_count_30d"]
+    groupby_node_params["windows"] = ["30d"]
+    groupby_node = add_groupby_operation(
+        graph=global_graph,
+        groupby_node_params=groupby_node_params,
+        input_node=join_node,
+    )
+    feature_node = add_project_operation(
+        graph=global_graph, input_node=groupby_node, column_names=["event_item_type_count_30d"]
+    )
+    return feature_node
 
 
 def prune_graph_and_check_definition(graph, first_target_node, second_target_node):
@@ -557,3 +649,170 @@ def test_extract_definition__aggregate_asat(
         first_target_node=aggregate_asat_feature_node,
         second_target_node=another_feature_node,
     )
+
+
+def test_extract_definition__lookup_on_assign(global_graph, lookup_assign_feature_node, entity_id):
+    """Test extract definition for lookup on assign"""
+    pruned_graph, node_name_map = global_graph.prune(target_node=lookup_assign_feature_node)
+    mapped_node = global_graph.get_node_by_name(node_name_map[lookup_assign_feature_node.name])
+    definition_extractor = DefinitionHashExtractor(graph=pruned_graph)
+    output = definition_extractor.extract(node=mapped_node)
+    definition_lookup_node = output.graph.get_node_by_name("lookup_1")
+
+    # check that input_column_names, feature_names, entity_column are remapped
+    assert definition_lookup_node.parameters.dict() == {
+        "input_column_names": ["column_d9a60160d24c905a79488d0e2092a339bea7170b"],
+        "feature_names": [
+            "feat_4b5f9cdb80dc00adbb31cf07b14f5cf59ace7097_column_d9a60160d24c905a79488d0e2092a339bea7170b"
+        ],
+        "entity_column": "column_ef6b7926e03221da314b807442c252f7641e3cdc",
+        "serving_name": "CUSTOMER_ID",
+        "entity_id": entity_id,
+        "scd_parameters": None,
+        "event_parameters": None,
+    }
+
+
+def test_extract_definition__join_on_assign(global_graph, assign_join_feature_node):
+    """Test extract definition for join on assign"""
+    pruned_graph, node_name_map = global_graph.prune(target_node=assign_join_feature_node)
+    mapped_node = global_graph.get_node_by_name(node_name_map[assign_join_feature_node.name])
+    definition_extractor = DefinitionHashExtractor(graph=pruned_graph)
+    output = definition_extractor.extract(node=mapped_node)
+    definition_join_node = output.graph.get_node_by_name("join_1")
+
+    # check that user specified column names are remapped
+    assert definition_join_node.parameters.dict() == {
+        "join_type": "inner",
+        "left_input_columns": ["column_76c1db248cf6514af9bfe87fb66ab78ac00dbc05", "order_method"],
+        "left_on": "order_id",
+        "left_output_columns": [
+            "left_6c18f419fd29e37b7833e65cd25ec346ca412099_column_76c1db248cf6514af9bfe87fb66ab78ac00dbc05",
+            "left_6c18f419fd29e37b7833e65cd25ec346ca412099_order_method",
+        ],
+        "metadata": None,
+        "right_input_columns": ["item_assign_col", "item_id", "item_name", "item_type", "order_id"],
+        "right_on": "order_id",
+        "right_output_columns": [
+            "right_6c18f419fd29e37b7833e65cd25ec346ca412099_item_assign_col",
+            "right_6c18f419fd29e37b7833e65cd25ec346ca412099_item_id",
+            "right_6c18f419fd29e37b7833e65cd25ec346ca412099_item_name",
+            "right_6c18f419fd29e37b7833e65cd25ec346ca412099_item_type",
+            "right_6c18f419fd29e37b7833e65cd25ec346ca412099_order_id",
+        ],
+        "scd_parameters": None,
+    }
+
+
+def test_extract_definition__lag(query_graph_with_lag_node):
+    """Test extract definition for lag"""
+    graph, lag_node = query_graph_with_lag_node
+    definition_extractor = DefinitionHashExtractor(graph=graph)
+    output = definition_extractor.extract(node=lag_node)
+    definition_lag_node = output.graph.get_node_by_name("lag_1")
+
+    # check that input column parameters are removed
+    assert definition_lag_node.parameters.dict() == {
+        "entity_columns": [],
+        "timestamp_column": "",
+        "offset": 1,
+    }
+
+
+def test_extract_definition__forward_aggregate(query_graph_and_assign_node, event_table_details):
+    """Test extract definition for forward aggregate"""
+    graph, assign_node = query_graph_and_assign_node
+    assign_timestamp_node = graph.add_operation(
+        node_type=NodeType.ASSIGN,
+        node_params={"name": "assign_timestamp", "value": 1234},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[assign_node],
+    )
+    assign_entity_node = graph.add_operation(
+        node_type=NodeType.ASSIGN,
+        node_params={"name": "assign_entity", "value": "cust_id"},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[assign_timestamp_node],
+    )
+    forward_node = graph.add_operation(
+        node_type=NodeType.FORWARD_AGGREGATE,
+        node_params={
+            "name": "target",
+            "window": "7d",
+            "table_details": event_table_details,
+            "timestamp_col": "assign_timestamp",
+            "keys": ["assign_entity"],
+            "agg_func": "sum",
+            "serving_names": ["CUST_ID"],
+            "parent": "c",
+        },
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[assign_entity_node],
+    )
+    proj_target = add_project_operation(
+        graph=graph, input_node=forward_node, column_names=["target"]
+    )
+    definition_extractor = DefinitionHashExtractor(graph=graph)
+    output = definition_extractor.extract(node=proj_target)
+
+    # check forward aggregate definition
+    definition_forward_node = output.graph.get_node_by_name("forward_aggregate_1")
+    assert definition_forward_node.parameters.dict() == {
+        "agg_func": "sum",
+        "entity_ids": None,
+        "keys": ["column_c77d5fe0bb605b04a3c3b248fd650d3dce3da91b"],
+        "name": "target_e33f23f160ddfbf50110548276b01c0138221347",
+        "parent": "column_876897d0e6b6a0eda2d67b0a9a2f40f3f3210656",
+        "serving_names": ["CUST_ID"],
+        "timestamp_col": "column_3b96b3251bd166376dc25b2f56dd22584f4062d4",
+        "value_by": None,
+        "window": "604800s",
+    }
+    project_node = output.graph.get_node_by_name("project_3")
+    assert project_node.parameters.dict() == {
+        "columns": ["target_e33f23f160ddfbf50110548276b01c0138221347"]
+    }
+
+
+def test_extract_definition__join_feature(
+    global_graph, order_size_feature_node, event_table_input_node, order_size_feature_join_node
+):
+    """Test extract definition for join feature"""
+    assign_entity_node = global_graph.add_operation(
+        node_type=NodeType.ASSIGN,
+        node_params={"name": "assign_entity", "value": "cust_id"},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[event_table_input_node],
+    )
+    assign_point_in_time_node = global_graph.add_operation(
+        node_type=NodeType.ASSIGN,
+        node_params={"name": "assign_point_in_time", "value": 1234},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[assign_entity_node],
+    )
+    node_params = {
+        "view_entity_column": "assign_entity",
+        "feature_entity_column": "assign_entity",
+        "view_point_in_time_column": "assign_point_in_time",
+        "name": "join_feat",
+    }
+    join_feature_node = global_graph.add_operation(
+        node_type=NodeType.JOIN_FEATURE,
+        node_params=node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[assign_point_in_time_node, order_size_feature_node],
+    )
+    proj_join_feature_node = add_project_operation(
+        graph=global_graph, input_node=join_feature_node, column_names=["join_feat"]
+    )
+    definition_extractor = DefinitionHashExtractor(graph=global_graph)
+    output = definition_extractor.extract(node=proj_join_feature_node)
+
+    # check join feature definition
+    definition_join_feature_node = output.graph.get_node_by_name("join_feature_1")
+    assert definition_join_feature_node.parameters.dict() == {
+        "feature_entity_column": "column_76c1db248cf6514af9bfe87fb66ab78ac00dbc05",
+        "name": "column_887175b6331f124607175848b99856cb0e27dcff",
+        "view_entity_column": "column_76c1db248cf6514af9bfe87fb66ab78ac00dbc05",
+        "view_point_in_time_column": "column_3183a72d6d94ab2b677f95fd4c0b4f16410830c4",
+    }

@@ -361,11 +361,12 @@ class AssignColumnMixin:
         Tuple[NodeT, Dict[str, str]]
             Tuple of the column-remapped node and the column name remap
         """
-        _ = input_node_column_remaps
+        column_name_remap = input_node_column_remaps[0]
         input_nodes_hash = hash_input_node_hashes(input_node_hashes)
         remapped_col_name = f"column_{input_nodes_hash}"
         assert hasattr(self.parameters, "name")
-        column_name_remap = {self.parameters.name: remapped_col_name}  # type: ignore
+        column_name_remap[self.parameters.name] = remapped_col_name  # type: ignore
+
         remapped_node = self.clone()
         remapped_node.parameters.name = remapped_col_name  # type: ignore
         return remapped_node, column_name_remap
@@ -532,6 +533,21 @@ class LagNode(BaseSeriesOutputNode):
         expression = f"{col_name}.lag(entity_columns={entity_columns}, offset={offset})"
         return [], ExpressionStr(expression)
 
+    def convert_to_column_remapped_node(
+        self: NodeT,
+        input_node_hashes: List[str],
+        input_node_column_remaps: List[Dict[str, str]],
+    ) -> Tuple[NodeT, Dict[str, str]]:
+        # since the structure of the lag node already contains the entity columns and timestamp column,
+        # we can safely remove them from the parameters when generating the feature definition hash without
+        # causing unexpected hash collision
+        remapped_node = self.clone()
+
+        assert isinstance(remapped_node.parameters, LagNode.Parameters)
+        remapped_node.parameters.entity_columns = []
+        remapped_node.parameters.timestamp_column = InColumnStr()
+        return remapped_node, {}
+
 
 class ForwardAggregateParameters(BaseGroupbyParameters):
     """
@@ -627,6 +643,36 @@ class ForwardAggregateNode(AggregationOpStructMixin, BaseNode):
         )
         statements.append((out_var_name, expression))
         return statements, out_var_name
+
+    def convert_to_column_remapped_node(
+        self: NodeT,
+        input_node_hashes: List[str],
+        input_node_column_remaps: List[Dict[str, str]],
+    ) -> Tuple[NodeT, Dict[str, str]]:
+        remapped_node = self._convert_to_column_remapped_node(  # type: ignore
+            input_node_column_remaps=input_node_column_remaps,
+        )
+        column_name_remap = {}
+
+        # rename target name
+        assert isinstance(self.parameters, ForwardAggregateParameters)
+        assert isinstance(remapped_node.parameters, ForwardAggregateParameters)
+        input_nodes_hash = hash_input_node_hashes(input_node_hashes)
+        target_name = f"target_{input_nodes_hash}"
+        column_name_remap[str(self.parameters.name)] = target_name
+        remapped_node.parameters.name = OutColumnStr(target_name)
+
+        # remap window & timestamp column
+        if self.parameters.window:
+            window_secs = parse_duration_string(self.parameters.window)
+            remapped_node.parameters.window = f"{window_secs}s"
+
+        input_node_column_remap = input_node_column_remaps[0]
+        if self.parameters.timestamp_col in input_node_column_remap:
+            remapped_node.parameters.timestamp_col = InColumnStr(
+                input_node_column_remap[self.parameters.timestamp_col]
+            )
+        return remapped_node, column_name_remap
 
 
 class GroupByNodeParameters(BaseGroupbyParameters):
@@ -783,6 +829,12 @@ class GroupByNode(AggregationOpStructMixin, BaseNode):
             column_name_remap[str(name)] = feat_name
 
         assert isinstance(remapped_node.parameters, GroupByNodeParameters)
+        input_node_column_remap = input_node_column_remaps[0]
+        if self.parameters.timestamp in column_name_remap:
+            remapped_node.parameters.timestamp = InColumnStr(
+                input_node_column_remap[self.parameters.timestamp]
+            )
+
         names, windows = sort_lists_by_first_list(names, windows)
         remapped_node.parameters.names = names
         remapped_node.parameters.windows = windows
@@ -1389,35 +1441,44 @@ class JoinNode(BasePrunableNode):
         input_node_hashes: List[str],
         input_node_column_remaps: List[Dict[str, str]],
     ) -> Tuple[NodeT, Dict[str, str]]:
+        # pylint: disable=too-many-locals
         remapped_node = self.clone()
         column_name_remap = {}
         input_nodes_hash = hash_input_node_hashes(input_node_hashes)
         assert isinstance(self.parameters, JoinNodeParameters)
         assert isinstance(remapped_node.parameters, JoinNodeParameters)
 
+        # remap left & right on columns
+        remapped_left_input_columns = []
         remapped_left_output_columns = []
+        remapped_right_input_columns = []
         remapped_right_output_columns = []
+        input_node_column_remap = input_node_column_remaps[0]
         for left_in_col, left_out_cols in zip(
             self.parameters.left_input_columns, self.parameters.left_output_columns
         ):
-            remapped_left_out_col = f"left_{input_nodes_hash}_{left_in_col}"
+            remapped_left_in_col = input_node_column_remap.get(left_in_col, left_in_col)
+            remapped_left_input_columns.append(InColumnStr(remapped_left_in_col))
+            remapped_left_out_col = f"left_{input_nodes_hash}_{remapped_left_in_col}"
             remapped_left_output_columns.append(OutColumnStr(remapped_left_out_col))
             column_name_remap[str(left_out_cols)] = remapped_left_out_col
 
         for right_in_col, right_out_cols in zip(
             self.parameters.right_input_columns, self.parameters.right_output_columns
         ):
+            remapped_right_in_col = input_node_column_remap.get(right_in_col, right_in_col)
+            remapped_right_input_columns.append(InColumnStr(remapped_right_in_col))
             remapped_right_out_col = f"right_{input_nodes_hash}_{right_in_col}"
             remapped_right_output_columns.append(OutColumnStr(remapped_right_out_col))
             column_name_remap[str(right_out_cols)] = remapped_right_out_col
 
         # remap the left & right columns
         left_in_cols, left_out_cols = sort_lists_by_first_list(  # type: ignore
-            self.parameters.left_input_columns,
+            remapped_left_input_columns,
             remapped_left_output_columns,
         )
         right_in_cols, right_out_cols = sort_lists_by_first_list(  # type: ignore
-            self.parameters.right_input_columns,
+            remapped_right_input_columns,
             remapped_right_output_columns,
         )
         remapped_node.parameters.left_input_columns = left_in_cols
@@ -1549,16 +1610,23 @@ class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
             input_node_hashes=input_node_hashes,
             input_node_column_remaps=input_node_column_remaps,
         )
+
+        # remap view_entity_column, view_point_in_time_column, feature_entity_column
         view_input_node_column_remap = input_node_column_remaps[0]
+        if remapped_node.parameters.feature_entity_column in view_input_node_column_remap:
+            remapped_node.parameters.feature_entity_column = view_input_node_column_remap[
+                remapped_node.parameters.feature_entity_column
+            ]
+
         if remapped_node.parameters.view_entity_column in view_input_node_column_remap:
             remapped_node.parameters.view_entity_column = view_input_node_column_remap[
                 remapped_node.parameters.view_entity_column
             ]
+
         if remapped_node.parameters.view_point_in_time_column in view_input_node_column_remap:
             remapped_node.parameters.view_point_in_time_column = view_input_node_column_remap[
                 remapped_node.parameters.view_point_in_time_column
             ]
-
         return remapped_node, column_name_remap
 
 
