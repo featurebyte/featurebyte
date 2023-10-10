@@ -1,13 +1,23 @@
 """
 Integration tests for ObservationTable
 """
+import os
+from http import HTTPStatus
+
 import pandas as pd
 import pytest
 from sqlglot import parse_one
 
 from featurebyte.api.entity import Entity
+from featurebyte.api.observation_table import ObservationTable
+from featurebyte.common.utils import dataframe_to_arrow_bytes
+from featurebyte.config import Configurations
+from featurebyte.enum import SpecialColumnName
 from featurebyte.exception import RecordCreationException
+from featurebyte.models.observation_table import UploadedFileInput
+from featurebyte.models.request_input import RequestInputType
 from featurebyte.query_graph.sql.common import sql_to_string
+from featurebyte.schema.observation_table import ObservationTableUpload
 
 
 def check_location_valid(observation_table, session):
@@ -43,16 +53,16 @@ async def check_materialized_table_accessible(
     assert num_rows == expected_num_rows
 
 
-def check_materialized_table_preview_methods(table, expected_columns):
+def check_materialized_table_preview_methods(table, expected_columns, number_of_rows=15):
     """
     Check that preview, sample and describe methods work on materialized tables
     """
-    df_preview = table.preview(limit=15)
-    assert df_preview.shape[0] == 15
+    df_preview = table.preview(limit=number_of_rows)
+    assert df_preview.shape[0] == number_of_rows
     assert df_preview.columns.tolist() == expected_columns
 
-    df_sample = table.sample(size=20)
-    assert df_sample.shape[0] == 20
+    df_sample = table.sample(size=number_of_rows)
+    assert df_sample.shape[0] == number_of_rows
     assert df_sample.columns.tolist() == expected_columns
 
     df_describe = table.describe()
@@ -175,3 +185,48 @@ async def test_observation_table_cleanup(scd_table, session, source_type):
 
     num_observation_tables_after = await _get_num_observation_tables()
     assert num_observation_tables_before == num_observation_tables_after
+
+
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.asyncio
+async def test_observation_table_upload(
+    feature_store, catalog, customer_entity, session, source_type
+):
+    _ = catalog, customer_entity
+    # Create upload request
+    upload_request = ObservationTableUpload(
+        name="uploaded_observation_table",
+        feature_store_id=feature_store.id,
+    )
+    # Read CSV file
+    df = pd.read_csv(os.path.join(os.path.dirname(__file__), "fixtures", "observation_table.csv"))
+    number_of_rows = df.shape[0]
+    df[SpecialColumnName.POINT_IN_TIME] = pd.to_datetime(df[SpecialColumnName.POINT_IN_TIME])
+    files = {"observation_set": dataframe_to_arrow_bytes(df)}
+    data = {"payload": upload_request.json()}
+
+    # Call upload route
+    observation_table_route = "/observation_table"
+    test_api_client = Configurations().get_client()
+    response = test_api_client.put(observation_table_route, data=data, files=files)
+    assert response.status_code == HTTPStatus.CREATED, response.json()
+    response_dict = response.json()
+    observation_table_id = response_dict["payload"]["output_document_id"]
+
+    # Get observation table
+    observation_table = ObservationTable.get_by_id(observation_table_id)
+
+    # Assert response
+    assert observation_table.name == "uploaded_observation_table"
+    assert observation_table.request_input == UploadedFileInput(type=RequestInputType.UPLOADED_FILE)
+    expected_columns = {SpecialColumnName.POINT_IN_TIME, "cust_id"}
+    actual_columns = {column.name for column in observation_table.columns_info}
+    assert expected_columns == actual_columns
+
+    # Assert materialized table
+    await check_materialized_table_accessible(
+        observation_table, session, source_type, number_of_rows
+    )
+    check_materialized_table_preview_methods(
+        observation_table, [SpecialColumnName.POINT_IN_TIME, "cust_id"], number_of_rows
+    )
