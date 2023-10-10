@@ -133,6 +133,31 @@ async def test_get_historical_features__feature_list_deployed(
 
 
 @pytest.mark.asyncio
+async def test_get_historical_features__feature_clusters_not_set(
+    historical_features_service,
+    deployed_feature_list,
+    mock_get_historical_features,
+    output_table_details,
+):
+    """
+    Test compute_historical_features when feature list is deployed and feature clusters are not set
+    """
+    featurelist_get_historical_features = FeatureListGetHistoricalFeatures(
+        feature_list_id=deployed_feature_list.id,
+    )
+    training_events = pd.DataFrame({"cust_id": [1], "POINT_IN_TIME": ["2022-01-01"]})
+
+    await historical_features_service.compute(
+        training_events,
+        featurelist_get_historical_features,
+        output_table_details=output_table_details,
+    )
+    assert mock_get_historical_features.assert_called_once
+    call_args = mock_get_historical_features.call_args
+    assert call_args[1]["is_feature_list_deployed"] is True
+
+
+@pytest.mark.asyncio
 async def test_get_historical_features__missing_point_in_time(
     mock_snowflake_feature,
     mocked_session,

@@ -208,3 +208,29 @@ class TestHistoricalFeatureTableApi(BaseMaterializedTableTestSuite):
         assert response.json() == {
             "detail": "Only one of observation_set file and observation_table_id can be set"
         }
+
+    def test_create__success_feature_clusters_not_set(self, test_api_client_persistent):
+        """Test created successfully when feature_clusters is not set"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+        payload = copy.deepcopy(self.payload)
+        payload["featurelist_get_historical_features"]["feature_clusters"] = None
+
+        response = self.post(test_api_client, payload)
+        assert response.status_code == HTTPStatus.CREATED, response.json()
+        assert response.json()["output_path"] is not None
+        assert response.json()["status"] == "SUCCESS"
+
+    def test_create__failed_feature_clusters_and_feature_list_id_not_set(
+        self, test_api_client_persistent
+    ):
+        """Test created failed when neither feature_clusters nor feature_list_id is set"""
+        test_api_client, _ = test_api_client_persistent
+
+        # verify that feature clusters or feature list id must be set
+        payload = copy.deepcopy(self.payload)
+        payload["featurelist_get_historical_features"]["feature_clusters"] = None
+        payload["featurelist_get_historical_features"]["feature_list_id"] = None
+        response = self.post(test_api_client, payload)
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert "Either feature_clusters or feature_list_id must be set" in response.json()["detail"]
