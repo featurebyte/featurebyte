@@ -108,11 +108,11 @@ class DefinitionHashExtractor(
                 inputs.append(input_node)
                 input_node_names.append(input_node_name)
 
-        # create the node with column name remap
+        # normalize & create the node
         input_node_hashes = [
             global_state.graph.node_name_to_ref[input_node.name] for input_node in inputs
         ]
-        column_remapped_node, column_name_remap = node.normalize_and_recreate_node(
+        normalized_node, column_name_remap = node.normalize_and_recreate_node(
             input_node_hashes=input_node_hashes,
             input_node_column_mappings=[
                 global_state.node_name_to_column_name_remap[input_node_name]
@@ -126,7 +126,7 @@ class DefinitionHashExtractor(
             mapped_node = inputs[0]
         else:
             mapped_node = global_state.graph.add_operation_node(
-                node=column_remapped_node, input_nodes=inputs
+                node=normalized_node, input_nodes=inputs
             )
 
         global_state.node_name_map[node.name] = mapped_node.name
