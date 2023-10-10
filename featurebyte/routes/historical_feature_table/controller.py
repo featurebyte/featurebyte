@@ -87,6 +87,8 @@ class HistoricalFeatureTableController(
                 table_create.featurelist_get_historical_features.feature_list_id  # type: ignore[arg-type]
             )
 
+        # length of feature_clusters will always be more than 0
+        assert len(feature_clusters) > 0
         feature_cluster = feature_clusters[0]
         feature_store = await self.feature_store_service.get_document(
             document_id=feature_cluster.feature_store_id
