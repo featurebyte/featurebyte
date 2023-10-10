@@ -58,6 +58,7 @@ from tests.unit.conftest_config import (
     config_fixture,
     mock_config_path_env_fixture,
 )
+from tests.util.task import Command, LongRunningTask
 
 # register tests.unit.routes.base so that API stacktrace display properly
 pytest.register_assert_rewrite("tests.unit.routes.base")
@@ -1592,13 +1593,15 @@ def mock_task_manager(request, persistent, storage, temp_storage):
     else:
         task_status = {}
         with patch("featurebyte.service.task_manager.TaskManager.submit") as mock_submit:
+            test_task_registry_map = TASK_REGISTRY_MAP.copy()
+            test_task_registry_map[Command.LONG_RUNNING_COMMAND] = LongRunningTask
 
             async def submit(payload: BaseTaskPayload):
                 kwargs = payload.json_dict()
                 kwargs["task_output_path"] = payload.task_output_path
                 task_id = str(uuid4())
                 user = User(id=kwargs.get("user_id"))
-                task = TASK_REGISTRY_MAP[payload.command](
+                task = test_task_registry_map[payload.command](
                     task_id=UUID(task_id),
                     payload=kwargs,
                     progress=Mock(),
