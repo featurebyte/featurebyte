@@ -1,7 +1,6 @@
 """
 Tests for ObservationTable routes
 """
-import json
 from http import HTTPStatus
 
 import pandas as pd
