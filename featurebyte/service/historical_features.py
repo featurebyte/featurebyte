@@ -319,6 +319,12 @@ class HistoricalFeaturesService(
     ) -> ValidationParameters:
         # multiple feature stores not supported
         feature_clusters = request.feature_clusters
+        if not feature_clusters:
+            # feature_clusters has become optional, need to derive it from feature_list_id when it is not set
+            feature_clusters = await self.feature_list_service.get_feature_clusters(
+                request.feature_list_id  # type: ignore[arg-type]
+            )
+
         assert len(feature_clusters) == 1
 
         feature_cluster = feature_clusters[0]

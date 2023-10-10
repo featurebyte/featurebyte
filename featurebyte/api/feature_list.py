@@ -1227,7 +1227,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
             feature_clusters=self._get_feature_clusters(),
             serving_names_mapping=serving_names_mapping,
         )
-        feature_store_id = featurelist_get_historical_features.feature_clusters[0].feature_store_id
+        feature_store_id = featurelist_get_historical_features.feature_clusters[0].feature_store_id  # type: ignore[index]
         feature_table_create_params = HistoricalFeatureTableCreate(
             name=historical_feature_table_name,
             observation_table_id=(
