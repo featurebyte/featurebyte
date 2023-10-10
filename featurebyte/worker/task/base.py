@@ -18,9 +18,6 @@ from featurebyte.schema.worker.progress import ProgressModel
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.storage import Storage
 
-TASK_MAP: Dict[Enum, type[BaseTask]] = {}
-
-
 logger = get_logger(__name__)
 
 
@@ -44,19 +41,6 @@ class BaseTask:  # pylint: disable=too-many-instance-attributes
         self.payload = self.payload_class(**payload)
         self.progress = progress
         self.app_container = app_container
-
-    def __init_subclass__(cls, **kwargs: Any) -> None:
-        super().__init_subclass__(**kwargs)
-
-        if cls.payload_class.command is None:
-            # handle the case where the command is not defined (e.g. abstract class)
-            return
-
-        assert isinstance(cls.payload_class.command, Enum)
-        command = cls.payload_class.command
-        if command in TASK_MAP:
-            logger.warning("Existing task command overridden.", extra={"command": command.value})
-        TASK_MAP[command] = cls
 
     @property
     def user(self) -> User:

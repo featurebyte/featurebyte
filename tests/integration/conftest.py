@@ -66,7 +66,7 @@ from featurebyte.session.base_spark import BaseSparkSchemaInitializer
 from featurebyte.session.manager import SessionManager
 from featurebyte.storage import LocalStorage, LocalTempStorage
 from featurebyte.worker import get_celery, get_redis
-from featurebyte.worker.task.base import TASK_MAP
+from featurebyte.worker.registry import TASK_REGISTRY_MAP
 
 # Static testing mongodb connection from docker/test/docker-compose.yml
 MONGO_CONNECTION = "mongodb://localhost:27021,localhost:27022/?replicaSet=rs0"
@@ -1343,7 +1343,7 @@ def mock_task_manager(request, persistent, storage, temp_storage, mock_app_callb
                 kwargs["task_output_path"] = payload.task_output_path
                 task_id = str(uuid4())
                 user = User(id=kwargs.get("user_id"))
-                task = TASK_MAP[payload.command](
+                task = TASK_REGISTRY_MAP[payload.command](
                     task_id=UUID(task_id),
                     payload=kwargs,
                     progress=Mock(),
