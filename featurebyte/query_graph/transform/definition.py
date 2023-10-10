@@ -112,9 +112,9 @@ class DefinitionHashExtractor(
         input_node_hashes = [
             global_state.graph.node_name_to_ref[input_node.name] for input_node in inputs
         ]
-        column_remapped_node, column_name_remap = node.convert_to_column_remapped_node(
+        column_remapped_node, column_name_remap = node.normalize_and_recreate_node(
             input_node_hashes=input_node_hashes,
-            input_node_column_remaps=[
+            input_node_column_mappings=[
                 global_state.node_name_to_column_name_remap[input_node_name]
                 for input_node_name in input_node_names
             ],

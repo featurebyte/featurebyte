@@ -32,6 +32,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     VarNameExpressionStr,
 )
 from featurebyte.query_graph.node.scalar import ValueParameterType
+from featurebyte.query_graph.util import hash_input_node_hashes
 
 NODE_TYPES = []
 NodeT = TypeVar("NodeT", bound="BaseNode")
@@ -64,8 +65,13 @@ class BaseNode(BaseModel):
     # variable to limit the line width of the generated SDK code.
     _auto_convert_expression_to_variable: ClassVar[bool] = True
 
+    # for generating feature definition hash
     # whether the node is commutative, i.e. the order of the inputs does not matter
     is_commutative: ClassVar[bool] = False
+    # normalized output prefix is used to prefix the output column name when the node is normalized
+    _normalized_output_prefix: ClassVar[str] = ""
+    # whether the node should inherit the first input column name mapping as the output column name mapping
+    _inherit_first_input_column_name_mapping: ClassVar[bool] = False
 
     class Config:
         """Model configuration"""
@@ -562,30 +568,53 @@ class BaseNode(BaseModel):
         assert len(input_columns) == 0
         return input_columns
 
-    def convert_to_column_remapped_node(
+    def normalize_and_recreate_node(
         self: NodeT,
         input_node_hashes: List[str],
-        input_node_column_remaps: List[Dict[str, str]],
+        input_node_column_mappings: List[Dict[str, str]],
     ) -> Tuple[NodeT, Dict[str, str]]:
         """
-        Convert current node to a column remapped node
+        This method is used to recreate a normalized node for the construction of the feature definition hash.
+        Normalized node means that the node parameters are normalized to a certain format. For example,
+        those user specified string parameters that do not affect the node operation will be replaced by
+        a normalized string parameter. This method will also return the original column name to remapped
+        column name mapping for the output node to use.
 
         Parameters
         ----------
         input_node_hashes: List[str]
             List of input node hashes
-        input_node_column_remaps: List[Dict[str, str]]
-            List of input node column remaps
+        input_node_column_mappings: List[Dict[str, str]]
+            List of input node column mapping (original column name to normalized column name)
 
         Returns
         -------
         NodeT
-            Node with column remapped
+            Normalized node
         Dict[str, str]
-            Original column name to remapped column name mapping
+            Output column name to normalized column name mapping
         """
-        _ = input_node_hashes, input_node_column_remaps
-        return self, {}
+        if not input_node_column_mappings:
+            # if the node does not have any input, then no need to remap the column
+            return self, {}
+
+        input_node_column_mapping = input_node_column_mappings[0]
+        input_nodes_hash = hash_input_node_hashes(input_node_hashes)
+
+        output_column_remap: Dict[str, str] = {}
+        if self._inherit_first_input_column_name_mapping:
+            output_column_remap.update(**input_node_column_mapping)
+
+        node_params = self.parameters.dict(by_alias=True)
+        for param_name, value in node_params.items():
+            if isinstance(value, InColumnStr):
+                remapped_value = input_node_column_mapping.get(value, value)
+                node_params[param_name] = remapped_value
+            if isinstance(value, OutColumnStr):
+                output_column_remap[value] = f"{self._normalized_output_prefix}{input_nodes_hash}"
+                node_params[param_name] = output_column_remap[value]
+
+        return self.clone(parameters=node_params), output_column_remap
 
 
 class SeriesOutputNodeOpStructMixin:
