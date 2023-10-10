@@ -97,8 +97,16 @@ class DefinitionHashExtractor(
             mapped_name = global_state.node_name_map[node.name]
             return global_state.graph.get_node_by_name(mapped_name)
 
+        input_node_names = self.graph.get_input_node_names(node)
         if node.is_commutative:
-            inputs = sorted(inputs, key=lambda x: global_state.graph.node_name_to_ref[x.name])
+            input_node_name_pairs = sorted(
+                zip(inputs, input_node_names),
+                key=lambda x: global_state.graph.node_name_to_ref[x[0].name],
+            )
+            inputs, input_node_names = [], []
+            for input_node, input_node_name in input_node_name_pairs:
+                inputs.append(input_node)
+                input_node_names.append(input_node_name)
 
         # create the node with column name remap
         input_node_hashes = [
@@ -108,7 +116,7 @@ class DefinitionHashExtractor(
             input_node_hashes=input_node_hashes,
             input_node_column_remaps=[
                 global_state.node_name_to_column_name_remap[input_node_name]
-                for input_node_name in self.graph.get_input_node_names(node)
+                for input_node_name in input_node_names
             ],
         )
 
