@@ -1241,6 +1241,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         else:
             assert isinstance(observation_table, pd.DataFrame)
             files = {"observation_set": dataframe_to_arrow_bytes(observation_table)}
+        # TODO: how the endpoint is invoked
         historical_feature_table_doc = self.post_async_task(
             route="/historical_feature_table",
             payload={"payload": feature_table_create_params.json()},

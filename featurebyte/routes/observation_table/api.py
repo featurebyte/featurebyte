@@ -5,9 +5,10 @@ from __future__ import annotations
 
 from typing import Optional, cast
 
+import json
 from http import HTTPStatus
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Form, Request, UploadFile
 from starlette.responses import StreamingResponse
 
 from featurebyte.models.base import PydanticObjectId
@@ -63,14 +64,17 @@ async def create_observation_table(
 
 
 @router.put("", response_model=Task, status_code=HTTPStatus.CREATED)
-async def upload_observation_table_csv(request: Request, data: ObservationTableUpload) -> Task:
+async def upload_observation_table_csv(
+    request: Request, payload: str = Form(), observation_set: UploadFile = None
+) -> Task:
     """
     Create observation table by uploading a CSV file.
     """
     controller: ObservationTableController = (
         request.state.app_container.observation_table_controller
     )
-    return await controller.upload_observation_table_csv(data)
+    data = ObservationTableUpload(**json.loads(payload))
+    return await controller.upload_observation_table_csv(data, observation_set)
 
 
 @router.get("/{observation_table_id}", response_model=ObservationTableModel)

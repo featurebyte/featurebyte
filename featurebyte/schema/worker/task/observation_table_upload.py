@@ -16,3 +16,4 @@ class ObservationTableUploadTaskPayload(BaseTaskPayload, ObservationTableUpload)
 
     output_collection_name = ObservationTableModel.collection_name()
     command = WorkerCommand.OBSERVATION_TABLE_UPLOAD
+    observation_set_storage_path: str

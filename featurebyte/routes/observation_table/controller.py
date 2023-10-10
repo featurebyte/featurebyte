@@ -6,7 +6,9 @@ from __future__ import annotations
 from typing import Optional
 
 from bson import ObjectId
+from fastapi import UploadFile
 
+from featurebyte.common.utils import dataframe_from_arrow_stream
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.routes.common.base_materialized_table import BaseMaterializedTableController
 from featurebyte.routes.task.controller import TaskController
@@ -75,7 +77,9 @@ class ObservationTableController(
         task_id = await self.task_manager.submit(payload=payload)
         return await self.task_controller.get_task(task_id=str(task_id))
 
-    async def upload_observation_table_csv(self, data: ObservationTableUpload) -> Task:
+    async def upload_observation_table_csv(
+        self, data: ObservationTableUpload, observation_set_file: UploadFile
+    ) -> Task:
         """
         Create ObservationTable by submitting a materialization task
 
@@ -83,12 +87,17 @@ class ObservationTableController(
         ----------
         data: ObservationTableUpload
             ObservationTableUpload creation payload
+        observation_set_file: UploadFile
+            Observation set file
 
         Returns
         -------
         Task
         """
-        payload = await self.service.get_observation_table_upload_task_payload(data=data)
+        observation_set_dataframe = dataframe_from_arrow_stream(observation_set_file.file)
+        payload = await self.service.get_observation_table_upload_task_payload(
+            data=data, observation_set_dataframe=observation_set_dataframe
+        )
         task_id = await self.task_manager.submit(payload=payload)
         return await self.task_controller.get_task(task_id=str(task_id))
 

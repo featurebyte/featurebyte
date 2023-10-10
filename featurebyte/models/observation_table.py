@@ -67,8 +67,16 @@ class TargetInput(FeatureByteBaseModel):
         """
 
 
+class UploadedFileInput(FeatureByteBaseModel):
+    """
+    UploadedFileInput is an input from an uploaded file that can be used to create an ObservationTableModel.
+    """
+
+    type: Literal[RequestInputType.UPLOADED_FILE]
+
+
 ObservationInput = Annotated[
-    Union[ViewObservationInput, SourceTableObservationInput, TargetInput],
+    Union[ViewObservationInput, SourceTableObservationInput, TargetInput, UploadedFileInput],
     Field(discriminator="type"),
 ]
 

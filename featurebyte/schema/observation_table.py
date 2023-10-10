@@ -6,11 +6,10 @@ from __future__ import annotations
 from typing import List, Optional
 
 from bson import ObjectId
-from pydantic import Field
+from pydantic import Field, StrictStr
 
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
-from featurebyte.models.observation_table import ObservationInput, ObservationTableModel
-from featurebyte.models.observation_table import Purpose
+from featurebyte.models.observation_table import ObservationInput, ObservationTableModel, Purpose
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 from featurebyte.schema.request_table import BaseRequestTableCreate, BaseRequestTableListRecord
 
@@ -32,8 +31,9 @@ class ObservationTableUpload(FeatureByteBaseModel):
     """
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
-    table_name: str
+    name: StrictStr
     feature_store_id: PydanticObjectId
+    purpose: Optional[Purpose] = Field(default=None)
 
 
 class ObservationTableList(PaginationMixin):

@@ -3,8 +3,10 @@ ObservationTableService class
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple, cast
+
+from dataclasses import dataclass
+from pathlib import Path
 
 import pandas as pd
 from bson import ObjectId
@@ -41,6 +43,7 @@ from featurebyte.service.materialized_table import BaseMaterializedTableService
 from featurebyte.service.preview import PreviewService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.session.base import BaseSession
+from featurebyte.storage import Storage
 
 
 @dataclass
@@ -124,6 +127,7 @@ class ObservationTableService(
         entity_service: EntityService,
         context_service: ContextService,
         preview_service: PreviewService,
+        temp_storage: Storage,
     ):
         super().__init__(
             user,
@@ -135,6 +139,7 @@ class ObservationTableService(
         )
         self.context_service = context_service
         self.preview_service = preview_service
+        self.temp_storage = temp_storage
 
     @property
     def class_name(self) -> str:
@@ -177,7 +182,9 @@ class ObservationTableService(
         )
 
     async def get_observation_table_upload_task_payload(
-            self, data: ObservationTableUpload
+        self,
+        data: ObservationTableUpload,
+        observation_set_dataframe: pd.DataFrame,
     ) -> ObservationTableUploadTaskPayload:
         """
         Validate and convert a ObservationTableUpload schema to a ObservationTableUploadTaskPayload schema
@@ -187,6 +194,8 @@ class ObservationTableService(
         ----------
         data: ObservationTableUpload
             ObservationTable upload payload
+        observation_set_dataframe: pd.DataFrame
+            Observation set DataFrame
 
         Returns
         -------
@@ -199,11 +208,18 @@ class ObservationTableService(
             document=FeatureByteBaseDocumentModel(_id=output_document_id, name=data.name),
         )
 
+        # Persist dataframe to parquet file that can be read by the task later
+        observation_set_storage_path = f"observation_table/{output_document_id}.parquet"
+        await self.temp_storage.put_dataframe(
+            observation_set_dataframe, Path(observation_set_storage_path)
+        )
+
         return ObservationTableUploadTaskPayload(
             **data.dict(by_alias=True),
             user_id=self.user.id,
             catalog_id=self.catalog_id,
             output_document_id=output_document_id,
+            observation_set_storage_path=observation_set_storage_path,
         )
 
     async def _get_column_name_to_entity_count(
