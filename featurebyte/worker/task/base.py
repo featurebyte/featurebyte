@@ -3,10 +3,9 @@ Base models for task and task payload
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from abc import abstractmethod
-from enum import Enum
 from uuid import UUID
 
 from featurebyte.logging import get_logger

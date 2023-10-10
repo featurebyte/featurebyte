@@ -1,7 +1,7 @@
 """
 Task registry
 """
-from typing import Dict
+from typing import Dict, Type
 
 from enum import Enum
 
@@ -28,7 +28,7 @@ from featurebyte.worker.task.target_table import TargetTableTask
 from featurebyte.worker.task.tile_task import TileTask
 
 # TASK_REGISTRY_MAP contains a mapping of the worker command to the task.
-TASK_REGISTRY_MAP: Dict[Enum, type[BaseTask]] = {
+TASK_REGISTRY_MAP: Dict[Enum, Type[BaseTask]] = {
     WorkerCommand.FEATURE_JOB_SETTING_ANALYSIS_CREATE: FeatureJobSettingAnalysisTask,
     WorkerCommand.FEATURE_JOB_SETTING_ANALYSIS_BACKTEST: FeatureJobSettingAnalysisBacktestTask,
     WorkerCommand.HISTORICAL_FEATURE_TABLE_CREATE: HistoricalFeatureTableTask,
