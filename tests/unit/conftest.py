@@ -1583,6 +1583,10 @@ def get_credential_fixture(credentials):
     return get_credential
 
 
+TEST_TASK_REGISTRY_MAP = TASK_REGISTRY_MAP.copy()
+TEST_TASK_REGISTRY_MAP[Command.LONG_RUNNING_COMMAND] = LongRunningTask
+
+
 @pytest.fixture(autouse=True, scope="function")
 def mock_task_manager(request, persistent, storage, temp_storage):
     """
@@ -1593,15 +1597,13 @@ def mock_task_manager(request, persistent, storage, temp_storage):
     else:
         task_status = {}
         with patch("featurebyte.service.task_manager.TaskManager.submit") as mock_submit:
-            test_task_registry_map = TASK_REGISTRY_MAP.copy()
-            test_task_registry_map[Command.LONG_RUNNING_COMMAND] = LongRunningTask
 
             async def submit(payload: BaseTaskPayload):
                 kwargs = payload.json_dict()
                 kwargs["task_output_path"] = payload.task_output_path
                 task_id = str(uuid4())
                 user = User(id=kwargs.get("user_id"))
-                task = test_task_registry_map[payload.command](
+                task = TEST_TASK_REGISTRY_MAP[payload.command](
                     task_id=UUID(task_id),
                     payload=kwargs,
                     progress=Mock(),
