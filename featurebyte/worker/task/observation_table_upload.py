@@ -8,11 +8,7 @@ from typing import Any, cast
 from pathlib import Path
 
 from featurebyte.logging import get_logger
-from featurebyte.models.observation_table import (
-    ObservationTableModel,
-    TargetInput,
-    UploadedFileInput,
-)
+from featurebyte.models.observation_table import ObservationTableModel, UploadedFileInput
 from featurebyte.models.request_input import RequestInputType
 from featurebyte.schema.worker.task.observation_table import ObservationTableTaskPayload
 from featurebyte.schema.worker.task.observation_table_upload import (
