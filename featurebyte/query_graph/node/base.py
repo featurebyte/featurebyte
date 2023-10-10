@@ -4,6 +4,7 @@ Base classes required for constructing query graph nodes
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
 from typing import Any, ClassVar, Dict, List, Optional, Sequence, Tuple, Type, TypeVar, Union
 
+import copy
 from abc import ABC, abstractmethod
 
 from pydantic import BaseModel, Field
@@ -75,6 +76,8 @@ class BaseNode(BaseModel):
     _inherit_first_input_column_name_mapping: ClassVar[bool] = False
     # window parameter field name used to normalize the window parameter
     _window_parameter_field_name: ClassVar[Optional[str]] = None
+    # nested parameter field names to be normalized
+    _normalize_nested_parameter_field_names: ClassVar[Optional[List[str]]] = None
 
     class Config:
         """Model configuration"""
@@ -571,6 +574,30 @@ class BaseNode(BaseModel):
         assert len(input_columns) == 0
         return input_columns
 
+    @staticmethod
+    def _get_mapped_input_column(
+        column_name: str, input_node_column_mappings: List[Dict[str, str]]
+    ) -> str:
+        for input_node_column_mapping in input_node_column_mappings:
+            if column_name in input_node_column_mapping:
+                return input_node_column_mapping[column_name]
+        return column_name
+
+    def _normalize_nested_parameters(
+        self, nested_parameters: Dict[str, Any], input_node_column_mappings: List[Dict[str, str]]
+    ) -> Dict[str, Any]:
+        output = copy.deepcopy(nested_parameters)
+        for param_name, value in nested_parameters.items():
+            if isinstance(value, InColumnStr):
+                output[param_name] = self._get_mapped_input_column(
+                    value, input_node_column_mappings
+                )
+            if isinstance(value, list) and all(isinstance(val, InColumnStr) for val in value):
+                output[param_name] = [
+                    self._get_mapped_input_column(val, input_node_column_mappings) for val in value
+                ]
+        return output
+
     def normalize_and_recreate_node(
         self: NodeT,
         input_node_hashes: List[str],
@@ -626,6 +653,15 @@ class BaseNode(BaseModel):
                     node_params[param_name] = windows
                 if isinstance(window_param, str):
                     node_params[param_name] = f"{parse_duration_string(window_param)}s"
+
+            if (
+                self._normalize_nested_parameter_field_names
+                and param_name in self._normalize_nested_parameter_field_names
+                and isinstance(value, dict)
+            ):
+                node_params[param_name] = self._normalize_nested_parameters(
+                    nested_parameters=value, input_node_column_mappings=input_node_column_mappings
+                )
 
         return self.clone(parameters=node_params), output_column_remap
 

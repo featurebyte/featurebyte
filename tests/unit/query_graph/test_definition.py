@@ -756,3 +756,143 @@ def test_extract_definition__join_feature(
         "view_entity_column": "column_76c1db248cf6514af9bfe87fb66ab78ac00dbc05",
         "view_point_in_time_column": "column_3183a72d6d94ab2b677f95fd4c0b4f16410830c4",
     }
+
+
+def test_extract_definition__scd_join(global_graph, event_table_input_node, scd_table_input_node):
+    """Test extract definition for scd join"""
+    assign_event_timestamp = global_graph.add_operation(
+        node_type=NodeType.ASSIGN,
+        node_params={"name": "assign_event_timestamp", "value": 1234},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[event_table_input_node],
+    )
+    assign_effective_timestamp = global_graph.add_operation(
+        node_type=NodeType.ASSIGN,
+        node_params={"name": "assign_effective_timestamp", "value": 1234},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[scd_table_input_node],
+    )
+    node_params = {
+        "left_on": "cust_id",
+        "right_on": "cust_id",
+        "left_input_columns": ["assign_event_timestamp", "cust_id"],
+        "left_output_columns": ["event_timestamp", "cust_id"],
+        "right_input_columns": ["membership_status"],
+        "right_output_columns": ["latest_membership_status"],
+        "join_type": "left",
+        "scd_parameters": {
+            "left_timestamp_column": "assign_event_timestamp",
+            "effective_timestamp_column": "assign_effective_timestamp",
+        },
+    }
+    join_node = global_graph.add_operation(
+        node_type=NodeType.JOIN,
+        node_params=node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[assign_event_timestamp, assign_effective_timestamp],
+    )
+    definition_extractor = DefinitionHashExtractor(graph=global_graph)
+    output = definition_extractor.extract(node=join_node)
+
+    # check scd join definition
+    definition_scd_join_node = output.graph.get_node_by_name("join_1")
+    assert definition_scd_join_node.parameters.dict() == {
+        "join_type": "left",
+        "left_input_columns": ["column_76c1db248cf6514af9bfe87fb66ab78ac00dbc05", "cust_id"],
+        "left_on": "cust_id",
+        "left_output_columns": [
+            "left_037fb23024141a7656d0feae4669229af68644de_column_76c1db248cf6514af9bfe87fb66ab78ac00dbc05",
+            "left_037fb23024141a7656d0feae4669229af68644de_cust_id",
+        ],
+        "metadata": None,
+        "right_input_columns": ["membership_status"],
+        "right_on": "cust_id",
+        "right_output_columns": [
+            "right_037fb23024141a7656d0feae4669229af68644de_membership_status"
+        ],
+        "scd_parameters": {
+            "current_flag_column": None,
+            "effective_timestamp_column": "column_7a3690316a07a729afae95830e2e465c50f083f5",
+            "end_timestamp_column": None,
+            "left_timestamp_column": "column_76c1db248cf6514af9bfe87fb66ab78ac00dbc05",
+            "natural_key_column": None,
+        },
+    }
+
+
+def test_extract_definition__scd_lookup(
+    global_graph, scd_lookup_node_parameters, scd_table_input_node
+):
+    """Test extract definition for scd lookup"""
+    assign_effective_timestamp = global_graph.add_operation(
+        node_type=NodeType.ASSIGN,
+        node_params={"name": "event_timestamp", "value": 1234},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[scd_table_input_node],
+    )
+    lookup_node = global_graph.add_operation(
+        node_type=NodeType.LOOKUP,
+        node_params=scd_lookup_node_parameters,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[assign_effective_timestamp],
+    )
+    definition_extractor = DefinitionHashExtractor(graph=global_graph)
+    output = definition_extractor.extract(node=lookup_node)
+
+    # check scd lookup definition
+    definition_scd_lookup_node = output.graph.get_node_by_name("lookup_1")
+    assert definition_scd_lookup_node.parameters.dict() == {
+        "entity_column": "cust_id",
+        "entity_id": ObjectId("63dbe68cd918ef71acffd127"),
+        "event_parameters": None,
+        "feature_names": ["feat_8671525d8c969bdedf6a0823f7cbfc3a50c40a7e_membership_status"],
+        "input_column_names": ["membership_status"],
+        "scd_parameters": {
+            "current_flag_column": "is_record_current",
+            "effective_timestamp_column": "column_7a3690316a07a729afae95830e2e465c50f083f5",
+            "end_timestamp_column": None,
+            "natural_key_column": "cust_id",
+            "offset": None,
+        },
+        "serving_name": "CUSTOMER_ID",
+    }
+
+
+def test_extract_definition__event_lookup(global_graph, event_table_input_node, entity_id):
+    """Test extract definition for event lookup"""
+    assign_event_timestamp = global_graph.add_operation(
+        node_type=NodeType.ASSIGN,
+        node_params={"name": "ts", "value": 1234},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[event_table_input_node],
+    )
+    node_params = {
+        "input_column_names": ["order_method"],
+        "feature_names": ["Order Method"],
+        "entity_column": "order_id",
+        "serving_name": "ORDER_ID",
+        "entity_id": entity_id,
+        "event_parameters": {"event_timestamp_column": "ts"},
+    }
+    lookup_node = global_graph.add_operation(
+        node_type=NodeType.LOOKUP,
+        node_params=node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[assign_event_timestamp],
+    )
+    definition_extractor = DefinitionHashExtractor(graph=global_graph)
+    output = definition_extractor.extract(node=lookup_node)
+
+    # check event lookup definition
+    definition_event_lookup_node = output.graph.get_node_by_name("lookup_1")
+    assert definition_event_lookup_node.parameters.dict() == {
+        "entity_column": "order_id",
+        "entity_id": ObjectId("63dbe68cd918ef71acffd127"),
+        "event_parameters": {
+            "event_timestamp_column": "column_76c1db248cf6514af9bfe87fb66ab78ac00dbc05"
+        },
+        "feature_names": ["feat_2bb71266681287a9f86aa393a871a9109fb6a3ee_order_method"],
+        "input_column_names": ["order_method"],
+        "scd_parameters": None,
+        "serving_name": "ORDER_ID",
+    }

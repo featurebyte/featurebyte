@@ -939,6 +939,9 @@ class BaseLookupNode(AggregationOpStructMixin, BaseNode):
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: LookupParameters
 
+    # feature definition hash generation configuration
+    _normalize_nested_parameter_field_names = ["scd_parameters", "event_parameters"]
+
     @property
     def max_input_count(self) -> int:
         return 1
@@ -1168,6 +1171,9 @@ class JoinNode(BasePrunableNode):
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: JoinNodeParameters
 
+    # feature definition hash generation configuration
+    _normalize_nested_parameter_field_names = ["scd_parameters"]
+
     @property
     def max_input_count(self) -> int:
         return 2
@@ -1394,22 +1400,21 @@ class JoinNode(BasePrunableNode):
         )
 
         # re-order the columns
-        left_in_cols, left_out_cols = sort_lists_by_first_list(  # type: ignore
+        left_in_cols, left_out_cols = sort_lists_by_first_list(
             remapped_node.parameters.left_input_columns,
             remapped_left_output_columns,
         )
-        right_in_cols, right_out_cols = sort_lists_by_first_list(  # type: ignore
+        right_in_cols, right_out_cols = sort_lists_by_first_list(
             remapped_node.parameters.right_input_columns,
             remapped_right_output_columns,
         )
         remapped_node.parameters.left_input_columns = left_in_cols
-        remapped_node.parameters.left_output_columns = left_out_cols  # type: ignore
+        remapped_node.parameters.left_output_columns = left_out_cols
         remapped_node.parameters.right_input_columns = right_in_cols
-        remapped_node.parameters.right_output_columns = right_out_cols  # type: ignore
+        remapped_node.parameters.right_output_columns = right_out_cols
 
         # reset metadata
         remapped_node.parameters.metadata = None
-        remapped_node.parameters.scd_parameters = None
         return remapped_node, column_name_remap
 
 
