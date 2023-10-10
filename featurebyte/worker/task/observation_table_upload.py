@@ -13,6 +13,7 @@ from featurebyte.models.observation_table import (
     TargetInput,
     UploadedFileInput,
 )
+from featurebyte.models.request_input import RequestInputType
 from featurebyte.schema.worker.task.observation_table import ObservationTableTaskPayload
 from featurebyte.schema.worker.task.observation_table_upload import (
     ObservationTableUploadTaskPayload,
@@ -78,7 +79,7 @@ class ObservationTableUploadTask(DataWarehouseMixin, BaseTask):
                 user_id=payload.user_id,
                 name=payload.name,
                 location=location,
-                request_input=UploadedFileInput(),
+                request_input=UploadedFileInput(type=RequestInputType.UPLOADED_FILE),
                 purpose=payload.purpose,
                 **additional_metadata,
             )
