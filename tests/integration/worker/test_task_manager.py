@@ -8,12 +8,15 @@ import time
 import pytest
 from bson.objectid import ObjectId
 
+from featurebyte.enum import WorkerCommand
 from featurebyte.exception import DocumentNotFoundError
 from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.models.periodic_task import Interval
 from featurebyte.schema.task import TaskId
 from featurebyte.schema.worker.task.test import TestTaskPayload
 from featurebyte.service.task_manager import TaskManager
+from featurebyte.worker.registry import TASK_REGISTRY_MAP
+from featurebyte.worker.task.test_task import TestTask
 
 
 async def wait_for_async_task(

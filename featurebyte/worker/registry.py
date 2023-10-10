@@ -25,6 +25,7 @@ from featurebyte.worker.task.observation_table_upload import ObservationTableUpl
 from featurebyte.worker.task.online_store_cleanup import OnlineStoreCleanupTask
 from featurebyte.worker.task.static_source_table import StaticSourceTableTask
 from featurebyte.worker.task.target_table import TargetTableTask
+from featurebyte.worker.task.test_task import TestTask
 from featurebyte.worker.task.tile_task import TileTask
 
 # TASK_REGISTRY_MAP contains a mapping of the worker command to the task.
@@ -44,4 +45,5 @@ TASK_REGISTRY_MAP: Dict[Enum, Type[BaseTask]] = {
     WorkerCommand.TARGET_TABLE_CREATE: TargetTableTask,
     WorkerCommand.TILE_COMPUTE: TileTask,
     WorkerCommand.ONLINE_STORE_TABLE_CLEANUP: OnlineStoreCleanupTask,
+    WorkerCommand.TEST: TestTask,
 }
