@@ -65,7 +65,7 @@ async def create_observation_table(
 
 @router.put("", response_model=Task, status_code=HTTPStatus.CREATED)
 async def upload_observation_table_csv(
-    request: Request, payload: str = Form(), observation_set: UploadFile = None
+    request: Request, payload: str = Form(), observation_set: Optional[UploadFile] = None
 ) -> Task:
     """
     Create observation table by uploading a CSV file.
@@ -74,6 +74,7 @@ async def upload_observation_table_csv(
         request.state.app_container.observation_table_controller
     )
     data = ObservationTableUpload(**json.loads(payload))
+    assert observation_set is not None
     return await controller.upload_observation_table_csv(data, observation_set)
 
 

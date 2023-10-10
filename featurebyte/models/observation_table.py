@@ -74,6 +74,25 @@ class UploadedFileInput(FeatureByteBaseModel):
 
     type: Literal[RequestInputType.UPLOADED_FILE]
 
+    async def materialize(
+        self,
+        session: BaseSession,
+        destination: TableDetails,
+        sample_rows: Optional[int],
+    ) -> None:
+        """
+        No-op materialize. This method isn't needed for UploadedFileInput since there is nothing to materialize/compute.
+
+        Parameters
+        ----------
+        session: BaseSession
+            The session to use to materialize the target input
+        destination: TableDetails
+            The destination table to materialize the target input to
+        sample_rows: Optional[int]
+            The number of rows to sample from the target input
+        """
+
 
 ObservationInput = Annotated[
     Union[ViewObservationInput, SourceTableObservationInput, TargetInput, UploadedFileInput],
