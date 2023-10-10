@@ -8,6 +8,7 @@ from abc import ABC, abstractmethod
 
 from pydantic import BaseModel, Field
 
+from featurebyte.common.model_util import parse_duration_string
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.metadata.column import InColumnStr, OutColumnStr
@@ -72,6 +73,8 @@ class BaseNode(BaseModel):
     _normalized_output_prefix: ClassVar[str] = ""
     # whether the node should inherit the first input column name mapping as the output column name mapping
     _inherit_first_input_column_name_mapping: ClassVar[bool] = False
+    # window parameter field name used to normalize the window parameter
+    _window_parameter_field_name: ClassVar[Optional[str]] = None
 
     class Config:
         """Model configuration"""
@@ -608,11 +611,21 @@ class BaseNode(BaseModel):
         node_params = self.parameters.dict(by_alias=True)
         for param_name, value in node_params.items():
             if isinstance(value, InColumnStr):
-                remapped_value = input_node_column_mapping.get(value, value)
-                node_params[param_name] = remapped_value
+                node_params[param_name] = input_node_column_mapping.get(value, value)
             if isinstance(value, OutColumnStr):
                 output_column_remap[value] = f"{self._normalized_output_prefix}{input_nodes_hash}"
                 node_params[param_name] = output_column_remap[value]
+            if isinstance(value, list) and all(isinstance(val, InColumnStr) for val in value):
+                node_params[param_name] = [input_node_column_mapping.get(val, val) for val in value]
+            if param_name == self._window_parameter_field_name:
+                window_param = node_params[param_name]
+                if isinstance(window_param, list):
+                    windows = []
+                    for window in window_param:
+                        windows.append(f"{parse_duration_string(window)}s" if window else window)
+                    node_params[param_name] = windows
+                if isinstance(window_param, str):
+                    node_params[param_name] = f"{parse_duration_string(window_param)}s"
 
         return self.clone(parameters=node_params), output_column_remap
 

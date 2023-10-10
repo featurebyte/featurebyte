@@ -3,7 +3,7 @@ Module for aggregation related sql generation
 """
 from __future__ import annotations
 
-from typing import Optional, cast
+from typing import Dict, Optional, cast
 
 from abc import abstractmethod
 from dataclasses import dataclass
@@ -227,7 +227,7 @@ class Forward(Aggregate):
     def construct_columns_map(
         context: SQLNodeContext, source_node: TableNode
     ) -> dict[str, Expression]:
-        columns_map = {}
+        columns_map: Dict[str, Expression] = {}
         spec = ForwardAggregateSpec.from_query_graph_node(
             context.query_node,
             graph=context.graph,
