@@ -41,7 +41,6 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask):
         db_session = await self.get_db_session(feature_store)
 
         observation_set_helper: ObservationSetHelper = self.app_container.observation_set_helper
-        # TODO: relevant
         observation_set = await observation_set_helper.get_observation_set(
             payload.observation_table_id, payload.observation_set_storage_path
         )
