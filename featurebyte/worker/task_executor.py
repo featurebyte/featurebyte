@@ -14,6 +14,7 @@ from threading import Thread
 from uuid import UUID
 
 import gevent
+from bson import ObjectId
 from celery import Task
 from celery.exceptions import SoftTimeLimitExceeded
 
@@ -113,7 +114,7 @@ class TaskExecutor:
             "temp_storage": get_temp_storage(),
             # Task specific parameters
             "user": user,
-            "catalog_id": payload.get("catalog_id"),
+            "catalog_id": ObjectId(payload.get("catalog_id")),
             "task_id": task_id,
             "payload": payload,
             "progress": progress,
