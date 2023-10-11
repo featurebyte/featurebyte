@@ -53,12 +53,12 @@ from featurebyte.storage import LocalTempStorage
 from featurebyte.storage.local import LocalStorage
 from featurebyte.worker import get_redis
 from featurebyte.worker.registry import TASK_REGISTRY_MAP
+from featurebyte.worker.test_util.random_task import Command, LongRunningTask
 from tests.unit.conftest_config import (
     config_file_fixture,
     config_fixture,
     mock_config_path_env_fixture,
 )
-from tests.util.task import Command, LongRunningTask
 
 # register tests.unit.routes.base so that API stacktrace display properly
 pytest.register_assert_rewrite("tests.unit.routes.base")

@@ -150,9 +150,8 @@ from featurebyte.worker.task.static_source_table import StaticSourceTableTask
 from featurebyte.worker.task.target_table import TargetTableTask
 from featurebyte.worker.task.test_task import TestTask
 from featurebyte.worker.task.tile_task import TileTask
-from featurebyte.worker.test_util.random_task import RandomTask
+from featurebyte.worker.test_util.random_task import LongRunningTask, RandomTask
 from featurebyte.worker.util.observation_set_helper import ObservationSetHelper
-from tests.util.task import LongRunningTask
 
 app_container_config = AppContainerConfig()
 

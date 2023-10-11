@@ -15,7 +15,7 @@ from featurebyte.models.periodic_task import Crontab, Interval
 from featurebyte.models.task import Task
 from featurebyte.schema.task import TaskStatus
 from featurebyte.service.task_manager import TaskManager
-from tests.util.task import LongRunningPayload
+from featurebyte.worker.test_util.random_task import LongRunningPayload
 
 
 @pytest.fixture(name="celery")
