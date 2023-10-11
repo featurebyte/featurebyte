@@ -11,7 +11,6 @@ from featurebyte.models.base import User
 from featurebyte.persistent import Persistent
 from featurebyte.routes.feature.controller import FeatureController
 from featurebyte.routes.feature_list.controller import FeatureListController
-from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.schema.feature_list import FeatureListCreate
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.schema.worker.task.feature_list_batch_feature_create import (

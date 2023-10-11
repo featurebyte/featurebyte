@@ -33,6 +33,7 @@ from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin
 
 
+# pylint: disable=too-many-instance-attributes
 class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask):
     """
     Materialized Table Delete Task
