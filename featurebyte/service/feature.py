@@ -135,11 +135,13 @@ class FeatureService(BaseNamespaceService[FeatureModel, FeatureServiceCreate]):
             definition = await self.namespace_handler.prepare_definition(document=document)
 
             # insert the document
+            definition_hash_output = document.extract_definition_hash()
             insert_id = await session.insert_one(
                 collection_name=self.collection_name,
                 document={
                     **document.dict(by_alias=True),
                     "definition": definition,
+                    "definition_hash": definition_hash_output.definition_hash,
                     "raw_graph": data.graph.dict(),
                 },
                 user_id=self.user.id,

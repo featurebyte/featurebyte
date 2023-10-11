@@ -302,6 +302,7 @@ def saved_feature_fixture(
     assert float_feature.id == feature_id_before
     assert float_feature.readiness == FeatureReadiness.DRAFT
     assert float_feature.saved is True
+    assert float_feature.cached_model.definition_hash == "83cebcee6c7f34bfe4bb4289441c2ee70361e3a3"
 
     # check the groupby node after feature is saved (node parameters should get pruned)
     graph = QueryGraphModel(**float_feature.dict()["graph"])
@@ -516,6 +517,7 @@ def test_get_feature(saved_feature):
         "dtype",
         "catalog_id",
         "definition",
+        "definition_hash",
         "user_defined_function_ids",
         "block_modification_by",
         "aggregation_ids",

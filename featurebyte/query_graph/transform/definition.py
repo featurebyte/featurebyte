@@ -21,8 +21,7 @@ class DefinitionHashOutput:
     """
 
     graph: QueryGraphModel
-    output_node_name: str
-    node_name_to_hash: Dict[str, DefinitionHash]
+    node_name: str
 
     @property
     def definition_hash(self) -> DefinitionHash:
@@ -33,7 +32,7 @@ class DefinitionHashOutput:
         -------
         DefinitionHash
         """
-        return self.node_name_to_hash[self.output_node_name]
+        return self.graph.node_name_to_ref[self.node_name]
 
 
 class DefinitionGlobalState:
@@ -142,9 +141,5 @@ class DefinitionHashExtractor(
             topological_order_map=self.graph.node_topological_order_map,
         )
         mapped_node_name = global_state.node_name_map[node.name]
-        output = DefinitionHashOutput(
-            graph=global_state.graph,
-            output_node_name=mapped_node_name,
-            node_name_to_hash=global_state.graph.node_name_to_ref,
-        )
+        output = DefinitionHashOutput(graph=global_state.graph, node_name=mapped_node_name)
         return output

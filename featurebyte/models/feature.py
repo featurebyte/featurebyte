@@ -38,6 +38,10 @@ from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.sql.online_store_compute_query import (
     get_online_store_precompute_queries,
 )
+from featurebyte.query_graph.transform.definition import (
+    DefinitionHashExtractor,
+    DefinitionHashOutput,
+)
 
 
 class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
@@ -51,6 +55,7 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
     tabular_source: TabularSource = Field(allow_mutation=False)
     version: VersionIdentifier = Field(allow_mutation=False, default=None)
     definition: Optional[str] = Field(allow_mutation=False, default=None)
+    definition_hash: Optional[str] = Field(allow_mutation=False, default=None)
 
     # special handling for those attributes that are expensive to deserialize
     # internal_* is used to store the raw data from persistence, _* is used as a cache
@@ -285,6 +290,18 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
                 )
             )
         return output
+
+    def extract_definition_hash(self) -> DefinitionHashOutput:
+        """
+        Extract definition hash
+
+        Returns
+        -------
+        DefinitionHashOutput
+            Definition hash output
+        """
+        extractor = DefinitionHashExtractor(graph=self.graph)
+        return extractor.extract(self.node)
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
