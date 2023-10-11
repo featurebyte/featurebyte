@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from bson.objectid import ObjectId
-from pydantic import Field, StrictStr, validator
+from pydantic import Field, StrictStr, root_validator, validator
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import version_validator
@@ -165,8 +165,18 @@ class FeatureListGetHistoricalFeatures(ComputeRequest):
     FeatureList get historical features schema
     """
 
-    feature_clusters: List[FeatureCluster]
+    feature_clusters: Optional[List[FeatureCluster]]
     feature_list_id: Optional[PydanticObjectId]
+
+    @root_validator
+    @classmethod
+    def _validate_input(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        feature_clusters = values.get("feature_clusters", None)
+        feature_list_id = values.get("feature_list_id", None)
+        if not feature_clusters and not feature_list_id:
+            raise ValueError("Either feature_clusters or feature_list_id must be set")
+
+        return values
 
 
 class OnlineFeaturesRequestPayload(FeatureByteBaseModel):

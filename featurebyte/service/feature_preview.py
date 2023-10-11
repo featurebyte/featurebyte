@@ -22,6 +22,7 @@ from featurebyte.schema.feature_list import (
 )
 from featurebyte.schema.preview import FeatureOrTargetPreview
 from featurebyte.service.entity_validation import EntityValidationService
+from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.preview import PreviewService
 from featurebyte.service.session_manager import SessionManagerService
@@ -43,9 +44,12 @@ class FeaturePreviewService(PreviewService):
         session_manager_service: SessionManagerService,
         entity_validation_service: EntityValidationService,
         feature_store_service: FeatureStoreService,
+        feature_list_service: FeatureListService,
     ):
         super().__init__(session_manager_service, feature_store_service)
         self.entity_validation_service = entity_validation_service
+        self.entity_validation_service = entity_validation_service
+        self.feature_list_service = feature_list_service
 
     @staticmethod
     def _update_point_in_time_if_needed(
@@ -302,6 +306,12 @@ class FeaturePreviewService(PreviewService):
         """
         # multiple feature stores not supported
         feature_clusters = featurelist_get_historical_features.feature_clusters
+        if not feature_clusters:
+            # feature_clusters has become optional, need to derive it from feature_list_id when it is not set
+            feature_clusters = await self.feature_list_service.get_feature_clusters(
+                featurelist_get_historical_features.feature_list_id  # type: ignore[arg-type]
+            )
+
         assert len(feature_clusters) == 1
         feature_cluster = feature_clusters[0]
 

@@ -28,7 +28,7 @@ from featurebyte.utils.messaging import Progress
 from featurebyte.utils.persistent import MongoDBImpl
 from featurebyte.utils.storage import get_storage, get_temp_storage
 from featurebyte.worker import get_celery, get_redis
-from featurebyte.worker.task.base import TASK_MAP
+from featurebyte.worker.registry import TASK_REGISTRY_MAP
 
 logger = get_logger(__name__)
 
@@ -103,7 +103,7 @@ class TaskExecutor:
         self.task_id = task_id
         command = self.command_type(payload["command"])
         user = User(id=payload.get("user_id"))
-        task_class = TASK_MAP[command]
+        task_class = TASK_REGISTRY_MAP[command]
         payload_object = task_class.payload_class(**payload)
         app_container = LazyAppContainer(
             user=user,

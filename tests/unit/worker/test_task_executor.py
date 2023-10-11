@@ -2,7 +2,6 @@
 Tests for task executor
 """
 import datetime
-from enum import Enum
 from multiprocessing import Array, Process, Value
 from unittest.mock import patch
 from uuid import uuid4
@@ -11,35 +10,30 @@ import greenlet
 import pytest
 from bson.objectid import ObjectId
 
+from featurebyte.enum import StrEnum
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.schema.worker.task.base import BaseTaskPayload, TaskType
-from featurebyte.worker.task.base import TASK_MAP, BaseTask, logger
+from featurebyte.worker.registry import TASK_REGISTRY_MAP
+from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task_executor import run_async
-from tests.unit.test_logger import MockLogHandler
 from tests.util.task import TaskExecutor
 
 
-@pytest.fixture(name="command_class")
-def command_class_fixture():
-    """Command class"""
+class TestCommand(StrEnum):
+    """Command enum used for testing"""
 
-    class Command(str, Enum):
-        """Command enum used for testing"""
-
-        RANDOM_COMMAND = "random_command"
-
-    return Command
+    RANDOM_COMMAND = "random_command"
 
 
 @pytest.fixture(name="random_task_payload_class")
-def random_task_payload_class_fixture(command_class):
+def random_task_payload_class_fixture():
     """RandomTaskPayload class"""
 
     class RandomTaskPayload(BaseTaskPayload):
         """RandomTaskPayload class"""
 
         output_collection_name = "random_collection"
-        command = command_class.RANDOM_COMMAND
+        command = TestCommand.RANDOM_COMMAND
 
     return RandomTaskPayload
 
@@ -48,8 +42,8 @@ def random_task_payload_class_fixture(command_class):
 def random_task_class_fixture(random_task_payload_class, persistent):
     """RandomTask class"""
     # Cannot reinitialize the same command
-    if "random_command" in TASK_MAP:
-        yield TASK_MAP["random_command"]
+    if TestCommand.RANDOM_COMMAND in TASK_REGISTRY_MAP:
+        yield TASK_REGISTRY_MAP[TestCommand.RANDOM_COMMAND]
     else:
 
         class RandomTask(BaseTask):
@@ -72,6 +66,8 @@ def random_task_class_fixture(random_task_payload_class, persistent):
                     user_id=self.user.id,
                 )
 
+        # Register the RANDOM_COMMAND in TASK_REGISTRY_MAP
+        TASK_REGISTRY_MAP[TestCommand.RANDOM_COMMAND] = RandomTask
         yield RandomTask
 
 
@@ -100,9 +96,9 @@ async def test_task_executor(random_task_class, persistent):
     """Test task get loaded properly when extending BaseTask & BaskTaskPayload"""
     _ = random_task_class
 
-    # check task get loaded to TASK_MAP properly
-    assert "random_command" in TASK_MAP
-    assert TASK_MAP["random_command"] == random_task_class
+    # check task get loaded to TASK_REGISTRY_MAP properly
+    assert TestCommand.RANDOM_COMMAND in TASK_REGISTRY_MAP
+    assert TASK_REGISTRY_MAP[TestCommand.RANDOM_COMMAND] == random_task_class
 
     # add task record
     task_id = uuid4()
@@ -143,44 +139,11 @@ async def test_task_executor(random_task_class, persistent):
     assert document["description"] == "Execute random task"
 
 
-def test_task_has_been_implemented(app_container, random_task_class, command_class):
+def test_task_has_been_implemented(app_container, random_task_class):
     """
     Test implement a task whose command has been implemented before
     """
     _ = random_task_class
-
-    # check task get loaded to TASK_MAP properly
-    assert "random_command" in TASK_MAP
-    mock_handler = MockLogHandler()
-
-    logger.addHandler(mock_handler)
-    mock_handler.records.clear()
-
-    class ConflictTaskPayload(BaseTaskPayload):
-        """Payload which going to cause conflict"""
-
-        command = command_class.RANDOM_COMMAND
-
-    class ConflictTask(BaseTask):
-        """RandomTask class"""
-
-        payload_class = ConflictTaskPayload
-
-        async def get_task_description(self) -> str:
-            return "Execute task with conflict command"
-
-        async def execute(self) -> None:
-            """Run some task"""
-
-    _ = ConflictTask
-
-    # Expect conflicting task to override existing one with a warning log
-    assert TASK_MAP[command_class.RANDOM_COMMAND] == ConflictTask
-    assert len(mock_handler.records) == 1
-    assert (
-        "Existing task command overridden. | {'command': 'random_command'}"
-        in mock_handler.records[0]
-    )
 
     # initiate BaseTask without override payload_class will trigger NotImplementedError
     with pytest.raises(NotImplementedError):

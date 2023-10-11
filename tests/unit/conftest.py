@@ -52,12 +52,13 @@ from featurebyte.session.snowflake import SnowflakeSession
 from featurebyte.storage import LocalTempStorage
 from featurebyte.storage.local import LocalStorage
 from featurebyte.worker import get_redis
-from featurebyte.worker.task.base import TASK_MAP
+from featurebyte.worker.registry import TASK_REGISTRY_MAP
 from tests.unit.conftest_config import (
     config_file_fixture,
     config_fixture,
     mock_config_path_env_fixture,
 )
+from tests.util.task import Command, LongRunningTask
 
 # register tests.unit.routes.base so that API stacktrace display properly
 pytest.register_assert_rewrite("tests.unit.routes.base")
@@ -1582,6 +1583,10 @@ def get_credential_fixture(credentials):
     return get_credential
 
 
+TEST_TASK_REGISTRY_MAP = TASK_REGISTRY_MAP.copy()
+TEST_TASK_REGISTRY_MAP[Command.LONG_RUNNING_COMMAND] = LongRunningTask
+
+
 @pytest.fixture(autouse=True, scope="function")
 def mock_task_manager(request, persistent, storage, temp_storage):
     """
@@ -1598,7 +1603,7 @@ def mock_task_manager(request, persistent, storage, temp_storage):
                 kwargs["task_output_path"] = payload.task_output_path
                 task_id = str(uuid4())
                 user = User(id=kwargs.get("user_id"))
-                task = TASK_MAP[payload.command](
+                task = TEST_TASK_REGISTRY_MAP[payload.command](
                     task_id=UUID(task_id),
                     payload=kwargs,
                     progress=Mock(),
