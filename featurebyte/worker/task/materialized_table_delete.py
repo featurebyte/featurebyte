@@ -92,7 +92,7 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask):
             MaterializedTableCollectionName.TARGET: self.target_table_service,
         }
         service = service_map[payload.collection_name]
-        materialized_table = await service.get_document(document_id=payload.document_id)
+        materialized_table = await service.get_document(document_id=payload.document_id)  # type: ignore[attr-defined]
         description = payload.collection_name.replace("_", " ")
         if not description.endswith(" table"):
             description = f"{description} table"
