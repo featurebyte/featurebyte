@@ -182,7 +182,7 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask):
         feature_store = await self.feature_store_service.get_document(
             document_id=deleted_document.location.feature_store_id
         )
-        db_session = await self.get_db_session(feature_store=feature_store)
+        db_session = await self.session_manager_service.get_feature_store_session(feature_store)
         await db_session.drop_table(
             table_name=deleted_document.location.table_details.table_name,
             schema_name=deleted_document.location.table_details.schema_name,  # type: ignore

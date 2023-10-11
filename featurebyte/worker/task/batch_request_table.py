@@ -67,7 +67,7 @@ class BatchRequestTableTask(DataWarehouseMixin, BaseTask):
         feature_store = await self.feature_store_service.get_document(
             document_id=payload.feature_store_id
         )
-        db_session = await self.get_db_session(feature_store)
+        db_session = await self.session_manager_service.get_feature_store_session(feature_store)
         service = self.batch_request_table_service
         location = await service.generate_materialized_table_location(
             payload.feature_store_id,

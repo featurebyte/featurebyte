@@ -74,7 +74,7 @@ class TargetTableTask(DataWarehouseMixin, BaseTask):
         feature_store = await self.feature_store_service.get_document(
             document_id=payload.feature_store_id
         )
-        db_session = await self.get_db_session(feature_store)
+        db_session = await self.session_manager_service.get_feature_store_session(feature_store)
         observation_set = await self.observation_set_helper.get_observation_set(
             payload.observation_table_id, payload.observation_set_storage_path
         )

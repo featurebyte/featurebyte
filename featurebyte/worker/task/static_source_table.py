@@ -67,7 +67,7 @@ class StaticSourceTableTask(DataWarehouseMixin, BaseTask):
         feature_store = await self.feature_store_service.get_document(
             document_id=payload.feature_store_id
         )
-        db_session = await self.get_db_session(feature_store)
+        db_session = await self.session_manager_service.get_feature_store_session(feature_store)
         location = await self.static_source_table_service.generate_materialized_table_location(
             payload.feature_store_id,
         )

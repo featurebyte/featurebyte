@@ -24,22 +24,6 @@ class DataWarehouseMixin:
     """
 
     payload: BaseTaskPayload
-    session_manager_service: SessionManagerService
-
-    async def get_db_session(self, feature_store: FeatureStoreModel) -> BaseSession:
-        """
-        Get the database session
-
-        Parameters
-        ----------
-        feature_store: FeatureStoreModel
-            The feature store model
-
-        Returns
-        -------
-        BaseSession
-        """
-        return await self.session_manager_service.get_feature_store_session(feature_store)
 
     @asynccontextmanager
     async def drop_table_on_error(
