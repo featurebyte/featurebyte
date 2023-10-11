@@ -25,7 +25,11 @@ async def test_get_task_description():
         task_id=uuid4(),
         payload=payload.dict(by_alias=True),
         progress=Mock(),
-        app_container=Mock(),
+        user=Mock(),
+        persistent=Mock(),
+        storage=Mock(),
+        temp_storage=Mock(),
+        online_store_cleanup_service=Mock(),
     )
     assert (
         await task.get_task_description() == 'Clean up online store table "Test Online Store Table"'

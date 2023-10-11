@@ -13,11 +13,8 @@ from uuid import uuid4
 import pytest
 import pytest_asyncio
 
-from featurebyte.app import get_celery
 from featurebyte.models.base import User
 from featurebyte.routes.lazy_app_container import LazyAppContainer
-from featurebyte.routes.registry import app_container_config
-from featurebyte.worker import get_redis
 from featurebyte.worker.task.base import BaseTask
 
 
@@ -74,32 +71,35 @@ class BaseTaskTestSuite:
         """
         yield Mock()
 
-    async def execute_task(self, task_class, payload, persistent, progress, storage, temp_storage):
+    async def execute_task(
+        self,
+        task_class,
+        payload,
+        persistent,
+        progress,
+        storage,
+        temp_storage,
+        app_container: LazyAppContainer,
+    ):
         """
         Execute task with payload
         """
         # pylint: disable=not-callable
         user = User(id=payload.get("user_id"))
-        task = task_class(
-            task_id=uuid4(),
-            payload=payload,
-            progress=progress,
-            app_container=LazyAppContainer(
-                user=user,
-                persistent=persistent,
-                temp_storage=temp_storage,
-                celery=get_celery(),
-                redis=get_redis(),
-                storage=storage,
-                catalog_id=payload.get("catalog_id"),
-                app_container_config=app_container_config,
-            ),
-        )
-
+        app_container.override_instance_for_test("persistent", persistent)
+        app_container.override_instance_for_test("user", user)
+        app_container.override_instance_for_test("temp_storage", temp_storage)
+        app_container.override_instance_for_test("storage", storage)
+        app_container.override_instance_for_test("progress", progress)
+        app_container.override_instance_for_test("payload", payload)
+        app_container.override_instance_for_test("task_id", uuid4())
+        task = app_container.get(task_class)
         await task.execute()
 
     @pytest_asyncio.fixture()
-    async def task_completed(self, mongo_persistent, progress, storage, temp_storage, catalog):
+    async def task_completed(
+        self, mongo_persistent, progress, storage, temp_storage, catalog, app_container
+    ):
         """
         Test execution of the task
         """
@@ -112,4 +112,5 @@ class BaseTaskTestSuite:
             progress=progress,
             storage=storage,
             temp_storage=temp_storage,
+            app_container=app_container,
         )

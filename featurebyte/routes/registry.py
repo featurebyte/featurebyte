@@ -6,6 +6,7 @@ This contains all the dependencies that we want to register in order to get our 
 from uuid import UUID
 
 from celery import Celery
+from redis import Redis
 
 from featurebyte.migration.migration_data_service import SchemaMetadataService
 from featurebyte.migration.service.data_warehouse import (
@@ -129,9 +130,28 @@ from featurebyte.storage import Storage
 from featurebyte.utils.credential import MongoBackedCredentialProvider
 from featurebyte.utils.messaging import Progress
 from featurebyte.utils.persistent import MongoDBImpl
+from featurebyte.worker.task.batch_feature_create import BatchFeatureCreateTask
+from featurebyte.worker.task.batch_feature_table import BatchFeatureTableTask
+from featurebyte.worker.task.batch_request_table import BatchRequestTableTask
+from featurebyte.worker.task.deployment_create_update import DeploymentCreateUpdateTask
+from featurebyte.worker.task.feature_job_setting_analysis import (
+    FeatureJobSettingAnalysisBacktestTask,
+    FeatureJobSettingAnalysisTask,
+)
+from featurebyte.worker.task.feature_list_batch_feature_create import (
+    FeatureListCreateWithBatchFeatureCreationTask,
+)
+from featurebyte.worker.task.historical_feature_table import HistoricalFeatureTableTask
+from featurebyte.worker.task.materialized_table_delete import MaterializedTableDeleteTask
+from featurebyte.worker.task.observation_table import ObservationTableTask
+from featurebyte.worker.task.observation_table_upload import ObservationTableUploadTask
+from featurebyte.worker.task.online_store_cleanup import OnlineStoreCleanupTask
+from featurebyte.worker.task.static_source_table import StaticSourceTableTask
 from featurebyte.worker.task.target_table import TargetTableTask
+from featurebyte.worker.task.tile_task import TileTask
 from featurebyte.worker.test_util.random_task import RandomTask
 from featurebyte.worker.util.observation_set_helper import ObservationSetHelper
+from tests.util.task import LongRunningTask
 
 app_container_config = AppContainerConfig()
 
@@ -278,6 +298,21 @@ app_container_config.register_class(UseCaseService)
 app_container_config.register_class(UseCaseController)
 app_container_config.register_class(TargetTableTask)
 app_container_config.register_class(RandomTask)
+app_container_config.register_class(FeatureJobSettingAnalysisTask)
+app_container_config.register_class(FeatureJobSettingAnalysisBacktestTask)
+app_container_config.register_class(HistoricalFeatureTableTask)
+app_container_config.register_class(ObservationTableTask)
+app_container_config.register_class(ObservationTableUploadTask)
+app_container_config.register_class(DeploymentCreateUpdateTask)
+app_container_config.register_class(BatchRequestTableTask)
+app_container_config.register_class(BatchFeatureTableTask)
+app_container_config.register_class(MaterializedTableDeleteTask)
+app_container_config.register_class(BatchFeatureCreateTask)
+app_container_config.register_class(FeatureListCreateWithBatchFeatureCreationTask)
+app_container_config.register_class(StaticSourceTableTask)
+app_container_config.register_class(TileTask)
+app_container_config.register_class(OnlineStoreCleanupTask)
+app_container_config.register_class(LongRunningTask)
 
 app_container_config.register_class(MongoDBImpl, name_override="persistent")
 
@@ -286,6 +321,7 @@ app_container_config.register_class(Celery, force_no_deps=True)
 app_container_config.register_class(Storage, force_no_deps=True)
 app_container_config.register_class(Storage, force_no_deps=True, name_override="temp_storage")
 app_container_config.register_class(User, force_no_deps=True)
+app_container_config.register_class(Redis, force_no_deps=True)
 
 
 class CatalogId:

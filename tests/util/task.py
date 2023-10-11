@@ -6,13 +6,6 @@ from enum import Enum
 
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.worker.task.base import BaseTask
-from featurebyte.worker.task_executor import TaskExecutor as WorkerTaskExecutor
-
-
-class TaskExecutor(WorkerTaskExecutor):
-    """TaskExecutor class"""
-
-    command_type = str
 
 
 class Command(str, Enum):

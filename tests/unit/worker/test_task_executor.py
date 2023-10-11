@@ -16,9 +16,9 @@ from featurebyte.utils.persistent import MongoDBImpl
 from featurebyte.utils.storage import get_storage, get_temp_storage
 from featurebyte.worker.registry import TASK_REGISTRY_MAP
 from featurebyte.worker.task.base import BaseTask
+from featurebyte.worker.task_executor import TaskExecutor as WorkerTaskExecutor
 from featurebyte.worker.task_executor import run_async
 from featurebyte.worker.test_util.random_task import RandomTask, RandomTaskPayload, TestCommand
-from tests.util.task import TaskExecutor
 
 
 @pytest.fixture(name="random_task_class")
@@ -51,6 +51,12 @@ def test_extend_base_task_payload():
         "is_scheduled_task": False,
     }
     assert payload_obj.task_output_path == f"/random_collection/{document_id}"
+
+
+class TaskExecutor(WorkerTaskExecutor):
+    """TaskExecutor class"""
+
+    command_type = str
 
 
 @pytest.mark.asyncio

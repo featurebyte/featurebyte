@@ -11,7 +11,6 @@ from featurebyte.models.batch_request_table import SourceTableBatchRequestInput
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.routes.lazy_app_container import LazyAppContainer
-from featurebyte.routes.registry import app_container_config
 from featurebyte.schema.worker.task.materialized_table_delete import (
     MaterializedTableCollectionName,
     MaterializedTableDeleteTaskPayload,
@@ -31,7 +30,9 @@ from featurebyte.worker.task.materialized_table_delete import MaterializedTableD
         (MaterializedTableCollectionName.TARGET, "target table"),
     ],
 )
-async def test_get_task_description(persistent, collection_name, expected_description):
+async def test_get_task_description(
+    persistent, collection_name, expected_description, app_container: LazyAppContainer
+):
     """
     Test get task description for materialized table delete
     """
@@ -67,21 +68,12 @@ async def test_get_task_description(persistent, collection_name, expected_descri
         collection_name=collection_name,
         document_id=document_id,
     )
-    task = MaterializedTableDeleteTask(
-        task_id=uuid4(),
-        payload=payload.dict(by_alias=True),
-        progress=Mock(),
-        app_container=LazyAppContainer(
-            user=Mock(),
-            persistent=persistent,
-            temp_storage=Mock(),
-            celery=Mock(),
-            redis=Mock(),
-            storage=Mock(),
-            catalog_id=catalog_id,
-            app_container_config=app_container_config,
-        ),
-    )
+    app_container.override_instance_for_test("persistent", persistent)
+    app_container.override_instance_for_test("catalog_id", catalog_id)
+    app_container.override_instance_for_test("task_id", uuid4())
+    app_container.override_instance_for_test("progress", Mock())
+    app_container.override_instance_for_test("payload", payload.dict(by_alias=True))
+    task = app_container.get(MaterializedTableDeleteTask)
     assert (
         await task.get_task_description()
         == f'Delete {expected_description} "Test {expected_description}"'

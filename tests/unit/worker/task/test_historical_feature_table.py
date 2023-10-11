@@ -17,7 +17,7 @@ from featurebyte.worker.task.historical_feature_table import HistoricalFeatureTa
 
 
 @pytest.mark.asyncio
-async def test_get_task_description():
+async def test_get_task_description(app_container):
     """
     Test get task description for historical feature table
     """
@@ -36,12 +36,10 @@ async def test_get_task_description():
         name="Test historical feature table",
         feature_store_id=ObjectId(),
     )
-    task = HistoricalFeatureTableTask(
-        task_id=uuid4(),
-        payload=payload.dict(by_alias=True),
-        progress=Mock(),
-        app_container=Mock(),
-    )
+    app_container.override_instance_for_test("task_id", uuid4())
+    app_container.override_instance_for_test("progress", Mock())
+    app_container.override_instance_for_test("payload", payload.dict(by_alias=True))
+    task = app_container.get(HistoricalFeatureTableTask)
     assert (
         await task.get_task_description()
         == 'Save historical feature table "Test historical feature table"'

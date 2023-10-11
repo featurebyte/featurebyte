@@ -16,7 +16,7 @@ from featurebyte.worker.task.observation_table_upload import ObservationTableUpl
 
 
 @pytest.mark.asyncio
-async def test_get_task_description(catalog):
+async def test_get_task_description(catalog, app_container):
     """
     Test get task description
     """
@@ -27,12 +27,10 @@ async def test_get_task_description(catalog):
         request_input=UploadedFileInput(type=RequestInputType.UPLOADED_FILE),
         observation_set_storage_path="filepath",
     )
-    task = ObservationTableUploadTask(
-        task_id=uuid4(),
-        payload=payload.dict(by_alias=True),
-        progress=Mock(),
-        app_container=Mock(),
-    )
+    app_container.override_instance_for_test("task_id", uuid4())
+    app_container.override_instance_for_test("progress", Mock())
+    app_container.override_instance_for_test("payload", payload.dict(by_alias=True))
+    task = app_container.get(ObservationTableUploadTask)
     assert (
         await task.get_task_description()
         == 'Upload observation table "Test Observation Table Upload" from CSV.'

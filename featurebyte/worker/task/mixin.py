@@ -24,7 +24,7 @@ class DataWarehouseMixin:
     """
 
     payload: BaseTaskPayload
-    app_container: LazyAppContainer
+    session_manager_service: SessionManagerService
 
     async def get_db_session(self, feature_store: FeatureStoreModel) -> BaseSession:
         """
@@ -39,8 +39,7 @@ class DataWarehouseMixin:
         -------
         BaseSession
         """
-        session_manager_service: SessionManagerService = self.app_container.session_manager_service
-        return await session_manager_service.get_feature_store_session(feature_store)
+        return await self.session_manager_service.get_feature_store_session(feature_store)
 
     @asynccontextmanager
     async def drop_table_on_error(

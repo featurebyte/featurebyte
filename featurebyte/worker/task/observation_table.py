@@ -5,10 +5,17 @@ from __future__ import annotations
 
 from typing import Any, cast
 
+from uuid import UUID
+
 from featurebyte.logging import get_logger
+from featurebyte.models.base import User
 from featurebyte.models.observation_table import ObservationTableModel, TargetInput
+from featurebyte.persistent import Persistent
 from featurebyte.schema.worker.task.observation_table import ObservationTableTaskPayload
+from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.observation_table import ObservationTableService
+from featurebyte.service.session_manager import SessionManagerService
+from featurebyte.storage import Storage
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin
 
@@ -22,6 +29,32 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask):
 
     payload_class = ObservationTableTaskPayload
 
+    def __init__(  # pylint: disable=too-many-arguments
+        self,
+        task_id: UUID,
+        payload: dict[str, Any],
+        progress: Any,
+        user: User,
+        persistent: Persistent,
+        storage: Storage,
+        temp_storage: Storage,
+        feature_store_service: FeatureStoreService,
+        session_manager_service: SessionManagerService,
+        observation_table_service: ObservationTableService,
+    ):
+        super().__init__(
+            task_id=task_id,
+            payload=payload,
+            progress=progress,
+            user=user,
+            persistent=persistent,
+            storage=storage,
+            temp_storage=temp_storage,
+        )
+        self.feature_store_service = feature_store_service
+        self.session_manager_service = session_manager_service
+        self.observation_table_service = observation_table_service
+
     async def get_task_description(self) -> str:
         payload = cast(ObservationTableTaskPayload, self.payload)
         return f'Save observation table "{payload.name}"'
@@ -31,14 +64,11 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask):
         Execute ObservationTable task
         """
         payload = cast(ObservationTableTaskPayload, self.payload)
-        feature_store = await self.app_container.feature_store_service.get_document(
+        feature_store = await self.feature_store_service.get_document(
             document_id=payload.feature_store_id
         )
         db_session = await self.get_db_session(feature_store)
-        observation_table_service: ObservationTableService = (
-            self.app_container.observation_table_service
-        )
-        location = await observation_table_service.generate_materialized_table_location(
+        location = await self.observation_table_service.generate_materialized_table_location(
             payload.feature_store_id,
         )
         await payload.request_input.materialize(
@@ -51,7 +81,7 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask):
             payload_input = payload.request_input
             assert not isinstance(payload_input, TargetInput)
             additional_metadata = (
-                await observation_table_service.validate_materialized_table_and_get_metadata(
+                await self.observation_table_service.validate_materialized_table_and_get_metadata(
                     db_session,
                     location.table_details,
                     feature_store=feature_store,
@@ -70,4 +100,4 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask):
                 purpose=payload.purpose,
                 **additional_metadata,
             )
-            await observation_table_service.create_document(observation_table)
+            await self.observation_table_service.create_document(observation_table)

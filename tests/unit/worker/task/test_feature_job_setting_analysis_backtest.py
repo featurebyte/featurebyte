@@ -69,6 +69,7 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
         mock_event_dataset,
         catalog,
         insert_credential,
+        app_container,
     ):
         _ = mock_event_dataset, insert_credential
         persistent, _ = mongo_persistent
@@ -86,6 +87,7 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
             progress=None,
             storage=storage,
             temp_storage=temp_storage,
+            app_container=app_container,
         )
 
     @pytest.mark.asyncio
@@ -156,7 +158,9 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
         }
 
     @pytest.mark.asyncio
-    async def test_execute_fail(self, mongo_persistent, progress, storage, temp_storage):
+    async def test_execute_fail(
+        self, mongo_persistent, progress, storage, temp_storage, app_container
+    ):
         """
         Test failed task execution
         """
@@ -175,6 +179,7 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
                 progress=progress,
                 storage=storage,
                 temp_storage=temp_storage,
+                app_container=app_container,
             )
         assert str(excinfo.value) == (
             f'FeatureJobSettingAnalysis (id: "{feature_job_setting_analysis_id}") not found. '
@@ -187,25 +192,22 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
         ]
 
     @pytest.mark.asyncio
-    async def test_get_task_description(self, persistent, catalog):
+    async def test_get_task_description(self, persistent, catalog, app_container: LazyAppContainer):
         """
         Test get task description
         """
         payload = FeatureJobSettingAnalysisBacktestTask.payload_class(**self.payload)
+        app_container.override_instance_for_test("persistent", persistent)
+        app_container.override_instance_for_test("catalog_id", catalog.id)
         task = FeatureJobSettingAnalysisBacktestTask(
             task_id=uuid4(),
             payload=payload.dict(by_alias=True),
             progress=Mock(),
-            app_container=LazyAppContainer(
-                user=Mock(),
-                persistent=persistent,
-                temp_storage=Mock(),
-                celery=Mock(),
-                redis=Mock(),
-                storage=Mock(),
-                catalog_id=catalog.id,
-                app_container_config=app_container_config,
-            ),
+            user=Mock(),
+            persistent=persistent,
+            storage=Mock(),
+            temp_storage=Mock(),
+            feature_job_setting_analysis_service=app_container.feature_job_setting_analysis_service,
         )
         assert (
             await task.get_task_description()

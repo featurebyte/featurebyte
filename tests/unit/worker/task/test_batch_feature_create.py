@@ -107,6 +107,13 @@ async def test_get_task_description():
         task_id=uuid4(),
         payload=payload.dict(by_alias=True),
         progress=Mock(),
-        app_container=Mock(),
+        user=Mock(),
+        persistent=Mock(),
+        storage=Mock(),
+        temp_storage=Mock(),
+        feature_service=Mock(),
+        feature_namespace_service=Mock(),
+        feature_controller=Mock(),
+        namespace_handler=Mock(),
     )
     assert await task.get_task_description() == "Save 2 features"

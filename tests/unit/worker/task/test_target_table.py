@@ -34,10 +34,8 @@ async def test_get_task_description(catalog, app_container):
             ),
         ),
     )
-    task = TargetTableTask(
-        task_id=uuid4(),
-        payload=payload.dict(by_alias=True),
-        progress=Mock(),
-        app_container=Mock(),
-    )
+    app_container.override_instance_for_test("task_id", uuid4())
+    app_container.override_instance_for_test("progress", Mock())
+    app_container.override_instance_for_test("payload", payload.dict(by_alias=True))
+    task = app_container.get(TargetTableTask)
     assert await task.get_task_description() == 'Save target table "Test Target Table"'

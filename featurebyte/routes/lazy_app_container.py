@@ -259,5 +259,18 @@ class LazyAppContainer:
         assert isinstance(key_to_use, str)
         return self._handle_block_modification_check(self._get_key(key_to_use))
 
+    def override_instance_for_test(self, key: str, instance: Any) -> None:
+        """
+        Override an instance for testing purposes.
+
+        Parameters
+        ----------
+        key: str
+            key to override
+        instance: Any
+            instance to override with
+        """
+        self.instance_map[key] = instance
+
     def __getattr__(self, key: str) -> Any:
         return self._handle_block_modification_check(self._get_key(key))

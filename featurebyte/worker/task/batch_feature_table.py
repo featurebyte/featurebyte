@@ -5,14 +5,23 @@ from __future__ import annotations
 
 from typing import Any, cast
 
+from uuid import UUID
+
 from featurebyte.logging import get_logger
+from featurebyte.models.base import User
 from featurebyte.models.batch_feature_table import BatchFeatureTableModel
 from featurebyte.models.deployment import DeploymentModel
 from featurebyte.models.feature_list import FeatureListModel
+from featurebyte.persistent import Persistent
 from featurebyte.schema.worker.task.batch_feature_table import BatchFeatureTableTaskPayload
 from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.batch_request_table import BatchRequestTableService
+from featurebyte.service.deployment import DeploymentService
+from featurebyte.service.feature_list import FeatureListService
+from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.online_serving import OnlineServingService
+from featurebyte.service.session_manager import SessionManagerService
+from featurebyte.storage import Storage
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin
 
@@ -26,6 +35,40 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask):
 
     payload_class = BatchFeatureTableTaskPayload
 
+    def __init__(  # pylint: disable=too-many-arguments
+        self,
+        task_id: UUID,
+        payload: dict[str, Any],
+        progress: Any,
+        user: User,
+        persistent: Persistent,
+        storage: Storage,
+        temp_storage: Storage,
+        feature_store_service: FeatureStoreService,
+        session_manager_service: SessionManagerService,
+        batch_request_table_service: BatchRequestTableService,
+        batch_feature_table_service: BatchFeatureTableService,
+        deployment_service: DeploymentService,
+        feature_list_service: FeatureListService,
+        online_serving_service: OnlineServingService,
+    ):
+        super().__init__(
+            task_id=task_id,
+            payload=payload,
+            progress=progress,
+            user=user,
+            persistent=persistent,
+            storage=storage,
+            temp_storage=temp_storage,
+        )
+        self.feature_store_service = feature_store_service
+        self.session_manager_service = session_manager_service
+        self.batch_request_table_service = batch_request_table_service
+        self.batch_feature_table_service = batch_feature_table_service
+        self.deployment_service = deployment_service
+        self.feature_list_service = feature_list_service
+        self.online_serving_service = online_serving_service
+
     async def get_task_description(self) -> str:
         payload = cast(BatchFeatureTableTaskPayload, self.payload)
         return f'Save batch feature table "{payload.name}"'
@@ -35,40 +78,31 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask):
         Execute BatchFeatureTableTask
         """
         payload = cast(BatchFeatureTableTaskPayload, self.payload)
-        feature_store = await self.app_container.feature_store_service.get_document(
+        feature_store = await self.feature_store_service.get_document(
             document_id=payload.feature_store_id
         )
         db_session = await self.get_db_session(feature_store)
 
-        app_container = self.app_container
-
-        batch_request_table_service: BatchRequestTableService = (
-            app_container.batch_request_table_service
-        )
-        batch_request_table_model = await batch_request_table_service.get_document(
+        batch_request_table_model = await self.batch_request_table_service.get_document(
             payload.batch_request_table_id
         )
 
-        batch_feature_table_service: BatchFeatureTableService = (
-            app_container.batch_feature_table_service
-        )
-        location = await batch_feature_table_service.generate_materialized_table_location(
+        location = await self.batch_feature_table_service.generate_materialized_table_location(
             payload.feature_store_id
         )
 
         # retrieve feature list from deployment
-        deployment: DeploymentModel = await app_container.deployment_service.get_document(
+        deployment: DeploymentModel = await self.deployment_service.get_document(
             document_id=payload.deployment_id
         )
-        feature_list: FeatureListModel = await app_container.feature_list_service.get_document(
+        feature_list: FeatureListModel = await self.feature_list_service.get_document(
             document_id=deployment.feature_list_id
         )
 
         async with self.drop_table_on_error(
             db_session=db_session, table_details=location.table_details
         ):
-            online_serving_service: OnlineServingService = app_container.online_serving_service
-            await online_serving_service.get_online_features_from_feature_list(
+            await self.online_serving_service.get_online_features_from_feature_list(
                 feature_list=feature_list,
                 request_data=batch_request_table_model,
                 output_table_details=location.table_details,
@@ -76,7 +110,7 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask):
             (
                 columns_info,
                 num_rows,
-            ) = await batch_request_table_service.get_columns_info_and_num_rows(
+            ) = await self.batch_request_table_service.get_columns_info_and_num_rows(
                 db_session, location.table_details
             )
             logger.debug("Creating a new BatchFeatureTable", extra=location.table_details.dict())
@@ -90,4 +124,4 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask):
                 columns_info=columns_info,
                 num_rows=num_rows,
             )
-            await batch_feature_table_service.create_document(batch_feature_table_model)
+            await self.batch_feature_table_service.create_document(batch_feature_table_model)

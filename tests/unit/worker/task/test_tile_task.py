@@ -8,12 +8,13 @@ import pytest
 from bson import ObjectId
 
 from featurebyte.models.tile import TileScheduledJobParameters
+from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.schema.worker.task.tile import TileTaskPayload
 from featurebyte.worker.task.tile_task import TileTask
 
 
 @pytest.mark.asyncio
-async def test_get_task_description(catalog):
+async def test_get_task_description(catalog, app_container: LazyAppContainer):
     """
     Test get task description
     """
@@ -37,10 +38,8 @@ async def test_get_task_description(catalog):
             value_column_types=[],
         ),
     )
-    task = TileTask(
-        task_id=uuid4(),
-        payload=payload.dict(by_alias=True),
-        progress=Mock(),
-        app_container=Mock(),
-    )
+    app_container.override_instance_for_test("task_id", uuid4())
+    app_container.override_instance_for_test("progress", Mock())
+    app_container.override_instance_for_test("payload", payload.dict(by_alias=True))
+    task = app_container.get(TileTask)
     assert await task.get_task_description() == 'Generate tile for "tile_id:aggregation_id"'

@@ -145,7 +145,9 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         )
 
     @pytest.mark.asyncio
-    async def test_execute_fail(self, mongo_persistent, progress, storage, temp_storage):
+    async def test_execute_fail(
+        self, mongo_persistent, progress, storage, temp_storage, app_container
+    ):
         """
         Test failed task execution
         """
@@ -163,6 +165,7 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
                 progress=progress,
                 storage=storage,
                 temp_storage=temp_storage,
+                app_container=app_container,
             )
         assert (
             str(excinfo.value)
@@ -183,6 +186,7 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         update_fixtures,
         storage,
         temp_storage,
+        app_container,
     ):
         """
         Test successful task execution without using existing event table
@@ -209,6 +213,7 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
             progress=progress,
             storage=storage,
             temp_storage=temp_storage,
+            app_container=app_container,
         )
 
         output_document_id = payload["output_document_id"]
@@ -222,26 +227,17 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         )
 
     @pytest.mark.asyncio
-    async def test_get_task_description(self, persistent, catalog):
+    async def test_get_task_description(self, persistent, catalog, app_container: LazyAppContainer):
         """
         Test get task description
         """
         payload = FeatureJobSettingAnalysisTask.payload_class(**self.payload)
-        task = FeatureJobSettingAnalysisTask(
-            task_id=uuid4(),
-            payload=payload.dict(by_alias=True),
-            progress=Mock(),
-            app_container=LazyAppContainer(
-                user=Mock(),
-                persistent=persistent,
-                temp_storage=Mock(),
-                celery=Mock(),
-                redis=Mock(),
-                storage=Mock(),
-                catalog_id=catalog.id,
-                app_container_config=app_container_config,
-            ),
-        )
+        app_container.override_instance_for_test("catalog_id", catalog.id)
+        app_container.override_instance_for_test("persistent", persistent)
+        app_container.override_instance_for_test("task_id", uuid4())
+        app_container.override_instance_for_test("progress", Mock())
+        app_container.override_instance_for_test("payload", payload.dict(by_alias=True))
+        task = app_container.get(FeatureJobSettingAnalysisTask)
         assert (
             await task.get_task_description()
             == 'Analyze feature job settings for table "sf_event_table"'
