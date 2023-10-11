@@ -1365,6 +1365,31 @@ def query_graph_with_cleaning_ops_graph_node_fixture(global_graph, input_node):
     return global_graph, inserted_graph_node
 
 
+@pytest.fixture(name="query_graph_with_lag_node")
+def query_graph_with_lag_node_fixture(global_graph, input_node):
+    """Fixture of a query graph with a lag operation"""
+    project_map = {}
+    for col in ["cust_id", "a", "ts"]:
+        project_map[col] = global_graph.add_operation(
+            node_type=NodeType.PROJECT,
+            node_params={"columns": [col]},
+            node_output_type="series",
+            input_nodes=[input_node],
+        )
+
+    lag_node = global_graph.add_operation(
+        node_type=NodeType.LAG,
+        node_params={
+            "entity_columns": ["cust_id"],
+            "timestamp_column": "ts",
+            "offset": 1,
+        },
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[project_map["a"], project_map["cust_id"], project_map["ts"]],
+    )
+    return global_graph, lag_node
+
+
 @pytest.fixture(name="query_graph_with_cleaning_ops_and_groupby")
 def query_graph_with_cleaning_ops_and_groupby_fixture(
     query_graph_with_cleaning_ops_graph_node, groupby_node_params

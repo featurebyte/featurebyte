@@ -7,6 +7,7 @@ from typing import Any, ClassVar, Dict, List, Literal, Optional, Sequence, Set, 
 
 from pydantic import BaseModel, Field, root_validator, validator
 
+from featurebyte.common.model_util import parse_duration_string
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -44,7 +45,11 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     get_object_class_from_function_call,
 )
 from featurebyte.query_graph.node.mixin import AggregationOpStructMixin, BaseGroupbyParameters
-from featurebyte.query_graph.util import append_to_lineage
+from featurebyte.query_graph.util import (
+    append_to_lineage,
+    hash_input_node_hashes,
+    sort_lists_by_first_list,
+)
 
 
 class ProjectNode(BaseNode):
@@ -153,12 +158,33 @@ class ProjectNode(BaseNode):
         statements.append((out_var_name, expression))
         return statements, out_var_name
 
+    def normalize_and_recreate_node(
+        self,
+        input_node_hashes: List[str],
+        input_node_column_mappings: List[Dict[str, str]],
+    ) -> Tuple["ProjectNode", Dict[str, str]]:
+        remapped_node, column_name_remap = super().normalize_and_recreate_node(
+            input_node_hashes=input_node_hashes,
+            input_node_column_mappings=input_node_column_mappings,
+        )
+        remapped_node.parameters.columns = sorted(remapped_node.parameters.columns)
+
+        # subset input_node_column_mappings to only include columns that are in the node
+        input_node_column_mapping = input_node_column_mappings[0]
+        for column in self.parameters.columns:
+            if column in input_node_column_mapping:
+                column_name_remap[column] = input_node_column_mapping[column]
+        return remapped_node, column_name_remap
+
 
 class FilterNode(BaseNode):
     """FilterNode class"""
 
     type: Literal[NodeType.FILTER] = Field(NodeType.FILTER, const=True)
     parameters: BaseModel = Field(default=BaseModel(), const=True)
+
+    # feature definition hash generation configuration
+    _inherit_first_input_column_name_mapping = True
 
     @property
     def max_input_count(self) -> int:
@@ -322,6 +348,10 @@ class AssignNode(AssignColumnMixin, BasePrunableNode):
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: Parameters
 
+    # feature definition hash generation configuration
+    _normalized_output_prefix = "column_"
+    _inherit_first_input_column_name_mapping = True
+
     @property
     def max_input_count(self) -> int:
         return 2
@@ -470,13 +500,31 @@ class LagNode(BaseSeriesOutputNode):
         expression = f"{col_name}.lag(entity_columns={entity_columns}, offset={offset})"
         return [], ExpressionStr(expression)
 
+    def normalize_and_recreate_node(
+        self,
+        input_node_hashes: List[str],
+        input_node_column_mappings: List[Dict[str, str]],
+    ) -> Tuple["LagNode", Dict[str, str]]:
+        remapped_node, column_name_remap = super().normalize_and_recreate_node(
+            input_node_hashes=input_node_hashes,
+            input_node_column_mappings=input_node_column_mappings,
+        )
+
+        # since the structure of the lag node already contains the entity columns and timestamp column,
+        # we can safely remove them from the parameters when generating the feature definition hash without
+        # causing unexpected hash collision
+        assert isinstance(remapped_node.parameters, LagNode.Parameters)
+        remapped_node.parameters.entity_columns = []
+        remapped_node.parameters.timestamp_column = InColumnStr()
+        return remapped_node, column_name_remap
+
 
 class ForwardAggregateParameters(BaseGroupbyParameters):
     """
     Forward aggregate parameters
     """
 
-    name: str
+    name: OutColumnStr
     window: Optional[str]
     timestamp_col: InColumnStr
 
@@ -491,6 +539,10 @@ class ForwardAggregateNode(AggregationOpStructMixin, BaseNode):
     parameters: ForwardAggregateParameters
 
     _auto_convert_expression_to_variable: ClassVar[bool] = False
+
+    # feature definition hash generation configuration
+    _normalized_output_prefix = "target_"
+    _window_parameter_field_name = "window"
 
     @property
     def max_input_count(self) -> int:
@@ -586,6 +638,9 @@ class GroupByNode(AggregationOpStructMixin, BaseNode):
     type: Literal[NodeType.GROUPBY] = Field(NodeType.GROUPBY, const=True)
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: GroupByNodeParameters
+
+    # feature definition hash generation configuration
+    _window_parameter_field_name = "windows"
 
     @property
     def max_input_count(self) -> int:
@@ -693,6 +748,40 @@ class GroupByNode(AggregationOpStructMixin, BaseNode):
         statements.append((out_var_name, expression))
         return statements, out_var_name
 
+    def normalize_and_recreate_node(
+        self,
+        input_node_hashes: List[str],
+        input_node_column_mappings: List[Dict[str, str]],
+    ) -> Tuple["GroupByNode", Dict[str, str]]:
+        remapped_node, column_name_remap = super().normalize_and_recreate_node(
+            input_node_hashes=input_node_hashes,
+            input_node_column_mappings=input_node_column_mappings,
+        )
+
+        # remap windows and names
+        input_nodes_hash = hash_input_node_hashes(input_node_hashes)
+        names = []
+        assert isinstance(self.parameters, GroupByNodeParameters)
+        for name, window in zip(self.parameters.names, self.parameters.windows):
+            if window:
+                window_secs = parse_duration_string(window)
+                feat_name = f"feat_{input_nodes_hash}_{window_secs}s"
+            else:
+                feat_name = f"feat_{input_nodes_hash}"
+
+            names.append(OutColumnStr(feat_name))
+            column_name_remap[str(name)] = feat_name
+
+        assert isinstance(remapped_node.parameters, GroupByNodeParameters)
+        names, windows = sort_lists_by_first_list(names, remapped_node.parameters.windows)
+        remapped_node.parameters.names = names
+        remapped_node.parameters.windows = windows
+
+        # remove tile_id and aggregation_id so that the definition hash will not be affected by them
+        remapped_node.parameters.tile_id = None
+        remapped_node.parameters.aggregation_id = None
+        return remapped_node, column_name_remap
+
 
 class ItemGroupbyParameters(BaseGroupbyParameters):
     """ItemGroupbyNode parameters"""
@@ -709,6 +798,9 @@ class ItemGroupbyNode(AggregationOpStructMixin, BaseNode):
 
     # class variable
     _auto_convert_expression_to_variable: ClassVar[bool] = False
+
+    # feature definition hash generation configuration
+    _normalized_output_prefix = "feat_"
 
     @property
     def max_input_count(self) -> int:
@@ -847,6 +939,9 @@ class BaseLookupNode(AggregationOpStructMixin, BaseNode):
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: LookupParameters
 
+    # feature definition hash generation configuration
+    _normalize_nested_parameter_field_names = ["scd_parameters", "event_parameters"]
+
     @property
     def max_input_count(self) -> int:
         return 1
@@ -895,6 +990,36 @@ class BaseLookupNode(AggregationOpStructMixin, BaseNode):
 
     def _exclude_source_columns(self) -> List[str]:
         return [self.parameters.entity_column]
+
+    def normalize_and_recreate_node(
+        self,
+        input_node_hashes: List[str],
+        input_node_column_mappings: List[Dict[str, str]],
+    ) -> Tuple["BaseLookupNode", Dict[str, str]]:
+        remapped_node, column_name_remap = super().normalize_and_recreate_node(
+            input_node_hashes=input_node_hashes,
+            input_node_column_mappings=input_node_column_mappings,
+        )
+
+        # remap feature names
+        assert isinstance(self.parameters, LookupParameters)
+        assert isinstance(remapped_node.parameters, LookupParameters)
+        input_nodes_hash = hash_input_node_hashes(input_node_hashes)
+        remapped_feature_names = []
+        for remapped_input_col, feat_name in zip(
+            remapped_node.parameters.input_column_names, self.parameters.feature_names
+        ):
+            remapped_feat_name = f"feat_{input_nodes_hash}_{remapped_input_col}"
+            remapped_feature_names.append(OutColumnStr(remapped_feat_name))
+            column_name_remap[str(feat_name)] = remapped_feat_name
+
+        # sort the lists by feature names
+        remapped_feature_names, remapped_input_column_names = sort_lists_by_first_list(
+            remapped_feature_names, remapped_node.parameters.input_column_names
+        )
+        remapped_node.parameters.input_column_names = remapped_input_column_names
+        remapped_node.parameters.feature_names = remapped_feature_names
+        return remapped_node, column_name_remap
 
 
 class LookupNode(BaseLookupNode):
@@ -1045,6 +1170,9 @@ class JoinNode(BasePrunableNode):
     type: Literal[NodeType.JOIN] = Field(NodeType.JOIN, const=True)
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: JoinNodeParameters
+
+    # feature definition hash generation configuration
+    _normalize_nested_parameter_field_names = ["scd_parameters"]
 
     @property
     def max_input_count(self) -> int:
@@ -1227,6 +1355,68 @@ class JoinNode(BasePrunableNode):
         statements.append((var_name, expression))
         return statements, var_name
 
+    @staticmethod
+    def _remap_output_columns(
+        input_columns: List[InColumnStr],
+        output_columns: List[OutColumnStr],
+        column_name_remap: Dict[str, str],
+        input_nodes_hash: str,
+        prefix: str,
+    ) -> Tuple[List[OutColumnStr], Dict[str, str]]:
+        remapped_output_columns = []
+        for left_in_col, left_out_cols in zip(input_columns, output_columns):
+            remapped_out_col = f"{prefix}{input_nodes_hash}_{left_in_col}"
+            remapped_output_columns.append(OutColumnStr(remapped_out_col))
+            column_name_remap[str(left_out_cols)] = remapped_out_col
+        return remapped_output_columns, column_name_remap
+
+    def normalize_and_recreate_node(
+        self,
+        input_node_hashes: List[str],
+        input_node_column_mappings: List[Dict[str, str]],
+    ) -> Tuple["JoinNode", Dict[str, str]]:
+        remapped_node, column_name_remap = super().normalize_and_recreate_node(
+            input_node_hashes=input_node_hashes,
+            input_node_column_mappings=input_node_column_mappings,
+        )
+
+        # remap output columns
+        assert isinstance(self.parameters, JoinNodeParameters)
+        assert isinstance(remapped_node.parameters, JoinNodeParameters)
+        input_nodes_hash = hash_input_node_hashes(input_node_hashes)
+        remapped_left_output_columns, column_name_remap = self._remap_output_columns(
+            input_columns=remapped_node.parameters.left_input_columns,
+            output_columns=self.parameters.left_output_columns,
+            column_name_remap=column_name_remap,
+            input_nodes_hash=input_nodes_hash,
+            prefix="left_",
+        )
+        remapped_right_output_columns, column_name_remap = self._remap_output_columns(
+            input_columns=remapped_node.parameters.right_input_columns,
+            output_columns=self.parameters.right_output_columns,
+            column_name_remap=column_name_remap,
+            input_nodes_hash=input_nodes_hash,
+            prefix="right_",
+        )
+
+        # re-order the columns
+        left_in_cols, left_out_cols = sort_lists_by_first_list(
+            remapped_node.parameters.left_input_columns,
+            remapped_left_output_columns,
+        )
+        right_in_cols, right_out_cols = sort_lists_by_first_list(
+            remapped_node.parameters.right_input_columns,
+            remapped_right_output_columns,
+        )
+        remapped_node.parameters.left_input_columns = left_in_cols
+        remapped_node.parameters.left_output_columns = left_out_cols
+        remapped_node.parameters.right_input_columns = right_in_cols
+        remapped_node.parameters.right_output_columns = right_out_cols
+
+        # reset metadata
+        remapped_node.parameters.metadata = None
+        return remapped_node, column_name_remap
+
 
 class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
     """JoinFeatureNode class
@@ -1261,6 +1451,10 @@ class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
     type: Literal[NodeType.JOIN_FEATURE] = Field(NodeType.JOIN_FEATURE, const=True)
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: Parameters
+
+    # feature definition hash generation configuration
+    _normalized_output_prefix = "column_"
+    _inherit_first_input_column_name_mapping = True
 
     @property
     def max_input_count(self) -> int:
@@ -1426,6 +1620,38 @@ class TrackChangesNode(BaseNode):
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         raise NotImplementedError()
 
+    def normalize_and_recreate_node(
+        self,
+        input_node_hashes: List[str],
+        input_node_column_mappings: List[Dict[str, str]],
+    ) -> Tuple["TrackChangesNode", Dict[str, str]]:
+        remapped_node, column_name_remap = super().normalize_and_recreate_node(
+            input_node_hashes=input_node_hashes,
+            input_node_column_mappings=input_node_column_mappings,
+        )
+
+        # remap output columns
+        assert isinstance(self.parameters, TrackChangesNodeParameters)
+        assert isinstance(remapped_node.parameters, TrackChangesNodeParameters)
+        input_nodes_hash = hash_input_node_hashes(input_node_hashes)
+        params = self.parameters
+        remapped_params = remapped_node.parameters
+        remapped_prev_tracked_col = f"prev_{input_nodes_hash}_{params.tracked_column}"
+        remapped_new_tracked_col = f"new_{input_nodes_hash}_{params.tracked_column}"
+        remapped_prev_from_col = f"prev_from_{input_nodes_hash}_{params.effective_timestamp_column}"
+        remapped_new_from_col = f"new_from_{input_nodes_hash}_{params.effective_timestamp_column}"
+
+        column_name_remap[str(params.previous_tracked_column_name)] = remapped_prev_tracked_col
+        column_name_remap[str(params.new_tracked_column_name)] = remapped_new_tracked_col
+        column_name_remap[str(params.previous_valid_from_column_name)] = remapped_prev_from_col
+        column_name_remap[str(params.new_valid_from_column_name)] = remapped_new_from_col
+
+        remapped_params.previous_tracked_column_name = OutColumnStr(remapped_prev_tracked_col)
+        remapped_params.new_tracked_column_name = OutColumnStr(remapped_new_tracked_col)
+        remapped_params.previous_valid_from_column_name = OutColumnStr(remapped_prev_from_col)
+        remapped_params.new_valid_from_column_name = OutColumnStr(remapped_new_from_col)
+        return remapped_node, column_name_remap
+
 
 class AggregateAsAtParameters(BaseGroupbyParameters, SCDBaseParameters):
     """Parameters for AggregateAsAtNode"""
@@ -1444,6 +1670,9 @@ class AggregateAsAtNode(AggregationOpStructMixin, BaseNode):
 
     # class variable
     _auto_convert_expression_to_variable: ClassVar[bool] = False
+
+    # feature definition hash generation configuration
+    _normalized_output_prefix = "feat_"
 
     @property
     def max_input_count(self) -> int:

@@ -4,10 +4,12 @@ Base classes required for constructing query graph nodes
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
 from typing import Any, ClassVar, Dict, List, Optional, Sequence, Tuple, Type, TypeVar, Union
 
+import copy
 from abc import ABC, abstractmethod
 
 from pydantic import BaseModel, Field
 
+from featurebyte.common.model_util import parse_duration_string
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.metadata.column import InColumnStr, OutColumnStr
@@ -32,6 +34,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     VarNameExpressionStr,
 )
 from featurebyte.query_graph.node.scalar import ValueParameterType
+from featurebyte.query_graph.util import hash_input_node_hashes
 
 NODE_TYPES = []
 NodeT = TypeVar("NodeT", bound="BaseNode")
@@ -63,6 +66,18 @@ class BaseNode(BaseModel):
     # _auto_convert_expression_to_variable: when the expression is long, it will convert to a new
     # variable to limit the line width of the generated SDK code.
     _auto_convert_expression_to_variable: ClassVar[bool] = True
+
+    # for generating feature definition hash
+    # whether the node is commutative, i.e. the order of the inputs does not matter
+    is_commutative: ClassVar[bool] = False
+    # normalized output prefix is used to prefix the output column name when the node is normalized
+    _normalized_output_prefix: ClassVar[str] = ""
+    # whether the node should inherit the first input column name mapping as the output column name mapping
+    _inherit_first_input_column_name_mapping: ClassVar[bool] = False
+    # window parameter field name used to normalize the window parameter
+    _window_parameter_field_name: ClassVar[Optional[str]] = None
+    # nested parameter field names to be normalized
+    _normalize_nested_parameter_field_names: ClassVar[Optional[List[str]]] = None
 
     class Config:
         """Model configuration"""
@@ -558,6 +573,97 @@ class BaseNode(BaseModel):
         input_columns = self._extract_column_str_values(self.parameters.dict(), InColumnStr)
         assert len(input_columns) == 0
         return input_columns
+
+    @staticmethod
+    def _get_mapped_input_column(
+        column_name: str, input_node_column_mappings: List[Dict[str, str]]
+    ) -> str:
+        for input_node_column_mapping in input_node_column_mappings:
+            if column_name in input_node_column_mapping:
+                return input_node_column_mapping[column_name]
+        return column_name
+
+    def _normalize_nested_parameters(
+        self, nested_parameters: Dict[str, Any], input_node_column_mappings: List[Dict[str, str]]
+    ) -> Dict[str, Any]:
+        output = copy.deepcopy(nested_parameters)
+        for param_name, value in nested_parameters.items():
+            if isinstance(value, InColumnStr):
+                output[param_name] = self._get_mapped_input_column(
+                    value, input_node_column_mappings
+                )
+            if isinstance(value, list) and all(isinstance(val, InColumnStr) for val in value):
+                output[param_name] = [
+                    self._get_mapped_input_column(val, input_node_column_mappings) for val in value
+                ]
+        return output
+
+    def normalize_and_recreate_node(
+        self: NodeT,
+        input_node_hashes: List[str],
+        input_node_column_mappings: List[Dict[str, str]],
+    ) -> Tuple[NodeT, Dict[str, str]]:
+        """
+        This method is used to recreate a normalized node for the construction of the feature definition hash.
+        Normalized node means that the node parameters are normalized to a certain format. For example,
+        those user specified string parameters that do not affect the node operation will be replaced by
+        a normalized string parameter. This method will also return the original column name to remapped
+        column name mapping for the output node to use.
+
+        Parameters
+        ----------
+        input_node_hashes: List[str]
+            List of input node hashes
+        input_node_column_mappings: List[Dict[str, str]]
+            List of input node column mapping (original column name to normalized column name)
+
+        Returns
+        -------
+        NodeT
+            Normalized node
+        Dict[str, str]
+            Output column name to normalized column name mapping
+        """
+        if not input_node_column_mappings:
+            # if the node does not have any input, then no need to remap the column
+            return self, {}
+
+        input_node_column_mapping = input_node_column_mappings[0]
+        input_nodes_hash = hash_input_node_hashes(input_node_hashes)
+
+        output_column_remap: Dict[str, str] = {}
+        if self._inherit_first_input_column_name_mapping:
+            output_column_remap.update(**input_node_column_mapping)
+
+        node_params = self.parameters.dict(by_alias=True)
+        for param_name, value in node_params.items():
+            if isinstance(value, InColumnStr):
+                node_params[param_name] = input_node_column_mapping.get(value, value)
+            if isinstance(value, OutColumnStr):
+                output_column_remap[value] = f"{self._normalized_output_prefix}{input_nodes_hash}"
+                node_params[param_name] = output_column_remap[value]
+            if isinstance(value, list) and all(isinstance(val, InColumnStr) for val in value):
+                node_params[param_name] = [input_node_column_mapping.get(val, val) for val in value]
+            if param_name == self._window_parameter_field_name:
+                window_param = node_params[param_name]
+                if isinstance(window_param, list):
+                    windows = []
+                    for window in window_param:
+                        windows.append(f"{parse_duration_string(window)}s" if window else window)
+                    node_params[param_name] = windows
+                if isinstance(window_param, str):
+                    node_params[param_name] = f"{parse_duration_string(window_param)}s"
+
+            if (
+                self._normalize_nested_parameter_field_names
+                and param_name in self._normalize_nested_parameter_field_names
+                and isinstance(value, dict)
+            ):
+                node_params[param_name] = self._normalize_nested_parameters(
+                    nested_parameters=value, input_node_column_mappings=input_node_column_mappings
+                )
+
+        return self.clone(parameters=node_params), output_column_remap
 
 
 class SeriesOutputNodeOpStructMixin:

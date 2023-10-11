@@ -52,6 +52,26 @@ def hash_node(
     return hash_result
 
 
+def hash_input_node_hashes(input_node_hashes: List[str]) -> str:
+    """
+    Hash the input node hashes for generating the input node(s) signature.
+
+    Parameters
+    ----------
+    input_node_hashes: List[str]
+        input node hashes
+
+    Returns
+    -------
+    str
+    """
+    hasher = hashlib.shake_128()
+    hash_data = json_util.dumps(tuple(input_node_hashes), sort_keys=True).encode("utf-8")
+    hasher.update(hash_data)
+    hash_result = hasher.hexdigest(20)  # pylint: disable=E1121
+    return hash_result
+
+
 def get_aggregation_identifier(transformations_hash: str, parameters: dict[str, Any]) -> str:
     """Get aggregation identifier that can be used to determine the column names in tile table
 
@@ -195,3 +215,23 @@ def append_to_lineage(lineage: tuple[str, ...], node_name: str) -> tuple[str, ..
     output = list(lineage)
     output.append(node_name)
     return tuple(output)
+
+
+def sort_lists_by_first_list(by_list: List[Any], *lists: List[Any]) -> List[List[Any]]:
+    """
+    Sorts multiple lists by the first list
+
+    Parameters
+    ----------
+    by_list: List[Any]
+        list to sort by
+    lists: List[Any]
+        lists to sort
+
+    Returns
+    -------
+    sorted_lists: List[List[Any]]
+        sorted lists
+    """
+    sorted_lists = [list(t) for t in zip(*sorted(zip(by_list, *lists)))]
+    return sorted_lists
