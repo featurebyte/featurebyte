@@ -10,73 +10,35 @@ import greenlet
 import pytest
 from bson.objectid import ObjectId
 
-from featurebyte.enum import StrEnum
-from featurebyte.models.base import DEFAULT_CATALOG_ID
-from featurebyte.schema.worker.task.base import BaseTaskPayload, TaskType
+from featurebyte.models.base import DEFAULT_CATALOG_ID, User
+from featurebyte.schema.worker.task.base import TaskType
+from featurebyte.utils.persistent import MongoDBImpl
+from featurebyte.utils.storage import get_storage, get_temp_storage
 from featurebyte.worker.registry import TASK_REGISTRY_MAP
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task_executor import run_async
+from featurebyte.worker.test_util.random_task import RandomTask, RandomTaskPayload, TestCommand
 from tests.util.task import TaskExecutor
 
 
-class TestCommand(StrEnum):
-    """Command enum used for testing"""
-
-    RANDOM_COMMAND = "random_command"
-
-
-@pytest.fixture(name="random_task_payload_class")
-def random_task_payload_class_fixture():
-    """RandomTaskPayload class"""
-
-    class RandomTaskPayload(BaseTaskPayload):
-        """RandomTaskPayload class"""
-
-        output_collection_name = "random_collection"
-        command = TestCommand.RANDOM_COMMAND
-
-    return RandomTaskPayload
-
-
 @pytest.fixture(name="random_task_class")
-def random_task_class_fixture(random_task_payload_class, persistent):
+def random_task_class_fixture(persistent):
     """RandomTask class"""
     # Cannot reinitialize the same command
     if TestCommand.RANDOM_COMMAND in TASK_REGISTRY_MAP:
         yield TASK_REGISTRY_MAP[TestCommand.RANDOM_COMMAND]
     else:
-
-        class RandomTask(BaseTask):
-            """RandomTask class"""
-
-            payload_class = random_task_payload_class
-
-            async def get_task_description(self) -> str:
-                return "Execute random task"
-
-            async def execute(self) -> None:
-                """Run some task"""
-                await persistent.insert_one(
-                    collection_name="random_collection",
-                    document={
-                        "_id": self.payload.output_document_id,
-                        "user_id": self.user.id,
-                        "output_document_id": self.payload.output_document_id,
-                    },
-                    user_id=self.user.id,
-                )
-
         # Register the RANDOM_COMMAND in TASK_REGISTRY_MAP
         TASK_REGISTRY_MAP[TestCommand.RANDOM_COMMAND] = RandomTask
         yield RandomTask
 
 
-def test_extend_base_task_payload(random_task_payload_class):
+def test_extend_base_task_payload():
     """Test the property & dict method of the extended payload"""
 
     user_id = ObjectId()
     document_id = ObjectId()
-    payload_obj = random_task_payload_class(
+    payload_obj = RandomTaskPayload(
         user_id=user_id, catalog_id=DEFAULT_CATALOG_ID, output_document_id=document_id
     )
     assert payload_obj.dict() == {
@@ -151,7 +113,10 @@ def test_task_has_been_implemented(app_container, random_task_class):
             task_id=uuid4(),
             payload={},
             progress=None,
-            app_container=app_container,
+            user=User(),
+            persistent=MongoDBImpl(),
+            storage=get_storage(),
+            temp_storage=get_temp_storage(),
         )
 
 

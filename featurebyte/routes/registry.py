@@ -3,6 +3,8 @@ Registrations module.
 
 This contains all the dependencies that we want to register in order to get our fast API app up and running.
 """
+from uuid import UUID
+
 from celery import Celery
 
 from featurebyte.migration.migration_data_service import SchemaMetadataService
@@ -125,7 +127,10 @@ from featurebyte.service.view_construction import ViewConstructionService
 from featurebyte.service.working_schema import WorkingSchemaService
 from featurebyte.storage import Storage
 from featurebyte.utils.credential import MongoBackedCredentialProvider
+from featurebyte.utils.messaging import Progress
 from featurebyte.utils.persistent import MongoDBImpl
+from featurebyte.worker.task.target_table import TargetTableTask
+from featurebyte.worker.test_util.random_task import RandomTask
 from featurebyte.worker.util.observation_set_helper import ObservationSetHelper
 
 app_container_config = AppContainerConfig()
@@ -271,6 +276,9 @@ app_container_config.register_class(WorkingSchemaService)
 
 app_container_config.register_class(UseCaseService)
 app_container_config.register_class(UseCaseController)
+app_container_config.register_class(TargetTableTask)
+app_container_config.register_class(RandomTask)
+
 app_container_config.register_class(MongoDBImpl, name_override="persistent")
 
 # These have force_no_deps set as True, as they are manually initialized.
@@ -293,6 +301,17 @@ class CatalogId:
 # as such, works as a placeholder.
 app_container_config.register_class(CatalogId, force_no_deps=True)
 
+
+class Payload:
+    """
+    Another special placeholder class.
+    """
+
+
+# Manually initialized via tasks.
+app_container_config.register_class(UUID, force_no_deps=True, name_override="task_id")
+app_container_config.register_class(Progress, force_no_deps=True)
+app_container_config.register_class(Payload, force_no_deps=True)
 
 # Validate the config after all classes have been registered.
 # This should be the last line in this module.

@@ -16,7 +16,7 @@ from featurebyte.worker.task.target_table import TargetTableTask
 
 
 @pytest.mark.asyncio
-async def test_get_task_description(catalog):
+async def test_get_task_description(catalog, app_container):
     """
     Test get task description
     """

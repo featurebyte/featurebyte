@@ -9,6 +9,7 @@ import asyncio
 import concurrent.futures
 import os
 from contextlib import contextmanager
+from uuid import UUID
 
 from bson import ObjectId
 
@@ -16,9 +17,11 @@ from featurebyte.common.progress import get_ranged_progress_callback
 from featurebyte.enum import ConflictResolution
 from featurebyte.exception import DocumentInconsistencyError
 from featurebyte.logging import get_logger
-from featurebyte.models.base import PydanticObjectId, activate_catalog
+from featurebyte.models.base import PydanticObjectId, User, activate_catalog
 from featurebyte.models.feature import FeatureModel
+from featurebyte.persistent import Persistent
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.routes.feature.controller import FeatureController
 from featurebyte.schema.feature import BatchFeatureItem, FeatureServiceCreate
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.schema.worker.task.batch_feature_create import BatchFeatureCreateTaskPayload
@@ -26,6 +29,9 @@ from featurebyte.schema.worker.task.feature_list_batch_feature_create import (
     FeatureListCreateWithBatchFeatureCreationTaskPayload,
 )
 from featurebyte.service.feature import FeatureService
+from featurebyte.service.feature_namespace import FeatureNamespaceService
+from featurebyte.service.namespace_handler import NamespaceHandler
+from featurebyte.storage import Storage
 from featurebyte.worker.task.base import BaseTask
 
 logger = get_logger(__name__)
@@ -87,6 +93,34 @@ class BatchFeatureCreateTask(BaseTask):
 
     payload_class: type[BaseTaskPayload] = BatchFeatureCreateTaskPayload
 
+    def __init__(  # pylint: disable=too-many-arguments
+        self,
+        task_id: UUID,
+        payload: dict[str, Any],
+        progress: Any,
+        user: User,
+        persistent: Persistent,
+        storage: Storage,
+        temp_storage: Storage,
+        feature_service: FeatureService,
+        feature_namespace_service: FeatureNamespaceService,
+        feature_controller: FeatureController,
+        namespace_handler: NamespaceHandler,
+    ):
+        super().__init__(
+            task_id=task_id,
+            payload=payload,
+            progress=progress,
+            user=user,
+            persistent=persistent,
+            storage=storage,
+            temp_storage=temp_storage,
+        )
+        self.feature_service = feature_service
+        self.feature_namespace_service = feature_namespace_service
+        self.feature_controller = feature_controller
+        self.namespace_handler = namespace_handler
+
     async def get_task_description(self) -> str:
         payload = cast(BatchFeatureCreateTaskPayload, self.payload)
         return f"Save {len(payload.features)} features"
@@ -106,7 +140,7 @@ class BatchFeatureCreateTask(BaseTask):
             Saved feature ids
         """
         saved_feature_ids = set()
-        async for doc in self.app_container.feature_service.list_documents_as_dict_iterator(
+        async for doc in self.feature_service.list_documents_as_dict_iterator(
             query_filter={"_id": {"$in": feature_ids}}
         ):
             saved_feature_ids.add(doc["_id"])
@@ -133,7 +167,7 @@ class BatchFeatureCreateTask(BaseTask):
             Conflict feature name to resolution feature id mapping
         """
         conflict_to_resolution_feature_id_map = {}
-        service = self.app_container.feature_namespace_service
+        service = self.feature_namespace_service
         if conflict_resolution == "retrieve":
             async for feat_namespace in service.list_documents_iterator(
                 query_filter={"name": {"$in": feature_names}}
@@ -158,7 +192,7 @@ class BatchFeatureCreateTask(BaseTask):
         bool
         """
         # retrieve the saved feature & check if it is the same as the expected feature
-        feature_service: FeatureService = self.app_container.feature_service
+        feature_service: FeatureService = self.feature_service
         feature = await feature_service.get_document(document_id=document.id)
         generated_hash = feature.graph.node_name_to_ref[feature.node_name]
         expected_hash = document.graph.node_name_to_ref[document.node_name]
@@ -214,14 +248,12 @@ class BatchFeatureCreateTask(BaseTask):
         )
 
         # prepare the feature document & definition
-        feature_service: FeatureService = self.app_container.feature_service
+        feature_service: FeatureService = self.feature_service
         document = await feature_service.prepare_feature_model(
             data=feature_create,
             sanitize_for_definition=True,
         )
-        definition = await self.app_container.namespace_handler.prepare_definition(
-            document=document
-        )
+        definition = await self.namespace_handler.prepare_definition(document=document)
 
         # execute the code to save the feature
         await execute_sdk_code(catalog_id=catalog_id, code=definition)
@@ -231,7 +263,7 @@ class BatchFeatureCreateTask(BaseTask):
 
         if not is_consistent:
             # delete the generated feature & raise an error
-            await self.app_container.feature_controller.delete_feature(feature_id=document.id)
+            await self.feature_controller.delete_feature(feature_id=document.id)
             raise DocumentInconsistencyError("Inconsistent feature definition detected!")
         return document
 

@@ -7,6 +7,7 @@ from typing import Any, cast
 
 from datetime import datetime
 from pathlib import Path
+from uuid import UUID
 
 from featurebyte_freeware.feature_job_analysis.analysis import (
     FeatureJobSettingsAnalysisResult,
@@ -16,16 +17,23 @@ from featurebyte_freeware.feature_job_analysis.database import EventDataset
 from featurebyte_freeware.feature_job_analysis.schema import FeatureJobSetting
 
 from featurebyte.logging import get_logger
+from featurebyte.models.base import User
 from featurebyte.models.feature_job_setting_analysis import (
     BackTestSummary,
     FeatureJobSettingAnalysisData,
     FeatureJobSettingAnalysisModel,
 )
+from featurebyte.persistent import Persistent
 from featurebyte.schema.feature_job_setting_analysis import EventTableCandidate
 from featurebyte.schema.worker.task.feature_job_setting_analysis import (
     FeatureJobSettingAnalysisBackTestTaskPayload,
     FeatureJobSettingAnalysisTaskPayload,
 )
+from featurebyte.service.event_table import EventTableService
+from featurebyte.service.feature_job_setting_analysis import FeatureJobSettingAnalysisService
+from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.session_manager import SessionManagerService
+from featurebyte.storage import Storage
 from featurebyte.worker.task.base import BaseTask
 
 logger = get_logger(__name__)
@@ -38,12 +46,39 @@ class FeatureJobSettingAnalysisTask(BaseTask):
 
     payload_class = FeatureJobSettingAnalysisTaskPayload
 
+    def __init__(  # pylint: disable=too-many-arguments
+        self,
+        task_id: UUID,
+        payload: dict[str, Any],
+        progress: Any,
+        user: User,
+        persistent: Persistent,
+        storage: Storage,
+        temp_storage: Storage,
+        event_table_service: EventTableService,
+        feature_store_service: FeatureStoreService,
+        session_manager_service: SessionManagerService,
+        feature_job_setting_analysis_service: FeatureJobSettingAnalysisService,
+    ):
+        super().__init__(
+            task_id=task_id,
+            payload=payload,
+            progress=progress,
+            user=user,
+            persistent=persistent,
+            storage=storage,
+            temp_storage=temp_storage,
+        )
+        self.event_table_service = event_table_service
+        self.feature_store_service = feature_store_service
+        self.session_manager_service = session_manager_service
+        self.feature_job_setting_analysis_service = feature_job_setting_analysis_service
+
     async def get_task_description(self) -> str:
         payload = cast(FeatureJobSettingAnalysisTaskPayload, self.payload)
         # retrieve event data
         if payload.event_table_id:
-            event_table_service = self.app_container.event_table_service
-            event_table_document = await event_table_service.get_document(
+            event_table_document = await self.event_table_service.get_document(
                 document_id=payload.event_table_id
             )
             event_table_name = event_table_document.name
@@ -62,8 +97,7 @@ class FeatureJobSettingAnalysisTask(BaseTask):
 
         # retrieve event data
         if payload.event_table_id:
-            event_table_service = self.app_container.event_table_service
-            event_table_document = await event_table_service.get_document(
+            event_table_document = await self.event_table_service.get_document(
                 document_id=payload.event_table_id
             )
             event_table = EventTableCandidate(
@@ -78,14 +112,12 @@ class FeatureJobSettingAnalysisTask(BaseTask):
             event_table = payload.event_table_candidate
 
         # retrieve feature store
-        feature_store = await self.app_container.feature_store_service.get_document(
+        feature_store = await self.feature_store_service.get_document(
             document_id=event_table.tabular_source.feature_store_id
         )
 
         # establish database session
-        db_session = await self.app_container.session_manager_service.get_feature_store_session(
-            feature_store
-        )
+        db_session = await self.session_manager_service.get_feature_store_session(feature_store)
 
         event_dataset = EventDataset(
             database_type=feature_store.type,
@@ -115,10 +147,7 @@ class FeatureJobSettingAnalysisTask(BaseTask):
         )
 
         await self.update_progress(percent=95, message="Saving Analysis")
-        feature_job_settings_analysis_service = (
-            self.app_container.feature_job_setting_analysis_service
-        )
-        analysis_doc = await feature_job_settings_analysis_service.create_document(
+        analysis_doc = await self.feature_job_setting_analysis_service.create_document(
             data=analysis_doc
         )
         assert analysis_doc.id == payload.output_document_id
@@ -144,9 +173,31 @@ class FeatureJobSettingAnalysisBacktestTask(BaseTask):
 
     payload_class = FeatureJobSettingAnalysisBackTestTaskPayload
 
+    def __init__(  # pylint: disable=too-many-arguments
+        self,
+        task_id: UUID,
+        payload: dict[str, Any],
+        progress: Any,
+        user: User,
+        persistent: Persistent,
+        storage: Storage,
+        temp_storage: Storage,
+        feature_job_setting_analysis_service: FeatureJobSettingAnalysisService,
+    ):
+        super().__init__(
+            task_id=task_id,
+            payload=payload,
+            progress=progress,
+            user=user,
+            persistent=persistent,
+            storage=storage,
+            temp_storage=temp_storage,
+        )
+        self.feature_job_setting_analysis_service = feature_job_setting_analysis_service
+
     async def get_task_description(self) -> str:
         payload = cast(FeatureJobSettingAnalysisBackTestTaskPayload, self.payload)
-        analysis = await self.app_container.feature_job_setting_analysis_service.get_document(
+        analysis = await self.feature_job_setting_analysis_service.get_document(
             document_id=payload.feature_job_setting_analysis_id
         )
         return f'Backtest feature job settings for table "{analysis.analysis_parameters.event_table_name}"'
@@ -160,10 +211,7 @@ class FeatureJobSettingAnalysisBacktestTask(BaseTask):
 
         # retrieve analysis doc from persistent
         document_id = payload.feature_job_setting_analysis_id
-        feature_job_settings_analysis_service = (
-            self.app_container.feature_job_setting_analysis_service
-        )
-        analysis_doc = await feature_job_settings_analysis_service.get_document(
+        analysis_doc = await self.feature_job_setting_analysis_service.get_document(
             document_id=document_id
         )
         document = analysis_doc.dict(by_alias=True)
@@ -197,7 +245,7 @@ class FeatureJobSettingAnalysisBacktestTask(BaseTask):
             1 - late_series["count_on_time"].sum() / late_series["total_count"].sum()
         )
         pct_incomplete_jobs = (late_series.pct_late_data > 0).sum() / late_series.shape[0]
-        await feature_job_settings_analysis_service.add_backtest_summary(
+        await self.feature_job_setting_analysis_service.add_backtest_summary(
             document_id=document_id,
             backtest_summary=BackTestSummary(
                 output_document_id=payload.output_document_id,

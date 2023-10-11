@@ -152,29 +152,34 @@ class LazyAppContainer:
 
     def __init__(
         self,
-        user: Any,
-        temp_storage: Storage,
-        celery: Celery,
-        redis: Redis[Any],
-        storage: Storage,
-        catalog_id: Optional[ObjectId],
         app_container_config: AppContainerConfig,
+        user: Optional[Any] = None,
+        temp_storage: Optional[Storage] = None,
+        celery: Optional[Celery] = None,
+        redis: Optional[Redis[Any]] = None,
+        storage: Optional[Storage] = None,
+        catalog_id: Optional[ObjectId] = None,
         persistent: Optional[Persistent] = None,
+        instance_map: Optional[Dict[str, Any]] = None,
     ):
         self.app_container_config = app_container_config
         self._enable_block_modification_check = True
 
-        # Used to cache instances if they've already been built
-        # Pre-load with some default deps
-        self.instance_map: Dict[str, Any] = {
-            "catalog_id": catalog_id,
-            "celery": celery,
-            "redis": redis,
-            "persistent": persistent,
-            "storage": storage,
-            "temp_storage": temp_storage,
-            "user": user,
-        }
+        # Used to cache instances if they've already been built.
+        # Pre-load with some default deps if they're not provided.
+        self.instance_map: Dict[str, Any] = (
+            {
+                "catalog_id": catalog_id,
+                "celery": celery,
+                "redis": redis,
+                "persistent": persistent,
+                "storage": storage,
+                "temp_storage": temp_storage,
+                "user": user,
+            }
+            if instance_map is None
+            else instance_map
+        )
 
     @contextmanager
     def disable_block_modification_check(self) -> Iterator[LazyAppContainer]:

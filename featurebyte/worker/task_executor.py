@@ -3,7 +3,7 @@ This module contains TaskExecutor class
 """
 from __future__ import annotations
 
-from typing import Any, Awaitable, Optional
+from typing import Any, Awaitable, Dict, Optional
 
 import asyncio
 import os
@@ -104,23 +104,25 @@ class TaskExecutor:
         command = self.command_type(payload["command"])
         user = User(id=payload.get("user_id"))
         task_class = TASK_REGISTRY_MAP[command]
-        payload_object = task_class.payload_class(**payload)
+        instance_map_to_use = {
+            # Default instances
+            "celery": get_celery(),
+            "redis": get_redis(),
+            "persistent": MongoDBImpl(),
+            "storage": get_storage(),
+            "temp_storage": get_temp_storage(),
+            # Task specific parameters
+            "user": user,
+            "catalog_id": payload.get("catalog_id"),
+            "task_id": task_id,
+            "payload": payload,
+            "progress": progress,
+        }
         app_container = LazyAppContainer(
-            user=user,
-            persistent=MongoDBImpl(),
-            temp_storage=get_temp_storage(),
-            celery=get_celery(),
-            redis=get_redis(),
-            storage=get_storage(),
-            catalog_id=payload_object.catalog_id,
             app_container_config=app_container_config,
+            instance_map=instance_map_to_use,
         )
-        self.task = task_class(
-            task_id=task_id,
-            payload=payload,
-            progress=progress,
-            app_container=app_container,
-        )
+        self.task = app_container.get(task_class)
         self._setup_worker_config()
 
     async def _update_task_start_time_and_description(self, persistent: Any) -> None:
