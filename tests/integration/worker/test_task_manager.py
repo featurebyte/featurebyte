@@ -35,9 +35,11 @@ async def wait_for_async_task(
 
 
 @pytest.fixture(name="task_manager")
-def task_manager_fixture(celery_service):
+def task_manager_fixture(celery_service, app_container):
     """Task manager fixture"""
     persistent, celery = celery_service
+    app_container.override_instance_for_test("persistent", persistent)
+    app_container.override_instance_for_test("celery", celery)
     return TaskManager(
         user=User(id=ObjectId()),
         persistent=persistent,
@@ -47,9 +49,8 @@ def task_manager_fixture(celery_service):
 
 
 @pytest.mark.asyncio
-async def test_submit_task(task_manager, mock_get_persistent):
+async def test_submit_task(task_manager):
     """Test task manager service"""
-    _ = mock_get_persistent
     payload = TestTaskPayload(
         user_id=task_manager.user.id,
         catalog_id=DEFAULT_CATALOG_ID,
@@ -68,9 +69,8 @@ async def test_submit_task(task_manager, mock_get_persistent):
 
 
 @pytest.mark.asyncio
-async def test_schedule_interval_task(task_manager, mock_get_persistent):
+async def test_schedule_interval_task(task_manager):
     """Test task manager service"""
-    _ = mock_get_persistent
     payload = TestTaskPayload(
         user_id=task_manager.user.id,
         catalog_id=DEFAULT_CATALOG_ID,
