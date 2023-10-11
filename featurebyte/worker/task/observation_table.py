@@ -77,7 +77,7 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask):
             sample_rows=payload.sample_rows,
         )
 
-        async with self.drop_table_on_error(db_session, location.table_details):
+        async with self.drop_table_on_error(db_session, location.table_details, self.payload):
             payload_input = payload.request_input
             assert not isinstance(payload_input, TargetInput)
             additional_metadata = (

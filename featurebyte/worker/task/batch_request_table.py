@@ -78,7 +78,7 @@ class BatchRequestTableTask(DataWarehouseMixin, BaseTask):
             sample_rows=None,
         )
 
-        async with self.drop_table_on_error(db_session, location.table_details):
+        async with self.drop_table_on_error(db_session, location.table_details, self.payload):
             columns_info, num_rows = await service.get_columns_info_and_num_rows(
                 db_session, location.table_details
             )

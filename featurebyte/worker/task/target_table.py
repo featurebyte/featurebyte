@@ -82,7 +82,7 @@ class TargetTableTask(DataWarehouseMixin, BaseTask):
             payload.feature_store_id
         )
         async with self.drop_table_on_error(
-            db_session=db_session, table_details=location.table_details
+            db_session=db_session, table_details=location.table_details, payload=self.payload
         ):
             await self.target_computer.compute(
                 observation_set=observation_set,

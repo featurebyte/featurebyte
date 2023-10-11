@@ -100,7 +100,7 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask):
         )
 
         async with self.drop_table_on_error(
-            db_session=db_session, table_details=location.table_details
+            db_session=db_session, table_details=location.table_details, payload=self.payload
         ):
             await self.online_serving_service.get_online_features_from_feature_list(
                 feature_list=feature_list,

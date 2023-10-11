@@ -85,7 +85,7 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask):
         )
 
         async with self.drop_table_on_error(
-            db_session=db_session, table_details=location.table_details
+            db_session=db_session, table_details=location.table_details, payload=self.payload
         ):
             await self.historical_features_service.compute(
                 observation_set=observation_set,

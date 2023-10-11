@@ -77,7 +77,7 @@ class StaticSourceTableTask(DataWarehouseMixin, BaseTask):
             sample_rows=payload.sample_rows,
         )
 
-        async with self.drop_table_on_error(db_session, location.table_details):
+        async with self.drop_table_on_error(db_session, location.table_details, self.payload):
             additional_metadata = (
                 await self.static_source_table_service.validate_materialized_table_and_get_metadata(
                     db_session, location.table_details
