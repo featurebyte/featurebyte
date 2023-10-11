@@ -47,8 +47,9 @@ def task_manager_fixture(celery_service):
 
 
 @pytest.mark.asyncio
-async def test_submit_task(task_manager):
+async def test_submit_task(task_manager, mock_get_persistent):
     """Test task manager service"""
+    _ = mock_get_persistent
     payload = TestTaskPayload(
         user_id=task_manager.user.id,
         catalog_id=DEFAULT_CATALOG_ID,
@@ -67,8 +68,9 @@ async def test_submit_task(task_manager):
 
 
 @pytest.mark.asyncio
-async def test_schedule_interval_task(task_manager):
+async def test_schedule_interval_task(task_manager, mock_get_persistent):
     """Test task manager service"""
+    _ = mock_get_persistent
     payload = TestTaskPayload(
         user_id=task_manager.user.id,
         catalog_id=DEFAULT_CATALOG_ID,
