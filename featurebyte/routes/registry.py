@@ -148,6 +148,7 @@ from featurebyte.worker.task.observation_table_upload import ObservationTableUpl
 from featurebyte.worker.task.online_store_cleanup import OnlineStoreCleanupTask
 from featurebyte.worker.task.static_source_table import StaticSourceTableTask
 from featurebyte.worker.task.target_table import TargetTableTask
+from featurebyte.worker.task.test_task import TestTask
 from featurebyte.worker.task.tile_task import TileTask
 from featurebyte.worker.test_util.random_task import RandomTask
 from featurebyte.worker.util.observation_set_helper import ObservationSetHelper
@@ -313,6 +314,7 @@ app_container_config.register_class(StaticSourceTableTask)
 app_container_config.register_class(TileTask)
 app_container_config.register_class(OnlineStoreCleanupTask)
 app_container_config.register_class(LongRunningTask)
+app_container_config.register_class(TestTask)
 
 app_container_config.register_class(MongoDBImpl, name_override="persistent")
 

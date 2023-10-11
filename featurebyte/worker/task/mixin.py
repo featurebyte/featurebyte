@@ -3,8 +3,9 @@ Mixin classes for tasks
 """
 from __future__ import annotations
 
-from contextlib import asynccontextmanager
 from typing import AsyncIterator
+
+from contextlib import asynccontextmanager
 
 from featurebyte.logging import get_logger
 from featurebyte.query_graph.node.schema import TableDetails
