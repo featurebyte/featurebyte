@@ -17,7 +17,6 @@ from featurebyte.models.event_table import EventTableModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent import DuplicateDocumentError
 from featurebyte.routes.lazy_app_container import LazyAppContainer
-from featurebyte.routes.registry import app_container_config
 from featurebyte.worker.task.feature_job_setting_analysis import (
     FeatureJobSettingAnalysisBacktestTask,
     FeatureJobSettingAnalysisTask,

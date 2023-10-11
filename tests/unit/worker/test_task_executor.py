@@ -22,7 +22,7 @@ from featurebyte.worker.test_util.random_task import RandomTask, RandomTaskPaylo
 
 
 @pytest.fixture(name="random_task_class")
-def random_task_class_fixture(persistent):
+def random_task_class_fixture():
     """RandomTask class"""
     # Cannot reinitialize the same command
     if TestCommand.RANDOM_COMMAND in TASK_REGISTRY_MAP:
@@ -107,7 +107,7 @@ async def test_task_executor(random_task_class, persistent):
     assert document["description"] == "Execute random task"
 
 
-def test_task_has_been_implemented(app_container, random_task_class):
+def test_task_has_been_implemented(random_task_class):
     """
     Test implement a task whose command has been implemented before
     """

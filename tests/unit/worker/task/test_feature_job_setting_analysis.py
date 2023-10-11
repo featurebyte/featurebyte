@@ -15,7 +15,6 @@ from featurebyte.models.feature_job_setting_analysis import FeatureJobSettingAna
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent import DuplicateDocumentError
 from featurebyte.routes.lazy_app_container import LazyAppContainer
-from featurebyte.routes.registry import app_container_config
 from featurebyte.worker.task.feature_job_setting_analysis import FeatureJobSettingAnalysisTask
 from tests.unit.worker.task.base import BaseTaskTestSuite
 

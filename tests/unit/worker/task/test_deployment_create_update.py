@@ -8,7 +8,6 @@ import pytest
 from bson import ObjectId
 
 from featurebyte.routes.lazy_app_container import LazyAppContainer
-from featurebyte.routes.registry import app_container_config
 from featurebyte.schema.worker.task.deployment_create_update import (
     CreateDeploymentPayload,
     DeploymentCreateUpdateTaskPayload,
