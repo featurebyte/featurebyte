@@ -1,6 +1,7 @@
 """
 Random task util. Mainly used in tests, but placing in src so that we can register for DI.
 """
+import time
 
 from featurebyte.enum import StrEnum
 from featurebyte.schema.worker.task.base import BaseTaskPayload
