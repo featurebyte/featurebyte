@@ -6,7 +6,6 @@ from http import HTTPStatus
 
 import pandas as pd
 import pytest
-from sqlglot import parse_one
 
 from featurebyte.api.entity import Entity
 from featurebyte.api.observation_table import ObservationTable
@@ -16,58 +15,12 @@ from featurebyte.enum import SpecialColumnName
 from featurebyte.exception import RecordCreationException
 from featurebyte.models.observation_table import UploadedFileInput
 from featurebyte.models.request_input import RequestInputType
-from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.schema.observation_table import ObservationTableUpload
-
-
-def check_location_valid(observation_table, session):
-    """
-    Check that the location attribute of the observation table is valid
-    """
-    table_details = observation_table.location.table_details
-    table_details_dict = table_details.dict()
-    table_details_dict.pop("table_name")
-    assert table_details_dict == {
-        "database_name": session.database_name,
-        "schema_name": session.schema_name,
-    }
-
-
-async def check_materialized_table_accessible(
-    observation_table, session, source_type, expected_num_rows
-):
-    """
-    Check materialized table is available
-    """
-    table_details = observation_table.location.table_details
-    query = sql_to_string(
-        parse_one(
-            f"""
-            SELECT COUNT(*) FROM "{table_details.database_name}"."{table_details.schema_name}"."{table_details.table_name}"
-            """
-        ),
-        source_type=source_type,
-    )
-    df = await session.execute_query(query)
-    num_rows = df.iloc[0, 0]
-    assert num_rows == expected_num_rows
-
-
-def check_materialized_table_preview_methods(table, expected_columns, number_of_rows=15):
-    """
-    Check that preview, sample and describe methods work on materialized tables
-    """
-    df_preview = table.preview(limit=number_of_rows)
-    assert df_preview.shape[0] == number_of_rows
-    assert df_preview.columns.tolist() == expected_columns
-
-    df_sample = table.sample(size=number_of_rows)
-    assert df_sample.shape[0] == number_of_rows
-    assert df_sample.columns.tolist() == expected_columns
-
-    df_describe = table.describe()
-    assert df_describe.shape[1] > 0
-    assert set(df_describe.index).issuperset(["top", "min", "max"])
+from tests.integration.api.materialized_table.utils import (
+    check_location_valid,
+    check_materialized_table_accessible,
+    check_materialized_table_preview_methods,
+)
 
 
 @pytest.fixture(name="normal_user_id_entity", scope="session")
@@ -99,8 +52,9 @@ async def test_observation_table_from_source_table(
         f"MY_OBSERVATION_TABLE_{source_type}", sample_rows=sample_rows
     )
     assert observation_table.name == f"MY_OBSERVATION_TABLE_{source_type}"
-    check_location_valid(observation_table, session)
-    await check_materialized_table_accessible(observation_table, session, source_type, sample_rows)
+    table_details = observation_table.location.table_details
+    check_location_valid(table_details, session)
+    await check_materialized_table_accessible(table_details, session, source_type, sample_rows)
 
     user_id_entity_col_name = "User ID"
     check_materialized_table_preview_methods(
@@ -148,8 +102,9 @@ async def test_observation_table_from_view(
         columns_rename_mapping={view.timestamp_column: "POINT_IN_TIME", "ÜSER ID": "üser id"},
     )
     assert observation_table.name == f"MY_OBSERVATION_TABLE_FROM_VIEW_{source_type}"
-    check_location_valid(observation_table, session)
-    await check_materialized_table_accessible(observation_table, session, source_type, sample_rows)
+    table_details = observation_table.location.table_details
+    check_location_valid(table_details, session)
+    await check_materialized_table_accessible(table_details, session, source_type, sample_rows)
 
     check_materialized_table_preview_methods(
         observation_table,
@@ -225,7 +180,7 @@ async def test_observation_table_upload(
 
     # Assert materialized table
     await check_materialized_table_accessible(
-        observation_table, session, source_type, number_of_rows
+        observation_table.location.table_details, session, source_type, number_of_rows
     )
     check_materialized_table_preview_methods(
         observation_table, [SpecialColumnName.POINT_IN_TIME, "cust_id"], number_of_rows
