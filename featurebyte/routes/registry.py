@@ -54,6 +54,7 @@ from featurebyte.routes.task.controller import TaskController
 from featurebyte.routes.temp_data.controller import TempDataController
 from featurebyte.routes.use_case.controller import UseCaseController
 from featurebyte.routes.user_defined_function.controller import UserDefinedFunctionController
+from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.service.catalog import AllCatalogService, CatalogService
@@ -339,16 +340,10 @@ class CatalogId:
 app_container_config.register_class(CatalogId, force_no_deps=True)
 
 
-class Payload:
-    """
-    Another special placeholder class.
-    """
-
-
 # Manually initialized via tasks.
 app_container_config.register_class(UUID, force_no_deps=True, name_override="task_id")
 app_container_config.register_class(Progress, force_no_deps=True)
-app_container_config.register_class(Payload, force_no_deps=True)
+app_container_config.register_class(BaseTaskPayload, force_no_deps=True, name_override="payload")
 
 # Validate the config after all classes have been registered.
 # This should be the last line in this module.

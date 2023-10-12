@@ -12,7 +12,6 @@ from featurebyte.models.base import User
 from featurebyte.persistent import Persistent
 from featurebyte.schema.worker.task.online_store_cleanup import OnlineStoreCleanupTaskPayload
 from featurebyte.service.online_store_cleanup import OnlineStoreCleanupService
-from featurebyte.storage import Storage
 from featurebyte.worker.task.base import BaseTask
 
 logger = get_logger(__name__)
@@ -32,8 +31,6 @@ class OnlineStoreCleanupTask(BaseTask):
         progress: Any,
         user: User,
         persistent: Persistent,
-        storage: Storage,
-        temp_storage: Storage,
         online_store_cleanup_service: OnlineStoreCleanupService,
     ):
         super().__init__(
@@ -42,8 +39,6 @@ class OnlineStoreCleanupTask(BaseTask):
             progress=progress,
             user=user,
             persistent=persistent,
-            storage=storage,
-            temp_storage=temp_storage,
         )
         self.online_store_cleanup_service = online_store_cleanup_service
 

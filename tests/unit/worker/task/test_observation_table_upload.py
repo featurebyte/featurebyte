@@ -1,8 +1,6 @@
 """
 Test observation table upload
 """
-from unittest.mock import Mock
-from uuid import uuid4
 
 import pytest
 from bson import ObjectId
@@ -27,8 +25,6 @@ async def test_get_task_description(catalog, app_container):
         request_input=UploadedFileInput(type=RequestInputType.UPLOADED_FILE),
         observation_set_storage_path="filepath",
     )
-    app_container.override_instance_for_test("task_id", uuid4())
-    app_container.override_instance_for_test("progress", Mock())
     app_container.override_instance_for_test("payload", payload.dict(by_alias=True))
     task = app_container.get(ObservationTableUploadTask)
     assert (

@@ -14,7 +14,6 @@ from featurebyte.schema.worker.task.tile import TileTaskPayload
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.tile.tile_task_executor import TileTaskExecutor
-from featurebyte.storage import Storage
 from featurebyte.worker.task.base import BaseTask
 
 logger = get_logger(__name__)
@@ -34,8 +33,6 @@ class TileTask(BaseTask):
         progress: Any,
         user: User,
         persistent: Persistent,
-        storage: Storage,
-        temp_storage: Storage,
         feature_store_service: FeatureStoreService,
         session_manager_service: SessionManagerService,
         tile_task_executor: TileTaskExecutor,
@@ -46,8 +43,6 @@ class TileTask(BaseTask):
             progress=progress,
             user=user,
             persistent=persistent,
-            storage=storage,
-            temp_storage=temp_storage,
         )
         self.feature_store_service = feature_store_service
         self.session_manager_service = session_manager_service

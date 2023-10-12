@@ -15,7 +15,6 @@ from featurebyte.schema.worker.task.static_source_table import StaticSourceTable
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.static_source_table import StaticSourceTableService
-from featurebyte.storage import Storage
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin
 
@@ -36,8 +35,6 @@ class StaticSourceTableTask(DataWarehouseMixin, BaseTask):
         progress: Any,
         user: User,
         persistent: Persistent,
-        storage: Storage,
-        temp_storage: Storage,
         feature_store_service: FeatureStoreService,
         static_source_table_service: StaticSourceTableService,
         session_manager_service: SessionManagerService,
@@ -48,8 +45,6 @@ class StaticSourceTableTask(DataWarehouseMixin, BaseTask):
             progress=progress,
             user=user,
             persistent=persistent,
-            storage=storage,
-            temp_storage=temp_storage,
         )
         self.feature_store_service = feature_store_service
         self.static_source_table_service = static_source_table_service

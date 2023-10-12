@@ -1,8 +1,6 @@
 """
 Test batch feature table
 """
-from unittest.mock import Mock
-from uuid import uuid4
 
 import pytest
 from bson import ObjectId
@@ -23,8 +21,6 @@ async def test_get_task_description(catalog, app_container):
         deployment_id=ObjectId(),
         catalog_id=catalog.id,
     )
-    app_container.override_instance_for_test("task_id", uuid4())
-    app_container.override_instance_for_test("progress", Mock())
     app_container.override_instance_for_test("payload", payload.dict(by_alias=True))
     task = app_container.get(BatchFeatureTableTask)
     assert await task.get_task_description() == 'Save batch feature table "Test Features"'

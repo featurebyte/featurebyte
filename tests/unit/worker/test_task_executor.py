@@ -13,7 +13,6 @@ from bson.objectid import ObjectId
 from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.schema.worker.task.base import TaskType
 from featurebyte.utils.persistent import MongoDBImpl
-from featurebyte.utils.storage import get_storage, get_temp_storage
 from featurebyte.worker.registry import TASK_REGISTRY_MAP
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task_executor import TaskExecutor as WorkerTaskExecutor
@@ -121,8 +120,6 @@ def test_task_has_been_implemented(random_task_class):
             progress=None,
             user=User(),
             persistent=MongoDBImpl(),
-            storage=get_storage(),
-            temp_storage=get_temp_storage(),
         )
 
 

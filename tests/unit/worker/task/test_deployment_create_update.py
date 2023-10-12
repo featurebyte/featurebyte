@@ -1,8 +1,6 @@
 """
 Test deployment create and update
 """
-from unittest.mock import Mock
-from uuid import uuid4
 
 import pytest
 from bson import ObjectId
@@ -17,7 +15,7 @@ from featurebyte.worker.task.deployment_create_update import DeploymentCreateUpd
 
 
 @pytest.mark.asyncio
-async def test_get_task_description_create():
+async def test_get_task_description_create(app_container):
     """
     Test get task description for deployment create
     """
@@ -29,18 +27,8 @@ async def test_get_task_description_create():
             enabled=False,
         ),
     )
-    task = DeploymentCreateUpdateTask(
-        task_id=uuid4(),
-        payload=payload.dict(by_alias=True),
-        progress=Mock(),
-        user=Mock(),
-        persistent=Mock(),
-        storage=Mock(),
-        temp_storage=Mock(),
-        redis=Mock(),
-        deployment_service=Mock(),
-        deploy_service=Mock(),
-    )
+    app_container.override_instance_for_test("payload", payload.dict(by_alias=True))
+    task = app_container.get(DeploymentCreateUpdateTask)
     assert await task.get_task_description() == 'Create deployment "Test deployment"'
 
 
@@ -78,16 +66,6 @@ async def test_get_task_description_update(
     )
     app_container.override_instance_for_test("persistent", persistent)
     app_container.override_instance_for_test("catalog_id", catalog_id)
-    task = DeploymentCreateUpdateTask(
-        task_id=uuid4(),
-        payload=payload.dict(by_alias=True),
-        progress=Mock(),
-        user=Mock(),
-        persistent=persistent,
-        storage=Mock(),
-        temp_storage=Mock(),
-        redis=Mock(),
-        deployment_service=app_container.deployment_service,
-        deploy_service=Mock(),
-    )
+    app_container.override_instance_for_test("payload", payload.dict(by_alias=True))
+    task = app_container.get(DeploymentCreateUpdateTask)
     assert await task.get_task_description() == expected

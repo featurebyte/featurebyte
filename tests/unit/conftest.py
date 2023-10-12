@@ -1535,16 +1535,25 @@ def catalog_fixture(snowflake_feature_store):
 def app_container_fixture(persistent, user, catalog):
     """
     Return an app container used in tests. This will allow us to easily retrieve instances of the right type.
+
+    Note that this fixture should be initialized individually per test that is run as the instance map scope is mutable
+    and can be over-ridden for each test to inject in specific dependencies that will be specific to the test. This
+    means that we should not put a scope="session" on this fixture, and it is likely that test will fail if that
+    change is made.
     """
     return LazyAppContainer(
-        user=user,
-        persistent=persistent,
-        temp_storage=LocalTempStorage(),
-        celery=get_celery(),
-        redis=get_redis(),
-        storage=LocalTempStorage(),
-        catalog_id=catalog.id,
         app_container_config=app_container_config,
+        instance_map={
+            "user": user,
+            "persistent": persistent,
+            "temp_storage": LocalTempStorage(),
+            "celery": get_celery(),
+            "redis": get_redis(),
+            "storage": LocalTempStorage(),
+            "catalog_id": catalog.id,
+            "task_id": uuid4(),
+            "progress": Mock(),
+        },
     )
 
 

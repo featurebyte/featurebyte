@@ -1,8 +1,6 @@
 """
 Test online store cleanup task
 """
-from unittest.mock import Mock
-from uuid import uuid4
 
 import pytest
 from bson import ObjectId
@@ -12,7 +10,7 @@ from featurebyte.worker.task.online_store_cleanup import OnlineStoreCleanupTask
 
 
 @pytest.mark.asyncio
-async def test_get_task_description():
+async def test_get_task_description(app_container):
     """
     Test get task description
     """
@@ -21,16 +19,8 @@ async def test_get_task_description():
         feature_store_id=ObjectId(),
         online_store_table_name="Test Online Store Table",
     )
-    task = OnlineStoreCleanupTask(
-        task_id=uuid4(),
-        payload=payload.dict(by_alias=True),
-        progress=Mock(),
-        user=Mock(),
-        persistent=Mock(),
-        storage=Mock(),
-        temp_storage=Mock(),
-        online_store_cleanup_service=Mock(),
-    )
+    app_container.override_instance_for_test("payload", payload.dict(by_alias=True))
+    task = app_container.get(OnlineStoreCleanupTask)
     assert (
         await task.get_task_description() == 'Clean up online store table "Test Online Store Table"'
     )

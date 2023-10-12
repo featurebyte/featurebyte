@@ -19,7 +19,6 @@ from featurebyte.schema.worker.task.feature_list_batch_feature_create import (
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.namespace_handler import NamespaceHandler
-from featurebyte.storage import Storage
 from featurebyte.worker.task.batch_feature_create import BatchFeatureCreateTask
 
 
@@ -37,8 +36,6 @@ class FeatureListCreateWithBatchFeatureCreationTask(BatchFeatureCreateTask):
         progress: Any,
         user: User,
         persistent: Persistent,
-        storage: Storage,
-        temp_storage: Storage,
         feature_service: FeatureService,
         feature_namespace_service: FeatureNamespaceService,
         feature_controller: FeatureController,
@@ -51,8 +48,6 @@ class FeatureListCreateWithBatchFeatureCreationTask(BatchFeatureCreateTask):
             progress=progress,
             user=user,
             persistent=persistent,
-            storage=storage,
-            temp_storage=temp_storage,
             feature_service=feature_service,
             feature_namespace_service=feature_namespace_service,
             feature_controller=feature_controller,

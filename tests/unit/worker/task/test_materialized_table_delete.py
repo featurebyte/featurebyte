@@ -1,8 +1,6 @@
 """
 Test materialized table delete
 """
-from unittest.mock import Mock
-from uuid import uuid4
 
 import pytest
 from bson import ObjectId
@@ -70,8 +68,6 @@ async def test_get_task_description(
     )
     app_container.override_instance_for_test("persistent", persistent)
     app_container.override_instance_for_test("catalog_id", catalog_id)
-    app_container.override_instance_for_test("task_id", uuid4())
-    app_container.override_instance_for_test("progress", Mock())
     app_container.override_instance_for_test("payload", payload.dict(by_alias=True))
     task = app_container.get(MaterializedTableDeleteTask)
     assert (

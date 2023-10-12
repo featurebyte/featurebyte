@@ -3,8 +3,7 @@ Test Feature Job Setting Analysis worker task
 """
 import copy
 import json
-from unittest.mock import Mock, call
-from uuid import uuid4
+from unittest.mock import call
 
 import pytest
 from bson import ObjectId
@@ -233,8 +232,6 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         payload = FeatureJobSettingAnalysisTask.payload_class(**self.payload)
         app_container.override_instance_for_test("catalog_id", catalog.id)
         app_container.override_instance_for_test("persistent", persistent)
-        app_container.override_instance_for_test("task_id", uuid4())
-        app_container.override_instance_for_test("progress", Mock())
         app_container.override_instance_for_test("payload", payload.dict(by_alias=True))
         task = app_container.get(FeatureJobSettingAnalysisTask)
         assert (

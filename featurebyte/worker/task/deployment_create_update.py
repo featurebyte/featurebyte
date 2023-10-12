@@ -20,7 +20,6 @@ from featurebyte.schema.worker.task.deployment_create_update import (
 )
 from featurebyte.service.deploy import DeployService
 from featurebyte.service.deployment import DeploymentService
-from featurebyte.storage import Storage
 from featurebyte.worker.task.base import BaseLockTask
 
 
@@ -38,8 +37,6 @@ class DeploymentCreateUpdateTask(BaseLockTask):
         progress: Any,
         user: User,
         persistent: Persistent,
-        storage: Storage,
-        temp_storage: Storage,
         redis: Redis[Any],
         deployment_service: DeploymentService,
         deploy_service: DeployService,
@@ -50,8 +47,6 @@ class DeploymentCreateUpdateTask(BaseLockTask):
             progress=progress,
             user=user,
             persistent=persistent,
-            storage=storage,
-            temp_storage=temp_storage,
             redis=redis,
         )
         self.deployment_service = deployment_service

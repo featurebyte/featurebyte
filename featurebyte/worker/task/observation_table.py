@@ -15,7 +15,6 @@ from featurebyte.schema.worker.task.observation_table import ObservationTableTas
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.session_manager import SessionManagerService
-from featurebyte.storage import Storage
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin
 
@@ -36,8 +35,6 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask):
         progress: Any,
         user: User,
         persistent: Persistent,
-        storage: Storage,
-        temp_storage: Storage,
         feature_store_service: FeatureStoreService,
         session_manager_service: SessionManagerService,
         observation_table_service: ObservationTableService,
@@ -48,8 +45,6 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask):
             progress=progress,
             user=user,
             persistent=persistent,
-            storage=storage,
-            temp_storage=temp_storage,
         )
         self.feature_store_service = feature_store_service
         self.session_manager_service = session_manager_service
