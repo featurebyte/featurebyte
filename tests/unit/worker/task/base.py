@@ -103,6 +103,8 @@ class BaseTaskTestSuite:
         """
         persistent, _ = mongo_persistent
         self.payload["catalog_id"] = catalog.id
+        if "task_progress_updater" in app_container.instance_map:
+            del app_container.instance_map["task_progress_updater"]
         await self.execute_task(
             task_class=self.task_class,
             payload=self.payload,

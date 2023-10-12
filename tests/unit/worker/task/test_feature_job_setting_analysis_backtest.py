@@ -157,7 +157,7 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
 
     @pytest.mark.asyncio
     async def test_execute_fail(
-        self, mongo_persistent, progress, storage, temp_storage, app_container
+        self, mongo_persistent, progress, storage, temp_storage, app_container: LazyAppContainer
     ):
         """
         Test failed task execution
@@ -170,6 +170,7 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
         payload["feature_job_setting_analysis_id"] = feature_job_setting_analysis_id
 
         with pytest.raises(DocumentNotFoundError) as excinfo:
+            del app_container.instance_map["task_progress_updater"]
             await self.execute_task(
                 task_class=self.task_class,
                 payload=payload,
