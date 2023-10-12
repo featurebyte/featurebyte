@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.schema.worker.task.feature_list_make_production_ready import (
     FeatureListMakeProductionReadyTaskPayload,
 )
@@ -19,7 +18,7 @@ class FeatureListMakeProductionReadyTask(BaseTask[FeatureListMakeProductionReady
     Feature list make production ready task
     """
 
-    payload_class: type[BaseTaskPayload] = FeatureListMakeProductionReadyTaskPayload
+    payload_class = FeatureListMakeProductionReadyTaskPayload
 
     def __init__(
         self,
