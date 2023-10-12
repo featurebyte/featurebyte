@@ -174,7 +174,7 @@ class FeatureListController(
                 catalog_id=self.service.catalog_id,
             )
             task_id = await self.task_controller.task_manager.submit(payload=payload)
-            return await self.task_controller.task_manager.get_task(task_id=str(task_id))
+            return await self.task_controller.get_task(task_id=str(task_id))
 
         return await self.get(document_id=feature_list_id)
 
