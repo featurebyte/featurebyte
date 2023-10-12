@@ -5,7 +5,7 @@ from typing import Literal, Optional, cast
 
 from http import HTTPStatus
 
-from fastapi import APIRouter, Query, Request, Response
+from fastapi import APIRouter, Query, Request
 from fastapi.responses import ORJSONResponse
 
 from featurebyte.models.base import PydanticObjectId
