@@ -5,8 +5,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from uuid import UUID
-
 from featurebyte.logging import get_logger
 from featurebyte.schema.worker.task.test import TestTaskPayload
 from featurebyte.worker.task.base import BaseTask
@@ -24,11 +22,9 @@ class TestTask(BaseTask[TestTaskPayload]):
 
     def __init__(
         self,
-        task_id: UUID,
-        progress: Any,
         task_progress_updater: TaskProgressUpdater,
     ):
-        super().__init__(task_id=task_id, progress=progress)
+        super().__init__()
         self.task_progress_updater = task_progress_updater
 
     async def get_task_description(self, payload: TestTaskPayload) -> str:

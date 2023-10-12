@@ -29,20 +29,14 @@ class DeploymentCreateUpdateTask(BaseLockTask[DeploymentCreateUpdateTaskPayload]
 
     payload_class = DeploymentCreateUpdateTaskPayload
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
-        task_id: UUID,
-        progress: Any,
         redis: Redis[Any],
         deployment_service: DeploymentService,
         deploy_service: DeployService,
         task_progress_updater: TaskProgressUpdater,
     ):
-        super().__init__(
-            task_id=task_id,
-            progress=progress,
-            redis=redis,
-        )
+        super().__init__(redis=redis)
         self.deployment_service = deployment_service
         self.deploy_service = deploy_service
         self.task_progress_updater = task_progress_updater

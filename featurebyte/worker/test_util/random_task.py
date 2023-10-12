@@ -1,10 +1,7 @@
 """
 Random task util. Mainly used in tests, but placing in src so that we can register for DI.
 """
-from typing import Any
-
 import time
-from uuid import UUID
 
 from featurebyte.enum import StrEnum
 from featurebyte.models.base import User
@@ -34,13 +31,11 @@ class RandomTask(BaseTask[RandomTaskPayload]):
 
     def __init__(
         self,
-        task_id: UUID,
-        progress: Any,
         user: User,
         persistent: Persistent,
         task_progress_updater: TaskProgressUpdater,
     ):
-        super().__init__(task_id=task_id, progress=progress)
+        super().__init__()
         self.persistent = persistent
         self.user = user
         self.task_progress_updater = task_progress_updater
@@ -90,11 +85,9 @@ class LongRunningTask(BaseTask[LongRunningPayload]):
 
     def __init__(
         self,
-        task_id: UUID,
-        progress: Any,
         task_progress_updater: TaskProgressUpdater,
     ):
-        super().__init__(task_id=task_id, progress=progress)
+        super().__init__()
         self.task_progress_updater = task_progress_updater
 
     async def get_task_description(self, payload: LongRunningPayload) -> str:

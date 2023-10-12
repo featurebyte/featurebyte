@@ -6,7 +6,6 @@ from __future__ import annotations
 from typing import Any
 
 from pathlib import Path
-from uuid import UUID
 
 from featurebyte.logging import get_logger
 from featurebyte.models.observation_table import ObservationTableModel, UploadedFileInput
@@ -33,17 +32,12 @@ class ObservationTableUploadTask(DataWarehouseMixin, BaseTask[ObservationTableUp
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        task_id: UUID,
-        progress: Any,
         temp_storage: Storage,
         feature_store_service: FeatureStoreService,
         session_manager_service: SessionManagerService,
         observation_table_service: ObservationTableService,
     ):
-        super().__init__(
-            task_id=task_id,
-            progress=progress,
-        )
+        super().__init__()
         self.temp_storage = temp_storage
         self.feature_store_service = feature_store_service
         self.session_manager_service = session_manager_service

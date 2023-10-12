@@ -5,8 +5,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from uuid import UUID
-
 from featurebyte.routes.feature_list.controller import FeatureListController
 from featurebyte.schema.feature_list import FeatureListCreate
 from featurebyte.schema.worker.task.feature_list_batch_feature_create import (
@@ -28,16 +26,11 @@ class FeatureListCreateWithBatchFeatureCreationTask(
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        task_id: UUID,
-        progress: Any,
         feature_list_controller: FeatureListController,
         batch_feature_creator: BatchFeatureCreator,
         task_progress_updater: TaskProgressUpdater,
     ):
-        super().__init__(
-            task_id=task_id,
-            progress=progress,
-        )
+        super().__init__()
         self.feature_list_controller = feature_list_controller
         self.batch_feature_creator = batch_feature_creator
         self.task_progress_updater = task_progress_updater

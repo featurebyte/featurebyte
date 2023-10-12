@@ -7,7 +7,6 @@ from typing import Any
 
 from datetime import datetime
 from pathlib import Path
-from uuid import UUID
 
 from featurebyte_freeware.feature_job_analysis.analysis import (
     FeatureJobSettingsAnalysisResult,
@@ -47,8 +46,6 @@ class FeatureJobSettingAnalysisTask(BaseTask[FeatureJobSettingAnalysisTaskPayloa
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        task_id: UUID,
-        progress: Any,
         storage: Storage,
         event_table_service: EventTableService,
         feature_store_service: FeatureStoreService,
@@ -56,10 +53,7 @@ class FeatureJobSettingAnalysisTask(BaseTask[FeatureJobSettingAnalysisTaskPayloa
         feature_job_setting_analysis_service: FeatureJobSettingAnalysisService,
         task_progress_updater: TaskProgressUpdater,
     ):
-        super().__init__(
-            task_id=task_id,
-            progress=progress,
-        )
+        super().__init__()
         self.storage = storage
         self.event_table_service = event_table_service
         self.feature_store_service = feature_store_service
@@ -161,19 +155,14 @@ class FeatureJobSettingAnalysisBacktestTask(BaseTask[FeatureJobSettingAnalysisBa
 
     payload_class = FeatureJobSettingAnalysisBackTestTaskPayload
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
-        task_id: UUID,
-        progress: Any,
         storage: Storage,
         temp_storage: Storage,
         feature_job_setting_analysis_service: FeatureJobSettingAnalysisService,
         task_progress_updater: TaskProgressUpdater,
     ):
-        super().__init__(
-            task_id=task_id,
-            progress=progress,
-        )
+        super().__init__()
         self.storage = storage
         self.temp_storage = temp_storage
         self.feature_job_setting_analysis_service = feature_job_setting_analysis_service

@@ -5,8 +5,6 @@ from __future__ import annotations
 
 from typing import Any, cast
 
-from uuid import UUID
-
 from featurebyte.models.materialized_table import MaterializedTableModel
 from featurebyte.schema.worker.task.materialized_table_delete import (
     MaterializedTableCollectionName,
@@ -40,8 +38,6 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask[MaterializedTable
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        task_id: UUID,
-        progress: Any,
         batch_request_table_service: BatchRequestTableService,
         batch_feature_table_service: BatchFeatureTableService,
         observation_table_service: ObservationTableService,
@@ -53,10 +49,7 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask[MaterializedTable
         table_service: TableService,
         session_manager_service: SessionManagerService,
     ):
-        super().__init__(
-            task_id=task_id,
-            progress=progress,
-        )
+        super().__init__()
         self.batch_request_table_service = batch_request_table_service
         self.batch_feature_table_service = batch_feature_table_service
         self.observation_table_service = observation_table_service

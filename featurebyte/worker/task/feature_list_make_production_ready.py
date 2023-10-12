@@ -5,8 +5,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from uuid import UUID
-
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.schema.worker.task.feature_list_make_production_ready import (
     FeatureListMakeProductionReadyTaskPayload,
@@ -25,15 +23,10 @@ class FeatureListMakeProductionReadyTask(BaseTask[FeatureListMakeProductionReady
 
     def __init__(
         self,
-        task_id: UUID,
-        progress: Any,
         feature_list_service: FeatureListService,
         feature_list_facade_service: FeatureListFacadeService,
     ):
-        super().__init__(
-            task_id=task_id,
-            progress=progress,
-        )
+        super().__init__()
         self.feature_list_service = feature_list_service
         self.feature_list_facade_service = feature_list_facade_service
 

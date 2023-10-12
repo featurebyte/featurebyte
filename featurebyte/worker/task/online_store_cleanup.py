@@ -5,8 +5,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from uuid import UUID
-
 from featurebyte.logging import get_logger
 from featurebyte.schema.worker.task.online_store_cleanup import OnlineStoreCleanupTaskPayload
 from featurebyte.service.online_store_cleanup import OnlineStoreCleanupService
@@ -22,16 +20,11 @@ class OnlineStoreCleanupTask(BaseTask[OnlineStoreCleanupTaskPayload]):
 
     payload_class = OnlineStoreCleanupTaskPayload
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
-        task_id: UUID,
-        progress: Any,
         online_store_cleanup_service: OnlineStoreCleanupService,
     ):
-        super().__init__(
-            task_id=task_id,
-            progress=progress,
-        )
+        super().__init__()
         self.online_store_cleanup_service = online_store_cleanup_service
 
     async def get_task_description(self, payload: OnlineStoreCleanupTaskPayload) -> str:

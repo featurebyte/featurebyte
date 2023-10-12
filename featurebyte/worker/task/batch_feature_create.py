@@ -5,8 +5,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from uuid import UUID
-
 from featurebyte.logging import get_logger
 from featurebyte.schema.worker.task.batch_feature_create import BatchFeatureCreateTaskPayload
 from featurebyte.worker.task.base import BaseTask
@@ -22,16 +20,11 @@ class BatchFeatureCreateTask(BaseTask[BatchFeatureCreateTaskPayload]):
 
     payload_class = BatchFeatureCreateTaskPayload
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
-        task_id: UUID,
-        progress: Any,
         batch_feature_creator: BatchFeatureCreator,
     ):
-        super().__init__(
-            task_id=task_id,
-            progress=progress,
-        )
+        super().__init__()
         self.batch_feature_creator = batch_feature_creator
 
     async def get_task_description(self, payload: BatchFeatureCreateTaskPayload) -> str:

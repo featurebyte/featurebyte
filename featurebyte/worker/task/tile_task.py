@@ -5,8 +5,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from uuid import UUID
-
 from featurebyte.logging import get_logger
 from featurebyte.schema.worker.task.tile import TileTaskPayload
 from featurebyte.service.feature_store import FeatureStoreService
@@ -26,16 +24,11 @@ class TileTask(BaseTask[TileTaskPayload]):
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        task_id: UUID,
-        progress: Any,
         feature_store_service: FeatureStoreService,
         session_manager_service: SessionManagerService,
         tile_task_executor: TileTaskExecutor,
     ):
-        super().__init__(
-            task_id=task_id,
-            progress=progress,
-        )
+        super().__init__()
         self.feature_store_service = feature_store_service
         self.session_manager_service = session_manager_service
         self.tile_task_executor = tile_task_executor

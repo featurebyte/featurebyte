@@ -6,7 +6,6 @@ from __future__ import annotations
 from typing import Any, Generic, Optional, Type, TypeVar
 
 from abc import abstractmethod
-from uuid import UUID
 
 from redis import Redis
 
@@ -19,20 +18,12 @@ logger = get_logger(__name__)
 TaskT = TypeVar("TaskT", bound=BaseTaskPayload)
 
 
-class BaseTask(Generic[TaskT]):  # pylint: disable=too-many-instance-attributes
+class BaseTask(Generic[TaskT]):
     """
     Base class for Task
     """
 
     payload_class: Type[TaskT]
-
-    def __init__(  # pylint: disable=too-many-arguments
-        self,
-        task_id: UUID,
-        progress: Any,
-    ):
-        self.task_id = task_id
-        self.progress = progress
 
     def get_payload_obj(self, payload_data: dict[str, Any]) -> TaskT:
         """
@@ -83,16 +74,11 @@ class BaseLockTask(BaseTask[TaskT]):
     can be executed at the same time. The lock is released when the task is finished.
     """
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
-        task_id: UUID,
-        progress: Any,
         redis: Redis[Any],
     ):
-        super().__init__(
-            task_id=task_id,
-            progress=progress,
-        )
+        super().__init__()
         self.redis = redis
 
     async def execute(self, payload: TaskT) -> Any:
