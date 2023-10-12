@@ -3,8 +3,7 @@ Test Feature Job Setting Analysis worker task
 """
 import copy
 import datetime
-from unittest.mock import Mock, call
-from uuid import uuid4
+from unittest.mock import call
 
 import pandas as pd
 import pytest
@@ -198,16 +197,8 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
         payload = FeatureJobSettingAnalysisBacktestTask.payload_class(**self.payload)
         app_container.override_instance_for_test("persistent", persistent)
         app_container.override_instance_for_test("catalog_id", catalog.id)
-        task = FeatureJobSettingAnalysisBacktestTask(
-            task_id=uuid4(),
-            payload=payload.dict(by_alias=True),
-            progress=Mock(),
-            user=Mock(),
-            persistent=persistent,
-            storage=Mock(),
-            temp_storage=Mock(),
-            feature_job_setting_analysis_service=app_container.feature_job_setting_analysis_service,
-        )
+        app_container.override_instance_for_test("payload", payload.dict(by_alias=True))
+        task = app_container.get(FeatureJobSettingAnalysisBacktestTask)
         assert (
             await task.get_task_description()
             == 'Backtest feature job settings for table "sf_event_table"'

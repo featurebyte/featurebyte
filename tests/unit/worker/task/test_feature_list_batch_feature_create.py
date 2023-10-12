@@ -1,8 +1,6 @@
 """
 Test feature list batch feature create
 """
-from unittest.mock import Mock
-from uuid import uuid4
 
 import pytest
 from bson import ObjectId
@@ -17,7 +15,7 @@ from featurebyte.worker.task.feature_list_batch_feature_create import (
 
 
 @pytest.mark.asyncio
-async def test_get_task_description():
+async def test_get_task_description(app_container):
     """
     Test get task description
     """
@@ -29,18 +27,6 @@ async def test_get_task_description():
         catalog_id=ObjectId(),
         conflict_resolution="raise",
     )
-    task = FeatureListCreateWithBatchFeatureCreationTask(
-        task_id=uuid4(),
-        payload=payload.dict(by_alias=True),
-        progress=Mock(),
-        user=Mock(),
-        persistent=Mock(),
-        storage=Mock(),
-        temp_storage=Mock(),
-        feature_service=Mock(),
-        feature_namespace_service=Mock(),
-        feature_controller=Mock(),
-        namespace_handler=Mock(),
-        feature_list_controller=Mock(),
-    )
+    app_container.override_instance_for_test("payload", payload.dict(by_alias=True))
+    task = app_container.get(FeatureListCreateWithBatchFeatureCreationTask)
     assert await task.get_task_description() == 'Save feature list "Test Feature list"'
