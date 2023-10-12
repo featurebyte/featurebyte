@@ -20,6 +20,7 @@ from featurebyte.worker.task.feature_job_setting_analysis import (
     FeatureJobSettingAnalysisBacktestTask,
     FeatureJobSettingAnalysisTask,
 )
+from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
 from tests.unit.worker.task.base import BaseTaskTestSuite
 
 
@@ -157,7 +158,7 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
 
     @pytest.mark.asyncio
     async def test_execute_fail(
-        self, mongo_persistent, progress, storage, temp_storage, app_container: LazyAppContainer
+        self, mongo_persistent, progress, storage, temp_storage, app_container
     ):
         """
         Test failed task execution
@@ -170,7 +171,7 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
         payload["feature_job_setting_analysis_id"] = feature_job_setting_analysis_id
 
         with pytest.raises(DocumentNotFoundError) as excinfo:
-            del app_container.instance_map["task_progress_updater"]
+            app_container.invalidate_dep_for_test(TaskProgressUpdater)
             await self.execute_task(
                 task_class=self.task_class,
                 payload=payload,

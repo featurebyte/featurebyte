@@ -239,6 +239,12 @@ class LazyAppContainer:
             instance.set_block_modification_check_callback(_check_block_modification)
         return instance
 
+    @staticmethod
+    def _get_key_to_use(key: Union[str, Type[Any]]) -> str:
+        if isinstance(key, str):
+            return key
+        return _get_class_name(key.__name__)
+
     def get(self, key: Union[str, Type[Any]]) -> Any:
         """
         Get an instance from the container.
@@ -252,11 +258,7 @@ class LazyAppContainer:
         -------
         Any
         """
-        if isinstance(key, str):
-            key_to_use = key
-        else:
-            key_to_use = _get_class_name(key.__name__)
-        assert isinstance(key_to_use, str)
+        key_to_use = self._get_key_to_use(key)
         return self._handle_block_modification_check(self._get_key(key_to_use))
 
     def override_instance_for_test(self, key: str, instance: Any) -> None:
@@ -271,6 +273,21 @@ class LazyAppContainer:
             instance to override with
         """
         self.instance_map[key] = instance
+
+    def invalidate_dep_for_test(self, key: Union[str, Type[Any]]) -> None:
+        """
+        Invalidate a dependency for testing purposes. This will remove the dependency from the instance map, and
+        force the dep to be re-created when it's next invoked. This is useful after we have overridden an instance
+        for test.
+
+        Parameters
+        ----------
+        key: Union[str, Type[Any]]
+            key of the instance to invalidate, or the type of the instance
+        """
+        key_to_use = self._get_key_to_use(key)
+        if key_to_use in self.instance_map:
+            del self.instance_map[key_to_use]
 
     def __getattr__(self, key: str) -> Any:
         return self._handle_block_modification_check(self._get_key(key))

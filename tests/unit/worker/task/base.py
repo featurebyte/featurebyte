@@ -15,6 +15,7 @@ import pytest_asyncio
 from featurebyte.models.base import User
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.worker.task.base import BaseTask
+from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
 
 
 class BaseTaskTestSuite:
@@ -103,8 +104,7 @@ class BaseTaskTestSuite:
         """
         persistent, _ = mongo_persistent
         self.payload["catalog_id"] = catalog.id
-        if "task_progress_updater" in app_container.instance_map:
-            del app_container.instance_map["task_progress_updater"]
+        app_container.invalidate_dep_for_test(TaskProgressUpdater)
         await self.execute_task(
             task_class=self.task_class,
             payload=self.payload,
