@@ -178,6 +178,7 @@ class FeatureJobSettingAnalysisBacktestTask(BaseTask):
         progress: Any,
         user: User,
         persistent: Persistent,
+        storage: Storage,
         temp_storage: Storage,
         feature_job_setting_analysis_service: FeatureJobSettingAnalysisService,
     ):
@@ -188,6 +189,7 @@ class FeatureJobSettingAnalysisBacktestTask(BaseTask):
             user=user,
             persistent=persistent,
         )
+        self.storage = storage
         self.temp_storage = temp_storage
         self.feature_job_setting_analysis_service = feature_job_setting_analysis_service
 
