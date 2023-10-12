@@ -8,7 +8,6 @@ from typing import Any, Dict, Optional
 import json
 from abc import abstractmethod
 from unittest.mock import Mock
-from uuid import uuid4
 
 import pytest
 import pytest_asyncio
@@ -92,7 +91,6 @@ class BaseTaskTestSuite:
         app_container.override_instance_for_test("storage", storage)
         app_container.override_instance_for_test("progress", progress)
         app_container.override_instance_for_test("payload", payload)
-        app_container.override_instance_for_test("task_id", uuid4())
         task = app_container.get(task_class)
         await task.execute()
 
