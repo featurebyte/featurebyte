@@ -8,7 +8,6 @@ import pytest
 from bson import ObjectId
 
 from featurebyte.routes.lazy_app_container import LazyAppContainer
-from featurebyte.routes.registry import app_container_config
 from featurebyte.schema.worker.task.deployment_create_update import (
     CreateDeploymentPayload,
     DeploymentCreateUpdateTaskPayload,
@@ -34,7 +33,13 @@ async def test_get_task_description_create():
         task_id=uuid4(),
         payload=payload.dict(by_alias=True),
         progress=Mock(),
-        app_container=Mock(),
+        user=Mock(),
+        persistent=Mock(),
+        storage=Mock(),
+        temp_storage=Mock(),
+        redis=Mock(),
+        deployment_service=Mock(),
+        deploy_service=Mock(),
     )
     assert await task.get_task_description() == 'Create deployment "Test deployment"'
 
@@ -47,7 +52,9 @@ async def test_get_task_description_create():
         (False, 'Disable deployment "Test deployment"'),
     ],
 )
-async def test_get_task_description_update(persistent, enabled, expected):
+async def test_get_task_description_update(
+    persistent, enabled, expected, app_container: LazyAppContainer
+):
     """
     Test get task description for deployment update
     """
@@ -69,19 +76,18 @@ async def test_get_task_description_update(persistent, enabled, expected):
         deployment_payload=UpdateDeploymentPayload(enabled=enabled),
         output_document_id=deployment_id,
     )
+    app_container.override_instance_for_test("persistent", persistent)
+    app_container.override_instance_for_test("catalog_id", catalog_id)
     task = DeploymentCreateUpdateTask(
         task_id=uuid4(),
         payload=payload.dict(by_alias=True),
         progress=Mock(),
-        app_container=LazyAppContainer(
-            user=Mock(),
-            persistent=persistent,
-            temp_storage=Mock(),
-            celery=Mock(),
-            redis=Mock(),
-            storage=Mock(),
-            catalog_id=catalog_id,
-            app_container_config=app_container_config,
-        ),
+        user=Mock(),
+        persistent=persistent,
+        storage=Mock(),
+        temp_storage=Mock(),
+        redis=Mock(),
+        deployment_service=app_container.deployment_service,
+        deploy_service=Mock(),
     )
     assert await task.get_task_description() == expected

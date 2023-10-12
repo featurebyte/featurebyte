@@ -10,7 +10,7 @@ from bson.objectid import ObjectId
 from featurebyte.app import get_celery
 from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.service.task_manager import TaskManager
-from tests.util.task import LongRunningPayload
+from featurebyte.worker.test_util.random_task import LongRunningPayload
 
 
 class TestTaskStatusApi:

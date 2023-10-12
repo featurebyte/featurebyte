@@ -5,13 +5,22 @@ from __future__ import annotations
 
 from typing import Any, Optional, cast
 
+from uuid import UUID
+
+from redis import Redis
+
 from featurebyte.exception import DocumentCreationError, DocumentUpdateError
+from featurebyte.models.base import User
+from featurebyte.persistent import Persistent
 from featurebyte.schema.worker.task.deployment_create_update import (
     CreateDeploymentPayload,
     DeploymentCreateUpdateTaskPayload,
     DeploymentPayloadType,
     UpdateDeploymentPayload,
 )
+from featurebyte.service.deploy import DeployService
+from featurebyte.service.deployment import DeploymentService
+from featurebyte.storage import Storage
 from featurebyte.worker.task.base import BaseLockTask
 
 
@@ -22,6 +31,32 @@ class DeploymentCreateUpdateTask(BaseLockTask):
 
     payload_class = DeploymentCreateUpdateTaskPayload
 
+    def __init__(  # pylint: disable=too-many-arguments
+        self,
+        task_id: UUID,
+        payload: dict[str, Any],
+        progress: Any,
+        user: User,
+        persistent: Persistent,
+        storage: Storage,
+        temp_storage: Storage,
+        redis: Redis[Any],
+        deployment_service: DeploymentService,
+        deploy_service: DeployService,
+    ):
+        super().__init__(
+            task_id=task_id,
+            payload=payload,
+            progress=progress,
+            user=user,
+            persistent=persistent,
+            storage=storage,
+            temp_storage=temp_storage,
+            redis=redis,
+        )
+        self.deployment_service = deployment_service
+        self.deploy_service = deploy_service
+
     async def get_task_description(self) -> str:
         payload = cast(DeploymentCreateUpdateTaskPayload, self.payload)
         if payload.deployment_payload.type == DeploymentPayloadType.CREATE:
@@ -29,7 +64,7 @@ class DeploymentCreateUpdateTask(BaseLockTask):
             creation_payload = cast(CreateDeploymentPayload, payload.deployment_payload)
             deployment_name = creation_payload.name
         else:
-            deployment = await self.app_container.deployment_service.get_document(
+            deployment = await self.deployment_service.get_document(
                 document_id=payload.output_document_id
             )
             deployment_name = deployment.name
@@ -70,7 +105,7 @@ class DeploymentCreateUpdateTask(BaseLockTask):
         payload = cast(DeploymentCreateUpdateTaskPayload, self.payload)
         if payload.deployment_payload.type == DeploymentPayloadType.CREATE:
             create_deployment_payload = cast(CreateDeploymentPayload, payload.deployment_payload)
-            await self.app_container.deploy_service.create_deployment(
+            await self.deploy_service.create_deployment(
                 feature_list_id=create_deployment_payload.feature_list_id,
                 deployment_id=payload.output_document_id,
                 deployment_name=create_deployment_payload.name,
@@ -82,7 +117,7 @@ class DeploymentCreateUpdateTask(BaseLockTask):
 
         if payload.deployment_payload.type == DeploymentPayloadType.UPDATE:
             update_deployment_payload = cast(UpdateDeploymentPayload, payload.deployment_payload)
-            await self.app_container.deploy_service.update_deployment(
+            await self.deploy_service.update_deployment(
                 deployment_id=payload.output_document_id,
                 enabled=update_deployment_payload.enabled,
                 update_progress=self.update_progress,

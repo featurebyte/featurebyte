@@ -8,11 +8,12 @@ from typing import Any, Optional
 from abc import abstractmethod
 from uuid import UUID
 
+from redis import Redis
+
 from featurebyte.logging import get_logger
 from featurebyte.models.base import User
 from featurebyte.models.task import Task
 from featurebyte.persistent import Persistent
-from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.schema.worker.progress import ProgressModel
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.storage import Storage
@@ -32,58 +33,20 @@ class BaseTask:  # pylint: disable=too-many-instance-attributes
         task_id: UUID,
         payload: dict[str, Any],
         progress: Any,
-        app_container: LazyAppContainer,
+        user: User,
+        persistent: Persistent,
+        storage: Storage,
+        temp_storage: Storage,
     ):
         if self.payload_class == BaseTaskPayload:
             raise NotImplementedError
         self.task_id = task_id
         self.payload = self.payload_class(**payload)
         self.progress = progress
-        self.app_container = app_container
-
-    @property
-    def user(self) -> User:
-        """
-        Get user instance
-
-        Returns
-        -------
-        User
-        """
-        return self.app_container.user  # type: ignore
-
-    @property
-    def persistent(self) -> Persistent:
-        """
-        Get persistent instance
-
-        Returns
-        -------
-        Persistent
-        """
-        return self.app_container.persistent  # type: ignore
-
-    @property
-    def storage(self) -> Storage:
-        """
-        Get storage instance
-
-        Returns
-        -------
-        Storage
-        """
-        return self.app_container.storage  # type: ignore
-
-    @property
-    def temp_storage(self) -> Storage:
-        """
-        Get temp storage instance
-
-        Returns
-        -------
-        Storage
-        """
-        return self.app_container.temp_storage  # type: ignore
+        self.user = user
+        self.persistent = persistent
+        self.storage = storage
+        self.temp_storage = temp_storage
 
     async def update_progress(self, percent: int, message: str | None = None) -> None:
         """
@@ -136,6 +99,28 @@ class BaseLockTask(BaseTask):
     can be executed at the same time. The lock is released when the task is finished.
     """
 
+    def __init__(  # pylint: disable=too-many-arguments
+        self,
+        task_id: UUID,
+        payload: dict[str, Any],
+        progress: Any,
+        user: User,
+        persistent: Persistent,
+        storage: Storage,
+        temp_storage: Storage,
+        redis: Redis[Any],
+    ):
+        super().__init__(
+            task_id=task_id,
+            payload=payload,
+            progress=progress,
+            user=user,
+            persistent=persistent,
+            storage=storage,
+            temp_storage=temp_storage,
+        )
+        self.redis = redis
+
     async def execute(self) -> Any:
         """
         Execute the task
@@ -144,7 +129,7 @@ class BaseLockTask(BaseTask):
         -------
         Any
         """
-        lock = self.app_container.redis.lock(self.lock_key, timeout=self.lock_timeout)
+        lock = self.redis.lock(self.lock_key, timeout=self.lock_timeout)
         try:
             if lock.acquire(blocking=self.lock_blocking):
                 return await self._execute()

@@ -53,12 +53,12 @@ from featurebyte.storage import LocalTempStorage
 from featurebyte.storage.local import LocalStorage
 from featurebyte.worker import get_redis
 from featurebyte.worker.registry import TASK_REGISTRY_MAP
+from featurebyte.worker.test_util.random_task import Command, LongRunningTask
 from tests.unit.conftest_config import (
     config_file_fixture,
     config_fixture,
     mock_config_path_env_fixture,
 )
-from tests.util.task import Command, LongRunningTask
 
 # register tests.unit.routes.base so that API stacktrace display properly
 pytest.register_assert_rewrite("tests.unit.routes.base")
@@ -1603,21 +1603,21 @@ def mock_task_manager(request, persistent, storage, temp_storage):
                 kwargs["task_output_path"] = payload.task_output_path
                 task_id = str(uuid4())
                 user = User(id=kwargs.get("user_id"))
-                task = TEST_TASK_REGISTRY_MAP[payload.command](
-                    task_id=UUID(task_id),
-                    payload=kwargs,
-                    progress=Mock(),
-                    app_container=LazyAppContainer(
-                        user=user,
-                        persistent=persistent,
-                        temp_storage=temp_storage,
-                        celery=get_celery(),
-                        redis=get_redis(),
-                        storage=storage,
-                        catalog_id=payload.catalog_id,
-                        app_container_config=app_container_config,
-                    ),
+                app_container = LazyAppContainer(
+                    user=user,
+                    persistent=persistent,
+                    temp_storage=temp_storage,
+                    celery=get_celery(),
+                    redis=get_redis(),
+                    storage=storage,
+                    catalog_id=payload.catalog_id,
+                    app_container_config=app_container_config,
                 )
+                app_container.override_instance_for_test("task_id", UUID(task_id))
+                app_container.override_instance_for_test("payload", kwargs)
+                app_container.override_instance_for_test("progress", Mock())
+                task = app_container.get(TEST_TASK_REGISTRY_MAP[payload.command])
+
                 try:
                     await task.execute()
                     status = TaskStatus.SUCCESS

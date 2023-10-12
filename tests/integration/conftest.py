@@ -1343,21 +1343,20 @@ def mock_task_manager(request, persistent, storage, temp_storage, mock_app_callb
                 kwargs["task_output_path"] = payload.task_output_path
                 task_id = str(uuid4())
                 user = User(id=kwargs.get("user_id"))
-                task = TASK_REGISTRY_MAP[payload.command](
-                    task_id=UUID(task_id),
-                    payload=kwargs,
-                    progress=Mock(),
-                    app_container=LazyAppContainer(
-                        user=user,
-                        persistent=persistent,
-                        temp_storage=temp_storage,
-                        celery=Mock(),
-                        redis=Mock(),
-                        storage=storage,
-                        catalog_id=payload.catalog_id,
-                        app_container_config=app_container_config,
-                    ),
+                app_container = LazyAppContainer(
+                    user=user,
+                    persistent=persistent,
+                    temp_storage=temp_storage,
+                    celery=Mock(),
+                    redis=Mock(),
+                    storage=storage,
+                    catalog_id=payload.catalog_id,
+                    app_container_config=app_container_config,
                 )
+                app_container.override_instance_for_test("task_id", UUID(task_id))
+                app_container.override_instance_for_test("payload", kwargs)
+                app_container.override_instance_for_test("progress", Mock())
+                task = app_container.get(TASK_REGISTRY_MAP[payload.command])
                 try:
                     await task.execute()
                     status = TaskStatus.SUCCESS

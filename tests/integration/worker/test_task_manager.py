@@ -35,9 +35,11 @@ async def wait_for_async_task(
 
 
 @pytest.fixture(name="task_manager")
-def task_manager_fixture(celery_service):
+def task_manager_fixture(celery_service, app_container):
     """Task manager fixture"""
     persistent, celery = celery_service
+    app_container.override_instance_for_test("persistent", persistent)
+    app_container.override_instance_for_test("celery", celery)
     return TaskManager(
         user=User(id=ObjectId()),
         persistent=persistent,

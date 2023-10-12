@@ -3,7 +3,10 @@ Registrations module.
 
 This contains all the dependencies that we want to register in order to get our fast API app up and running.
 """
+from uuid import UUID
+
 from celery import Celery
+from redis import Redis
 
 from featurebyte.migration.migration_data_service import SchemaMetadataService
 from featurebyte.migration.service.data_warehouse import (
@@ -125,7 +128,29 @@ from featurebyte.service.view_construction import ViewConstructionService
 from featurebyte.service.working_schema import WorkingSchemaService
 from featurebyte.storage import Storage
 from featurebyte.utils.credential import MongoBackedCredentialProvider
+from featurebyte.utils.messaging import Progress
 from featurebyte.utils.persistent import MongoDBImpl
+from featurebyte.worker.task.batch_feature_create import BatchFeatureCreateTask
+from featurebyte.worker.task.batch_feature_table import BatchFeatureTableTask
+from featurebyte.worker.task.batch_request_table import BatchRequestTableTask
+from featurebyte.worker.task.deployment_create_update import DeploymentCreateUpdateTask
+from featurebyte.worker.task.feature_job_setting_analysis import (
+    FeatureJobSettingAnalysisBacktestTask,
+    FeatureJobSettingAnalysisTask,
+)
+from featurebyte.worker.task.feature_list_batch_feature_create import (
+    FeatureListCreateWithBatchFeatureCreationTask,
+)
+from featurebyte.worker.task.historical_feature_table import HistoricalFeatureTableTask
+from featurebyte.worker.task.materialized_table_delete import MaterializedTableDeleteTask
+from featurebyte.worker.task.observation_table import ObservationTableTask
+from featurebyte.worker.task.observation_table_upload import ObservationTableUploadTask
+from featurebyte.worker.task.online_store_cleanup import OnlineStoreCleanupTask
+from featurebyte.worker.task.static_source_table import StaticSourceTableTask
+from featurebyte.worker.task.target_table import TargetTableTask
+from featurebyte.worker.task.test_task import TestTask
+from featurebyte.worker.task.tile_task import TileTask
+from featurebyte.worker.test_util.random_task import LongRunningTask, RandomTask
 from featurebyte.worker.util.observation_set_helper import ObservationSetHelper
 
 app_container_config = AppContainerConfig()
@@ -271,6 +296,25 @@ app_container_config.register_class(WorkingSchemaService)
 
 app_container_config.register_class(UseCaseService)
 app_container_config.register_class(UseCaseController)
+app_container_config.register_class(TargetTableTask)
+app_container_config.register_class(RandomTask)
+app_container_config.register_class(FeatureJobSettingAnalysisTask)
+app_container_config.register_class(FeatureJobSettingAnalysisBacktestTask)
+app_container_config.register_class(HistoricalFeatureTableTask)
+app_container_config.register_class(ObservationTableTask)
+app_container_config.register_class(ObservationTableUploadTask)
+app_container_config.register_class(DeploymentCreateUpdateTask)
+app_container_config.register_class(BatchRequestTableTask)
+app_container_config.register_class(BatchFeatureTableTask)
+app_container_config.register_class(MaterializedTableDeleteTask)
+app_container_config.register_class(BatchFeatureCreateTask)
+app_container_config.register_class(FeatureListCreateWithBatchFeatureCreationTask)
+app_container_config.register_class(StaticSourceTableTask)
+app_container_config.register_class(TileTask)
+app_container_config.register_class(OnlineStoreCleanupTask)
+app_container_config.register_class(LongRunningTask)
+app_container_config.register_class(TestTask)
+
 app_container_config.register_class(MongoDBImpl, name_override="persistent")
 
 # These have force_no_deps set as True, as they are manually initialized.
@@ -278,6 +322,7 @@ app_container_config.register_class(Celery, force_no_deps=True)
 app_container_config.register_class(Storage, force_no_deps=True)
 app_container_config.register_class(Storage, force_no_deps=True, name_override="temp_storage")
 app_container_config.register_class(User, force_no_deps=True)
+app_container_config.register_class(Redis, force_no_deps=True)
 
 
 class CatalogId:
@@ -293,6 +338,17 @@ class CatalogId:
 # as such, works as a placeholder.
 app_container_config.register_class(CatalogId, force_no_deps=True)
 
+
+class Payload:
+    """
+    Another special placeholder class.
+    """
+
+
+# Manually initialized via tasks.
+app_container_config.register_class(UUID, force_no_deps=True, name_override="task_id")
+app_container_config.register_class(Progress, force_no_deps=True)
+app_container_config.register_class(Payload, force_no_deps=True)
 
 # Validate the config after all classes have been registered.
 # This should be the last line in this module.
