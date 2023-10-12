@@ -54,7 +54,6 @@ class FeatureJobSettingAnalysisTask(BaseTask):
         user: User,
         persistent: Persistent,
         storage: Storage,
-        temp_storage: Storage,
         event_table_service: EventTableService,
         feature_store_service: FeatureStoreService,
         session_manager_service: SessionManagerService,
@@ -66,9 +65,8 @@ class FeatureJobSettingAnalysisTask(BaseTask):
             progress=progress,
             user=user,
             persistent=persistent,
-            storage=storage,
-            temp_storage=temp_storage,
         )
+        self.storage = storage
         self.event_table_service = event_table_service
         self.feature_store_service = feature_store_service
         self.session_manager_service = session_manager_service
@@ -180,7 +178,6 @@ class FeatureJobSettingAnalysisBacktestTask(BaseTask):
         progress: Any,
         user: User,
         persistent: Persistent,
-        storage: Storage,
         temp_storage: Storage,
         feature_job_setting_analysis_service: FeatureJobSettingAnalysisService,
     ):
@@ -190,9 +187,8 @@ class FeatureJobSettingAnalysisBacktestTask(BaseTask):
             progress=progress,
             user=user,
             persistent=persistent,
-            storage=storage,
-            temp_storage=temp_storage,
         )
+        self.temp_storage = temp_storage
         self.feature_job_setting_analysis_service = feature_job_setting_analysis_service
 
     async def get_task_description(self) -> str:

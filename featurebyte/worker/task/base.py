@@ -35,8 +35,6 @@ class BaseTask:  # pylint: disable=too-many-instance-attributes
         progress: Any,
         user: User,
         persistent: Persistent,
-        storage: Storage,
-        temp_storage: Storage,
     ):
         if self.payload_class == BaseTaskPayload:
             raise NotImplementedError
@@ -45,8 +43,6 @@ class BaseTask:  # pylint: disable=too-many-instance-attributes
         self.progress = progress
         self.user = user
         self.persistent = persistent
-        self.storage = storage
-        self.temp_storage = temp_storage
 
     async def update_progress(self, percent: int, message: str | None = None) -> None:
         """
@@ -106,8 +102,6 @@ class BaseLockTask(BaseTask):
         progress: Any,
         user: User,
         persistent: Persistent,
-        storage: Storage,
-        temp_storage: Storage,
         redis: Redis[Any],
     ):
         super().__init__(
@@ -116,8 +110,6 @@ class BaseLockTask(BaseTask):
             progress=progress,
             user=user,
             persistent=persistent,
-            storage=storage,
-            temp_storage=temp_storage,
         )
         self.redis = redis
 

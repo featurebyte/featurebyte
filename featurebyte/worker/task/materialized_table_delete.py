@@ -28,7 +28,6 @@ from featurebyte.service.validator.materialized_table_delete import (
     check_delete_batch_request_table,
     check_delete_static_source_table,
 )
-from featurebyte.storage import Storage
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin
 
@@ -48,8 +47,6 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask):
         progress: Any,
         user: User,
         persistent: Persistent,
-        storage: Storage,
-        temp_storage: Storage,
         batch_request_table_service: BatchRequestTableService,
         batch_feature_table_service: BatchFeatureTableService,
         observation_table_service: ObservationTableService,
@@ -67,8 +64,6 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask):
             progress=progress,
             user=user,
             persistent=persistent,
-            storage=storage,
-            temp_storage=temp_storage,
         )
         self.batch_request_table_service = batch_request_table_service
         self.batch_feature_table_service = batch_feature_table_service
