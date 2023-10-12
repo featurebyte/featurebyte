@@ -57,6 +57,7 @@ class FeatureListMakeProductionReadyTask(BaseTask):
         """
         Execute FeatureListMakeProductionReadyTask
         """
+        assert isinstance(self.payload, FeatureListMakeProductionReadyTaskPayload)
         await self.feature_list_facade_service.make_features_production_ready(
             feature_list_id=self.payload.feature_list_id,
             ignore_guardrails=self.payload.ignore_guardrails,

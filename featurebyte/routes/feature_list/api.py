@@ -104,7 +104,7 @@ async def update_feature_list(
     )
     if isinstance(feature_list_or_task, Task):
         response.status_code = HTTPStatus.ACCEPTED
-        return cast(Task, feature_list_or_task)
+        return feature_list_or_task
     return cast(FeatureListModelResponse, feature_list_or_task)
 
 
