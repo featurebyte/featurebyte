@@ -22,9 +22,10 @@ from featurebyte.routes.batch_request_table.controller import BatchRequestTableC
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.routes.catalog.catalog_name_injector import CatalogNameInjector
 from featurebyte.routes.catalog.controller import CatalogController
-from featurebyte.routes.common.base import DerivePrimaryEntityHelper
+from featurebyte.routes.common.derive_primary_entity_helper import DerivePrimaryEntityHelper
 from featurebyte.routes.common.feature_metadata_extractor import FeatureOrTargetMetadataExtractor
 from featurebyte.routes.common.feature_or_target_helper import FeatureOrTargetHelper
+from featurebyte.routes.common.primary_entity_validator import PrimaryEntityValidator
 from featurebyte.routes.context.controller import ContextController
 from featurebyte.routes.credential.controller import CredentialController
 from featurebyte.routes.deployment.controller import AllDeploymentController, DeploymentController
@@ -301,6 +302,7 @@ app_container_config.register_class(ViewConstructionService)
 app_container_config.register_class(WorkingSchemaService)
 app_container_config.register_class(UseCaseService)
 app_container_config.register_class(UseCaseController)
+app_container_config.register_class(PrimaryEntityValidator)
 
 # register tasks
 app_container_config.register_class(TargetTableTask)

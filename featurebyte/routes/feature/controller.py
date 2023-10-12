@@ -15,7 +15,8 @@ from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_namespace import FeatureReadiness
-from featurebyte.routes.common.base import BaseDocumentController, DerivePrimaryEntityHelper
+from featurebyte.routes.common.base import BaseDocumentController
+from featurebyte.routes.common.derive_primary_entity_helper import DerivePrimaryEntityHelper
 from featurebyte.routes.common.feature_metadata_extractor import FeatureOrTargetMetadataExtractor
 from featurebyte.routes.feature_namespace.controller import FeatureNamespaceController
 from featurebyte.routes.task.controller import TaskController

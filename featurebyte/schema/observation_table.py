@@ -23,6 +23,7 @@ class ObservationTableCreate(BaseRequestTableCreate):
     request_input: ObservationInput
     skip_entity_validation_checks: bool = Field(default=False)
     purpose: Optional[Purpose] = Field(default=None)
+    primary_entity_ids: Optional[List[PydanticObjectId]] = Field(default=None)
 
 
 class ObservationTableUpload(FeatureByteBaseModel):

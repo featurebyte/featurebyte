@@ -7,7 +7,8 @@ from bson import ObjectId
 
 from featurebyte.exception import DocumentCreationError, DocumentDeletionError
 from featurebyte.models.context import ContextModel
-from featurebyte.routes.common.base import BaseDocumentController, DerivePrimaryEntityHelper
+from featurebyte.routes.common.base import BaseDocumentController
+from featurebyte.routes.common.primary_entity_validator import PrimaryEntityValidator
 from featurebyte.schema.context import ContextCreate, ContextList, ContextUpdate
 from featurebyte.schema.info import ContextInfo, EntityBriefInfo, EntityBriefInfoList
 from featurebyte.schema.observation_table import ObservationTableUpdate
@@ -16,6 +17,7 @@ from featurebyte.service.catalog import CatalogService
 from featurebyte.service.context import ContextService
 from featurebyte.service.deployment import DeploymentService
 from featurebyte.service.entity import EntityService
+from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.use_case import UseCaseService
 from featurebyte.service.user_service import UserService
@@ -41,7 +43,7 @@ class ContextController(
         entity_service: EntityService,
         use_case_service: UseCaseService,
         catalog_service: CatalogService,
-        derive_primary_entity_helper: DerivePrimaryEntityHelper,
+        primary_entity_validator: PrimaryEntityValidator,
     ):
         super().__init__(service=context_service)
         self.observation_table_service = observation_table_service
@@ -52,7 +54,7 @@ class ContextController(
         self.entity_service = entity_service
         self.use_case_service = use_case_service
         self.catalog_service = catalog_service
-        self.derive_primary_entity_helper = derive_primary_entity_helper
+        self.primary_entity_validator = primary_entity_validator
 
     async def create_context(
         self,
@@ -75,26 +77,12 @@ class ContextController(
         -------
         ContextModel
         """
-        # validate entity ids exist and each entity id's parents must not be in the entity ids
-        all_parents_ids = []
-        for entity_id in data.primary_entity_ids:
-            entity = await self.entity_service.get_document(document_id=entity_id)
-            for parent in entity.parents:
-                all_parents_ids.append(parent.id)
-
-        if set(all_parents_ids).intersection(set(data.primary_entity_ids)):
-            raise DocumentCreationError("Context entity ids must not include any parent entity ids")
-
-        # validate all entity ids are primary entity ids
-        primary_entity_ids = await self.derive_primary_entity_helper.derive_primary_entity_ids(
-            entity_ids=data.primary_entity_ids
-        )
-        if set(primary_entity_ids) != set(data.primary_entity_ids):
-            not_primary = set(data.primary_entity_ids).difference(set(primary_entity_ids))
-            raise DocumentCreationError(
-                f"Context entity ids must all be primary entity ids: {[str(x) for x in not_primary]}"
+        try:
+            await self.primary_entity_validator.validate_entities_are_primary_entities(
+                data.primary_entity_ids
             )
-
+        except ValueError:
+            raise DocumentCreationError("Context entity ids must all be primary entity ids")
         result: ContextModel = await self.context_service.create_document(data=data)
         return result
 
