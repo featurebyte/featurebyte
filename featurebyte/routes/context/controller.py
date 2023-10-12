@@ -17,7 +17,6 @@ from featurebyte.service.catalog import CatalogService
 from featurebyte.service.context import ContextService
 from featurebyte.service.deployment import DeploymentService
 from featurebyte.service.entity import EntityService
-from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.use_case import UseCaseService
 from featurebyte.service.user_service import UserService
@@ -81,8 +80,10 @@ class ContextController(
             await self.primary_entity_validator.validate_entities_are_primary_entities(
                 data.primary_entity_ids
             )
-        except ValueError:
-            raise DocumentCreationError("Context entity ids must all be primary entity ids")
+        except ValueError as exc:
+            raise DocumentCreationError(
+                "Context entity ids must all be primary entity ids"
+            ) from exc
         result: ContextModel = await self.context_service.create_document(data=data)
         return result
 
