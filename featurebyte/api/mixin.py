@@ -184,12 +184,12 @@ class AsyncMixin(FeatureByteBaseModel):
         update_response = client.patch(url=route, json=payload)
         if update_response.status_code == HTTPStatus.OK:
             return
-        if update_response.status_code != HTTPStatus.ACCEPTED:
-            raise RecordUpdateException(response=update_response)
-        if update_response.json():
+        if update_response.status_code == HTTPStatus.ACCEPTED:
             cls._poll_async_task(
                 task_response=update_response,
                 delay=delay,
                 retrieve_result=False,
                 task_failure_exception_class=RecordUpdateException,
             )
+            return
+        raise RecordUpdateException(response=update_response)

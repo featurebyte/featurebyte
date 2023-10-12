@@ -481,7 +481,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
 
         # enable the deployment
         response = test_api_client.patch(f"/deployment/{deployment_id}", json={"enabled": True})
-        assert response.status_code == HTTPStatus.OK
+        assert response.status_code == HTTPStatus.ACCEPTED
         assert response.json()["status"] == "SUCCESS"
 
         # check serving endpoint populated in info
