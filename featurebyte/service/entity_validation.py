@@ -3,7 +3,7 @@ Module to support serving using parent-child relationship
 """
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import Optional
 
 from featurebyte.exception import (
     AmbiguousEntityRelationshipError,
@@ -121,7 +121,7 @@ class EntityValidationService:
 
         Returns
         -------
-        Optional[List[ParentServingPreparation]]
+        Optional[ParentServingPreparation]
 
         Raises
         ------
