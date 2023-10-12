@@ -36,6 +36,5 @@ async def test_get_task_description(catalog, app_container: LazyAppContainer):
             value_column_types=[],
         ),
     )
-    app_container.override_instance_for_test("payload", payload.dict(by_alias=True))
     task = app_container.get(TileTask)
-    assert await task.get_task_description() == 'Generate tile for "tile_id:aggregation_id"'
+    assert await task.get_task_description(payload) == 'Generate tile for "tile_id:aggregation_id"'

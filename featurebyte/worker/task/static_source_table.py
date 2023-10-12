@@ -3,14 +3,12 @@ StaticSourceTable creation task
 """
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import Any
 
 from uuid import UUID
 
 from featurebyte.logging import get_logger
-from featurebyte.models.base import User
 from featurebyte.models.static_source_table import StaticSourceTableModel
-from featurebyte.persistent import Persistent
 from featurebyte.schema.worker.task.static_source_table import StaticSourceTableTaskPayload
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
@@ -21,7 +19,7 @@ from featurebyte.worker.task.mixin import DataWarehouseMixin
 logger = get_logger(__name__)
 
 
-class StaticSourceTableTask(DataWarehouseMixin, BaseTask):
+class StaticSourceTableTask(DataWarehouseMixin, BaseTask[StaticSourceTableTaskPayload]):
     """
     StaticSourceTable Task
     """
@@ -31,34 +29,23 @@ class StaticSourceTableTask(DataWarehouseMixin, BaseTask):
     def __init__(  # pylint: disable=too-many-arguments
         self,
         task_id: UUID,
-        payload: dict[str, Any],
         progress: Any,
-        user: User,
-        persistent: Persistent,
         feature_store_service: FeatureStoreService,
         static_source_table_service: StaticSourceTableService,
         session_manager_service: SessionManagerService,
     ):
         super().__init__(
             task_id=task_id,
-            payload=payload,
             progress=progress,
-            user=user,
-            persistent=persistent,
         )
         self.feature_store_service = feature_store_service
         self.static_source_table_service = static_source_table_service
         self.session_manager_service = session_manager_service
 
-    async def get_task_description(self) -> str:
-        payload = cast(StaticSourceTableTaskPayload, self.payload)
+    async def get_task_description(self, payload: StaticSourceTableTaskPayload) -> str:
         return f'Save static source table "{payload.name}"'
 
-    async def execute(self) -> Any:
-        """
-        Execute StaticSourceTable task
-        """
-        payload = cast(StaticSourceTableTaskPayload, self.payload)
+    async def execute(self, payload: StaticSourceTableTaskPayload) -> Any:
         feature_store = await self.feature_store_service.get_document(
             document_id=payload.feature_store_id
         )
@@ -72,7 +59,7 @@ class StaticSourceTableTask(DataWarehouseMixin, BaseTask):
             sample_rows=payload.sample_rows,
         )
 
-        async with self.drop_table_on_error(db_session, location.table_details, self.payload):
+        async with self.drop_table_on_error(db_session, location.table_details, payload):
             additional_metadata = (
                 await self.static_source_table_service.validate_materialized_table_and_get_metadata(
                     db_session, location.table_details
@@ -80,7 +67,7 @@ class StaticSourceTableTask(DataWarehouseMixin, BaseTask):
             )
             logger.debug("Creating a new StaticSourceTable", extra=location.table_details.dict())
             static_source_table = StaticSourceTableModel(
-                _id=self.payload.output_document_id,
+                _id=payload.output_document_id,
                 user_id=payload.user_id,
                 name=payload.name,
                 location=location,

@@ -194,12 +194,11 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
         """
         Test get task description
         """
-        payload = FeatureJobSettingAnalysisBacktestTask.payload_class(**self.payload)
         app_container.override_instance_for_test("persistent", persistent)
         app_container.override_instance_for_test("catalog_id", catalog.id)
-        app_container.override_instance_for_test("payload", payload.dict(by_alias=True))
         task = app_container.get(FeatureJobSettingAnalysisBacktestTask)
+        payload = task.get_payload_obj(self.payload)
         assert (
-            await task.get_task_description()
+            await task.get_task_description(payload)
             == 'Backtest feature job settings for table "sf_event_table"'
         )

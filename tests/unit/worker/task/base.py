@@ -90,9 +90,9 @@ class BaseTaskTestSuite:
         app_container.override_instance_for_test("temp_storage", temp_storage)
         app_container.override_instance_for_test("storage", storage)
         app_container.override_instance_for_test("progress", progress)
-        app_container.override_instance_for_test("payload", payload)
         task = app_container.get(task_class)
-        await task.execute()
+        task_payload = task.get_payload_obj(payload)
+        await task.execute(task_payload)
 
     @pytest_asyncio.fixture()
     async def task_completed(

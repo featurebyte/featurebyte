@@ -27,6 +27,5 @@ async def test_get_task_description(app_container):
         catalog_id=ObjectId(),
         conflict_resolution="raise",
     )
-    app_container.override_instance_for_test("payload", payload.dict(by_alias=True))
     task = app_container.get(FeatureListCreateWithBatchFeatureCreationTask)
-    assert await task.get_task_description() == 'Save feature list "Test Feature list"'
+    assert await task.get_task_description(payload) == 'Save feature list "Test Feature list"'

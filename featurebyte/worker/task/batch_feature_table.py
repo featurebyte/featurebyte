@@ -3,16 +3,14 @@ BatchFeatureTable creation task
 """
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import Any
 
 from uuid import UUID
 
 from featurebyte.logging import get_logger
-from featurebyte.models.base import User
 from featurebyte.models.batch_feature_table import BatchFeatureTableModel
 from featurebyte.models.deployment import DeploymentModel
 from featurebyte.models.feature_list import FeatureListModel
-from featurebyte.persistent import Persistent
 from featurebyte.schema.worker.task.batch_feature_table import BatchFeatureTableTaskPayload
 from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.batch_request_table import BatchRequestTableService
@@ -27,7 +25,7 @@ from featurebyte.worker.task.mixin import DataWarehouseMixin
 logger = get_logger(__name__)
 
 
-class BatchFeatureTableTask(DataWarehouseMixin, BaseTask):
+class BatchFeatureTableTask(DataWarehouseMixin, BaseTask[BatchFeatureTableTaskPayload]):
     """
     BatchFeatureTableTask creates a batch feature table by computing online predictions
     """
@@ -37,10 +35,7 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask):
     def __init__(  # pylint: disable=too-many-arguments
         self,
         task_id: UUID,
-        payload: dict[str, Any],
         progress: Any,
-        user: User,
-        persistent: Persistent,
         feature_store_service: FeatureStoreService,
         session_manager_service: SessionManagerService,
         batch_request_table_service: BatchRequestTableService,
@@ -51,10 +46,7 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask):
     ):
         super().__init__(
             task_id=task_id,
-            payload=payload,
             progress=progress,
-            user=user,
-            persistent=persistent,
         )
         self.feature_store_service = feature_store_service
         self.session_manager_service = session_manager_service
@@ -64,15 +56,10 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask):
         self.feature_list_service = feature_list_service
         self.online_serving_service = online_serving_service
 
-    async def get_task_description(self) -> str:
-        payload = cast(BatchFeatureTableTaskPayload, self.payload)
+    async def get_task_description(self, payload: BatchFeatureTableTaskPayload) -> str:
         return f'Save batch feature table "{payload.name}"'
 
-    async def execute(self) -> Any:
-        """
-        Execute BatchFeatureTableTask
-        """
-        payload = cast(BatchFeatureTableTaskPayload, self.payload)
+    async def execute(self, payload: BatchFeatureTableTaskPayload) -> Any:
         feature_store = await self.feature_store_service.get_document(
             document_id=payload.feature_store_id
         )
@@ -95,7 +82,7 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask):
         )
 
         async with self.drop_table_on_error(
-            db_session=db_session, table_details=location.table_details, payload=self.payload
+            db_session=db_session, table_details=location.table_details, payload=payload
         ):
             await self.online_serving_service.get_online_features_from_feature_list(
                 feature_list=feature_list,
@@ -111,7 +98,7 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask):
             logger.debug("Creating a new BatchFeatureTable", extra=location.table_details.dict())
             batch_feature_table_model = BatchFeatureTableModel(
                 _id=payload.output_document_id,
-                user_id=self.payload.user_id,
+                user_id=payload.user_id,
                 name=payload.name,
                 location=location,
                 batch_request_table_id=payload.batch_request_table_id,

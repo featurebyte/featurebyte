@@ -28,6 +28,8 @@ async def test_get_task_description(catalog, app_container):
             ),
         ),
     )
-    app_container.override_instance_for_test("payload", payload.dict(by_alias=True))
     task = app_container.get(ObservationTableTask)
-    assert await task.get_task_description() == 'Save observation table "Test Observation Table"'
+    assert (
+        await task.get_task_description(payload)
+        == 'Save observation table "Test Observation Table"'
+    )

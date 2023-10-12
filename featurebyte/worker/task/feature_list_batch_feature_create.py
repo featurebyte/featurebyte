@@ -3,70 +3,53 @@ Feature list creation with batch feature creation task
 """
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import Any
 
 from uuid import UUID
 
-from featurebyte.models.base import User
-from featurebyte.persistent import Persistent
-from featurebyte.routes.feature.controller import FeatureController
 from featurebyte.routes.feature_list.controller import FeatureListController
 from featurebyte.schema.feature_list import FeatureListCreate
-from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.schema.worker.task.feature_list_batch_feature_create import (
     FeatureListCreateWithBatchFeatureCreationTaskPayload,
 )
-from featurebyte.service.feature import FeatureService
-from featurebyte.service.feature_namespace import FeatureNamespaceService
-from featurebyte.service.namespace_handler import NamespaceHandler
-from featurebyte.worker.task.batch_feature_create import BatchFeatureCreateTask
+from featurebyte.worker.task.base import BaseTask
+from featurebyte.worker.util.batch_feature_creator import BatchFeatureCreator
+from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
 
 
-class FeatureListCreateWithBatchFeatureCreationTask(BatchFeatureCreateTask):
+class FeatureListCreateWithBatchFeatureCreationTask(
+    BaseTask[FeatureListCreateWithBatchFeatureCreationTaskPayload]
+):
     """
     Feature list creation with batch feature creation task
     """
 
-    payload_class: type[BaseTaskPayload] = FeatureListCreateWithBatchFeatureCreationTaskPayload
+    payload_class = FeatureListCreateWithBatchFeatureCreationTaskPayload
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
         task_id: UUID,
-        payload: dict[str, Any],
         progress: Any,
-        user: User,
-        persistent: Persistent,
-        feature_service: FeatureService,
-        feature_namespace_service: FeatureNamespaceService,
-        feature_controller: FeatureController,
-        namespace_handler: NamespaceHandler,
         feature_list_controller: FeatureListController,
+        batch_feature_creator: BatchFeatureCreator,
+        task_progress_updater: TaskProgressUpdater,
     ):
         super().__init__(
             task_id=task_id,
-            payload=payload,
             progress=progress,
-            user=user,
-            persistent=persistent,
-            feature_service=feature_service,
-            feature_namespace_service=feature_namespace_service,
-            feature_controller=feature_controller,
-            namespace_handler=namespace_handler,
         )
         self.feature_list_controller = feature_list_controller
+        self.batch_feature_creator = batch_feature_creator
+        self.task_progress_updater = task_progress_updater
 
-    async def get_task_description(self) -> str:
-        payload = cast(FeatureListCreateWithBatchFeatureCreationTaskPayload, self.payload)
+    async def get_task_description(
+        self, payload: FeatureListCreateWithBatchFeatureCreationTaskPayload
+    ) -> str:
         return f'Save feature list "{payload.name}"'
 
-    async def execute(self) -> Any:
-        """
-        Execute FeatureListCreateWithBatchFeatureCreationTask
-        """
-        payload = cast(FeatureListCreateWithBatchFeatureCreationTaskPayload, self.payload)
-
+    async def execute(self, payload: FeatureListCreateWithBatchFeatureCreationTaskPayload) -> Any:
         # create list of features
-        feature_ids = await self.batch_feature_create(
+        feature_ids = await self.batch_feature_creator.batch_feature_create(
             payload=payload, start_percentage=0, end_percentage=90
         )
 
@@ -75,4 +58,6 @@ class FeatureListCreateWithBatchFeatureCreationTask(BatchFeatureCreateTask):
             _id=payload.id, name=payload.name, feature_ids=feature_ids
         )
         await self.feature_list_controller.create_feature_list(data=feature_list_create)
-        await self.update_progress(percent=100, message="Completed feature list creation")
+        await self.task_progress_updater.update_progress(
+            percent=100, message="Completed feature list creation"
+        )

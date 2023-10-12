@@ -3,14 +3,12 @@ ObservationTable creation task
 """
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import Any
 
 from uuid import UUID
 
 from featurebyte.logging import get_logger
-from featurebyte.models.base import User
 from featurebyte.models.observation_table import ObservationTableModel, TargetInput
-from featurebyte.persistent import Persistent
 from featurebyte.schema.worker.task.observation_table import ObservationTableTaskPayload
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.observation_table import ObservationTableService
@@ -21,7 +19,7 @@ from featurebyte.worker.task.mixin import DataWarehouseMixin
 logger = get_logger(__name__)
 
 
-class ObservationTableTask(DataWarehouseMixin, BaseTask):
+class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayload]):
     """
     ObservationTable Task
     """
@@ -31,34 +29,23 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask):
     def __init__(  # pylint: disable=too-many-arguments
         self,
         task_id: UUID,
-        payload: dict[str, Any],
         progress: Any,
-        user: User,
-        persistent: Persistent,
         feature_store_service: FeatureStoreService,
         session_manager_service: SessionManagerService,
         observation_table_service: ObservationTableService,
     ):
         super().__init__(
             task_id=task_id,
-            payload=payload,
             progress=progress,
-            user=user,
-            persistent=persistent,
         )
         self.feature_store_service = feature_store_service
         self.session_manager_service = session_manager_service
         self.observation_table_service = observation_table_service
 
-    async def get_task_description(self) -> str:
-        payload = cast(ObservationTableTaskPayload, self.payload)
+    async def get_task_description(self, payload: ObservationTableTaskPayload) -> str:
         return f'Save observation table "{payload.name}"'
 
-    async def execute(self) -> Any:
-        """
-        Execute ObservationTable task
-        """
-        payload = cast(ObservationTableTaskPayload, self.payload)
+    async def execute(self, payload: ObservationTableTaskPayload) -> Any:
         feature_store = await self.feature_store_service.get_document(
             document_id=payload.feature_store_id
         )
@@ -72,7 +59,7 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask):
             sample_rows=payload.sample_rows,
         )
 
-        async with self.drop_table_on_error(db_session, location.table_details, self.payload):
+        async with self.drop_table_on_error(db_session, location.table_details, payload):
             payload_input = payload.request_input
             assert not isinstance(payload_input, TargetInput)
             additional_metadata = (
@@ -86,7 +73,7 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask):
 
             logger.debug("Creating a new ObservationTable", extra=location.table_details.dict())
             observation_table = ObservationTableModel(
-                _id=self.payload.output_document_id,
+                _id=payload.output_document_id,
                 user_id=payload.user_id,
                 name=payload.name,
                 location=location,

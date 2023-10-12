@@ -3,7 +3,7 @@ Base models for task and task payload
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Generic, Optional, Type, TypeVar
 
 from abc import abstractmethod
 from uuid import UUID
@@ -11,75 +11,64 @@ from uuid import UUID
 from redis import Redis
 
 from featurebyte.logging import get_logger
-from featurebyte.models.base import User
-from featurebyte.models.task import Task
-from featurebyte.persistent import Persistent
-from featurebyte.schema.worker.progress import ProgressModel
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 
 logger = get_logger(__name__)
 
 
-class BaseTask:  # pylint: disable=too-many-instance-attributes
+TaskT = TypeVar("TaskT", bound=BaseTaskPayload)
+
+
+class BaseTask(Generic[TaskT]):  # pylint: disable=too-many-instance-attributes
     """
     Base class for Task
     """
 
-    payload_class: type[BaseTaskPayload] = BaseTaskPayload
+    payload_class: Type[TaskT]
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
         task_id: UUID,
-        payload: dict[str, Any],
         progress: Any,
-        user: User,
-        persistent: Persistent,
     ):
-        if self.payload_class == BaseTaskPayload:
-            raise NotImplementedError
         self.task_id = task_id
-        self.payload = self.payload_class(**payload)
         self.progress = progress
-        self.user = user
-        self.persistent = persistent
 
-    async def update_progress(self, percent: int, message: str | None = None) -> None:
+    def get_payload_obj(self, payload_data: dict[str, Any]) -> TaskT:
         """
-        Update progress
+        Get payload object from payload data.
 
         Parameters
         ----------
-        percent: int
-            Completed progress percentage
-        message: str | None
-            Optional message
+        payload_data: dict[str, Any]
+            Payload data
+
+        Returns
+        -------
+        TaskT
         """
-        progress = ProgressModel(percent=percent, message=message)
-        progress_dict = progress.dict(exclude_none=True)
-
-        # write to persistent
-        await self.persistent.update_one(
-            collection_name=Task.collection_name(),
-            query_filter={"_id": str(self.task_id)},
-            update={"$set": {"progress": progress_dict}},
-            disable_audit=True,
-            user_id=self.user.id,
-        )
-
-        if self.progress:
-            # publish to redis
-            self.progress.put(progress_dict)
+        return self.payload_class(**payload_data)
 
     @abstractmethod
-    async def execute(self) -> Any:
+    async def execute(self, payload: TaskT) -> Any:
         """
         Execute the task
+
+        Parameters
+        ----------
+        payload: TaskT
+            Task payload
         """
 
     @abstractmethod
-    async def get_task_description(self) -> str:
+    async def get_task_description(self, payload: TaskT) -> str:
         """
         Get the task description
+
+        Parameters
+        ----------
+        payload: TaskT
+            Task payload
 
         Returns
         -------
@@ -88,7 +77,7 @@ class BaseTask:  # pylint: disable=too-many-instance-attributes
         raise NotImplementedError()
 
 
-class BaseLockTask(BaseTask):
+class BaseLockTask(BaseTask[TaskT]):
     """
     BaseLockTask is used to run a task with a lock. At most one task with the same lock
     can be executed at the same time. The lock is released when the task is finished.
@@ -97,46 +86,49 @@ class BaseLockTask(BaseTask):
     def __init__(  # pylint: disable=too-many-arguments
         self,
         task_id: UUID,
-        payload: dict[str, Any],
         progress: Any,
-        user: User,
-        persistent: Persistent,
         redis: Redis[Any],
     ):
         super().__init__(
             task_id=task_id,
-            payload=payload,
             progress=progress,
-            user=user,
-            persistent=persistent,
         )
         self.redis = redis
 
-    async def execute(self) -> Any:
+    async def execute(self, payload: TaskT) -> Any:
         """
-        Execute the task
+        Execute the task with special handling for locking.
+
+        Parameters
+        ----------
+        payload: TaskT
+            Task payload
 
         Returns
         -------
         Any
         """
-        lock = self.redis.lock(self.lock_key, timeout=self.lock_timeout)
+        lock = self.redis.lock(self.lock_key(payload), timeout=self.lock_timeout)
         try:
             if lock.acquire(blocking=self.lock_blocking):
-                return await self._execute()
+                return await self._execute(payload)
 
             # handle the case when the lock is not acquired
-            return self.handle_lock_not_acquired()
+            return self.handle_lock_not_acquired(payload)
         finally:
             if lock.owned():
                 lock.release()
 
-    @property
     @abstractmethod
-    def lock_key(self) -> str:
+    def lock_key(self, payload: TaskT) -> str:
         """
         Key to lock the task. This is used to prevent multiple tasks with the same
         lock_key running at the same time.
+
+        Parameters
+        ----------
+        payload: TaskT
+            Task payload
 
         Returns
         -------
@@ -168,14 +160,32 @@ class BaseLockTask(BaseTask):
         """
 
     @abstractmethod
-    def handle_lock_not_acquired(self) -> Any:
+    def handle_lock_not_acquired(self, payload: TaskT) -> Any:
         """
         Handle the case when the lock is not acquired. This method will be called when
         the lock is not acquired.
+
+        Parameters
+        ----------
+        payload: TaskT
+            Task payload
+
+        Returns
+        -------
+        Any
         """
 
     @abstractmethod
-    async def _execute(self) -> Any:
+    async def _execute(self, payload: TaskT) -> Any:
         """
         Execute the task when the lock is acquired
+
+        Parameters
+        ----------
+        payload: TaskT
+            Task payload
+
+        Returns
+        -------
+        Any
         """

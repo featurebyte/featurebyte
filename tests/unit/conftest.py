@@ -1623,12 +1623,12 @@ def mock_task_manager(request, persistent, storage, temp_storage):
                     app_container_config=app_container_config,
                 )
                 app_container.override_instance_for_test("task_id", UUID(task_id))
-                app_container.override_instance_for_test("payload", kwargs)
                 app_container.override_instance_for_test("progress", Mock())
                 task = app_container.get(TEST_TASK_REGISTRY_MAP[payload.command])
 
                 try:
-                    await task.execute()
+                    task_payload = task.get_payload_obj(kwargs)
+                    await task.execute(task_payload)
                     status = TaskStatus.SUCCESS
                     traceback_info = None
                 except Exception:  # pylint: disable=broad-except

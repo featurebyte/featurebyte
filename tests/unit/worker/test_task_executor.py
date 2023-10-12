@@ -10,11 +10,9 @@ import greenlet
 import pytest
 from bson.objectid import ObjectId
 
-from featurebyte.models.base import DEFAULT_CATALOG_ID, User
+from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.schema.worker.task.base import TaskType
-from featurebyte.utils.persistent import MongoDBImpl
 from featurebyte.worker.registry import TASK_REGISTRY_MAP
-from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task_executor import TaskExecutor as WorkerTaskExecutor
 from featurebyte.worker.task_executor import run_async
 from featurebyte.worker.test_util.random_task import RandomTask, RandomTaskPayload, TestCommand
@@ -104,23 +102,6 @@ async def test_task_executor(random_task_class, persistent):
     )
     assert isinstance(document["start_time"], datetime.datetime)
     assert document["description"] == "Execute random task"
-
-
-def test_task_has_been_implemented(random_task_class):
-    """
-    Test implement a task whose command has been implemented before
-    """
-    _ = random_task_class
-
-    # initiate BaseTask without override payload_class will trigger NotImplementedError
-    with pytest.raises(NotImplementedError):
-        BaseTask(
-            task_id=uuid4(),
-            payload={},
-            progress=None,
-            user=User(),
-            persistent=MongoDBImpl(),
-        )
 
 
 def run_process_task(state: Value, exception_value: Value, timeout: int):

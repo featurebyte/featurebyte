@@ -28,8 +28,8 @@ async def test_get_task_description(catalog, app_container):
             ),
         ),
     )
-    app_container.override_instance_for_test("payload", payload.dict(by_alias=True))
     task = app_container.get(BatchRequestTableTask)
     assert (
-        await task.get_task_description() == 'Save batch request table "Test Batch Request Table"'
+        await task.get_task_description(payload)
+        == 'Save batch request table "Test Batch Request Table"'
     )

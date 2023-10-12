@@ -3,7 +3,7 @@ Feature Job Setting Analysis task
 """
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import Any
 
 from datetime import datetime
 from pathlib import Path
@@ -17,13 +17,11 @@ from featurebyte_freeware.feature_job_analysis.database import EventDataset
 from featurebyte_freeware.feature_job_analysis.schema import FeatureJobSetting
 
 from featurebyte.logging import get_logger
-from featurebyte.models.base import User
 from featurebyte.models.feature_job_setting_analysis import (
     BackTestSummary,
     FeatureJobSettingAnalysisData,
     FeatureJobSettingAnalysisModel,
 )
-from featurebyte.persistent import Persistent
 from featurebyte.schema.feature_job_setting_analysis import EventTableCandidate
 from featurebyte.schema.worker.task.feature_job_setting_analysis import (
     FeatureJobSettingAnalysisBackTestTaskPayload,
@@ -35,11 +33,12 @@ from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.storage import Storage
 from featurebyte.worker.task.base import BaseTask
+from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
 
 logger = get_logger(__name__)
 
 
-class FeatureJobSettingAnalysisTask(BaseTask):
+class FeatureJobSettingAnalysisTask(BaseTask[FeatureJobSettingAnalysisTaskPayload]):
     """
     Feature Job Setting Analysis Task
     """
@@ -49,31 +48,26 @@ class FeatureJobSettingAnalysisTask(BaseTask):
     def __init__(  # pylint: disable=too-many-arguments
         self,
         task_id: UUID,
-        payload: dict[str, Any],
         progress: Any,
-        user: User,
-        persistent: Persistent,
         storage: Storage,
         event_table_service: EventTableService,
         feature_store_service: FeatureStoreService,
         session_manager_service: SessionManagerService,
         feature_job_setting_analysis_service: FeatureJobSettingAnalysisService,
+        task_progress_updater: TaskProgressUpdater,
     ):
         super().__init__(
             task_id=task_id,
-            payload=payload,
             progress=progress,
-            user=user,
-            persistent=persistent,
         )
         self.storage = storage
         self.event_table_service = event_table_service
         self.feature_store_service = feature_store_service
         self.session_manager_service = session_manager_service
         self.feature_job_setting_analysis_service = feature_job_setting_analysis_service
+        self.task_progress_updater = task_progress_updater
 
-    async def get_task_description(self) -> str:
-        payload = cast(FeatureJobSettingAnalysisTaskPayload, self.payload)
+    async def get_task_description(self, payload: FeatureJobSettingAnalysisTaskPayload) -> str:
         # retrieve event data
         if payload.event_table_id:
             event_table_document = await self.event_table_service.get_document(
@@ -86,12 +80,8 @@ class FeatureJobSettingAnalysisTask(BaseTask):
             event_table_name = payload.event_table_candidate.name
         return f'Analyze feature job settings for table "{event_table_name}"'
 
-    async def execute(self) -> Any:
-        """
-        Execute the task
-        """
-        await self.update_progress(percent=0, message="Preparing data")
-        payload = cast(FeatureJobSettingAnalysisTaskPayload, self.payload)
+    async def execute(self, payload: FeatureJobSettingAnalysisTaskPayload) -> Any:
+        await self.task_progress_updater.update_progress(percent=0, message="Preparing data")
 
         # retrieve event data
         if payload.event_table_id:
@@ -126,7 +116,7 @@ class FeatureJobSettingAnalysisTask(BaseTask):
             sql_query_func=db_session.execute_query,
         )
 
-        await self.update_progress(percent=5, message="Running Analysis")
+        await self.task_progress_updater.update_progress(percent=5, message="Running Analysis")
         analysis = await create_feature_job_settings_analysis(
             event_dataset=event_dataset,
             **payload.dict(by_alias=True),
@@ -144,7 +134,7 @@ class FeatureJobSettingAnalysisTask(BaseTask):
             analysis_report=analysis.to_html(),
         )
 
-        await self.update_progress(percent=95, message="Saving Analysis")
+        await self.task_progress_updater.update_progress(percent=95, message="Saving Analysis")
         analysis_doc = await self.feature_job_setting_analysis_service.create_document(
             data=analysis_doc
         )
@@ -161,10 +151,10 @@ class FeatureJobSettingAnalysisTask(BaseTask):
             "Completed feature job setting analysis",
             extra={"document_id": payload.output_document_id},
         )
-        await self.update_progress(percent=100, message="Analysis Completed")
+        await self.task_progress_updater.update_progress(percent=100, message="Analysis Completed")
 
 
-class FeatureJobSettingAnalysisBacktestTask(BaseTask):
+class FeatureJobSettingAnalysisBacktestTask(BaseTask[FeatureJobSettingAnalysisBackTestTaskPayload]):
     """
     Feature Job Setting Analysis Task
     """
@@ -174,38 +164,39 @@ class FeatureJobSettingAnalysisBacktestTask(BaseTask):
     def __init__(  # pylint: disable=too-many-arguments
         self,
         task_id: UUID,
-        payload: dict[str, Any],
         progress: Any,
-        user: User,
-        persistent: Persistent,
         storage: Storage,
         temp_storage: Storage,
         feature_job_setting_analysis_service: FeatureJobSettingAnalysisService,
+        task_progress_updater: TaskProgressUpdater,
     ):
         super().__init__(
             task_id=task_id,
-            payload=payload,
             progress=progress,
-            user=user,
-            persistent=persistent,
         )
         self.storage = storage
         self.temp_storage = temp_storage
         self.feature_job_setting_analysis_service = feature_job_setting_analysis_service
+        self.task_progress_updater = task_progress_updater
 
-    async def get_task_description(self) -> str:
-        payload = cast(FeatureJobSettingAnalysisBackTestTaskPayload, self.payload)
+    async def get_task_description(
+        self, payload: FeatureJobSettingAnalysisBackTestTaskPayload
+    ) -> str:
         analysis = await self.feature_job_setting_analysis_service.get_document(
             document_id=payload.feature_job_setting_analysis_id
         )
         return f'Backtest feature job settings for table "{analysis.analysis_parameters.event_table_name}"'
 
-    async def execute(self) -> None:
+    async def execute(self, payload: FeatureJobSettingAnalysisBackTestTaskPayload) -> None:
         """
         Execute the task
+
+        Parameters
+        ----------
+        payload: FeatureJobSettingAnalysisBackTestTaskPayload
+            Payload
         """
-        await self.update_progress(percent=0, message="Preparing table")
-        payload = cast(FeatureJobSettingAnalysisBackTestTaskPayload, self.payload)
+        await self.task_progress_updater.update_progress(percent=0, message="Preparing table")
 
         # retrieve analysis doc from persistent
         document_id = payload.feature_job_setting_analysis_id
@@ -226,7 +217,7 @@ class FeatureJobSettingAnalysisBacktestTask(BaseTask):
         analysis = FeatureJobSettingsAnalysisResult.from_dict(document)
 
         # run backtest
-        await self.update_progress(percent=5, message="Running Analysis")
+        await self.task_progress_updater.update_progress(percent=5, message="Running Analysis")
         feature_job_setting = FeatureJobSetting(
             frequency=payload.frequency,
             blind_spot=payload.blind_spot,
@@ -256,7 +247,7 @@ class FeatureJobSettingAnalysisBacktestTask(BaseTask):
         )
 
         # store results in temp storage
-        await self.update_progress(percent=95, message="Saving Analysis")
+        await self.task_progress_updater.update_progress(percent=95, message="Saving Analysis")
         prefix = f"feature_job_setting_analysis/backtest/{payload.output_document_id}"
         await self.temp_storage.put_text(backtest_report, Path(f"{prefix}.html"))
         await self.temp_storage.put_dataframe(backtest_result.results, Path(f"{prefix}.parquet"))
@@ -265,4 +256,4 @@ class FeatureJobSettingAnalysisBacktestTask(BaseTask):
             "Completed feature job setting analysis backtest",
             extra={"document_id": payload.output_document_id},
         )
-        await self.update_progress(percent=100, message="Analysis Completed")
+        await self.task_progress_updater.update_progress(percent=100, message="Analysis Completed")

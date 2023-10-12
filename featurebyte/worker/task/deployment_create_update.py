@@ -10,8 +10,6 @@ from uuid import UUID
 from redis import Redis
 
 from featurebyte.exception import DocumentCreationError, DocumentUpdateError
-from featurebyte.models.base import User
-from featurebyte.persistent import Persistent
 from featurebyte.schema.worker.task.deployment_create_update import (
     CreateDeploymentPayload,
     DeploymentCreateUpdateTaskPayload,
@@ -21,9 +19,10 @@ from featurebyte.schema.worker.task.deployment_create_update import (
 from featurebyte.service.deploy import DeployService
 from featurebyte.service.deployment import DeploymentService
 from featurebyte.worker.task.base import BaseLockTask
+from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
 
 
-class DeploymentCreateUpdateTask(BaseLockTask):
+class DeploymentCreateUpdateTask(BaseLockTask[DeploymentCreateUpdateTaskPayload]):
     """
     FeatureList Deploy Task
     """
@@ -33,27 +32,22 @@ class DeploymentCreateUpdateTask(BaseLockTask):
     def __init__(  # pylint: disable=too-many-arguments
         self,
         task_id: UUID,
-        payload: dict[str, Any],
         progress: Any,
-        user: User,
-        persistent: Persistent,
         redis: Redis[Any],
         deployment_service: DeploymentService,
         deploy_service: DeployService,
+        task_progress_updater: TaskProgressUpdater,
     ):
         super().__init__(
             task_id=task_id,
-            payload=payload,
             progress=progress,
-            user=user,
-            persistent=persistent,
             redis=redis,
         )
         self.deployment_service = deployment_service
         self.deploy_service = deploy_service
+        self.task_progress_updater = task_progress_updater
 
-    async def get_task_description(self) -> str:
-        payload = cast(DeploymentCreateUpdateTaskPayload, self.payload)
+    async def get_task_description(self, payload: DeploymentCreateUpdateTaskPayload) -> str:
         if payload.deployment_payload.type == DeploymentPayloadType.CREATE:
             action = "Create"
             creation_payload = cast(CreateDeploymentPayload, payload.deployment_payload)
@@ -69,10 +63,8 @@ class DeploymentCreateUpdateTask(BaseLockTask):
                 action = "Disable"
         return f'{action} deployment "{deployment_name}"'
 
-    @property
-    def lock_key(self) -> str:
+    def lock_key(self, payload: DeploymentCreateUpdateTaskPayload) -> str:
         # each deployment can only be created or updated once at a time
-        payload = cast(DeploymentCreateUpdateTaskPayload, self.payload)
         return f"deployment:{payload.output_document_id}:create_update"
 
     @property
@@ -86,18 +78,13 @@ class DeploymentCreateUpdateTask(BaseLockTask):
         # fail the current task immediately without waiting
         return False
 
-    def handle_lock_not_acquired(self) -> None:
-        payload = cast(DeploymentCreateUpdateTaskPayload, self.payload)
+    def handle_lock_not_acquired(self, payload: DeploymentCreateUpdateTaskPayload) -> None:
         error_msg = f"Deployment {payload.output_document_id} is currently being created or updated"
         if payload.deployment_payload.type == DeploymentPayloadType.CREATE:
             raise DocumentCreationError(error_msg)
         raise DocumentUpdateError(error_msg)
 
-    async def _execute(self) -> Any:
-        """
-        Execute Deployment Create & Update Task
-        """
-        payload = cast(DeploymentCreateUpdateTaskPayload, self.payload)
+    async def _execute(self, payload: DeploymentCreateUpdateTaskPayload) -> Any:
         if payload.deployment_payload.type == DeploymentPayloadType.CREATE:
             create_deployment_payload = cast(CreateDeploymentPayload, payload.deployment_payload)
             await self.deploy_service.create_deployment(
@@ -105,7 +92,7 @@ class DeploymentCreateUpdateTask(BaseLockTask):
                 deployment_id=payload.output_document_id,
                 deployment_name=create_deployment_payload.name,
                 to_enable_deployment=create_deployment_payload.enabled,
-                update_progress=self.update_progress,
+                update_progress=self.task_progress_updater.update_progress,
                 use_case_id=create_deployment_payload.use_case_id,
                 context_id=create_deployment_payload.context_id,
             )
@@ -115,5 +102,5 @@ class DeploymentCreateUpdateTask(BaseLockTask):
             await self.deploy_service.update_deployment(
                 deployment_id=payload.output_document_id,
                 enabled=update_deployment_payload.enabled,
-                update_progress=self.update_progress,
+                update_progress=self.task_progress_updater.update_progress,
             )
