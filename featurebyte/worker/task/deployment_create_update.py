@@ -5,8 +5,6 @@ from __future__ import annotations
 
 from typing import Any, Optional, cast
 
-from uuid import UUID
-
 from redis import Redis
 
 from featurebyte.exception import DocumentCreationError, DocumentUpdateError
