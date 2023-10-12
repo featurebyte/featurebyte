@@ -48,6 +48,7 @@ from featurebyte.service.feature_list_facade import FeatureListFacadeService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_preview import FeaturePreviewService
 from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
+from featurebyte.service.task_manager import TaskManager
 from featurebyte.service.tile_job_log import TileJobLogService
 
 
@@ -71,6 +72,7 @@ class FeatureListController(
         feature_preview_service: FeaturePreviewService,
         tile_job_log_service: TileJobLogService,
         task_controller: TaskController,
+        task_manager: TaskManager,
     ):
         super().__init__(feature_list_service)
         self.feature_list_facade_service = feature_list_facade_service
@@ -79,6 +81,7 @@ class FeatureListController(
         self.feature_preview_service = feature_preview_service
         self.tile_job_log_service = tile_job_log_service
         self.task_controller = task_controller
+        self.task_manager = task_manager
 
     async def submit_feature_list_create_with_batch_feature_create_task(
         self, data: FeatureListCreateWithBatchFeatureCreation
@@ -103,8 +106,8 @@ class FeatureListController(
                 "catalog_id": self.service.catalog_id,
             }
         )
-        task_id = await self.task_controller.task_manager.submit(payload=payload)
-        return await self.task_controller.task_manager.get_task(task_id=str(task_id))
+        task_id = await self.task_manager.submit(payload=payload)
+        return await self.task_manager.get_task(task_id=str(task_id))
 
     async def create_feature_list(
         self, data: Union[FeatureListCreate, FeatureListNewVersionCreate]
@@ -173,7 +176,7 @@ class FeatureListController(
                 user_id=self.service.user.id,
                 catalog_id=self.service.catalog_id,
             )
-            task_id = await self.task_controller.task_manager.submit(payload=payload)
+            task_id = await self.task_manager.submit(payload=payload)
             return await self.task_controller.get_task(task_id=str(task_id))
 
         return await self.get(document_id=feature_list_id)
