@@ -16,7 +16,6 @@ from featurebyte.models.task import Task
 from featurebyte.persistent import Persistent
 from featurebyte.schema.worker.progress import ProgressModel
 from featurebyte.schema.worker.task.base import BaseTaskPayload
-from featurebyte.storage import Storage
 
 logger = get_logger(__name__)
 
