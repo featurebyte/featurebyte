@@ -18,6 +18,9 @@ from featurebyte.worker.task.feature_job_setting_analysis import (
 from featurebyte.worker.task.feature_list_batch_feature_create import (
     FeatureListCreateWithBatchFeatureCreationTask,
 )
+from featurebyte.worker.task.feature_list_make_production_ready import (
+    FeatureListMakeProductionReadyTask,
+)
 from featurebyte.worker.task.historical_feature_table import HistoricalFeatureTableTask
 from featurebyte.worker.task.materialized_table_delete import MaterializedTableDeleteTask
 from featurebyte.worker.task.observation_table import ObservationTableTask
@@ -41,6 +44,7 @@ TASK_REGISTRY_MAP: Dict[Enum, Type[BaseTask]] = {
     WorkerCommand.MATERIALIZED_TABLE_DELETE: MaterializedTableDeleteTask,
     WorkerCommand.BATCH_FEATURE_CREATE: BatchFeatureCreateTask,
     WorkerCommand.FEATURE_LIST_CREATE_WITH_BATCH_FEATURE_CREATE: FeatureListCreateWithBatchFeatureCreationTask,
+    WorkerCommand.FEATURE_LIST_MAKE_PRODUCTION_READY: FeatureListMakeProductionReadyTask,
     WorkerCommand.STATIC_SOURCE_TABLE_CREATE: StaticSourceTableTask,
     WorkerCommand.TARGET_TABLE_CREATE: TargetTableTask,
     WorkerCommand.TILE_COMPUTE: TileTask,

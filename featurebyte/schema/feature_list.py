@@ -122,7 +122,6 @@ class FeatureListUpdate(FeatureByteBaseModel):
     """
 
     make_production_ready: Optional[bool]
-    deployed: Optional[bool]
     ignore_guardrails: Optional[bool]
 
 
@@ -131,6 +130,7 @@ class FeatureListServiceUpdate(BaseDocumentServiceUpdateSchema, FeatureListUpdat
     FeatureList service update schema
     """
 
+    deployed: Optional[bool]
     online_enabled_feature_ids: Optional[List[PydanticObjectId]]
     readiness_distribution: Optional[FeatureReadinessDistribution]
 
