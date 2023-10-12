@@ -468,7 +468,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         response = test_api_client.patch(
             f"{self.base_route}/{doc_id}", json={"make_production_ready": True}
         )
-        assert response.status_code == HTTPStatus.OK
+        assert response.status_code == HTTPStatus.ACCEPTED
 
         response = test_api_client.post("/deployment", json={"feature_list_id": doc_id})
         deployment_id = response.json()["payload"]["output_document_id"]

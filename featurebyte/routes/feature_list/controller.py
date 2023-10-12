@@ -39,6 +39,9 @@ from featurebyte.schema.task import Task
 from featurebyte.schema.worker.task.feature_list_batch_feature_create import (
     FeatureListCreateWithBatchFeatureCreationTaskPayload,
 )
+from featurebyte.schema.worker.task.feature_list_make_production_ready import (
+    FeatureListMakeProductionReadyTaskPayload,
+)
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_facade import FeatureListFacadeService
@@ -146,7 +149,7 @@ class FeatureListController(
         self,
         feature_list_id: ObjectId,
         data: FeatureListUpdate,
-    ) -> FeatureListModelResponse:
+    ) -> Union[FeatureListModelResponse, Task]:
         """
         Update FeatureList at persistent
 
@@ -159,14 +162,19 @@ class FeatureListController(
 
         Returns
         -------
-        FeatureListModelResponse
-            FeatureList object with updated attribute(s)
+        Union[FeatureListModelResponse, Task]
+            FeatureList object with updated attribute(s) or Task object
+
         """
         if data.make_production_ready:
-            await self.feature_list_facade_service.make_features_production_ready(
+            payload = FeatureListMakeProductionReadyTaskPayload(
                 feature_list_id=feature_list_id,
                 ignore_guardrails=bool(data.ignore_guardrails),
+                user_id=self.service.user.id,
+                catalog_id=self.service.catalog_id,
             )
+            task_id = await self.task_controller.task_manager.submit(payload=payload)
+            return await self.task_controller.task_manager.get_task(task_id=str(task_id))
 
         return await self.get(document_id=feature_list_id)
 

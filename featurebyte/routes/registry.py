@@ -142,6 +142,9 @@ from featurebyte.worker.task.feature_job_setting_analysis import (
 from featurebyte.worker.task.feature_list_batch_feature_create import (
     FeatureListCreateWithBatchFeatureCreationTask,
 )
+from featurebyte.worker.task.feature_list_make_production_ready import (
+    FeatureListMakeProductionReadyTask,
+)
 from featurebyte.worker.task.historical_feature_table import HistoricalFeatureTableTask
 from featurebyte.worker.task.materialized_table_delete import MaterializedTableDeleteTask
 from featurebyte.worker.task.observation_table import ObservationTableTask
@@ -294,9 +297,10 @@ app_container_config.register_class(UserService)
 app_container_config.register_class(VersionService)
 app_container_config.register_class(ViewConstructionService)
 app_container_config.register_class(WorkingSchemaService)
-
 app_container_config.register_class(UseCaseService)
 app_container_config.register_class(UseCaseController)
+
+# register tasks
 app_container_config.register_class(TargetTableTask)
 app_container_config.register_class(RandomTask)
 app_container_config.register_class(FeatureJobSettingAnalysisTask)
@@ -315,6 +319,7 @@ app_container_config.register_class(TileTask)
 app_container_config.register_class(OnlineStoreCleanupTask)
 app_container_config.register_class(LongRunningTask)
 app_container_config.register_class(TestTask)
+app_container_config.register_class(FeatureListMakeProductionReadyTask)
 
 app_container_config.register_class(MongoDBImpl, name_override="persistent")
 

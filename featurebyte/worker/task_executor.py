@@ -100,7 +100,12 @@ class TaskExecutor:
 
     command_type = WorkerCommand
 
-    def __init__(self, payload: dict[str, Any], task_id: UUID, progress: Any = None) -> None:
+    def __init__(
+        self,
+        payload: dict[str, Any],
+        task_id: UUID,
+        progress: Any = None,
+    ) -> None:
         self.task_id = task_id
         command = self.command_type(payload["command"])
         user = User(id=payload.get("user_id"))

@@ -7,6 +7,7 @@ from pydantic import Field
 
 from featurebyte.enum import WorkerCommand
 from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.schema.worker.task.base import BaseTaskPayload, TaskType
 
 
@@ -19,3 +20,4 @@ class FeatureListMakeProductionReadyTaskPayload(BaseTaskPayload):
     task_type: TaskType = Field(default=TaskType.IO_TASK)
     feature_list_id: PydanticObjectId
     ignore_guardrails: bool = False
+    output_collection_name = FeatureListModel.collection_name()

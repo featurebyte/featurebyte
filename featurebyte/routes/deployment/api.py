@@ -5,7 +5,7 @@ from typing import Literal, Optional, cast
 
 from http import HTTPStatus
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Query, Request, Response
 from fastapi.responses import ORJSONResponse
 
 from featurebyte.models.base import PydanticObjectId
@@ -70,7 +70,7 @@ async def get_deployment(request: Request, deployment_id: PydanticObjectId) -> D
     return deployment
 
 
-@router.patch("/{deployment_id}")
+@router.patch("/{deployment_id}", status_code=HTTPStatus.ACCEPTED)
 async def update_deployment(
     request: Request, deployment_id: PydanticObjectId, data: DeploymentUpdate
 ) -> Optional[Task]:

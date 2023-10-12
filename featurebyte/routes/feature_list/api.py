@@ -9,7 +9,7 @@ from typing import Any, Dict, Optional, Union, cast
 import json
 from http import HTTPStatus
 
-from fastapi import APIRouter, File, Form, Query, Request, UploadFile
+from fastapi import APIRouter, File, Form, Query, Request, Response, UploadFile
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.persistent import AuditDocumentList
@@ -90,19 +90,22 @@ async def get_feature_list(
     return feature_list
 
 
-@router.patch("/{feature_list_id}", response_model=FeatureListModelResponse)
+@router.patch("/{feature_list_id}", response_model=Union[FeatureListModelResponse, Task])
 async def update_feature_list(
-    request: Request, feature_list_id: PydanticObjectId, data: FeatureListUpdate
-) -> FeatureListModelResponse:
+    request: Request, feature_list_id: PydanticObjectId, data: FeatureListUpdate, response: Response
+) -> Union[FeatureListModelResponse, Task]:
     """
     Update FeatureList
     """
     controller = request.state.app_container.feature_list_controller
-    feature_list: FeatureListModelResponse = await controller.update_feature_list(
+    feature_list_or_task = await controller.update_feature_list(
         feature_list_id=feature_list_id,
         data=data,
     )
-    return feature_list
+    if isinstance(feature_list_or_task, Task):
+        response.status_code = HTTPStatus.ACCEPTED
+        return cast(Task, feature_list_or_task)
+    return cast(FeatureListModelResponse, feature_list_or_task)
 
 
 @router.delete("/{feature_list_id}", status_code=HTTPStatus.OK)
