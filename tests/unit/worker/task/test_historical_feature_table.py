@@ -34,9 +34,8 @@ async def test_get_task_description(app_container):
         name="Test historical feature table",
         feature_store_id=ObjectId(),
     )
-    app_container.override_instance_for_test("payload", payload.dict(by_alias=True))
     task = app_container.get(HistoricalFeatureTableTask)
     assert (
-        await task.get_task_description()
+        await task.get_task_description(payload)
         == 'Save historical feature table "Test historical feature table"'
     )

@@ -25,9 +25,8 @@ async def test_get_task_description(catalog, app_container):
         request_input=UploadedFileInput(type=RequestInputType.UPLOADED_FILE),
         observation_set_storage_path="filepath",
     )
-    app_container.override_instance_for_test("payload", payload.dict(by_alias=True))
     task = app_container.get(ObservationTableUploadTask)
     assert (
-        await task.get_task_description()
+        await task.get_task_description(payload)
         == 'Upload observation table "Test Observation Table Upload" from CSV.'
     )

@@ -17,9 +17,8 @@ from featurebyte.schema.feature import BatchFeatureItem
 from featurebyte.worker.task.batch_feature_create import (
     BatchFeatureCreateTask,
     BatchFeatureCreateTaskPayload,
-    execute_sdk_code,
-    set_environment_variable,
 )
+from featurebyte.worker.util.batch_feature_creator import execute_sdk_code, set_environment_variable
 
 
 @pytest.fixture(name="test_catalog")
@@ -101,6 +100,5 @@ async def test_get_task_description(app_container):
         catalog_id=ObjectId(),
         conflict_resolution="raise",
     )
-    app_container.override_instance_for_test("payload", payload.dict(by_alias=True))
     task = app_container.get(BatchFeatureCreateTask)
-    assert await task.get_task_description() == "Save 2 features"
+    assert await task.get_task_description(payload) == "Save 2 features"

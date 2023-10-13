@@ -30,6 +30,7 @@ from featurebyte.utils.persistent import MongoDBImpl
 from featurebyte.utils.storage import get_storage, get_temp_storage
 from featurebyte.worker import get_celery, get_redis
 from featurebyte.worker.registry import TASK_REGISTRY_MAP
+from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
 
 logger = get_logger(__name__)
 
@@ -105,11 +106,13 @@ class TaskExecutor:
         command = self.command_type(payload["command"])
         user = User(id=payload.get("user_id"))
         task_class = TASK_REGISTRY_MAP[command]
+        self.persistent = MongoDBImpl()
+        self.user = user
         instance_map_to_use = {
             # Default instances
             "celery": get_celery(),
             "redis": get_redis(),
-            "persistent": MongoDBImpl(),
+            "persistent": self.persistent,
             "storage": get_storage(),
             "temp_storage": get_temp_storage(),
             # Task specific parameters
@@ -124,28 +127,30 @@ class TaskExecutor:
             instance_map=instance_map_to_use,
         )
         self.task = app_container.get(task_class)
+        self.task_progress_updater = app_container.get(TaskProgressUpdater)
         self._setup_worker_config()
+        self.payload_dict = payload
 
-    async def _update_task_start_time_and_description(self, persistent: Any) -> None:
+    async def _update_task_start_time_and_description(self, payload: Any) -> None:
         """
         Update task start time and description
 
         Parameters
         ----------
-        persistent: Any
-            Persistent object
+        payload: Any
+            Task payload
         """
-        await persistent.update_one(
+        await self.persistent.update_one(
             collection_name=TaskModel.collection_name(),
             query_filter={"_id": str(self.task_id)},
             update={
                 "$set": {
                     "start_time": datetime.utcnow(),
-                    "description": await self.task.get_task_description(),
+                    "description": await self.task.get_task_description(payload),
                 }
             },
             disable_audit=True,
-            user_id=self.task.user.id,
+            user_id=self.user.id,
         )
 
     def _setup_worker_config(self) -> None:
@@ -174,8 +179,16 @@ class TaskExecutor:
         """
         Execute the task
         """
-        await self._update_task_start_time_and_description(self.task.persistent)
-        await self.task.execute()
+        # Send initial progress to indicate task is started
+        await self.task_progress_updater.update_progress(percent=0)
+
+        # Execute the task
+        payload_obj = self.task.get_payload_obj(self.payload_dict)
+        await self._update_task_start_time_and_description(payload_obj)
+        await self.task.execute(payload_obj)
+
+        # Send final progress to indicate task is completed
+        await self.task_progress_updater.update_progress(percent=100)
 
 
 class BaseCeleryTask(Task):
@@ -204,12 +217,8 @@ class BaseCeleryTask(Task):
         """
         progress = self.progress_class(user_id=payload.get("user_id"), task_id=request_id)
         executor = self.executor_class(payload=payload, task_id=request_id, progress=progress)
-        # send initial progress to indicate task is started
-        await executor.task.update_progress(percent=0)
         try:
             return_val = await executor.execute()
-            # send final progress to indicate task is completed
-            await executor.task.update_progress(percent=100)
             return return_val
         finally:
             # indicate stream is closed

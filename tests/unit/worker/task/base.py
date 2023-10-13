@@ -15,6 +15,7 @@ import pytest_asyncio
 from featurebyte.models.base import User
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.worker.task.base import BaseTask
+from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
 
 
 class BaseTaskTestSuite:
@@ -90,9 +91,9 @@ class BaseTaskTestSuite:
         app_container.override_instance_for_test("temp_storage", temp_storage)
         app_container.override_instance_for_test("storage", storage)
         app_container.override_instance_for_test("progress", progress)
-        app_container.override_instance_for_test("payload", payload)
         task = app_container.get(task_class)
-        await task.execute()
+        task_payload = task.get_payload_obj(payload)
+        await task.execute(task_payload)
 
     @pytest_asyncio.fixture()
     async def task_completed(
@@ -103,6 +104,7 @@ class BaseTaskTestSuite:
         """
         persistent, _ = mongo_persistent
         self.payload["catalog_id"] = catalog.id
+        app_container.invalidate_dep_for_test(TaskProgressUpdater)
         await self.execute_task(
             task_class=self.task_class,
             payload=self.payload,

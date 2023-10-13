@@ -27,9 +27,8 @@ async def test_get_task_description_create(app_container):
             enabled=False,
         ),
     )
-    app_container.override_instance_for_test("payload", payload.dict(by_alias=True))
     task = app_container.get(DeploymentCreateUpdateTask)
-    assert await task.get_task_description() == 'Create deployment "Test deployment"'
+    assert await task.get_task_description(payload) == 'Create deployment "Test deployment"'
 
 
 @pytest.mark.asyncio
@@ -66,6 +65,5 @@ async def test_get_task_description_update(
     )
     app_container.override_instance_for_test("persistent", persistent)
     app_container.override_instance_for_test("catalog_id", catalog_id)
-    app_container.override_instance_for_test("payload", payload.dict(by_alias=True))
     task = app_container.get(DeploymentCreateUpdateTask)
-    assert await task.get_task_description() == expected
+    assert await task.get_task_description(payload) == expected

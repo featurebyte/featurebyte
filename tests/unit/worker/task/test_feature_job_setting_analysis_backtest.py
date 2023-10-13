@@ -20,6 +20,7 @@ from featurebyte.worker.task.feature_job_setting_analysis import (
     FeatureJobSettingAnalysisBacktestTask,
     FeatureJobSettingAnalysisTask,
 )
+from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
 from tests.unit.worker.task.base import BaseTaskTestSuite
 
 
@@ -170,6 +171,7 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
         payload["feature_job_setting_analysis_id"] = feature_job_setting_analysis_id
 
         with pytest.raises(DocumentNotFoundError) as excinfo:
+            app_container.invalidate_dep_for_test(TaskProgressUpdater)
             await self.execute_task(
                 task_class=self.task_class,
                 payload=payload,
@@ -194,12 +196,11 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
         """
         Test get task description
         """
-        payload = FeatureJobSettingAnalysisBacktestTask.payload_class(**self.payload)
         app_container.override_instance_for_test("persistent", persistent)
         app_container.override_instance_for_test("catalog_id", catalog.id)
-        app_container.override_instance_for_test("payload", payload.dict(by_alias=True))
         task = app_container.get(FeatureJobSettingAnalysisBacktestTask)
+        payload = task.get_payload_obj(self.payload)
         assert (
-            await task.get_task_description()
+            await task.get_task_description(payload)
             == 'Backtest feature job settings for table "sf_event_table"'
         )

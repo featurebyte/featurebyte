@@ -54,7 +54,6 @@ from featurebyte.routes.task.controller import TaskController
 from featurebyte.routes.temp_data.controller import TempDataController
 from featurebyte.routes.use_case.controller import UseCaseController
 from featurebyte.routes.user_defined_function.controller import UserDefinedFunctionController
-from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.service.catalog import AllCatalogService, CatalogService
@@ -155,7 +154,9 @@ from featurebyte.worker.task.target_table import TargetTableTask
 from featurebyte.worker.task.test_task import TestTask
 from featurebyte.worker.task.tile_task import TileTask
 from featurebyte.worker.test_util.random_task import LongRunningTask, RandomTask
+from featurebyte.worker.util.batch_feature_creator import BatchFeatureCreator
 from featurebyte.worker.util.observation_set_helper import ObservationSetHelper
+from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
 
 app_container_config = AppContainerConfig()
 
@@ -320,6 +321,8 @@ app_container_config.register_class(OnlineStoreCleanupTask)
 app_container_config.register_class(LongRunningTask)
 app_container_config.register_class(TestTask)
 app_container_config.register_class(FeatureListMakeProductionReadyTask)
+app_container_config.register_class(TaskProgressUpdater)
+app_container_config.register_class(BatchFeatureCreator)
 
 app_container_config.register_class(MongoDBImpl, name_override="persistent")
 
@@ -348,7 +351,6 @@ app_container_config.register_class(CatalogId, force_no_deps=True)
 # Manually initialized via tasks.
 app_container_config.register_class(UUID, force_no_deps=True, name_override="task_id")
 app_container_config.register_class(Progress, force_no_deps=True)
-app_container_config.register_class(BaseTaskPayload, force_no_deps=True, name_override="payload")
 
 # Validate the config after all classes have been registered.
 # This should be the last line in this module.

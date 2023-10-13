@@ -28,8 +28,8 @@ async def test_get_task_description(catalog, app_container):
             ),
         ),
     )
-    app_container.override_instance_for_test("payload", payload.dict(by_alias=True))
     task = app_container.get(StaticSourceTableTask)
     assert (
-        await task.get_task_description() == 'Save static source table "Test Static Source Table"'
+        await task.get_task_description(payload)
+        == 'Save static source table "Test Static Source Table"'
     )

@@ -68,9 +68,8 @@ async def test_get_task_description(
     )
     app_container.override_instance_for_test("persistent", persistent)
     app_container.override_instance_for_test("catalog_id", catalog_id)
-    app_container.override_instance_for_test("payload", payload.dict(by_alias=True))
     task = app_container.get(MaterializedTableDeleteTask)
     assert (
-        await task.get_task_description()
+        await task.get_task_description(payload)
         == f'Delete {expected_description} "Test {expected_description}"'
     )

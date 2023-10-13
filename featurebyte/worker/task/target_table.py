@@ -3,14 +3,10 @@ TargetTable creation task
 """
 from __future__ import annotations
 
-from typing import Any, cast
-
-from uuid import UUID
+from typing import Any
 
 from featurebyte.logging import get_logger
-from featurebyte.models.base import User
 from featurebyte.models.observation_table import ObservationTableModel
-from featurebyte.persistent import Persistent
 from featurebyte.schema.target import ComputeTargetRequest
 from featurebyte.schema.worker.task.target_table import TargetTableTaskPayload
 from featurebyte.service.feature_store import FeatureStoreService
@@ -20,11 +16,12 @@ from featurebyte.service.target_helper.compute_target import TargetComputer
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin
 from featurebyte.worker.util.observation_set_helper import ObservationSetHelper
+from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
 
 logger = get_logger(__name__)
 
 
-class TargetTableTask(DataWarehouseMixin, BaseTask):
+class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
     """
     TargetTableTask creates a TargetTable by computing historical features
     """
@@ -33,39 +30,25 @@ class TargetTableTask(DataWarehouseMixin, BaseTask):
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        task_id: UUID,
-        payload: dict[str, Any],
-        progress: Any,
-        user: User,
-        persistent: Persistent,
         feature_store_service: FeatureStoreService,
         session_manager_service: SessionManagerService,
         observation_set_helper: ObservationSetHelper,
         observation_table_service: ObservationTableService,
         target_computer: TargetComputer,
+        task_progress_updater: TaskProgressUpdater,
     ):
-        super().__init__(
-            task_id=task_id,
-            payload=payload,
-            progress=progress,
-            user=user,
-            persistent=persistent,
-        )
+        super().__init__()
         self.feature_store_service = feature_store_service
         self.session_manager_service = session_manager_service
         self.observation_set_helper = observation_set_helper
         self.observation_table_service = observation_table_service
         self.target_computer = target_computer
+        self.task_progress_updater = task_progress_updater
 
-    async def get_task_description(self) -> str:
-        payload = cast(TargetTableTaskPayload, self.payload)
+    async def get_task_description(self, payload: TargetTableTaskPayload) -> str:
         return f'Save target table "{payload.name}"'
 
-    async def execute(self) -> Any:
-        """
-        Execute TargetTableTask
-        """
-        payload = cast(TargetTableTaskPayload, self.payload)
+    async def execute(self, payload: TargetTableTaskPayload) -> Any:
         feature_store = await self.feature_store_service.get_document(
             document_id=payload.feature_store_id
         )
@@ -77,7 +60,7 @@ class TargetTableTask(DataWarehouseMixin, BaseTask):
             payload.feature_store_id
         )
         async with self.drop_table_on_error(
-            db_session=db_session, table_details=location.table_details, payload=self.payload
+            db_session=db_session, table_details=location.table_details, payload=payload
         ):
             await self.target_computer.compute(
                 observation_set=observation_set,
@@ -89,7 +72,7 @@ class TargetTableTask(DataWarehouseMixin, BaseTask):
                     target_id=payload.target_id,
                 ),
                 output_table_details=location.table_details,
-                progress_callback=self.update_progress,
+                progress_callback=self.task_progress_updater.update_progress,
             )
 
             additional_metadata = (
@@ -103,7 +86,7 @@ class TargetTableTask(DataWarehouseMixin, BaseTask):
             )
 
             observation_table = ObservationTableModel(
-                _id=self.payload.output_document_id,
+                _id=payload.output_document_id,
                 user_id=payload.user_id,
                 name=payload.name,
                 location=location,

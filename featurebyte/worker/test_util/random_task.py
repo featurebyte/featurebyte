@@ -4,8 +4,11 @@ Random task util. Mainly used in tests, but placing in src so that we can regist
 import time
 
 from featurebyte.enum import StrEnum
+from featurebyte.models.base import User
+from featurebyte.persistent import Persistent
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.worker.task.base import BaseTask
+from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
 
 
 class TestCommand(StrEnum):
@@ -21,22 +24,40 @@ class RandomTaskPayload(BaseTaskPayload):
     command = TestCommand.RANDOM_COMMAND
 
 
-class RandomTask(BaseTask):
+class RandomTask(BaseTask[RandomTaskPayload]):
     """RandomTask class"""
 
     payload_class = RandomTaskPayload
 
-    async def get_task_description(self) -> str:
+    def __init__(
+        self,
+        user: User,
+        persistent: Persistent,
+        task_progress_updater: TaskProgressUpdater,
+    ):
+        super().__init__()
+        self.persistent = persistent
+        self.user = user
+        self.task_progress_updater = task_progress_updater
+
+    async def get_task_description(self, payload: RandomTaskPayload) -> str:
         return "Execute random task"
 
-    async def execute(self) -> None:
-        """Run some task"""
+    async def execute(self, payload: RandomTaskPayload) -> None:
+        """
+        Run some arbitrary task.
+
+        Parameters
+        ----------
+        payload : RandomTaskPayload
+            Payload
+        """
         await self.persistent.insert_one(
             collection_name="random_collection",
             document={
-                "_id": self.payload.output_document_id,
+                "_id": payload.output_document_id,
                 "user_id": self.user.id,
-                "output_document_id": self.payload.output_document_id,
+                "output_document_id": payload.output_document_id,
             },
             user_id=self.user.id,
         )
@@ -57,18 +78,32 @@ class LongRunningPayload(BaseTaskPayload):
     command = Command.LONG_RUNNING_COMMAND
 
 
-class LongRunningTask(BaseTask):
+class LongRunningTask(BaseTask[LongRunningPayload]):
     """LongRunningTask class"""
 
     payload_class = LongRunningPayload
 
-    async def get_task_description(self) -> str:
+    def __init__(
+        self,
+        task_progress_updater: TaskProgressUpdater,
+    ):
+        super().__init__()
+        self.task_progress_updater = task_progress_updater
+
+    async def get_task_description(self, payload: LongRunningPayload) -> str:
         return "Execute long running task"
 
-    async def execute(self) -> None:
-        """Delay for 1 second to simulate long-running task"""
+    async def execute(self, payload: LongRunningPayload) -> None:
+        """
+        Delay for 1 second to simulate long-running task
+
+        Parameters
+        ----------
+        payload : LongRunningPayload
+            Payload
+        """
         step = 10
         for i in range(step):
             time.sleep(1.0 / step)
             percent = int((i + 1) * (100.0 / step))
-            await self.update_progress(percent=percent)
+            await self.task_progress_updater.update_progress(percent=percent)

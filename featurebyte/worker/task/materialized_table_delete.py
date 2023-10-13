@@ -5,11 +5,7 @@ from __future__ import annotations
 
 from typing import Any, cast
 
-from uuid import UUID
-
-from featurebyte.models.base import User
 from featurebyte.models.materialized_table import MaterializedTableModel
-from featurebyte.persistent import Persistent
 from featurebyte.schema.worker.task.materialized_table_delete import (
     MaterializedTableCollectionName,
     MaterializedTableDeleteTaskPayload,
@@ -33,7 +29,7 @@ from featurebyte.worker.task.mixin import DataWarehouseMixin
 
 
 # pylint: disable=too-many-instance-attributes
-class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask):
+class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask[MaterializedTableDeleteTaskPayload]):
     """
     Materialized Table Delete Task
     """
@@ -42,11 +38,6 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask):
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        task_id: UUID,
-        payload: dict[str, Any],
-        progress: Any,
-        user: User,
-        persistent: Persistent,
         batch_request_table_service: BatchRequestTableService,
         batch_feature_table_service: BatchFeatureTableService,
         observation_table_service: ObservationTableService,
@@ -58,13 +49,7 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask):
         table_service: TableService,
         session_manager_service: SessionManagerService,
     ):
-        super().__init__(
-            task_id=task_id,
-            payload=payload,
-            progress=progress,
-            user=user,
-            persistent=persistent,
-        )
+        super().__init__()
         self.batch_request_table_service = batch_request_table_service
         self.batch_feature_table_service = batch_feature_table_service
         self.observation_table_service = observation_table_service
@@ -76,8 +61,7 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask):
         self.table_service = table_service
         self.session_manager_service = session_manager_service
 
-    async def get_task_description(self) -> str:
-        payload = cast(MaterializedTableDeleteTaskPayload, self.payload)
+    async def get_task_description(self, payload: MaterializedTableDeleteTaskPayload) -> str:
         service_map = {
             MaterializedTableCollectionName.BATCH_REQUEST: self.batch_request_table_service,
             MaterializedTableCollectionName.BATCH_FEATURE: self.batch_feature_table_service,
@@ -93,74 +77,64 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask):
             description = f"{description} table"
         return f'Delete {description} "{materialized_table.name}"'
 
-    @property
-    def task_payload(self) -> MaterializedTableDeleteTaskPayload:
-        """
-        Task payload
-
-        Returns
-        -------
-        MaterializedTableDeleteTaskPayload
-        """
-        return cast(MaterializedTableDeleteTaskPayload, self.payload)
-
-    async def _delete_batch_request_table(self) -> MaterializedTableModel:
+    async def _delete_batch_request_table(
+        self, payload: MaterializedTableDeleteTaskPayload
+    ) -> MaterializedTableModel:
         document = await check_delete_batch_request_table(
             batch_request_table_service=self.batch_request_table_service,
             batch_feature_table_service=self.batch_feature_table_service,
-            document_id=self.task_payload.document_id,
+            document_id=payload.document_id,
         )
-        await self.batch_request_table_service.delete_document(
-            document_id=self.task_payload.document_id
-        )
+        await self.batch_request_table_service.delete_document(document_id=payload.document_id)
         return cast(MaterializedTableModel, document)
 
-    async def _delete_batch_feature_table(self) -> MaterializedTableModel:
+    async def _delete_batch_feature_table(
+        self, payload: MaterializedTableDeleteTaskPayload
+    ) -> MaterializedTableModel:
         document = await self.batch_feature_table_service.get_document(
-            document_id=self.task_payload.document_id
+            document_id=payload.document_id
         )
         await self.batch_feature_table_service.delete_document(document_id=document.id)
         return cast(MaterializedTableModel, document)
 
-    async def _delete_observation_table(self) -> MaterializedTableModel:
+    async def _delete_observation_table(
+        self, payload: MaterializedTableDeleteTaskPayload
+    ) -> MaterializedTableModel:
         validator: ObservationTableDeleteValidator = self.observation_table_delete_validator
         document = await validator.check_delete_observation_table(
-            observation_table_id=self.task_payload.document_id,
+            observation_table_id=payload.document_id,
         )
-        await self.observation_table_service.delete_document(
-            document_id=self.task_payload.document_id
-        )
+        await self.observation_table_service.delete_document(document_id=payload.document_id)
         return cast(MaterializedTableModel, document)
 
-    async def _delete_historical_feature_table(self) -> MaterializedTableModel:
+    async def _delete_historical_feature_table(
+        self, payload: MaterializedTableDeleteTaskPayload
+    ) -> MaterializedTableModel:
         document = await self.historical_feature_table_service.get_document(
-            document_id=self.task_payload.document_id
+            document_id=payload.document_id
         )
         await self.historical_feature_table_service.delete_document(document_id=document.id)
         return cast(MaterializedTableModel, document)
 
-    async def _delete_target_table(self) -> MaterializedTableModel:
-        document = await self.target_table_service.get_document(
-            document_id=self.task_payload.document_id
-        )
+    async def _delete_target_table(
+        self, payload: MaterializedTableDeleteTaskPayload
+    ) -> MaterializedTableModel:
+        document = await self.target_table_service.get_document(document_id=payload.document_id)
         await self.target_table_service.delete_document(document_id=document.id)
         return cast(MaterializedTableModel, document)
 
-    async def _delete_static_source_table(self) -> MaterializedTableModel:
+    async def _delete_static_source_table(
+        self, payload: MaterializedTableDeleteTaskPayload
+    ) -> MaterializedTableModel:
         document = await check_delete_static_source_table(
             static_source_table_service=self.static_source_table_service,
             table_service=self.table_service,
-            document_id=self.task_payload.document_id,
+            document_id=payload.document_id,
         )
-        await self.static_source_table_service.delete_document(
-            document_id=self.task_payload.document_id
-        )
+        await self.static_source_table_service.delete_document(document_id=payload.document_id)
         return cast(MaterializedTableModel, document)
 
-    async def execute(self) -> Any:
-        """
-        Execute Deployment Create & Update Task
-        """
+    async def execute(self, payload: MaterializedTableDeleteTaskPayload) -> Any:
         # table to delete action mapping
         table_to_delete_action = {
             MaterializedTableCollectionName.BATCH_REQUEST: self._delete_batch_request_table,
@@ -172,7 +146,7 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask):
         }
 
         # delete document stored at mongo
-        deleted_document = await table_to_delete_action[self.task_payload.collection_name]()
+        deleted_document = await table_to_delete_action[payload.collection_name](payload)
 
         # delete table stored at data warehouse
         feature_store = await self.feature_store_service.get_document(

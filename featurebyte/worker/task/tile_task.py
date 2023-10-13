@@ -3,13 +3,9 @@ Test task
 """
 from __future__ import annotations
 
-from typing import Any, cast
-
-from uuid import UUID
+from typing import Any
 
 from featurebyte.logging import get_logger
-from featurebyte.models.base import User
-from featurebyte.persistent import Persistent
 from featurebyte.schema.worker.task.tile import TileTaskPayload
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
@@ -19,7 +15,7 @@ from featurebyte.worker.task.base import BaseTask
 logger = get_logger(__name__)
 
 
-class TileTask(BaseTask):
+class TileTask(BaseTask[TileTaskPayload]):
     """
     Test Task
     """
@@ -28,40 +24,22 @@ class TileTask(BaseTask):
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        task_id: UUID,
-        payload: dict[str, Any],
-        progress: Any,
-        user: User,
-        persistent: Persistent,
         feature_store_service: FeatureStoreService,
         session_manager_service: SessionManagerService,
         tile_task_executor: TileTaskExecutor,
     ):
-        super().__init__(
-            task_id=task_id,
-            payload=payload,
-            progress=progress,
-            user=user,
-            persistent=persistent,
-        )
+        super().__init__()
         self.feature_store_service = feature_store_service
         self.session_manager_service = session_manager_service
         self.tile_task_executor = tile_task_executor
 
-    async def get_task_description(self) -> str:
-        payload = cast(TileTaskPayload, self.payload)
+    async def get_task_description(self, payload: TileTaskPayload) -> str:
         return (
             f'Generate tile for "{payload.parameters.tile_id}:{payload.parameters.aggregation_id}"'
         )
 
-    async def execute(self) -> Any:
-        """
-        Execute Tile task
-        """
+    async def execute(self, payload: TileTaskPayload) -> Any:
         logger.debug("Tile task started")
-
-        payload = cast(TileTaskPayload, self.payload)
-
         # get feature store
         feature_store = await self.feature_store_service.get_document(
             document_id=payload.feature_store_id

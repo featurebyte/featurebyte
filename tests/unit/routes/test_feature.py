@@ -809,7 +809,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
 
     @pytest.mark.asyncio
     @patch(
-        "featurebyte.worker.task.batch_feature_create.BatchFeatureCreateTask.is_generated_feature_consistent",
+        "featurebyte.worker.util.batch_feature_creator.BatchFeatureCreator.is_generated_feature_consistent",
         new_callable=AsyncMock,
     )
     async def test_batch_feature_create__failure(
