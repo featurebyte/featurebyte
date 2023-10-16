@@ -55,4 +55,9 @@ class ObservationTableUpdate(BaseDocumentServiceUpdateSchema):
     ObservationTable Update Context schema
     """
 
-    context_id: PydanticObjectId
+    context_id: Optional[PydanticObjectId]
+    use_case_id_to_add: Optional[PydanticObjectId]
+    use_case_id_to_remove: Optional[PydanticObjectId]
+
+    # for update model only and not from input
+    use_case_ids: Optional[List[PydanticObjectId]]

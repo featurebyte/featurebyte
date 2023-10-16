@@ -9,6 +9,7 @@ from bson import ObjectId
 from fastapi import UploadFile
 
 from featurebyte.common.utils import dataframe_from_arrow_stream
+from featurebyte.exception import ObservationTableInvalidUseCaseError
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.routes.common.base_materialized_table import BaseMaterializedTableController
 from featurebyte.routes.task.controller import TaskController
@@ -25,6 +26,7 @@ from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.preview import PreviewService
 from featurebyte.service.task_manager import TaskManager
+from featurebyte.service.use_case import UseCaseService
 from featurebyte.service.validator.materialized_table_delete import ObservationTableDeleteValidator
 
 
@@ -48,6 +50,7 @@ class ObservationTableController(
         observation_table_delete_validator: ObservationTableDeleteValidator,
         context_service: ContextService,
         task_manager: TaskManager,
+        use_case_service: UseCaseService,
     ):
         super().__init__(service=observation_table_service, preview_service=preview_service)
         self.observation_table_service = observation_table_service
@@ -56,6 +59,7 @@ class ObservationTableController(
         self.observation_table_delete_validator = observation_table_delete_validator
         self.context_service = context_service
         self.task_manager = task_manager
+        self.use_case_service = use_case_service
 
     async def create_observation_table(
         self,
@@ -149,10 +153,57 @@ class ObservationTableController(
         data: ObservationTableUpdate
             ObservationTable update payload
 
+        Raises
+        ------
+        ObservationTableInvalidUseCaseError
+            if use_case_ids is provided in the payload or use_case_id_to_add/use_case_id_to_remove is invalid
+
         Returns
         -------
         Optional[ObservationTableModel]
         """
+
+        if data.use_case_ids:
+            raise ObservationTableInvalidUseCaseError("use_case_ids is not a valid field to update")
+
+        if data.use_case_id_to_add or data.use_case_id_to_remove:
+            observation_table = await self.observation_table_service.get_document(
+                document_id=observation_table_id
+            )
+
+            if not observation_table.context_id:
+                raise ObservationTableInvalidUseCaseError(
+                    f"Cannot add/remove UseCase as the ObservationTable {observation_table_id} is not associated with any Context."
+                )
+
+            use_case_ids = observation_table.use_case_ids
+            # validate use case id to add
+            if data.use_case_id_to_add:
+                if data.use_case_id_to_add in use_case_ids:
+                    raise ObservationTableInvalidUseCaseError(
+                        f"Cannot add UseCase {data.use_case_id_to_add} as it is already associated with the ObservationTable."
+                    )
+                use_case = await self.use_case_service.get_document(
+                    document_id=data.use_case_id_to_add
+                )
+                if use_case.context_id != observation_table.context_id:
+                    raise ObservationTableInvalidUseCaseError(
+                        f"Cannot add UseCase {data.use_case_id_to_add} as its context_id is different from the existing context_id."
+                    )
+
+                use_case_ids.append(data.use_case_id_to_add)
+
+            # validate use case id to remove
+            if data.use_case_id_to_remove:
+                if data.use_case_id_to_remove not in use_case_ids:
+                    raise ObservationTableInvalidUseCaseError(
+                        f"Cannot remove UseCase {data.use_case_id_to_remove} as it is not associated with the ObservationTable."
+                    )
+                use_case_ids.remove(data.use_case_id_to_remove)
+
+            # update use case ids
+            data.use_case_ids = use_case_ids
+
         return await self.observation_table_service.update_observation_table(
             observation_table_id, data
         )
