@@ -71,7 +71,7 @@ class SimpleTestView(View):
         """
         self.join_col = join_col_override
 
-    def _get_additional_excluded_columns_as_other_view(self) -> list[str]:
+    def _get_additional_excluded_columns_as_other_view(self):
         if self.excluded_columns_override is None:
             return super()._get_additional_excluded_columns_as_other_view()
         return self.excluded_columns_override
