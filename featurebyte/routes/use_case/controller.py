@@ -124,6 +124,11 @@ class UseCaseController(
         ----------
         document_id: ObjectId
             UseCase id to be deleted
+
+        Raises
+        ------
+        DocumentDeletionError
+            if the use case is associated with any asset
         """
         # check whether use case is associated with any observation table
         async for table_doc in self.observation_table_service.list_documents_as_dict_iterator(

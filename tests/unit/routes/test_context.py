@@ -239,8 +239,8 @@ class TestContextApi(BaseCatalogApiTestSuite):
         context_id = response_dict["_id"]
 
         # create target
-        target_payload = self.load_payload(f"tests/fixtures/request_payloads/target.json")
-        response = test_api_client.post(f"/target", json=target_payload)
+        target_payload = self.load_payload("tests/fixtures/request_payloads/target.json")
+        response = test_api_client.post("/target", json=target_payload)
         assert response.status_code == HTTPStatus.CREATED, response.json()
 
         # create use case

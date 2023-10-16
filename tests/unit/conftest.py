@@ -37,11 +37,7 @@ from featurebyte.api.groupby import GroupBy
 from featurebyte.api.item_table import ItemTable
 from featurebyte.app import User, app, get_celery
 from featurebyte.enum import AggFunc, InternalName, SourceType
-from featurebyte.exception import (
-    DuplicatedRecordException,
-    ObjectHasBeenSavedError,
-    RecordCreationException,
-)
+from featurebyte.exception import DuplicatedRecordException, ObjectHasBeenSavedError
 from featurebyte.models.credential import CredentialModel
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.models.task import Task as TaskModel

@@ -143,6 +143,7 @@ class ContextController(
         Raises
         ------
         DocumentDeletionError
+            if the use case is associated with any asset
         """
         # check whether context is used by any use case
         async for use_case_doc in self.use_case_service.list_documents_as_dict_iterator(
