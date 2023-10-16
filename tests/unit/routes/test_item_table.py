@@ -2,7 +2,6 @@
 Tests for ItemTable routes
 """
 from http import HTTPStatus
-from unittest import mock
 
 import pytest
 from bson.objectid import ObjectId
@@ -12,7 +11,6 @@ from featurebyte.models.item_table import ItemTableModel
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.table import ItemTableData
 from featurebyte.schema.item_table import ItemTableCreate
-from featurebyte.service.semantic import SemanticService
 from tests.unit.routes.base import BaseTableApiTestSuite
 
 
