@@ -461,7 +461,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         mock_session = mock_get_session.return_value
         mock_session.execute_query = mock_execute_query
 
-        # Request code template
+        # Request sample entity serving names
         deployment_id = deployment_doc["_id"]
         response = test_api_client.get(
             f"{self.base_route}/{deployment_id}/sample_entity_serving_names?count=10",

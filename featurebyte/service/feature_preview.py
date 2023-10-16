@@ -9,25 +9,35 @@ import pandas as pd
 
 from featurebyte.common.utils import dataframe_to_json
 from featurebyte.enum import SpecialColumnName
-from featurebyte.exception import MissingPointInTimeColumnError
+from featurebyte.exception import (
+    DocumentNotFoundError,
+    LimitExceededError,
+    MissingPointInTimeColumnError,
+)
 from featurebyte.logging import get_logger
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, sql_to_string
 from featurebyte.query_graph.sql.feature_historical import get_historical_features_expr
 from featurebyte.query_graph.sql.feature_preview import get_feature_or_target_preview_sql
+from featurebyte.query_graph.sql.materialisation import get_source_expr
 from featurebyte.schema.feature import FeatureSQL
 from featurebyte.schema.feature_list import (
     FeatureListGetHistoricalFeatures,
     FeatureListPreview,
     FeatureListSQL,
+    PreviewObservationSet,
 )
 from featurebyte.schema.preview import FeatureOrTargetPreview
 from featurebyte.service.entity_validation import EntityValidationService
+from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.preview import PreviewService
 from featurebyte.service.session_manager import SessionManagerService
 
 # This time is used as an arbitrary value to use in scenarios where we don't have any time provided in previews.
+from featurebyte.service.target import TargetService
+
 ARBITRARY_TIME = pd.Timestamp(1970, 1, 1, 12)
 
 
@@ -45,25 +55,35 @@ class FeaturePreviewService(PreviewService):
         entity_validation_service: EntityValidationService,
         feature_store_service: FeatureStoreService,
         feature_list_service: FeatureListService,
+        observation_table_service: ObservationTableService,
+        feature_service: FeatureService,
+        target_service: TargetService,
     ):
         super().__init__(session_manager_service, feature_store_service)
         self.entity_validation_service = entity_validation_service
         self.entity_validation_service = entity_validation_service
         self.feature_list_service = feature_list_service
+        self.observation_table_service = observation_table_service
+        self.feature_service = feature_service
+        self.target_service = target_service
 
-    @staticmethod
-    def _update_point_in_time_if_needed(
-        point_in_time_and_serving_name_list: list[Dict[str, Any]], is_time_based: bool
+    async def _update_point_in_time_if_needed(
+        self,
+        preview_observation_set: PreviewObservationSet,
+        is_time_based: bool,
+        serving_names_mapping: Optional[Dict[str, str]],
     ) -> Tuple[list[Dict[str, Any]], bool]:
         """
         Helper method to update point in time if needed.
 
         Parameters
         ----------
-        point_in_time_and_serving_name_list: list[Dict[str, Any]]
-            list of dictionary containing point in time and serving name
+        preview_observation_set: PreviewObservationSet
+            FeatureListGetHistoricalFeatures object
         is_time_based: bool
             whether the feature is time based
+        serving_names_mapping: Optional[Dict[str, str]]
+            optional serving names mapping if the observation table has different serving name
 
         Returns
         -------
@@ -73,11 +93,48 @@ class FeaturePreviewService(PreviewService):
 
         Raises
         ------
+        LimitExceededError
+            raised if the observation table has more than 50 rows
         MissingPointInTimeColumnError
             raised if the point in time column is not provided in the dictionary for a time based feature
         """
+        # Validate the observation_table_id
+        if preview_observation_set.observation_table_id is not None:
+            observation_table = await self.observation_table_service.get_document(
+                document_id=preview_observation_set.observation_table_id
+            )
+            if observation_table.num_rows > 100:
+                raise LimitExceededError("Observation table must have 100 rows or less")
+
+            feature_store = await self.feature_store_service.get_document(
+                document_id=observation_table.location.feature_store_id
+            )
+            db_session = await self.session_manager_service.get_feature_store_session(
+                feature_store=feature_store,
+            )
+            sql_expr = get_source_expr(source=observation_table.location.table_details)
+            sql = sql_to_string(
+                sql_expr,
+                source_type=db_session.source_type,
+            )
+            observation_set_dataframe = await db_session.execute_query(sql)
+            assert observation_set_dataframe is not None
+            point_in_time_and_serving_name_list = observation_set_dataframe.to_dict(
+                orient="records"
+            )
+        else:
+            point_in_time_and_serving_name_list = (
+                preview_observation_set.point_in_time_and_serving_name_list
+            )
+
+        serving_names_mapping = serving_names_mapping or {}
         updated = False
         for point_in_time_and_serving_name in point_in_time_and_serving_name_list:
+            # apply serving names mapping
+            for key, value in serving_names_mapping.items():
+                if key in point_in_time_and_serving_name:
+                    point_in_time_and_serving_name[value] = point_in_time_and_serving_name[key]
+
             if SpecialColumnName.POINT_IN_TIME not in point_in_time_and_serving_name:
                 if is_time_based:
                     raise MissingPointInTimeColumnError(
@@ -111,9 +168,24 @@ class FeaturePreviewService(PreviewService):
         dict[str, Any]
             Dataframe converted to json string
         """
-        graph = feature_or_target_preview.graph
-        feature_node = graph.get_node_by_name(feature_or_target_preview.node_name)
-        operation_struction = feature_or_target_preview.graph.extract_operation_structure(
+        if feature_or_target_preview.object_id is not None:
+            document: Any
+            try:
+                document = await self.feature_service.get_document(
+                    feature_or_target_preview.object_id
+                )
+            except DocumentNotFoundError:
+                document = await self.target_service.get_document(
+                    feature_or_target_preview.object_id
+                )
+            graph = document.graph
+            node_name = document.node_name
+        else:
+            graph = feature_or_target_preview.graph
+            node_name = feature_or_target_preview.node_name
+
+        feature_node = graph.get_node_by_name(node_name)
+        operation_struction = graph.extract_operation_structure(
             feature_node, keep_all_source_columns=True
         )
 
@@ -122,15 +194,16 @@ class FeaturePreviewService(PreviewService):
         (
             point_in_time_and_serving_name_list,
             updated,
-        ) = FeaturePreviewService._update_point_in_time_if_needed(
-            feature_or_target_preview.point_in_time_and_serving_name_list,
+        ) = await self._update_point_in_time_if_needed(
+            feature_or_target_preview,
             operation_struction.is_time_based,
+            feature_or_target_preview.serving_names_mapping,
         )
 
         request_column_names = set(point_in_time_and_serving_name_list[0].keys())
         feature_store, session = await self._get_feature_store_session(
             graph=graph,
-            node_name=feature_or_target_preview.node_name,
+            node_name=node_name,
             feature_store_name=feature_or_target_preview.feature_store_name,
         )
         parent_serving_preparation = (
@@ -170,9 +243,17 @@ class FeaturePreviewService(PreviewService):
         dict[str, Any]
             Dataframe converted to json string
         """
+        if featurelist_preview.feature_list_id is not None:
+            feature_clusters = await self.feature_list_service.get_feature_clusters(
+                featurelist_preview.feature_list_id
+            )
+        else:
+            assert featurelist_preview.feature_clusters is not None
+            feature_clusters = featurelist_preview.feature_clusters
+
         # Check if any of the features are time based
         has_time_based_feature = False
-        for feature_cluster in featurelist_preview.feature_clusters:
+        for feature_cluster in feature_clusters:
             for feature_node_name in feature_cluster.node_names:
                 feature_node = feature_cluster.graph.get_node_by_name(feature_node_name)
                 operation_struction = feature_cluster.graph.extract_operation_structure(
@@ -181,17 +262,20 @@ class FeaturePreviewService(PreviewService):
                 if operation_struction.is_time_based:
                     has_time_based_feature = True
                     break
+
         # Raise error if there's no point in time provided for time based features.
         (
             point_in_time_and_serving_name_list,
             updated,
-        ) = FeaturePreviewService._update_point_in_time_if_needed(
-            featurelist_preview.point_in_time_and_serving_name_list, has_time_based_feature
+        ) = await self._update_point_in_time_if_needed(
+            featurelist_preview,
+            has_time_based_feature,
+            featurelist_preview.serving_names_mapping,
         )
 
         result: Optional[pd.DataFrame] = None
         group_join_keys = list(point_in_time_and_serving_name_list[0].keys())
-        for feature_cluster in featurelist_preview.feature_clusters:
+        for feature_cluster in feature_clusters:
             request_column_names = set(group_join_keys)
             feature_store = await self.feature_store_service.get_document(
                 feature_cluster.feature_store_id

@@ -23,6 +23,7 @@ from featurebyte.api.feature_or_target_mixin import FeatureOrTargetMixin
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.feature_util import FEATURE_COMMON_LIST_FIELDS, FEATURE_LIST_FOREIGN_KEYS
 from featurebyte.api.feature_validation_util import assert_is_lookup_feature
+from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.savable_api_object import DeletableApiObject, SavableApiObject
 from featurebyte.api.templates.doc_util import substitute_docstring
 from featurebyte.api.templates.feature_or_target_doc import (
@@ -766,7 +767,7 @@ class Feature(
     @typechecked
     def preview(  # pylint: disable=missing-function-docstring
         self,
-        observation_set: pd.DataFrame,
+        observation_set: Union[ObservationTable, pd.DataFrame],
     ) -> pd.DataFrame:
         return self._preview(observation_set=observation_set, url="/feature/preview")
 

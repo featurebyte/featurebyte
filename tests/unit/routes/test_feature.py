@@ -107,10 +107,18 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         )
         yield mock_get_session
 
+    @pytest.fixture(autouse=True)
+    def always_patched_observation_table_service(self, patched_observation_table_service):
+        """
+        Patch ObservationTableService so validate_materialized_table_and_get_metadata always passes
+        """
+        _ = patched_observation_table_service
+
     def setup_creation_route(self, api_client):
         """Setup for post route"""
         api_object_filename_pairs = [
             ("entity", "entity"),
+            ("context", "context"),
             ("event_table", "event_table"),
         ]
         for api_object, filename in api_object_filename_pairs:
@@ -635,16 +643,48 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         }
 
     def test_preview_200(
-        self, test_api_client_persistent, feature_preview_payload, mock_get_session
+        self,
+        test_api_client_persistent,
+        create_success_response,
+        feature_preview_payload,
+        mock_get_session,
     ):
         """Test feature preview (success)"""
         test_api_client, _ = test_api_client_persistent
+        feature = create_success_response.json()
         expected_df = pd.DataFrame({"a": [0, 1, 2]})
         mock_session = mock_get_session.return_value
         mock_session.execute_query.return_value = expected_df
         mock_session.generate_session_unique_id = Mock(return_value="1")
+
+        # test preview using graph and node name
         response = test_api_client.post(f"{self.base_route}/preview", json=feature_preview_payload)
         assert response.status_code == HTTPStatus.OK
+        assert_frame_equal(dataframe_from_json(response.json()), expected_df)
+
+        # test preview using feature id
+        feature_preview_payload.pop("graph")
+        feature_preview_payload.pop("node_name")
+        feature_preview_payload["object_id"] = feature["_id"]
+        response = test_api_client.post(f"{self.base_route}/preview", json=feature_preview_payload)
+        assert response.status_code == HTTPStatus.OK
+        assert_frame_equal(dataframe_from_json(response.json()), expected_df)
+
+        # test preview using observation table
+        payload = self.load_payload("tests/fixtures/request_payloads/observation_table.json")
+        response = test_api_client.post("/observation_table", json=payload)
+        assert response.status_code == HTTPStatus.CREATED, response.json()
+        response = self.wait_for_results(test_api_client, response)
+        assert response.json()["status"] == "SUCCESS", response.json()["traceback"]
+        obs_table_df = pd.DataFrame(
+            {"POINT_IN_TIME": pd.to_datetime(["2022-04-01"]), "cust_id": ["C1"]}
+        )
+        mock_session.execute_query.side_effect = (obs_table_df, expected_df)
+
+        feature_preview_payload.pop("point_in_time_and_serving_name_list")
+        feature_preview_payload["observation_table_id"] = "646f6c1c0ed28a5271fb02d7"
+        response = test_api_client.post(f"{self.base_route}/preview", json=feature_preview_payload)
+        assert response.status_code == HTTPStatus.OK, response.json()
         assert_frame_equal(dataframe_from_json(response.json()), expected_df)
 
     def test_preview_missing_point_in_time(
@@ -688,7 +728,12 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
                 "loc": ["body", "point_in_time_and_serving_name_list", 0],
                 "msg": "value is not a valid dict",
                 "type": "type_error.dict",
-            }
+            },
+            {
+                "loc": ["body", "__root__"],
+                "msg": "Either1 point_in_time_and_serving_name_list or observation_table_id must be set",
+                "type": "value_error",
+            },
         ]
 
     def test_sql_200(self, test_api_client_persistent, feature_preview_payload):

@@ -721,7 +721,8 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
     @typechecked
     def preview(
         self,
-        observation_set: pd.DataFrame,
+        observation_set: Union[ObservationTable, pd.DataFrame],
+        serving_names_mapping: Optional[Dict[str, str]] = None,
     ) -> Optional[pd.DataFrame]:
         """
         Materializes a FeatureList using a small observation set of up to 50 rows. Unlike compute_historical_features,
@@ -734,11 +735,11 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
 
         Parameters
         ----------
-        observation_set : pd.DataFrame
-            Observation set DataFrame which combines historical points-in-time and values of the feature primary entity
-            or its descendant (serving entities). The column containing the point-in-time values should be named
-            `POINT_IN_TIME`, while the columns representing entity values should be named using accepted serving
-            names for the entity.
+        observation_set: Union[ObservationTable, pd.DataFrame]
+            Observation set with `POINT_IN_TIME` and serving names columns. This can be either an
+            ObservationTable or a pandas DataFrame.
+        serving_names_mapping : Optional[Dict[str, str]]
+            Optional serving names mapping if the observation table has different serving name
 
         Returns
         -------
@@ -776,7 +777,9 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         0   2022-06-01     a2828c3b-036c-4e2e-9bd6-30c9ee9a20e3  10.0                 7.938
         1   2022-06-02     ac479f28-e0ff-41a4-8e60-8678e670e80b  6.0                  9.870
         """
-        return super().preview(observation_set=observation_set)
+        return super().preview(
+            observation_set=observation_set, serving_names_mapping=serving_names_mapping
+        )
 
     @property
     def feature_list_namespace(self) -> FeatureListNamespace:
@@ -1113,7 +1116,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         Parameters
         ----------
         observation_set : pd.DataFrame
-            Observation set DataFrame or ObservationTable object, which combines historical points-in-time and values
+            Observation set DataFrame which combines historical points-in-time and values
             of the feature primary entity or its descendant (serving entities). The column containing the point-in-time
             values should be named `POINT_IN_TIME`, while the columns representing entity values should be named using
             accepted serving names for the entity.
@@ -1170,7 +1173,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         """
         temp_historical_feature_table_name = f"__TEMPORARY_HISTORICAL_FEATURE_TABLE_{ObjectId()}"
         temp_historical_feature_table = self.compute_historical_feature_table(
-            observation_table=observation_set,
+            observation_set=observation_set,
             historical_feature_table_name=temp_historical_feature_table_name,
             serving_names_mapping=serving_names_mapping,
         )
@@ -1182,7 +1185,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
     @typechecked
     def compute_historical_feature_table(
         self,
-        observation_table: Union[ObservationTable, pd.DataFrame],
+        observation_set: Union[ObservationTable, pd.DataFrame],
         historical_feature_table_name: str,
         serving_names_mapping: Optional[Dict[str, str]] = None,
     ) -> HistoricalFeatureTable:
@@ -1192,9 +1195,9 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
 
         Parameters
         ----------
-        observation_table: Union[ObservationTable, pd.DataFrame]
+        observation_set: Union[ObservationTable, pd.DataFrame]
             Observation set with `POINT_IN_TIME` and serving names columns. This can be either an
-            ObservationTable of a pandas DataFrame.
+            ObservationTable or a pandas DataFrame.
         historical_feature_table_name: str
             Name of the historical feature table to be created
         serving_names_mapping : Optional[Dict[str, str]]
@@ -1231,16 +1234,16 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         feature_table_create_params = HistoricalFeatureTableCreate(
             name=historical_feature_table_name,
             observation_table_id=(
-                observation_table.id if isinstance(observation_table, ObservationTable) else None
+                observation_set.id if isinstance(observation_set, ObservationTable) else None
             ),
             feature_store_id=feature_store_id,
             featurelist_get_historical_features=featurelist_get_historical_features,
         )
-        if isinstance(observation_table, ObservationTable):
+        if isinstance(observation_set, ObservationTable):
             files = None
         else:
-            assert isinstance(observation_table, pd.DataFrame)
-            files = {"observation_set": dataframe_to_arrow_bytes(observation_table)}
+            assert isinstance(observation_set, pd.DataFrame)
+            files = {"observation_set": dataframe_to_arrow_bytes(observation_set)}
         historical_feature_table_doc = self.post_async_task(
             route="/historical_feature_table",
             payload={"payload": feature_table_create_params.json()},

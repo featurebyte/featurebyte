@@ -395,15 +395,17 @@ def enforce_observation_set_row_order(function: Any) -> Any:
     """
 
     @functools.wraps(function)
-    def wrapper(self: Any, observation_set: pd.DataFrame, **kwargs: Any) -> pd.DataFrame:
-        observation_set = observation_set.copy()
-        observation_set[InternalName.ROW_INDEX] = range(observation_set.shape[0])
+    def wrapper(self: Any, observation_set: Any, **kwargs: Any) -> pd.DataFrame:
+        if isinstance(observation_set, pd.DataFrame):
+            observation_set = observation_set.copy()
+            observation_set[InternalName.ROW_INDEX] = range(observation_set.shape[0])
         result_dataframe = (
             function(self, observation_set, **kwargs)
             .sort_values(InternalName.ROW_INDEX)
             .drop(InternalName.ROW_INDEX, axis=1)
         )
-        result_dataframe.index = observation_set.index
+        if isinstance(observation_set, pd.DataFrame):
+            result_dataframe.index = observation_set.index
         return result_dataframe
 
     return wrapper

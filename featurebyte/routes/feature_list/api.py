@@ -34,6 +34,7 @@ from featurebyte.schema.feature_list import (
     FeatureListNewVersionCreate,
     FeatureListPaginatedList,
     FeatureListPreview,
+    FeatureListSampleEntityServingNames,
     FeatureListSQL,
     FeatureListUpdate,
 )
@@ -273,3 +274,24 @@ async def update_feature_list_description(
         description=data.description,
     )
     return feature_list
+
+
+@router.get(
+    "/{feature_list_id}/sample_entity_serving_names",
+    response_model=FeatureListSampleEntityServingNames,
+)
+async def get_feature_list_sample_entity_serving_names(
+    request: Request,
+    feature_list_id: PydanticObjectId,
+    count: int = Query(default=1, gt=0, le=10),
+) -> FeatureListSampleEntityServingNames:
+    """
+    Get Feature List Sample Entity Serving Names
+    """
+    controller = request.state.app_container.feature_list_controller
+    sample_entity_serving_names: FeatureListSampleEntityServingNames = (
+        await controller.get_sample_entity_serving_names(
+            feature_list_id=feature_list_id, count=count
+        )
+    )
+    return sample_entity_serving_names

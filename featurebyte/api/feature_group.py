@@ -27,6 +27,7 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.mixin import AsyncMixin
+from featurebyte.api.observation_table import ObservationTable
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.env_util import get_alive_bar_additional_params
 from featurebyte.common.typing import Scalar
@@ -274,7 +275,8 @@ class BaseFeatureGroup(AsyncMixin):
     @typechecked
     def preview(
         self,
-        observation_set: pd.DataFrame,
+        observation_set: Union[ObservationTable, pd.DataFrame],
+        serving_names_mapping: Optional[Dict[str, str]] = None,
     ) -> Optional[pd.DataFrame]:
         """
         Materializes a FeatureGroup object using a small observation set of up to 50 rows. Unlike
@@ -287,11 +289,11 @@ class BaseFeatureGroup(AsyncMixin):
 
         Parameters
         ----------
-        observation_set : pd.DataFrame
-            Observation set DataFrame which combines historical points-in-time and values of the feature primary entity
-            or its descendant (serving entities). The column containing the point-in-time values should be named
-            `POINT_IN_TIME`, while the columns representing entity values should be named using accepted serving
-            names for the entity.
+        observation_set: Union[ObservationTable, pd.DataFrame]
+            Observation set with `POINT_IN_TIME` and serving names columns. This can be either an
+            ObservationTable or a pandas DataFrame.
+        serving_names_mapping : Optional[Dict[str, str]]
+            Optional serving names mapping if the observation table has different serving name
 
         Returns
         -------
@@ -338,11 +340,18 @@ class BaseFeatureGroup(AsyncMixin):
         """
         tic = time.time()
 
-        payload = FeatureListPreview(
-            feature_clusters=self._get_feature_clusters(),
-            point_in_time_and_serving_name_list=observation_set.to_dict(orient="records"),
-        )
+        preview_parameters: Dict[str, Any] = {
+            "feature_clusters": self._get_feature_clusters(),
+            "serving_names_mapping": serving_names_mapping,
+        }
+        if isinstance(observation_set, ObservationTable):
+            preview_parameters["observation_table_id"] = observation_set.id
+        else:
+            preview_parameters["point_in_time_and_serving_name_list"] = observation_set.to_dict(
+                orient="records"
+            )
 
+        payload = FeatureListPreview(**preview_parameters)
         client = Configurations().get_client()
         response = client.post("/feature_list/preview", json=payload.json_dict())
         if response.status_code != HTTPStatus.OK:

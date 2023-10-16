@@ -216,7 +216,7 @@ class Target(
     @typechecked
     def preview(  # pylint: disable=missing-function-docstring
         self,
-        observation_set: pd.DataFrame,
+        observation_set: Union[ObservationTable, pd.DataFrame],
     ) -> pd.DataFrame:
         return self._preview(observation_set=observation_set, url="/target/preview")
 

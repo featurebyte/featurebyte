@@ -108,7 +108,7 @@ def test_feature_list__get_historical_features(single_feat_flist, mocked_compute
     expected_dataframe = dataframe.copy()
     expected_dataframe[InternalName.ROW_INDEX] = [0, 1]
     _, kwargs = mock_compute_historical_feature_table.call_args
-    assert expected_dataframe.equals(kwargs["observation_table"])
+    assert expected_dataframe.equals(kwargs["observation_set"])
     assert (
         kwargs["historical_feature_table_name"]
         == f"__TEMPORARY_HISTORICAL_FEATURE_TABLE_{mock_object_id}"

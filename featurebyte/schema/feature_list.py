@@ -152,14 +152,6 @@ class FeatureListSQL(FeatureByteBaseModel):
     feature_clusters: List[FeatureCluster]
 
 
-class FeatureListPreview(FeatureListSQL):
-    """
-    FeatureList preview schema
-    """
-
-    point_in_time_and_serving_name_list: List[Dict[str, Any]] = Field(min_items=1, max_items=50)
-
-
 class FeatureListGetHistoricalFeatures(ComputeRequest):
     """
     FeatureList get historical features schema
@@ -170,7 +162,7 @@ class FeatureListGetHistoricalFeatures(ComputeRequest):
 
     @root_validator
     @classmethod
-    def _validate_input(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _validate_feature_clusters(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         feature_clusters = values.get("feature_clusters", None)
         feature_list_id = values.get("feature_list_id", None)
         if not feature_clusters and not feature_list_id:
@@ -179,9 +171,52 @@ class FeatureListGetHistoricalFeatures(ComputeRequest):
         return values
 
 
+class PreviewObservationSet(FeatureByteBaseModel):
+    """
+    Preview observation set schema
+    """
+
+    point_in_time_and_serving_name_list: Optional[List[Dict[str, Any]]] = Field(
+        min_items=1, max_items=50
+    )
+    observation_table_id: Optional[PydanticObjectId]
+
+    @root_validator
+    @classmethod
+    def _validate_observation_set(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        point_in_time_and_serving_name_list = values.get(
+            "point_in_time_and_serving_name_list", None
+        )
+        observation_table_id = values.get("observation_table_id", None)
+        if not point_in_time_and_serving_name_list and not observation_table_id:
+            raise ValueError(
+                "Either1 point_in_time_and_serving_name_list or observation_table_id must be set"
+            )
+        if observation_table_id is not None and point_in_time_and_serving_name_list is not None:
+            raise ValueError(
+                "Only one of point_in_time_and_serving_name_list and observation_table_id can be set"
+            )
+
+        return values
+
+
+class FeatureListPreview(FeatureListGetHistoricalFeatures, PreviewObservationSet):
+    """
+    FeatureList preview schema
+    """
+
+
 class OnlineFeaturesRequestPayload(FeatureByteBaseModel):
     """
     FeatureList get online features schema
     """
 
     entity_serving_names: List[Dict[str, Any]] = Field(min_items=1, max_items=50)
+
+
+class FeatureListSampleEntityServingNames(FeatureByteBaseModel):
+    """
+    Schema for feature list sample entity serving names
+    """
+
+    entity_serving_names: List[Dict[str, str]]
