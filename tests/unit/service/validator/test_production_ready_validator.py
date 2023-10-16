@@ -14,15 +14,11 @@ from featurebyte.service.validator.production_ready_validator import ProductionR
 
 
 @pytest.fixture(name="production_ready_validator")
-def production_ready_validator_fixture(version_service, feature_service, table_service):
+def production_ready_validator_fixture(app_container):
     """
     Get production ready validator
     """
-    return ProductionReadyValidator(
-        table_service=table_service,
-        version_service=version_service,
-        feature_service=feature_service,
-    )
+    return app_container.production_ready_validator
 
 
 @pytest.fixture(name="source_version_creator")
