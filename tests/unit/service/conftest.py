@@ -19,6 +19,7 @@ from featurebyte.enum import SemanticType, SourceType
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.entity import ParentEntity
 from featurebyte.models.entity_validation import EntityInfo
+from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
 from featurebyte.schema.catalog import CatalogCreate
@@ -33,6 +34,7 @@ from featurebyte.schema.feature_store import FeatureStoreCreate
 from featurebyte.schema.item_table import ItemTableCreate
 from featurebyte.schema.scd_table import SCDTableCreate
 from featurebyte.schema.target import TargetCreate
+from featurebyte.service.catalog import CatalogService
 from featurebyte.storage import LocalTempStorage
 from featurebyte.worker import get_celery, get_redis
 
@@ -357,12 +359,19 @@ async def feature_store_fixture(test_dir, feature_store_service):
 
 
 @pytest_asyncio.fixture(name="catalog")
-async def catalog_fixture(test_dir, app_container):
+async def catalog_fixture(test_dir, user, persistent):
     """Catalog model"""
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/catalog.json")
+    # Cannot inject catalog service here because the app_container fixture depends on catalog, which creates a cycle.
+    catalog_service = CatalogService(
+        user,
+        persistent,
+        catalog_id=DEFAULT_CATALOG_ID,
+        block_modification_handler=BlockModificationHandler(),
+    )
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
-        catalog = await app_container.catalog_service.create_document(data=CatalogCreate(**payload))
+        catalog = await catalog_service.create_document(data=CatalogCreate(**payload))
         Catalog.activate(catalog.name)
         return catalog
 
