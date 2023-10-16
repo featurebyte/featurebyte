@@ -35,7 +35,7 @@ class TargetService(BaseNamespaceService[TargetModel, TargetCreate]):
 
     document_class = TargetModel
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         user: Any,
         persistent: Persistent,

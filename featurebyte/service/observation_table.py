@@ -118,7 +118,7 @@ class ObservationTableService(
     document_class = ObservationTableModel
     materialized_table_name_prefix = MaterializedTableNamePrefix.OBSERVATION_TABLE
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         user: Any,
         persistent: Persistent,

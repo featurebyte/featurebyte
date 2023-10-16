@@ -222,7 +222,7 @@ class LazyAppContainer:
             filtered_deps, self.app_container_config.get_class_def_mapping()
         )
         new_deps = build_deps(ordered_deps, self.instance_map)
-        self.instance_map.update({name: dep for name, dep in new_deps.items()})
+        self.instance_map.update(new_deps)
         return self.instance_map[key]
 
     @staticmethod
