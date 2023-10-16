@@ -10,11 +10,10 @@ from uuid import UUID, uuid4
 import pytest
 
 from featurebyte.exception import DocumentNotFoundError
-from featurebyte.models.base import User
 from featurebyte.models.periodic_task import Crontab, Interval
 from featurebyte.models.task import Task
+from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.schema.task import TaskStatus
-from featurebyte.service.task_manager import TaskManager
 from featurebyte.worker.test_util.random_task import LongRunningPayload
 
 
@@ -28,11 +27,10 @@ def celery_fixture():
 
 
 @pytest.fixture(name="task_manager")
-def task_manager_fixture(user_id, persistent, celery, catalog):
+def task_manager_fixture(celery, app_container: LazyAppContainer):
     """Task manager fixture"""
-    yield TaskManager(
-        user=User(id=user_id), persistent=persistent, celery=celery, catalog_id=catalog.id
-    )
+    app_container.override_instance_for_test("celery", celery)
+    yield app_container.task_manager
 
 
 @pytest.mark.asyncio
