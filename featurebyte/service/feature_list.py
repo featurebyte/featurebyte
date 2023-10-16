@@ -21,6 +21,7 @@ from featurebyte.models.feature_list import (
 from featurebyte.models.feature_namespace import DefaultVersionMode
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.persistent import Persistent
+from featurebyte.routes.block_modification_checker import BlockModificationChecker
 from featurebyte.schema.feature_list import FeatureListServiceCreate, FeatureListServiceUpdate
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 from featurebyte.schema.info import (
@@ -131,8 +132,14 @@ class FeatureListService(
         relationship_info_service: RelationshipInfoService,
         feature_service: FeatureService,
         feature_list_namespace_service: FeatureListNamespaceService,
+        block_modification_checker: BlockModificationChecker,
     ):
-        super().__init__(user=user, persistent=persistent, catalog_id=catalog_id)
+        super().__init__(
+            user=user,
+            persistent=persistent,
+            catalog_id=catalog_id,
+            block_modification_checker=block_modification_checker,
+        )
         self.entity_service = entity_service
         self.relationship_info_service = relationship_info_service
         self.feature_service = feature_service

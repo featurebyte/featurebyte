@@ -12,6 +12,7 @@ from featurebyte.models.context import ContextModel
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.enum import NodeOutputType
 from featurebyte.query_graph.node.metadata.operation import NodeOutputCategory, OperationStructure
+from featurebyte.routes.block_modification_checker import BlockModificationChecker
 from featurebyte.schema.context import ContextCreate, ContextUpdate
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.entity import EntityService
@@ -31,8 +32,9 @@ class ContextService(BaseDocumentService[ContextModel, ContextCreate, ContextUpd
         persistent: Persistent,
         catalog_id: Optional[ObjectId],
         entity_service: EntityService,
+        block_modification_checker: BlockModificationChecker,
     ):
-        super().__init__(user, persistent, catalog_id)
+        super().__init__(user, persistent, catalog_id, block_modification_checker)
         self.entity_service = entity_service
 
     async def _validate_view(

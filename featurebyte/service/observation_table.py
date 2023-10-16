@@ -26,6 +26,7 @@ from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.routes.block_modification_checker import BlockModificationChecker
 from featurebyte.schema.feature_store import FeatureStoreSample
 from featurebyte.schema.observation_table import (
     ObservationTableCreate,
@@ -128,6 +129,7 @@ class ObservationTableService(
         context_service: ContextService,
         preview_service: PreviewService,
         temp_storage: Storage,
+        block_modification_checker: BlockModificationChecker,
     ):
         super().__init__(
             user,
@@ -136,6 +138,7 @@ class ObservationTableService(
             session_manager_service,
             feature_store_service,
             entity_service,
+            block_modification_checker,
         )
         self.context_service = context_service
         self.preview_service = preview_service
