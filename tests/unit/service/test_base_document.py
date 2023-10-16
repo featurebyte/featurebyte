@@ -603,7 +603,7 @@ async def test_app_container__disable_block_modification_check(app_container, en
         )
 
     # case 1: use context manager without using the yielded app_container
-    with app_container.block_modification_checker.disable_block_modification_check():
+    with app_container.block_modification_handler.disable_block_modification_check():
         service = app_container.entity_service
         updated_entity = await app_container.entity_service.update_document(
             document_id=entity.id, data=EntityServiceUpdate(name="new_name")
@@ -617,7 +617,7 @@ async def test_app_container__disable_block_modification_check(app_container, en
     assert service._check_block_modification_func() is True
 
     # case 2: use context manager with using the yielded app_container
-    with app_container.block_modification_checker.disable_block_modification_check() as updated_app_container:
+    with app_container.block_modification_handler.disable_block_modification_check() as updated_app_container:
         service = updated_app_container.entity_service
         updated_entity = await updated_app_container.entity_service.update_document(
             document_id=entity.id, data=EntityServiceUpdate(name="another_name")

@@ -19,7 +19,7 @@ from featurebyte.models.base import User
 from featurebyte.routes.app_container_config import AppContainerConfig
 from featurebyte.routes.batch_feature_table.controller import BatchFeatureTableController
 from featurebyte.routes.batch_request_table.controller import BatchRequestTableController
-from featurebyte.routes.block_modification_checker import BlockModificationChecker
+from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.routes.catalog.catalog_name_injector import CatalogNameInjector
 from featurebyte.routes.catalog.controller import CatalogController
 from featurebyte.routes.common.base import DerivePrimaryEntityHelper
@@ -324,7 +324,7 @@ app_container_config.register_class(TestTask)
 app_container_config.register_class(FeatureListMakeProductionReadyTask)
 app_container_config.register_class(TaskProgressUpdater)
 app_container_config.register_class(BatchFeatureCreator)
-app_container_config.register_class(BlockModificationChecker)
+app_container_config.register_class(BlockModificationHandler)
 app_container_config.register_class(MongoDBImpl, name_override="persistent")
 
 # These have force_no_deps set as True, as they are manually initialized.

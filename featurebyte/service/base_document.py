@@ -36,7 +36,7 @@ from featurebyte.models.persistent import (
     QueryFilter,
 )
 from featurebyte.persistent.base import Persistent
-from featurebyte.routes.block_modification_checker import BlockModificationChecker
+from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, BaseInfo
 from featurebyte.service.mixin import (
     DEFAULT_PAGE_SIZE,
@@ -94,13 +94,13 @@ class BaseDocumentService(
         user: Any,
         persistent: Persistent,
         catalog_id: Optional[ObjectId],
-        block_modification_checker: BlockModificationChecker,
+        block_modification_handler: BlockModificationHandler,
     ):
         self.user = user
         self.persistent = persistent
         self.catalog_id = catalog_id
         self._allow_to_use_raw_query_filter = False
-        self.block_modification_checker = block_modification_checker
+        self.block_modification_handler = block_modification_handler
         if self.is_catalog_specific and not catalog_id:
             raise CatalogNotSpecifiedError(
                 f"No active catalog specified for service: {self.__class__.__name__}"
@@ -874,7 +874,7 @@ class BaseDocumentService(
             )
 
     def _check_document_modifiable(self, document: Dict[str, Any]) -> None:
-        if self.block_modification_checker.block_modification and document.get(
+        if self.block_modification_handler.block_modification and document.get(
             "block_modification_by"
         ):
             block_modification_by = [

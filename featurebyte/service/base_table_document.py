@@ -11,7 +11,7 @@ from featurebyte.models.base import UniqueConstraintResolutionSignature
 from featurebyte.models.feature_store import TableStatus
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.persistent import Persistent
-from featurebyte.routes.block_modification_checker import BlockModificationChecker
+from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.schema.table import TableCreate, TableServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.feature_store import FeatureStoreService
@@ -33,10 +33,10 @@ class BaseTableDocumentService(BaseDocumentService[Document, DocumentCreate, Doc
         user: Any,
         persistent: Persistent,
         catalog_id: Optional[ObjectId],
-        block_modification_checker: BlockModificationChecker,
+        block_modification_handler: BlockModificationHandler,
         feature_store_service: FeatureStoreService,
     ):
-        super().__init__(user, persistent, catalog_id, block_modification_checker)
+        super().__init__(user, persistent, catalog_id, block_modification_handler)
         self.feature_store_service = feature_store_service
 
     @property

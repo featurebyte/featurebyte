@@ -1,14 +1,14 @@
 """
-Block modification checker
+Block modification handler
 """
 from typing import Iterator
 
 from contextlib import contextmanager
 
 
-class BlockModificationChecker:
+class BlockModificationHandler:
     """
-    Block modification checker
+    Block modification handler
     """
 
     def __init__(self) -> None:

@@ -11,7 +11,7 @@ from featurebyte.enum import MaterializedTableNamePrefix
 from featurebyte.models.base import FeatureByteBaseDocumentModel
 from featurebyte.models.batch_request_table import BatchRequestTableModel
 from featurebyte.persistent import Persistent
-from featurebyte.routes.block_modification_checker import BlockModificationChecker
+from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.schema.batch_request_table import BatchRequestTableCreate
 from featurebyte.schema.worker.task.batch_request_table import BatchRequestTableTaskPayload
 from featurebyte.service.context import ContextService
@@ -40,7 +40,7 @@ class BatchRequestTableService(
         session_manager_service: SessionManagerService,
         entity_service: EntityService,
         context_service: ContextService,
-        block_modification_checker: BlockModificationChecker,
+        block_modification_handler: BlockModificationHandler,
     ):
         super().__init__(
             user,
@@ -49,7 +49,7 @@ class BatchRequestTableService(
             session_manager_service,
             feature_store_service,
             entity_service,
-            block_modification_checker,
+            block_modification_handler,
         )
         self.context_service = context_service
 

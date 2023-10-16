@@ -9,7 +9,7 @@ from bson import ObjectId
 
 from featurebyte.models.feature_list import FeatureListNamespaceModel
 from featurebyte.persistent import Persistent
-from featurebyte.routes.block_modification_checker import BlockModificationChecker
+from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.routes.catalog.catalog_name_injector import CatalogNameInjector
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 from featurebyte.schema.info import (
@@ -43,9 +43,9 @@ class FeatureListNamespaceService(
         table_service: TableService,
         feature_namespace_service: FeatureNamespaceService,
         catalog_name_injector: CatalogNameInjector,
-        block_modification_checker: BlockModificationChecker,
+        block_modification_handler: BlockModificationHandler,
     ):
-        super().__init__(user, persistent, catalog_id, block_modification_checker)
+        super().__init__(user, persistent, catalog_id, block_modification_handler)
         self.entity_service = entity_service
         self.table_service = table_service
         self.feature_namespace_service = feature_namespace_service

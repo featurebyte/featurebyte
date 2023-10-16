@@ -9,7 +9,7 @@ from featurebyte.exception import UseCaseInvalidDataError
 from featurebyte.models.observation_table import TargetInput
 from featurebyte.models.use_case import UseCaseModel
 from featurebyte.persistent import Persistent
-from featurebyte.routes.block_modification_checker import BlockModificationChecker
+from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.schema.observation_table import ObservationTableUpdate
 from featurebyte.schema.use_case import UseCaseCreate, UseCaseUpdate
 from featurebyte.service.base_document import BaseDocumentService
@@ -33,9 +33,9 @@ class UseCaseService(BaseDocumentService[UseCaseModel, UseCaseCreate, UseCaseUpd
         observation_table_service: ObservationTableService,
         context_service: ContextService,
         historical_feature_table_service: HistoricalFeatureTableService,
-        block_modification_checker: BlockModificationChecker,
+        block_modification_handler: BlockModificationHandler,
     ):
-        super().__init__(user, persistent, catalog_id, block_modification_checker)
+        super().__init__(user, persistent, catalog_id, block_modification_handler)
         self.observation_table_service = observation_table_service
         self.context_service = context_service
         self.historical_feature_table_service = historical_feature_table_service

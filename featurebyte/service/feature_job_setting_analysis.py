@@ -14,7 +14,7 @@ from featurebyte.models.feature_job_setting_analysis import (
     FeatureJobSettingAnalysisModel,
 )
 from featurebyte.persistent import Persistent
-from featurebyte.routes.block_modification_checker import BlockModificationChecker
+from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.schema.feature_job_setting_analysis import (
     FeatureJobSettingAnalysisBacktest,
@@ -47,9 +47,9 @@ class FeatureJobSettingAnalysisService(
         persistent: Persistent,
         catalog_id: Optional[ObjectId],
         event_table_service: EventTableService,
-        block_modification_checker: BlockModificationChecker,
+        block_modification_handler: BlockModificationHandler,
     ):
-        super().__init__(user, persistent, catalog_id, block_modification_checker)
+        super().__init__(user, persistent, catalog_id, block_modification_handler)
         self.event_table_service = event_table_service
 
     async def create_document_creation_task(

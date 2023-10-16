@@ -12,7 +12,7 @@ from featurebyte.logging import get_logger
 from featurebyte.models.credential import CredentialModel
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.persistent.base import Persistent
-from featurebyte.routes.block_modification_checker import BlockModificationChecker
+from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.schema.credential import CredentialCreate, CredentialServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.feature_store import FeatureStoreService
@@ -37,13 +37,13 @@ class CredentialService(
         catalog_id: Optional[ObjectId],
         feature_store_warehouse_service: FeatureStoreWarehouseService,
         feature_store_service: FeatureStoreService,
-        block_modification_checker: BlockModificationChecker,
+        block_modification_handler: BlockModificationHandler,
     ):
         super().__init__(
             user=user,
             persistent=persistent,
             catalog_id=catalog_id,
-            block_modification_checker=block_modification_checker,
+            block_modification_handler=block_modification_handler,
         )
         self.feature_store_warehouse_service = feature_store_warehouse_service
         self.feature_store_service = feature_store_service

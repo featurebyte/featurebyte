@@ -12,7 +12,7 @@ from bson import ObjectId
 from featurebyte.models.entity import EntityModel
 from featurebyte.models.relationship_analysis import derive_primary_entity
 from featurebyte.persistent import Persistent
-from featurebyte.routes.block_modification_checker import BlockModificationChecker
+from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.routes.catalog.catalog_name_injector import CatalogNameInjector
 from featurebyte.schema.entity import EntityCreate, EntityServiceUpdate
 from featurebyte.schema.info import EntityBriefInfoList
@@ -57,9 +57,9 @@ class EntityService(BaseDocumentService[EntityModel, EntityCreate, EntityService
         persistent: Persistent,
         catalog_id: Optional[ObjectId],
         catalog_name_injector: CatalogNameInjector,
-        block_modification_checker: BlockModificationChecker,
+        block_modification_handler: BlockModificationHandler,
     ):
-        super().__init__(user, persistent, catalog_id, block_modification_checker)
+        super().__init__(user, persistent, catalog_id, block_modification_handler)
         self.catalog_name_injector = catalog_name_injector
 
     @staticmethod

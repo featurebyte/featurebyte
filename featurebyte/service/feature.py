@@ -15,7 +15,7 @@ from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_namespace import DefaultVersionMode, FeatureReadiness
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.routes.block_modification_checker import BlockModificationChecker
+from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.schema.feature import FeatureServiceCreate
 from featurebyte.schema.feature_namespace import (
     FeatureNamespaceCreate,
@@ -45,13 +45,13 @@ class FeatureService(BaseNamespaceService[FeatureModel, FeatureServiceCreate]):
         table_service: TableService,
         feature_namespace_service: FeatureNamespaceService,
         namespace_handler: NamespaceHandler,
-        block_modification_checker: BlockModificationChecker,
+        block_modification_handler: BlockModificationHandler,
     ):
         super().__init__(
             user=user,
             persistent=persistent,
             catalog_id=catalog_id,
-            block_modification_checker=block_modification_checker,
+            block_modification_handler=block_modification_handler,
         )
         self.table_service = table_service
         self.feature_namespace_service = feature_namespace_service
