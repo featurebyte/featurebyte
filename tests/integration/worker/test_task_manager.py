@@ -37,12 +37,7 @@ def task_manager_fixture(celery_service, app_container):
     persistent, celery = celery_service
     app_container.override_instance_for_test("persistent", persistent)
     app_container.override_instance_for_test("celery", celery)
-    return TaskManager(
-        user=User(id=ObjectId()),
-        persistent=persistent,
-        celery=celery,
-        catalog_id=DEFAULT_CATALOG_ID,
-    )
+    return app_container.get(TaskManager)
 
 
 @pytest.mark.asyncio

@@ -23,6 +23,7 @@ from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.persistent.base import Persistent
 from featurebyte.persistent.mongo import MongoDB
 from featurebyte.routes.app_container_config import _get_class_name
+from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
 from featurebyte.utils.credential import MongoBackedCredentialProvider
@@ -213,7 +214,10 @@ async def run_migration(
         Whether to include data warehouse migrations
     """
     schema_metadata_service = SchemaMetadataService(
-        user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
+        user=user,
+        persistent=persistent,
+        catalog_id=DEFAULT_CATALOG_ID,
+        block_modification_handler=BlockModificationHandler(),
     )
     schema_metadata = await schema_metadata_service.get_or_create_document(
         name=MigrationMetadata.SCHEMA_METADATA

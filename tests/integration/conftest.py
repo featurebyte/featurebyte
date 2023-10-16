@@ -1413,18 +1413,15 @@ def user():
 
 
 @pytest.fixture()
-def online_store_table_version_service(user, mongo_persistent, catalog):
+def online_store_table_version_service(app_container):
     """
     Fixture for online store table version service
     """
-    service = OnlineStoreTableVersionService(
-        user=user, persistent=mongo_persistent[0], catalog_id=catalog.id
-    )
-    yield service
+    yield app_container.online_store_table_version_service
 
 
 @pytest.fixture()
-def online_store_table_version_service_factory(mongo_database_name, catalog):
+def online_store_table_version_service_factory(mongo_database_name, app_container):
     """
     Fixture for a callback that returns a new OnlineStoreTableVersionService with a new persistent
 
@@ -1433,11 +1430,10 @@ def online_store_table_version_service_factory(mongo_database_name, catalog):
     """
 
     def factory():
-        return OnlineStoreTableVersionService(
-            user=user(),
-            persistent=get_new_persistent(mongo_database_name)[0],
-            catalog_id=catalog.id,
+        app_container.override_instance_for_test(
+            "persistent", get_new_persistent(mongo_database_name)[0]
         )
+        return app_container.get(OnlineStoreTableVersionService)
 
     return factory
 
@@ -1448,7 +1444,10 @@ def task_manager_fixture(persistent, user, catalog):
     Return a task manager used in tests.
     """
     task_manager = TaskManager(
-        user=user, persistent=persistent, celery=get_celery(), catalog_id=catalog.id
+        user=user,
+        persistent=persistent,
+        celery=get_celery(),
+        catalog_id=catalog.id,
     )
     return task_manager
 

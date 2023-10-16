@@ -14,6 +14,7 @@ from featurebyte.enum import MaterializedTableNamePrefix
 from featurebyte.models.base import FeatureByteBaseDocumentModel
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
 from featurebyte.persistent import Persistent
+from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.schema.historical_feature_table import HistoricalFeatureTableCreate
 from featurebyte.schema.worker.task.historical_feature_table import (
     HistoricalFeatureTableTaskPayload,
@@ -41,6 +42,7 @@ class HistoricalFeatureTableService(
         session_manager_service: SessionManagerService,
         entity_service: EntityService,
         temp_storage: Storage,
+        block_modification_handler: BlockModificationHandler,
     ):
         super().__init__(
             user,
@@ -49,6 +51,7 @@ class HistoricalFeatureTableService(
             session_manager_service,
             feature_store_service,
             entity_service,
+            block_modification_handler,
         )
         self.temp_storage = temp_storage
 

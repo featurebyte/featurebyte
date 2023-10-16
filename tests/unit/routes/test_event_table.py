@@ -2,7 +2,6 @@
 Tests for EventTable routes
 """
 from http import HTTPStatus
-from unittest import mock
 
 import pytest
 import pytest_asyncio
@@ -13,7 +12,6 @@ from featurebyte.models.feature_store import TableStatus
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.table import EventTableData
 from featurebyte.schema.event_table import EventTableCreate
-from featurebyte.service.semantic import SemanticService
 from tests.unit.routes.base import BaseTableApiTestSuite
 
 
@@ -72,18 +70,15 @@ class TestEventTableApi(BaseTableApiTestSuite):
     update_unprocessable_payload_expected_detail_pairs = []
 
     @pytest_asyncio.fixture(name="event_timestamp_id_semantic_ids")
-    async def event_timestamp_id_semantic_fixture(self, user_id, persistent, default_catalog_id):
+    async def event_timestamp_id_semantic_fixture(self, app_container):
         """Event timestamp & event ID semantic IDs fixture"""
-        user = mock.Mock()
-        user.id = user_id
-        semantic_service = SemanticService(
-            user=user, persistent=persistent, catalog_id=ObjectId(default_catalog_id)
-        )
-        record_creation_timestamp = await semantic_service.get_or_create_document(
+        record_creation_timestamp = await app_container.semantic_service.get_or_create_document(
             "record_creation_timestamp"
         )
-        event_timestamp = await semantic_service.get_or_create_document("event_timestamp")
-        event_id = await semantic_service.get_or_create_document("event_id")
+        event_timestamp = await app_container.semantic_service.get_or_create_document(
+            "event_timestamp"
+        )
+        event_id = await app_container.semantic_service.get_or_create_document("event_id")
         return event_timestamp.id, event_id.id, record_creation_timestamp.id
 
     @pytest.fixture(name="data_model_dict")

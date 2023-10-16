@@ -11,6 +11,7 @@ from requests import Response
 
 from featurebyte.models.base import User
 from featurebyte.models.periodic_task import Interval, PeriodicTask
+from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.service.periodic_task import PeriodicTaskService
 from tests.unit.routes.base import BaseCatalogApiTestSuite
 
@@ -75,7 +76,10 @@ class TestPeriodicTaskApi(BaseCatalogApiTestSuite):
         """Post route success response object"""
         _, persistent = test_api_client_persistent
         periodic_task_service = PeriodicTaskService(
-            user=User(id=user_id), persistent=persistent, catalog_id=ObjectId(default_catalog_id)
+            user=User(id=user_id),
+            persistent=persistent,
+            catalog_id=ObjectId(default_catalog_id),
+            block_modification_handler=BlockModificationHandler(),
         )
         document = await periodic_task_service.create_document(data=PeriodicTask(**self.payload))
         return MockResponse(
@@ -90,7 +94,10 @@ class TestPeriodicTaskApi(BaseCatalogApiTestSuite):
         _, persistent = test_api_client_persistent
         output = []
         periodic_task_service = PeriodicTaskService(
-            user=User(id=user_id), persistent=persistent, catalog_id=ObjectId(default_catalog_id)
+            user=User(id=user_id),
+            persistent=persistent,
+            catalog_id=ObjectId(default_catalog_id),
+            block_modification_handler=BlockModificationHandler(),
         )
         for payload in self.multiple_success_payload_generator(None):
             document = await periodic_task_service.create_document(data=PeriodicTask(**payload))

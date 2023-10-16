@@ -14,6 +14,7 @@ from featurebyte.enum import MaterializedTableNamePrefix
 from featurebyte.models.base import FeatureByteBaseDocumentModel
 from featurebyte.models.target_table import TargetTableModel
 from featurebyte.persistent import Persistent
+from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.schema.target_table import TargetTableCreate
 from featurebyte.schema.worker.task.target_table import TargetTableTaskPayload
 from featurebyte.service.entity import EntityService
@@ -40,6 +41,7 @@ class TargetTableService(BaseMaterializedTableService[TargetTableModel, TargetTa
         entity_service: EntityService,
         session_manager_service: SessionManagerService,
         temp_storage: Storage,
+        block_modification_handler: BlockModificationHandler,
     ):
         super().__init__(
             user,
@@ -48,6 +50,7 @@ class TargetTableService(BaseMaterializedTableService[TargetTableModel, TargetTa
             session_manager_service,
             feature_store_service,
             entity_service,
+            block_modification_handler,
         )
         self.temp_storage = temp_storage
 

@@ -17,7 +17,6 @@ from featurebyte.routes.app_container_config import (
     ClassDefinition,
     _get_class_name,
 )
-from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.storage import Storage
 
 
@@ -223,21 +222,8 @@ class LazyAppContainer:
             filtered_deps, self.app_container_config.get_class_def_mapping()
         )
         new_deps = build_deps(ordered_deps, self.instance_map)
-        self.instance_map.update(
-            {name: self._handle_block_modification_check(dep) for name, dep in new_deps.items()}
-        )
+        self.instance_map.update(new_deps)
         return self.instance_map[key]
-
-    def _handle_block_modification_check(self, instance: Any) -> Any:
-        # construct a callback function that will be used to check if a block can be modified
-        def _check_block_modification() -> bool:
-            # point to the container's block modification check
-            return self._enable_block_modification_check
-
-        # If the instance is a BaseDocumentService, set the block modification check
-        if isinstance(instance, BaseDocumentService):
-            instance.set_block_modification_check_callback(_check_block_modification)
-        return instance
 
     @staticmethod
     def _get_key_to_use(key: Union[str, Type[Any]]) -> str:
@@ -259,7 +245,7 @@ class LazyAppContainer:
         Any
         """
         key_to_use = self._get_key_to_use(key)
-        return self._handle_block_modification_check(self._get_key(key_to_use))
+        return self._get_key(key_to_use)
 
     def override_instance_for_test(self, key: str, instance: Any) -> None:
         """
@@ -290,4 +276,4 @@ class LazyAppContainer:
             del self.instance_map[key_to_use]
 
     def __getattr__(self, key: str) -> Any:
-        return self._handle_block_modification_check(self._get_key(key))
+        return self._get_key(key)

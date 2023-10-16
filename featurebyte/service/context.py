@@ -12,6 +12,7 @@ from featurebyte.models.context import ContextModel
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.enum import NodeOutputType
 from featurebyte.query_graph.node.metadata.operation import NodeOutputCategory, OperationStructure
+from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.schema.context import ContextCreate, ContextUpdate
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.entity import EntityService
@@ -31,9 +32,12 @@ class ContextService(BaseDocumentService[ContextModel, ContextCreate, ContextUpd
         persistent: Persistent,
         catalog_id: Optional[ObjectId],
         entity_service: EntityService,
+        block_modification_handler: BlockModificationHandler,
+        table_service: TableService,
     ):
-        super().__init__(user, persistent, catalog_id)
+        super().__init__(user, persistent, catalog_id, block_modification_handler)
         self.entity_service = entity_service
+        self.table_service = table_service
 
     async def _validate_view(
         self, operation_structure: OperationStructure, context: ContextModel
@@ -55,10 +59,6 @@ class ContextService(BaseDocumentService[ContextModel, ContextCreate, ContextUpd
         DocumentUpdateError
             When the context view is not a proper context view (frame, view and has all required entities)
         """
-        table_service = TableService(
-            user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
-        )
-
         # check that it is a proper view
         if operation_structure.output_type != NodeOutputType.FRAME:
             raise DocumentUpdateError("Context view must but a table but not a single column.")
@@ -71,7 +71,7 @@ class ContextService(BaseDocumentService[ContextModel, ContextCreate, ContextUpd
         for table_id in table_ids:
             if table_id is None:
                 raise DocumentUpdateError("Table record has not been stored at the persistent.")
-            table_id_to_doc[table_id] = await table_service.get_document(document_id=table_id)
+            table_id_to_doc[table_id] = await self.table_service.get_document(document_id=table_id)
 
         # check that entities can be found on the view
         # TODO: add entity id to operation structure column (DEV-957)

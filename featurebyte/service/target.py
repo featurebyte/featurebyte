@@ -13,6 +13,7 @@ from featurebyte.models.feature_namespace import DefaultVersionMode
 from featurebyte.models.target import TargetModel
 from featurebyte.models.target_namespace import TargetNamespaceModel
 from featurebyte.persistent import Persistent
+from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.schema.target import TargetCreate
 from featurebyte.schema.target_namespace import TargetNamespaceCreate, TargetNamespaceServiceUpdate
 from featurebyte.service.base_namespace_service import BaseNamespaceService
@@ -34,7 +35,7 @@ class TargetService(BaseNamespaceService[TargetModel, TargetCreate]):
 
     document_class = TargetModel
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         user: Any,
         persistent: Persistent,
@@ -45,8 +46,14 @@ class TargetService(BaseNamespaceService[TargetModel, TargetCreate]):
         entity_validation_service: EntityValidationService,
         session_manager_service: SessionManagerService,
         entity_service: EntityService,
+        block_modification_handler: BlockModificationHandler,
     ):
-        super().__init__(user=user, persistent=persistent, catalog_id=catalog_id)
+        super().__init__(
+            user=user,
+            persistent=persistent,
+            catalog_id=catalog_id,
+            block_modification_handler=block_modification_handler,
+        )
         self.target_namespace_service = target_namespace_service
         self.namespace_handler = namespace_handler
         self.feature_store_service = feature_store_service

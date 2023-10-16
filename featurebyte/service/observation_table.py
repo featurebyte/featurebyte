@@ -26,6 +26,7 @@ from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.schema.feature_store import FeatureStoreSample
 from featurebyte.schema.observation_table import (
     ObservationTableCreate,
@@ -117,7 +118,7 @@ class ObservationTableService(
     document_class = ObservationTableModel
     materialized_table_name_prefix = MaterializedTableNamePrefix.OBSERVATION_TABLE
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         user: Any,
         persistent: Persistent,
@@ -128,6 +129,7 @@ class ObservationTableService(
         context_service: ContextService,
         preview_service: PreviewService,
         temp_storage: Storage,
+        block_modification_handler: BlockModificationHandler,
     ):
         super().__init__(
             user,
@@ -136,6 +138,7 @@ class ObservationTableService(
             session_manager_service,
             feature_store_service,
             entity_service,
+            block_modification_handler,
         )
         self.context_service = context_service
         self.preview_service = preview_service

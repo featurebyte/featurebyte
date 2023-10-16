@@ -4,19 +4,7 @@ BaseService class
 # pylint: disable=too-many-lines
 from __future__ import annotations
 
-from typing import (
-    Any,
-    AsyncIterator,
-    Callable,
-    Dict,
-    Generic,
-    Iterator,
-    List,
-    Optional,
-    Type,
-    TypeVar,
-    Union,
-)
+from typing import Any, AsyncIterator, Dict, Generic, Iterator, List, Optional, Type, TypeVar, Union
 
 import copy
 from contextlib import contextmanager
@@ -48,6 +36,7 @@ from featurebyte.models.persistent import (
     QueryFilter,
 )
 from featurebyte.persistent.base import Persistent
+from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, BaseInfo
 from featurebyte.service.mixin import (
     DEFAULT_PAGE_SIZE,
@@ -100,12 +89,18 @@ class BaseDocumentService(
 
     document_class: Type[Document]
 
-    def __init__(self, user: Any, persistent: Persistent, catalog_id: Optional[ObjectId]):
+    def __init__(
+        self,
+        user: Any,
+        persistent: Persistent,
+        catalog_id: Optional[ObjectId],
+        block_modification_handler: BlockModificationHandler,
+    ):
         self.user = user
         self.persistent = persistent
         self.catalog_id = catalog_id
         self._allow_to_use_raw_query_filter = False
-        self._check_block_modification_func: Optional[Callable[[], bool]] = None
+        self.block_modification_handler = block_modification_handler
         if self.is_catalog_specific and not catalog_id:
             raise CatalogNotSpecifiedError(
                 f"No active catalog specified for service: {self.__class__.__name__}"
@@ -129,17 +124,6 @@ class BaseDocumentService(
             yield
         finally:
             self._allow_to_use_raw_query_filter = False
-
-    def set_block_modification_check_callback(self, func: Callable[[], bool]) -> None:
-        """
-        Set callback function to check whether to block modification
-
-        Parameters
-        ----------
-        func: Callable[[], bool]
-            Callback function to check whether to block modification
-        """
-        self._check_block_modification_func = func
 
     @property
     def collection_name(self) -> str:
@@ -890,11 +874,9 @@ class BaseDocumentService(
             )
 
     def _check_document_modifiable(self, document: Dict[str, Any]) -> None:
-        check_block_modification = True
-        if self._check_block_modification_func:
-            check_block_modification = self._check_block_modification_func()
-
-        if check_block_modification and document.get("block_modification_by"):
+        if self.block_modification_handler.block_modification and document.get(
+            "block_modification_by"
+        ):
             block_modification_by = [
                 f"{item['asset_name']}(id: {item['document_id']})"
                 for item in document.get("block_modification_by", [])

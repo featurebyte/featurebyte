@@ -14,6 +14,7 @@ from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.materialisation import get_source_count_expr
+from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.schema.worker.task.materialized_table_delete import (
     MaterializedTableDeleteTaskPayload,
@@ -43,8 +44,9 @@ class BaseMaterializedTableService(
         session_manager_service: SessionManagerService,
         feature_store_service: FeatureStoreService,
         entity_service: EntityService,
+        block_modification_handler: BlockModificationHandler,
     ):
-        super().__init__(user, persistent, catalog_id)
+        super().__init__(user, persistent, catalog_id, block_modification_handler)
         self.session_manager_service = session_manager_service
         self.feature_store_service = feature_store_service
         self.entity_service = entity_service

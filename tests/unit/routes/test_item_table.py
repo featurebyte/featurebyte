@@ -2,7 +2,6 @@
 Tests for ItemTable routes
 """
 from http import HTTPStatus
-from unittest import mock
 
 import pytest
 from bson.objectid import ObjectId
@@ -12,7 +11,6 @@ from featurebyte.models.item_table import ItemTableModel
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.table import ItemTableData
 from featurebyte.schema.item_table import ItemTableCreate
-from featurebyte.service.semantic import SemanticService
 from tests.unit.routes.base import BaseTableApiTestSuite
 
 
@@ -102,14 +100,11 @@ class TestItemTableApi(BaseTableApiTestSuite):
         return {"status": "PUBLISHED"}
 
     @pytest.mark.asyncio
-    async def test_item_id_semantic(self, user_id, persistent, data_response, default_catalog_id):
+    async def test_item_id_semantic(self, data_response, app_container):
         """Test item id semantic is set correctly"""
-        user = mock.Mock()
-        user.id = user_id
-        semantic_service = SemanticService(
-            user=user, persistent=persistent, catalog_id=ObjectId(default_catalog_id)
+        item_id_semantic = await app_container.semantic_service.get_or_create_document(
+            name=SemanticType.ITEM_ID
         )
-        item_id_semantic = await semantic_service.get_or_create_document(name=SemanticType.ITEM_ID)
 
         # check the that semantic ID is set correctly
         item_id_semantic_id = None

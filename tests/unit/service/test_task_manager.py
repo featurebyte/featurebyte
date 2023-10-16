@@ -30,9 +30,14 @@ def celery_fixture():
 @pytest.fixture(name="task_manager")
 def task_manager_fixture(user_id, persistent, celery, catalog):
     """Task manager fixture"""
-    yield TaskManager(
-        user=User(id=user_id), persistent=persistent, celery=celery, catalog_id=catalog.id
+    user = User(id=user_id)
+    task_manager = TaskManager(
+        user=user,
+        persistent=persistent,
+        celery=celery,
+        catalog_id=catalog.id,
     )
+    yield task_manager
 
 
 @pytest.mark.asyncio

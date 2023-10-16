@@ -15,6 +15,7 @@ from featurebyte.logging import get_logger
 from featurebyte.models.periodic_task import Crontab, Interval, PeriodicTask
 from featurebyte.models.task import Task as TaskModel
 from featurebyte.persistent import Persistent
+from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.schema.task import Task
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
@@ -29,7 +30,11 @@ class TaskManager:
     """
 
     def __init__(
-        self, user: Any, persistent: Persistent, celery: Celery, catalog_id: Optional[ObjectId]
+        self,
+        user: Any,
+        persistent: Persistent,
+        celery: Celery,
+        catalog_id: Optional[ObjectId],
     ) -> None:
         self.user = user
         self.persistent = persistent
@@ -228,6 +233,7 @@ class TaskManager:
             user=self.user,
             persistent=self.persistent,
             catalog_id=self.catalog_id,
+            block_modification_handler=BlockModificationHandler(),
         )
         await periodic_task_service.create_document(data=periodic_task)
         return periodic_task.id
@@ -275,6 +281,7 @@ class TaskManager:
             user=self.user,
             persistent=self.persistent,
             catalog_id=self.catalog_id,
+            block_modification_handler=BlockModificationHandler(),
         )
         await periodic_task_service.create_document(data=periodic_task)
         return periodic_task.id
@@ -296,6 +303,7 @@ class TaskManager:
             user=self.user,
             persistent=self.persistent,
             catalog_id=self.catalog_id,
+            block_modification_handler=BlockModificationHandler(),
         )
         return await periodic_task_service.get_document(document_id=periodic_task_id)
 
@@ -316,8 +324,8 @@ class TaskManager:
             user=self.user,
             persistent=self.persistent,
             catalog_id=self.catalog_id,
+            block_modification_handler=BlockModificationHandler(),
         )
-
         result = await periodic_task_service.list_documents_as_dict(
             page=1,
             page_size=0,
@@ -343,6 +351,7 @@ class TaskManager:
             user=self.user,
             persistent=self.persistent,
             catalog_id=self.catalog_id,
+            block_modification_handler=BlockModificationHandler(),
         )
         await periodic_task_service.delete_document(document_id=periodic_task_id)
 
@@ -359,6 +368,7 @@ class TaskManager:
             user=self.user,
             persistent=self.persistent,
             catalog_id=self.catalog_id,
+            block_modification_handler=BlockModificationHandler(),
         )
         result = await periodic_task_service.list_documents_as_dict(
             page=1,
