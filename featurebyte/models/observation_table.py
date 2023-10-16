@@ -127,7 +127,7 @@ class ObservationTableModel(MaterializedTableModel):
     request_input: ObservationInput
     most_recent_point_in_time: StrictStr
     context_id: Optional[PydanticObjectId] = Field(default=None)
-    use_case_ids: Optional[List[PydanticObjectId]] = Field(default_factory=list)
+    use_case_ids: List[PydanticObjectId] = Field(default_factory=list)
     purpose: Optional[Purpose] = Field(default=None)
     least_recent_point_in_time: Optional[StrictStr] = Field(default=None)
     entity_column_name_to_count: Optional[Dict[str, int]] = Field(default_factory=dict)

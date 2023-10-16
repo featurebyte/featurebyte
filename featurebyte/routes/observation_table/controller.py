@@ -170,8 +170,13 @@ class ObservationTableController(
             observation_table = await self.observation_table_service.get_document(
                 document_id=observation_table_id
             )
-            use_case_ids = observation_table.use_case_ids if observation_table.use_case_ids else []
 
+            if not observation_table.context_id:
+                raise ObservationTableInvalidUseCaseError(
+                    f"Cannot add/remove UseCase as the ObservationTable {observation_table_id} is not associated with any Context."
+                )
+
+            use_case_ids = observation_table.use_case_ids
             # validate use case id to add
             if data.use_case_id_to_add:
                 if data.use_case_id_to_add in use_case_ids:

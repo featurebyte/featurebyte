@@ -229,6 +229,25 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
             == f"Cannot remove UseCase {use_case_id} as it is not associated with the ObservationTable."
         )
 
+        # test add use_case to an observation table that is not associated with a context
+        observation_table_id = str(ObjectId())
+        observation_table_payload = BaseMaterializedTableTestSuite.load_payload(
+            "tests/fixtures/request_payloads/observation_table.json"
+        )
+        observation_table_payload["_id"] = observation_table_id
+        observation_table_payload["name"] = "test_observation_table_1"
+        observation_table_payload["context_id"] = None
+        response = test_api_client.post("/observation_table", json=observation_table_payload)
+        assert response.status_code == HTTPStatus.CREATED, response.json()
+        response = test_api_client.patch(
+            f"{self.base_route}/{observation_table_id}", json={"use_case_id_to_add": use_case_id}
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert (
+            response.json()["detail"]
+            == f"Cannot add/remove UseCase as the ObservationTable {observation_table_id} is not associated with any Context."
+        )
+
     def test_upload_observation_csv(self, test_api_client_persistent, snowflake_feature_store_id):
         """
         Test put CSV route
