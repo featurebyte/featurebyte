@@ -333,3 +333,24 @@ def test_event_view_join_scd_view__feature_info(
         "Input3": {"data": "sf_scd_table", "column_name": "cust_id", "semantic": None},
         "Input4": {"data": "sf_event_table", "column_name": "col_float", "semantic": None},
     }
+
+
+def test_join_scd_view_repeated_effective_timestamp_column_allowed(
+    snowflake_event_view, snowflake_scd_table_v2
+):
+    """
+    Test effective timestamp column is excluded from repeated column validation
+    """
+    scd_view = snowflake_scd_table_v2.get_view()
+    joined_view = snowflake_event_view.join(scd_view[["date_of_birth"]])
+    assert joined_view.columns == [
+        "col_int",
+        "col_float",
+        "col_char",
+        "col_text",
+        "col_binary",
+        "col_boolean",
+        "event_timestamp",
+        "cust_id",
+        "date_of_birth",
+    ]
