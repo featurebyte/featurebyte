@@ -1,7 +1,7 @@
 """
 Test view class
 """
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from unittest.mock import MagicMock, Mock, patch
 
@@ -44,6 +44,7 @@ class SimpleTestView(View):
     )
 
     join_col = ""
+    excluded_columns_override: Optional[List[str]] = None
 
     @property
     def node(self):
@@ -69,6 +70,11 @@ class SimpleTestView(View):
         Test helper to set the join column override.
         """
         self.join_col = join_col_override
+
+    def _get_additional_excluded_columns_as_other_view(self):
+        if self.excluded_columns_override is None:
+            return super()._get_additional_excluded_columns_as_other_view()
+        return self.excluded_columns_override
 
 
 @pytest.fixture(name="simple_test_view")
@@ -482,6 +488,26 @@ def test_validate_join__multiple_overlapping_columns():
 
     # also ok if prefix is provided
     base_view.join(view_with_multiple_overlapping, rprefix="prefix")
+
+
+@pytest.mark.usefixtures("patch_graph_operations")
+def test_validate_join__additional_excluded_columns():
+    """
+    Test join validation with additional excluded columns
+    """
+    col_info_a, col_info_b, col_info_c = (
+        ColumnInfo(name="colA", dtype=DBVarType.INT),
+        ColumnInfo(name="colB", dtype=DBVarType.INT),
+        ColumnInfo(name="colC", dtype=DBVarType.INT),
+    )
+    base_view = SimpleTestView(columns_info=[col_info_a, col_info_b, col_info_c])
+    other_view = SimpleTestView(
+        columns_info=[col_info_a, col_info_b, col_info_c],
+        join_col=col_info_b.name,
+        excluded_columns_override=["colA", "colC"],
+    )
+    # should have no error since the repeated columns are excluded from join result
+    base_view.join(other_view)
 
 
 @pytest.mark.usefixtures("patch_graph_operations")

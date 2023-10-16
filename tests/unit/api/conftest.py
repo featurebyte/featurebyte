@@ -182,6 +182,25 @@ def saved_scd_table_fixture(snowflake_scd_table, catalog):
     yield snowflake_scd_table
 
 
+@pytest.fixture(name="snowflake_scd_table_v2")
+def snowflake_scd_table_v2_fixture(snowflake_data_source, catalog):
+    """SCDTable object fixture"""
+    _ = catalog
+    scd_table = snowflake_data_source.get_source_table(
+        database_name="sf_database",
+        schema_name="sf_schema",
+        table_name="scd_table_v2",
+    ).create_scd_table(
+        name="sf_scd_table_v2",
+        natural_key_column="col_text",
+        surrogate_key_column="col_int",
+        effective_timestamp_column="event_timestamp",
+        end_timestamp_column="end_timestamp",
+        current_flag_column="is_active",
+    )
+    yield scd_table
+
+
 @pytest.fixture(name="snowflake_item_table")
 def snowflake_item_table_fixture(
     snowflake_database_table_item_table,

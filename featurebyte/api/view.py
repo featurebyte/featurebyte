@@ -1218,14 +1218,18 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             raised when the on column provided, is not present in the columns
         """
         # Validate whether there are overlapping column names
-        left_join_key, _ = self._get_join_keys(other_view, on)
+        _, right_join_key = self._get_join_keys(other_view, on)
+        right_excluded_columns = other_view.get_excluded_columns_as_other_view(right_join_key)
         current_column_names = {col.name for col in self.columns_info}
         repeated_column_names = []
         for other_col in apply_column_name_modifiers_columns_info(
             other_view.columns_info, rsuffix, rprefix
         ):
-            # Raise an error if the name is repeated, but it is not a join key
-            if other_col.name in current_column_names and other_col.name != left_join_key:
+            # Raise an error if the name is repeated and will be included in the join result
+            if (
+                other_col.name in current_column_names
+                and other_col.name not in right_excluded_columns
+            ):
                 repeated_column_names.append(other_col.name)
         if len(repeated_column_names) > 0:
             raise RepeatedColumnNamesError(

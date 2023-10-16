@@ -2,6 +2,7 @@
 """
 Common test fixtures used across unit test directories
 """
+import copy
 import json
 import tempfile
 import traceback
@@ -330,7 +331,24 @@ def snowflake_query_map_fixture():
     query_map['SHOW COLUMNS IN "sf_database"."sf_schema"."dimension_table"'] = query_map[
         'SHOW COLUMNS IN "sf_database"."sf_schema"."sf_table"'
     ]
+    query_map[
+        'SHOW COLUMNS IN "sf_database"."sf_schema"."scd_table_v2"'
+    ] = get_show_columns_query_result_for_scd_table_v2(
+        query_map['SHOW COLUMNS IN "sf_database"."sf_schema"."scd_table"']
+    )
     return query_map
+
+
+def get_show_columns_query_result_for_scd_table_v2(scd_table_query_result):
+    """
+    Get SHOW COLUMNS query result for scd_table_v2 where effective_timestamp is renamed to
+    event_timestamp
+    """
+    result = copy.deepcopy(scd_table_query_result)
+    for info in result:
+        if info["column_name"] == "effective_timestamp":
+            info["column_name"] = "event_timestamp"
+    return result
 
 
 @pytest.fixture(name="snowflake_execute_query")
