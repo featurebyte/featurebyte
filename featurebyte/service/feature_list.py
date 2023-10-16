@@ -22,8 +22,8 @@ from featurebyte.models.feature_namespace import DefaultVersionMode
 from featurebyte.models.feature_store import FeatureStoreModel, TableModel
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.persistent import Persistent
-from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
+from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.schema.feature_list import FeatureListServiceCreate, FeatureListServiceUpdate
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 from featurebyte.schema.info import (
