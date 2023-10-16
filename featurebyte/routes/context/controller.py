@@ -144,9 +144,6 @@ class ContextController(
         ------
         DocumentDeletionError
         """
-        # check existence of context first
-        _ = await self.context_service.get_document(document_id=context_id)
-
         # check whether context is used by any use case
         async for use_case_doc in self.use_case_service.list_documents_as_dict_iterator(
             query_filter={"context_id": context_id}

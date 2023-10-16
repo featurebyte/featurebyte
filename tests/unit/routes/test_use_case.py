@@ -173,7 +173,6 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         assert response.json()["total"] == 1
         assert response.json()["data"][0]["_id"] == str(target_ob_table_id)
 
-    @pytest.mark.asyncio
     async def test_create_use_case__non_existent_target_and_context(
         self,
         test_api_client_persistent,
@@ -412,7 +411,6 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
             in response.json()["detail"]
         )
 
-    @pytest.mark.asyncio
     async def test_delete_use_case(self, test_api_client_persistent, create_success_response):
         """Test delete observation_table (fail) that is already associated with a use case"""
         test_api_client, _ = test_api_client_persistent
@@ -429,6 +427,32 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
 
         response = test_api_client.get(f"{self.base_route}/{use_case_id}")
         assert response.status_code == HTTPStatus.NOT_FOUND
+
+    @pytest.mark.asyncio
+    async def test_delete_use_case_422__use_case_used_in_observation_table(
+        self, test_api_client_persistent, create_success_response, create_observation_table
+    ):
+        """Test delete use case that is already associated with a observation table"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        use_case_id = create_response_dict["_id"]
+
+        # create an observation table
+        new_ob_table_id = ObjectId()
+        await create_observation_table(new_ob_table_id)
+
+        # add use case to the observation table
+        response = test_api_client.patch(
+            f"/observation_table/{new_ob_table_id}", json={"use_case_id_to_add": use_case_id}
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+
+        # delete use case
+        response = test_api_client.delete(f"{self.base_route}/{use_case_id}")
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert response.json()["detail"] == (
+            "UseCase is associated with observation table: observation_table_from_target_input"
+        )
 
     @pytest.mark.asyncio
     async def test_list_deployments(
@@ -465,7 +489,6 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         assert data[0]["name"] == "test_deployment"
         assert data[0]["use_case_id"] == use_case_id
 
-    @pytest.mark.asyncio
     async def test_create_use_case__target_and_context_with_different_entities(
         self,
         test_api_client_persistent,
@@ -499,7 +522,6 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
         assert "Target and context must have the same entities" in response.json()["detail"]
 
-    @pytest.mark.asyncio
     async def test_create_use_case__with_target_namespace_id(
         self,
         test_api_client_persistent,

@@ -150,6 +150,7 @@ class ObservationTableModel(MaterializedTableModel):
 
         indexes = MaterializedTableModel.Settings.indexes + [
             pymongo.operations.IndexModel("context_id"),
+            pymongo.operations.IndexModel("use_case_ids"),
             [
                 ("name", pymongo.TEXT),
                 ("description", pymongo.TEXT),
