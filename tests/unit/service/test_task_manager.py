@@ -14,7 +14,6 @@ from featurebyte.models.base import User
 from featurebyte.models.periodic_task import Crontab, Interval
 from featurebyte.models.task import Task
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
-from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.schema.task import TaskStatus
 from featurebyte.service.periodic_task import PeriodicTaskService
 from featurebyte.service.task_manager import TaskManager
