@@ -3,7 +3,7 @@ ObservationTableModel models
 """
 from __future__ import annotations
 
-from typing import Dict, Optional, Union
+from typing import Dict, List, Optional, Union
 from typing_extensions import Annotated, Literal
 
 from datetime import datetime  # pylint: disable=wrong-import-order
@@ -120,11 +120,14 @@ class ObservationTableModel(MaterializedTableModel):
         The input that defines how the observation table is created
     context_id: Optional[PydanticObjectId]
         The id of the context that the observation table is associated with
+    use_case_ids: Optional[List[PydanticObjectId]]
+        The ids of the use cases that the observation table is associated with
     """
 
     request_input: ObservationInput
     most_recent_point_in_time: StrictStr
     context_id: Optional[PydanticObjectId] = Field(default=None)
+    use_case_ids: Optional[List[PydanticObjectId]] = Field(default_factory=list)
     purpose: Optional[Purpose] = Field(default=None)
     least_recent_point_in_time: Optional[StrictStr] = Field(default=None)
     entity_column_name_to_count: Optional[Dict[str, int]] = Field(default_factory=dict)

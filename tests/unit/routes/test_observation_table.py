@@ -51,7 +51,10 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         """
         api_object_filename_pairs = [
             ("entity", "entity"),
+            ("event_table", "event_table"),
+            ("item_table", "item_table"),
             ("context", "context"),
+            ("target", "target"),
         ]
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
@@ -125,6 +128,106 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         response = test_api_client.get(f"{self.base_route}/{doc_id}")
         assert response.status_code == HTTPStatus.OK
         assert response.json()["context_id"] == context_id
+
+    def test_update_use_case(self, test_api_client_persistent, create_success_response):
+        """Test update context route"""
+        test_api_client, _ = test_api_client_persistent
+        doc_id = create_success_response.json()["_id"]
+
+        use_case_id = str(ObjectId())
+        use_case_payload = BaseMaterializedTableTestSuite.load_payload(
+            "tests/fixtures/request_payloads/use_case.json"
+        )
+        use_case_payload["_id"] = use_case_id
+        use_case_payload["name"] = "test_use_case"
+        response = test_api_client.post("/use_case", json=use_case_payload)
+        assert response.status_code == HTTPStatus.CREATED, response.json()
+
+        # test add use case
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}", json={"use_case_id_to_add": use_case_id}
+        )
+        assert response.status_code == HTTPStatus.OK
+        response = test_api_client.get(f"{self.base_route}/{doc_id}")
+        assert response.status_code == HTTPStatus.OK
+        assert use_case_id in response.json()["use_case_ids"]
+
+        # test add use case duplicate
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}", json={"use_case_id_to_add": use_case_id}
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert (
+            response.json()["detail"]
+            == f"Cannot add UseCase {use_case_id} as it is already associated with the ObservationTable."
+        )
+
+        # test remove use case
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}", json={"use_case_id_to_remove": use_case_id}
+        )
+        assert response.status_code == HTTPStatus.OK
+        response = test_api_client.get(f"{self.base_route}/{doc_id}")
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["use_case_ids"] == []
+
+    def test_update_use_case_with_error(self, test_api_client_persistent, create_success_response):
+        """Test update context route"""
+        test_api_client, _ = test_api_client_persistent
+        doc_id = create_success_response.json()["_id"]
+
+        context_id = str(ObjectId())
+        context_payload = BaseMaterializedTableTestSuite.load_payload(
+            "tests/fixtures/request_payloads/context.json"
+        )
+        context_payload["_id"] = context_id
+        context_payload["name"] = "test_context"
+        response = test_api_client.post("/context", json=context_payload)
+        assert response.status_code == HTTPStatus.CREATED, response.json()
+
+        use_case_id = str(ObjectId())
+        use_case_payload = BaseMaterializedTableTestSuite.load_payload(
+            "tests/fixtures/request_payloads/use_case.json"
+        )
+        use_case_payload["_id"] = use_case_id
+        use_case_payload["name"] = "test_use_case"
+        use_case_payload["context_id"] = context_id
+        response = test_api_client.post("/use_case", json=use_case_payload)
+        assert response.status_code == HTTPStatus.CREATED, response.json()
+
+        # test update use_case_ids which is not allowed
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}", json={"use_case_ids": [use_case_id]}
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.json()["detail"] == "use_case_ids is not a valid field to update"
+
+        # test add use_case that has different context
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}", json={"use_case_id_to_add": use_case_id}
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert (
+            response.json()["detail"]
+            == f"Cannot add UseCase {use_case_id} as its context_id is different from the existing context_id."
+        )
+
+        # test non_existent use_case_id to add
+        non_exist_use_case_id = str(ObjectId())
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}", json={"use_case_id_to_add": non_exist_use_case_id}
+        )
+        assert response.status_code == HTTPStatus.NOT_FOUND
+
+        # test use_case_id to remove not already associated with the observation table
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}", json={"use_case_id_to_remove": use_case_id}
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert (
+            response.json()["detail"]
+            == f"Cannot remove UseCase {use_case_id} as it is not associated with the ObservationTable."
+        )
 
     def test_upload_observation_csv(self, test_api_client_persistent, snowflake_feature_store_id):
         """

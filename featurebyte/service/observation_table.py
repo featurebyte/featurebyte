@@ -358,22 +358,22 @@ class ObservationTableService(
             If the entity ids are different from the existing Context
         """
 
-        # validate that the context exists
-        await self.context_service.get_document(document_id=data.context_id)
-
-        exist_observation_table = await self.get_document(document_id=observation_table_id)
-        if (
-            exist_observation_table.context_id
-            and exist_observation_table.context_id != data.context_id
-        ):
-            exist_context = await self.context_service.get_document(
-                document_id=exist_observation_table.context_id
-            )
+        if data.context_id:
+            # validate that the context exists
             new_context = await self.context_service.get_document(document_id=data.context_id)
-            if set(exist_context.primary_entity_ids) != set(new_context.primary_entity_ids):
-                raise ObservationTableInvalidContextError(
-                    "Cannot update Context as the entities are different from the existing Context."
+
+            exist_observation_table = await self.get_document(document_id=observation_table_id)
+            if (
+                exist_observation_table.context_id
+                and exist_observation_table.context_id != data.context_id
+            ):
+                exist_context = await self.context_service.get_document(
+                    document_id=exist_observation_table.context_id
                 )
+                if set(exist_context.primary_entity_ids) != set(new_context.primary_entity_ids):
+                    raise ObservationTableInvalidContextError(
+                        "Cannot update Context as the entities are different from the existing Context."
+                    )
 
         observation_table: Optional[ObservationTableModel] = await self.update_document(
             document_id=observation_table_id, data=data, return_document=True

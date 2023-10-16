@@ -432,6 +432,12 @@ class ObservationTableInvalidContextError(BaseUnprocessableEntityError):
     """
 
 
+class ObservationTableInvalidUseCaseError(BaseUnprocessableEntityError):
+    """
+    Raise when invalid use_case_id is specified when updating observation table
+    """
+
+
 class UnsupportedRequestCodeTemplateLanguage(BaseUnprocessableEntityError):
     """
     Raise when the language for request code template is not supported
