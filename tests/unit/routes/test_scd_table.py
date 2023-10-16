@@ -2,7 +2,6 @@
 Tests for SCDTable routes
 """
 from http import HTTPStatus
-from unittest import mock
 
 import pytest
 import pytest_asyncio
@@ -70,10 +69,8 @@ class TestSCDTableApi(BaseTableApiTestSuite):
     update_unprocessable_payload_expected_detail_pairs = []
 
     @pytest_asyncio.fixture(name="scd_table_semantic_ids")
-    async def scd_table_semantic_ids_fixture(self, user_id, persistent, app_container):
+    async def scd_table_semantic_ids_fixture(self, app_container):
         """SCD ID semantic IDs fixture"""
-        user = mock.Mock()
-        user.id = user_id
         natural_data = await app_container.semantic_service.get_or_create_document("natural_id")
         surrogate_data = await app_container.semantic_service.get_or_create_document("surrogate_id")
         return natural_data.id, surrogate_data.id
