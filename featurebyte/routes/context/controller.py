@@ -5,21 +5,25 @@ from __future__ import annotations
 
 from bson import ObjectId
 
-from featurebyte.exception import DocumentCreationError
+from featurebyte.exception import DocumentCreationError, DocumentDeletionError
 from featurebyte.models.context import ContextModel
 from featurebyte.routes.common.base import BaseDocumentController, DerivePrimaryEntityHelper
 from featurebyte.schema.context import ContextCreate, ContextList, ContextUpdate
 from featurebyte.schema.info import ContextInfo, EntityBriefInfo, EntityBriefInfoList
 from featurebyte.schema.observation_table import ObservationTableUpdate
+from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.context import ContextService
+from featurebyte.service.deployment import DeploymentService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.use_case import UseCaseService
 from featurebyte.service.user_service import UserService
 
 
-class ContextController(BaseDocumentController[ContextModel, ContextService, ContextList]):
+class ContextController(
+    BaseDocumentController[ContextModel, ContextService, ContextList]
+):  # pylint: disable=too-many-instance-attributes
     """
     Context controller
     """
@@ -30,7 +34,9 @@ class ContextController(BaseDocumentController[ContextModel, ContextService, Con
     def __init__(
         self,
         observation_table_service: ObservationTableService,
+        batch_feature_table_service: BatchFeatureTableService,
         context_service: ContextService,
+        deployment_service: DeploymentService,
         user_service: UserService,
         entity_service: EntityService,
         use_case_service: UseCaseService,
@@ -39,7 +45,9 @@ class ContextController(BaseDocumentController[ContextModel, ContextService, Con
     ):
         super().__init__(service=context_service)
         self.observation_table_service = observation_table_service
+        self.batch_feature_table_service = batch_feature_table_service
         self.context_service = context_service
+        self.deployment_service = deployment_service
         self.user_service = user_service
         self.entity_service = entity_service
         self.use_case_service = use_case_service
@@ -122,6 +130,55 @@ class ContextController(BaseDocumentController[ContextModel, ContextService, Con
             document_id=context_id, data=ContextUpdate(**data.dict()), return_document=False
         )
         return await self.get(document_id=context_id)
+
+    async def delete_context(self, context_id: ObjectId) -> None:
+        """
+        Delete Context if it is not used by any use case or associated with any tables
+
+        Parameters
+        ----------
+        context_id: ObjectId
+            Context ID
+
+        Raises
+        ------
+        DocumentDeletionError
+        """
+        # check existence of context first
+        _ = await self.context_service.get_document(document_id=context_id)
+
+        # check whether context is used by any use case
+        async for use_case_doc in self.use_case_service.list_documents_as_dict_iterator(
+            query_filter={"context_id": context_id}
+        ):
+            raise DocumentDeletionError("Context is used by use case: " + use_case_doc["name"])
+
+        # check whether context is associated with any observation table
+        async for table_doc in self.observation_table_service.list_documents_as_dict_iterator(
+            query_filter={"context_id": context_id}
+        ):
+            raise DocumentDeletionError(
+                "Context is associated with observation table: " + table_doc["name"]
+            )
+
+        # check whether context is associated with any batch feature table
+        async for table_doc in self.batch_feature_table_service.list_documents_as_dict_iterator(
+            query_filter={"context_id": context_id}
+        ):
+            raise DocumentDeletionError(
+                "Context is associated with batch feature table: " + table_doc["name"]
+            )
+
+        # check whether context is associated with any deployment
+        async for deployment_doc in self.deployment_service.list_documents_as_dict_iterator(
+            query_filter={"context_id": context_id}
+        ):
+            raise DocumentDeletionError(
+                "Context is associated with deployment: " + deployment_doc["name"]
+            )
+
+        # delete context
+        await self.context_service.delete_document(document_id=context_id)
 
     async def get_info(self, context_id: ObjectId) -> ContextInfo:
         """

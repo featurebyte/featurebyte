@@ -199,6 +199,65 @@ class TestContextApi(BaseCatalogApiTestSuite):
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json()["detail"] == expected_message
 
+    def test_delete_200(self, create_success_response, test_api_client_persistent):
+        """Test context delete (success)"""
+        test_api_client, _ = test_api_client_persistent
+        response_dict = create_success_response.json()
+        context_id = response_dict["_id"]
+        response = test_api_client.delete(f"{self.base_route}/{context_id}")
+        assert response.status_code == HTTPStatus.OK, response.json()
+
+    def test_delete_422__used_by_observation_table(
+        self,
+        test_api_client_persistent,
+        snowflake_database_table,
+        patched_observation_table_service,
+        catalog,
+        context,
+    ):
+        """Test context delete (unprocessable)"""
+        _ = catalog, patched_observation_table_service
+        test_api_client, _ = test_api_client_persistent
+        test_api_client.headers["active-catalog-id"] = str(catalog.id)
+        observation_table = snowflake_database_table.create_observation_table(
+            "observation_table_from_source_table", context_name=context.name
+        )
+
+        response = test_api_client.delete(f"{self.base_route}/{context.id}")
+        assert response.json()["detail"] == (
+            f"Context is associated with observation table: {observation_table.name}"
+        )
+
+    def test_delete_422__used_by_use_case(
+        self,
+        test_api_client_persistent,
+        create_success_response,
+    ):
+        """Test context delete (unprocessable)"""
+        test_api_client, _ = test_api_client_persistent
+        response_dict = create_success_response.json()
+        context_id = response_dict["_id"]
+
+        # create target
+        target_payload = self.load_payload(f"tests/fixtures/request_payloads/target.json")
+        response = test_api_client.post(f"/target", json=target_payload)
+        assert response.status_code == HTTPStatus.CREATED, response.json()
+
+        # create use case
+        response = test_api_client.post(
+            "/use_case",
+            json={
+                "name": "test_use_case",
+                "context_id": context_id,
+                "target_id": target_payload["_id"],
+            },
+        )
+        assert response.status_code == HTTPStatus.CREATED, response.json()
+
+        # check delete context
+        response = test_api_client.delete(f"{self.base_route}/{context_id}")
+        assert response.json()["detail"] == "Context is used by use case: test_use_case"
+
     def test_create_context__not_all_primary_entity_ids(
         self,
         create_success_response,
