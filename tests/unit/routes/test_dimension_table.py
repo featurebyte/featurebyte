@@ -2,7 +2,6 @@
 Tests for DimensionTable routes
 """
 from http import HTTPStatus
-from unittest import mock
 
 import pytest
 import pytest_asyncio
@@ -12,7 +11,6 @@ from featurebyte.models.dimension_table import DimensionTableModel
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.table import DimensionTableData
 from featurebyte.schema.dimension_table import DimensionTableCreate
-from featurebyte.service.semantic import SemanticService
 from tests.unit.routes.base import BaseTableApiTestSuite
 
 
@@ -73,12 +71,11 @@ class TestDimensionTableApi(BaseTableApiTestSuite):
     update_unprocessable_payload_expected_detail_pairs = []
 
     @pytest_asyncio.fixture(name="dimension_id_semantic_id")
-    async def dimension_id_semantic_id_fixture(self, user_id, persistent):
+    async def dimension_id_semantic_id_fixture(self, app_container):
         """Dimension ID semantic IDs fixture"""
-        user = mock.Mock()
-        user.id = user_id
-        semantic_service = SemanticService(user=user, persistent=persistent, catalog_id=None)
-        dimension_id_semantic = await semantic_service.get_or_create_document("dimension_id")
+        dimension_id_semantic = await app_container.semantic_service.get_or_create_document(
+            "dimension_id"
+        )
         return dimension_id_semantic.id
 
     @pytest.fixture(name="data_model_dict")
