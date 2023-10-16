@@ -10,6 +10,8 @@ from bson.objectid import ObjectId
 from featurebyte.models.base import UniqueConstraintResolutionSignature
 from featurebyte.models.feature_store import TableStatus
 from featurebyte.models.persistent import QueryFilter
+from featurebyte.persistent import Persistent
+from featurebyte.routes.block_modification_checker import BlockModificationChecker
 from featurebyte.schema.table import TableCreate, TableServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.feature_store import FeatureStoreService
@@ -25,6 +27,17 @@ class BaseTableDocumentService(BaseDocumentService[Document, DocumentCreate, Doc
     """
 
     document_update_class: type[DocumentUpdate]
+
+    def __init__(
+        self,
+        user: Any,
+        persistent: Persistent,
+        catalog_id: Optional[ObjectId],
+        block_modification_checker: BlockModificationChecker,
+        feature_store_service: FeatureStoreService,
+    ):
+        super().__init__(user, persistent, catalog_id, block_modification_checker)
+        self.feature_store_service = feature_store_service
 
     @property
     def table_type(self) -> str:
@@ -116,9 +129,9 @@ class BaseTableDocumentService(BaseDocumentService[Document, DocumentCreate, Doc
 
     async def create_document(self, data: DocumentCreate) -> Document:
         # retrieve feature store to check the feature_store_id is valid
-        _ = await FeatureStoreService(
-            user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
-        ).get_document(document_id=data.tabular_source.feature_store_id)
+        _ = await self.feature_store_service.get_document(
+            document_id=data.tabular_source.feature_store_id
+        )
 
         # create document ID if it is None
         data_doc_id = data.id or ObjectId()

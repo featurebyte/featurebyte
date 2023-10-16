@@ -12,7 +12,6 @@ from featurebyte.models.scd_table import SCDTableModel
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.table import SCDTableData
 from featurebyte.schema.scd_table import SCDTableCreate
-from featurebyte.service.semantic import SemanticService
 from tests.unit.routes.base import BaseTableApiTestSuite
 
 
@@ -71,13 +70,12 @@ class TestSCDTableApi(BaseTableApiTestSuite):
     update_unprocessable_payload_expected_detail_pairs = []
 
     @pytest_asyncio.fixture(name="scd_table_semantic_ids")
-    async def scd_table_semantic_ids_fixture(self, user_id, persistent):
+    async def scd_table_semantic_ids_fixture(self, user_id, persistent, app_container):
         """SCD ID semantic IDs fixture"""
         user = mock.Mock()
         user.id = user_id
-        semantic_service = SemanticService(user=user, persistent=persistent, catalog_id=None)
-        natural_data = await semantic_service.get_or_create_document("natural_id")
-        surrogate_data = await semantic_service.get_or_create_document("surrogate_id")
+        natural_data = await app_container.semantic_service.get_or_create_document("natural_id")
+        surrogate_data = await app_container.semantic_service.get_or_create_document("surrogate_id")
         return natural_data.id, surrogate_data.id
 
     @pytest.fixture(name="data_model_dict")
