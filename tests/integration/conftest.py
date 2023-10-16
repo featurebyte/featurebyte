@@ -55,12 +55,14 @@ from featurebyte.models.task import Task as TaskModel
 from featurebyte.models.tile import TileSpec
 from featurebyte.persistent.mongo import MongoDB
 from featurebyte.query_graph.node.schema import SparkDetails, SQLiteDetails
+from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
 from featurebyte.schema.task import TaskStatus
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
+from featurebyte.service.periodic_task import PeriodicTaskService
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.base_spark import BaseSparkSchemaInitializer
 from featurebyte.session.manager import SessionManager
@@ -1444,7 +1446,16 @@ def task_manager_fixture(persistent, user, catalog):
     Return a task manager used in tests.
     """
     task_manager = TaskManager(
-        user=user, persistent=persistent, celery=get_celery(), catalog_id=catalog.id
+        user=user,
+        persistent=persistent,
+        celery=get_celery(),
+        catalog_id=catalog.id,
+        periodic_task_service=PeriodicTaskService(
+            user=user,
+            persistent=persistent,
+            catalog_id=catalog.ig,
+            block_modification_handler=BlockModificationHandler(),
+        ),
     )
     return task_manager
 

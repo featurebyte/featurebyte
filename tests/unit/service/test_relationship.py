@@ -8,6 +8,7 @@ from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.relationship import Parent, Relationship
 from featurebyte.persistent import Persistent
+from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.relationship import RelationshipService
 
@@ -74,7 +75,12 @@ class FamilyRelationshipService(RelationshipService):
 @pytest.fixture(name="family_document_service")
 def family_document_service_fixture(user, persistent):
     """FamilyDocumentService object"""
-    return FamilyDocumentService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
+    return FamilyDocumentService(
+        user=user,
+        persistent=persistent,
+        catalog_id=DEFAULT_CATALOG_ID,
+        block_modification_handler=BlockModificationHandler(),
+    )
 
 
 @pytest.fixture(name="family_relationship_service")

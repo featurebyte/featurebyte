@@ -24,6 +24,7 @@ from featurebyte.models.base import (
     UniqueValuesConstraint,
 )
 from featurebyte.models.persistent import AuditActionType
+from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.schema.entity import EntityServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService
 
@@ -68,13 +69,23 @@ class NonAuditableDocumentService(BaseDocumentService):
 @pytest.fixture(name="document_service")
 def document_service_fixture(user, persistent):
     """Fixture for DocumentService"""
-    return DocumentService(user=user, persistent=persistent, catalog_id=None)
+    return DocumentService(
+        user=user,
+        persistent=persistent,
+        catalog_id=None,
+        block_modification_handler=BlockModificationHandler(),
+    )
 
 
 @pytest.fixture(name="non_auditable_document_service")
 def non_auditable_document_service_fixture(user, persistent):
     """Fixture for NonAuditableDocumentService"""
-    return NonAuditableDocumentService(user=user, persistent=persistent, catalog_id=None)
+    return NonAuditableDocumentService(
+        user=user,
+        persistent=persistent,
+        catalog_id=None,
+        block_modification_handler=BlockModificationHandler(),
+    )
 
 
 @pytest.mark.asyncio
@@ -121,7 +132,10 @@ async def test_check_document_creation_conflict(
     persistent.find_one.return_value = {"_id": "conflict_id_val", "name": "conflict_name_val"}
     with pytest.raises(DocumentConflictError) as exc:
         await DocumentService(
-            user=Mock(), persistent=persistent, catalog_id=None
+            user=Mock(),
+            persistent=persistent,
+            catalog_id=None,
+            block_modification_handler=BlockModificationHandler(),
         )._check_document_unique_constraint(
             query_filter=query_filter,
             conflict_signature=conflict_signature,
@@ -549,11 +563,11 @@ async def test_document_disable_block_modification_check(
     assert expected_error in str(exc.value)
 
     # try to update document - expect no error
-    document_service.set_block_modification_check_callback(lambda: False)
-    document = await document_service.update_document(
-        document_id=document.id, data=Document(name="new_name")
-    )
-    assert document.name == "new_name"
+    with document_service.block_modification_handler.disable_block_modification_check():
+        document = await document_service.update_document(
+            document_id=document.id, data=Document(name="new_name")
+        )
+        assert document.name == "new_name"
 
 
 def test_catalog_specific_service_requires_catalog_id(user, persistent):
@@ -565,7 +579,12 @@ def test_catalog_specific_service_requires_catalog_id(user, persistent):
     ) as mock_is_catalog_specific:
         with pytest.raises(CatalogNotSpecifiedError) as exc:
             mock_is_catalog_specific.return_value = True
-            DocumentService(user=user, persistent=persistent, catalog_id=None)
+            DocumentService(
+                user=user,
+                persistent=persistent,
+                catalog_id=None,
+                block_modification_handler=BlockModificationHandler(),
+            )
         assert str(exc.value) == "Catalog not specified. Please specify a catalog."
 
 
@@ -611,21 +630,20 @@ async def test_app_container__disable_block_modification_check(app_container, en
         assert updated_entity.name == "new_name"
 
         # inside the context manager, check that block modification check is disabled
-        assert service._check_block_modification_func() is False
+        assert service.block_modification_handler.block_modification is False
 
     # outside the context manager, check that block modification check is enabled
-    assert service._check_block_modification_func() is True
+    assert service.block_modification_handler.block_modification is True
 
     # case 2: use context manager with using the yielded app_container
-    with app_container.block_modification_handler.disable_block_modification_check() as updated_app_container:
-        service = updated_app_container.entity_service
-        updated_entity = await updated_app_container.entity_service.update_document(
+    with app_container.block_modification_handler.disable_block_modification_check():
+        updated_entity = await app_container.entity_service.update_document(
             document_id=entity.id, data=EntityServiceUpdate(name="another_name")
         )
         assert updated_entity.name == "another_name"
 
         # inside the context manager, check that block modification check is disabled
-        assert service._check_block_modification_func() is False
+        assert service.block_modification_handler.block_modification is False
 
     # outside the context manager, check that block modification check is enabled
-    assert service._check_block_modification_func() is True
+    assert service.block_modification_handler.block_modification is True

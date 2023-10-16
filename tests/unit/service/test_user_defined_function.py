@@ -19,11 +19,9 @@ def user_defined_function_service_fixture(app_container):
 @pytest.fixture(name="user_defined_function_service_with_different_catalog")
 def user_defined_function_service_with_different_catalog_fixture(app_container):
     """User defined function service with different catalog fixture"""
-    return UserDefinedFunctionService(
-        user=app_container.user_defined_function_service.user,
-        persistent=app_container.user_defined_function_service.persistent,
-        catalog_id=ObjectId(),
-    )
+    app_container.override_instance_for_test("catalog_id", ObjectId())
+    app_container.invalidate_dep_for_test(UserDefinedFunctionService)
+    return app_container.get(UserDefinedFunctionService)
 
 
 @pytest.fixture(name="user_defined_function_dict")
