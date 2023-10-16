@@ -38,12 +38,6 @@ def task_manager_fixture(user_id, persistent, celery, catalog):
         persistent=persistent,
         celery=celery,
         catalog_id=catalog.id,
-        periodic_task_service=PeriodicTaskService(
-            user=user,
-            persistent=persistent,
-            catalog_id=catalog.id,
-            block_modification_handler=BlockModificationHandler(),
-        ),
     )
     yield task_manager
 
