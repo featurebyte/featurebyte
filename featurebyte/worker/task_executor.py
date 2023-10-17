@@ -193,6 +193,15 @@ class BaseCeleryTask(Task):
         """
         Get app container
 
+        Parameters
+        ----------
+        task_id: UUID
+            Task ID
+        payload: dict[str, Any]
+            Task payload
+        progress: Any
+            Task progress
+
         Returns
         -------
         LazyAppContainer
