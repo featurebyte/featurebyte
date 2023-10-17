@@ -1,7 +1,7 @@
 """
 Mixin class containing common methods for feature or target classes
 """
-from typing import Any, List, Sequence, cast
+from typing import Any, List, Sequence, Union, cast
 
 import time
 from http import HTTPStatus
@@ -13,6 +13,7 @@ from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.entity import Entity
+from featurebyte.api.observation_table import ObservationTable
 from featurebyte.common.formatting_util import CodeStr
 from featurebyte.common.utils import dataframe_from_json
 from featurebyte.config import Configurations
@@ -77,17 +78,26 @@ class FeatureOrTargetMixin(QueryObject, ApiObject):
             definition = self._generate_code(to_format=True, to_use_saved_data=True)
         return CodeStr(definition)
 
-    def _preview(self, observation_set: pd.DataFrame, url: str) -> pd.DataFrame:
+    def _preview(
+        self, observation_set: Union[ObservationTable, pd.DataFrame], url: str
+    ) -> pd.DataFrame:
         # helper function to preview
         tic = time.time()
-        pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
-        payload = FeatureOrTargetPreview(
-            feature_store_name=self.feature_store.name,
-            graph=pruned_graph,
-            node_name=mapped_node.name,
-            point_in_time_and_serving_name_list=observation_set.to_dict(orient="records"),
-        )
 
+        pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
+        preview_params = {
+            "feature_store_name": self.feature_store.name,
+            "graph": pruned_graph,
+            "node_name": mapped_node.name,
+        }
+        if isinstance(observation_set, ObservationTable):
+            preview_params["observation_table_id"] = observation_set.id
+        else:
+            preview_params["point_in_time_and_serving_name_list"] = observation_set.to_dict(
+                orient="records"
+            )
+
+        payload = FeatureOrTargetPreview(**preview_params)
         client = Configurations().get_client()
         response = client.post(url=url, json=payload.json_dict())
         if response.status_code != HTTPStatus.OK:

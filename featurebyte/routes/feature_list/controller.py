@@ -30,6 +30,7 @@ from featurebyte.schema.feature_list import (
     FeatureListNewVersionCreate,
     FeatureListPaginatedList,
     FeatureListPreview,
+    FeatureListSampleEntityServingNames,
     FeatureListServiceCreate,
     FeatureListSQL,
     FeatureListUpdate,
@@ -410,3 +411,27 @@ class FeatureListController(
             features=features,
             hour_limit=hour_limit,
         )
+
+    async def get_sample_entity_serving_names(
+        self, feature_list_id: ObjectId, count: int
+    ) -> FeatureListSampleEntityServingNames:
+        """
+        Get sample entity serving names for feature list
+
+        Parameters
+        ----------
+        feature_list_id: ObjectId
+            Feature list ID
+        count: int
+            Number of sample entity serving names to return
+
+        Returns
+        -------
+        FeatureListSampleEntityServingNames
+            Sample entity serving names
+        """
+
+        entity_serving_names = await self.service.get_sample_entity_serving_names(
+            feature_list_id=feature_list_id, count=count
+        )
+        return FeatureListSampleEntityServingNames(entity_serving_names=entity_serving_names)

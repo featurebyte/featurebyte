@@ -19,8 +19,10 @@ from featurebyte.models.feature_list import (
     FeatureReadinessDistribution,
 )
 from featurebyte.models.feature_namespace import DefaultVersionMode
+from featurebyte.models.feature_store import FeatureStoreModel, TableModel
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.persistent import Persistent
+from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.schema.feature_list import FeatureListServiceCreate, FeatureListServiceUpdate
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
@@ -31,11 +33,14 @@ from featurebyte.schema.info import (
     FeatureListNamespaceInfo,
 )
 from featurebyte.service.base_document import BaseDocumentService
-from featurebyte.service.entity import EntityService
+from featurebyte.service.entity import EntityService, get_primary_entity_from_entities
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
+from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
 from featurebyte.service.relationship_info import RelationshipInfoService
+from featurebyte.service.session_manager import SessionManagerService
+from featurebyte.service.table import TableService
 
 
 async def validate_feature_list_version_and_namespace_consistency(
@@ -123,7 +128,7 @@ class FeatureListService(
 
     document_class = FeatureListModel
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         user: Any,
         persistent: Persistent,
@@ -133,6 +138,9 @@ class FeatureListService(
         feature_service: FeatureService,
         feature_list_namespace_service: FeatureListNamespaceService,
         block_modification_handler: BlockModificationHandler,
+        table_service: TableService,
+        feature_store_service: FeatureStoreService,
+        session_manager_service: SessionManagerService,
     ):
         super().__init__(
             user=user,
@@ -144,6 +152,9 @@ class FeatureListService(
         self.relationship_info_service = relationship_info_service
         self.feature_service = feature_service
         self.feature_list_namespace_service = feature_list_namespace_service
+        self.table_service = table_service
+        self.feature_store_service = feature_store_service
+        self.session_manager_service = session_manager_service
 
     async def _feature_iterator(
         self, feature_ids: Sequence[ObjectId]
@@ -469,6 +480,124 @@ class FeatureListService(
             features.append(feature)
 
         return FeatureListModel.derive_feature_clusters(features)
+
+    async def get_table_column_unique_values(
+        self,
+        feature_store: FeatureStoreModel,
+        table: TableModel,
+        column_name: str,
+        num_rows: int,
+    ) -> List[Any]:
+        """
+        Get unique values for a column in a table
+
+        Parameters
+        ----------
+        feature_store: FeatureStoreModel
+            Feature store
+        table: TableModel
+            Table
+        column_name: str
+            Column name
+        num_rows: int
+            Number of rows to return
+
+        Returns
+        -------
+        List[Any]
+        """
+        graph, node = table.construct_graph_and_node(
+            feature_store_details=feature_store.get_feature_store_details(),
+            table_data_dict=table.dict(by_alias=True),
+        )
+        db_session = await self.session_manager_service.get_feature_store_session(
+            feature_store=feature_store,
+        )
+        unique_values_sql = GraphInterpreter(
+            graph, source_type=feature_store.type
+        ).construct_unique_values_sql(
+            node_name=node.name, column_name=column_name, num_rows=num_rows
+        )
+        result = await db_session.execute_query(unique_values_sql)
+        assert result is not None
+        unique_values: List[Any] = result[column_name].to_list()
+        return unique_values
+
+    async def get_sample_entity_serving_names(  # pylint: disable=too-many-locals
+        self, feature_list_id: ObjectId, count: int
+    ) -> List[Dict[str, str]]:
+        """
+        Get sample entity serving names for a feature list
+
+        Parameters
+        ----------
+        feature_list_id: ObjectId
+            FeatureList Id
+        count: int
+            Number of sample entity serving names to return
+
+        Returns
+        -------
+        List[Dict[str, str]]
+        """
+        feature_list = await self.get_document(feature_list_id)
+
+        # get entities and tables used for the feature list
+        feature_list_namespace = await self.feature_list_namespace_service.get_document(
+            document_id=feature_list.feature_list_namespace_id
+        )
+        entities_docs = await self.entity_service.list_documents_as_dict(
+            page=1, page_size=0, query_filter={"_id": {"$in": feature_list_namespace.entity_ids}}
+        )
+        primary_entity = get_primary_entity_from_entities(entities_docs)
+        entities = {
+            entity["_id"]: {"serving_name": entity["serving_names"]}
+            for entity in primary_entity["data"]
+        }
+        tables = self.table_service.list_documents_iterator(
+            query_filter={"_id": {"$in": feature_list_namespace.table_ids}}
+        )
+
+        feature_store: Optional[FeatureStoreModel] = None
+        async for table in tables:
+            assert isinstance(table, TableModel)
+            if not feature_store:
+                feature_store = await self.feature_store_service.get_document(
+                    document_id=table.tabular_source.feature_store_id
+                )
+            else:
+                assert (
+                    feature_store.id == table.tabular_source.feature_store_id
+                ), "Feature List tables must be in the same feature store"
+
+            entity_columns = [
+                column for column in table.columns_info if column.entity_id in entities
+            ]
+            if entity_columns:
+                for column in entity_columns:
+                    # skip if sample values already exists unless column is a primary key for the table
+                    existing_sample_values = entities[column.entity_id].get("sample_value")
+                    if existing_sample_values and column.name not in table.primary_key_columns:
+                        continue
+
+                    entities[column.entity_id][
+                        "sample_value"
+                    ] = await self.get_table_column_unique_values(
+                        feature_store=feature_store,
+                        table=table,
+                        column_name=column.name,
+                        num_rows=count,
+                    )
+
+        return [
+            {
+                entity["serving_name"][0]: entity["sample_value"][
+                    row_idx % len(entity["sample_value"])
+                ]
+                for entity in entities.values()
+            }
+            for row_idx in range(count)
+        ]
 
 
 class AllFeatureListService(

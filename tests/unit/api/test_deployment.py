@@ -114,7 +114,7 @@ def test_get_online_serving_code(deployment, catalog, config_file):
     url = f"http://localhost:8080/deployment/{deployment.id}/online_features"
 
     with patch(
-        "featurebyte.service.online_serving.OnlineServingService.get_table_column_unique_values"
+        "featurebyte.service.feature_list.FeatureListService.get_table_column_unique_values"
     ) as mock_preview:
         mock_preview.return_value = ["sample_cust_id"]
         assert (

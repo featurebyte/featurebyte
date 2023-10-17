@@ -1,20 +1,32 @@
 """
 Preview schema
 """
-from typing import Any, Dict, List
+from typing import Optional
 
-from pydantic import Field, StrictStr
+from pydantic import StrictStr
 
-from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.enum import FeatureOrTargetType
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.schema.common.feature_or_target import ComputeRequest
+from featurebyte.schema.feature_list import PreviewObservationSet
 
 
-class FeatureOrTargetPreview(FeatureByteBaseModel):
+class FeatureOrTarget(FeatureByteBaseModel):
+    """
+    FeatureOrTarget schema
+    """
+
+    type: FeatureOrTargetType
+    id: PydanticObjectId
+
+
+class FeatureOrTargetPreview(ComputeRequest, PreviewObservationSet):
     """
     Feature Preview schema
     """
 
-    graph: QueryGraph
-    node_name: str
     feature_store_name: StrictStr
-    point_in_time_and_serving_name_list: List[Dict[str, Any]] = Field(min_items=1, max_items=50)
+    graph: Optional[QueryGraph]
+    node_name: Optional[str]
+    feature_or_target: Optional[FeatureOrTarget]

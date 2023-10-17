@@ -389,5 +389,12 @@ class FunctionParameterInputForm(StrEnum):
     COLUMN = "column"  # column is used as function argument
 
 
+class FeatureOrTargetType(StrEnum):
+    """Feature or Target type"""
+
+    FEATURE = "feature"
+    TARGET = "target"
+
+
 # enum used for handle conflict when saving object to persistent storage
 ConflictResolution = Literal["raise", "retrieve"]

@@ -1,6 +1,7 @@
 """
 Tests for FeatureList route
 """
+# pylint: disable=too-many-lines
 from collections import defaultdict
 from http import HTTPStatus
 from unittest.mock import AsyncMock, Mock, call, patch
@@ -90,12 +91,22 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         )
         yield mock_get_session
 
+    @pytest.fixture(autouse=True)
+    def always_patched_observation_table_service(
+        self, patched_observation_table_service_for_preview
+    ):
+        """
+        Patch ObservationTableService so validate_materialized_table_and_get_metadata always passes
+        """
+        _ = patched_observation_table_service_for_preview
+
     def setup_creation_route(self, api_client):
         """
         Setup for post route
         """
         api_object_filename_pairs = [
             ("entity", "entity"),
+            ("context", "context"),
             ("event_table", "event_table"),
             ("feature", "feature_sum_30m"),
         ]
@@ -674,7 +685,10 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         }
 
     def test_preview_200(
-        self, test_api_client_persistent, featurelist_preview_payload, mock_get_session
+        self,
+        test_api_client_persistent,
+        featurelist_preview_payload,
+        mock_get_session,
     ):
         """Test feature list preview"""
         test_api_client, _ = test_api_client_persistent
@@ -682,10 +696,68 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         mock_session = mock_get_session.return_value
         mock_session.execute_query.return_value = expected_df
         mock_session.generate_session_unique_id = Mock(return_value="1")
+
+        # test preview using feature clusters
         response = test_api_client.post(
             f"{self.base_route}/preview", json=featurelist_preview_payload
         )
         assert response.status_code == HTTPStatus.OK
+        assert_frame_equal(dataframe_from_json(response.json()), expected_df)
+
+    def test_preview_using_feature_list_id_200(
+        self,
+        test_api_client_persistent,
+        create_success_response,
+        featurelist_preview_payload,
+        mock_get_session,
+    ):
+        """Test feature list preview"""
+        test_api_client, _ = test_api_client_persistent
+        featurelist = create_success_response.json()
+        expected_df = pd.DataFrame({"a": [0, 1, 2]})
+        mock_session = mock_get_session.return_value
+        mock_session.execute_query.return_value = expected_df
+        mock_session.generate_session_unique_id = Mock(return_value="1")
+
+        # test preview using feature list id
+        featurelist_preview_payload.pop("feature_clusters")
+        featurelist_preview_payload["feature_list_id"] = featurelist["_id"]
+        response = test_api_client.post(
+            f"{self.base_route}/preview", json=featurelist_preview_payload
+        )
+        assert response.status_code == HTTPStatus.OK
+        assert_frame_equal(dataframe_from_json(response.json()), expected_df)
+
+    def test_preview_using_observation_table_200(
+        self,
+        test_api_client_persistent,
+        featurelist_preview_payload,
+        mock_get_session,
+    ):
+        """Test feature list preview"""
+        test_api_client, _ = test_api_client_persistent
+        expected_df = pd.DataFrame({"a": [0, 1, 2]})
+        mock_session = mock_get_session.return_value
+        mock_session.execute_query.return_value = expected_df
+        mock_session.generate_session_unique_id = Mock(return_value="1")
+
+        # test preview using observation table
+        payload = self.load_payload("tests/fixtures/request_payloads/observation_table.json")
+        response = test_api_client.post("/observation_table", json=payload)
+        assert response.status_code == HTTPStatus.CREATED, response.json()
+        response = self.wait_for_results(test_api_client, response)
+        assert response.json()["status"] == "SUCCESS", response.json()["traceback"]
+        obs_table_df = pd.DataFrame(
+            {"POINT_IN_TIME": pd.to_datetime(["2022-04-01"]), "cust_id": ["C1"]}
+        )
+        mock_session.execute_query.side_effect = (obs_table_df, expected_df)
+
+        featurelist_preview_payload.pop("point_in_time_and_serving_name_list")
+        featurelist_preview_payload["observation_table_id"] = "646f6c1c0ed28a5271fb02d7"
+        response = test_api_client.post(
+            f"{self.base_route}/preview", json=featurelist_preview_payload
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
         assert_frame_equal(dataframe_from_json(response.json()), expected_df)
 
     @pytest.fixture(name="featurelist_get_historical_features_payload")
@@ -880,3 +952,55 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
 
         response = test_api_client.get(f"feature/{feature_create.id}")
         assert response.status_code == HTTPStatus.NOT_FOUND
+
+    def test_request_sample_entity_serving_names(
+        self,
+        test_api_client_persistent,
+        create_success_response,
+        mock_get_session,
+    ):
+        """Test getting sample entity serving names for a deployment"""
+        test_api_client, _ = test_api_client_persistent
+        result = create_success_response.json()
+
+        async def mock_execute_query(query):
+            _ = query
+            return pd.DataFrame(
+                [
+                    {
+                        "cust_id": 1,
+                    },
+                    {
+                        "cust_id": 2,
+                    },
+                    {
+                        "cust_id": 3,
+                    },
+                ]
+            )
+
+        mock_session = mock_get_session.return_value
+        mock_session.execute_query = mock_execute_query
+
+        # Request sample entity serving names
+        feature_list_id = result["_id"]
+        response = test_api_client.get(
+            f"{self.base_route}/{feature_list_id}/sample_entity_serving_names?count=10",
+        )
+
+        # Check result
+        assert response.status_code == HTTPStatus.OK, response.content
+        assert response.json() == {
+            "entity_serving_names": [
+                {"cust_id": "1"},
+                {"cust_id": "2"},
+                {"cust_id": "3"},
+                {"cust_id": "1"},
+                {"cust_id": "2"},
+                {"cust_id": "3"},
+                {"cust_id": "1"},
+                {"cust_id": "2"},
+                {"cust_id": "3"},
+                {"cust_id": "1"},
+            ],
+        }

@@ -31,6 +31,10 @@ HTTP_REQUEST_TIMEOUT: int = 180
 HTTP_REQUEST_MAX_RETRIES: int = 3
 HTTP_REQUEST_BACKOFF_FACTOR: float = 0.3
 
+# feature requests row limits
+FEATURE_PREVIEW_ROW_LIMIT: int = 50
+ONLINE_FEATURE_REQUEST_ROW_LIMIT: int = 50
+
 # default local location
 DEFAULT_HOME_PATH: Path = Path.home().joinpath(".featurebyte")
 
