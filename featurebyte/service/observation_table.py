@@ -17,12 +17,13 @@ from featurebyte.enum import DBVarType, MaterializedTableNamePrefix, SpecialColu
 from featurebyte.exception import (
     MissingPointInTimeColumnError,
     ObservationTableInvalidContextError,
+    ObservationTableInvalidUseCaseError,
     UnsupportedPointInTimeColumnTypeError,
 )
 from featurebyte.models.base import FeatureByteBaseDocumentModel, PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.materialized_table import ColumnSpecWithEntityId
-from featurebyte.models.observation_table import ObservationTableModel
+from featurebyte.models.observation_table import ObservationTableModel, TargetInput
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
@@ -44,6 +45,7 @@ from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.materialized_table import BaseMaterializedTableService
 from featurebyte.service.preview import PreviewService
 from featurebyte.service.session_manager import SessionManagerService
+from featurebyte.service.use_case import UseCaseService
 from featurebyte.session.base import BaseSession
 from featurebyte.storage import Storage
 
@@ -132,6 +134,7 @@ class ObservationTableService(
         temp_storage: Storage,
         block_modification_handler: BlockModificationHandler,
         primary_entity_validator: PrimaryEntityValidator,
+        use_case_service: UseCaseService,
     ):
         super().__init__(
             user,
@@ -146,6 +149,7 @@ class ObservationTableService(
         self.preview_service = preview_service
         self.temp_storage = temp_storage
         self.primary_entity_validator = primary_entity_validator
+        self.use_case_service = use_case_service
 
     @property
     def class_name(self) -> str:
@@ -350,7 +354,7 @@ class ObservationTableService(
             "entity_column_name_to_count": column_name_to_count,
         }
 
-    async def update_observation_table(
+    async def update_observation_table(  # pylint: disable=too-many-branches
         self, observation_table_id: ObjectId, data: ObservationTableUpdate
     ) -> Optional[ObservationTableModel]:
         """
@@ -371,27 +375,77 @@ class ObservationTableService(
         ------
         ObservationTableInvalidContextError
             If the entity ids are different from the existing Context
+        ObservationTableInvalidUseCaseError
+            If the use case is invalid
         """
 
+        if data.use_case_ids:
+            raise ObservationTableInvalidUseCaseError("use_case_ids is not a valid field to update")
+
+        observation_table = await self.get_document(document_id=observation_table_id)
+        if data.use_case_id_to_add or data.use_case_id_to_remove:
+            if not observation_table.context_id:
+                raise ObservationTableInvalidUseCaseError(
+                    f"Cannot add/remove UseCase as the ObservationTable {observation_table_id} is not associated with any Context."
+                )
+
+            use_case_ids = observation_table.use_case_ids
+            # validate use case id to add
+            if data.use_case_id_to_add:
+                if data.use_case_id_to_add in use_case_ids:
+                    raise ObservationTableInvalidUseCaseError(
+                        f"Cannot add UseCase {data.use_case_id_to_add} as it is already associated with the ObservationTable."
+                    )
+                use_case = await self.use_case_service.get_document(
+                    document_id=data.use_case_id_to_add
+                )
+                if use_case.context_id != observation_table.context_id:
+                    raise ObservationTableInvalidUseCaseError(
+                        f"Cannot add UseCase {data.use_case_id_to_add} as its context_id is different from the existing context_id."
+                    )
+
+                # validate request_input and target_id
+                if not isinstance(observation_table.request_input, TargetInput):
+                    raise ObservationTableInvalidUseCaseError(
+                        "observation table request_input is not TargetInput"
+                    )
+
+                if not use_case.target_id or (
+                    isinstance(observation_table.request_input, TargetInput)
+                    and observation_table.request_input.target_id != use_case.target_id
+                ):
+                    raise ObservationTableInvalidUseCaseError(
+                        f"Cannot add UseCase {data.use_case_id_to_add} as its target_id is different from the existing target_id."
+                    )
+
+                use_case_ids.append(data.use_case_id_to_add)
+
+            # validate use case id to remove
+            if data.use_case_id_to_remove:
+                if data.use_case_id_to_remove not in use_case_ids:
+                    raise ObservationTableInvalidUseCaseError(
+                        f"Cannot remove UseCase {data.use_case_id_to_remove} as it is not associated with the ObservationTable."
+                    )
+                use_case_ids.remove(data.use_case_id_to_remove)
+
+            # update use case ids
+            data.use_case_ids = sorted(use_case_ids)
+
         if data.context_id:
-            # validate that the context exists
+            # validate context_id
             new_context = await self.context_service.get_document(document_id=data.context_id)
 
-            exist_observation_table = await self.get_document(document_id=observation_table_id)
-            if (
-                exist_observation_table.context_id
-                and exist_observation_table.context_id != data.context_id
-            ):
+            if observation_table.context_id and observation_table.context_id != data.context_id:
                 exist_context = await self.context_service.get_document(
-                    document_id=exist_observation_table.context_id
+                    document_id=observation_table.context_id
                 )
                 if set(exist_context.primary_entity_ids) != set(new_context.primary_entity_ids):
                     raise ObservationTableInvalidContextError(
                         "Cannot update Context as the entities are different from the existing Context."
                     )
 
-        observation_table: Optional[ObservationTableModel] = await self.update_document(
+        result: Optional[ObservationTableModel] = await self.update_document(
             document_id=observation_table_id, data=data, return_document=True
         )
 
-        return observation_table
+        return result

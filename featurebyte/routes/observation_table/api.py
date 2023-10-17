@@ -204,7 +204,7 @@ async def update_observation_table_context(
     data: ObservationTableUpdate,
 ) -> ObservationTableModel:
     """
-    Update observation_table description
+    Update observation_table
     """
     controller = request.state.app_container.observation_table_controller
     observation_table: ObservationTableModel = await controller.update_observation_table(

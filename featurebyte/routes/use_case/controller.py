@@ -9,6 +9,7 @@ from featurebyte.exception import DocumentCreationError, DocumentDeletionError
 from featurebyte.models.use_case import UseCaseModel
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.info import EntityBriefInfo, EntityBriefInfoList, UseCaseInfo
+from featurebyte.schema.observation_table import ObservationTableUpdate
 from featurebyte.schema.use_case import UseCaseCreate, UseCaseList, UseCaseUpdate
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.context import ContextService
@@ -114,6 +115,17 @@ class UseCaseController(
         -------
         UseCaseModel
         """
+        for obs_id in [data.default_eda_table_id, data.default_preview_table_id]:
+            if obs_id:
+                observation_table = await self.observation_table_service.get_document(
+                    document_id=obs_id
+                )
+                if use_case_id not in observation_table.use_case_ids:
+                    await self.observation_table_service.update_observation_table(
+                        observation_table_id=obs_id,
+                        data=ObservationTableUpdate(use_case_id_to_add=use_case_id),
+                    )
+
         return await self.service.update_use_case(document_id=use_case_id, data=data)
 
     async def delete_use_case(self, document_id: ObjectId) -> None:
@@ -234,7 +246,7 @@ class UseCaseController(
         observation_table_ids = []
         async for obs_table in self.observation_table_service.list_documents_iterator(
             query_filter={
-                "context_id": use_case.context_id,
+                "use_case_ids": use_case.id,
                 "request_input.target_id": use_case.target_id,
             },
         ):

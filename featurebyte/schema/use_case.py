@@ -37,7 +37,6 @@ class UseCaseUpdate(BaseDocumentServiceUpdateSchema):
     Use Case update schema
     """
 
-    new_observation_table_id: Optional[PydanticObjectId]
     default_preview_table_id: Optional[PydanticObjectId]
     default_eda_table_id: Optional[PydanticObjectId]
 

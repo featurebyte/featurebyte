@@ -1,7 +1,6 @@
 """
 Tests for Use Case route
 """
-from functools import partial
 from http import HTTPStatus
 
 import pytest
@@ -64,97 +63,16 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
             payload["name"] = f'{self.payload["name"]}_{i}'
             yield payload
 
-    @pytest.fixture(name="location")
-    def location_fixture(self):
-        """
-        location fixture
-        """
-        return {
-            "feature_store_id": ObjectId(),
-            "table_details": {
-                "database_name": "fb_database",
-                "schema_name": "fb_schema",
-                "table_name": "fb_materialized_table",
-            },
-        }
-
-    @pytest.fixture(name="create_observation_table")
-    def create_observation_table_fixture(
-        self, test_api_client_persistent, location, default_catalog_id, user_id
-    ):
-        """
-        simulate creating observation table for target input, target_id and context_id
-        """
-
-        _, persistent = test_api_client_persistent
-
-        async def create_observation_table(
-            ob_table_id, target_input=True, same_context=True, same_target=True, new_context_id=None
-        ):
-            context_id = ObjectId(self.payload["context_id"])
-            if not same_context:
-                context_id = new_context_id
-
-            target_id = ObjectId(self.payload["target_id"])
-            if not same_target:
-                target_id = ObjectId()
-
-            request_input = {
-                "target_id": target_id,
-                "observation_table_id": ob_table_id,
-                "type": "dataframe",
-            }
-            if not target_input:
-                request_input = {
-                    "columns": None,
-                    "columns_rename_mapping": None,
-                    "source": location,
-                    "type": "source_table",
-                }
-
-            await persistent.insert_one(
-                collection_name="observation_table",
-                document={
-                    "_id": ob_table_id,
-                    "name": "observation_table_from_target_input",
-                    "request_input": request_input,
-                    "location": location,
-                    "columns_info": [
-                        {"name": "a", "dtype": "INT"},
-                        {"name": "b", "dtype": "INT"},
-                        {"name": "c", "dtype": "INT"},
-                    ],
-                    "num_rows": 1000,
-                    "most_recent_point_in_time": "2023-01-15T10:00:00",
-                    "context_id": context_id,
-                    "catalog_id": ObjectId(default_catalog_id),
-                    "user_id": user_id,
-                },
-                user_id=user_id,
-            )
-
-        return partial(create_observation_table)
-
     @pytest.mark.asyncio
-    async def test_automated_assign_observation_table(
+    async def test_list_observation_tables(
         self,
         test_api_client_persistent,
         create_observation_table,
         create_success_response,
     ):
         """Test automated assign observation table when creating use case"""
-        _ = create_success_response
         test_api_client, _ = test_api_client_persistent
-        target_ob_table_id = ObjectId()
-        non_target_ob_table_id = ObjectId()
-        different_context_ob_table_id = ObjectId()
-
-        # create observation table with target input
-        await create_observation_table(target_ob_table_id)
-        # create observation table with non target input
-        await create_observation_table(non_target_ob_table_id, target_input=False)
-        # create observation table with different context
-        await create_observation_table(different_context_ob_table_id, same_context=False)
+        _ = create_success_response
 
         payload = self.payload.copy()
         payload["_id"] = str(ObjectId())
@@ -165,6 +83,23 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         assert created_use_case["context_id"] == self.payload["context_id"]
         assert created_use_case["target_id"] == self.payload["target_id"]
         assert created_use_case["description"] == self.payload["description"]
+
+        target_ob_table_id = ObjectId()
+        non_target_ob_table_id = ObjectId()
+        different_context_ob_table_id = ObjectId()
+
+        # create observation table with target input
+        await create_observation_table(
+            target_ob_table_id,
+            use_case_id=created_use_case["_id"],
+            context_id=self.payload["context_id"],
+            target_input=True,
+            target_id=self.payload["target_id"],
+        )
+        # create observation table with non target input
+        await create_observation_table(non_target_ob_table_id, target_input=False)
+        # create observation table with different context
+        await create_observation_table(different_context_ob_table_id)
 
         response = test_api_client.get(
             f"{self.base_route}/{created_use_case['_id']}/observation_tables",
@@ -211,23 +146,23 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         create_response_dict = create_success_response.json()
         use_case_id = create_response_dict["_id"]
 
-        new_ob_table_id_1 = ObjectId()
-        await create_observation_table(new_ob_table_id_1)
-        response = test_api_client.patch(
-            f"{self.base_route}/{use_case_id}",
-            json={"new_observation_table_id": str(new_ob_table_id_1)},
-        )
-        assert response.status_code == HTTPStatus.OK
-        data = response.json()
-        assert data["context_id"] == self.payload["context_id"]
-        assert data["target_id"] == self.payload["target_id"]
-        assert data["description"] == self.payload["description"]
-
         new_ob_table_id_2 = ObjectId()
-        await create_observation_table(new_ob_table_id_2)
+        await create_observation_table(
+            new_ob_table_id_2,
+            use_case_id=use_case_id,
+            context_id=self.payload["context_id"],
+            target_input=True,
+            target_id=self.payload["target_id"],
+        )
 
         new_ob_table_id_3 = ObjectId()
-        await create_observation_table(new_ob_table_id_3)
+        await create_observation_table(
+            new_ob_table_id_3,
+            use_case_id=use_case_id,
+            context_id=self.payload["context_id"],
+            target_input=True,
+            target_id=self.payload["target_id"],
+        )
 
         response = test_api_client.patch(
             f"{self.base_route}/{use_case_id}",
@@ -246,11 +181,11 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
             f"{self.base_route}/{use_case_id}/observation_tables",
         )
         assert response.status_code == HTTPStatus.OK
-        assert response.json()["total"] == 3
+        assert response.json()["total"] == 2
         data = response.json()["data"]
-        assert sorted(
-            [str(new_ob_table_id_1), str(new_ob_table_id_2), str(new_ob_table_id_3)]
-        ) == sorted([data[0]["_id"], data[1]["_id"], data[2]["_id"]])
+        assert sorted([str(new_ob_table_id_2), str(new_ob_table_id_3)]) == sorted(
+            [data[0]["_id"], data[1]["_id"]]
+        )
 
         # test use case info endpoint
         response = test_api_client.get(
@@ -280,57 +215,30 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         create_response_dict = create_success_response.json()
         use_case_id = create_response_dict["_id"]
 
-        # create observation table with non target input
-        non_target_ob_table_id = ObjectId()
-        await create_observation_table(non_target_ob_table_id, target_input=False)
+        different_context_ob_table_id = ObjectId()
+        await create_observation_table(different_context_ob_table_id)
         response = test_api_client.patch(
             f"{self.base_route}/{use_case_id}",
-            json={"new_observation_table_id": str(non_target_ob_table_id)},
+            json={"default_preview_table_id": str(different_context_ob_table_id)},
         )
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-        assert response.json()["detail"] == "observation table request_input is not TargetInput"
+        assert (
+            response.json()["detail"]
+            == f"Cannot add UseCase {use_case_id} as its context_id is different from the existing context_id."
+        )
 
         different_target_ob_table_id = ObjectId()
-        await create_observation_table(different_target_ob_table_id, same_target=False)
+        await create_observation_table(
+            different_target_ob_table_id, context_id=self.payload["context_id"]
+        )
         response = test_api_client.patch(
             f"{self.base_route}/{use_case_id}",
-            json={"new_observation_table_id": str(different_target_ob_table_id)},
+            json={"default_preview_table_id": str(different_target_ob_table_id)},
         )
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert (
             response.json()["detail"]
-            == "Inconsistent target_id between use case and observation table"
-        )
-
-        new_entity_id = ObjectId()
-        entity_payload = self.load_payload("tests/fixtures/request_payloads/entity.json")
-        entity_payload["_id"] = str(new_entity_id)
-        entity_payload["name"] = "new_entity_name"
-        entity_payload["serving_name"] = "new_entity_serving_name"
-        response = test_api_client.post("/entity", json=entity_payload)
-        assert response.status_code == HTTPStatus.CREATED, response.json()
-
-        different_context_ob_table_id = ObjectId()
-        context_payload = self.load_payload("tests/fixtures/request_payloads/context.json")
-        context_payload["_id"] = str(different_context_ob_table_id)
-        context_payload["primary_entity_ids"] = [str(new_entity_id)]
-        context_payload["name"] = "new_context_name"
-        response = test_api_client.post("/context", json=context_payload)
-        assert response.status_code == HTTPStatus.CREATED, response.json()
-
-        await create_observation_table(
-            different_context_ob_table_id,
-            same_context=False,
-            new_context_id=different_context_ob_table_id,
-        )
-        response = test_api_client.patch(
-            f"{self.base_route}/{use_case_id}",
-            json={"new_observation_table_id": str(different_context_ob_table_id)},
-        )
-        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
-        assert (
-            response.json()["detail"]
-            == "Inconsistent entities between use case and observation table"
+            == f"Cannot add UseCase {use_case_id} as its target_id is different from the existing target_id."
         )
 
     @pytest.mark.asyncio
@@ -349,12 +257,13 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         use_case_id = create_response_dict["_id"]
 
         new_ob_table_id = ObjectId()
-        await create_observation_table(new_ob_table_id)
-        response = test_api_client.patch(
-            f"{self.base_route}/{use_case_id}",
-            json={"new_observation_table_id": str(new_ob_table_id)},
+        await create_observation_table(
+            new_ob_table_id,
+            use_case_id=use_case_id,
+            context_id=self.payload["context_id"],
+            target_input=True,
+            target_id=self.payload["target_id"],
         )
-        assert response.status_code == HTTPStatus.OK
 
         feature_table_payload = BaseCatalogApiTestSuite.load_payload(
             "tests/fixtures/request_payloads/historical_feature_table.json"
@@ -396,37 +305,21 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         use_case_id = create_response_dict["_id"]
 
         new_ob_table_id = ObjectId()
-        await create_observation_table(new_ob_table_id)
-        response = test_api_client.patch(
-            f"{self.base_route}/{use_case_id}",
-            json={"new_observation_table_id": str(new_ob_table_id)},
+        await create_observation_table(
+            new_ob_table_id,
+            use_case_id=use_case_id,
+            context_id=self.payload["context_id"],
+            target_input=True,
+            target_id=self.payload["target_id"],
         )
-        assert response.status_code == HTTPStatus.OK
 
         # delete the observation table that is associated with the use case
         response = test_api_client.delete(f"/observation_table/{str(new_ob_table_id)}")
-        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
         assert (
             f"Cannot delete Observation Table {str(new_ob_table_id)} because it is referenced"
             in response.json()["detail"]
         )
-
-    async def test_delete_use_case(self, test_api_client_persistent, create_success_response):
-        """Test delete observation_table (fail) that is already associated with a use case"""
-        test_api_client, _ = test_api_client_persistent
-        create_response_dict = create_success_response.json()
-        use_case_id = create_response_dict["_id"]
-
-        response = test_api_client.get(f"{self.base_route}/{use_case_id}")
-        assert response.status_code == HTTPStatus.OK
-        assert response.json()["_id"] == use_case_id
-
-        # delete use case
-        response = test_api_client.delete(f"{self.base_route}/{use_case_id}")
-        assert response.status_code == HTTPStatus.OK
-
-        response = test_api_client.get(f"{self.base_route}/{use_case_id}")
-        assert response.status_code == HTTPStatus.NOT_FOUND
 
     @pytest.mark.asyncio
     async def test_delete_use_case_422__use_case_used_in_observation_table(
@@ -439,8 +332,12 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
 
         # create an observation table
         new_ob_table_id = ObjectId()
-        await create_observation_table(new_ob_table_id)
-
+        await create_observation_table(
+            new_ob_table_id,
+            context_id=self.payload["context_id"],
+            target_input=True,
+            target_id=self.payload["target_id"],
+        )
         # add use case to the observation table
         response = test_api_client.patch(
             f"/observation_table/{new_ob_table_id}", json={"use_case_id_to_add": use_case_id}

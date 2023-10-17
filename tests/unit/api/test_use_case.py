@@ -1,7 +1,7 @@
 """
 Unit test for UseCase class
 """
-from featurebyte import UseCase
+from featurebyte import ObservationTable, UseCase
 
 
 def test_create_use_case(catalog, float_target, context):
@@ -126,3 +126,33 @@ def test_info(use_case, target_table, cust_id_entity):
             "catalog_name": "catalog",
         }
     ]
+
+
+def test_observation_table_with_multiple_use_cases(use_case, target_table, float_target, context):
+    """
+    Test UseCase.add_observation_table method
+    """
+
+    use_case.add_observation_table(target_table.name)
+    retrieved_use_case = UseCase.get_by_id(use_case.id)
+    obs_table_df = retrieved_use_case.list_observation_tables()
+    assert len(obs_table_df) == 1
+    assert obs_table_df.iloc[0]["id"] == str(target_table.id)
+    assert obs_table_df.iloc[0]["name"] == "my_target_table"
+
+    use_case_2 = UseCase.create(
+        name="test_use_case_2",
+        target_name=float_target.name,
+        context_name=context.name,
+        description="test_use_case_2 description",
+    )
+    use_case_2.add_observation_table(target_table.name)
+    retrieved_use_case_2 = UseCase.get_by_id(use_case_2.id)
+    obs_table_df_2 = retrieved_use_case_2.list_observation_tables()
+    assert len(obs_table_df_2) == 1
+    assert obs_table_df_2.iloc[0]["id"] == str(target_table.id)
+    assert obs_table_df_2.iloc[0]["name"] == "my_target_table"
+
+    retrieved_obs_table = ObservationTable.get_by_id(target_table.id)
+    assert len(retrieved_obs_table.use_case_ids) == 2
+    assert set(retrieved_obs_table.use_case_ids) == {retrieved_use_case.id, retrieved_use_case_2.id}

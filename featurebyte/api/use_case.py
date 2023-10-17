@@ -149,8 +149,8 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
         >>> use_case.add_observation_table(observation_table_name)  # doctest: +SKIP
         """
         observation_table = ObservationTable.get(observation_table_name)
-        self.update(
-            update_payload={"new_observation_table_id": observation_table.id},
+        observation_table.update(
+            update_payload={"use_case_id_to_add": self.id, "use_case_ids": None},
             allow_update_local=False,
         )
 
