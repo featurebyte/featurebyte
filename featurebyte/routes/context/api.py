@@ -21,7 +21,7 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
 )
 from featurebyte.routes.context.controller import ContextController
-from featurebyte.schema.common.base import DescriptionUpdate
+from featurebyte.schema.common.base import DeleteResponse, DescriptionUpdate
 from featurebyte.schema.context import ContextCreate, ContextList, ContextUpdate
 from featurebyte.schema.info import ContextInfo
 from featurebyte.schema.observation_table import ObservationTableList
@@ -67,12 +67,6 @@ class ContextRouter(BaseApiRouter[ContextModel, ContextList, ContextCreate, Cont
             response_model=ContextInfo,
         )
 
-        self.remove_routes(
-            {
-                "/context/{context_id}": ["DELETE"],
-            }
-        )
-
     async def get_object(self, request: Request, context_id: PydanticObjectId) -> ContextModel:
         return await super().get_object(request, context_id)
 
@@ -106,6 +100,14 @@ class ContextRouter(BaseApiRouter[ContextModel, ContextList, ContextCreate, Cont
         controller = self.get_controller_for_request(request)
         result: ContextModel = await controller.create_context(data=data)
         return result
+
+    async def delete_object(self, request: Request, context_id: PydanticObjectId) -> DeleteResponse:
+        """
+        Delete Context
+        """
+        controller = self.get_controller_for_request(request)
+        await controller.delete_context(context_id=context_id)
+        return DeleteResponse()
 
     async def update_context(
         self, request: Request, context_id: PydanticObjectId, data: ContextUpdate

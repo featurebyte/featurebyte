@@ -5,13 +5,14 @@ from typing import Any, Dict
 
 from bson import ObjectId
 
-from featurebyte.exception import DocumentCreationError
+from featurebyte.exception import DocumentCreationError, DocumentDeletionError
 from featurebyte.models.use_case import UseCaseModel
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.info import EntityBriefInfo, EntityBriefInfoList, UseCaseInfo
 from featurebyte.schema.use_case import UseCaseCreate, UseCaseList, UseCaseUpdate
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.context import ContextService
+from featurebyte.service.deployment import DeploymentService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 from featurebyte.service.observation_table import ObservationTableService
@@ -21,7 +22,9 @@ from featurebyte.service.use_case import UseCaseService
 from featurebyte.service.user_service import UserService
 
 
-class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, UseCaseList]):
+class UseCaseController(
+    BaseDocumentController[UseCaseModel, UseCaseService, UseCaseList]
+):  # pylint: disable=too-many-instance-attributes
     """
     UseCase controller
     """
@@ -29,12 +32,13 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
     paginated_document_class = UseCaseList
     document_update_schema_class = UseCaseUpdate
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         use_case_service: UseCaseService,
         user_service: UserService,
         target_service: TargetService,
         context_service: ContextService,
+        deployment_service: DeploymentService,
         entity_service: EntityService,
         observation_table_service: ObservationTableService,
         historical_feature_table_service: HistoricalFeatureTableService,
@@ -45,6 +49,7 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
         self.user_service = user_service
         self.target_service = target_service
         self.context_service = context_service
+        self.deployment_service = deployment_service
         self.entity_service = entity_service
         self.observation_table_service = observation_table_service
         self.historical_feature_table_service = historical_feature_table_service
@@ -119,7 +124,28 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
         ----------
         document_id: ObjectId
             UseCase id to be deleted
+
+        Raises
+        ------
+        DocumentDeletionError
+            if the use case is associated with any asset
         """
+        # check whether use case is associated with any observation table
+        async for table_doc in self.observation_table_service.list_documents_as_dict_iterator(
+            query_filter={"use_case_ids": document_id}
+        ):
+            raise DocumentDeletionError(
+                "UseCase is associated with observation table: " + table_doc["name"]
+            )
+
+        # check whether use case is associated with any deployment
+        async for deployment_doc in self.deployment_service.list_documents_as_dict_iterator(
+            query_filter={"use_case_id": document_id}
+        ):
+            raise DocumentDeletionError(
+                "UseCase is associated with deployment: " + deployment_doc["name"]
+            )
+
         await self.service.delete_document(document_id=document_id)
 
     async def get_info(self, use_case_id: ObjectId) -> UseCaseInfo:
