@@ -150,7 +150,7 @@ async def test_observation_table_upload(
     _ = catalog, customer_entity
     # Create upload request
     upload_request = ObservationTableUpload(
-        name="uploaded_observation_table",
+        name="uploaded_observation_table.csv",
         feature_store_id=feature_store.id,
     )
     # Read CSV file
@@ -172,7 +172,7 @@ async def test_observation_table_upload(
     observation_table = ObservationTable.get_by_id(observation_table_id)
 
     # Assert response
-    assert observation_table.name == "uploaded_observation_table"
+    assert observation_table.name == upload_request.name
     assert observation_table.request_input == UploadedFileInput(type=RequestInputType.UPLOADED_FILE)
     expected_columns = {SpecialColumnName.POINT_IN_TIME, "cust_id"}
     actual_columns = {column.name for column in observation_table.columns_info}

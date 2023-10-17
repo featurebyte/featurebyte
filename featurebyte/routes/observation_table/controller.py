@@ -5,6 +5,9 @@ from __future__ import annotations
 
 from typing import Optional
 
+import os.path
+
+import pandas as pd
 from bson import ObjectId
 from fastapi import UploadFile
 
@@ -98,7 +101,16 @@ class ObservationTableController(
         -------
         Task
         """
-        observation_set_dataframe = dataframe_from_arrow_stream(observation_set_file.file)
+        # Check that filename is a .csv or .parquet file
+        uploaded_filename_extension = os.path.splitext(data.name)[-1]
+
+        if uploaded_filename_extension == ".csv":
+            observation_set_dataframe = dataframe_from_arrow_stream(observation_set_file.file)
+        elif uploaded_filename_extension == ".parquet":
+            observation_set_dataframe = pd.read_parquet(observation_set_file.file)
+        else:
+            raise ValueError("Uploaded file must be a .csv or .parquet file.")
+
         payload = await self.service.get_observation_table_upload_task_payload(
             data=data, observation_set_dataframe=observation_set_dataframe
         )

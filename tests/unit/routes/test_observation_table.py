@@ -1,6 +1,9 @@
 """
 Tests for ObservationTable routes
 """
+from typing import Any
+
+import tempfile
 from http import HTTPStatus
 
 import pandas as pd
@@ -248,25 +251,10 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
             == f"Cannot add/remove UseCase as the ObservationTable {observation_table_id} is not associated with any Context."
         )
 
-    def test_upload_observation_csv(self, test_api_client_persistent, snowflake_feature_store_id):
-        """
-        Test put CSV route
-        """
-        test_api_client, _ = test_api_client_persistent
-
-        # Prepare upload request
-        upload_request = ObservationTableUpload(
-            name="uploaded_observation_table",
-            feature_store_id=snowflake_feature_store_id,
-            purpose="other",
-        )
-        df = pd.DataFrame(
-            {
-                "POINT_IN_TIME": ["2023-01-15 10:00:00"],
-                "CUST_ID": ["C1"],
-            }
-        )
-        files = {"observation_set": dataframe_to_arrow_bytes(df)}
+    def _test_uploaded_file(
+        self, uploaded_file: Any, upload_request: ObservationTableUpload, test_api_client: Any
+    ):
+        files = {"observation_set": uploaded_file}
         data = {"payload": upload_request.json()}
 
         # Call upload route
@@ -281,9 +269,54 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         assert response.status_code == HTTPStatus.OK, response_dict
 
         # Assert response
-        assert response_dict["name"] == "uploaded_observation_table"
+        assert response_dict["name"] == upload_request.name
         assert response_dict["request_input"] == {"type": "uploaded_file"}
         assert response_dict["purpose"] == "other"
         expected_columns = {"POINT_IN_TIME", "cust_id"}
         actual_columns = {column["name"] for column in response_dict["columns_info"]}
         assert expected_columns == actual_columns
+
+    @pytest.fixture(name="sample_upload_dataframe")
+    def sample_dataframe_fixture(self):
+        return pd.DataFrame(
+            {
+                "POINT_IN_TIME": ["2023-01-15 10:00:00"],
+                "CUST_ID": ["C1"],
+            }
+        )
+
+    def test_upload_observation_csv(
+        self, test_api_client_persistent, snowflake_feature_store_id, sample_upload_dataframe
+    ):
+        """
+        Test put CSV route
+        """
+        test_api_client, _ = test_api_client_persistent
+
+        # Prepare upload request
+        upload_request = ObservationTableUpload(
+            name="uploaded_observation_table.csv",
+            feature_store_id=snowflake_feature_store_id,
+            purpose="other",
+        )
+        self._test_uploaded_file(
+            dataframe_to_arrow_bytes(sample_upload_dataframe), upload_request, test_api_client
+        )
+
+    def test_upload_observation_parquet(
+        self, test_api_client_persistent, snowflake_feature_store_id, sample_upload_dataframe
+    ):
+        """
+        Test put route for parquet files
+        """
+        test_api_client, _ = test_api_client_persistent
+
+        # Prepare upload request
+        upload_request = ObservationTableUpload(
+            name="uploaded_observation_table.parquet",
+            feature_store_id=snowflake_feature_store_id,
+            purpose="other",
+        )
+        with tempfile.NamedTemporaryFile() as file_obj:
+            sample_upload_dataframe.to_parquet(file_obj.name)
+            self._test_uploaded_file(file_obj, upload_request, test_api_client)
