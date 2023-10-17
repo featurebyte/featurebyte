@@ -3,9 +3,7 @@ Lazy app container functions the same as the app_container, but only initializes
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Iterator, List, Optional, Type, Union
-
-from contextlib import contextmanager
+from typing import Any, Dict, List, Optional, Type, Union
 
 from bson import ObjectId
 from celery import Celery
@@ -162,7 +160,6 @@ class LazyAppContainer:
         instance_map: Optional[Dict[str, Any]] = None,
     ):
         self.app_container_config = app_container_config
-        self._enable_block_modification_check = True
 
         # Used to cache instances if they've already been built.
         # Pre-load with some default deps if they're not provided.
@@ -179,21 +176,6 @@ class LazyAppContainer:
             if instance_map is None
             else instance_map
         )
-
-    @contextmanager
-    def disable_block_modification_check(self) -> Iterator[LazyAppContainer]:
-        """
-        Disable block modification check.
-
-        Yields
-        ------
-        LazyAppContainer
-        """
-        try:
-            self._enable_block_modification_check = False
-            yield self
-        finally:
-            self._enable_block_modification_check = True
 
     def _get_key(self, key: str) -> Any:
         """
