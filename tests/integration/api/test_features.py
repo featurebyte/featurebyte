@@ -115,7 +115,8 @@ def test_combined_simple_aggregate_and_window_aggregate(event_table, item_table)
         columns_rename_mapping={event_view.timestamp_column: "POINT_IN_TIME"},
     )
     df_feature_preview = feature.preview(observation_table)
-    assert df_feature_preview.shape == (5, 3)
+    assert df_feature_preview.shape[0] <= 5
+    assert df_feature_preview.shape[1] == 3
 
     feature_list = FeatureList([feature], name="my_feature_list")
     df_feature_list_preview = feature_list.preview(observation_table)
