@@ -185,19 +185,24 @@ def test_get_or_create_scd_table__create(snowflake_database_table_scd_table):
 
 
 @pytest.mark.usefixtures("patched_observation_table_service")
-def test_create_observation_table(snowflake_database_table, snowflake_execute_query):
+def test_create_observation_table(
+    snowflake_database_table, snowflake_execute_query, catalog, cust_id_entity
+):
     """
     Test creating ObservationTable from SourceTable
     """
+    _ = catalog
     observation_table = snowflake_database_table.create_observation_table(
         "my_observation_table",
         columns=["event_timestamp", "cust_id"],
         columns_rename_mapping={"event_timestamp": "POINT_IN_TIME"},
+        primary_entities=[cust_id_entity.name],
     )
 
     # Check return type
     assert isinstance(observation_table, ObservationTable)
     assert observation_table.name == "my_observation_table"
+    assert observation_table.primary_entity_ids == [cust_id_entity.id]
 
     # Check that the correct query was executed
     query = snowflake_execute_query.call_args[0][0]
