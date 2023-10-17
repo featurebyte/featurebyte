@@ -278,6 +278,9 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
 
     @pytest.fixture(name="sample_upload_dataframe")
     def sample_dataframe_fixture(self):
+        """
+        Sample dataframe fixture
+        """
         return pd.DataFrame(
             {
                 "POINT_IN_TIME": ["2023-01-15 10:00:00"],
