@@ -105,7 +105,7 @@ class TaskExecutor:
         self,
         payload: dict[str, Any],
         task_id: UUID,
-        app_container: Optional[LazyAppContainer] = None,
+        app_container: LazyAppContainer,
     ) -> None:
         self.task_id = task_id
         command = self.command_type(payload["command"])
