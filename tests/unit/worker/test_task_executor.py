@@ -3,14 +3,13 @@ Tests for task executor
 """
 import datetime
 from multiprocessing import Array, Process, Value
-from unittest.mock import patch
 from uuid import uuid4
 
 import greenlet
 import pytest
 from bson.objectid import ObjectId
 
-from featurebyte.models.base import DEFAULT_CATALOG_ID
+from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.schema.worker.task.base import TaskType
 from featurebyte.worker.registry import TASK_REGISTRY_MAP
 from featurebyte.worker.task_executor import TaskExecutor as WorkerTaskExecutor
@@ -57,7 +56,7 @@ class TaskExecutor(WorkerTaskExecutor):
 
 
 @pytest.mark.asyncio
-async def test_task_executor(random_task_class, persistent):
+async def test_task_executor(random_task_class, persistent, app_container):
     """Test task get loaded properly when extending BaseTask & BaskTaskPayload"""
     _ = random_task_class
 
@@ -74,18 +73,22 @@ async def test_task_executor(random_task_class, persistent):
     # run executor
     user_id = ObjectId()
     document_id = ObjectId()
-    with patch("featurebyte.worker.task_executor.MongoDBImpl") as mock_get_persistent:
-        mock_get_persistent.return_value = persistent
-        await TaskExecutor(
-            payload={
-                "command": "random_command",
-                "user_id": user_id,
-                "catalog_id": DEFAULT_CATALOG_ID,
-                "output_document_id": document_id,
-            },
-            task_id=task_id,
-            progress=None,
-        ).execute()
+    app_container.override_instances_for_test(
+        {
+            "persistent": persistent,
+            "user": User(id=user_id),
+        }
+    )
+    await TaskExecutor(
+        payload={
+            "command": "random_command",
+            "user_id": user_id,
+            "catalog_id": DEFAULT_CATALOG_ID,
+            "output_document_id": document_id,
+        },
+        task_id=task_id,
+        app_container=app_container,
+    ).execute()
 
     # check store
     document = await persistent.find_one("random_collection", {"user_id": user_id}, user_id=user_id)

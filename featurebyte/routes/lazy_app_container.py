@@ -240,7 +240,18 @@ class LazyAppContainer:
         instance: Any
             instance to override with
         """
-        self.instance_map[key] = instance
+        self.override_instances_for_test({key: instance})
+
+    def override_instances_for_test(self, instances_to_update: Dict[str, Any]) -> None:
+        """
+        Override multiple instances for testing purposes.
+
+        Parameters
+        ----------
+        instances_to_update: Dict[str, Any]
+            mapping of key to instance
+        """
+        self.instance_map.update(instances_to_update)
 
     def invalidate_dep_for_test(self, key: Union[str, Type[Any]]) -> None:
         """

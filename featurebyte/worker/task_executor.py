@@ -101,32 +101,17 @@ class TaskExecutor:
 
     command_type = WorkerCommand
 
-    def __init__(self, payload: dict[str, Any], task_id: UUID, progress: Any = None) -> None:
+    def __init__(
+        self,
+        payload: dict[str, Any],
+        task_id: UUID,
+        app_container: Optional[LazyAppContainer] = None,
+    ) -> None:
         self.task_id = task_id
         command = self.command_type(payload["command"])
-        user = User(id=payload.get("user_id"))
-        task_class = TASK_REGISTRY_MAP[command]
-        self.persistent = MongoDBImpl()
-        self.user = user
-        instance_map_to_use = {
-            # Default instances
-            "celery": get_celery(),
-            "redis": get_redis(),
-            "persistent": self.persistent,
-            "storage": get_storage(),
-            "temp_storage": get_temp_storage(),
-            # Task specific parameters
-            "user": user,
-            "catalog_id": ObjectId(payload.get("catalog_id")),
-            "task_id": task_id,
-            "payload": payload,
-            "progress": progress,
-        }
-        app_container = LazyAppContainer(
-            app_container_config=app_container_config,
-            instance_map=instance_map_to_use,
-        )
-        self.task = app_container.get(task_class)
+        self.persistent = app_container.get("persistent")
+        self.user = User(id=payload.get("user_id"))
+        self.task = app_container.get(TASK_REGISTRY_MAP[command])
         self.task_progress_updater = app_container.get(TaskProgressUpdater)
         self._setup_worker_config()
         self.payload_dict = payload
@@ -200,6 +185,36 @@ class BaseCeleryTask(Task):
     progress_class = Progress
     executor_class = TaskExecutor
 
+    @staticmethod
+    def get_app_container(
+        task_id: UUID, payload: dict[str, Any], progress: Any
+    ) -> LazyAppContainer:
+        """
+        Get app container
+
+        Returns
+        -------
+        LazyAppContainer
+        """
+        instance_map_to_use = {
+            # Default instances
+            "celery": get_celery(),
+            "redis": get_redis(),
+            "persistent": MongoDBImpl(),
+            "storage": get_storage(),
+            "temp_storage": get_temp_storage(),
+            # Task specific parameters
+            "user": User(id=payload.get("user_id")),
+            "catalog_id": ObjectId(payload.get("catalog_id")),
+            "task_id": task_id,
+            "payload": payload,
+            "progress": progress,
+        }
+        return LazyAppContainer(
+            app_container_config=app_container_config,
+            instance_map=instance_map_to_use,
+        )
+
     async def execute_task(self: Any, request_id: UUID, **payload: Any) -> Any:
         """
         Execute Celery task
@@ -216,7 +231,10 @@ class BaseCeleryTask(Task):
         Any
         """
         progress = self.progress_class(user_id=payload.get("user_id"), task_id=request_id)
-        executor = self.executor_class(payload=payload, task_id=request_id, progress=progress)
+        app_container = self.get_app_container(request_id, payload, progress)
+        executor = self.executor_class(
+            payload=payload, task_id=request_id, app_container=app_container
+        )
         try:
             return_val = await executor.execute()
             return return_val

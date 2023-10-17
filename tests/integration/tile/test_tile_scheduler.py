@@ -2,6 +2,7 @@
 This module contains integration tests for TileManager scheduler
 """
 from unittest import mock
+from unittest.mock import Mock
 from uuid import uuid4
 
 import pytest
@@ -29,7 +30,7 @@ async def mock_scheduler_fixture(feature, tile_spec, tile_scheduler_service):
 @pytest.mark.parametrize("source_type", ["spark", "snowflake", "databricks"], indirect=True)
 @pytest.mark.asyncio
 async def test_generate_tiles_with_scheduler__verify_scheduling_and_execution(
-    feature_store, session, tile_manager_service, scheduler_fixture
+    feature_store, session, tile_manager_service, scheduler_fixture, app_container
 ):
     """
     Test generate_tiles with scheduler
@@ -44,7 +45,16 @@ async def test_generate_tiles_with_scheduler__verify_scheduling_and_execution(
     assert job_details.time_modulo_frequency_second == tile_spec.time_modulo_frequency_second
     assert job_details.interval == Interval(every=tile_spec.frequency_minute * 60, period="seconds")
 
-    task_executor = TaskExecutor(payload=job_details.kwargs, task_id=uuid4())
+    task_id = uuid4()
+    app_container.override_instances_for_test(
+        {
+            "task_id": task_id,
+            "progress": Mock(),
+        }
+    )
+    task_executor = TaskExecutor(
+        payload=job_details.kwargs, task_id=task_id, app_container=app_container
+    )
     with mock.patch(
         "featurebyte.service.feature_store.FeatureStoreService.get_document"
     ) as mock_feature_store_service:
