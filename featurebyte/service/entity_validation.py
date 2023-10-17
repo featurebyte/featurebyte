@@ -121,7 +121,7 @@ class EntityValidationService:
 
         Returns
         -------
-        Optional[List[ParentServingPreparation]]
+        Optional[ParentServingPreparation]
 
         Raises
         ------

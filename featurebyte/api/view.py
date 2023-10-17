@@ -1661,6 +1661,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         columns_rename_mapping: Optional[dict[str, str]] = None,
         context_name: Optional[str] = None,
         skip_entity_validation_checks: Optional[bool] = False,
+        primary_entities: Optional[List[str]] = None,
     ) -> ObservationTable:
         """
         Creates an ObservationTable from the View.
@@ -1687,6 +1688,8 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             Context name for the observation table.
         skip_entity_validation_checks: Optional[bool]
             Skip entity validation checks when creating the observation table.
+        primary_entities: Optional[List[str]]
+            List of primary entities for the observation table.
 
         Returns
         -------
@@ -1707,6 +1710,10 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         from featurebyte.api.context import Context
 
         context_id = Context.get(context_name).id if context_name else None
+        primary_entity_ids = []
+        if primary_entities is not None:
+            for entity_name in primary_entities:
+                primary_entity_ids.append(Entity.get(entity_name).id)
 
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
 
@@ -1722,6 +1729,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             sample_rows=sample_rows,
             context_id=context_id,
             skip_entity_validation_checks=skip_entity_validation_checks,
+            primary_entity_ids=primary_entity_ids,
         )
         observation_table_doc = ObservationTable.post_async_task(
             route="/observation_table", payload=payload.json_dict()

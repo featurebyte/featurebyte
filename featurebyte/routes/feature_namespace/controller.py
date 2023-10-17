@@ -8,11 +8,8 @@ from typing import Any, Literal, cast
 from bson.objectid import ObjectId
 
 from featurebyte.routes.catalog.catalog_name_injector import CatalogNameInjector
-from featurebyte.routes.common.base import (
-    BaseDocumentController,
-    DerivePrimaryEntityHelper,
-    PaginatedDocument,
-)
+from featurebyte.routes.common.base import BaseDocumentController, PaginatedDocument
+from featurebyte.routes.common.derive_primary_entity_helper import DerivePrimaryEntityHelper
 from featurebyte.routes.common.feature_or_target_helper import FeatureOrTargetHelper
 from featurebyte.schema.feature_namespace import (
     FeatureNamespaceList,

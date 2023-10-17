@@ -19,7 +19,7 @@ from featurebyte.exception import (
     ObservationTableInvalidContextError,
     UnsupportedPointInTimeColumnTypeError,
 )
-from featurebyte.models.base import FeatureByteBaseDocumentModel
+from featurebyte.models.base import FeatureByteBaseDocumentModel, PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.materialized_table import ColumnSpecWithEntityId
 from featurebyte.models.observation_table import ObservationTableModel
@@ -27,6 +27,7 @@ from featurebyte.persistent import Persistent
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
+from featurebyte.routes.common.primary_entity_validator import PrimaryEntityValidator
 from featurebyte.schema.feature_store import FeatureStoreSample
 from featurebyte.schema.observation_table import (
     ObservationTableCreate,
@@ -130,6 +131,7 @@ class ObservationTableService(
         preview_service: PreviewService,
         temp_storage: Storage,
         block_modification_handler: BlockModificationHandler,
+        primary_entity_validator: PrimaryEntityValidator,
     ):
         super().__init__(
             user,
@@ -143,6 +145,7 @@ class ObservationTableService(
         self.context_service = context_service
         self.preview_service = preview_service
         self.temp_storage = temp_storage
+        self.primary_entity_validator = primary_entity_validator
 
     @property
     def class_name(self) -> str:
@@ -297,6 +300,7 @@ class ObservationTableService(
         feature_store: FeatureStoreModel,
         serving_names_remapping: Optional[Dict[str, str]] = None,
         skip_entity_validation_checks: bool = False,
+        primary_entity_ids: Optional[List[PydanticObjectId]] = None,
     ) -> Dict[str, Any]:
         """
         Validate and get additional metadata for the materialized observation table.
@@ -313,6 +317,8 @@ class ObservationTableService(
             Remapping of serving names
         skip_entity_validation_checks: bool
             Whether to skip entity validation checks
+        primary_entity_ids: Optional[List[PydanticObjectId]]
+            List of primary entity IDs
 
         Returns
         -------
@@ -324,6 +330,12 @@ class ObservationTableService(
             table_details=table_details,
             serving_names_remapping=serving_names_remapping,
         )
+        # Perform validation on primary entity IDs. We always perform this check if the primary entity IDs exist.
+        if primary_entity_ids is not None:
+            await self.primary_entity_validator.validate_entities_are_primary_entities(
+                primary_entity_ids
+            )
+
         # Perform validation on column info
         validate_columns_info(columns_info, skip_entity_validation_checks)
         # Get entity statistics metadata

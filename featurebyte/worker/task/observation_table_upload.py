@@ -72,6 +72,7 @@ class ObservationTableUploadTask(DataWarehouseMixin, BaseTask[ObservationTableUp
                     db_session,
                     location.table_details,
                     feature_store=feature_store,
+                    primary_entity_ids=payload.primary_entity_ids,
                 )
             )
 
@@ -84,6 +85,7 @@ class ObservationTableUploadTask(DataWarehouseMixin, BaseTask[ObservationTableUp
                 location=location,
                 request_input=UploadedFileInput(type=RequestInputType.UPLOADED_FILE),
                 purpose=payload.purpose,
+                primary_entity_ids=payload.primary_entity_ids,
                 **additional_metadata,
             )
             await self.observation_table_service.create_document(observation_table)

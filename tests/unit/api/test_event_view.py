@@ -793,21 +793,24 @@ def test_sdk_code_generation(saved_event_table, update_fixtures):
 
 @pytest.mark.usefixtures("patched_observation_table_service")
 def test_create_observation_table_from_event_view__no_sample(
-    snowflake_event_table, snowflake_execute_query
+    snowflake_event_table, snowflake_execute_query, catalog, cust_id_entity
 ):
     """
     Test creating ObservationTable from an EventView
     """
+    _ = catalog
     view = snowflake_event_table.get_view()
 
     observation_table = view.create_observation_table(
         "my_observation_table_from_event_view",
         columns=["event_timestamp", "cust_id"],
         columns_rename_mapping={"event_timestamp": "POINT_IN_TIME"},
+        primary_entities=[cust_id_entity.name],
     )
 
     assert isinstance(observation_table, ObservationTable)
     assert observation_table.name == "my_observation_table_from_event_view"
+    assert observation_table.primary_entity_ids == [cust_id_entity.id]
 
     # Check that the correct query was executed
     query = snowflake_execute_query.call_args[0][0]

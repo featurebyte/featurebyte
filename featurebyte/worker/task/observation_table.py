@@ -61,6 +61,7 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
                     location.table_details,
                     feature_store=feature_store,
                     skip_entity_validation_checks=payload.skip_entity_validation_checks,
+                    primary_entity_ids=payload.primary_entity_ids,
                 )
             )
 
@@ -73,6 +74,7 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
                 context_id=payload.context_id,
                 request_input=payload.request_input,
                 purpose=payload.purpose,
+                primary_entity_ids=payload.primary_entity_ids,
                 **additional_metadata,
             )
             await self.observation_table_service.create_document(observation_table)

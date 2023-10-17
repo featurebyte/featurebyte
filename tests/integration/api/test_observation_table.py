@@ -152,6 +152,8 @@ async def test_observation_table_upload(
     upload_request = ObservationTableUpload(
         name="uploaded_observation_table",
         feature_store_id=feature_store.id,
+        purpose="other",
+        primary_entity_ids=[customer_entity.id],
     )
     # Read CSV file
     df = pd.read_csv(os.path.join(os.path.dirname(__file__), "fixtures", "observation_table.csv"))
@@ -173,6 +175,8 @@ async def test_observation_table_upload(
 
     # Assert response
     assert observation_table.name == "uploaded_observation_table"
+    assert observation_table.primary_entity_ids == [customer_entity.id]
+    assert observation_table.purpose == "other"
     assert observation_table.request_input == UploadedFileInput(type=RequestInputType.UPLOADED_FILE)
     expected_columns = {SpecialColumnName.POINT_IN_TIME, "cust_id"}
     actual_columns = {column.name for column in observation_table.columns_info}

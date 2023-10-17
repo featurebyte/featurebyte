@@ -8,11 +8,8 @@ from typing import Any, Literal, cast
 from bson.objectid import ObjectId
 
 from featurebyte.models.feature_list import FeatureListNamespaceModel
-from featurebyte.routes.common.base import (
-    BaseDocumentController,
-    DerivePrimaryEntityHelper,
-    PaginatedDocument,
-)
+from featurebyte.routes.common.base import BaseDocumentController, PaginatedDocument
+from featurebyte.routes.common.derive_primary_entity_helper import DerivePrimaryEntityHelper
 from featurebyte.schema.feature_list_namespace import (
     FeatureListNamespaceList,
     FeatureListNamespaceModelResponse,
