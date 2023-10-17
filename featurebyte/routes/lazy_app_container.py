@@ -160,7 +160,6 @@ class LazyAppContainer:
         instance_map: Optional[Dict[str, Any]] = None,
     ):
         self.app_container_config = app_container_config
-        self._enable_block_modification_check = True
 
         # Used to cache instances if they've already been built.
         # Pre-load with some default deps if they're not provided.
