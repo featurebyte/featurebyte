@@ -323,3 +323,22 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         with tempfile.NamedTemporaryFile() as file_obj:
             sample_upload_dataframe.to_parquet(file_obj.name)
             self._test_uploaded_file(file_obj, upload_request, test_api_client)
+
+    def test_upload_observation_errors_with_unknown_file(
+        self, test_api_client_persistent, snowflake_feature_store_id, sample_upload_dataframe
+    ):
+        test_api_client, _ = test_api_client_persistent
+        # Prepare upload request with random file extension
+        upload_request = ObservationTableUpload(
+            name="uploaded_observation_table.random_ext",
+            feature_store_id=snowflake_feature_store_id,
+            purpose="other",
+        )
+        files = {"observation_set": dataframe_to_arrow_bytes(sample_upload_dataframe)}
+        data = {"payload": upload_request.json()}
+
+        # Call upload route
+        response = test_api_client.put(self.base_route, data=data, files=files)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR, response_dict
+        assert "Uploaded file must be a .csv or .parquet file" in response_dict["detail"]

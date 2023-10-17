@@ -100,6 +100,11 @@ class ObservationTableController(
         Returns
         -------
         Task
+
+        Raises
+        ------
+        ValueError
+            if uploaded file is not a .csv or .parquet file
         """
         # Check that filename is a .csv or .parquet file
         uploaded_filename_extension = os.path.splitext(data.name)[-1]
