@@ -274,7 +274,7 @@ class TestContextApi(BaseCatalogApiTestSuite):
         payload["name"] = f"{payload['name']}_1"
 
         with mock.patch(
-            "featurebyte.routes.common.base.DerivePrimaryEntityHelper.derive_primary_entity_ids"
+            "featurebyte.routes.common.derive_primary_entity_helper.DerivePrimaryEntityHelper.derive_primary_entity_ids"
         ) as mock_derive:
             mock_derive.return_value = [ObjectId()]
             response = test_api_client.post(f"{self.base_route}", json=payload)
