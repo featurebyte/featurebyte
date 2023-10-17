@@ -113,7 +113,7 @@ class TaskExecutor:
         self.user = User(id=payload.get("user_id"))
         self.task = app_container.get(TASK_REGISTRY_MAP[command])
         self.task_progress_updater = app_container.get(TaskProgressUpdater)
-        self._setup_worker_config()
+        self.setup_worker_config()
         self.payload_dict = payload
 
     async def _update_task_start_time_and_description(self, payload: Any) -> None:
@@ -138,7 +138,8 @@ class TaskExecutor:
             user_id=self.user.id,
         )
 
-    def _setup_worker_config(self) -> None:
+    @staticmethod
+    def setup_worker_config() -> None:
         """
         Setup featurebyte config file for the worker
         """
