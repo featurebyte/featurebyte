@@ -103,17 +103,12 @@ class ContextController(
         ContextModel
             Context object with updated attribute(s)
         """
-        if data.default_preview_table_id:
-            await self.observation_table_service.update_observation_table(
-                observation_table_id=data.default_preview_table_id,
-                data=ObservationTableUpdate(context_id=context_id),
-            )
-
-        if data.default_eda_table_id:
-            await self.observation_table_service.update_observation_table(
-                observation_table_id=data.default_eda_table_id,
-                data=ObservationTableUpdate(context_id=context_id),
-            )
+        for obs_id in [data.default_eda_table_id, data.default_preview_table_id]:
+            if obs_id:
+                await self.observation_table_service.update_observation_table(
+                    observation_table_id=obs_id,
+                    data=ObservationTableUpdate(context_id=context_id),
+                )
 
         await self.service.update_document(
             document_id=context_id, data=ContextUpdate(**data.dict()), return_document=False

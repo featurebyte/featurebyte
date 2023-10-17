@@ -75,13 +75,15 @@ class ObservationTableDeleteValidator:
                 query_filter={"observation_table_id": document.id}
             )
         ]
+
         # check if the document is associated with a use case
         use_case_ids = [
             str(doc["_id"])
             async for doc in self.use_case_service.list_documents_as_dict_iterator(
-                query_filter={"context_id": document.context_id}
+                query_filter={"_id": {"$in": document.use_case_ids}}
             )
         ]
+
         all_reference_ids = reference_ids + target_reference_ids + use_case_ids
         if all_reference_ids:
             table_names = []

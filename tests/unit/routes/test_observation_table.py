@@ -129,11 +129,26 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         assert response.status_code == HTTPStatus.OK
         assert response.json()["context_id"] == context_id
 
-    def test_update_use_case(self, test_api_client_persistent, create_success_response):
+    @pytest.mark.asyncio
+    async def test_update_use_case(
+        self, test_api_client_persistent, create_success_response, create_observation_table
+    ):
         """Test update context route"""
         test_api_client, _ = test_api_client_persistent
-        doc_id = create_success_response.json()["_id"]
+        _ = create_success_response
 
+        use_case_payload = BaseMaterializedTableTestSuite.load_payload(
+            "tests/fixtures/request_payloads/use_case.json"
+        )
+        new_ob_table_id = ObjectId()
+        await create_observation_table(
+            new_ob_table_id,
+            context_id=use_case_payload["context_id"],
+            target_input=True,
+            target_id=use_case_payload["target_id"],
+        )
+
+        doc_id = str(new_ob_table_id)
         use_case_id = str(ObjectId())
         use_case_payload = BaseMaterializedTableTestSuite.load_payload(
             "tests/fixtures/request_payloads/use_case.json"
@@ -147,7 +162,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         response = test_api_client.patch(
             f"{self.base_route}/{doc_id}", json={"use_case_id_to_add": use_case_id}
         )
-        assert response.status_code == HTTPStatus.OK
+        assert response.status_code == HTTPStatus.OK, response.json()
         response = test_api_client.get(f"{self.base_route}/{doc_id}")
         assert response.status_code == HTTPStatus.OK
         assert use_case_id in response.json()["use_case_ids"]

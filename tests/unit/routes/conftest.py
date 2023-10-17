@@ -4,6 +4,7 @@ Fixture for API unit tests
 # pylint: disable=duplicate-code
 from __future__ import annotations
 
+from functools import partial
 from unittest.mock import Mock, patch
 
 import pytest
@@ -93,3 +94,85 @@ def get_credential_fixture(credentials):
         return credentials.get(feature_store_name)
 
     return get_credential
+
+
+@pytest.fixture(name="location")
+def location_fixture():
+    """
+    location fixture
+    """
+    return {
+        "feature_store_id": ObjectId(),
+        "table_details": {
+            "database_name": "fb_database",
+            "schema_name": "fb_schema",
+            "table_name": "fb_materialized_table",
+        },
+    }
+
+
+@pytest.fixture(name="create_observation_table")
+def create_observation_table_fixture(
+    test_api_client_persistent, location, default_catalog_id, user_id
+):
+    """
+    simulate creating observation table for target input, target_id and context_id
+    """
+
+    _, persistent = test_api_client_persistent
+
+    async def create_observation_table(
+        ob_table_id, use_case_id=None, target_input=True, target_id=None, context_id=None
+    ):
+        ob_table_id = ObjectId(ob_table_id)
+
+        if not target_id:
+            target_id = ObjectId()
+        else:
+            target_id = ObjectId(target_id)
+
+        if not context_id:
+            context_id = ObjectId()
+        else:
+            context_id = ObjectId(context_id)
+
+        request_input = {
+            "target_id": target_id,
+            "observation_table_id": ob_table_id,
+            "type": "dataframe",
+        }
+        if not target_input:
+            request_input = {
+                "columns": None,
+                "columns_rename_mapping": None,
+                "source": location,
+                "type": "source_table",
+            }
+
+        use_case_ids = []
+        if use_case_id:
+            use_case_ids.append(ObjectId(use_case_id))
+
+        await persistent.insert_one(
+            collection_name="observation_table",
+            document={
+                "_id": ob_table_id,
+                "name": "observation_table_from_target_input",
+                "request_input": request_input,
+                "location": location,
+                "columns_info": [
+                    {"name": "a", "dtype": "INT"},
+                    {"name": "b", "dtype": "INT"},
+                    {"name": "c", "dtype": "INT"},
+                ],
+                "num_rows": 1000,
+                "most_recent_point_in_time": "2023-01-15T10:00:00",
+                "context_id": context_id,
+                "use_case_ids": use_case_ids,
+                "catalog_id": ObjectId(default_catalog_id),
+                "user_id": user_id,
+            },
+            user_id=user_id,
+        )
+
+    return partial(create_observation_table)

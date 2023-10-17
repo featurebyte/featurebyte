@@ -80,7 +80,7 @@ async def list_use_case_observation_tables(
     observation_table_controller = request.state.app_container.observation_table_controller
     observation_table_list: ObservationTableList = await observation_table_controller.list(
         query_filter={
-            "context_id": use_case.context_id,
+            "use_case_ids": use_case.id,
             "request_input.target_id": use_case.target_id,
         },
         page=page,
