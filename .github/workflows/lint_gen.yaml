@@ -21,7 +21,7 @@ jobs:
         python-version:
         - 3.8.12
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: arduino/setup-task@v1
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -54,7 +54,7 @@ jobs:
     needs:
     - lint
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
     - if: ${{ github.event_name == 'pull_request' }}
