@@ -327,6 +327,9 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
     def test_upload_observation_errors_with_unknown_file(
         self, test_api_client_persistent, snowflake_feature_store_id, sample_upload_dataframe
     ):
+        """
+        Test upload route with unknown file
+        """
         test_api_client, _ = test_api_client_persistent
         # Prepare upload request with random file extension
         upload_request = ObservationTableUpload(
