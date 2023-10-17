@@ -1027,8 +1027,9 @@ class SourceTable(AbstractTableData):
 
         context_id = Context.get(context_name).id if context_name else None
         primary_entity_ids = []
-        for entity_name in primary_entities:
-            primary_entity_ids.append(Entity.get(entity_name).id)
+        if primary_entities is not None:
+            for entity_name in primary_entities:
+                primary_entity_ids.append(Entity.get(entity_name).id)
 
         payload = ObservationTableCreate(
             name=name,

@@ -7,7 +7,7 @@ from typing import Any, Optional, Sequence
 
 from bson import ObjectId
 
-from featurebyte.models import EntityModel
+from featurebyte.models.entity import EntityModel
 from featurebyte.models.relationship_analysis import derive_primary_entity
 from featurebyte.service.entity import EntityService
 
