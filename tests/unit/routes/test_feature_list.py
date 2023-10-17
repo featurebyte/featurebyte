@@ -1,6 +1,7 @@
 """
 Tests for FeatureList route
 """
+# pylint: disable=too-many-lines
 from collections import defaultdict
 from http import HTTPStatus
 from unittest.mock import AsyncMock, Mock, call, patch
@@ -91,11 +92,13 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         yield mock_get_session
 
     @pytest.fixture(autouse=True)
-    def always_patched_observation_table_service(self, patched_observation_table_service):
+    def always_patched_observation_table_service(
+        self, patched_observation_table_service_for_preview
+    ):
         """
         Patch ObservationTableService so validate_materialized_table_and_get_metadata always passes
         """
-        _ = patched_observation_table_service
+        _ = patched_observation_table_service_for_preview
 
     def setup_creation_route(self, api_client):
         """
@@ -684,13 +687,11 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
     def test_preview_200(
         self,
         test_api_client_persistent,
-        create_success_response,
         featurelist_preview_payload,
         mock_get_session,
     ):
         """Test feature list preview"""
         test_api_client, _ = test_api_client_persistent
-        featurelist = create_success_response.json()
         expected_df = pd.DataFrame({"a": [0, 1, 2]})
         mock_session = mock_get_session.return_value
         mock_session.execute_query.return_value = expected_df
@@ -703,6 +704,21 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         assert response.status_code == HTTPStatus.OK
         assert_frame_equal(dataframe_from_json(response.json()), expected_df)
 
+    def test_preview_using_feature_list_id_200(
+        self,
+        test_api_client_persistent,
+        create_success_response,
+        featurelist_preview_payload,
+        mock_get_session,
+    ):
+        """Test feature list preview"""
+        test_api_client, _ = test_api_client_persistent
+        featurelist = create_success_response.json()
+        expected_df = pd.DataFrame({"a": [0, 1, 2]})
+        mock_session = mock_get_session.return_value
+        mock_session.execute_query.return_value = expected_df
+        mock_session.generate_session_unique_id = Mock(return_value="1")
+
         # test preview using feature list id
         featurelist_preview_payload.pop("feature_clusters")
         featurelist_preview_payload["feature_list_id"] = featurelist["_id"]
@@ -711,6 +727,19 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         )
         assert response.status_code == HTTPStatus.OK
         assert_frame_equal(dataframe_from_json(response.json()), expected_df)
+
+    def test_preview_using_observation_table_200(
+        self,
+        test_api_client_persistent,
+        featurelist_preview_payload,
+        mock_get_session,
+    ):
+        """Test feature list preview"""
+        test_api_client, _ = test_api_client_persistent
+        expected_df = pd.DataFrame({"a": [0, 1, 2]})
+        mock_session = mock_get_session.return_value
+        mock_session.execute_query.return_value = expected_df
+        mock_session.generate_session_unique_id = Mock(return_value="1")
 
         # test preview using observation table
         payload = self.load_payload("tests/fixtures/request_payloads/observation_table.json")

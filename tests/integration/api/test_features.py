@@ -3,6 +3,7 @@ Tests for more features
 """
 import pandas as pd
 import pytest
+from pandas._testing import assert_frame_equal
 
 from featurebyte import FeatureList
 
@@ -105,6 +106,20 @@ def test_combined_simple_aggregate_and_window_aggregate(event_table, item_table)
         }
     ]
     assert df_preview.to_dict("records") == expected
+
+    # preview using observation table
+    observation_table = item_view.create_observation_table(
+        f"OBSERVATION_TABLE_FROM_ITEM_VIEW_FOR_PREVIEW",
+        sample_rows=5,
+        columns=[event_view.timestamp_column, "order_id"],
+        columns_rename_mapping={event_view.timestamp_column: "POINT_IN_TIME"},
+    )
+    df_feature_preview = feature.preview(observation_table)
+    assert df_feature_preview.shape == (5, 3)
+
+    feature_list = FeatureList([feature], name="my_feature_list")
+    df_feature_list_preview = feature_list.preview(observation_table)
+    assert_frame_equal(df_feature_preview, df_feature_list_preview)
 
 
 def test_relative_frequency_with_filter(event_table, scd_table):

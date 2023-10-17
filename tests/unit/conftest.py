@@ -913,6 +913,31 @@ def patched_observation_table_service_fixture():
         yield
 
 
+@pytest.fixture(name="patched_observation_table_service_for_preview")
+def patched_observation_table_service_for_preview_fixture():
+    """
+    Patch ObservationTableService.validate_materialized_table_and_get_metadata
+    """
+
+    async def mocked_get_additional_metadata(*args, **kwargs):
+        _ = args
+        _ = kwargs
+        return {
+            "columns_info": [
+                {"name": "POINT_IN_TIME", "dtype": "TIMESTAMP"},
+                {"name": "cust_id", "dtype": "INT"},
+            ],
+            "num_rows": 50,
+            "most_recent_point_in_time": "2023-01-15 10:00:00",
+        }
+
+    with patch(
+        "featurebyte.service.observation_table.ObservationTableService.validate_materialized_table_and_get_metadata",
+        Mock(side_effect=mocked_get_additional_metadata),
+    ):
+        yield
+
+
 @pytest.fixture(name="patched_static_source_table_service")
 def patched_static_source_table_service_fixture():
     """

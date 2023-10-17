@@ -3,18 +3,17 @@ FeaturePreviewService class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple, Union
 
 import pandas as pd
 
 from featurebyte.common.utils import dataframe_to_json
-from featurebyte.enum import SpecialColumnName
-from featurebyte.exception import (
-    DocumentNotFoundError,
-    LimitExceededError,
-    MissingPointInTimeColumnError,
-)
+from featurebyte.config import FEATURE_PREVIEW_ROW_LIMIT
+from featurebyte.enum import FeatureOrTargetType, SpecialColumnName
+from featurebyte.exception import LimitExceededError, MissingPointInTimeColumnError
 from featurebyte.logging import get_logger
+from featurebyte.models.feature import FeatureModel
+from featurebyte.models.target import TargetModel
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, sql_to_string
 from featurebyte.query_graph.sql.feature_historical import get_historical_features_expr
 from featurebyte.query_graph.sql.feature_preview import get_feature_or_target_preview_sql
@@ -103,8 +102,10 @@ class FeaturePreviewService(PreviewService):
             observation_table = await self.observation_table_service.get_document(
                 document_id=preview_observation_set.observation_table_id
             )
-            if observation_table.num_rows > 100:
-                raise LimitExceededError("Observation table must have 100 rows or less")
+            if observation_table.num_rows > FEATURE_PREVIEW_ROW_LIMIT:
+                raise LimitExceededError(
+                    f"Observation table must have {FEATURE_PREVIEW_ROW_LIMIT} rows or less"
+                )
 
             feature_store = await self.feature_store_service.get_document(
                 document_id=observation_table.location.feature_store_id
@@ -168,19 +169,19 @@ class FeaturePreviewService(PreviewService):
         dict[str, Any]
             Dataframe converted to json string
         """
-        if feature_or_target_preview.object_id is not None:
-            document: Any
-            try:
-                document = await self.feature_service.get_document(
-                    feature_or_target_preview.object_id
-                )
-            except DocumentNotFoundError:
-                document = await self.target_service.get_document(
-                    feature_or_target_preview.object_id
-                )
+        if feature_or_target_preview.feature_or_target is not None:
+            document: Union[FeatureModel, TargetModel]
+            service: Union[FeatureService, TargetService] = (
+                self.feature_service
+                if feature_or_target_preview.feature_or_target.type == FeatureOrTargetType.FEATURE
+                else self.target_service
+            )
+            document = await service.get_document(feature_or_target_preview.feature_or_target.id)
             graph = document.graph
             node_name = document.node_name
         else:
+            assert feature_or_target_preview.graph
+            assert feature_or_target_preview.node_name
             graph = feature_or_target_preview.graph
             node_name = feature_or_target_preview.node_name
 

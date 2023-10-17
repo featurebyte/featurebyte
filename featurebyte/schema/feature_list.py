@@ -10,6 +10,7 @@ from pydantic import Field, StrictStr, root_validator, validator
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import version_validator
+from featurebyte.config import FEATURE_PREVIEW_ROW_LIMIT, ONLINE_FEATURE_REQUEST_ROW_LIMIT
 from featurebyte.enum import ConflictResolution
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, VersionIdentifier
 from featurebyte.models.feature_list import (
@@ -177,7 +178,7 @@ class PreviewObservationSet(FeatureByteBaseModel):
     """
 
     point_in_time_and_serving_name_list: Optional[List[Dict[str, Any]]] = Field(
-        min_items=1, max_items=50
+        min_items=1, max_items=FEATURE_PREVIEW_ROW_LIMIT
     )
     observation_table_id: Optional[PydanticObjectId]
 
@@ -190,7 +191,7 @@ class PreviewObservationSet(FeatureByteBaseModel):
         observation_table_id = values.get("observation_table_id", None)
         if not point_in_time_and_serving_name_list and not observation_table_id:
             raise ValueError(
-                "Either1 point_in_time_and_serving_name_list or observation_table_id must be set"
+                "Either point_in_time_and_serving_name_list or observation_table_id must be set"
             )
         if observation_table_id is not None and point_in_time_and_serving_name_list is not None:
             raise ValueError(
@@ -211,7 +212,9 @@ class OnlineFeaturesRequestPayload(FeatureByteBaseModel):
     FeatureList get online features schema
     """
 
-    entity_serving_names: List[Dict[str, Any]] = Field(min_items=1, max_items=50)
+    entity_serving_names: List[Dict[str, Any]] = Field(
+        min_items=1, max_items=ONLINE_FEATURE_REQUEST_ROW_LIMIT
+    )
 
 
 class FeatureListSampleEntityServingNames(FeatureByteBaseModel):
