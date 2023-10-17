@@ -6,7 +6,7 @@
 
 # --- TEMPLATE --- #
 # One of 'breaking', 'deprecation', 'enhancement', 'bug_fix'
-change_type: enhancement
+change_type: breaking
 
 # The name of the component, or a single word describing the area of concern
 # (e.g. gh-actions, docs, middleware, worker)
@@ -21,7 +21,9 @@ note: "Support using observation tables in feature, target and featurelist previ
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext:
+subtext: |
+  + Parameter `observation_set` in `Feature.preview`, `Target.preview` and `FeatureList.preview` now accepts `ObservationTable` object or pandas dataframe
+  + Breaking change: Parameter `observation_table` in `FeatureList.compute_historical_feature_table` is renamed to `observation_set`
 
 # SAMPLE
 #subtext: |
