@@ -5,10 +5,12 @@ from __future__ import annotations
 
 from typing import Optional
 
+import pandas as pd
 from bson import ObjectId
 from fastapi import UploadFile
 
-from featurebyte.common.utils import dataframe_from_arrow_stream
+from featurebyte.enum import SpecialColumnName
+from featurebyte.exception import UnsupportedObservationTableUploadFileFormat
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.routes.common.base_materialized_table import BaseMaterializedTableController
 from featurebyte.routes.task.controller import TaskController
@@ -80,7 +82,7 @@ class ObservationTableController(
         task_id = await self.task_manager.submit(payload=payload)
         return await self.task_controller.get_task(task_id=str(task_id))
 
-    async def upload_observation_table_csv(
+    async def upload_observation_table(
         self, data: ObservationTableUpload, observation_set_file: UploadFile
     ) -> Task:
         """
@@ -96,8 +98,27 @@ class ObservationTableController(
         Returns
         -------
         Task
+
+        Raises
+        ------
+        UnsupportedObservationTableUploadFileFormat
+            if the observation set file format is not supported
         """
-        observation_set_dataframe = dataframe_from_arrow_stream(observation_set_file.file)
+        assert observation_set_file.filename is not None
+        if observation_set_file.filename.lower().endswith(".csv"):
+            assert observation_set_file.content_type == "text/csv"
+            observation_set_dataframe = pd.read_csv(observation_set_file.file)
+            # Convert point_in_time column to datetime
+            observation_set_dataframe[SpecialColumnName.POINT_IN_TIME] = pd.to_datetime(
+                observation_set_dataframe[SpecialColumnName.POINT_IN_TIME]
+            )
+        elif observation_set_file.filename.lower().endswith(".parquet"):
+            assert observation_set_file.content_type == "application/octet-stream"
+            observation_set_dataframe = pd.read_parquet(observation_set_file.file)
+        else:
+            raise UnsupportedObservationTableUploadFileFormat(
+                "Only csv and parquet file formats are supported for observation set upload"
+            )
         payload = await self.service.get_observation_table_upload_task_payload(
             data=data, observation_set_dataframe=observation_set_dataframe
         )

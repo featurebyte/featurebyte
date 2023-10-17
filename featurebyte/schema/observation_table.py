@@ -33,7 +33,6 @@ class ObservationTableUpload(FeatureByteBaseModel):
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
-    feature_store_id: PydanticObjectId
     purpose: Optional[Purpose] = Field(default=None)
     primary_entity_ids: Optional[List[PydanticObjectId]] = Field(default=None)
 
