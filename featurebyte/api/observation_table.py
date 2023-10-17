@@ -12,12 +12,17 @@ import pandas as pd
 
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.api_object_util import ForeignKeyMapping
+from featurebyte.api.entity import Entity
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.materialized_table import MaterializedTableMixin
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.observation_table import ObservationTableModel
-from featurebyte.schema.observation_table import ObservationTableListRecord, ObservationTableUpdate
+from featurebyte.models.observation_table import ObservationTableModel, Purpose
+from featurebyte.schema.observation_table import (
+    ObservationTableListRecord,
+    ObservationTableUpdate,
+    ObservationTableUpload,
+)
 
 
 class ObservationTable(ObservationTableModel, ApiObject, MaterializedTableMixin):
@@ -187,3 +192,48 @@ class ObservationTable(ObservationTableModel, ApiObject, MaterializedTableMixin)
         # noqa: DAR402
         """
         super().delete()
+
+    @classmethod
+    def upload(
+        cls,
+        file_path: Union[str, Path],
+        name: str,
+        purpose: Optional[Purpose] = None,
+        primary_entities: Optional[List[str]] = None,
+    ) -> ObservationTable:
+        """
+        Uploads a file to create an observation table.
+
+        Parameters
+        ----------
+        file_path: Union[str, Path]
+            Path to file to upload.
+        name: str
+            Name of the observation table to create.
+        purpose: Optional[Purpose]
+            Purpose of the observation table.
+        primary_entities: Optional[List[str]]
+            List of primary entities for the observation table.
+
+        Returns
+        -------
+        ObservationTable
+        """
+        primary_entity_ids = []
+        if primary_entities is not None:
+            for entity_name in primary_entities:
+                primary_entity_ids.append(Entity.get(entity_name).id)
+
+        payload = ObservationTableUpload(
+            name=name,
+            purpose=purpose,
+            primary_entity_ids=primary_entity_ids,
+        )
+        with open(file_path, "rb") as file_object:
+            observation_table_doc = cls.post_async_task(
+                route=f"{cls._route}/upload",
+                payload={"payload": payload.json()},
+                is_payload_json=False,
+                files={"observation_set": file_object},
+            )
+        return ObservationTable.get_by_id(observation_table_doc["_id"])

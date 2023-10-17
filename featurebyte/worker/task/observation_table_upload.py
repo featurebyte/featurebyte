@@ -13,6 +13,7 @@ from featurebyte.models.request_input import RequestInputType
 from featurebyte.schema.worker.task.observation_table_upload import (
     ObservationTableUploadTaskPayload,
 )
+from featurebyte.service.catalog import CatalogService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.session_manager import SessionManagerService
@@ -36,20 +37,22 @@ class ObservationTableUploadTask(DataWarehouseMixin, BaseTask[ObservationTableUp
         feature_store_service: FeatureStoreService,
         session_manager_service: SessionManagerService,
         observation_table_service: ObservationTableService,
+        catalog_service: CatalogService,
     ):
         super().__init__()
         self.temp_storage = temp_storage
         self.feature_store_service = feature_store_service
         self.session_manager_service = session_manager_service
         self.observation_table_service = observation_table_service
+        self.catalog_service = catalog_service
 
     async def get_task_description(self, payload: ObservationTableUploadTaskPayload) -> str:
         return f'Upload observation table "{payload.name}" from CSV.'
 
     async def execute(self, payload: ObservationTableUploadTaskPayload) -> Any:
-        feature_store = await self.feature_store_service.get_document(
-            document_id=payload.feature_store_id
-        )
+        catalog = await self.catalog_service.get_document(document_id=payload.catalog_id)
+        feature_store_id = catalog.default_feature_store_ids[0]
+        feature_store = await self.feature_store_service.get_document(document_id=feature_store_id)
         db_session = await self.session_manager_service.get_feature_store_session(feature_store)
 
         # Retrieve uploaded file from temp storage
@@ -59,7 +62,7 @@ class ObservationTableUploadTask(DataWarehouseMixin, BaseTask[ObservationTableUp
 
         # Get location for the new observation table
         location = await self.observation_table_service.generate_materialized_table_location(
-            payload.feature_store_id,
+            feature_store_id
         )
 
         # Write the file to the warehouse

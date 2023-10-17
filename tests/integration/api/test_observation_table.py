@@ -142,41 +142,32 @@ async def test_observation_table_cleanup(scd_table, session, source_type):
     assert num_observation_tables_before == num_observation_tables_after
 
 
+@pytest.mark.parametrize("file_type", ["csv", "parquet"])
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_observation_table_upload(
-    feature_store, catalog, customer_entity, session, source_type
+    feature_store, catalog, customer_entity, session, source_type, file_type
 ):
     _ = catalog, customer_entity
-    # Create upload request
-    upload_request = ObservationTableUpload(
-        name="uploaded_observation_table",
-        feature_store_id=feature_store.id,
-        purpose="other",
-        primary_entity_ids=[customer_entity.id],
+
+    # Upload observation table
+    file_path = os.path.join(
+        os.path.dirname(__file__), "fixtures", f"observation_table.{file_type}"
     )
-    # Read CSV file
-    df = pd.read_csv(os.path.join(os.path.dirname(__file__), "fixtures", "observation_table.csv"))
+    if file_type == "csv":
+        df = pd.read_csv(file_path)
+    elif file_type == "parquet":
+        df = pd.read_parquet(file_path)
+    else:
+        raise ValueError(f"Unsupported file type: {file_type}")
     number_of_rows = df.shape[0]
-    df[SpecialColumnName.POINT_IN_TIME] = pd.to_datetime(df[SpecialColumnName.POINT_IN_TIME])
-    files = {"observation_set": dataframe_to_arrow_bytes(df)}
-    data = {"payload": upload_request.json()}
-
-    # Call upload route
-    observation_table_route = "/observation_table"
-    test_api_client = Configurations().get_client()
-    response = test_api_client.put(observation_table_route, data=data, files=files)
-    assert response.status_code == HTTPStatus.CREATED, response.json()
-    response_dict = response.json()
-    observation_table_id = response_dict["payload"]["output_document_id"]
-
-    # Get observation table
-    observation_table = ObservationTable.get_by_id(observation_table_id)
+    observation_table = ObservationTable.upload(
+        file_path=file_path,
+        name=f"uploaded_observation_table_{file_type}",
+    )
 
     # Assert response
-    assert observation_table.name == "uploaded_observation_table"
-    assert observation_table.primary_entity_ids == [customer_entity.id]
-    assert observation_table.purpose == "other"
+    assert observation_table.name == f"uploaded_observation_table_{file_type}"
     assert observation_table.request_input == UploadedFileInput(type=RequestInputType.UPLOADED_FILE)
     expected_columns = {SpecialColumnName.POINT_IN_TIME, "cust_id"}
     actual_columns = {column.name for column in observation_table.columns_info}

@@ -1,13 +1,13 @@
 """
 Tests for ObservationTable routes
 """
+import tempfile
 from http import HTTPStatus
 
 import pandas as pd
 import pytest
 from bson.objectid import ObjectId
 
-from featurebyte.common.utils import dataframe_to_arrow_bytes
 from featurebyte.schema.observation_table import ObservationTableUpload
 from tests.unit.routes.base import BaseMaterializedTableTestSuite
 
@@ -263,16 +263,16 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
             == f"Cannot add/remove UseCase as the ObservationTable {observation_table_id} is not associated with any Context."
         )
 
-    def test_upload_observation_csv(self, test_api_client_persistent, snowflake_feature_store_id):
+    @pytest.mark.parametrize("file_type", ["csv", "parquet"])
+    def test_upload_observation(self, test_api_client_persistent, file_type):
         """
-        Test put CSV route
+        Test upload route
         """
         test_api_client, _ = test_api_client_persistent
 
         # Prepare upload request
         upload_request = ObservationTableUpload(
             name="uploaded_observation_table",
-            feature_store_id=snowflake_feature_store_id,
             purpose="other",
         )
         df = pd.DataFrame(
@@ -281,14 +281,23 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
                 "CUST_ID": ["C1"],
             }
         )
-        files = {"observation_set": dataframe_to_arrow_bytes(df)}
-        data = {"payload": upload_request.json()}
+        with tempfile.NamedTemporaryFile(mode="wb", suffix=f".{file_type}") as write_file_obj:
+            if file_type == "csv":
+                df.to_csv(write_file_obj, index=False)
+            elif file_type == "parquet":
+                df.to_parquet(write_file_obj, index=False)
+            else:
+                raise ValueError(f"Unsupported file type: {file_type}")
+            write_file_obj.flush()
+            with open(write_file_obj.name, "rb") as file_obj:
+                files = {"observation_set": file_obj}
+                data = {"payload": upload_request.json()}
 
-        # Call upload route
-        response = test_api_client.put(self.base_route, data=data, files=files)
-        assert response.status_code == HTTPStatus.CREATED, response.json()
-        response_dict = response.json()
-        observation_table_id = response_dict["payload"]["output_document_id"]
+                # Call upload route
+                response = test_api_client.post(f"{self.base_route}/upload", data=data, files=files)
+                assert response.status_code == HTTPStatus.CREATED, response.json()
+                response_dict = response.json()
+                observation_table_id = response_dict["payload"]["output_document_id"]
 
         # Get observation table
         response = test_api_client.get(f"{self.base_route}/{observation_table_id}")

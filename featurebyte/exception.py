@@ -442,3 +442,9 @@ class UnsupportedRequestCodeTemplateLanguage(BaseUnprocessableEntityError):
     """
     Raise when the language for request code template is not supported
     """
+
+
+class UnsupportedObservationTableUploadFileFormat(BaseUnprocessableEntityError):
+    """
+    Raise when the file format for observation table upload is not supported
+    """
