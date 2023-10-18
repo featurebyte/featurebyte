@@ -354,3 +354,20 @@ def test_join_scd_view_repeated_effective_timestamp_column_allowed(
         "cust_id",
         "date_of_birth",
     ]
+
+
+def test_change_view_join_scd_view_with_rprefix(snowflake_scd_table):
+    """
+    Test joining change view with SCDView with rprefix same as change view column prefix
+    """
+    change_view = snowflake_scd_table.get_change_view("col_boolean")
+    scd_view = snowflake_scd_table.get_view()[["col_float"]]
+    joined_view = change_view.join(scd_view, rprefix="new_")
+    assert joined_view.columns == [
+        "col_text",
+        "new_effective_timestamp",
+        "past_effective_timestamp",
+        "new_col_boolean",
+        "past_col_boolean",
+        "new_col_float",
+    ]

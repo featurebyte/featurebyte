@@ -510,6 +510,29 @@ def test_validate_join__additional_excluded_columns():
     base_view.join(other_view)
 
 
+def test_validate_join__repeated_caused_by_modifiers():
+    """
+    Test the case where repeated column names are caused by modifiers
+    """
+    col_info_a, col_info_b, col_info_c = (
+        ColumnInfo(name="colA", dtype=DBVarType.INT),
+        ColumnInfo(name="colB", dtype=DBVarType.INT),
+        ColumnInfo(name="colC", dtype=DBVarType.INT),
+    )
+    col_info_a_short, col_info_b_short = (
+        ColumnInfo(name="A", dtype=DBVarType.INT),
+        ColumnInfo(name="B", dtype=DBVarType.INT),
+    )
+    base_view = SimpleTestView(columns_info=[col_info_a, col_info_b, col_info_c])
+    other_view = SimpleTestView(
+        columns_info=[col_info_a_short, col_info_b_short, col_info_c],
+        join_col=col_info_b_short.name,
+    )
+    with pytest.raises(RepeatedColumnNamesError) as exc_info:
+        base_view.join(other_view, rprefix="col", on="colB")
+    assert "Duplicate column names ['colA'] found" in str(exc_info.value)
+
+
 @pytest.mark.usefixtures("patch_graph_operations")
 def test_validate_join__check_on_column():
     """
