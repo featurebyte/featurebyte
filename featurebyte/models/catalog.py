@@ -52,6 +52,13 @@ class CatalogModel(FeatureByteBaseDocumentModel):
         default_factory=list,
         description="List of default feature store IDs that are associated with the catalog.",
     )
+    is_deleted: bool = Field(
+        default=False,
+        description=(
+            "Flag to indicate if the catalog is deleted. "
+            "If true, the catalog will not be returned in any API calls."
+        ),
+    )
 
     # pydantic validators
     _sort_ids_validator = validator("default_feature_store_ids", allow_reuse=True)(
