@@ -21,7 +21,7 @@ services:
   spark-thrift:
     hostname: spark-thrift
     container_name: spark-thrift-test
-    image: featurebyte/cluster-apache-spark:3.3.1
+    image: featurebyte/cluster-apache-spark:${SPARK_VERSION}
     ports:
       - "10009:10000"
       - "4049:4040"
@@ -49,7 +49,6 @@ services:
         --hiveconf hive.server2.thrift.bind.host=0.0.0.0 \
         --hiveconf derby.system.home=/opt/spark/data/derby \
         --master=local[2] \
-        --jars /opt/spark/jars/delta-core_2.12-2.2.0.jar,/opt/spark/jars/delta-storage-2.2.0.jar,/opt/spark/jars/antlr4-runtime-4.8.jar \
         --conf spark.driver.memory=2G \
         --conf spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension \
         --conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog \

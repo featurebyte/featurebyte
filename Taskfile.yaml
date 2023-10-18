@@ -333,7 +333,9 @@ tasks:
         sh: id -u
       LOCAL_GID:
         sh: id -g
+      SPARK_VERSION: '{{default "3.3.1"}}'
     cmds:
+      - echo "SPARK_VERSION=$SPARK_VERSION"
       - mkdir -p ~/.spark/data
       - cd docker && docker compose -p featurebyte-test -f docker-compose.yml up -d
       - task: test-setup-status
