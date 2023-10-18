@@ -959,7 +959,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         create_success_response,
         mock_get_session,
     ):
-        """Test getting sample entity serving names for a deployment"""
+        """Test getting sample entity serving names for a feature list"""
         test_api_client, _ = test_api_client_persistent
         result = create_success_response.json()
 

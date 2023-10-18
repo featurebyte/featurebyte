@@ -15,6 +15,7 @@ from featurebyte.models.target import TargetModel
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.routes.common.feature_metadata_extractor import FeatureOrTargetMetadataExtractor
 from featurebyte.routes.common.feature_or_target_helper import FeatureOrTargetHelper
+from featurebyte.schema.feature_list import SampleEntityServingNames
 from featurebyte.schema.preview import FeatureOrTargetPreview
 from featurebyte.schema.target import TargetCreate, TargetInfo, TargetList
 from featurebyte.service.entity import EntityService
@@ -185,3 +186,27 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
             raise HTTPException(
                 status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]
             ) from exc
+
+    async def get_sample_entity_serving_names(
+        self, target_id: ObjectId, count: int
+    ) -> SampleEntityServingNames:
+        """
+        Get sample entity serving names for target
+
+        Parameters
+        ----------
+        target_id: ObjectId
+            Target ID
+        count: int
+            Number of sample entity serving names to return
+
+        Returns
+        -------
+        SampleEntityServingNames
+            Sample entity serving names
+        """
+
+        entity_serving_names = await self.service.get_sample_entity_serving_names(
+            target_id=target_id, count=count
+        )
+        return SampleEntityServingNames(entity_serving_names=entity_serving_names)

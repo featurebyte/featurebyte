@@ -3,7 +3,7 @@ Target class
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Dict, List, Optional
 
 from bson import ObjectId
 
@@ -18,6 +18,7 @@ from featurebyte.schema.target import TargetCreate
 from featurebyte.schema.target_namespace import TargetNamespaceCreate, TargetNamespaceServiceUpdate
 from featurebyte.service.base_namespace_service import BaseNamespaceService
 from featurebyte.service.entity import EntityService
+from featurebyte.service.entity_serving_names import EntityServingNamesService
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.namespace_handler import (
@@ -47,6 +48,7 @@ class TargetService(BaseNamespaceService[TargetModel, TargetCreate]):
         session_manager_service: SessionManagerService,
         entity_service: EntityService,
         block_modification_handler: BlockModificationHandler,
+        entity_serving_names_service: EntityServingNamesService,
     ):
         super().__init__(
             user=user,
@@ -60,6 +62,7 @@ class TargetService(BaseNamespaceService[TargetModel, TargetCreate]):
         self.entity_validation_service = entity_validation_service
         self.session_manager_service = session_manager_service
         self.entity_service = entity_service
+        self.entity_serving_names_service = entity_serving_names_service
 
     async def prepare_target_model(
         self, data: TargetCreate, sanitize_for_definition: bool
@@ -216,3 +219,29 @@ class TargetService(BaseNamespaceService[TargetModel, TargetCreate]):
                     ),
                 )
         return await self.get_document(document_id=insert_id)
+
+    async def get_sample_entity_serving_names(  # pylint: disable=too-many-locals
+        self, target_id: ObjectId, count: int
+    ) -> List[Dict[str, str]]:
+        """
+        Get sample entity serving names for a target
+
+        Parameters
+        ----------
+        target_id: ObjectId
+            Target Id
+        count: int
+            Number of sample entity serving names to return
+
+        Returns
+        -------
+        List[Dict[str, str]]
+        """
+        target = await self.get_document(target_id)
+
+        # get entities and tables used for the feature list
+        return await self.entity_serving_names_service.get_sample_entity_serving_names(
+            entity_ids=target.entity_ids,
+            table_ids=target.table_ids,
+            count=count,
+        )

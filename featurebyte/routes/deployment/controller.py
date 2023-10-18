@@ -24,10 +24,7 @@ from featurebyte.schema.deployment import (
     DeploymentUpdate,
     OnlineFeaturesResponseModel,
 )
-from featurebyte.schema.feature_list import (
-    FeatureListSampleEntityServingNames,
-    OnlineFeaturesRequestPayload,
-)
+from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload, SampleEntityServingNames
 from featurebyte.schema.info import DeploymentInfo, DeploymentRequestCodeTemplate
 from featurebyte.schema.task import Task
 from featurebyte.schema.worker.task.deployment_create_update import (
@@ -256,7 +253,7 @@ class DeploymentController(
 
     async def get_sample_entity_serving_names(
         self, deployment_id: ObjectId, count: int
-    ) -> FeatureListSampleEntityServingNames:
+    ) -> SampleEntityServingNames:
         """
         Get request code template for a given deployment ID.
 
@@ -269,14 +266,14 @@ class DeploymentController(
 
         Returns
         -------
-        FeatureListSampleEntityServingNames
+        SampleEntityServingNames
             Sample entity serving names
         """
         deployment: DeploymentModel = await self.service.get_document(deployment_id)
         entity_serving_names = await self.feature_list_service.get_sample_entity_serving_names(
             feature_list_id=deployment.feature_list_id, count=count
         )
-        return FeatureListSampleEntityServingNames(entity_serving_names=entity_serving_names)
+        return SampleEntityServingNames(entity_serving_names=entity_serving_names)
 
 
 class AllDeploymentController(

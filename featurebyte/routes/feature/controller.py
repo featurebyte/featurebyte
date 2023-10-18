@@ -31,6 +31,7 @@ from featurebyte.schema.feature import (
     FeatureSQL,
     FeatureUpdate,
 )
+from featurebyte.schema.feature_list import SampleEntityServingNames
 from featurebyte.schema.info import FeatureInfo
 from featurebyte.schema.preview import FeatureOrTargetPreview
 from featurebyte.schema.task import Task
@@ -433,3 +434,27 @@ class FeatureController(
             features=[ExtendedFeatureModel(**feature.dict(by_alias=True))],
             hour_limit=hour_limit,
         )
+
+    async def get_sample_entity_serving_names(
+        self, feature_id: ObjectId, count: int
+    ) -> SampleEntityServingNames:
+        """
+        Get sample entity serving names for feature
+
+        Parameters
+        ----------
+        feature_id: ObjectId
+            Feature ID
+        count: int
+            Number of sample entity serving names to return
+
+        Returns
+        -------
+        SampleEntityServingNames
+            Sample entity serving names
+        """
+
+        entity_serving_names = await self.service.get_sample_entity_serving_names(
+            feature_id=feature_id, count=count
+        )
+        return SampleEntityServingNames(entity_serving_names=entity_serving_names)
