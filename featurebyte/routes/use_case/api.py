@@ -147,7 +147,7 @@ async def delete_use_case(request: Request, use_case_id: PydanticObjectId) -> No
     Update Use Case
     """
     controller = request.state.app_container.use_case_controller
-    await controller.delete_use_case(document_id=use_case_id)
+    await controller.delete(document_id=use_case_id)
 
 
 @router.get("/{use_case_id}/info", response_model=UseCaseInfo, status_code=HTTPStatus.OK)

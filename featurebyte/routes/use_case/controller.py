@@ -1,20 +1,19 @@
 """
 UseCase API route controller
 """
-from typing import Any, Dict
+from typing import Any, Dict, List, Tuple
 
 from bson import ObjectId
 
-from featurebyte.exception import (
-    DocumentCreationError,
-    DocumentDeletionError,
-    ObservationTableInvalidUseCaseError,
-)
+from featurebyte.exception import DocumentDeletionError, ObservationTableInvalidUseCaseError
+from featurebyte.exception import DocumentCreationError
+from featurebyte.models.persistent import QueryFilter
 from featurebyte.models.use_case import UseCaseModel
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.info import EntityBriefInfo, EntityBriefInfoList, UseCaseInfo
 from featurebyte.schema.observation_table import ObservationTableUpdate
 from featurebyte.schema.use_case import UseCaseCreate, UseCaseList, UseCaseUpdate
+from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.context import ContextService
 from featurebyte.service.deployment import DeploymentService
@@ -165,37 +164,13 @@ class UseCaseController(
 
         return await self.service.update_use_case(document_id=use_case_id, data=data)
 
-    async def delete_use_case(self, document_id: ObjectId) -> None:
-        """
-        Delete UseCase from persistent
-
-        Parameters
-        ----------
-        document_id: ObjectId
-            UseCase id to be deleted
-
-        Raises
-        ------
-        DocumentDeletionError
-            if the use case is associated with any asset
-        """
-        # check whether use case is associated with any observation table
-        async for table_doc in self.observation_table_service.list_documents_as_dict_iterator(
-            query_filter={"use_case_ids": document_id}
-        ):
-            raise DocumentDeletionError(
-                "UseCase is associated with observation table: " + table_doc["name"]
-            )
-
-        # check whether use case is associated with any deployment
-        async for deployment_doc in self.deployment_service.list_documents_as_dict_iterator(
-            query_filter={"use_case_id": document_id}
-        ):
-            raise DocumentDeletionError(
-                "UseCase is associated with deployment: " + deployment_doc["name"]
-            )
-
-        await self.service.delete_document(document_id=document_id)
+    async def service_and_query_pairs_for_delete_verification(
+        self, document_id: ObjectId
+    ) -> List[Tuple[BaseDocumentService, QueryFilter]]:
+        return [
+            (self.observation_table_service, {"use_case_ids": document_id}),
+            (self.deployment_service, {"use_case_id": document_id}),
+        ]
 
     async def get_info(self, use_case_id: ObjectId) -> UseCaseInfo:
         """

@@ -535,7 +535,7 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         response = test_api_client.delete(f"{self.base_route}/{use_case_id}")
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
         assert response.json()["detail"] == (
-            "UseCase is associated with observation table: observation_table_from_target_input"
+            "UseCase is referenced by ObservationTable: observation_table_from_target_input"
         )
 
     @pytest.mark.asyncio
