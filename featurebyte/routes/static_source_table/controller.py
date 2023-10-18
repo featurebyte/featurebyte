@@ -3,19 +3,22 @@ StaticSourceTable API route controller
 """
 from __future__ import annotations
 
+from typing import List, Tuple
+
 from bson import ObjectId
 
+from featurebyte.models.persistent import QueryFilter
 from featurebyte.models.static_source_table import StaticSourceTableModel
 from featurebyte.routes.common.base_materialized_table import BaseMaterializedTableController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.info import StaticSourceTableInfo
 from featurebyte.schema.static_source_table import StaticSourceTableCreate, StaticSourceTableList
 from featurebyte.schema.task import Task
+from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.preview import PreviewService
 from featurebyte.service.static_source_table import StaticSourceTableService
 from featurebyte.service.table import TableService
-from featurebyte.service.validator.materialized_table_delete import check_delete_static_source_table
 
 
 class StaticSourceTableController(
@@ -62,12 +65,11 @@ class StaticSourceTableController(
         task_id = await self.task_controller.task_manager.submit(payload=payload)
         return await self.task_controller.get_task(task_id=str(task_id))
 
-    async def _verify_delete_operation(self, document_id: ObjectId) -> None:
-        await check_delete_static_source_table(
-            static_source_table_service=self.service,
-            table_service=self.table_service,
-            document_id=document_id,
-        )
+    async def service_and_query_pairs_for_delete_verification(
+        self, document_id: ObjectId
+    ) -> List[Tuple[BaseDocumentService, QueryFilter]]:
+        document = await self.service.get_document(document_id=document_id)
+        return [(self.table_service, {"tabular_source": document.location.dict()})]
 
     async def get_info(self, document_id: ObjectId, verbose: bool) -> StaticSourceTableInfo:
         """
