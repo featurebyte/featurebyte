@@ -166,7 +166,7 @@ class UseCaseController(
 
     async def service_and_query_pairs_for_delete_verification(
         self, document_id: ObjectId
-    ) -> List[Tuple[BaseDocumentService, QueryFilter]]:
+    ) -> List[Tuple[BaseDocumentService, QueryFilter]]:  # type: ignore
         return [
             (self.observation_table_service, {"use_case_ids": document_id}),
             (self.deployment_service, {"use_case_id": document_id}),

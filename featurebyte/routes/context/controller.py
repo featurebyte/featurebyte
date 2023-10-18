@@ -121,7 +121,7 @@ class ContextController(
 
     async def service_and_query_pairs_for_delete_verification(
         self, document_id: ObjectId
-    ) -> List[Tuple[BaseDocumentService, QueryFilter]]:
+    ) -> List[Tuple[BaseDocumentService, QueryFilter]]:  # type: ignore
         return [
             (self.use_case_service, {"context_id": document_id}),
             (self.observation_table_service, {"context_id": document_id}),

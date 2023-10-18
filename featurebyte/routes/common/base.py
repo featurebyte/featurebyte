@@ -159,7 +159,7 @@ class BaseDocumentController(Generic[Document, DocumentServiceT, PaginatedDocume
 
     async def service_and_query_pairs_for_delete_verification(
         self, document_id: ObjectId
-    ) -> List[Tuple[BaseDocumentService, QueryFilter]]:
+    ) -> List[Tuple[BaseDocumentService, QueryFilter]]:  # type: ignore
         """
         List of service and query filter pairs. The first element of each pair is the document service
         of the related document, and the second element is the query filter to retrieve the related

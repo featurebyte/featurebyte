@@ -67,7 +67,7 @@ class StaticSourceTableController(
 
     async def service_and_query_pairs_for_delete_verification(
         self, document_id: ObjectId
-    ) -> List[Tuple[BaseDocumentService, QueryFilter]]:
+    ) -> List[Tuple[BaseDocumentService, QueryFilter]]:  # type: ignore
         document = await self.service.get_document(document_id=document_id)
         return [(self.table_service, {"tabular_source": document.location.dict()})]
 

@@ -67,7 +67,7 @@ class BatchRequestTableController(
 
     async def service_and_query_pairs_for_delete_verification(
         self, document_id: ObjectId
-    ) -> List[Tuple[BaseDocumentService, QueryFilter]]:
+    ) -> List[Tuple[BaseDocumentService, QueryFilter]]:  # type: ignore
         return [
             (self.batch_feature_table_service, {"batch_request_table_id": document_id}),
         ]

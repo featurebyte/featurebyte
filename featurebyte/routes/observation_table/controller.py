@@ -132,7 +132,7 @@ class ObservationTableController(
 
     async def service_and_query_pairs_for_delete_verification(
         self, document_id: ObjectId
-    ) -> List[Tuple[BaseDocumentService, QueryFilter]]:
+    ) -> List[Tuple[BaseDocumentService, QueryFilter]]:  # type: ignore
         document = await self.service.get_document(document_id=document_id)
         return [
             (self.historical_feature_table_service, {"observation_table_id": document_id}),
