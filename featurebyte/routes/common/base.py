@@ -178,7 +178,9 @@ class BaseDocumentController(Generic[Document, DocumentServiceT, PaginatedDocume
 
     async def verify_delete_operation(self, document_id: ObjectId) -> None:
         """
-        Check whether the document can be deleted
+        Check whether the document can be deleted. This function uses the output of
+        "service_and_query_pairs_for_delete_verification" to query related documents to check whether
+        the document to be deleted is referenced by other documents.
 
         Parameters
         ----------
