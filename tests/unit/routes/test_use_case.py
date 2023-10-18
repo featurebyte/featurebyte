@@ -204,6 +204,193 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         assert data["default_preview_table"] == "observation_table_from_target_input"
 
     @pytest.mark.asyncio
+    async def test_delete_use_case__success(
+        self,
+        create_success_response,
+        test_api_client_persistent,
+        create_observation_table,
+    ):
+        """Test update use case"""
+
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        use_case_id = create_response_dict["_id"]
+
+        new_ob_table_id = ObjectId()
+        await create_observation_table(
+            new_ob_table_id,
+            use_case_id=use_case_id,
+            context_id=self.payload["context_id"],
+            target_input=True,
+            target_id=self.payload["target_id"],
+        )
+
+        # test list observation tables endpoint
+        response = test_api_client.get(
+            f"{self.base_route}/{use_case_id}/observation_tables",
+        )
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["total"] == 1
+        assert response.json()["data"][0]["_id"] == str(new_ob_table_id)
+
+        # delete use case from observation table
+        response = test_api_client.patch(
+            f"{self.base_route}/{use_case_id}",
+            json={
+                "observation_table_id_to_remove": str(new_ob_table_id),
+            },
+        )
+        assert response.status_code == HTTPStatus.OK
+
+        response = test_api_client.get(
+            f"{self.base_route}/{use_case_id}/observation_tables",
+        )
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["total"] == 0
+
+    @pytest.mark.asyncio
+    async def test_delete_use_case__failed_use_case_id_not_linked(
+        self,
+        create_success_response,
+        test_api_client_persistent,
+        create_observation_table,
+    ):
+        """Test update use case"""
+
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        use_case_id = create_response_dict["_id"]
+
+        new_ob_table_id = ObjectId()
+
+        # delete use case from observation table
+        response = test_api_client.patch(
+            f"{self.base_route}/{use_case_id}",
+            json={
+                "observation_table_id_to_remove": str(new_ob_table_id),
+                "default_preview_table_id": str(new_ob_table_id),
+            },
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert (
+            "observation_table_id_to_remove cannot be the same as default_preview_table_id"
+            in response.json()["detail"][0]["msg"]
+        )
+
+        response = test_api_client.patch(
+            f"{self.base_route}/{use_case_id}",
+            json={
+                "observation_table_id_to_remove": str(new_ob_table_id),
+                "default_eda_table_id": str(new_ob_table_id),
+            },
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert (
+            "observation_table_id_to_remove cannot be the same as default_eda_table_id"
+            in response.json()["detail"][0]["msg"]
+        )
+
+        await create_observation_table(
+            new_ob_table_id,
+            use_case_id=ObjectId(),
+            context_id=self.payload["context_id"],
+            target_input=True,
+            target_id=self.payload["target_id"],
+        )
+
+        # test list observation tables endpoint
+        response = test_api_client.get(
+            f"{self.base_route}/{use_case_id}/observation_tables",
+        )
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["total"] == 0
+
+        # delete use case from observation table
+        response = test_api_client.patch(
+            f"{self.base_route}/{use_case_id}",
+            json={
+                "observation_table_id_to_remove": str(new_ob_table_id),
+            },
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert (
+            response.json()["detail"]
+            == f"UseCase {use_case_id} is not associated with observation table {new_ob_table_id}"
+        )
+
+    @pytest.mark.asyncio
+    async def test_delete_use_case__failed_obs_table_is_default_eda_or_preview(
+        self,
+        create_success_response,
+        test_api_client_persistent,
+        create_observation_table,
+    ):
+        """Test update use case"""
+
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        use_case_id = create_response_dict["_id"]
+
+        new_ob_table_id_1 = ObjectId()
+        await create_observation_table(
+            new_ob_table_id_1,
+            use_case_id=use_case_id,
+            context_id=self.payload["context_id"],
+            target_input=True,
+            target_id=self.payload["target_id"],
+        )
+
+        response = test_api_client.patch(
+            f"{self.base_route}/{use_case_id}",
+            json={
+                "default_eda_table_id": str(new_ob_table_id_1),
+            },
+        )
+        assert response.status_code == HTTPStatus.OK
+
+        # delete use case from observation table
+        response = test_api_client.patch(
+            f"{self.base_route}/{use_case_id}",
+            json={
+                "observation_table_id_to_remove": str(new_ob_table_id_1),
+            },
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert (
+            response.json()["detail"]
+            == f"Cannot remove observation_table {new_ob_table_id_1} as it is the default EDA table"
+        )
+
+        new_ob_table_id_2 = ObjectId()
+        await create_observation_table(
+            new_ob_table_id_2,
+            use_case_id=use_case_id,
+            context_id=self.payload["context_id"],
+            target_input=True,
+            target_id=self.payload["target_id"],
+        )
+
+        response = test_api_client.patch(
+            f"{self.base_route}/{use_case_id}",
+            json={
+                "default_preview_table_id": str(new_ob_table_id_2),
+            },
+        )
+        assert response.status_code == HTTPStatus.OK
+        # delete use case from observation table
+        response = test_api_client.patch(
+            f"{self.base_route}/{use_case_id}",
+            json={
+                "observation_table_id_to_remove": str(new_ob_table_id_2),
+            },
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert (
+            response.json()["detail"]
+            == f"Cannot remove observation_table {new_ob_table_id_2} as it is the default preview table"
+        )
+
+    @pytest.mark.asyncio
     async def test_update_use_case_with_error(
         self,
         create_success_response,

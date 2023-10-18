@@ -154,6 +154,27 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
             allow_update_local=False,
         )
 
+    @typechecked
+    def delete_observation_table(self, observation_table_name: str) -> None:
+        """
+        Delete observation table from the Use Case.
+
+        Parameters
+        ----------
+        observation_table_name: str
+            Name of new observation table to be removed.
+
+        Examples
+        --------
+        >>> use_case = catalog.get_use_case("use_case")
+        >>> use_case.delete_observation_table(observation_table_name)  # doctest: +SKIP
+        """
+        observation_table = ObservationTable.get(observation_table_name)
+        self.update(
+            update_payload={"observation_table_id_to_remove": observation_table.id},
+            allow_update_local=False,
+        )
+
     def list_feature_tables(self) -> pd.DataFrame:
         """
         List feature tables (BaseFeatureOrTargetTableModel) associated with the Use Case.
