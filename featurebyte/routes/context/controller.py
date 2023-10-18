@@ -7,7 +7,7 @@ from typing import List, Tuple
 
 from bson import ObjectId
 
-from featurebyte.exception import DocumentCreationError, DocumentDeletionError
+from featurebyte.exception import DocumentCreationError
 from featurebyte.models.context import ContextModel
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.routes.common.base import BaseDocumentController

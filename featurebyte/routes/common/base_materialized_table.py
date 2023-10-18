@@ -58,18 +58,6 @@ class BaseMaterializedTableController(
         super().__init__(service)
         self.preview_service = preview_service
 
-    async def _verify_delete_operation(self, document_id: ObjectId) -> None:
-        """
-        Verify that the document can be deleted
-
-        Parameters
-        ----------
-        document_id: ObjectId
-            ID of document to delete
-        """
-        # check existence of the document first
-        await self.service.get_document(document_id=document_id)
-
     async def delete_materialized_table(self, document_id: ObjectId) -> Task:
         """
         Delete materialized table
@@ -79,7 +67,11 @@ class BaseMaterializedTableController(
         document_id: ObjectId
             ID of materialized table to delete
         """
-        await self._verify_delete_operation(document_id=document_id)
+        # check if document exists
+        _ = await self.service.get_document(document_id=document_id)
+
+        # check if document is used by any other documents
+        await self.verify_delete_operation(document_id=document_id)
 
         # create task payload & submit task
         payload = await self.service.get_materialized_table_delete_task_payload(

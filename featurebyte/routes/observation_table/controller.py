@@ -3,7 +3,7 @@ ObservationTable API route controller
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import List, Optional, Tuple
 
 import pandas as pd
 from bson import ObjectId
@@ -12,6 +12,7 @@ from fastapi import UploadFile
 from featurebyte.enum import SpecialColumnName
 from featurebyte.exception import UnsupportedObservationTableUploadFileFormat
 from featurebyte.models.observation_table import ObservationTableModel
+from featurebyte.models.persistent import QueryFilter
 from featurebyte.routes.common.base_materialized_table import BaseMaterializedTableController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.info import ObservationTableInfo
@@ -22,13 +23,15 @@ from featurebyte.schema.observation_table import (
     ObservationTableUpload,
 )
 from featurebyte.schema.task import Task
+from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.context import ContextService
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.preview import PreviewService
+from featurebyte.service.target_table import TargetTableService
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.service.use_case import UseCaseService
-from featurebyte.service.validator.materialized_table_delete import ObservationTableDeleteValidator
 
 
 class ObservationTableController(
@@ -48,7 +51,8 @@ class ObservationTableController(
         preview_service: PreviewService,
         task_controller: TaskController,
         feature_store_service: FeatureStoreService,
-        observation_table_delete_validator: ObservationTableDeleteValidator,
+        historical_feature_table_service: HistoricalFeatureTableService,
+        target_table_service: TargetTableService,
         context_service: ContextService,
         task_manager: TaskManager,
         use_case_service: UseCaseService,
@@ -57,7 +61,8 @@ class ObservationTableController(
         self.observation_table_service = observation_table_service
         self.task_controller = task_controller
         self.feature_store_service = feature_store_service
-        self.observation_table_delete_validator = observation_table_delete_validator
+        self.historical_feature_table_service = historical_feature_table_service
+        self.target_table_service = target_table_service
         self.context_service = context_service
         self.task_manager = task_manager
         self.use_case_service = use_case_service
@@ -125,10 +130,15 @@ class ObservationTableController(
         task_id = await self.task_manager.submit(payload=payload)
         return await self.task_controller.get_task(task_id=str(task_id))
 
-    async def _verify_delete_operation(self, document_id: ObjectId) -> None:
-        await self.observation_table_delete_validator.check_delete_observation_table(
-            observation_table_id=document_id,
-        )
+    async def service_and_query_pairs_for_delete_verification(
+        self, document_id: ObjectId
+    ) -> List[Tuple[BaseDocumentService, QueryFilter]]:
+        document = await self.service.get_document(document_id=document_id)
+        return [
+            (self.historical_feature_table_service, {"observation_table_id": document_id}),
+            (self.target_table_service, {"observation_table_id": document_id}),
+            (self.use_case_service, {"_id": {"$in": document.use_case_ids}}),
+        ]
 
     async def get_info(self, document_id: ObjectId, verbose: bool) -> ObservationTableInfo:
         """
