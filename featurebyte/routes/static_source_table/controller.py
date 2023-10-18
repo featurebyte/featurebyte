@@ -3,7 +3,7 @@ StaticSourceTable API route controller
 """
 from __future__ import annotations
 
-from typing import List, Tuple
+from typing import Any, List, Tuple
 
 from bson import ObjectId
 
@@ -14,7 +14,6 @@ from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.info import StaticSourceTableInfo
 from featurebyte.schema.static_source_table import StaticSourceTableCreate, StaticSourceTableList
 from featurebyte.schema.task import Task
-from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.preview import PreviewService
 from featurebyte.service.static_source_table import StaticSourceTableService
@@ -67,7 +66,7 @@ class StaticSourceTableController(
 
     async def service_and_query_pairs_for_checking_reference(
         self, document_id: ObjectId
-    ) -> List[Tuple[BaseDocumentService, QueryFilter]]:  # type: ignore
+    ) -> List[Tuple[Any, QueryFilter]]:
         document = await self.service.get_document(document_id=document_id)
         return [(self.table_service, {"tabular_source": document.location.dict()})]
 

@@ -10,7 +10,6 @@ from bson.objectid import ObjectId
 from featurebyte.exception import DocumentDeletionError, DocumentUpdateError
 from featurebyte.models.persistent import AuditDocumentList, FieldValueHistory, QueryFilter
 from featurebyte.schema.common.base import PaginationMixin
-from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.service.catalog import CatalogService
@@ -159,7 +158,7 @@ class BaseDocumentController(Generic[Document, DocumentServiceT, PaginatedDocume
 
     async def service_and_query_pairs_for_checking_reference(
         self, document_id: ObjectId
-    ) -> List[Tuple[BaseDocumentService, QueryFilter]]:  # type: ignore
+    ) -> List[Tuple[Any, QueryFilter]]:
         """
         List of service and query filter pairs. The first element of each pair is the document service
         of the related document, and the second element is the query filter to retrieve the related
@@ -172,7 +171,7 @@ class BaseDocumentController(Generic[Document, DocumentServiceT, PaginatedDocume
 
         Returns
         -------
-        List[Tuple[BaseDocumentService, QueryFilter]]
+        List[Tuple[Any, QueryFilter]]
             List of service and query filter pairs
         """
         _ = self, document_id

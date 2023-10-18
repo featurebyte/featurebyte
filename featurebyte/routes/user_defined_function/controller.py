@@ -20,7 +20,6 @@ from featurebyte.schema.user_defined_function import (
     UserDefinedFunctionServiceUpdate,
     UserDefinedFunctionUpdate,
 )
-from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
@@ -166,7 +165,7 @@ class UserDefinedFunctionController(
 
     async def service_and_query_pairs_for_checking_reference(
         self, document_id: ObjectId
-    ) -> List[Tuple[BaseDocumentService, QueryFilter]]:  # type: ignore
+    ) -> List[Tuple[Any, QueryFilter]]:
         return [(self.feature_service, {"user_defined_function_ids": {"$in": [document_id]}})]
 
     async def list_user_defined_functions(

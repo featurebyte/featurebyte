@@ -5,15 +5,17 @@ from typing import Any, Dict, List, Tuple
 
 from bson import ObjectId
 
-from featurebyte.exception import DocumentDeletionError, ObservationTableInvalidUseCaseError
-from featurebyte.exception import DocumentCreationError
+from featurebyte.exception import (
+    DocumentCreationError,
+    DocumentDeletionError,
+    ObservationTableInvalidUseCaseError,
+)
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.models.use_case import UseCaseModel
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.info import EntityBriefInfo, EntityBriefInfoList, UseCaseInfo
 from featurebyte.schema.observation_table import ObservationTableUpdate
 from featurebyte.schema.use_case import UseCaseCreate, UseCaseList, UseCaseUpdate
-from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.context import ContextService
 from featurebyte.service.deployment import DeploymentService
@@ -166,7 +168,7 @@ class UseCaseController(
 
     async def service_and_query_pairs_for_checking_reference(
         self, document_id: ObjectId
-    ) -> List[Tuple[BaseDocumentService, QueryFilter]]:  # type: ignore
+    ) -> List[Tuple[Any, QueryFilter]]:
         return [
             (self.observation_table_service, {"use_case_ids": document_id}),
             (self.deployment_service, {"use_case_id": document_id}),

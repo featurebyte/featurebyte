@@ -3,7 +3,7 @@ BatchRequestTable API route controller
 """
 from __future__ import annotations
 
-from typing import List, Tuple
+from typing import Any, List, Tuple
 
 from bson import ObjectId
 
@@ -14,7 +14,6 @@ from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.batch_request_table import BatchRequestTableCreate, BatchRequestTableList
 from featurebyte.schema.info import BatchRequestTableInfo
 from featurebyte.schema.task import Task
-from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.service.feature_store import FeatureStoreService
@@ -67,7 +66,7 @@ class BatchRequestTableController(
 
     async def service_and_query_pairs_for_checking_reference(
         self, document_id: ObjectId
-    ) -> List[Tuple[BaseDocumentService, QueryFilter]]:  # type: ignore
+    ) -> List[Tuple[Any, QueryFilter]]:
         return [
             (self.batch_feature_table_service, {"batch_request_table_id": document_id}),
         ]

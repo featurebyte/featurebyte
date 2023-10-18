@@ -3,7 +3,7 @@ Context API route controller
 """
 from __future__ import annotations
 
-from typing import List, Tuple
+from typing import Any, List, Tuple
 
 from bson import ObjectId
 
@@ -15,7 +15,6 @@ from featurebyte.routes.common.primary_entity_validator import PrimaryEntityVali
 from featurebyte.schema.context import ContextCreate, ContextList, ContextUpdate
 from featurebyte.schema.info import ContextInfo, EntityBriefInfo, EntityBriefInfoList
 from featurebyte.schema.observation_table import ObservationTableUpdate
-from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.context import ContextService
@@ -121,7 +120,7 @@ class ContextController(
 
     async def service_and_query_pairs_for_checking_reference(
         self, document_id: ObjectId
-    ) -> List[Tuple[BaseDocumentService, QueryFilter]]:  # type: ignore
+    ) -> List[Tuple[Any, QueryFilter]]:
         return [
             (self.use_case_service, {"context_id": document_id}),
             (self.observation_table_service, {"context_id": document_id}),

@@ -3,7 +3,7 @@ ObservationTable API route controller
 """
 from __future__ import annotations
 
-from typing import List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 import pandas as pd
 from bson import ObjectId
@@ -23,7 +23,6 @@ from featurebyte.schema.observation_table import (
     ObservationTableUpload,
 )
 from featurebyte.schema.task import Task
-from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.context import ContextService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
@@ -132,7 +131,7 @@ class ObservationTableController(
 
     async def service_and_query_pairs_for_checking_reference(
         self, document_id: ObjectId
-    ) -> List[Tuple[BaseDocumentService, QueryFilter]]:  # type: ignore
+    ) -> List[Tuple[Any, QueryFilter]]:
         document = await self.service.get_document(document_id=document_id)
         return [
             (self.historical_feature_table_service, {"observation_table_id": document_id}),
