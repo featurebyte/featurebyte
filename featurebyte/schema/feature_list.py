@@ -217,9 +217,9 @@ class OnlineFeaturesRequestPayload(FeatureByteBaseModel):
     )
 
 
-class FeatureListSampleEntityServingNames(FeatureByteBaseModel):
+class SampleEntityServingNames(FeatureByteBaseModel):
     """
-    Schema for feature list sample entity serving names
+    Schema for sample entity serving names
     """
 
     entity_serving_names: List[Dict[str, str]]

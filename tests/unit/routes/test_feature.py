@@ -926,3 +926,55 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         assert create_success_response.json()["aggregation_result_names"] == [
             "_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481"
         ]
+
+    def test_request_sample_entity_serving_names(
+        self,
+        test_api_client_persistent,
+        create_success_response,
+        mock_get_session,
+    ):
+        """Test getting sample entity serving names for a feature"""
+        test_api_client, _ = test_api_client_persistent
+        result = create_success_response.json()
+
+        async def mock_execute_query(query):
+            _ = query
+            return pd.DataFrame(
+                [
+                    {
+                        "cust_id": 1,
+                    },
+                    {
+                        "cust_id": 2,
+                    },
+                    {
+                        "cust_id": 3,
+                    },
+                ]
+            )
+
+        mock_session = mock_get_session.return_value
+        mock_session.execute_query = mock_execute_query
+
+        # Request sample entity serving names
+        feature_id = result["_id"]
+        response = test_api_client.get(
+            f"{self.base_route}/{feature_id}/sample_entity_serving_names?count=10",
+        )
+
+        # Check result
+        assert response.status_code == HTTPStatus.OK, response.content
+        assert response.json() == {
+            "entity_serving_names": [
+                {"cust_id": "1"},
+                {"cust_id": "2"},
+                {"cust_id": "3"},
+                {"cust_id": "1"},
+                {"cust_id": "2"},
+                {"cust_id": "3"},
+                {"cust_id": "1"},
+                {"cust_id": "2"},
+                {"cust_id": "3"},
+                {"cust_id": "1"},
+            ],
+        }

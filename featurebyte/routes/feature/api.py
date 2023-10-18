@@ -33,6 +33,7 @@ from featurebyte.schema.feature import (
     FeatureSQL,
     FeatureUpdate,
 )
+from featurebyte.schema.feature_list import SampleEntityServingNames
 from featurebyte.schema.info import FeatureInfo
 from featurebyte.schema.preview import FeatureOrTargetPreview
 from featurebyte.schema.task import Task
@@ -241,3 +242,22 @@ async def update_feature_description(
         description=data.description,
     )
     return feature
+
+
+@router.get(
+    "/{feature_id}/sample_entity_serving_names",
+    response_model=SampleEntityServingNames,
+)
+async def get_feature_sample_entity_serving_names(
+    request: Request,
+    feature_id: PydanticObjectId,
+    count: int = Query(default=1, gt=0, le=10),
+) -> SampleEntityServingNames:
+    """
+    Get Feature Sample Entity Serving Names
+    """
+    controller = request.state.app_container.feature_controller
+    sample_entity_serving_names: SampleEntityServingNames = (
+        await controller.get_sample_entity_serving_names(feature_id=feature_id, count=count)
+    )
+    return sample_entity_serving_names

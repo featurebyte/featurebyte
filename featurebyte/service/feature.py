@@ -3,7 +3,7 @@ FeatureService class
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Dict, List, Optional
 
 from datetime import datetime
 
@@ -22,6 +22,7 @@ from featurebyte.schema.feature_namespace import (
     FeatureNamespaceServiceUpdate,
 )
 from featurebyte.service.base_namespace_service import BaseNamespaceService
+from featurebyte.service.entity_serving_names import EntityServingNamesService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.namespace_handler import (
     NamespaceHandler,
@@ -46,6 +47,7 @@ class FeatureService(BaseNamespaceService[FeatureModel, FeatureServiceCreate]):
         feature_namespace_service: FeatureNamespaceService,
         namespace_handler: NamespaceHandler,
         block_modification_handler: BlockModificationHandler,
+        entity_serving_names_service: EntityServingNamesService,
     ):
         super().__init__(
             user=user,
@@ -56,6 +58,7 @@ class FeatureService(BaseNamespaceService[FeatureModel, FeatureServiceCreate]):
         self.table_service = table_service
         self.feature_namespace_service = feature_namespace_service
         self.namespace_handler = namespace_handler
+        self.entity_serving_names_service = entity_serving_names_service
 
     async def prepare_feature_model(
         self, data: FeatureServiceCreate, sanitize_for_definition: bool
@@ -264,4 +267,30 @@ class FeatureService(BaseNamespaceService[FeatureModel, FeatureServiceCreate]):
             update={
                 "$set": {"last_updated_by_scheduled_task_at": last_updated_by_scheduled_task_at}
             },
+        )
+
+    async def get_sample_entity_serving_names(  # pylint: disable=too-many-locals
+        self, feature_id: ObjectId, count: int
+    ) -> List[Dict[str, str]]:
+        """
+        Get sample entity serving names for a feature
+
+        Parameters
+        ----------
+        feature_id: ObjectId
+            Feature Id
+        count: int
+            Number of sample entity serving names to return
+
+        Returns
+        -------
+        List[Dict[str, str]]
+        """
+        feature = await self.get_document(feature_id)
+
+        # get entities and tables used for the feature list
+        return await self.entity_serving_names_service.get_sample_entity_serving_names(
+            entity_ids=feature.entity_ids,
+            table_ids=feature.table_ids,
+            count=count,
         )

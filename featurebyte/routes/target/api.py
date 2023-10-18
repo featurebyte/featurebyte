@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional, cast
 
 from http import HTTPStatus
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Query, Request
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.persistent import AuditDocumentList
@@ -23,6 +23,7 @@ from featurebyte.routes.common.schema import (
     VerboseQuery,
 )
 from featurebyte.schema.common.base import DescriptionUpdate
+from featurebyte.schema.feature_list import SampleEntityServingNames
 from featurebyte.schema.preview import FeatureOrTargetPreview
 from featurebyte.schema.target import TargetCreate, TargetInfo, TargetList, TargetUpdate
 
@@ -166,3 +167,22 @@ async def update_target_description(
         description=data.description,
     )
     return target
+
+
+@router.get(
+    "/{target_id}/sample_entity_serving_names",
+    response_model=SampleEntityServingNames,
+)
+async def get_feature_sample_entity_serving_names(
+    request: Request,
+    target_id: PydanticObjectId,
+    count: int = Query(default=1, gt=0, le=10),
+) -> SampleEntityServingNames:
+    """
+    Get Feature Sample Entity Serving Names
+    """
+    controller = request.state.app_container.target_controller
+    sample_entity_serving_names: SampleEntityServingNames = (
+        await controller.get_sample_entity_serving_names(target_id=target_id, count=count)
+    )
+    return sample_entity_serving_names
