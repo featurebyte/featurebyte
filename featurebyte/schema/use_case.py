@@ -39,6 +39,30 @@ class UseCaseUpdate(BaseDocumentServiceUpdateSchema):
 
     default_preview_table_id: Optional[PydanticObjectId]
     default_eda_table_id: Optional[PydanticObjectId]
+    observation_table_id_to_remove: Optional[PydanticObjectId]
+
+    @root_validator(pre=True)
+    @classmethod
+    def _validate_input(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        default_preview_table_id = values.get("default_preview_table_id", None)
+        default_eda_table_id = values.get("default_eda_table_id", None)
+        observation_table_id_to_remove = values.get("observation_table_id_to_remove", None)
+
+        if observation_table_id_to_remove:
+            if (
+                default_preview_table_id
+                and default_preview_table_id == observation_table_id_to_remove
+            ):
+                raise ValueError(
+                    "observation_table_id_to_remove cannot be the same as default_preview_table_id"
+                )
+
+            if default_eda_table_id and default_eda_table_id == observation_table_id_to_remove:
+                raise ValueError(
+                    "observation_table_id_to_remove cannot be the same as default_eda_table_id"
+                )
+
+        return values
 
 
 class UseCaseList(PaginationMixin):

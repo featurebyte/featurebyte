@@ -5,7 +5,11 @@ from typing import Any, Dict
 
 from bson import ObjectId
 
-from featurebyte.exception import DocumentCreationError, DocumentDeletionError
+from featurebyte.exception import (
+    DocumentCreationError,
+    DocumentDeletionError,
+    ObservationTableInvalidUseCaseError,
+)
 from featurebyte.models.use_case import UseCaseModel
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.info import EntityBriefInfo, EntityBriefInfoList, UseCaseInfo
@@ -111,6 +115,13 @@ class UseCaseController(
         data: UseCaseUpdate
             use case update data
 
+        Raises
+        ------
+        DocumentDeletionError
+            if use case is not associated with the observation table to remove
+        ObservationTableInvalidUseCaseError
+            if observation table to remove is the default EDA or preview table
+
         Returns
         -------
         UseCaseModel
@@ -125,6 +136,32 @@ class UseCaseController(
                         observation_table_id=obs_id,
                         data=ObservationTableUpdate(use_case_id_to_add=use_case_id),
                     )
+
+        obs_table_id_remove = data.observation_table_id_to_remove
+        if obs_table_id_remove:
+            observation_table = await self.observation_table_service.get_document(
+                document_id=obs_table_id_remove
+            )
+            if use_case_id not in observation_table.use_case_ids:
+                raise DocumentDeletionError(
+                    f"UseCase {use_case_id} is not associated with observation table {obs_table_id_remove}"
+                )
+
+            use_case = await self.get(document_id=use_case_id)
+            if use_case.default_eda_table_id == obs_table_id_remove:
+                raise ObservationTableInvalidUseCaseError(
+                    f"Cannot remove observation_table {obs_table_id_remove} as it is the default EDA table"
+                )
+
+            if use_case.default_preview_table_id == obs_table_id_remove:
+                raise ObservationTableInvalidUseCaseError(
+                    f"Cannot remove observation_table {obs_table_id_remove} as it is the default preview table"
+                )
+
+            await self.observation_table_service.update_observation_table(
+                observation_table_id=obs_table_id_remove,
+                data=ObservationTableUpdate(use_case_id_to_remove=use_case_id),
+            )
 
         return await self.service.update_use_case(document_id=use_case_id, data=data)
 
