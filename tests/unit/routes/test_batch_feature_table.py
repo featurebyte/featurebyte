@@ -155,8 +155,7 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
         response_dict = response.json()
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response_dict
         assert response_dict["detail"] == (
-            f"Cannot delete Batch Request Table {batch_request_table_id} because it is referenced by "
-            f"1 Batch Feature Table(s): ['{batch_feature_table_id}']"
+            "BatchRequestTable is referenced by BatchFeatureTable: batch_feature_table"
         )
 
     def test_info_200(self, test_api_client_persistent, create_success_response):
