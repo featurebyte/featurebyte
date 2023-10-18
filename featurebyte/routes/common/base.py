@@ -161,7 +161,9 @@ class BaseDocumentController(Generic[Document, DocumentServiceT, PaginatedDocume
         self, document_id: ObjectId
     ) -> List[Tuple[BaseDocumentService, QueryFilter]]:
         """
-        List of service and query filter pairs
+        List of service and query filter pairs. The first element of each pair is the document service
+        of the related document, and the second element is the query filter to retrieve the related
+        documents.
 
         Parameters
         ----------

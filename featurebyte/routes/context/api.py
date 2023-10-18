@@ -106,7 +106,7 @@ class ContextRouter(BaseApiRouter[ContextModel, ContextList, ContextCreate, Cont
         Delete Context
         """
         controller = self.get_controller_for_request(request)
-        await controller.delete_context(context_id=context_id)
+        await controller.delete(document_id=context_id)
         return DeleteResponse()
 
     async def update_context(

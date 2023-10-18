@@ -225,7 +225,7 @@ class TestContextApi(BaseCatalogApiTestSuite):
 
         response = test_api_client.delete(f"{self.base_route}/{context.id}")
         assert response.json()["detail"] == (
-            f"Context is associated with observation table: {observation_table.name}"
+            f"Context is referenced by ObservationTable: {observation_table.name}"
         )
 
     def test_delete_422__used_by_use_case(
@@ -256,7 +256,7 @@ class TestContextApi(BaseCatalogApiTestSuite):
 
         # check delete context
         response = test_api_client.delete(f"{self.base_route}/{context_id}")
-        assert response.json()["detail"] == "Context is used by use case: test_use_case"
+        assert response.json()["detail"] == "Context is referenced by UseCase: test_use_case"
 
     def test_create_context__not_all_primary_entity_ids(
         self,
