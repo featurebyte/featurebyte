@@ -1,9 +1,13 @@
 """
 Base class for materialized table routes
 """
-from typing import Any, TypeVar
+from typing import Any, AsyncGenerator, Optional, TypeVar
 
+from io import BytesIO
+
+import pyarrow as pa
 from bson import ObjectId
+from pyarrow import parquet as pq
 from starlette.responses import StreamingResponse
 
 from featurebyte.models.batch_feature_table import BatchFeatureTableModel
@@ -12,6 +16,7 @@ from featurebyte.models.historical_feature_table import HistoricalFeatureTableMo
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.static_source_table import StaticSourceTableModel
 from featurebyte.models.target_table import TargetTableModel
+from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.routes.common.base import BaseDocumentController, PaginatedDocument
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.task import Task
@@ -114,4 +119,90 @@ class BaseMaterializedTableController(
         return StreamingResponse(
             bytestream,
             media_type="application/octet-stream",
+        )
+
+    async def download_materialized_table_as_parquet_bytes(
+        self,
+        location: TabularSource,
+    ) -> AsyncGenerator[bytes, None]:
+        """
+        Download materialized table as parquet bytes generator
+
+        Parameters
+        ----------
+        location: TabularSource
+            ID of materialized table to download
+
+        Returns
+        -------
+        AsyncGenerator[bytes, None]
+        """
+        bytestream = await self.preview_service.download_table(
+            location=location,
+        )
+        assert bytestream is not None
+
+        in_buffer = BytesIO()
+        out_buffer = BytesIO()
+        reader: Optional[pa.RecordBatchStreamReader] = None
+        writer: Optional[pq.ParquetWriter] = None
+        async for in_chunk in bytestream:
+            in_buffer.write(in_chunk)
+            in_buffer.seek(0)
+            if not reader:
+                reader = pa.ipc.open_stream(in_buffer)
+            table = reader.read_all()
+            in_buffer.seek(0)
+            in_buffer.truncate(0)
+
+            if not writer:
+                writer = pq.ParquetWriter(out_buffer, table.schema)
+            writer.write_table(table)
+            out_buffer.seek(0)
+            out_chunk = out_buffer.getvalue()
+            if out_chunk:
+                yield out_chunk
+                out_buffer.seek(0)
+                out_buffer.truncate(0)
+
+        # read final chunk
+        if reader:
+            reader.close()
+            if writer:
+                writer.write_table(reader.read_all())
+                writer.close()
+        out_chunk = out_buffer.getvalue()
+        if out_chunk:
+            yield out_chunk
+
+    async def download_materialized_table_as_parquet(
+        self,
+        document_id: ObjectId,
+    ) -> StreamingResponse:
+        """
+        Download materialized table as parquet file
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            ID of materialized table to download
+
+        Returns
+        -------
+        StreamingResponse
+            StreamingResponse object
+        """
+        table = await self.service.get_document(document_id=document_id)
+        bytestream = self.download_materialized_table_as_parquet_bytes(
+            location=table.location,
+        )
+        return StreamingResponse(
+            bytestream,
+            media_type="application/octet-stream",
+            headers={
+                "content-disposition": (
+                    'attachment; name="data"; '
+                    f'filename="{table.collection_name()}_{table.name}.parquet"'
+                )
+            },
         )

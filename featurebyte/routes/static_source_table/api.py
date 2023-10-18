@@ -155,6 +155,20 @@ async def download_table_as_pyarrow_table(
     return result
 
 
+@router.get("/parquet/{static_source_table_id}")
+async def download_table_as_parquet(
+    request: Request, static_source_table_id: PydanticObjectId
+) -> StreamingResponse:
+    """
+    Download StaticSourceTable as parquet file
+    """
+    controller = request.state.app_container.static_source_table_controller
+    result: StreamingResponse = await controller.download_materialized_table_as_parquet(
+        document_id=static_source_table_id,
+    )
+    return result
+
+
 @router.patch("/{static_source_table_id}/description", response_model=StaticSourceTableModel)
 async def update_static_source_table_description(
     request: Request,

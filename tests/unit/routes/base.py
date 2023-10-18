@@ -8,16 +8,22 @@ import tempfile
 import textwrap
 from datetime import datetime
 from http import HTTPStatus
+from io import BytesIO
 from pathlib import Path
 from time import sleep
 from unittest.mock import Mock
 
 import pandas as pd
+import pyarrow as pa
 import pytest
 import pytest_asyncio
 from bson.objectid import ObjectId
 
-from featurebyte.common.utils import dataframe_to_arrow_bytes, parquet_from_arrow_stream
+from featurebyte.common.utils import (
+    create_new_arrow_stream_writer,
+    dataframe_to_arrow_bytes,
+    parquet_from_arrow_stream,
+)
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.node.schema import FeatureStoreDetails
 from featurebyte.schema.table import TableCreate
@@ -1363,6 +1369,48 @@ class BaseMaterializedTableTestSuite(BaseAsyncApiTestSuite):
                 """
             ).strip()
         )
+
+    def test_download_parquet(
+        self, test_api_client_persistent, create_success_response, mock_get_session
+    ):
+        """Test download parquet (success)"""
+        test_api_client, _ = test_api_client_persistent
+        assert create_success_response.status_code == HTTPStatus.OK
+        result = create_success_response.json()
+        table_name = result["name"]
+        doc_id = result["_id"]
+        expected_df = pd.DataFrame({"colA": [1, 2, 3] * 100})
+
+        async def mock_get_async_query_stream(query):
+            _ = query
+            buffer = BytesIO()
+            batches = pa.Table.from_pandas(expected_df).to_batches(max_chunksize=10)
+            writer = create_new_arrow_stream_writer(buffer, batches[0].schema)
+            for batch in batches:
+                writer.write_batch(batch)
+                yield buffer.getvalue()
+                buffer.seek(0)
+                buffer.truncate(0)
+
+        mock_session = mock_get_session.return_value
+        mock_session.get_async_query_stream = Mock(side_effect=mock_get_async_query_stream)
+        mock_session.execute_query.return_value = pd.DataFrame({"row_count": [3]})
+        mock_session.list_table_schema.return_value = {"colA": DBVarType.INT}
+        mock_session.generate_session_unique_id = Mock(return_value="1")
+
+        response = test_api_client.get(f"{self.base_route}/parquet/{doc_id}")
+        assert response.status_code == HTTPStatus.OK
+        assert len(response.content) > 0
+        assert response.headers == {
+            "content-disposition": (
+                f'attachment; name="data"; filename="{self.base_route.lstrip("/")}_{table_name}.parquet"'
+            ),
+            "content-type": "application/octet-stream",
+        }
+        buffer = BytesIO()
+        expected_df.to_parquet(buffer, index=False)
+        downloaded_df = pd.read_parquet(BytesIO(response.content))
+        pd.testing.assert_frame_equal(downloaded_df, expected_df)
 
     @pytest.fixture(autouse=True)
     def auto_patch_snowflake_execute_query(self, snowflake_execute_query_for_materialized_table):
