@@ -157,7 +157,7 @@ class BaseDocumentController(Generic[Document, DocumentServiceT, PaginatedDocume
         )
         return cast(PaginatedDocument, self.paginated_document_class(**document_data))
 
-    async def service_and_query_pairs_for_delete_verification(
+    async def service_and_query_pairs_for_checking_reference(
         self, document_id: ObjectId
     ) -> List[Tuple[BaseDocumentService, QueryFilter]]:  # type: ignore
         """
@@ -201,7 +201,7 @@ class BaseDocumentController(Generic[Document, DocumentServiceT, PaginatedDocume
             If the document cannot be deleted
         """
         asset_class_name = self.service.class_name
-        service_query_filter_pairs = await self.service_and_query_pairs_for_delete_verification(
+        service_query_filter_pairs = await self.service_and_query_pairs_for_checking_reference(
             document_id=document_id
         )
         for service, query_filter in service_query_filter_pairs:

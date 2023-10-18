@@ -164,7 +164,7 @@ class UserDefinedFunctionController(
         )
         return cast(UserDefinedFunctionModel, output_document)
 
-    async def service_and_query_pairs_for_delete_verification(
+    async def service_and_query_pairs_for_checking_reference(
         self, document_id: ObjectId
     ) -> List[Tuple[BaseDocumentService, QueryFilter]]:  # type: ignore
         return [(self.feature_service, {"user_defined_function_ids": {"$in": [document_id]}})]

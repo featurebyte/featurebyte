@@ -130,7 +130,7 @@ class ObservationTableController(
         task_id = await self.task_manager.submit(payload=payload)
         return await self.task_controller.get_task(task_id=str(task_id))
 
-    async def service_and_query_pairs_for_delete_verification(
+    async def service_and_query_pairs_for_checking_reference(
         self, document_id: ObjectId
     ) -> List[Tuple[BaseDocumentService, QueryFilter]]:  # type: ignore
         document = await self.service.get_document(document_id=document_id)

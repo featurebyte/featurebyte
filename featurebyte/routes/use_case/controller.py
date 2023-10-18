@@ -164,7 +164,7 @@ class UseCaseController(
 
         return await self.service.update_use_case(document_id=use_case_id, data=data)
 
-    async def service_and_query_pairs_for_delete_verification(
+    async def service_and_query_pairs_for_checking_reference(
         self, document_id: ObjectId
     ) -> List[Tuple[BaseDocumentService, QueryFilter]]:  # type: ignore
         return [

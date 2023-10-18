@@ -119,7 +119,7 @@ class ContextController(
         )
         return await self.get(document_id=context_id)
 
-    async def service_and_query_pairs_for_delete_verification(
+    async def service_and_query_pairs_for_checking_reference(
         self, document_id: ObjectId
     ) -> List[Tuple[BaseDocumentService, QueryFilter]]:  # type: ignore
         return [
