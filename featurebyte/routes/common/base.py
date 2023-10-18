@@ -3,12 +3,14 @@ BaseController for API routes
 """
 from __future__ import annotations
 
-from typing import Any, Generic, List, Literal, Optional, Type, TypeVar, cast
+from typing import Any, Generic, List, Literal, Optional, Tuple, Type, TypeVar, cast
 
 from bson.objectid import ObjectId
 
+from featurebyte.exception import DocumentDeletionError
 from featurebyte.models.persistent import AuditDocumentList, FieldValueHistory, QueryFilter
 from featurebyte.schema.common.base import PaginationMixin
+from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.service.catalog import CatalogService
@@ -155,6 +157,48 @@ class BaseDocumentController(Generic[Document, DocumentServiceT, PaginatedDocume
         )
         return cast(PaginatedDocument, self.paginated_document_class(**document_data))
 
+    async def service_and_query_pairs_for_delete_verification(
+        self, document_id: ObjectId
+    ) -> List[Tuple[BaseDocumentService, QueryFilter]]:
+        """
+        List of service and query filter pairs
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            ID of document to retrieve
+
+        Returns
+        -------
+        List[Tuple[BaseDocumentService, QueryFilter]]
+            List of service and query filter pairs
+        """
+        _ = self, document_id
+        return []
+
+    async def verify_delete_operation(self, document_id: ObjectId) -> None:
+        """
+        Check whether the document can be deleted
+
+        Parameters
+        ----------
+        document_id: ObjectId
+
+        Raises
+        ------
+        DocumentDeletionError
+            If the document cannot be deleted
+        """
+        asset_class_name = self.service.class_name
+        service_query_filter_pairs = await self.service_and_query_pairs_for_delete_verification(
+            document_id=document_id
+        )
+        for service, query_filter in service_query_filter_pairs:
+            async for doc in service.list_documents_as_dict_iterator(query_filter=query_filter):
+                raise DocumentDeletionError(
+                    f"{asset_class_name} is referenced by {service.class_name}: {doc['name']}"
+                )
+
     async def delete(self, document_id: ObjectId) -> None:
         """
         Delete document.
@@ -164,6 +208,7 @@ class BaseDocumentController(Generic[Document, DocumentServiceT, PaginatedDocume
         document_id: ObjectId
             ID of document to delete
         """
+        await self.verify_delete_operation(document_id=document_id)
         await self.service.delete_document(document_id=document_id)
 
     async def list_audit(
