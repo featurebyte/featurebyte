@@ -1219,7 +1219,11 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         """
         # Validate whether there are overlapping column names
         _, right_join_key = self._get_join_keys(other_view, on)
-        right_excluded_columns = other_view.get_excluded_columns_as_other_view(right_join_key)
+        right_excluded_columns = apply_column_name_modifiers(
+            other_view.get_excluded_columns_as_other_view(right_join_key),
+            rsuffix=rsuffix,
+            rprefix=rprefix,
+        )
         current_column_names = {col.name for col in self.columns_info}
         repeated_column_names = []
         for other_col in apply_column_name_modifiers_columns_info(
