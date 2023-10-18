@@ -126,7 +126,6 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
         """Test delete 422 for batch request table failed validation check"""
         test_api_client, persistent = test_api_client_persistent
         create_success_response_dict = create_success_response.json()
-        batch_feature_table_id = create_success_response_dict["_id"]
 
         # insert another document to batch feature table to make sure the query filter is correct
         payload = copy.deepcopy(self.payload)
