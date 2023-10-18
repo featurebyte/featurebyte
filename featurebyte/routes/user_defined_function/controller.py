@@ -3,13 +3,14 @@ UserDefinedFunction API route controller
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, cast
+from typing import Any, Dict, List, Literal, Tuple, cast
 
 from bson import ObjectId
 
-from featurebyte.exception import DocumentCreationError, DocumentDeletionError, DocumentUpdateError
+from featurebyte.exception import DocumentCreationError, DocumentUpdateError
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreModel
+from featurebyte.models.persistent import QueryFilter
 from featurebyte.models.user_defined_function import UserDefinedFunctionModel
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.info import UserDefinedFunctionFeatureInfo, UserDefinedFunctionInfo
@@ -19,6 +20,7 @@ from featurebyte.schema.user_defined_function import (
     UserDefinedFunctionServiceUpdate,
     UserDefinedFunctionUpdate,
 )
+from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
@@ -66,21 +68,6 @@ class UserDefinedFunctionController(
             if to_delete:
                 await self.service.delete_document(document_id=user_defined_function.id)
             raise exception_class(f"{exc}") from exc
-
-    async def _check_user_defined_function_used_by_feature(
-        self,
-        document_id: PydanticObjectId,
-        exception_class: type[DocumentUpdateError] | type[DocumentDeletionError],
-    ) -> None:
-        # check if function used in any saved feature
-        features = await self.feature_service.list_documents_as_dict(
-            query_filter={"user_defined_function_ids": {"$in": [document_id]}},
-        )
-        if features["total"]:
-            feature_names = [doc["name"] for doc in features["data"]]
-            raise exception_class(
-                f"User defined function used by saved feature(s): {feature_names}"
-            )
 
     async def create_user_defined_function(
         self,
@@ -150,9 +137,8 @@ class UserDefinedFunctionController(
             raise DocumentUpdateError("No changes detected in user defined function")
 
         # check if function used in any saved feature
-        await self._check_user_defined_function_used_by_feature(
-            document_id=document_id,
-            exception_class=DocumentUpdateError,
+        await self.verify_operation_by_checking_reference(
+            document_id=document_id, exception_class=DocumentUpdateError
         )
 
         # retrieve feature store
@@ -178,24 +164,10 @@ class UserDefinedFunctionController(
         )
         return cast(UserDefinedFunctionModel, output_document)
 
-    async def delete_user_defined_function(self, document_id: PydanticObjectId) -> None:
-        """
-        Delete UserDefinedFunction from persistent
-
-        Parameters
-        ----------
-        document_id: PydanticObjectId
-            UserDefinedFunction id to be deleted
-        """
-        # check if user defined function exists
-        await self.service.get_document(document_id=document_id)
-
-        # check if function used in any saved feature
-        await self._check_user_defined_function_used_by_feature(
-            document_id=document_id,
-            exception_class=DocumentDeletionError,
-        )
-        await self.service.delete_document(document_id=document_id)
+    async def service_and_query_pairs_for_delete_verification(
+        self, document_id: ObjectId
+    ) -> List[Tuple[BaseDocumentService, QueryFilter]]:  # type: ignore
+        return [(self.feature_service, {"user_defined_function_ids": {"$in": [document_id]}})]
 
     async def list_user_defined_functions(
         self,

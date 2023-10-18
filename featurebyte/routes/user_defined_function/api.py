@@ -91,7 +91,7 @@ async def delete_user_defined_function(
     Delete UserDefinedFunction
     """
     controller = request.state.app_container.user_defined_function_controller
-    await controller.delete_user_defined_function(document_id=user_defined_function_id)
+    await controller.delete(document_id=user_defined_function_id)
     return DeleteResponse()
 
 

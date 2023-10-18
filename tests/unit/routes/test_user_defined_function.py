@@ -170,7 +170,7 @@ class TestUserDefinedFunctionApi(BaseCatalogApiTestSuite):
         assert update_response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert (
             update_response.json()["detail"]
-            == "User defined function used by saved feature(s): ['sum_30m']"
+            == "UserDefinedFunction is referenced by Feature: sum_30m"
         )
 
     def test_update__function_not_found(
@@ -234,10 +234,7 @@ class TestUserDefinedFunctionApi(BaseCatalogApiTestSuite):
         )
         response = test_api_client.delete(url=f"{self.base_route}/{response_dict['_id']}")
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-        assert (
-            response.json()["detail"]
-            == "User defined function used by saved feature(s): ['sum_30m']"
-        )
+        assert response.json()["detail"] == "UserDefinedFunction is referenced by Feature: sum_30m"
 
     def test_list_200__filter_by_feature_store_id(
         self, test_api_client_persistent, create_multiple_success_responses

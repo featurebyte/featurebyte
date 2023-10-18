@@ -6,6 +6,7 @@ from typing import Any, TypeVar
 from bson import ObjectId
 from starlette.responses import StreamingResponse
 
+from featurebyte.exception import DocumentDeletionError
 from featurebyte.models.batch_feature_table import BatchFeatureTableModel
 from featurebyte.models.batch_request_table import BatchRequestTableModel
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
@@ -71,7 +72,9 @@ class BaseMaterializedTableController(
         _ = await self.service.get_document(document_id=document_id)
 
         # check if document is used by any other documents
-        await self.verify_delete_operation(document_id=document_id)
+        await self.verify_operation_by_checking_reference(
+            document_id=document_id, exception_class=DocumentDeletionError
+        )
 
         # create task payload & submit task
         payload = await self.service.get_materialized_table_delete_task_payload(

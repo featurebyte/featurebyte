@@ -3,11 +3,11 @@ BaseController for API routes
 """
 from __future__ import annotations
 
-from typing import Any, Generic, List, Literal, Optional, Tuple, Type, TypeVar, cast
+from typing import Any, Generic, List, Literal, Optional, Tuple, Type, TypeVar, Union, cast
 
 from bson.objectid import ObjectId
 
-from featurebyte.exception import DocumentDeletionError
+from featurebyte.exception import DocumentDeletionError, DocumentUpdateError
 from featurebyte.models.persistent import AuditDocumentList, FieldValueHistory, QueryFilter
 from featurebyte.schema.common.base import PaginationMixin
 from featurebyte.service.base_document import BaseDocumentService
@@ -178,7 +178,11 @@ class BaseDocumentController(Generic[Document, DocumentServiceT, PaginatedDocume
         _ = self, document_id
         return []
 
-    async def verify_delete_operation(self, document_id: ObjectId) -> None:
+    async def verify_operation_by_checking_reference(
+        self,
+        document_id: ObjectId,
+        exception_class: Union[Type[DocumentDeletionError], Type[DocumentUpdateError]],
+    ) -> None:
         """
         Check whether the document can be deleted. This function uses the output of
         "service_and_query_pairs_for_delete_verification" to query related documents to check whether
@@ -187,6 +191,9 @@ class BaseDocumentController(Generic[Document, DocumentServiceT, PaginatedDocume
         Parameters
         ----------
         document_id: ObjectId
+            ID of document to verify
+        exception_class: Union[Type[DocumentDeletionError], Type[DocumentUpdateError]]
+            Exception class to raise if the document cannot be deleted
 
         Raises
         ------
@@ -199,7 +206,7 @@ class BaseDocumentController(Generic[Document, DocumentServiceT, PaginatedDocume
         )
         for service, query_filter in service_query_filter_pairs:
             async for doc in service.list_documents_as_dict_iterator(query_filter=query_filter):
-                raise DocumentDeletionError(
+                raise exception_class(
                     f"{asset_class_name} is referenced by {service.class_name}: {doc['name']}"
                 )
 
@@ -212,7 +219,9 @@ class BaseDocumentController(Generic[Document, DocumentServiceT, PaginatedDocume
         document_id: ObjectId
             ID of document to delete
         """
-        await self.verify_delete_operation(document_id=document_id)
+        await self.verify_operation_by_checking_reference(
+            document_id=document_id, exception_class=DocumentDeletionError
+        )
         await self.service.delete_document(document_id=document_id)
 
     async def list_audit(
