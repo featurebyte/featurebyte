@@ -461,6 +461,7 @@ def test_catalog_update_name(new_catalog):
             ),
             ("INSERT", 'insert: "grocery"', "default_feature_store_ids", np.nan, []),
             ("INSERT", 'insert: "grocery"', "description", np.nan, None),
+            ("INSERT", 'insert: "grocery"', "is_deleted", np.nan, False),
             ("INSERT", 'insert: "grocery"', "name", np.nan, "grocery"),
             ("INSERT", 'insert: "grocery"', "updated_at", np.nan, None),
             ("INSERT", 'insert: "grocery"', "user_id", np.nan, None),
