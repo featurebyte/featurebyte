@@ -504,8 +504,7 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         response = test_api_client.delete(f"/observation_table/{str(new_ob_table_id)}")
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
         assert (
-            f"Cannot delete Observation Table {str(new_ob_table_id)} because it is referenced"
-            in response.json()["detail"]
+            response.json()["detail"] == "ObservationTable is referenced by UseCase: test_use_case "
         )
 
     @pytest.mark.asyncio
@@ -535,7 +534,7 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         response = test_api_client.delete(f"{self.base_route}/{use_case_id}")
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
         assert response.json()["detail"] == (
-            "UseCase is associated with observation table: observation_table_from_target_input"
+            "UseCase is referenced by ObservationTable: observation_table_from_target_input"
         )
 
     @pytest.mark.asyncio

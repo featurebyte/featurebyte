@@ -191,7 +191,7 @@ def test_create_feature_with_user_defined_function(cos_udf, float_feature):
     with pytest.raises(RecordDeletionException) as exc:
         cos_udf.delete()
 
-    expected_error = "User defined function used by saved feature(s): ['cos_feat']"
+    expected_error = "UserDefinedFunction is referenced by Feature: cos_feat"
     assert expected_error in str(exc.value)
 
     # delete the feature first then delete the UDF should succeed
@@ -231,14 +231,12 @@ def test_create_complex_feature_with_user_defined_function(
     # attempt to delete the UDF should fail
     with pytest.raises(RecordDeletionException) as exc:
         power_udf.delete()
-    expected_error = (
-        "User defined function used by saved feature(s): ['power_feat2', 'power_feat1']"
-    )
+    expected_error = "UserDefinedFunction is referenced by Feature: power_feat2"
     assert expected_error in str(exc.value)
 
     with pytest.raises(RecordDeletionException) as exc:
         date_sub_udf.delete()
-    expected_error = "User defined function used by saved feature(s): ['date_sub_feat']"
+    expected_error = "UserDefinedFunction is referenced by Feature: date_sub_feat"
     assert expected_error in str(exc.value)
 
     # delete the feature first then delete the UDF should succeed (for power_udf)
@@ -290,7 +288,7 @@ def test_create_feature_with_complex_operation(
     assert sorted(feat.cached_model.user_defined_function_ids) == sorted([power_udf.id, cos_udf.id])
 
     # attempt to delete the UDF should fail
-    expected_error = "User defined function used by saved feature(s): ['sum_cos_float_square']"
+    expected_error = "UserDefinedFunction is referenced by Feature: sum_cos_float_square"
     with pytest.raises(RecordDeletionException) as exc:
         power_udf.delete()
     assert expected_error in str(exc.value)
@@ -344,7 +342,7 @@ def test_update_user_defined_function(cos_udf, float_feature):
 
     with pytest.raises(RecordUpdateException) as exc:
         cos_udf.update_output_dtype("FLOAT")
-    expected_error = "User defined function used by saved feature(s): ['new_feat']"
+    expected_error = "UserDefinedFunction is referenced by Feature: new_feat"
     assert expected_error in str(exc.value)
 
 

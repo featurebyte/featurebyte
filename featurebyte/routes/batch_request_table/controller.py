@@ -3,9 +3,12 @@ BatchRequestTable API route controller
 """
 from __future__ import annotations
 
+from typing import Any, List, Tuple
+
 from bson import ObjectId
 
 from featurebyte.models.batch_request_table import BatchRequestTableModel
+from featurebyte.models.persistent import QueryFilter
 from featurebyte.routes.common.base_materialized_table import BaseMaterializedTableController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.batch_request_table import BatchRequestTableCreate, BatchRequestTableList
@@ -15,7 +18,6 @@ from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.preview import PreviewService
-from featurebyte.service.validator.materialized_table_delete import check_delete_batch_request_table
 
 
 class BatchRequestTableController(
@@ -62,12 +64,12 @@ class BatchRequestTableController(
         task_id = await self.task_controller.task_manager.submit(payload=payload)
         return await self.task_controller.get_task(task_id=str(task_id))
 
-    async def _verify_delete_operation(self, document_id: ObjectId) -> None:
-        await check_delete_batch_request_table(
-            batch_request_table_service=self.service,
-            batch_feature_table_service=self.batch_feature_table_service,
-            document_id=document_id,
-        )
+    async def service_and_query_pairs_for_checking_reference(
+        self, document_id: ObjectId
+    ) -> List[Tuple[Any, QueryFilter]]:
+        return [
+            (self.batch_feature_table_service, {"batch_request_table_id": document_id}),
+        ]
 
     async def get_info(self, document_id: ObjectId, verbose: bool) -> BatchRequestTableInfo:
         """

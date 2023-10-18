@@ -3,10 +3,13 @@ Context API route controller
 """
 from __future__ import annotations
 
+from typing import Any, List, Tuple
+
 from bson import ObjectId
 
-from featurebyte.exception import DocumentCreationError, DocumentDeletionError
+from featurebyte.exception import DocumentCreationError
 from featurebyte.models.context import ContextModel
+from featurebyte.models.persistent import QueryFilter
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.routes.common.primary_entity_validator import PrimaryEntityValidator
 from featurebyte.schema.context import ContextCreate, ContextList, ContextUpdate
@@ -115,52 +118,15 @@ class ContextController(
         )
         return await self.get(document_id=context_id)
 
-    async def delete_context(self, context_id: ObjectId) -> None:
-        """
-        Delete Context if it is not used by any use case or associated with any tables
-
-        Parameters
-        ----------
-        context_id: ObjectId
-            Context ID
-
-        Raises
-        ------
-        DocumentDeletionError
-            if the use case is associated with any asset
-        """
-        # check whether context is used by any use case
-        async for use_case_doc in self.use_case_service.list_documents_as_dict_iterator(
-            query_filter={"context_id": context_id}
-        ):
-            raise DocumentDeletionError("Context is used by use case: " + use_case_doc["name"])
-
-        # check whether context is associated with any observation table
-        async for table_doc in self.observation_table_service.list_documents_as_dict_iterator(
-            query_filter={"context_id": context_id}
-        ):
-            raise DocumentDeletionError(
-                "Context is associated with observation table: " + table_doc["name"]
-            )
-
-        # check whether context is associated with any batch feature table
-        async for table_doc in self.batch_feature_table_service.list_documents_as_dict_iterator(
-            query_filter={"context_id": context_id}
-        ):
-            raise DocumentDeletionError(
-                "Context is associated with batch feature table: " + table_doc["name"]
-            )
-
-        # check whether context is associated with any deployment
-        async for deployment_doc in self.deployment_service.list_documents_as_dict_iterator(
-            query_filter={"context_id": context_id}
-        ):
-            raise DocumentDeletionError(
-                "Context is associated with deployment: " + deployment_doc["name"]
-            )
-
-        # delete context
-        await self.context_service.delete_document(document_id=context_id)
+    async def service_and_query_pairs_for_checking_reference(
+        self, document_id: ObjectId
+    ) -> List[Tuple[Any, QueryFilter]]:
+        return [
+            (self.use_case_service, {"context_id": document_id}),
+            (self.observation_table_service, {"context_id": document_id}),
+            (self.batch_feature_table_service, {"context_id": document_id}),
+            (self.deployment_service, {"context_id": document_id}),
+        ]
 
     async def get_info(self, context_id: ObjectId) -> ContextInfo:
         """

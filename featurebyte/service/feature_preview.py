@@ -60,7 +60,6 @@ class FeaturePreviewService(PreviewService):
     ):
         super().__init__(session_manager_service, feature_store_service)
         self.entity_validation_service = entity_validation_service
-        self.entity_validation_service = entity_validation_service
         self.feature_list_service = feature_list_service
         self.observation_table_service = observation_table_service
         self.feature_service = feature_service

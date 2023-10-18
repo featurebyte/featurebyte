@@ -131,7 +131,6 @@ class TestHistoricalFeatureTableApi(BaseMaterializedTableTestSuite):
         """Test delete 422 for observation table failed validation check"""
         test_api_client, persistent = test_api_client_persistent
         create_success_response_dict = create_success_response.json()
-        historical_feature_table_id = create_success_response_dict["_id"]
 
         # insert another document to historical feature table to make sure the query filter is correct
         payload = copy.deepcopy(self.payload)
@@ -162,8 +161,7 @@ class TestHistoricalFeatureTableApi(BaseMaterializedTableTestSuite):
         response_dict = response.json()
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response_dict
         assert response_dict["detail"] == (
-            f"Cannot delete Observation Table {observation_table_id} because it is referenced by "
-            f"1 Historical Feature Table(s): ['{historical_feature_table_id}']"
+            "ObservationTable is referenced by HistoricalFeatureTable: historical_feature_table"
         )
 
     def test_info_200(self, test_api_client_persistent, create_success_response):
