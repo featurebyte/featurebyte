@@ -7,7 +7,7 @@ from typing import List, Optional
 
 from http import HTTPStatus
 
-from fastapi import Request
+from fastapi import Query, Request
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.catalog import CatalogModel, CatalogNameHistoryEntry
@@ -41,13 +41,22 @@ class CatalogRouter(BaseApiRouter[CatalogModel, CatalogList, CatalogCreate, Cata
 
     def __init__(self) -> None:
         super().__init__("/catalog")
+        self.remove_routes({"/catalog/{catalog_id}": ["DELETE"]})
 
-        # # update route
+        # update route
         self.router.add_api_route(
             "/{catalog_id}",
             self.update_catalog,
             methods=["PATCH"],
             response_model=CatalogModel,
+            status_code=HTTPStatus.OK,
+        )
+
+        # delete route
+        self.router.add_api_route(
+            "/{catalog_id}",
+            self.delete_catalog,
+            methods=["DELETE"],
             status_code=HTTPStatus.OK,
         )
 
@@ -65,11 +74,6 @@ class CatalogRouter(BaseApiRouter[CatalogModel, CatalogList, CatalogCreate, Cata
             self.list_name_history,
             methods=["GET"],
             response_model=List[CatalogNameHistoryEntry],
-        )
-        self.remove_routes(
-            {
-                "/catalog/{catalog_id}": ["DELETE"],
-            }
         )
 
     async def get_object(self, request: Request, catalog_id: PydanticObjectId) -> CatalogModel:
@@ -135,6 +139,30 @@ class CatalogRouter(BaseApiRouter[CatalogModel, CatalogList, CatalogCreate, Cata
             data=data,
         )
         return catalog
+
+    async def delete_catalog(
+        self,
+        request: Request,
+        catalog_id: PydanticObjectId,
+        soft_delete: bool = Query(default=True),
+    ) -> None:
+        """
+        Delete catalog
+
+        Parameters
+        ----------
+        request: Request
+            Request
+        catalog_id: PydanticObjectId
+            Catalog ID
+        soft_delete: Optional[str]
+            Soft delete
+        """
+        controller = self.get_controller_for_request(request)
+        await controller.delete_catalog(
+            catalog_id=catalog_id,
+            soft_delete=soft_delete,
+        )
 
     async def list_name_history(
         self,

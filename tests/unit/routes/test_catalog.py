@@ -7,6 +7,7 @@ import pytest
 import pytest_asyncio
 from bson.objectid import ObjectId
 
+from featurebyte.models.deployment import DeploymentModel
 from tests.unit.routes.base import BaseApiTestSuite
 
 
@@ -209,6 +210,79 @@ class TestCatalogApi(BaseApiTestSuite):
                 "type": "type_error",
             }
         ]
+
+    def test_soft_delete(self, create_success_response, test_api_client_persistent):
+        """
+        Test catalog delete (soft delete)
+        """
+        test_api_client, _ = test_api_client_persistent
+        response_dict = create_success_response.json()
+        catalog_id = response_dict["_id"]
+
+        # test soft delete
+        response = test_api_client.delete(
+            f"{self.base_route}/{catalog_id}", params={"soft_delete": True}
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+
+        # attempt to retrieve the catalog
+        response = test_api_client.get(f"{self.base_route}/{catalog_id}")
+        assert response.status_code == HTTPStatus.NOT_FOUND, response.json()
+
+        # check soft deleted catalog not in catalog list
+        response = test_api_client.get(f"{self.base_route}")
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json()["data"] == []
+
+    @pytest.mark.asyncio
+    async def test_soft_delete__with_active_deployment(
+        self, create_success_response, test_api_client_persistent, app_container
+    ):
+        """
+        Test catalog delete (soft delete)
+        """
+        test_api_client, _ = test_api_client_persistent
+        response_dict = create_success_response.json()
+        catalog_id = response_dict["_id"]
+
+        # create deployment
+        app_container.deployment_service.catalog_id = ObjectId(catalog_id)
+        deployment = await app_container.deployment_service.create_document(
+            data=DeploymentModel(
+                name="test_deployment",
+                feature_list_id=ObjectId(),
+                enabled=True,
+                catalog_id=catalog_id,
+            )
+        )
+        assert deployment.enabled is True
+        assert deployment.catalog_id == ObjectId(catalog_id)
+
+        # test soft delete
+        response = test_api_client.delete(
+            f"{self.base_route}/{catalog_id}", params={"soft_delete": True}
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert response.json()["detail"] == (
+            "Catalog cannot be deleted because it still has active deployment: test_deployment"
+        )
+
+    def test_hard_delete__not_implemented(
+        self, create_success_response, test_api_client_persistent
+    ):
+        """
+        Test catalog delete (hard delete)
+        """
+        test_api_client, _ = test_api_client_persistent
+        response_dict = create_success_response.json()
+        catalog_id = response_dict["_id"]
+
+        # test soft delete
+        response = test_api_client.delete(
+            f"{self.base_route}/{catalog_id}", params={"soft_delete": False}
+        )
+        assert response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR, response.json()
+        assert response.json()["detail"] == "Hard delete is not supported"
 
     def tests_get_name_history(self, test_api_client_persistent, create_success_response):
         """

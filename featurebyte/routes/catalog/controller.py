@@ -5,11 +5,13 @@ from __future__ import annotations
 
 from bson.objectid import ObjectId
 
+from featurebyte.exception import DocumentDeletionError
 from featurebyte.models.catalog import CatalogModel
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.catalog import CatalogList, CatalogServiceUpdate, CatalogUpdate
 from featurebyte.schema.info import CatalogInfo
 from featurebyte.service.catalog import CatalogService
+from featurebyte.service.deployment import AllDeploymentService
 
 
 class CatalogController(
@@ -20,6 +22,14 @@ class CatalogController(
     """
 
     paginated_document_class = CatalogList
+
+    def __init__(
+        self,
+        service: CatalogService,
+        all_deployment_service: AllDeploymentService,
+    ):
+        super().__init__(service=service)
+        self.all_deployment_service = all_deployment_service
 
     async def update_catalog(
         self,
@@ -47,6 +57,36 @@ class CatalogController(
             return_document=False,
         )
         return await self.get(document_id=catalog_id)
+
+    async def delete_catalog(self, catalog_id: ObjectId, soft_delete: bool) -> None:
+        """
+        Delete a document given document ID
+
+        Parameters
+        ----------
+        catalog_id: ObjectId
+            Catalog ID
+        soft_delete: bool
+            Flag to control soft delete
+
+        Raises
+        ------
+        NotImplementedError
+            If hard delete is requested
+        DocumentDeletionError
+            If the catalog has active deployment
+        """
+        if not soft_delete:
+            raise NotImplementedError("Hard delete is not supported")
+
+        async for doc in self.all_deployment_service.list_documents_as_dict_iterator(
+            query_filter={"enabled": True, "catalog_id": catalog_id}
+        ):
+            raise DocumentDeletionError(
+                f"Catalog cannot be deleted because it still has active deployment: {doc['name']}"
+            )
+
+        await self.service.soft_delete(document_id=catalog_id)
 
     async def get_info(
         self,
