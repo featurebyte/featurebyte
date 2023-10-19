@@ -341,7 +341,7 @@ class ObservationTableService(
         min_interval_df = await db_session.execute_query(sql_string)
         assert min_interval_df is not None
         value = min_interval_df.iloc[0]["MIN_INTERVAL"]
-        if value is None or value == np.nan:
+        if value is None or np.isnan(value):
             return None
         return int(value)
 
