@@ -136,7 +136,7 @@ class SCDTableRouter(
 
     async def create_object(self, request: Request, data: SCDTableCreate) -> SCDTableModel:
         controller = self.get_controller_for_request(request)
-        return await controller.create_table(data=data)
+        return await controller.create_table(data=data)  # type: ignore
 
     async def get_scd_table_info(
         self, request: Request, scd_table_id: PydanticObjectId, verbose: bool = VerboseQuery
@@ -191,7 +191,7 @@ class SCDTableRouter(
         scd_table: SCDTableModel = await controller.update_column_critical_data_info(
             document_id=scd_table_id,
             column_name=data.column_name,
-            critical_data_info=data.critical_data_info,
+            critical_data_info=data.critical_data_info,  # type: ignore
         )
         return scd_table
 

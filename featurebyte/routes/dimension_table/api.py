@@ -146,7 +146,7 @@ class DimensionTableRouter(
         self, request: Request, data: DimensionTableCreate
     ) -> DimensionTableModel:
         controller = self.get_controller_for_request(request)
-        return await controller.create_table(data=data)
+        return await controller.create_table(data=data)  # type: ignore
 
     async def get_dimension_table_info(
         self, request: Request, dimension_table_id: PydanticObjectId, verbose: bool = VerboseQuery
@@ -201,7 +201,7 @@ class DimensionTableRouter(
         dimension_table: DimensionTableModel = await controller.update_column_critical_data_info(
             document_id=dimension_table_id,
             column_name=data.column_name,
-            critical_data_info=data.critical_data_info,
+            critical_data_info=data.critical_data_info,  # type: ignore
         )
         return dimension_table
 
