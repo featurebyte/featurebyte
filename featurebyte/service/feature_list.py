@@ -18,7 +18,6 @@ from featurebyte.models.feature_list import (
     FeatureListNamespaceModel,
     FeatureReadinessDistribution,
 )
-from featurebyte.models.feature_namespace import DefaultVersionMode
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.persistent import Persistent
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
