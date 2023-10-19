@@ -285,6 +285,28 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         )
         self.check_feature_list_deployed(test_api_client, feature_list_id, False)
 
+    def test_delete_200(self, test_api_client_persistent, create_success_response):
+        """Test delete deployment"""
+        test_api_client, _ = test_api_client_persistent
+        deployment_id = create_success_response.json()["_id"]
+        response = test_api_client.delete(f"{self.base_route}/{deployment_id}")
+        assert response.status_code == HTTPStatus.OK, response.json()
+
+        # check deleted deployment cannot be found
+        response = test_api_client.get(f"{self.base_route}/{deployment_id}")
+        assert response.status_code == HTTPStatus.NOT_FOUND, response.json()
+
+    def test_delete_422(
+        self, test_api_client_persistent, create_success_response, default_catalog_id
+    ):
+        """Test delete deployment (422)"""
+        test_api_client, _ = test_api_client_persistent
+        deployment_id = create_success_response.json()["_id"]
+        self.update_deployment_enabled(test_api_client, deployment_id, default_catalog_id)
+        response = test_api_client.delete(f"{self.base_route}/{deployment_id}")
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert response.json()["detail"] == "Only disabled deployment can be deleted."
+
     def test_info_200(self, test_api_client_persistent, create_success_response):
         """Test info route"""
         test_api_client, _ = test_api_client_persistent

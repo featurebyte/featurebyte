@@ -177,3 +177,29 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
             "updated_at": None,
             "description": None,
         }
+
+    def test_delete_deployment(
+        self, test_api_client_persistent, create_success_response, default_catalog_id
+    ):
+        """Test delete deployment used by batch feature table"""
+        test_api_client, _ = test_api_client_persistent
+        doc_id = create_success_response.json()["_id"]
+        response = test_api_client.get(f"{self.base_route}/{doc_id}")
+        assert response.status_code == HTTPStatus.OK, response.json()
+
+        # attempt to delete deployment
+        deployment_id = response.json()["deployment_id"]
+        response = test_api_client.delete(f"/deployment/{deployment_id}")
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert response.json()["detail"] == "Only disabled deployment can be deleted."
+
+        # disable the deployment first
+        self.update_deployment_enabled(
+            test_api_client, deployment_id, default_catalog_id, enabled=False
+        )
+        response = test_api_client.delete(f"/deployment/{deployment_id}")
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert (
+            response.json()["detail"]
+            == "Deployment is referenced by BatchFeatureTable: batch_feature_table"
+        )
