@@ -81,6 +81,11 @@ class TargetTableRouter(BaseMaterializedTableRouter[TargetTableModel]):
             methods=["GET"],
         )
         self.router.add_api_route(
+            "/parquet/{target_table_id}",
+            self.download_table_as_parquet,
+            methods=["GET"],
+        )
+        self.router.add_api_route(
             "/{target_table_id}/description",
             self.update_target_table_description,
             methods=["PATCH"],
@@ -189,6 +194,19 @@ class TargetTableRouter(BaseMaterializedTableRouter[TargetTableModel]):
         """
         controller = request.state.app_container.target_table_controller
         result: StreamingResponse = await controller.download_materialized_table(
+            document_id=target_table_id,
+        )
+        return result
+
+    @staticmethod
+    async def download_table_as_parquet(
+        request: Request, target_table_id: PydanticObjectId
+    ) -> StreamingResponse:
+        """
+        Download TargetTable as parquet file
+        """
+        controller = request.state.app_container.target_table_controller
+        result: StreamingResponse = await controller.download_materialized_table_as_parquet(
             document_id=target_table_id,
         )
         return result

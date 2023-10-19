@@ -158,6 +158,20 @@ async def download_table_as_pyarrow_table(
     return result
 
 
+@router.get("/parquet/{batch_feature_table_id}")
+async def download_table_as_parquet(
+    request: Request, batch_feature_table_id: PydanticObjectId
+) -> StreamingResponse:
+    """
+    Download BatchFeatureTable as parquet file
+    """
+    controller = request.state.app_container.batch_feature_table_controller
+    result: StreamingResponse = await controller.download_materialized_table_as_parquet(
+        document_id=batch_feature_table_id,
+    )
+    return result
+
+
 @router.patch("/{batch_feature_table_id}/description", response_model=BatchFeatureTableModel)
 async def update_batch_feature_table_description(
     request: Request,

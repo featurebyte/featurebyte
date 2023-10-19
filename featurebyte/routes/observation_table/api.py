@@ -182,6 +182,20 @@ async def download_table_as_pyarrow_table(
     return result
 
 
+@router.get("/parquet/{observation_table_id}")
+async def download_table_as_parquet(
+    request: Request, observation_table_id: PydanticObjectId
+) -> StreamingResponse:
+    """
+    Download ObservationTable as parquet file
+    """
+    controller = request.state.app_container.observation_table_controller
+    result: StreamingResponse = await controller.download_materialized_table_as_parquet(
+        document_id=observation_table_id,
+    )
+    return result
+
+
 @router.patch("/{observation_table_id}/description", response_model=ObservationTableModel)
 async def update_observation_table_description(
     request: Request,
