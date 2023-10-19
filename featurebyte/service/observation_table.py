@@ -10,10 +10,11 @@ from pathlib import Path
 
 import pandas as pd
 from bson import ObjectId
+from sqlglot import Expression, expressions
 
 from featurebyte.api.source_table import SourceTable
 from featurebyte.common.utils import dataframe_from_json
-from featurebyte.enum import DBVarType, MaterializedTableNamePrefix, SpecialColumnName
+from featurebyte.enum import DBVarType, MaterializedTableNamePrefix, SpecialColumnName, SourceType
 from featurebyte.exception import (
     MissingPointInTimeColumnError,
     ObservationTableInvalidContextError,
@@ -27,6 +28,13 @@ from featurebyte.models.observation_table import ObservationTableModel, TargetIn
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.query_graph.sql.adapter import get_sql_adapter
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
+from featurebyte.query_graph.sql.common import (
+    get_fully_qualified_table_name,
+    quoted_identifier,
+    sql_to_string,
+)
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.routes.common.primary_entity_validator import PrimaryEntityValidator
 from featurebyte.schema.feature_store import FeatureStoreSample
@@ -232,6 +240,95 @@ class ObservationTableService(
             observation_set_storage_path=observation_set_storage_path,
         )
 
+    @staticmethod
+    def get_minimum_iet_sql_expr(
+        entity_column_names: List[str], table_details: TableDetails, source_type: SourceType
+    ) -> Expression:
+        """
+        Get the SQL expression to compute the minimum interval in seconds for each entity.
+
+        Parameters
+        ----------
+        entity_column_names: List[str]
+            List of entity column names
+        table_details: TableDetails
+            Table details of the materialized table
+        source_type: SourceType
+            Source type
+
+        Returns
+        -------
+        str
+        """
+        adapter = get_sql_adapter(source_type)
+
+        window_expression = expressions.Window(
+            this=expressions.Anonymous(
+                this="LAG", expressions=[make_literal_value(SpecialColumnName.POINT_IN_TIME)]
+            ),
+            partition_by=[make_literal_value(col_name) for col_name in entity_column_names],
+            order=expressions.Order(
+                expressions=[
+                    expressions.Ordered(this=make_literal_value(SpecialColumnName.POINT_IN_TIME))
+                ]
+            ),
+        )
+        aliased_window = expressions.Alias(
+            this=window_expression,
+            alias=quoted_identifier("PREVIOUS_POINT_IN_TIME"),
+        )
+        inner_query = expressions.select(aliased_window, SpecialColumnName.POINT_IN_TIME).from_(
+            get_fully_qualified_table_name(table_details.dict())
+        )
+
+        # TODO: convert to seconds
+        datediff_expr = adapter.datediff_microsecond(quoted_identifier("PREVIOUS_POINT_IN_TIME"), quoted_identifier(SpecialColumnName.POINT_IN_TIME))
+        difference_expr = expressions.Alias(
+            this=datediff_expr,
+            alias=quoted_identifier("interval")
+        )
+        iet_expr = expressions.select(difference_expr).from_(inner_query.subquery())
+        return expressions.select(expressions.Min(this=quoted_identifier("interval"))).from_(iet_expr.subquery())
+
+    async def _get_entity_col_name_to_minimum_interval(
+        self,
+        db_session: BaseSession,
+        columns_info: List[ColumnSpecWithEntityId],
+        table_details: TableDetails,
+    ) -> Dict[str, int]:
+        """
+        Get the entity column name to minimum interval mapping.
+
+        Parameters
+        ----------
+        db_session: BaseSession
+            Database session
+        columns_info: List[ColumnSpecWithEntityId]
+            List of column specs with entity id
+        table_details: TableDetails
+            Table details of the materialized table
+
+        Returns
+        -------
+        Dict[str, int]
+            column name to minimum interval in seconds
+        """
+        entity_col_names = [col.name for col in columns_info if col.entity_id is not None]
+        # Construct SQL
+        sql_expr = self.get_minimum_iet_sql_expr(entity_col_names, table_details, db_session.source_type)
+
+        # Execute SQL
+        sql_string = sql_to_string(sql_expr, db_session.source_type)
+        df_row_count = await db_session.execute_query(sql_string)
+        assert df_row_count is not None
+
+        # Build output for entity columns
+        column_name_to_minimum_interval = {}
+        for col_name in entity_col_names:
+            # TODO: get the results from the dataframe
+            column_name_to_minimum_interval[col_name] = 1
+        return column_name_to_minimum_interval
+
     async def _get_column_name_to_entity_count(
         self,
         feature_store: FeatureStoreModel,
@@ -342,16 +439,22 @@ class ObservationTableService(
 
         # Perform validation on column info
         validate_columns_info(columns_info, skip_entity_validation_checks)
+        # Get entity column name to minimum interval mapping
+        column_name_to_minimum_interval = await self._get_entity_col_name_to_minimum_interval(
+            db_session, columns_info, table_details
+        )
         # Get entity statistics metadata
         column_name_to_count, point_in_time_stats = await self._get_column_name_to_entity_count(
             feature_store, table_details, columns_info
         )
+
         return {
             "columns_info": columns_info,
             "num_rows": num_rows,
             "most_recent_point_in_time": point_in_time_stats.most_recent,
             "least_recent_point_in_time": point_in_time_stats.least_recent,
             "entity_column_name_to_count": column_name_to_count,
+            "entity_column_name_to_min_interval_secs": column_name_to_minimum_interval,
         }
 
     async def update_observation_table(  # pylint: disable=too-many-branches
