@@ -338,7 +338,7 @@ class ObservationTableService(
         sql_string = sql_to_string(sql_expr, db_session.source_type)
         min_interval_df = await db_session.execute_query(sql_string)
         assert min_interval_df is not None
-        return min_interval_df.iloc[0]["MIN_INTERVAL"]
+        return int(min_interval_df.iloc[0]["MIN_INTERVAL"])
 
     async def _get_column_name_to_entity_count(
         self,
