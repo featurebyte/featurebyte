@@ -366,6 +366,6 @@ class Deployment(DeletableApiObject):
         Examples
         --------
         >>> deployment = fb.Deployment.get_by_id(<deployment_id>)  # doctest: +SKIP
-        >>> deployment.delete()
+        >>> deployment.delete()  # doctest: +SKIP
         """
         self._delete()
