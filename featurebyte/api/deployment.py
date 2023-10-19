@@ -11,12 +11,12 @@ import pandas as pd
 from bson import ObjectId
 from typeguard import typechecked
 
-from featurebyte.api.api_object import ApiObject
 from featurebyte.api.api_object_util import ForeignKeyMapping
 from featurebyte.api.batch_feature_table import BatchFeatureTable
 from featurebyte.api.batch_request_table import BatchRequestTable
 from featurebyte.api.feature_job import FeatureJobStatusResult
 from featurebyte.api.feature_list import FeatureList
+from featurebyte.api.savable_api_object import DeletableApiObject
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.formatting_util import CodeStr
 from featurebyte.config import Configurations
@@ -27,7 +27,7 @@ from featurebyte.schema.batch_feature_table import BatchFeatureTableCreate
 from featurebyte.schema.deployment import DeploymentUpdate
 
 
-class Deployment(ApiObject):
+class Deployment(DeletableApiObject):
     """
     A FeatureByte Catalog serves as a centralized repository for storing metadata about FeatureByte objects such as
     tables, entities, features, and feature lists associated with a specific domain. It functions as an effective tool
@@ -357,3 +357,15 @@ class Deployment(ApiObject):
         >>> deployments = fb.Deployment.list()
         """
         return super().list(include_id=include_id)
+
+    def delete(self) -> None:
+        """
+        Delete the deployment from the persistent data store. The deployment can only be deleted if it is not
+        enabled and not associated with any active batch feature table.
+
+        Examples
+        --------
+        >>> deployment = fb.Deployment.get_by_id(<deployment_id>)  # doctest: +SKIP
+        >>> deployment.delete()  # doctest: +SKIP
+        """
+        self._delete()

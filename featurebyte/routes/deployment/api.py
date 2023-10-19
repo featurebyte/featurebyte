@@ -106,6 +106,15 @@ async def list_deployments(
     return deployment_list
 
 
+@router.delete("/{deployment_id}")
+async def delete_deployment(request: Request, deployment_id: PydanticObjectId) -> None:
+    """
+    Delete Deployment
+    """
+    controller = request.state.app_container.deployment_controller
+    await controller.delete(document_id=deployment_id)
+
+
 @router.get("/audit/{deployment_id}", response_model=AuditDocumentList)
 async def list_deployment_audit_logs(
     request: Request,

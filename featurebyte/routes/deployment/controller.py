@@ -3,16 +3,17 @@ Deployment API route controller
 """
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Any, List, Literal, Optional, Tuple
 
 from http import HTTPStatus
 
 from bson import ObjectId
 from fastapi import HTTPException
 
-from featurebyte.exception import FeatureListNotOnlineEnabledError
+from featurebyte.exception import DocumentDeletionError, FeatureListNotOnlineEnabledError
 from featurebyte.models.deployment import DeploymentModel
 from featurebyte.models.feature_list import FeatureListModel
+from featurebyte.models.persistent import QueryFilter
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.deployment import (
@@ -32,6 +33,7 @@ from featurebyte.schema.worker.task.deployment_create_update import (
     DeploymentCreateUpdateTaskPayload,
     UpdateDeploymentPayload,
 )
+from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.catalog import AllCatalogService, CatalogService
 from featurebyte.service.context import ContextService
 from featurebyte.service.deployment import AllDeploymentService, DeploymentService
@@ -59,6 +61,7 @@ class DeploymentController(
         online_serving_service: OnlineServingService,
         task_controller: TaskController,
         use_case_service: UseCaseService,
+        batch_feature_table_service: BatchFeatureTableService,
     ):
         super().__init__(deployment_service)
         self.catalog_service = catalog_service
@@ -67,6 +70,7 @@ class DeploymentController(
         self.online_serving_service = online_serving_service
         self.task_controller = task_controller
         self.use_case_service = use_case_service
+        self.batch_feature_table_service = batch_feature_table_service
 
     async def create_deployment(self, data: DeploymentCreate) -> Task:
         """
@@ -135,6 +139,17 @@ class DeploymentController(
             task_id = await self.task_controller.task_manager.submit(payload=payload)
             return await self.task_controller.get_task(task_id=str(task_id))
         return None
+
+    async def service_and_query_pairs_for_checking_reference(
+        self, document_id: ObjectId
+    ) -> List[Tuple[Any, QueryFilter]]:
+        return [(self.batch_feature_table_service, {"deployment_id": document_id})]
+
+    async def delete(self, document_id: ObjectId) -> None:
+        deployment = await self.service.get_document(document_id=document_id)
+        if deployment.enabled:
+            raise DocumentDeletionError("Only disabled deployment can be deleted.")
+        await super().delete(document_id=document_id)
 
     async def get_info(self, document_id: ObjectId, verbose: bool) -> DeploymentInfo:
         """

@@ -203,3 +203,17 @@ async def update_feature_job_setting_analysis_description(
         )
     )
     return feature_job_setting_analysis
+
+
+@router.delete("/{feature_job_setting_analysis_id}")
+async def delete_feature_job_setting_analysis(
+    request: Request,
+    feature_job_setting_analysis_id: PydanticObjectId,
+) -> None:
+    """
+    Delete Feature Job Setting Analysis
+    """
+    controller = request.state.app_container.feature_job_setting_analysis_controller
+    await controller.delete(
+        document_id=feature_job_setting_analysis_id,
+    )
