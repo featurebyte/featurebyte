@@ -3,7 +3,7 @@ DimensionTable API routes
 """
 from __future__ import annotations
 
-from typing import Optional, cast
+from typing import Optional
 
 from http import HTTPStatus
 
@@ -12,17 +12,16 @@ from fastapi import APIRouter, Request
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.dimension_table import DimensionTableModel
 from featurebyte.models.persistent import AuditDocumentList
-from featurebyte.routes.base_router import BaseRouter
+from featurebyte.routes.base_router import BaseApiRouter
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
-    NameQuery,
     PageQuery,
     PageSizeQuery,
     SearchQuery,
-    SortByQuery,
     SortDirQuery,
     VerboseQuery,
 )
+from featurebyte.routes.dimension_table.controller import DimensionTableController
 from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.dimension_table import (
     DimensionTableCreate,
@@ -40,209 +39,202 @@ from featurebyte.schema.table import (
 router = APIRouter(prefix="/dimension_table")
 
 
-class DimensionTableRouter(BaseRouter):
+class DimensionTableRouter(
+    BaseApiRouter[
+        DimensionTableModel, DimensionTableList, DimensionTableCreate, DimensionTableController
+    ]
+):
     """
     Dimension table router
     """
 
+    # pylint: disable=arguments-renamed
+
+    object_model = DimensionTableModel
+    list_object_model = DimensionTableList
+    create_object_schema = DimensionTableCreate
+    controller = DimensionTableController
+
     def __init__(self) -> None:
-        super().__init__(router=router)
+        super().__init__("/dimension_table")
+        self.remove_routes({"/dimension_table/{dimension_table_id}": ["DELETE"]})
 
+        # update route
+        self.router.add_api_route(
+            "/{dimension_table_id}",
+            self.update_dimension_table,
+            methods=["PATCH"],
+            response_model=DimensionTableModel,
+            status_code=HTTPStatus.OK,
+        )
 
-@router.post("", response_model=DimensionTableModel, status_code=HTTPStatus.CREATED)
-async def create_dimension_table(
-    request: Request, data: DimensionTableCreate
-) -> DimensionTableModel:
-    """
-    Create DimensionTable
-    """
-    controller = request.state.app_container.dimension_table_controller
-    dimension_table: DimensionTableModel = await controller.create_table(data=data)
-    return dimension_table
+        # info route
+        self.router.add_api_route(
+            "/{dimension_table_id}/info",
+            self.get_dimension_table_info,
+            methods=["GET"],
+            response_model=DimensionTableInfo,
+        )
 
+        # update column entity route
+        self.router.add_api_route(
+            "/{dimension_table_id}/column_entity",
+            self.update_column_entity,
+            methods=["PATCH"],
+            response_model=DimensionTableModel,
+            status_code=HTTPStatus.OK,
+        )
 
-@router.get("", response_model=DimensionTableList)
-async def list_dimension_table(
-    request: Request,
-    page: int = PageQuery,
-    page_size: int = PageSizeQuery,
-    sort_by: Optional[str] = SortByQuery,
-    sort_dir: Optional[str] = SortDirQuery,
-    search: Optional[str] = SearchQuery,
-    name: Optional[str] = NameQuery,
-) -> DimensionTableList:
-    """
-    List DimensionTable
-    """
-    controller = request.state.app_container.dimension_table_controller
-    dimension_table_list: DimensionTableList = await controller.list(
-        page=page,
-        page_size=page_size,
-        sort_by=sort_by,
-        sort_dir=sort_dir,
-        search=search,
-        name=name,
-    )
-    return dimension_table_list
+        # update column critical data info route
+        self.router.add_api_route(
+            "/{dimension_table_id}/column_critical_data_info",
+            self.update_column_critical_data_info,
+            methods=["PATCH"],
+            response_model=DimensionTableModel,
+            status_code=HTTPStatus.OK,
+        )
 
+        # update column semantic route
+        self.router.add_api_route(
+            "/{dimension_table_id}/column_semantic",
+            self.update_column_semantic,
+            methods=["PATCH"],
+            response_model=DimensionTableModel,
+            status_code=HTTPStatus.OK,
+        )
 
-@router.get("/{dimension_table_id}", response_model=DimensionTableModel)
-async def get_dimension_table(
-    request: Request, dimension_table_id: PydanticObjectId
-) -> DimensionTableModel:
-    """
-    Retrieve DimensionTable
-    """
-    controller = request.state.app_container.dimension_table_controller
-    dimension_table: DimensionTableModel = await controller.get(
-        document_id=dimension_table_id,
-    )
-    return dimension_table
+        # update column description
+        self.router.add_api_route(
+            "/{dimension_table_id}/column_description",
+            self.update_column_description,
+            methods=["PATCH"],
+            response_model=DimensionTableModel,
+            status_code=HTTPStatus.OK,
+        )
 
+    async def get_object(
+        self, request: Request, dimension_table_id: PydanticObjectId
+    ) -> DimensionTableModel:
+        return await super().get_object(request, dimension_table_id)
 
-@router.patch("/{dimension_table_id}", response_model=DimensionTableModel)
-async def update_dimension_table(
-    request: Request,
-    dimension_table_id: PydanticObjectId,
-    data: DimensionTableUpdate,
-) -> DimensionTableModel:
-    """
-    Update DimensionTable
-    """
-    controller = request.state.app_container.dimension_table_controller
-    dimension_table: DimensionTableModel = await controller.update_table(
-        document_id=dimension_table_id,
-        data=data,
-    )
-    return dimension_table
+    async def list_audit_logs(
+        self,
+        request: Request,
+        dimension_table_id: PydanticObjectId,
+        page: int = PageQuery,
+        page_size: int = PageSizeQuery,
+        sort_by: Optional[str] = AuditLogSortByQuery,
+        sort_dir: Optional[str] = SortDirQuery,
+        search: Optional[str] = SearchQuery,
+    ) -> AuditDocumentList:
+        return await super().list_audit_logs(
+            request,
+            dimension_table_id,
+            page=page,
+            page_size=page_size,
+            sort_by=sort_by,
+            sort_dir=sort_dir,
+            search=search,
+        )
 
+    async def update_description(
+        self, request: Request, dimension_table_id: PydanticObjectId, data: DescriptionUpdate
+    ) -> DimensionTableModel:
+        return await super().update_description(request, dimension_table_id, data)
 
-@router.get("/audit/{dimension_table_id}", response_model=AuditDocumentList)
-async def list_dimension_table_audit_logs(
-    request: Request,
-    dimension_table_id: PydanticObjectId,
-    page: int = PageQuery,
-    page_size: int = PageSizeQuery,
-    sort_by: Optional[str] = AuditLogSortByQuery,
-    sort_dir: Optional[str] = SortDirQuery,
-    search: Optional[str] = SearchQuery,
-) -> AuditDocumentList:
-    """
-    List DimensionTable audit logs
-    """
-    controller = request.state.app_container.dimension_table_controller
-    audit_doc_list: AuditDocumentList = await controller.list_audit(
-        document_id=dimension_table_id,
-        page=page,
-        page_size=page_size,
-        sort_by=sort_by,
-        sort_dir=sort_dir,
-        search=search,
-    )
-    return audit_doc_list
+    async def create_object(
+        self, request: Request, data: DimensionTableCreate
+    ) -> DimensionTableModel:
+        controller = self.get_controller_for_request(request)
+        return await controller.create_table(data=data)  # type: ignore
 
+    async def get_dimension_table_info(
+        self, request: Request, dimension_table_id: PydanticObjectId, verbose: bool = VerboseQuery
+    ) -> DimensionTableInfo:
+        """
+        Retrieve dimension table info
+        """
+        controller = self.get_controller_for_request(request)
+        info = await controller.get_info(
+            document_id=dimension_table_id,
+            verbose=verbose,
+        )
+        return info
 
-@router.get("/{dimension_table_id}/info", response_model=DimensionTableInfo)
-async def get_dimension_table_info(
-    request: Request,
-    dimension_table_id: PydanticObjectId,
-    verbose: bool = VerboseQuery,
-) -> DimensionTableInfo:
-    """
-    Retrieve DimensionTable info
-    """
-    controller = request.state.app_container.dimension_table_controller
-    info = await controller.get_info(
-        document_id=dimension_table_id,
-        verbose=verbose,
-    )
-    return cast(DimensionTableInfo, info)
+    async def update_dimension_table(
+        self, request: Request, dimension_table_id: PydanticObjectId, data: DimensionTableUpdate
+    ) -> DimensionTableModel:
+        """
+        Update dimension table
+        """
+        controller = self.get_controller_for_request(request)
+        dimension_table: DimensionTableModel = await controller.update_table(
+            document_id=dimension_table_id,
+            data=data,
+        )
+        return dimension_table
 
+    async def update_column_entity(
+        self, request: Request, dimension_table_id: PydanticObjectId, data: ColumnEntityUpdate
+    ) -> DimensionTableModel:
+        """
+        Update column entity
+        """
+        controller = self.get_controller_for_request(request)
+        dimension_table: DimensionTableModel = await controller.update_column_entity(
+            document_id=dimension_table_id,
+            column_name=data.column_name,
+            entity_id=data.entity_id,
+        )
+        return dimension_table
 
-@router.patch("/{dimension_table_id}/description", response_model=DimensionTableModel)
-async def update_dimension_table_description(
-    request: Request,
-    dimension_table_id: PydanticObjectId,
-    data: DescriptionUpdate,
-) -> DimensionTableModel:
-    """
-    Update dimension_table description
-    """
-    controller = request.state.app_container.dimension_table_controller
-    dimension_table: DimensionTableModel = await controller.update_description(
-        document_id=dimension_table_id,
-        description=data.description,
-    )
-    return dimension_table
+    async def update_column_critical_data_info(
+        self,
+        request: Request,
+        dimension_table_id: PydanticObjectId,
+        data: ColumnCriticalDataInfoUpdate,
+    ) -> DimensionTableModel:
+        """
+        Update column critical data info
+        """
+        controller = self.get_controller_for_request(request)
+        dimension_table: DimensionTableModel = await controller.update_column_critical_data_info(
+            document_id=dimension_table_id,
+            column_name=data.column_name,
+            critical_data_info=data.critical_data_info,  # type: ignore
+        )
+        return dimension_table
 
+    async def update_column_semantic(
+        self,
+        request: Request,
+        dimension_table_id: PydanticObjectId,
+        data: ColumnSemanticUpdate,
+    ) -> DimensionTableModel:
+        """
+        Update column semantic
+        """
+        controller = self.get_controller_for_request(request)
+        dimension_table: DimensionTableModel = await controller.update_column_semantic(
+            document_id=dimension_table_id,
+            column_name=data.column_name,
+            semantic_id=data.semantic_id,
+        )
+        return dimension_table
 
-@router.patch("/{dimension_table_id}/column_entity", response_model=DimensionTableModel)
-async def update_column_entity(
-    request: Request,
-    dimension_table_id: PydanticObjectId,
-    data: ColumnEntityUpdate,
-) -> DimensionTableModel:
-    """
-    Update column entity
-    """
-    controller = request.state.app_container.dimension_table_controller
-    dimension_table: DimensionTableModel = await controller.update_column_entity(
-        document_id=dimension_table_id,
-        column_name=data.column_name,
-        entity_id=data.entity_id,
-    )
-    return dimension_table
-
-
-@router.patch("/{dimension_table_id}/column_critical_data_info", response_model=DimensionTableModel)
-async def update_column_critical_data_info(
-    request: Request,
-    dimension_table_id: PydanticObjectId,
-    data: ColumnCriticalDataInfoUpdate,
-) -> DimensionTableModel:
-    """
-    Update column critical data info
-    """
-    controller = request.state.app_container.dimension_table_controller
-    dimension_table: DimensionTableModel = await controller.update_column_critical_data_info(
-        document_id=dimension_table_id,
-        column_name=data.column_name,
-        critical_data_info=data.critical_data_info,
-    )
-    return dimension_table
-
-
-@router.patch("/{dimension_table_id}/column_description", response_model=DimensionTableModel)
-async def update_column_description(
-    request: Request,
-    dimension_table_id: PydanticObjectId,
-    data: ColumnDescriptionUpdate,
-) -> DimensionTableModel:
-    """
-    Update column description
-    """
-    controller = request.state.app_container.dimension_table_controller
-    dimension_table: DimensionTableModel = await controller.update_column_description(
-        document_id=dimension_table_id,
-        column_name=data.column_name,
-        description=data.description,
-    )
-    return dimension_table
-
-
-@router.patch("/{dimension_table_id}/column_semantic", response_model=DimensionTableModel)
-async def update_column_semantic(
-    request: Request,
-    dimension_table_id: PydanticObjectId,
-    data: ColumnSemanticUpdate,
-) -> DimensionTableModel:
-    """
-    Update column semantic
-    """
-    controller = request.state.app_container.dimension_table_controller
-    dimension_table: DimensionTableModel = await controller.update_column_semantic(
-        document_id=dimension_table_id,
-        column_name=data.column_name,
-        semantic_id=data.semantic_id,
-    )
-    return dimension_table
+    async def update_column_description(
+        self,
+        request: Request,
+        dimension_table_id: PydanticObjectId,
+        data: ColumnDescriptionUpdate,
+    ) -> DimensionTableModel:
+        """
+        Update column description
+        """
+        controller = self.get_controller_for_request(request)
+        dimension_table: DimensionTableModel = await controller.update_column_description(
+            document_id=dimension_table_id,
+            column_name=data.column_name,
+            description=data.description,
+        )
+        return dimension_table

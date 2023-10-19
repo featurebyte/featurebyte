@@ -3,7 +3,7 @@ ItemTable API routes
 """
 from __future__ import annotations
 
-from typing import Optional, cast
+from typing import Optional
 
 from http import HTTPStatus
 
@@ -12,17 +12,16 @@ from fastapi import APIRouter, Request
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.item_table import ItemTableModel
 from featurebyte.models.persistent import AuditDocumentList
-from featurebyte.routes.base_router import BaseRouter
+from featurebyte.routes.base_router import BaseApiRouter
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
-    NameQuery,
     PageQuery,
     PageSizeQuery,
     SearchQuery,
-    SortByQuery,
     SortDirQuery,
     VerboseQuery,
 )
+from featurebyte.routes.item_table.controller import ItemTableController
 from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.info import ItemTableInfo
 from featurebyte.schema.item_table import ItemTableCreate, ItemTableList, ItemTableUpdate
@@ -36,205 +35,196 @@ from featurebyte.schema.table import (
 router = APIRouter(prefix="/item_table")
 
 
-class ItemTableRouter(BaseRouter):
+class ItemTableRouter(
+    BaseApiRouter[ItemTableModel, ItemTableList, ItemTableCreate, ItemTableController]
+):
     """
     Item table router
     """
 
+    # pylint: disable=arguments-renamed
+
+    object_model = ItemTableModel
+    list_object_model = ItemTableList
+    create_object_schema = ItemTableCreate
+    controller = ItemTableController
+
     def __init__(self) -> None:
-        super().__init__(router=router)
+        super().__init__("/item_table")
+        self.remove_routes({"/item_table/{item_table_id}": ["DELETE"]})
 
+        # update route
+        self.router.add_api_route(
+            "/{item_table_id}",
+            self.update_item_table,
+            methods=["PATCH"],
+            response_model=ItemTableModel,
+            status_code=HTTPStatus.OK,
+        )
 
-@router.post("", response_model=ItemTableModel, status_code=HTTPStatus.CREATED)
-async def create_item_table(request: Request, data: ItemTableCreate) -> ItemTableModel:
-    """
-    Create ItemTable
-    """
-    controller = request.state.app_container.item_table_controller
-    item_table: ItemTableModel = await controller.create_table(data=data)
-    return item_table
+        # info route
+        self.router.add_api_route(
+            "/{item_table_id}/info",
+            self.get_item_table_info,
+            methods=["GET"],
+            response_model=ItemTableInfo,
+        )
 
+        # update column entity route
+        self.router.add_api_route(
+            "/{item_table_id}/column_entity",
+            self.update_column_entity,
+            methods=["PATCH"],
+            response_model=ItemTableModel,
+            status_code=HTTPStatus.OK,
+        )
 
-@router.get("", response_model=ItemTableList)
-async def list_item_table(
-    request: Request,
-    page: int = PageQuery,
-    page_size: int = PageSizeQuery,
-    sort_by: Optional[str] = SortByQuery,
-    sort_dir: Optional[str] = SortDirQuery,
-    search: Optional[str] = SearchQuery,
-    name: Optional[str] = NameQuery,
-) -> ItemTableList:
-    """
-    List ItemTable
-    """
-    controller = request.state.app_container.item_table_controller
-    item_table_list: ItemTableList = await controller.list(
-        page=page,
-        page_size=page_size,
-        sort_by=sort_by,
-        sort_dir=sort_dir,
-        search=search,
-        name=name,
-    )
-    return item_table_list
+        # update column critical data info route
+        self.router.add_api_route(
+            "/{item_table_id}/column_critical_data_info",
+            self.update_column_critical_data_info,
+            methods=["PATCH"],
+            response_model=ItemTableModel,
+            status_code=HTTPStatus.OK,
+        )
 
+        # update column semantic route
+        self.router.add_api_route(
+            "/{item_table_id}/column_semantic",
+            self.update_column_semantic,
+            methods=["PATCH"],
+            response_model=ItemTableModel,
+            status_code=HTTPStatus.OK,
+        )
 
-@router.get("/{item_table_id}", response_model=ItemTableModel)
-async def get_item_table(request: Request, item_table_id: PydanticObjectId) -> ItemTableModel:
-    """
-    Retrieve ItemTable
-    """
-    controller = request.state.app_container.item_table_controller
-    item_table: ItemTableModel = await controller.get(
-        document_id=item_table_id,
-    )
-    return item_table
+        # update column description
+        self.router.add_api_route(
+            "/{item_table_id}/column_description",
+            self.update_column_description,
+            methods=["PATCH"],
+            response_model=ItemTableModel,
+            status_code=HTTPStatus.OK,
+        )
 
+    async def get_object(self, request: Request, item_table_id: PydanticObjectId) -> ItemTableModel:
+        return await super().get_object(request, item_table_id)
 
-@router.patch("/{item_table_id}", response_model=ItemTableModel)
-async def update_item_table(
-    request: Request,
-    item_table_id: PydanticObjectId,
-    data: ItemTableUpdate,
-) -> ItemTableModel:
-    """
-    Update ItemTable
-    """
-    controller = request.state.app_container.item_table_controller
-    item_table: ItemTableModel = await controller.update_table(
-        document_id=item_table_id,
-        data=data,
-    )
-    return item_table
+    async def list_audit_logs(
+        self,
+        request: Request,
+        item_table_id: PydanticObjectId,
+        page: int = PageQuery,
+        page_size: int = PageSizeQuery,
+        sort_by: Optional[str] = AuditLogSortByQuery,
+        sort_dir: Optional[str] = SortDirQuery,
+        search: Optional[str] = SearchQuery,
+    ) -> AuditDocumentList:
+        return await super().list_audit_logs(
+            request,
+            item_table_id,
+            page=page,
+            page_size=page_size,
+            sort_by=sort_by,
+            sort_dir=sort_dir,
+            search=search,
+        )
 
+    async def update_description(
+        self, request: Request, item_table_id: PydanticObjectId, data: DescriptionUpdate
+    ) -> ItemTableModel:
+        return await super().update_description(request, item_table_id, data)
 
-@router.get("/audit/{item_table_id}", response_model=AuditDocumentList)
-async def list_item_table_audit_logs(
-    request: Request,
-    item_table_id: PydanticObjectId,
-    page: int = PageQuery,
-    page_size: int = PageSizeQuery,
-    sort_by: Optional[str] = AuditLogSortByQuery,
-    sort_dir: Optional[str] = SortDirQuery,
-    search: Optional[str] = SearchQuery,
-) -> AuditDocumentList:
-    """
-    List ItemTable audit logs
-    """
-    controller = request.state.app_container.item_table_controller
-    audit_doc_list: AuditDocumentList = await controller.list_audit(
-        document_id=item_table_id,
-        page=page,
-        page_size=page_size,
-        sort_by=sort_by,
-        sort_dir=sort_dir,
-        search=search,
-    )
-    return audit_doc_list
+    async def create_object(self, request: Request, data: ItemTableCreate) -> ItemTableModel:
+        controller = self.get_controller_for_request(request)
+        return await controller.create_table(data=data)  # type: ignore
 
+    async def get_item_table_info(
+        self, request: Request, item_table_id: PydanticObjectId, verbose: bool = VerboseQuery
+    ) -> ItemTableInfo:
+        """
+        Retrieve item table info
+        """
+        controller = self.get_controller_for_request(request)
+        info = await controller.get_info(
+            document_id=item_table_id,
+            verbose=verbose,
+        )
+        return info
 
-@router.get("/{item_table_id}/info", response_model=ItemTableInfo)
-async def get_item_table_info(
-    request: Request,
-    item_table_id: PydanticObjectId,
-    verbose: bool = VerboseQuery,
-) -> ItemTableInfo:
-    """
-    Retrieve ItemTable info
-    """
-    controller = request.state.app_container.item_table_controller
-    info = await controller.get_info(
-        document_id=item_table_id,
-        verbose=verbose,
-    )
-    return cast(ItemTableInfo, info)
+    async def update_item_table(
+        self, request: Request, item_table_id: PydanticObjectId, data: ItemTableUpdate
+    ) -> ItemTableModel:
+        """
+        Update item table
+        """
+        controller = self.get_controller_for_request(request)
+        item_table: ItemTableModel = await controller.update_table(
+            document_id=item_table_id,
+            data=data,
+        )
+        return item_table
 
+    async def update_column_entity(
+        self, request: Request, item_table_id: PydanticObjectId, data: ColumnEntityUpdate
+    ) -> ItemTableModel:
+        """
+        Update column entity
+        """
+        controller = self.get_controller_for_request(request)
+        item_table: ItemTableModel = await controller.update_column_entity(
+            document_id=item_table_id,
+            column_name=data.column_name,
+            entity_id=data.entity_id,
+        )
+        return item_table
 
-@router.patch("/{item_table_id}/description", response_model=ItemTableModel)
-async def update_item_table_description(
-    request: Request,
-    item_table_id: PydanticObjectId,
-    data: DescriptionUpdate,
-) -> ItemTableModel:
-    """
-    Update item_table description
-    """
-    controller = request.state.app_container.item_table_controller
-    item_table: ItemTableModel = await controller.update_description(
-        document_id=item_table_id,
-        description=data.description,
-    )
-    return item_table
+    async def update_column_critical_data_info(
+        self,
+        request: Request,
+        item_table_id: PydanticObjectId,
+        data: ColumnCriticalDataInfoUpdate,
+    ) -> ItemTableModel:
+        """
+        Update column critical data info
+        """
+        controller = self.get_controller_for_request(request)
+        item_table: ItemTableModel = await controller.update_column_critical_data_info(
+            document_id=item_table_id,
+            column_name=data.column_name,
+            critical_data_info=data.critical_data_info,  # type: ignore
+        )
+        return item_table
 
+    async def update_column_semantic(
+        self,
+        request: Request,
+        item_table_id: PydanticObjectId,
+        data: ColumnSemanticUpdate,
+    ) -> ItemTableModel:
+        """
+        Update column semantic
+        """
+        controller = self.get_controller_for_request(request)
+        item_table: ItemTableModel = await controller.update_column_semantic(
+            document_id=item_table_id,
+            column_name=data.column_name,
+            semantic_id=data.semantic_id,
+        )
+        return item_table
 
-@router.patch("/{item_table_id}/column_entity", response_model=ItemTableModel)
-async def update_column_entity(
-    request: Request,
-    item_table_id: PydanticObjectId,
-    data: ColumnEntityUpdate,
-) -> ItemTableModel:
-    """
-    Update column entity
-    """
-    controller = request.state.app_container.item_table_controller
-    item_table: ItemTableModel = await controller.update_column_entity(
-        document_id=item_table_id,
-        column_name=data.column_name,
-        entity_id=data.entity_id,
-    )
-    return item_table
-
-
-@router.patch("/{item_table_id}/column_critical_data_info", response_model=ItemTableModel)
-async def update_column_critical_data_info(
-    request: Request,
-    item_table_id: PydanticObjectId,
-    data: ColumnCriticalDataInfoUpdate,
-) -> ItemTableModel:
-    """
-    Update column critical data info
-    """
-    controller = request.state.app_container.item_table_controller
-    item_table: ItemTableModel = await controller.update_column_critical_data_info(
-        document_id=item_table_id,
-        column_name=data.column_name,
-        critical_data_info=data.critical_data_info,
-    )
-    return item_table
-
-
-@router.patch("/{item_table_id}/column_description", response_model=ItemTableModel)
-async def update_column_description(
-    request: Request,
-    item_table_id: PydanticObjectId,
-    data: ColumnDescriptionUpdate,
-) -> ItemTableModel:
-    """
-    Update column description
-    """
-    controller = request.state.app_container.item_table_controller
-    item_table: ItemTableModel = await controller.update_column_description(
-        document_id=item_table_id,
-        column_name=data.column_name,
-        description=data.description,
-    )
-    return item_table
-
-
-@router.patch("/{item_table_id}/column_semantic", response_model=ItemTableModel)
-async def update_column_semantic(
-    request: Request,
-    item_table_id: PydanticObjectId,
-    data: ColumnSemanticUpdate,
-) -> ItemTableModel:
-    """
-    Update column semantic
-    """
-    controller = request.state.app_container.item_table_controller
-    item_table: ItemTableModel = await controller.update_column_semantic(
-        document_id=item_table_id,
-        column_name=data.column_name,
-        semantic_id=data.semantic_id,
-    )
-    return item_table
+    async def update_column_description(
+        self,
+        request: Request,
+        item_table_id: PydanticObjectId,
+        data: ColumnDescriptionUpdate,
+    ) -> ItemTableModel:
+        """
+        Update column description
+        """
+        controller = self.get_controller_for_request(request)
+        item_table: ItemTableModel = await controller.update_column_description(
+            document_id=item_table_id,
+            column_name=data.column_name,
+            description=data.description,
+        )
+        return item_table
