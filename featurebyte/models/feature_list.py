@@ -25,7 +25,7 @@ from featurebyte.models.base import (
     VersionIdentifier,
 )
 from featurebyte.models.feature import FeatureModel
-from featurebyte.models.feature_namespace import DefaultVersionMode, FeatureReadiness
+from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.models.relationship import RelationshipType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
@@ -417,9 +417,6 @@ class FeatureListNamespaceModel(FrozenFeatureListNamespaceModel):
     )
     readiness_distribution: FeatureReadinessDistribution = Field(allow_mutation=False)
     default_feature_list_id: PydanticObjectId = Field(allow_mutation=False)
-    default_version_mode: DefaultVersionMode = Field(
-        default=DefaultVersionMode.AUTO, allow_mutation=False
-    )
     status: FeatureListStatus = Field(allow_mutation=False, default=FeatureListStatus.DRAFT)
 
     # pydantic validators

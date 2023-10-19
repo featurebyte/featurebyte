@@ -428,7 +428,6 @@ def test_info(saved_feature_list):
             {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "catalog"}
         ],
         "tables": [{"name": "sf_event_table", "status": "PUBLIC_DRAFT", "catalog_name": "catalog"}],
-        "default_version_mode": "AUTO",
         "status": "DRAFT",
         "feature_count": 1,
         "version_count": 1,

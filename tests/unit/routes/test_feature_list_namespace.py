@@ -129,7 +129,6 @@ class TestFeatureListNamespaceApi(BaseCatalogApiTestSuite):
             ],
             "feature_namespace_ids": create_response_dict["feature_namespace_ids"],
             "default_feature_ids": response_dict["default_feature_ids"],
-            "default_version_mode": "AUTO",
             "default_feature_list_id": response_dict["default_feature_list_id"],
             "dtype_distribution": [{"count": 2, "dtype": "FLOAT"}],
             "version_count": 1,

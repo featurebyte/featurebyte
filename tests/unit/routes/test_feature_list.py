@@ -197,7 +197,6 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         namespace_response_dict = namespace_response.json()
         assert namespace_response_dict["feature_list_ids"] == [result["_id"], new_fl_dict["_id"]]
         assert namespace_response_dict["readiness_distribution"] == expected_readiness_dist
-        assert namespace_response_dict["default_version_mode"] == "AUTO"
         assert namespace_response_dict["default_feature_list_id"] == new_fl_dict["_id"]
 
     def test_create_201_multiple_features(self, test_api_client_persistent, user_id):
@@ -508,7 +507,6 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
             "tables": [
                 {"name": "sf_event_table", "status": "PUBLIC_DRAFT", "catalog_name": "grocery"}
             ],
-            "default_version_mode": "AUTO",
             "version_count": 1,
             "dtype_distribution": [{"dtype": "FLOAT", "count": 1}],
             "status": "DEPLOYED",
@@ -620,7 +618,6 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
             "tables": [
                 {"name": "sf_event_table", "status": "PUBLIC_DRAFT", "catalog_name": "grocery"}
             ],
-            "default_version_mode": "AUTO",
             "dtype_distribution": [{"count": 1, "dtype": "FLOAT"}],
             "version_count": 1,
             "feature_count": 1,

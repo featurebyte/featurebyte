@@ -18,7 +18,6 @@ from featurebyte.models.feature_list import (
     FeatureListNamespaceModel,
     FeatureReadinessDistribution,
 )
-from featurebyte.models.feature_namespace import DefaultVersionMode
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.persistent import Persistent
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
@@ -308,7 +307,6 @@ class FeatureListService(
                         feature_list_ids=[insert_id],
                         readiness_distribution=document.readiness_distribution,
                         default_feature_list_id=insert_id,
-                        default_version_mode=DefaultVersionMode.AUTO,
                         features=feature_data["features"],
                     )
                 )

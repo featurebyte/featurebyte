@@ -443,7 +443,6 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         - `primary_entity`: Details about the primary entity of the FeatureList object.
         - `entities`: List of entities involved in the computation of the features contained in the FeatureList object.
         - `tables`: List of tables involved in the computation of the features contained in the FeatureList object.
-        - `default_version_mode`: Indicates whether the default version mode is 'auto' or 'manual'.
         - `version_count`: The number of versions with the same feature list namespace.
         - `catalog_name`: The catalog name of the FeatureList object.
         - `status`: The status of the FeatureList object.
@@ -506,7 +505,6 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
               'catalog_name': 'grocery'
             }
           ],
-          'default_version_mode': 'AUTO',
           'version_count': 3,
           'catalog_name': 'grocery',
           'dtype_distribution': [
