@@ -10,7 +10,8 @@ from pathlib import Path
 
 import pandas as pd
 from bson import ObjectId
-from sqlglot import Expression, expressions
+from sqlglot import expressions
+from sqlglot.expressions import Expression
 
 from featurebyte.api.source_table import SourceTable
 from featurebyte.common.utils import dataframe_from_json
@@ -310,7 +311,7 @@ class ObservationTableService(
         db_session: BaseSession,
         columns_info: List[ColumnSpecWithEntityId],
         table_details: TableDetails,
-    ) -> int:
+    ) -> Optional[int]:
         """
         Get the entity column name to minimum interval mapping.
 
@@ -325,8 +326,8 @@ class ObservationTableService(
 
         Returns
         -------
-        int
-            minimum interval in seconds
+        Optional[int]
+            minimum interval in seconds, None if there's only one row
         """
         entity_col_names = [col.name for col in columns_info if col.entity_id is not None]
         # Construct SQL
@@ -338,7 +339,10 @@ class ObservationTableService(
         sql_string = sql_to_string(sql_expr, db_session.source_type)
         min_interval_df = await db_session.execute_query(sql_string)
         assert min_interval_df is not None
-        return int(min_interval_df.iloc[0]["MIN_INTERVAL"])
+        value = min_interval_df.iloc[0]["MIN_INTERVAL"]
+        if value is None or np.nan:
+            return None
+        return int(value)
 
     async def _get_column_name_to_entity_count(
         self,

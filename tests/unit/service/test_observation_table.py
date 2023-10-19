@@ -88,8 +88,8 @@ def db_session_fixture():
                     "max": ["2023-01-15T10:00:00+08:00", 10],
                 },
             )
-        if "interval" in query:
-            return pd.DataFrame({"min_interval": [3600]})
+        if "INTERVAL" in query:
+            return pd.DataFrame({"MIN_INTERVAL": [3600]})
         raise NotImplementedError(f"Unexpected query: {query}")
 
     mock_db_session = Mock(
