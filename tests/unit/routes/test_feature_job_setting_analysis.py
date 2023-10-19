@@ -407,3 +407,17 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
         }
         response = test_api_client.post(f"{self.base_route}", json=payload)
         assert response.status_code == HTTPStatus.CREATED
+
+    def test_delete(self, test_api_client_persistent, create_success_response):
+        """
+        Delete existing analysis
+        """
+        _ = create_success_response
+        test_api_client, _ = test_api_client_persistent
+        analysis_id = create_success_response.json()["_id"]
+        response = test_api_client.delete(f"{self.base_route}/{analysis_id}")
+        assert response.status_code == HTTPStatus.OK, response.json()
+
+        # check analysis is no longer available
+        response = test_api_client.get(f"{self.base_route}/{analysis_id}")
+        assert response.status_code == HTTPStatus.NOT_FOUND, response.json()
