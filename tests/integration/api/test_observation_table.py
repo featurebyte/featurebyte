@@ -56,6 +56,8 @@ async def test_observation_table_from_source_table(
     check_location_valid(table_details, session)
     await check_materialized_table_accessible(table_details, session, source_type, sample_rows)
 
+    assert observation_table.min_interval_secs_between_entities == 0
+
     user_id_entity_col_name = "User ID"
     check_materialized_table_preview_methods(
         observation_table, expected_columns=["POINT_IN_TIME", user_id_entity_col_name]

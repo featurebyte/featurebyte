@@ -14,7 +14,7 @@ from sqlglot import Expression, expressions
 
 from featurebyte.api.source_table import SourceTable
 from featurebyte.common.utils import dataframe_from_json
-from featurebyte.enum import DBVarType, MaterializedTableNamePrefix, SpecialColumnName, SourceType
+from featurebyte.enum import DBVarType, MaterializedTableNamePrefix, SourceType, SpecialColumnName
 from featurebyte.exception import (
     MissingPointInTimeColumnError,
     ObservationTableInvalidContextError,
@@ -261,41 +261,56 @@ class ObservationTableService(
         str
         """
         adapter = get_sql_adapter(source_type)
+        point_in_time_quoted = quoted_identifier(SpecialColumnName.POINT_IN_TIME)
+        previous_point_in_time_quoted = quoted_identifier("PREVIOUS_POINT_IN_TIME")
 
         window_expression = expressions.Window(
-            this=expressions.Anonymous(
-                this="LAG", expressions=[make_literal_value(SpecialColumnName.POINT_IN_TIME)]
-            ),
+            this=expressions.Anonymous(this="LAG", expressions=[point_in_time_quoted]),
             partition_by=[make_literal_value(col_name) for col_name in entity_column_names],
-            order=expressions.Order(
-                expressions=[
-                    expressions.Ordered(this=make_literal_value(SpecialColumnName.POINT_IN_TIME))
-                ]
-            ),
+            order=expressions.Order(expressions=[expressions.Ordered(this=point_in_time_quoted)]),
         )
         aliased_window = expressions.Alias(
             this=window_expression,
-            alias=quoted_identifier("PREVIOUS_POINT_IN_TIME"),
+            alias=previous_point_in_time_quoted,
         )
-        inner_query = expressions.select(aliased_window, SpecialColumnName.POINT_IN_TIME).from_(
+        inner_query = expressions.select(aliased_window, point_in_time_quoted).from_(
             get_fully_qualified_table_name(table_details.dict())
         )
 
-        # TODO: convert to seconds
-        datediff_expr = adapter.datediff_microsecond(quoted_identifier("PREVIOUS_POINT_IN_TIME"), quoted_identifier(SpecialColumnName.POINT_IN_TIME))
-        difference_expr = expressions.Alias(
-            this=datediff_expr,
-            alias=quoted_identifier("interval")
+        datediff_expr = adapter.datediff_microsecond(
+            previous_point_in_time_quoted, point_in_time_quoted
         )
-        iet_expr = expressions.select(difference_expr).from_(inner_query.subquery())
-        return expressions.select(expressions.Min(this=quoted_identifier("interval"))).from_(iet_expr.subquery())
+        # Convert microseconds to seconds
+        quoted_interval_identifier = quoted_identifier("interval")
+        interval_secs_expr = expressions.Mul(
+            this=datediff_expr, expression=make_literal_value(1000000)
+        )
+        difference_expr = expressions.Alias(
+            this=interval_secs_expr, alias=quoted_interval_identifier
+        )
+        iet_expr = (
+            expressions.select(difference_expr)
+            .from_(inner_query.subquery())
+            .where(
+                expressions.Not(
+                    this=expressions.Is(
+                        this=quoted_interval_identifier, expression=expressions.Null()
+                    )
+                )
+            )
+        )
+        aliased_min = expressions.Alias(
+            this=expressions.Min(this=quoted_interval_identifier),
+            alias=quoted_identifier("min_interval"),
+        )
+        return expressions.select(aliased_min).from_(iet_expr.subquery())
 
-    async def _get_entity_col_name_to_minimum_interval(
+    async def _get_min_interval_secs_between_entities(
         self,
         db_session: BaseSession,
         columns_info: List[ColumnSpecWithEntityId],
         table_details: TableDetails,
-    ) -> Dict[str, int]:
+    ) -> int:
         """
         Get the entity column name to minimum interval mapping.
 
@@ -315,19 +330,15 @@ class ObservationTableService(
         """
         entity_col_names = [col.name for col in columns_info if col.entity_id is not None]
         # Construct SQL
-        sql_expr = self.get_minimum_iet_sql_expr(entity_col_names, table_details, db_session.source_type)
+        sql_expr = self.get_minimum_iet_sql_expr(
+            entity_col_names, table_details, db_session.source_type
+        )
 
         # Execute SQL
         sql_string = sql_to_string(sql_expr, db_session.source_type)
-        df_row_count = await db_session.execute_query(sql_string)
-        assert df_row_count is not None
-
-        # Build output for entity columns
-        column_name_to_minimum_interval = {}
-        for col_name in entity_col_names:
-            # TODO: get the results from the dataframe
-            column_name_to_minimum_interval[col_name] = 1
-        return column_name_to_minimum_interval
+        min_interval_df = await db_session.execute_query(sql_string)
+        assert min_interval_df is not None
+        return min_interval_df.iloc[0]["min_interval"]
 
     async def _get_column_name_to_entity_count(
         self,
@@ -440,7 +451,7 @@ class ObservationTableService(
         # Perform validation on column info
         validate_columns_info(columns_info, skip_entity_validation_checks)
         # Get entity column name to minimum interval mapping
-        column_name_to_minimum_interval = await self._get_entity_col_name_to_minimum_interval(
+        min_interval_secs_between_entities = await self._get_min_interval_secs_between_entities(
             db_session, columns_info, table_details
         )
         # Get entity statistics metadata
@@ -454,7 +465,7 @@ class ObservationTableService(
             "most_recent_point_in_time": point_in_time_stats.most_recent,
             "least_recent_point_in_time": point_in_time_stats.least_recent,
             "entity_column_name_to_count": column_name_to_count,
-            "entity_column_name_to_min_interval_secs": column_name_to_minimum_interval,
+            "min_interval_secs_between_entities": min_interval_secs_between_entities,
         }
 
     async def update_observation_table(  # pylint: disable=too-many-branches

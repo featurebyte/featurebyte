@@ -89,10 +89,7 @@ def db_session_fixture():
                 },
             )
         if "interval" in query:
-            # TODO:
-            return pd.DataFrame(
-                {}
-            )
+            return pd.DataFrame({"min_interval": [3600]})
         raise NotImplementedError(f"Unexpected query: {query}")
 
     mock_db_session = Mock(
@@ -218,8 +215,7 @@ async def test_validate__most_recent_point_in_time(
             "most_recent_point_in_time": "2023-01-15T02:00:00",
             "num_rows": 1000,
             "entity_column_name_to_count": {"cust_id": 2},
-            # TODO: fix this
-            "entity_column_name_to_min_interval_secs": {"cust_id": 1},
+            "min_interval_secs_between_entities": 3600,
         }
 
 
@@ -282,21 +278,25 @@ def test_get_minimum_iet_sql_expr(observation_table_service, table_details):
     """
     Test get_minimum_iet_sql_expr
     """
-    expr = observation_table_service.get_minimum_iet_sql_expr(["entity"], table_details, SourceType.SNOWFLAKE)
+    expr = observation_table_service.get_minimum_iet_sql_expr(
+        ["entity"], table_details, SourceType.SNOWFLAKE
+    )
     expr_sql = expr.sql(pretty=True)
     expected_query = textwrap.dedent(
         """
         SELECT
-          MIN("interval")
+          MIN("interval") AS "min_interval"
         FROM (
           SELECT
-            DATEDIFF(microsecond, "PREVIOUS_POINT_IN_TIME", "POINT_IN_TIME") AS "interval"
+            DATEDIFF(microsecond, "PREVIOUS_POINT_IN_TIME", "POINT_IN_TIME") * 1000000 AS "interval"
           FROM (
             SELECT
-              LAG('POINT_IN_TIME') OVER (PARTITION BY 'entity' ORDER BY 'POINT_IN_TIME' NULLS LAST) AS "PREVIOUS_POINT_IN_TIME",
-              POINT_IN_TIME
+              LAG("POINT_IN_TIME") OVER (PARTITION BY 'entity' ORDER BY "POINT_IN_TIME" NULLS LAST) AS "PREVIOUS_POINT_IN_TIME",
+              "POINT_IN_TIME"
             FROM "fb_database"."fb_schema"."fb_table"
           )
+          WHERE
+            NOT "interval" IS NULL
         )
         """
     ).strip()
