@@ -10,7 +10,7 @@ from http import HTTPStatus
 from bson import ObjectId
 from typeguard import typechecked
 
-from featurebyte.api.api_object import ApiObject
+from featurebyte.api.api_object import ApiObject, get_api_object_cache_key
 from featurebyte.api.api_object_util import delete_api_object_by_id
 from featurebyte.config import Configurations
 from featurebyte.enum import ConflictResolution
@@ -124,3 +124,7 @@ class DeletableApiObject(ApiObject):
 
     def _delete(self) -> None:
         delete_api_object_by_id(route=self._route, id_value=self.id)
+
+        # update api object cache store to remove the deleted object
+        cache_key = get_api_object_cache_key(self)
+        self._cache.pop(cache_key, None)

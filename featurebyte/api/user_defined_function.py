@@ -416,7 +416,7 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
         >>> udf = catalog.get_user_defined_function("cos")
         >>> udf.delete()
         """
-        super()._delete()
+        self._delete()
 
     def info(self, verbose: bool = False) -> Dict[str, Any]:
         """

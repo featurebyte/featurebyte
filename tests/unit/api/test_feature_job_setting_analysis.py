@@ -13,6 +13,7 @@ import pytest_asyncio
 from bson import ObjectId
 from pandas.testing import assert_frame_equal
 
+from featurebyte import RecordRetrievalException
 from featurebyte.api.feature_job_setting_analysis import FeatureJobSettingAnalysis
 from featurebyte.models.feature_job_setting_analysis import FeatureJobSettingAnalysisModel
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
@@ -179,3 +180,16 @@ def test_download_report(saved_analysis):
         # download should work if path does not exist
         os.unlink(file_obj.name)
         analysis.download_report(output_path=file_obj.name)
+
+
+def test_delete(saved_analysis):
+    """
+    Test delete
+    """
+    analysis_id = saved_analysis
+    analysis = FeatureJobSettingAnalysis.get_by_id(analysis_id)
+    analysis.delete()
+
+    # check that analysis is deleted
+    with pytest.raises(RecordRetrievalException):
+        FeatureJobSettingAnalysis.get_by_id(analysis_id)

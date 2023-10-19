@@ -16,9 +16,9 @@ from featurebyte.api.api_handler.base import ListHandler
 from featurebyte.api.api_handler.feature_job_setting_analysis import (
     FeatureJobSettingAnalysisListHandler,
 )
-from featurebyte.api.api_object import ApiObject
 from featurebyte.api.api_object_util import ForeignKeyMapping
 from featurebyte.api.base_table import TableApiObject
+from featurebyte.api.savable_api_object import DeletableApiObject
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.env_util import display_html_in_notebook
 from featurebyte.config import Configurations
@@ -30,7 +30,7 @@ from featurebyte.schema.feature_job_setting_analysis import (
 )
 
 
-class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, ApiObject):
+class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, DeletableApiObject):
     """
     The FeatureJobSettingAnalysis object contains the result of the analysis of the data availability and freshness of
     a table. The metadata held by the object includes a report and recommendation for the configuration of the feature
@@ -262,3 +262,14 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, ApiObject):
         >>> analysis = fb.FeatureJobSettingAnalysis.get_by_id(<analysis_id>)  # doctest: +SKIP
         """
         return cls._get_by_id(id=id)
+
+    def delete(self) -> None:
+        """
+        Delete the feature job setting analysis from the persistent data store.
+
+        Examples
+        --------
+        >>> analysis = fb.FeatureJobSettingAnalysis.get_by_id(<analysis_id>)  # doctest: +SKIP
+        >>> analysis.delete()  # doctest: +SKIP
+        """
+        self._delete()
