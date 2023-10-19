@@ -56,7 +56,6 @@ def feature_list_namespace_model_dict_fixture():
         "readiness_distribution": [{"readiness": "DRAFT", "count": 2}],
         "status": "DRAFT",
         "default_feature_list_id": feature_list_ids[0],
-        "default_version_mode": "AUTO",
         "created_at": None,
         "updated_at": None,
         "user_id": None,

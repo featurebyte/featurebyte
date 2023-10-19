@@ -101,7 +101,6 @@ class FeatureListNamespaceService(
             entities=EntityBriefInfoList.from_paginated_data(entities),
             primary_entity=EntityBriefInfoList.from_paginated_data(primary_entity),
             tables=TableBriefInfoList.from_paginated_data(tables),
-            default_version_mode=namespace.default_version_mode,
             default_feature_list_id=namespace.default_feature_list_id,
             dtype_distribution=namespace.dtype_distribution,
             version_count=len(namespace.feature_list_ids),

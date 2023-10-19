@@ -308,7 +308,6 @@ class FeatureListService(
                         feature_list_ids=[insert_id],
                         readiness_distribution=document.readiness_distribution,
                         default_feature_list_id=insert_id,
-                        default_version_mode=DefaultVersionMode.AUTO,
                         features=feature_data["features"],
                     )
                 )

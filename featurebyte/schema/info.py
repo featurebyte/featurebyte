@@ -232,7 +232,6 @@ class NamespaceInfo(BaseInfo):
     entities: EntityBriefInfoList
     primary_entity: EntityBriefInfoList
     tables: TableBriefInfoList
-    default_version_mode: DefaultVersionMode
     version_count: int
     catalog_name: str
 
@@ -244,6 +243,7 @@ class FeatureNamespaceInfo(NamespaceInfo):
 
     dtype: DBVarType
     primary_table: TableBriefInfoList
+    default_version_mode: DefaultVersionMode
     default_feature_id: PydanticObjectId
 
 

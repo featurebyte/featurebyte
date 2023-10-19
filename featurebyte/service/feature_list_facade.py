@@ -9,7 +9,7 @@ from featurebyte.models.feature_list import (
     FeatureListNamespaceModel,
     FeatureListStatus,
 )
-from featurebyte.models.feature_namespace import DefaultVersionMode, FeatureReadiness
+from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.schema.feature_list import FeatureListNewVersionCreate, FeatureListServiceCreate
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
@@ -145,16 +145,6 @@ class FeatureListFacadeService:
         )
         if feature_list_namespace.status != FeatureListStatus.DRAFT:
             raise DocumentDeletionError("Only feature list with DRAFT status can be deleted.")
-
-        if (
-            feature_list_namespace.default_feature_list_id == feature_list_id
-            and feature_list_namespace.default_version_mode == DefaultVersionMode.MANUAL
-        ):
-            raise DocumentDeletionError(
-                "Feature list is the default feature list of the feature list namespace and the "
-                "default version mode is manual. Please set another feature list as the default feature list "
-                "or change the default version mode to auto."
-            )
 
         await self.feature_list_service.delete_document(document_id=feature_list_id)
         try:
