@@ -3,7 +3,7 @@ EventTable API routes
 """
 from __future__ import annotations
 
-from typing import List, Optional, cast
+from typing import List, Optional
 
 from http import HTTPStatus
 
@@ -12,14 +12,12 @@ from fastapi import APIRouter, Request
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.event_table import EventTableModel, FeatureJobSettingHistoryEntry
 from featurebyte.models.persistent import AuditDocumentList
-from featurebyte.routes.base_router import BaseApiRouter, BaseRouter
+from featurebyte.routes.base_router import BaseApiRouter
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
-    NameQuery,
     PageQuery,
     PageSizeQuery,
     SearchQuery,
-    SortByQuery,
     SortDirQuery,
     VerboseQuery,
 )
