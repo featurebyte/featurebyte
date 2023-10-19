@@ -285,10 +285,10 @@ def test_get_minimum_iet_sql_expr(observation_table_service, table_details):
     expected_query = textwrap.dedent(
         """
         SELECT
-          MIN("interval") AS "min_interval"
+          MIN("INTERVAL") AS "MIN_INTERVAL"
         FROM (
           SELECT
-            DATEDIFF(microsecond, "PREVIOUS_POINT_IN_TIME", "POINT_IN_TIME") * 1000000 AS "interval"
+            DATEDIFF(microsecond, "PREVIOUS_POINT_IN_TIME", "POINT_IN_TIME") * 1000000 AS "INTERVAL"
           FROM (
             SELECT
               LAG("POINT_IN_TIME") OVER (PARTITION BY 'entity' ORDER BY "POINT_IN_TIME" NULLS LAST) AS "PREVIOUS_POINT_IN_TIME",
@@ -296,7 +296,7 @@ def test_get_minimum_iet_sql_expr(observation_table_service, table_details):
             FROM "fb_database"."fb_schema"."fb_table"
           )
           WHERE
-            NOT "interval" IS NULL
+            NOT "INTERVAL" IS NULL
         )
         """
     ).strip()

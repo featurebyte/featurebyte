@@ -281,7 +281,7 @@ class ObservationTableService(
             previous_point_in_time_quoted, point_in_time_quoted
         )
         # Convert microseconds to seconds
-        quoted_interval_identifier = quoted_identifier("interval")
+        quoted_interval_identifier = quoted_identifier("INTERVAL")
         interval_secs_expr = expressions.Mul(
             this=datediff_expr, expression=make_literal_value(1000000)
         )
@@ -301,7 +301,7 @@ class ObservationTableService(
         )
         aliased_min = expressions.Alias(
             this=expressions.Min(this=quoted_interval_identifier),
-            alias=quoted_identifier("min_interval"),
+            alias=quoted_identifier("MIN_INTERVAL"),
         )
         return expressions.select(aliased_min).from_(iet_expr.subquery())
 
@@ -325,8 +325,8 @@ class ObservationTableService(
 
         Returns
         -------
-        Dict[str, int]
-            column name to minimum interval in seconds
+        int
+            minimum interval in seconds
         """
         entity_col_names = [col.name for col in columns_info if col.entity_id is not None]
         # Construct SQL
