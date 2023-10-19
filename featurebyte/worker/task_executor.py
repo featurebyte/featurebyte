@@ -187,7 +187,7 @@ class BaseCeleryTask(Task):
     executor_class = TaskExecutor
 
     @staticmethod
-    def get_app_container(
+    async def get_app_container(
         task_id: UUID, payload: dict[str, Any], progress: Any
     ) -> LazyAppContainer:
         """
@@ -241,7 +241,7 @@ class BaseCeleryTask(Task):
         Any
         """
         progress = self.progress_class(user_id=payload.get("user_id"), task_id=request_id)
-        app_container = self.get_app_container(request_id, payload, progress)
+        app_container = await self.get_app_container(request_id, payload, progress)
         executor = self.executor_class(
             payload=payload, task_id=request_id, app_container=app_container
         )
