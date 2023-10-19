@@ -288,9 +288,14 @@ class ObservationTableService(
         difference_expr = expressions.Alias(
             this=interval_secs_expr, alias=quoted_interval_identifier
         )
-        iet_expr = (
-            expressions.select(difference_expr)
-            .from_(inner_query.subquery())
+        iet_expr = expressions.select(difference_expr).from_(inner_query.subquery())
+        aliased_min = expressions.Alias(
+            this=expressions.Min(this=quoted_interval_identifier),
+            alias=quoted_identifier("MIN_INTERVAL"),
+        )
+        return (
+            expressions.select(aliased_min)
+            .from_(iet_expr.subquery())
             .where(
                 expressions.Not(
                     this=expressions.Is(
@@ -299,11 +304,6 @@ class ObservationTableService(
                 )
             )
         )
-        aliased_min = expressions.Alias(
-            this=expressions.Min(this=quoted_interval_identifier),
-            alias=quoted_identifier("MIN_INTERVAL"),
-        )
-        return expressions.select(aliased_min).from_(iet_expr.subquery())
 
     async def _get_min_interval_secs_between_entities(
         self,
@@ -338,7 +338,7 @@ class ObservationTableService(
         sql_string = sql_to_string(sql_expr, db_session.source_type)
         min_interval_df = await db_session.execute_query(sql_string)
         assert min_interval_df is not None
-        return min_interval_df.iloc[0]["min_interval"]
+        return min_interval_df.iloc[0]["MIN_INTERVAL"]
 
     async def _get_column_name_to_entity_count(
         self,

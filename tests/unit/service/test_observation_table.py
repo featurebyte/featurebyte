@@ -295,9 +295,9 @@ def test_get_minimum_iet_sql_expr(observation_table_service, table_details):
               "POINT_IN_TIME"
             FROM "fb_database"."fb_schema"."fb_table"
           )
-          WHERE
-            NOT "INTERVAL" IS NULL
         )
+        WHERE
+          NOT "INTERVAL" IS NULL
         """
     ).strip()
     assert expr_sql == expected_query
