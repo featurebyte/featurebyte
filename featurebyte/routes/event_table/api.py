@@ -12,7 +12,7 @@ from fastapi import APIRouter, Request
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.event_table import EventTableModel, FeatureJobSettingHistoryEntry
 from featurebyte.models.persistent import AuditDocumentList
-from featurebyte.routes.base_router import BaseRouter
+from featurebyte.routes.base_router import BaseApiRouter, BaseRouter
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
     NameQuery,
@@ -23,6 +23,7 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
     VerboseQuery,
 )
+from featurebyte.routes.event_table.controller import EventTableController
 from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.event_table import EventTableCreate, EventTableList, EventTableUpdate
 from featurebyte.schema.info import EventTableInfo
@@ -36,231 +37,228 @@ from featurebyte.schema.table import (
 router = APIRouter(prefix="/event_table")
 
 
-class EventTableRouter(BaseRouter):
+class EventTableRouter(
+    BaseApiRouter[EventTableModel, EventTableList, EventTableCreate, EventTableController]
+):
     """
     Event table router
     """
 
+    # pylint: disable=arguments-renamed
+
+    object_model = EventTableModel
+    list_object_model = EventTableList
+    create_object_schema = EventTableCreate
+    controller = EventTableController
+
     def __init__(self) -> None:
-        super().__init__(router=router)
+        super().__init__("/event_table")
+        self.remove_routes({"/event_table/{event_table_id}": ["DELETE"]})
 
-
-@router.post("", response_model=EventTableModel, status_code=HTTPStatus.CREATED)
-async def create_event_table(request: Request, data: EventTableCreate) -> EventTableModel:
-    """
-    Create EventTable
-    """
-    controller = request.state.app_container.event_table_controller
-    event_table: EventTableModel = await controller.create_table(data=data)
-    return event_table
-
-
-@router.get("", response_model=EventTableList)
-async def list_event_table(
-    request: Request,
-    page: int = PageQuery,
-    page_size: int = PageSizeQuery,
-    sort_by: Optional[str] = SortByQuery,
-    sort_dir: Optional[str] = SortDirQuery,
-    search: Optional[str] = SearchQuery,
-    name: Optional[str] = NameQuery,
-) -> EventTableList:
-    """
-    List EventTable
-    """
-    controller = request.state.app_container.event_table_controller
-    event_table_list: EventTableList = await controller.list(
-        page=page,
-        page_size=page_size,
-        sort_by=sort_by,
-        sort_dir=sort_dir,
-        search=search,
-        name=name,
-    )
-    return event_table_list
-
-
-@router.get("/{event_table_id}", response_model=EventTableModel)
-async def get_event_table(request: Request, event_table_id: PydanticObjectId) -> EventTableModel:
-    """
-    Retrieve EventTable
-    """
-    controller = request.state.app_container.event_table_controller
-    event_table: EventTableModel = await controller.get(
-        document_id=event_table_id,
-    )
-    return event_table
-
-
-@router.patch("/{event_table_id}", response_model=EventTableModel)
-async def update_event_table(
-    request: Request,
-    event_table_id: PydanticObjectId,
-    data: EventTableUpdate,
-) -> EventTableModel:
-    """
-    Update EventTable
-    """
-    controller = request.state.app_container.event_table_controller
-    event_table: EventTableModel = await controller.update_table(
-        document_id=event_table_id,
-        data=data,
-    )
-    return event_table
-
-
-@router.get("/audit/{event_table_id}", response_model=AuditDocumentList)
-async def list_event_table_audit_logs(
-    request: Request,
-    event_table_id: PydanticObjectId,
-    page: int = PageQuery,
-    page_size: int = PageSizeQuery,
-    sort_by: Optional[str] = AuditLogSortByQuery,
-    sort_dir: Optional[str] = SortDirQuery,
-    search: Optional[str] = SearchQuery,
-) -> AuditDocumentList:
-    """
-    List EventTable audit logs
-    """
-    controller = request.state.app_container.event_table_controller
-    audit_doc_list: AuditDocumentList = await controller.list_audit(
-        document_id=event_table_id,
-        page=page,
-        page_size=page_size,
-        sort_by=sort_by,
-        sort_dir=sort_dir,
-        search=search,
-    )
-    return audit_doc_list
-
-
-@router.get(
-    "/history/default_feature_job_setting/{event_table_id}",
-    response_model=List[FeatureJobSettingHistoryEntry],
-)
-async def list_default_feature_job_setting_history(
-    request: Request,
-    event_table_id: PydanticObjectId,
-) -> List[FeatureJobSettingHistoryEntry]:
-    """
-    List EventTable default feature job settings history
-    """
-    controller = request.state.app_container.event_table_controller
-    history_values = await controller.list_field_history(
-        document_id=event_table_id,
-        field="default_feature_job_setting",
-    )
-
-    return [
-        FeatureJobSettingHistoryEntry(
-            created_at=record.created_at,
-            setting=record.value,
+        # update route
+        self.router.add_api_route(
+            "/{event_table_id}",
+            self.update_event_table,
+            methods=["PATCH"],
+            response_model=EventTableModel,
+            status_code=HTTPStatus.OK,
         )
-        for record in history_values
-    ]
 
+        # info route
+        self.router.add_api_route(
+            "/{event_table_id}/info",
+            self.get_event_table_info,
+            methods=["GET"],
+            response_model=EventTableInfo,
+        )
 
-@router.get("/{event_table_id}/info", response_model=EventTableInfo)
-async def get_event_table_info(
-    request: Request,
-    event_table_id: PydanticObjectId,
-    verbose: bool = VerboseQuery,
-) -> EventTableInfo:
-    """
-    Retrieve EventTable info
-    """
-    controller = request.state.app_container.event_table_controller
-    info = await controller.get_info(
-        document_id=event_table_id,
-        verbose=verbose,
-    )
-    return cast(EventTableInfo, info)
+        # update column entity route
+        self.router.add_api_route(
+            "/{event_table_id}/column_entity",
+            self.update_column_entity,
+            methods=["PATCH"],
+            response_model=EventTableModel,
+            status_code=HTTPStatus.OK,
+        )
 
+        # update column critical data info route
+        self.router.add_api_route(
+            "/{event_table_id}/column_critical_data_info",
+            self.update_column_critical_data_info,
+            methods=["PATCH"],
+            response_model=EventTableModel,
+            status_code=HTTPStatus.OK,
+        )
 
-@router.patch("/{event_table_id}/description", response_model=EventTableModel)
-async def update_event_table_description(
-    request: Request,
-    event_table_id: PydanticObjectId,
-    data: DescriptionUpdate,
-) -> EventTableModel:
-    """
-    Update event_table description
-    """
-    controller = request.state.app_container.event_table_controller
-    event_table: EventTableModel = await controller.update_description(
-        document_id=event_table_id,
-        description=data.description,
-    )
-    return event_table
+        # update column semantic route
+        self.router.add_api_route(
+            "/{event_table_id}/column_semantic",
+            self.update_column_semantic,
+            methods=["PATCH"],
+            response_model=EventTableModel,
+            status_code=HTTPStatus.OK,
+        )
 
+        # update column description
+        self.router.add_api_route(
+            "/{event_table_id}/column_description",
+            self.update_column_description,
+            methods=["PATCH"],
+            response_model=EventTableModel,
+            status_code=HTTPStatus.OK,
+        )
 
-@router.patch("/{event_table_id}/column_entity", response_model=EventTableModel)
-async def update_column_entity(
-    request: Request,
-    event_table_id: PydanticObjectId,
-    data: ColumnEntityUpdate,
-) -> EventTableModel:
-    """
-    Update column entity
-    """
-    controller = request.state.app_container.event_table_controller
-    event_table: EventTableModel = await controller.update_column_entity(
-        document_id=event_table_id,
-        column_name=data.column_name,
-        entity_id=data.entity_id,
-    )
-    return event_table
+        # list default feature job setting history
+        self.router.add_api_route(
+            "/history/default_feature_job_setting/{event_table_id}",
+            self.list_default_feature_job_setting_history,
+            methods=["GET"],
+            response_model=List[FeatureJobSettingHistoryEntry],
+        )
 
+    async def get_object(
+        self, request: Request, event_table_id: PydanticObjectId
+    ) -> EventTableModel:
+        return await super().get_object(request, event_table_id)
 
-@router.patch("/{event_table_id}/column_critical_data_info", response_model=EventTableModel)
-async def update_column_critical_data_info(
-    request: Request,
-    event_table_id: PydanticObjectId,
-    data: ColumnCriticalDataInfoUpdate,
-) -> EventTableModel:
-    """
-    Update column critical data info
-    """
-    controller = request.state.app_container.event_table_controller
-    event_table: EventTableModel = await controller.update_column_critical_data_info(
-        document_id=event_table_id,
-        column_name=data.column_name,
-        critical_data_info=data.critical_data_info,
-    )
-    return event_table
+    async def list_audit_logs(
+        self,
+        request: Request,
+        event_table_id: PydanticObjectId,
+        page: int = PageQuery,
+        page_size: int = PageSizeQuery,
+        sort_by: Optional[str] = AuditLogSortByQuery,
+        sort_dir: Optional[str] = SortDirQuery,
+        search: Optional[str] = SearchQuery,
+    ) -> AuditDocumentList:
+        return await super().list_audit_logs(
+            request,
+            event_table_id,
+            page=page,
+            page_size=page_size,
+            sort_by=sort_by,
+            sort_dir=sort_dir,
+            search=search,
+        )
 
+    async def update_description(
+        self, request: Request, event_table_id: PydanticObjectId, data: DescriptionUpdate
+    ) -> EventTableModel:
+        return await super().update_description(request, event_table_id, data)
 
-@router.patch("/{event_table_id}/column_description", response_model=EventTableModel)
-async def update_column_description(
-    request: Request,
-    event_table_id: PydanticObjectId,
-    data: ColumnDescriptionUpdate,
-) -> EventTableModel:
-    """
-    Update column description
-    """
-    controller = request.state.app_container.event_table_controller
-    event_table: EventTableModel = await controller.update_column_description(
-        document_id=event_table_id,
-        column_name=data.column_name,
-        description=data.description,
-    )
-    return event_table
+    async def create_object(self, request: Request, data: EventTableCreate) -> EventTableModel:
+        controller = self.get_controller_for_request(request)
+        return await controller.create_table(data=data)
 
+    async def get_event_table_info(
+        self, request: Request, event_table_id: PydanticObjectId, verbose: bool = VerboseQuery
+    ) -> EventTableInfo:
+        """
+        Retrieve event table info
+        """
+        controller = self.get_controller_for_request(request)
+        info = await controller.get_info(
+            document_id=event_table_id,
+            verbose=verbose,
+        )
+        return info
 
-@router.patch("/{event_table_id}/column_semantic", response_model=EventTableModel)
-async def update_column_semantic(
-    request: Request,
-    event_table_id: PydanticObjectId,
-    data: ColumnSemanticUpdate,
-) -> EventTableModel:
-    """
-    Update column semantic
-    """
-    controller = request.state.app_container.event_table_controller
-    event_table: EventTableModel = await controller.update_column_semantic(
-        document_id=event_table_id,
-        column_name=data.column_name,
-        semantic_id=data.semantic_id,
-    )
-    return event_table
+    async def update_event_table(
+        self, request: Request, event_table_id: PydanticObjectId, data: EventTableUpdate
+    ) -> EventTableModel:
+        """
+        Update event table
+        """
+        controller = self.get_controller_for_request(request)
+        event_table: EventTableModel = await controller.update_table(
+            document_id=event_table_id,
+            data=data,
+        )
+        return event_table
+
+    async def update_column_entity(
+        self, request: Request, event_table_id: PydanticObjectId, data: ColumnEntityUpdate
+    ) -> EventTableModel:
+        """
+        Update column entity
+        """
+        controller = self.get_controller_for_request(request)
+        event_table: EventTableModel = await controller.update_column_entity(
+            document_id=event_table_id,
+            column_name=data.column_name,
+            entity_id=data.entity_id,
+        )
+        return event_table
+
+    async def update_column_critical_data_info(
+        self,
+        request: Request,
+        event_table_id: PydanticObjectId,
+        data: ColumnCriticalDataInfoUpdate,
+    ) -> EventTableModel:
+        """
+        Update column critical data info
+        """
+        controller = self.get_controller_for_request(request)
+        event_table: EventTableModel = await controller.update_column_critical_data_info(
+            document_id=event_table_id,
+            column_name=data.column_name,
+            critical_data_info=data.critical_data_info,
+        )
+        return event_table
+
+    async def update_column_semantic(
+        self,
+        request: Request,
+        event_table_id: PydanticObjectId,
+        data: ColumnSemanticUpdate,
+    ) -> EventTableModel:
+        """
+        Update column semantic
+        """
+        controller = self.get_controller_for_request(request)
+        event_table: EventTableModel = await controller.update_column_semantic(
+            document_id=event_table_id,
+            column_name=data.column_name,
+            semantic_id=data.semantic_id,
+        )
+        return event_table
+
+    async def update_column_description(
+        self,
+        request: Request,
+        event_table_id: PydanticObjectId,
+        data: ColumnDescriptionUpdate,
+    ) -> EventTableModel:
+        """
+        Update column description
+        """
+        controller = self.get_controller_for_request(request)
+        event_table: EventTableModel = await controller.update_column_description(
+            document_id=event_table_id,
+            column_name=data.column_name,
+            description=data.description,
+        )
+        return event_table
+
+    async def list_default_feature_job_setting_history(
+        self,
+        request: Request,
+        event_table_id: PydanticObjectId,
+    ) -> List[FeatureJobSettingHistoryEntry]:
+        """
+        List EventTable default feature job settings history
+        """
+        controller = self.get_controller_for_request(request)
+        history_values = await controller.list_field_history(
+            document_id=event_table_id,
+            field="default_feature_job_setting",
+        )
+
+        return [
+            FeatureJobSettingHistoryEntry(
+                created_at=record.created_at,
+                setting=record.value,
+            )
+            for record in history_values
+        ]
