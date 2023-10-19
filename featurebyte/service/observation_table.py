@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional, Tuple, cast
 from dataclasses import dataclass
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 from bson import ObjectId
 from sqlglot import expressions
