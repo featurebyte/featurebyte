@@ -2,20 +2,16 @@
 Integration tests for ObservationTable
 """
 import os
-from http import HTTPStatus
 
 import pandas as pd
 import pytest
 
 from featurebyte.api.entity import Entity
 from featurebyte.api.observation_table import ObservationTable
-from featurebyte.common.utils import dataframe_to_arrow_bytes
-from featurebyte.config import Configurations
 from featurebyte.enum import SpecialColumnName
 from featurebyte.exception import RecordCreationException
 from featurebyte.models.observation_table import UploadedFileInput
 from featurebyte.models.request_input import RequestInputType
-from featurebyte.schema.observation_table import ObservationTableUpload
 from tests.integration.api.materialized_table.utils import (
     check_location_valid,
     check_materialized_table_accessible,
@@ -56,8 +52,6 @@ async def test_observation_table_from_source_table(
     check_location_valid(table_details, session)
     await check_materialized_table_accessible(table_details, session, source_type, sample_rows)
 
-    assert observation_table.min_interval_secs_between_entities == 0
-
     user_id_entity_col_name = "User ID"
     check_materialized_table_preview_methods(
         observation_table, expected_columns=["POINT_IN_TIME", user_id_entity_col_name]
@@ -83,6 +77,32 @@ async def test_observation_table_from_source_table(
     assert _convert_timestamp_for_timezones(
         observation_table.most_recent_point_in_time
     ) == _convert_timestamp_for_timezones(str(expected_max))
+
+
+@pytest.mark.asyncio
+async def test_observation_table_min_interval_between_entities(
+    catalog, session, data_source, normal_user_id_entity
+):
+    _ = catalog, normal_user_id_entity
+    df = pd.read_csv(
+        os.path.join(os.path.dirname(__file__), "fixtures", "observation_table_time_interval.csv")
+    )
+    df[SpecialColumnName.POINT_IN_TIME] = pd.to_datetime(
+        df[SpecialColumnName.POINT_IN_TIME].astype(str)
+    )
+    table_name = "observation_table_time_interval"
+    await session.register_table(table_name, df, temporary=False)
+
+    database_table = data_source.get_source_table(
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+        table_name=table_name,
+    )
+    sample_rows = 123
+    observation_table = database_table.create_observation_table(
+        f"MY_OBSERVATION_TABLE_FOR_INTERVALS", sample_rows=sample_rows
+    )
+    assert observation_table.min_interval_secs_between_entities == 3600
 
 
 @pytest.mark.asyncio

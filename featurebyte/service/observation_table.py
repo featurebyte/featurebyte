@@ -267,7 +267,7 @@ class ObservationTableService(
 
         window_expression = expressions.Window(
             this=expressions.Anonymous(this="LAG", expressions=[point_in_time_quoted]),
-            partition_by=[make_literal_value(col_name) for col_name in entity_column_names],
+            partition_by=[quoted_identifier(col_name) for col_name in entity_column_names],
             order=expressions.Order(expressions=[expressions.Ordered(this=point_in_time_quoted)]),
         )
         aliased_window = expressions.Alias(
@@ -283,7 +283,7 @@ class ObservationTableService(
         )
         # Convert microseconds to seconds
         quoted_interval_identifier = quoted_identifier("INTERVAL")
-        interval_secs_expr = expressions.Mul(
+        interval_secs_expr = expressions.Div(
             this=datediff_expr, expression=make_literal_value(1000000)
         )
         difference_expr = expressions.Alias(

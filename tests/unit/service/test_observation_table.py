@@ -288,10 +288,10 @@ def test_get_minimum_iet_sql_expr(observation_table_service, table_details):
           MIN("INTERVAL") AS "MIN_INTERVAL"
         FROM (
           SELECT
-            DATEDIFF(microsecond, "PREVIOUS_POINT_IN_TIME", "POINT_IN_TIME") * 1000000 AS "INTERVAL"
+            DATEDIFF(microsecond, "PREVIOUS_POINT_IN_TIME", "POINT_IN_TIME") / 1000000 AS "INTERVAL"
           FROM (
             SELECT
-              LAG("POINT_IN_TIME") OVER (PARTITION BY 'entity' ORDER BY "POINT_IN_TIME" NULLS LAST) AS "PREVIOUS_POINT_IN_TIME",
+              LAG("POINT_IN_TIME") OVER (PARTITION BY "entity" ORDER BY "POINT_IN_TIME" NULLS LAST) AS "PREVIOUS_POINT_IN_TIME",
               "POINT_IN_TIME"
             FROM "fb_database"."fb_schema"."fb_table"
           )
