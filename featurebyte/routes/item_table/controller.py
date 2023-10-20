@@ -3,14 +3,19 @@ ItemTable API route controller
 """
 from __future__ import annotations
 
+from typing import Any, List, Tuple
+
 from bson import ObjectId
 
 from featurebyte.enum import SemanticType
 from featurebyte.models.item_table import ItemTableModel
+from featurebyte.models.persistent import QueryFilter
 from featurebyte.routes.common.base_table import BaseTableDocumentController
 from featurebyte.schema.info import ItemTableInfo
 from featurebyte.schema.item_table import ItemTableList, ItemTableServiceUpdate
+from featurebyte.service.entity import EntityService
 from featurebyte.service.event_table import EventTableService
+from featurebyte.service.feature import FeatureService
 from featurebyte.service.item_table import ItemTableService
 from featurebyte.service.semantic import SemanticService
 from featurebyte.service.table_columns_info import TableDocumentService
@@ -40,10 +45,14 @@ class ItemTableController(
         semantic_service: SemanticService,
         table_info_service: TableInfoService,
         event_table_service: EventTableService,
+        entity_service: EntityService,
+        feature_service: FeatureService,
     ):
         super().__init__(item_table_service, table_facade_service, semantic_service)
         self.table_info_service = table_info_service
         self.event_table_service = event_table_service
+        self.entity_service = entity_service
+        self.feature_service = feature_service
 
     async def get_info(self, document_id: ObjectId, verbose: bool) -> ItemTableInfo:
         """
@@ -73,3 +82,11 @@ class ItemTableController(
             item_id_column=item_table.item_id_column,
             event_table_name=event_table.name,
         )
+
+    async def service_and_query_pairs_for_checking_reference(
+        self, document_id: ObjectId
+    ) -> List[Tuple[Any, QueryFilter]]:
+        return [
+            (self.entity_service, {"primary_table_ids": document_id}),
+            (self.feature_service, {"table_ids": document_id}),
+        ]
