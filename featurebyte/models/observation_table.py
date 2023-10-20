@@ -131,6 +131,7 @@ class ObservationTableModel(MaterializedTableModel):
     purpose: Optional[Purpose] = Field(default=None)
     least_recent_point_in_time: Optional[StrictStr] = Field(default=None)
     entity_column_name_to_count: Optional[Dict[str, int]] = Field(default_factory=dict)
+    min_interval_secs_between_entities: Optional[float] = Field(default_factory=None)
     primary_entity_ids: Optional[List[PydanticObjectId]] = Field(default_factory=list)
 
     @validator("most_recent_point_in_time", "least_recent_point_in_time")

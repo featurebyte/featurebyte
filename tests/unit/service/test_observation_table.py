@@ -88,6 +88,8 @@ def db_session_fixture():
                     "max": ["2023-01-15T10:00:00+08:00", 10],
                 },
             )
+        if "INTERVAL" in query:
+            return pd.DataFrame({"MIN_INTERVAL": [3600]})
         raise NotImplementedError(f"Unexpected query: {query}")
 
     mock_db_session = Mock(
@@ -213,6 +215,7 @@ async def test_validate__most_recent_point_in_time(
             "most_recent_point_in_time": "2023-01-15T02:00:00",
             "num_rows": 1000,
             "entity_column_name_to_count": {"cust_id": 2},
+            "min_interval_secs_between_entities": 3600,
         }
 
 
@@ -269,3 +272,32 @@ async def test_request_input_get_row_count(observation_table_from_source_table, 
     ).strip()
     query = db_session.execute_query.call_args[0][0]
     assert query == expected_query
+
+
+def test_get_minimum_iet_sql_expr(observation_table_service, table_details):
+    """
+    Test get_minimum_iet_sql_expr
+    """
+    expr = observation_table_service.get_minimum_iet_sql_expr(
+        ["entity"], table_details, SourceType.SNOWFLAKE
+    )
+    expr_sql = expr.sql(pretty=True)
+    expected_query = textwrap.dedent(
+        """
+        SELECT
+          MIN("INTERVAL") AS "MIN_INTERVAL"
+        FROM (
+          SELECT
+            DATEDIFF(microsecond, "PREVIOUS_POINT_IN_TIME", "POINT_IN_TIME") / 1000000 AS "INTERVAL"
+          FROM (
+            SELECT
+              LAG("POINT_IN_TIME") OVER (PARTITION BY "entity" ORDER BY "POINT_IN_TIME" NULLS LAST) AS "PREVIOUS_POINT_IN_TIME",
+              "POINT_IN_TIME"
+            FROM "fb_database"."fb_schema"."fb_table"
+          )
+        )
+        WHERE
+          NOT "INTERVAL" IS NULL
+        """
+    ).strip()
+    assert expr_sql == expected_query

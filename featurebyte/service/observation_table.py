@@ -10,10 +10,12 @@ from pathlib import Path
 
 import pandas as pd
 from bson import ObjectId
+from sqlglot import expressions
+from sqlglot.expressions import Expression
 
 from featurebyte.api.source_table import SourceTable
 from featurebyte.common.utils import dataframe_from_json
-from featurebyte.enum import DBVarType, MaterializedTableNamePrefix, SpecialColumnName
+from featurebyte.enum import DBVarType, MaterializedTableNamePrefix, SourceType, SpecialColumnName
 from featurebyte.exception import (
     MissingPointInTimeColumnError,
     ObservationTableInvalidContextError,
@@ -27,6 +29,13 @@ from featurebyte.models.observation_table import ObservationTableModel, TargetIn
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.query_graph.sql.adapter import get_sql_adapter
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
+from featurebyte.query_graph.sql.common import (
+    get_fully_qualified_table_name,
+    quoted_identifier,
+    sql_to_string,
+)
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.routes.common.primary_entity_validator import PrimaryEntityValidator
 from featurebyte.schema.feature_store import FeatureStoreSample
@@ -232,6 +241,109 @@ class ObservationTableService(
             observation_set_storage_path=observation_set_storage_path,
         )
 
+    @staticmethod
+    def get_minimum_iet_sql_expr(
+        entity_column_names: List[str], table_details: TableDetails, source_type: SourceType
+    ) -> Expression:
+        """
+        Get the SQL expression to compute the minimum interval in seconds for each entity.
+
+        Parameters
+        ----------
+        entity_column_names: List[str]
+            List of entity column names
+        table_details: TableDetails
+            Table details of the materialized table
+        source_type: SourceType
+            Source type
+
+        Returns
+        -------
+        str
+        """
+        adapter = get_sql_adapter(source_type)
+        point_in_time_quoted = quoted_identifier(SpecialColumnName.POINT_IN_TIME)
+        previous_point_in_time_quoted = quoted_identifier("PREVIOUS_POINT_IN_TIME")
+
+        window_expression = expressions.Window(
+            this=expressions.Anonymous(this="LAG", expressions=[point_in_time_quoted]),
+            partition_by=[quoted_identifier(col_name) for col_name in entity_column_names],
+            order=expressions.Order(expressions=[expressions.Ordered(this=point_in_time_quoted)]),
+        )
+        aliased_window = expressions.Alias(
+            this=window_expression,
+            alias=previous_point_in_time_quoted,
+        )
+        inner_query = expressions.select(aliased_window, point_in_time_quoted).from_(
+            get_fully_qualified_table_name(table_details.dict())
+        )
+
+        datediff_expr = adapter.datediff_microsecond(
+            previous_point_in_time_quoted, point_in_time_quoted
+        )
+        # Convert microseconds to seconds
+        quoted_interval_identifier = quoted_identifier("INTERVAL")
+        interval_secs_expr = expressions.Div(
+            this=datediff_expr, expression=make_literal_value(1000000)
+        )
+        difference_expr = expressions.Alias(
+            this=interval_secs_expr, alias=quoted_interval_identifier
+        )
+        iet_expr = expressions.select(difference_expr).from_(inner_query.subquery())
+        aliased_min = expressions.Alias(
+            this=expressions.Min(this=quoted_interval_identifier),
+            alias=quoted_identifier("MIN_INTERVAL"),
+        )
+        return (
+            expressions.select(aliased_min)
+            .from_(iet_expr.subquery())
+            .where(
+                expressions.Not(
+                    this=expressions.Is(
+                        this=quoted_interval_identifier, expression=expressions.Null()
+                    )
+                )
+            )
+        )
+
+    async def _get_min_interval_secs_between_entities(
+        self,
+        db_session: BaseSession,
+        columns_info: List[ColumnSpecWithEntityId],
+        table_details: TableDetails,
+    ) -> Optional[float]:
+        """
+        Get the entity column name to minimum interval mapping.
+
+        Parameters
+        ----------
+        db_session: BaseSession
+            Database session
+        columns_info: List[ColumnSpecWithEntityId]
+            List of column specs with entity id
+        table_details: TableDetails
+            Table details of the materialized table
+
+        Returns
+        -------
+        Optional[float]
+            minimum interval in seconds, None if there's only one row
+        """
+        entity_col_names = [col.name for col in columns_info if col.entity_id is not None]
+        # Construct SQL
+        sql_expr = self.get_minimum_iet_sql_expr(
+            entity_col_names, table_details, db_session.source_type
+        )
+
+        # Execute SQL
+        sql_string = sql_to_string(sql_expr, db_session.source_type)
+        min_interval_df = await db_session.execute_query(sql_string)
+        assert min_interval_df is not None
+        value = min_interval_df.iloc[0]["MIN_INTERVAL"]
+        if value is None or pd.isna(value):
+            return None
+        return float(value)
+
     async def _get_column_name_to_entity_count(
         self,
         feature_store: FeatureStoreModel,
@@ -342,16 +454,22 @@ class ObservationTableService(
 
         # Perform validation on column info
         validate_columns_info(columns_info, skip_entity_validation_checks)
+        # Get entity column name to minimum interval mapping
+        min_interval_secs_between_entities = await self._get_min_interval_secs_between_entities(
+            db_session, columns_info, table_details
+        )
         # Get entity statistics metadata
         column_name_to_count, point_in_time_stats = await self._get_column_name_to_entity_count(
             feature_store, table_details, columns_info
         )
+
         return {
             "columns_info": columns_info,
             "num_rows": num_rows,
             "most_recent_point_in_time": point_in_time_stats.most_recent,
             "least_recent_point_in_time": point_in_time_stats.least_recent,
             "entity_column_name_to_count": column_name_to_count,
+            "min_interval_secs_between_entities": min_interval_secs_between_entities,
         }
 
     async def update_observation_table(  # pylint: disable=too-many-branches
