@@ -7,7 +7,6 @@ from typing import Any, List, Tuple
 
 from bson import ObjectId
 
-from featurebyte import Feature
 from featurebyte.enum import SemanticType
 from featurebyte.models.dimension_table import DimensionTableModel
 from featurebyte.models.persistent import QueryFilter

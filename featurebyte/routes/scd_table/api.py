@@ -22,7 +22,7 @@ from featurebyte.routes.common.schema import (
     VerboseQuery,
 )
 from featurebyte.routes.scd_table.controller import SCDTableController
-from featurebyte.schema.common.base import DescriptionUpdate
+from featurebyte.schema.common.base import DeleteResponse, DescriptionUpdate
 from featurebyte.schema.info import SCDTableInfo
 from featurebyte.schema.scd_table import SCDTableCreate, SCDTableList, SCDTableUpdate
 from featurebyte.schema.table import (
@@ -51,7 +51,6 @@ class SCDTableRouter(
 
     def __init__(self) -> None:
         super().__init__("/scd_table")
-        self.remove_routes({"/scd_table/{scd_table_id}": ["DELETE"]})
 
         # update route
         self.router.add_api_route(
@@ -228,3 +227,10 @@ class SCDTableRouter(
             description=data.description,
         )
         return scd_table
+
+    async def delete_object(
+        self, request: Request, scd_table_id: PydanticObjectId
+    ) -> DeleteResponse:
+        controller = self.get_controller_for_request(request)
+        await controller.delete(document_id=scd_table_id)
+        return DeleteResponse()

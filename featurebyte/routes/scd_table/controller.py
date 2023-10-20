@@ -3,13 +3,18 @@ SCDTable API route controller
 """
 from __future__ import annotations
 
+from typing import Any, List, Tuple
+
 from bson import ObjectId
 
 from featurebyte.enum import SemanticType
+from featurebyte.models.persistent import QueryFilter
 from featurebyte.models.scd_table import SCDTableModel
 from featurebyte.routes.common.base_table import BaseTableDocumentController
 from featurebyte.schema.info import SCDTableInfo
 from featurebyte.schema.scd_table import SCDTableList, SCDTableServiceUpdate
+from featurebyte.service.entity import EntityService
+from featurebyte.service.feature import FeatureService
 from featurebyte.service.scd_table import SCDTableService
 from featurebyte.service.semantic import SemanticService
 from featurebyte.service.table_columns_info import TableDocumentService
@@ -39,9 +44,13 @@ class SCDTableController(BaseTableDocumentController[SCDTableModel, SCDTableServ
         table_facade_service: TableFacadeService,
         semantic_service: SemanticService,
         table_info_service: TableInfoService,
+        entity_service: EntityService,
+        feature_service: FeatureService,
     ):
         super().__init__(service, table_facade_service, semantic_service)
         self.table_info_service = table_info_service
+        self.entity_service = entity_service
+        self.feature_service = feature_service
 
     async def get_info(self, document_id: ObjectId, verbose: bool) -> SCDTableInfo:
         """
@@ -70,3 +79,11 @@ class SCDTableController(BaseTableDocumentController[SCDTableModel, SCDTableServ
             end_timestamp_column=scd_table.end_timestamp_column,
             current_flag_column=scd_table.current_flag_column,
         )
+
+    async def service_and_query_pairs_for_checking_reference(
+        self, document_id: ObjectId
+    ) -> List[Tuple[Any, QueryFilter]]:
+        return [
+            (self.entity_service, {"primary_table_ids": document_id}),
+            (self.feature_service, {"table_ids": document_id}),
+        ]
