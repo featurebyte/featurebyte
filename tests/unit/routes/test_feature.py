@@ -1,6 +1,7 @@
 """
 Tests for Feature route
 """
+# pylint: disable=too-many-lines
 from collections import defaultdict
 from datetime import datetime
 from http import HTTPStatus
