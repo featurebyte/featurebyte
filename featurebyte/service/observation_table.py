@@ -311,7 +311,7 @@ class ObservationTableService(
         db_session: BaseSession,
         columns_info: List[ColumnSpecWithEntityId],
         table_details: TableDetails,
-    ) -> Optional[int]:
+    ) -> Optional[float]:
         """
         Get the entity column name to minimum interval mapping.
 
@@ -326,7 +326,7 @@ class ObservationTableService(
 
         Returns
         -------
-        Optional[int]
+        Optional[float]
             minimum interval in seconds, None if there's only one row
         """
         entity_col_names = [col.name for col in columns_info if col.entity_id is not None]
@@ -342,7 +342,7 @@ class ObservationTableService(
         value = min_interval_df.iloc[0]["MIN_INTERVAL"]
         if value is None or pd.isna(value):
             return None
-        return int(value)
+        return float(value)
 
     async def _get_column_name_to_entity_count(
         self,
