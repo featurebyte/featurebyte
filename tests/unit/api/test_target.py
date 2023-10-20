@@ -126,3 +126,14 @@ class TestTargetTestSuite(FeatureOrTargetBaseTestSuite):
         )
         actual_df = lists[["name", "dtype", "entities"]]
         fb_assert_frame_equal(actual_df, expected_df, sort_by_columns=["name"])
+
+    def test_delete_target(self, float_target):
+        """Test delete target"""
+        assert float_target.saved is False
+
+        float_target.save()
+        assert float_target.saved
+
+        # delete the target
+        float_target.delete()
+        assert float_target.saved is False
