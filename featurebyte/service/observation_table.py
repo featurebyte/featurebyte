@@ -8,7 +8,6 @@ from typing import Any, Dict, List, Optional, Tuple, cast
 from dataclasses import dataclass
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 from bson import ObjectId
 from sqlglot import expressions
@@ -341,7 +340,7 @@ class ObservationTableService(
         min_interval_df = await db_session.execute_query(sql_string)
         assert min_interval_df is not None
         value = min_interval_df.iloc[0]["MIN_INTERVAL"]
-        if value is None or np.isnan(value):
+        if value is None or pd.isna(value):
             return None
         return int(value)
 
