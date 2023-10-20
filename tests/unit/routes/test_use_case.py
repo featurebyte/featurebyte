@@ -633,3 +633,19 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         assert response_dict["context_id"] == use_case_payload["context_id"]
         assert response_dict["target_namespace_id"] == target_namespace_id
         assert response_dict["target_id"] == target_id
+
+    def test_delete_target(self, test_api_client_persistent, create_success_response):
+        """Test delete target"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        target_id = create_response_dict["target_id"]
+        response = test_api_client.delete(f"/target/{target_id}")
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert response.json()["detail"] == "Target is referenced by UseCase: test_use_case "
+
+        # delete the use case & try to delete again should be successful
+        use_case_id = create_response_dict["_id"]
+        response = test_api_client.delete(f"{self.base_route}/{use_case_id}")
+        assert response.status_code == HTTPStatus.OK, response.json()
+        response = test_api_client.delete(f"/target/{target_id}")
+        assert response.status_code == HTTPStatus.OK, response.json()

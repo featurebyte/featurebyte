@@ -245,3 +245,29 @@ class TargetService(BaseNamespaceService[TargetModel, TargetCreate]):
             table_ids=target.table_ids,
             count=count,
         )
+
+    async def delete_document(
+        self,
+        document_id: ObjectId,
+        exception_detail: Optional[str] = None,
+        use_raw_query_filter: bool = False,
+        **kwargs: Any,
+    ) -> int:
+        target = await self.get_document(document_id=document_id)
+        target_namespace = await self.target_namespace_service.get_document(
+            document_id=target.target_namespace_id,
+        )
+        output = await super().delete_document(
+            document_id=document_id,
+            exception_detail=exception_detail,
+            use_raw_query_filter=use_raw_query_filter,
+            **kwargs,
+        )
+        await self.target_namespace_service.update_document(
+            document_id=target_namespace.id,
+            data=TargetNamespaceServiceUpdate(
+                target_ids=self.exclude_object_id(target_namespace.target_ids, target.id),
+            ),
+            return_document=False,
+        )
+        return output

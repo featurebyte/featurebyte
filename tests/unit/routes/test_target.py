@@ -192,3 +192,20 @@ class TestTargetApi(BaseCatalogApiTestSuite):
                 {"cust_id": "1"},
             ],
         }
+
+    def test_delete_200(self, test_api_client_persistent, create_success_response):
+        """Test delete target"""
+        test_api_client, _ = test_api_client_persistent
+        target_id = create_success_response.json()["_id"]
+        response = test_api_client.delete(f"{self.base_route}/{target_id}")
+        assert response.status_code == HTTPStatus.OK, response.json()
+
+        # check target namespace
+        target_namespace_id = create_success_response.json()["target_namespace_id"]
+        response = test_api_client.get(f"/target_namespace/{target_namespace_id}")
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json()["target_ids"] == []
+
+        # check deleted target
+        response = test_api_client.get(f"{self.base_route}/{target_id}")
+        assert response.status_code == HTTPStatus.NOT_FOUND, response.json()

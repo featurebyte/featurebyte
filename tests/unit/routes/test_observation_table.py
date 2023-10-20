@@ -311,3 +311,24 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         expected_columns = {"POINT_IN_TIME", "cust_id"}
         actual_columns = {column["name"] for column in response_dict["columns_info"]}
         assert expected_columns == actual_columns
+
+    @pytest.mark.asyncio
+    async def test_delete_target(self, test_api_client_persistent, create_observation_table):
+        """Test delete target"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        target_payload = self.load_payload("tests/fixtures/request_payloads/target.json")
+        target_id = target_payload["_id"]
+        await create_observation_table(
+            ObjectId(),
+            target_input=True,
+            target_id=ObjectId(target_id),
+        )
+
+        # attempt to delete target should fail
+        response = test_api_client.delete(f"/target/{target_id}")
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert response.json()["detail"] == (
+            "Target is referenced by ObservationTable: observation_table_from_target_input"
+        )
