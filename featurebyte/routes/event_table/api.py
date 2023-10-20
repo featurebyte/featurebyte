@@ -22,7 +22,7 @@ from featurebyte.routes.common.schema import (
     VerboseQuery,
 )
 from featurebyte.routes.event_table.controller import EventTableController
-from featurebyte.schema.common.base import DescriptionUpdate
+from featurebyte.schema.common.base import DeleteResponse, DescriptionUpdate
 from featurebyte.schema.event_table import EventTableCreate, EventTableList, EventTableUpdate
 from featurebyte.schema.info import EventTableInfo
 from featurebyte.schema.table import (
@@ -51,7 +51,6 @@ class EventTableRouter(
 
     def __init__(self) -> None:
         super().__init__("/event_table")
-        self.remove_routes({"/event_table/{event_table_id}": ["DELETE"]})
 
         # update route
         self.router.add_api_route(
@@ -260,3 +259,10 @@ class EventTableRouter(
             )
             for record in history_values
         ]
+
+    async def delete_object(
+        self, request: Request, event_table_id: PydanticObjectId
+    ) -> DeleteResponse:
+        controller = self.get_controller_for_request(request)
+        await controller.delete(document_id=event_table_id)
+        return DeleteResponse()
