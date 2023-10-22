@@ -190,3 +190,9 @@ class BaseTableTestSuite:
         table_under_test.update_description(None)
         assert table_under_test.description is None
         assert table_under_test.info()["description"] is None
+
+    def test_delete(self, table_under_test):
+        """Test delete table"""
+        assert table_under_test.saved
+        table_under_test.delete()
+        assert not table_under_test.saved

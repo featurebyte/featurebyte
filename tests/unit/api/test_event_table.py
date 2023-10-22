@@ -22,6 +22,7 @@ from featurebyte.exception import (
     DuplicatedRecordException,
     ObjectHasBeenSavedError,
     RecordCreationException,
+    RecordDeletionException,
     RecordRetrievalException,
     RecordUpdateException,
 )
@@ -305,6 +306,12 @@ class TestEventTableTestSuite(BaseTableTestSuite):
     LIMIT 10
     """
     expected_timestamp_column = "event_timestamp"
+
+    def test_delete(self, table_under_test):
+        """Test delete"""
+        with pytest.raises(RecordDeletionException) as exc:
+            table_under_test.delete()
+        assert "EventTable is referenced by ItemTable: sf_item_table" in str(exc.value)
 
 
 def test_info__event_table_without_record_creation_date(
