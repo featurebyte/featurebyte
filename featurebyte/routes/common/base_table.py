@@ -3,7 +3,7 @@ BaseDataController for API routes
 """
 from __future__ import annotations
 
-from typing import Any, Optional, Type, TypeVar, cast
+from typing import Any, List, Optional, Tuple, Type, TypeVar, cast
 
 from bson.objectid import ObjectId
 
@@ -12,13 +12,16 @@ from featurebyte.exception import ColumnNotFoundError
 from featurebyte.models.dimension_table import DimensionTableModel
 from featurebyte.models.event_table import EventTableModel
 from featurebyte.models.item_table import ItemTableModel
+from featurebyte.models.persistent import QueryFilter
 from featurebyte.models.scd_table import SCDTableModel
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
 from featurebyte.routes.common.base import BaseDocumentController, PaginatedDocument
 from featurebyte.schema.table import TableServiceUpdate, TableUpdate
 from featurebyte.service.dimension_table import DimensionTableService
+from featurebyte.service.entity import EntityService
 from featurebyte.service.event_table import EventTableService
+from featurebyte.service.feature import FeatureService
 from featurebyte.service.item_table import ItemTableService
 from featurebyte.service.scd_table import SCDTableService
 from featurebyte.service.semantic import SemanticService
@@ -54,10 +57,14 @@ class BaseTableDocumentController(
         service: TableDocumentService,
         table_facade_service: TableFacadeService,
         semantic_service: SemanticService,
+        entity_service: EntityService,
+        feature_service: FeatureService,
     ):
         super().__init__(service)  # type: ignore[arg-type]
         self.table_facade_service = table_facade_service
         self.semantic_service = semantic_service
+        self.entity_service = entity_service
+        self.feature_service = feature_service
 
     async def _get_column_semantic_map(self, document: TableDocumentT) -> dict[str, Any]:
         """
@@ -315,3 +322,11 @@ class BaseTableDocumentController(
             field="semantic_id",
             data=semantic_id,
         )
+
+    async def service_and_query_pairs_for_checking_reference(
+        self, document_id: ObjectId
+    ) -> List[Tuple[Any, QueryFilter]]:
+        return [
+            (self.entity_service, {"primary_table_ids": document_id}),
+            (self.feature_service, {"table_ids": document_id}),
+        ]
