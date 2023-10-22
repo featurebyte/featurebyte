@@ -150,6 +150,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
             source=snowflake_event_table.tabular_source,
         ),
         context_id=context.id,
+        primary_entity_ids=[cust_id_entity.id],
     )
     historical_feature_table = HistoricalFeatureTableCreate(
         _id="646f6c1c0ed28a5271fb02d8",

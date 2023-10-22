@@ -22,5 +22,8 @@
         "type": "source_table"
     },
     "sample_rows": null,
-    "purpose": "other"
+    "purpose": "other",
+    "primary_entity_ids": [
+        "63f94ed6ea1f050131379214"
+    ]
 }

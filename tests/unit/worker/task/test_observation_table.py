@@ -27,6 +27,7 @@ async def test_get_task_description(catalog, app_container):
                 table_details=TableDetails(table_name="test_table"),
             ),
         ),
+        primary_entity_ids=["63f94ed6ea1f050131379214"],
     )
     task = app_container.get(ObservationTableTask)
     assert (
