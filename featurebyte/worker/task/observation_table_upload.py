@@ -66,7 +66,9 @@ class ObservationTableUploadTask(DataWarehouseMixin, BaseTask[ObservationTableUp
         )
 
         # Write the file to the warehouse
-        await db_session.register_table(location.table_details.table_name, uploaded_dataframe)
+        await db_session.register_table(
+            location.table_details.table_name, uploaded_dataframe, temporary=False
+        )
 
         async with self.drop_table_on_error(db_session, location.table_details, payload):
             # Validate table and retrieve metadata about the table
