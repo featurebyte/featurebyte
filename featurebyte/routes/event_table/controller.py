@@ -3,14 +3,21 @@ EventTable API route controller
 """
 from __future__ import annotations
 
+from typing import Any, List, Tuple
+
 from bson.objectid import ObjectId
 
 from featurebyte.enum import SemanticType
 from featurebyte.models.event_table import EventTableModel
+from featurebyte.models.persistent import QueryFilter
 from featurebyte.routes.common.base_table import BaseTableDocumentController
 from featurebyte.schema.event_table import EventTableList, EventTableServiceUpdate
 from featurebyte.schema.info import EventTableInfo
+from featurebyte.service.entity import EntityService
 from featurebyte.service.event_table import EventTableService
+from featurebyte.service.feature import FeatureService
+from featurebyte.service.feature_job_setting_analysis import FeatureJobSettingAnalysisService
+from featurebyte.service.item_table import ItemTableService
 from featurebyte.service.semantic import SemanticService
 from featurebyte.service.table_columns_info import TableDocumentService
 from featurebyte.service.table_facade import TableFacadeService
@@ -38,10 +45,22 @@ class EventTableController(
         event_table_service: TableDocumentService,
         table_facade_service: TableFacadeService,
         semantic_service: SemanticService,
+        entity_service: EntityService,
+        feature_service: FeatureService,
         table_info_service: TableInfoService,
+        item_table_service: ItemTableService,
+        feature_job_setting_analysis_service: FeatureJobSettingAnalysisService,
     ):
-        super().__init__(event_table_service, table_facade_service, semantic_service)
+        super().__init__(
+            service=event_table_service,
+            table_facade_service=table_facade_service,
+            semantic_service=semantic_service,
+            entity_service=entity_service,
+            feature_service=feature_service,
+        )
         self.table_info_service = table_info_service
+        self.item_table_service = item_table_service
+        self.feature_job_setting_analysis_service = feature_job_setting_analysis_service
 
     async def get_info(self, document_id: ObjectId, verbose: bool) -> EventTableInfo:
         """
@@ -68,3 +87,13 @@ class EventTableController(
             event_timestamp_column=event_table.event_timestamp_column,
             default_feature_job_setting=event_table.default_feature_job_setting,
         )
+
+    async def service_and_query_pairs_for_checking_reference(
+        self, document_id: ObjectId
+    ) -> List[Tuple[Any, QueryFilter]]:
+        return await super().service_and_query_pairs_for_checking_reference(
+            document_id=document_id
+        ) + [
+            (self.item_table_service, {"event_table_id": document_id}),
+            (self.feature_job_setting_analysis_service, {"event_table_id": document_id}),
+        ]

@@ -237,3 +237,31 @@ class TestDimensionTableApi(BaseTableApiTestSuite):
                 "description": None,
             },
         ]
+
+    def test_delete_200(self, test_api_client_persistent, create_success_response):
+        """Test delete"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        table_id = create_response_dict["_id"]
+        response = test_api_client.delete(f"{self.base_route}/{table_id}")
+        assert response.status_code == HTTPStatus.OK, response.text
+
+    def test_delete_422(self, test_api_client_persistent, create_success_response):
+        """Test delete (unsuccessful)"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        table_id = create_response_dict["_id"]
+        entity_payload = self.load_payload("tests/fixtures/request_payloads/entity.json")
+        response = test_api_client.patch(
+            f"{self.base_route}/{table_id}/column_entity",
+            json={
+                "column_name": "col_int",
+                "entity_id": entity_payload["_id"],
+            },
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+
+        # attempt to delete the table should fail
+        response = test_api_client.delete(f"{self.base_route}/{table_id}")
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert response.json()["detail"] == "DimensionTable is referenced by Entity: customer"

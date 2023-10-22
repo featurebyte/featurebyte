@@ -18,7 +18,7 @@ from typeguard import typechecked
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.api_object_util import ForeignKeyMapping
 from featurebyte.api.entity import Entity
-from featurebyte.api.savable_api_object import SavableApiObject
+from featurebyte.api.savable_api_object import DeletableApiObject, SavableApiObject
 from featurebyte.api.source_table import AbstractTableData, SourceTable
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.config import Configurations
@@ -494,7 +494,9 @@ class TableListMixin(ApiObject):
         return data_list
 
 
-class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAttrMixin):
+class TableApiObject(
+    AbstractTableData, TableListMixin, DeletableApiObject, SavableApiObject, GetAttrMixin
+):
     """
     Base class for all Table objects
     """
@@ -1113,3 +1115,19 @@ class TableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAtt
             url=f"{self._route}/{self.id}/column_description",
             skip_update_schema_check=True,
         )
+
+    def delete(self) -> None:
+        """
+        Delete the table from the persistent data store. The table can only be deleted if
+
+        - the table is not referenced by any other table (item table referencing event table)
+        - the table is not referenced by any feature
+        - the table is not referenced by any feature job setting analysis
+        - the table is not used as primary table in any entity
+
+        Examples
+        --------
+        >>> event_table = catalog.get_table("GROCERYINVOICE")
+        >>> event_table.delete()  # doctest: +SKIP
+        """
+        self._delete()

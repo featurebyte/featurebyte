@@ -10,7 +10,9 @@ from featurebyte.models.item_table import ItemTableModel
 from featurebyte.routes.common.base_table import BaseTableDocumentController
 from featurebyte.schema.info import ItemTableInfo
 from featurebyte.schema.item_table import ItemTableList, ItemTableServiceUpdate
+from featurebyte.service.entity import EntityService
 from featurebyte.service.event_table import EventTableService
+from featurebyte.service.feature import FeatureService
 from featurebyte.service.item_table import ItemTableService
 from featurebyte.service.semantic import SemanticService
 from featurebyte.service.table_columns_info import TableDocumentService
@@ -38,10 +40,18 @@ class ItemTableController(
         item_table_service: TableDocumentService,
         table_facade_service: TableFacadeService,
         semantic_service: SemanticService,
+        entity_service: EntityService,
+        feature_service: FeatureService,
         table_info_service: TableInfoService,
         event_table_service: EventTableService,
     ):
-        super().__init__(item_table_service, table_facade_service, semantic_service)
+        super().__init__(
+            service=item_table_service,
+            table_facade_service=table_facade_service,
+            semantic_service=semantic_service,
+            entity_service=entity_service,
+            feature_service=feature_service,
+        )
         self.table_info_service = table_info_service
         self.event_table_service = event_table_service
 

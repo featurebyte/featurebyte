@@ -1,6 +1,7 @@
 """
 Tests for Feature route
 """
+# pylint: disable=too-many-lines
 from collections import defaultdict
 from datetime import datetime
 from http import HTTPStatus
@@ -978,3 +979,25 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
                 {"cust_id": "1"},
             ],
         }
+
+    def test_delete_event_table(self, test_api_client_persistent, create_success_response):
+        """Test delete event table"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        table_id = create_response_dict["table_ids"][0]
+
+        # attempt to delete an event table used by a feature
+        response = test_api_client.delete(f"/event_table/{table_id}")
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert response.json()["detail"] == "EventTable is referenced by Feature: sum_30m"
+
+        # delete the feature & then delete the event table
+        feature_id = create_response_dict["_id"]
+        response = test_api_client.delete(f"{self.base_route}/{feature_id}")
+        assert response.status_code == HTTPStatus.OK, response.json()
+        response = test_api_client.delete(f"/event_table/{table_id}")
+        assert response.status_code == HTTPStatus.OK, response.json()
+
+        # check deleted table
+        response = test_api_client.get(f"/event_table/{table_id}")
+        assert response.status_code == HTTPStatus.NOT_FOUND, response.json()

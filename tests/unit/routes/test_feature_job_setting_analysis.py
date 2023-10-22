@@ -408,11 +408,10 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
         response = test_api_client.post(f"{self.base_route}", json=payload)
         assert response.status_code == HTTPStatus.CREATED
 
-    def test_delete(self, test_api_client_persistent, create_success_response):
+    def test_delete_200(self, test_api_client_persistent, create_success_response):
         """
         Delete existing analysis
         """
-        _ = create_success_response
         test_api_client, _ = test_api_client_persistent
         analysis_id = create_success_response.json()["_id"]
         response = test_api_client.delete(f"{self.base_route}/{analysis_id}")
@@ -421,3 +420,24 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
         # check analysis is no longer available
         response = test_api_client.get(f"{self.base_route}/{analysis_id}")
         assert response.status_code == HTTPStatus.NOT_FOUND, response.json()
+
+    def test_delete_event_table(self, test_api_client_persistent, create_success_response):
+        """
+        Delete event table
+        """
+        create_response_dict = create_success_response.json()
+        event_table_id = create_response_dict["event_table_id"]
+        test_api_client, _ = test_api_client_persistent
+        response = test_api_client.delete(f"/event_table/{event_table_id}")
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert (
+            response.json()["detail"]
+            == "EventTable is referenced by FeatureJobSettingAnalysis: sample_analysis"
+        )
+
+        # delete the analysis and then delete the event table
+        analysis_id = create_response_dict["_id"]
+        response = test_api_client.delete(f"{self.base_route}/{analysis_id}")
+        assert response.status_code == HTTPStatus.OK, response.json()
+        response = test_api_client.delete(f"/event_table/{event_table_id}")
+        assert response.status_code == HTTPStatus.OK, response.json()

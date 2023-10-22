@@ -210,3 +210,20 @@ class TestItemTableApi(BaseTableApiTestSuite):
                 "description": None,
             },
         ]
+
+    def test_delete_event_table(self, test_api_client_persistent, create_success_response):
+        """Test delete event table"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        event_table_id = create_response_dict["event_table_id"]
+        response = test_api_client.delete(f"/event_table/{event_table_id}")
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert response.json()["detail"] == "EventTable is referenced by ItemTable: sf_item_table"
+
+    def test_delete_200(self, test_api_client_persistent, create_success_response):
+        """Test delete item table"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        table_id = create_response_dict["_id"]
+        response = test_api_client.delete(f"{self.base_route}/{table_id}")
+        assert response.status_code == HTTPStatus.OK, response.json()

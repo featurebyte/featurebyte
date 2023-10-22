@@ -266,3 +266,11 @@ class TestSCDTableApi(BaseTableApiTestSuite):
                 "description": None,
             },
         ]
+
+    def test_delete_200(self, test_api_client_persistent, create_success_response):
+        """Test delete (success)"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        table_id = create_response_dict["_id"]
+        response = test_api_client.delete(f"{self.base_route}/{table_id}")
+        assert response.status_code == HTTPStatus.OK, response.json()

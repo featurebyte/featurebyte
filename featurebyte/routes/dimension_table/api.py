@@ -22,7 +22,7 @@ from featurebyte.routes.common.schema import (
     VerboseQuery,
 )
 from featurebyte.routes.dimension_table.controller import DimensionTableController
-from featurebyte.schema.common.base import DescriptionUpdate
+from featurebyte.schema.common.base import DeleteResponse, DescriptionUpdate
 from featurebyte.schema.dimension_table import (
     DimensionTableCreate,
     DimensionTableList,
@@ -57,7 +57,6 @@ class DimensionTableRouter(
 
     def __init__(self) -> None:
         super().__init__("/dimension_table")
-        self.remove_routes({"/dimension_table/{dimension_table_id}": ["DELETE"]})
 
         # update route
         self.router.add_api_route(
@@ -238,3 +237,10 @@ class DimensionTableRouter(
             description=data.description,
         )
         return dimension_table
+
+    async def delete_object(
+        self, request: Request, dimension_table_id: PydanticObjectId
+    ) -> DeleteResponse:
+        controller = self.get_controller_for_request(request)
+        await controller.delete(document_id=dimension_table_id)
+        return DeleteResponse()

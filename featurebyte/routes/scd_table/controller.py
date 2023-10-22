@@ -10,6 +10,8 @@ from featurebyte.models.scd_table import SCDTableModel
 from featurebyte.routes.common.base_table import BaseTableDocumentController
 from featurebyte.schema.info import SCDTableInfo
 from featurebyte.schema.scd_table import SCDTableList, SCDTableServiceUpdate
+from featurebyte.service.entity import EntityService
+from featurebyte.service.feature import FeatureService
 from featurebyte.service.scd_table import SCDTableService
 from featurebyte.service.semantic import SemanticService
 from featurebyte.service.table_columns_info import TableDocumentService
@@ -35,12 +37,20 @@ class SCDTableController(BaseTableDocumentController[SCDTableModel, SCDTableServ
 
     def __init__(
         self,
-        service: TableDocumentService,
+        scd_table_service: TableDocumentService,
         table_facade_service: TableFacadeService,
         semantic_service: SemanticService,
         table_info_service: TableInfoService,
+        entity_service: EntityService,
+        feature_service: FeatureService,
     ):
-        super().__init__(service, table_facade_service, semantic_service)
+        super().__init__(
+            service=scd_table_service,
+            table_facade_service=table_facade_service,
+            semantic_service=semantic_service,
+            entity_service=entity_service,
+            feature_service=feature_service,
+        )
         self.table_info_service = table_info_service
 
     async def get_info(self, document_id: ObjectId, verbose: bool) -> SCDTableInfo:
