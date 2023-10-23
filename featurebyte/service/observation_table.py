@@ -563,18 +563,20 @@ class ObservationTableService(
             # validate and replace context_id
             new_context = await self.context_service.get_document(document_id=data.context_id)
 
-            if observation_table.context_id and observation_table.context_id != data.context_id:
-                exist_context = await self.context_service.get_document(
-                    document_id=observation_table.context_id
-                )
-                if set(exist_context.primary_entity_ids) != set(new_context.primary_entity_ids):
-                    raise ObservationTableInvalidContextError(
-                        "Cannot update Context as the entities are different from the existing Context."
+            if observation_table.context_id:
+                if observation_table.context_id != data.context_id:
+                    exist_context = await self.context_service.get_document(
+                        document_id=observation_table.context_id
                     )
-            elif new_context.primary_entity_ids != observation_table.primary_entity_ids:
-                raise ObservationTableInvalidContextError(
-                    "Cannot update Context as the primary_entity_ids are different from existing primary_entity_ids."
-                )
+                    if set(exist_context.primary_entity_ids) != set(new_context.primary_entity_ids):
+                        raise ObservationTableInvalidContextError(
+                            "Cannot update Context as the entities are different from the existing Context."
+                        )
+            else:
+                if new_context.primary_entity_ids != observation_table.primary_entity_ids:
+                    raise ObservationTableInvalidContextError(
+                        "Cannot update Context as the primary_entity_ids are different from existing primary_entity_ids."
+                    )
 
         if data.context_id_to_remove:
             # validate and replace context_id

@@ -455,7 +455,7 @@ class TestContextApi(BaseCatalogApiTestSuite):
 
         # update context_id for new observation table with different primary entity ids
         new_ob_table_id_3 = ObjectId()
-        await create_observation_table(new_ob_table_id_3, context_id=context_id)
+        await create_observation_table(new_ob_table_id_3, context_empty=True)
         response = test_api_client.patch(
             f"{self.base_route}/{context_id}",
             json={

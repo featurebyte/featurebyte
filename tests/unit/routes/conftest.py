@@ -127,6 +127,7 @@ def create_observation_table_fixture(
         target_input=True,
         target_id=None,
         context_id=None,
+        context_empty=False,
         entity_id=None,
     ):
         ob_table_id = ObjectId(ob_table_id)
@@ -136,10 +137,13 @@ def create_observation_table_fixture(
         else:
             target_id = ObjectId(target_id)
 
-        if not context_id:
-            context_id = ObjectId()
+        if context_empty:
+            context_id = None
         else:
-            context_id = ObjectId(context_id)
+            if not context_id:
+                context_id = ObjectId()
+            else:
+                context_id = ObjectId(context_id)
 
         request_input = {
             "target_id": target_id,
