@@ -92,7 +92,6 @@ class CountDictAccessor:
             node_type=NodeType.COUNT_DICT_TRANSFORM,
             output_var_type=output_var_type,
             node_params=node_params,
-            **self._feature_obj.unary_op_series_params(),
         )
 
     def entropy(self) -> Feature:

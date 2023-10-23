@@ -55,7 +55,6 @@ def to_timedelta(series: Series, unit: TimedeltaSupportedUnitType) -> Series:
         node_type=NodeType.TIMEDELTA,
         output_var_type=DBVarType.TIMEDELTA,
         node_params={"unit": unit},
-        **series.unary_op_series_params(),
     )
 
     return timedelta_series

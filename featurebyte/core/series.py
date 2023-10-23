@@ -150,7 +150,6 @@ class FrozenSeries(
             node_name=node.name,
             name=self.name,
             dtype=self.dtype,
-            **self.unary_op_series_params(),
         )
 
     @property
@@ -167,16 +166,6 @@ class FrozenSeries(
         int
         """
         return 0
-
-    def unary_op_series_params(self) -> dict[str, Any]:
-        """
-        Additional parameters that will be passed to unary operation output constructor
-
-        Returns
-        -------
-        dict[str, Any]
-        """
-        return {}
 
     def _assert_assignment_valid(self, value: Any) -> None:
         """
@@ -567,7 +556,6 @@ class FrozenSeries(
             node_type=NodeType.NOT,
             output_var_type=DBVarType.BOOL,
             node_params={},
-            **self.unary_op_series_params(),
         )
 
     @typechecked
@@ -635,7 +623,6 @@ class FrozenSeries(
             node_type=NodeType.IS_NULL,
             output_var_type=DBVarType.BOOL,
             node_params={},
-            **self.unary_op_series_params(),
         )
 
     def notnull(self: FrozenSeriesT) -> FrozenSeriesT:
@@ -715,7 +702,6 @@ class FrozenSeries(
             node_type=NodeType.CAST,
             output_var_type=output_var_type,
             node_params=node_params,
-            **self.unary_op_series_params(),
         )
 
     @numeric_only
@@ -752,7 +738,6 @@ class FrozenSeries(
             node_type=NodeType.ABS,
             output_var_type=self.dtype,
             node_params={},
-            **self.unary_op_series_params(),
         )
 
     @numeric_only
@@ -790,7 +775,6 @@ class FrozenSeries(
             node_type=NodeType.SQRT,
             output_var_type=DBVarType.FLOAT,
             node_params={},
-            **self.unary_op_series_params(),
         )
 
     @numeric_only
@@ -869,7 +853,6 @@ class FrozenSeries(
             node_type=NodeType.LOG,
             output_var_type=DBVarType.FLOAT,
             node_params={},
-            **self.unary_op_series_params(),
         )
 
     @numeric_only
@@ -907,7 +890,6 @@ class FrozenSeries(
             node_type=NodeType.EXP,
             output_var_type=DBVarType.FLOAT,
             node_params={},
-            **self.unary_op_series_params(),
         )
 
     @numeric_only
@@ -946,7 +928,6 @@ class FrozenSeries(
             node_type=NodeType.FLOOR,
             output_var_type=DBVarType.INT,
             node_params={},
-            **self.unary_op_series_params(),
         )
 
     @numeric_only
@@ -984,7 +965,6 @@ class FrozenSeries(
             node_type=NodeType.CEIL,
             output_var_type=DBVarType.INT,
             node_params={},
-            **self.unary_op_series_params(),
         )
 
     @numeric_only
@@ -1007,7 +987,6 @@ class FrozenSeries(
             node_type=NodeType.COS,
             output_var_type=DBVarType.FLOAT,
             node_params={},
-            **self.unary_op_series_params(),
         )
 
     @numeric_only
@@ -1030,7 +1009,6 @@ class FrozenSeries(
             node_type=NodeType.SIN,
             output_var_type=DBVarType.FLOAT,
             node_params={},
-            **self.unary_op_series_params(),
         )
 
     @numeric_only
@@ -1053,7 +1031,6 @@ class FrozenSeries(
             node_type=NodeType.TAN,
             output_var_type=DBVarType.FLOAT,
             node_params={},
-            **self.unary_op_series_params(),
         )
 
     @numeric_only
@@ -1076,7 +1053,6 @@ class FrozenSeries(
             node_type=NodeType.ACOS,
             output_var_type=DBVarType.FLOAT,
             node_params={},
-            **self.unary_op_series_params(),
         )
 
     @numeric_only
@@ -1099,7 +1075,6 @@ class FrozenSeries(
             node_type=NodeType.ASIN,
             output_var_type=DBVarType.FLOAT,
             node_params={},
-            **self.unary_op_series_params(),
         )
 
     @numeric_only
@@ -1122,7 +1097,6 @@ class FrozenSeries(
             node_type=NodeType.ATAN,
             output_var_type=DBVarType.FLOAT,
             node_params={},
-            **self.unary_op_series_params(),
         )
 
     def copy(self: FrozenSeriesT, *args: Any, **kwargs: Any) -> FrozenSeriesT:
@@ -1201,7 +1175,6 @@ class FrozenSeries(
                 node_type=NodeType.DICTIONARY_KEYS,
                 output_var_type=DBVarType.ARRAY,
                 node_params={},
-                **other.unary_op_series_params(),
             )
 
         # perform the is in check when the other series is an array

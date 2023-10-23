@@ -31,7 +31,6 @@ COMMON_SKIPPED_ATTRIBUTES = [
     "json_dict",
     "dict",
     "extract_pruned_graph_and_node",
-    "unary_op_series_params",
     "node_types_lineage",
     "pytype_dbtype_map",
     "node",

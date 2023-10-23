@@ -486,7 +486,6 @@ class DatetimeAccessor:
             node_type=self._node_type,
             output_var_type=var_type,
             node_params=node_params,
-            **self._obj.unary_op_series_params(),
         )
 
     def _infer_timezone_offset(self, series: FrozenSeries) -> Optional[Union[FrozenSeries, str]]:
