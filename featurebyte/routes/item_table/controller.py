@@ -55,6 +55,11 @@ class ItemTableController(
         self.table_info_service = table_info_service
         self.event_table_service = event_table_service
 
+    async def create_table(self, data: ItemTableModel) -> ItemTableModel:
+        # check existence of event table first before creating item table
+        _ = await self.event_table_service.get_document(document_id=data.event_table_id)
+        return await super().create_table(data=data)
+
     async def get_info(self, document_id: ObjectId, verbose: bool) -> ItemTableInfo:
         """
         Get document info given document ID
