@@ -122,7 +122,12 @@ def create_observation_table_fixture(
     _, persistent = test_api_client_persistent
 
     async def create_observation_table(
-        ob_table_id, use_case_id=None, target_input=True, target_id=None, context_id=None
+        ob_table_id,
+        use_case_id=None,
+        target_input=True,
+        target_id=None,
+        context_id=None,
+        entity_id=None,
     ):
         ob_table_id = ObjectId(ob_table_id)
 
@@ -153,6 +158,10 @@ def create_observation_table_fixture(
         if use_case_id:
             use_case_ids.append(ObjectId(use_case_id))
 
+        primary_entity_ids = []
+        if entity_id:
+            primary_entity_ids.append(ObjectId(entity_id))
+
         await persistent.insert_one(
             collection_name="observation_table",
             document={
@@ -169,6 +178,7 @@ def create_observation_table_fixture(
                 "most_recent_point_in_time": "2023-01-15T10:00:00",
                 "context_id": context_id,
                 "use_case_ids": use_case_ids,
+                "primary_entity_ids": primary_entity_ids,
                 "catalog_id": ObjectId(default_catalog_id),
                 "user_id": user_id,
             },

@@ -560,7 +560,7 @@ class ObservationTableService(
             data.use_case_ids = sorted(use_case_ids)
 
         if data.context_id:
-            # validate context_id
+            # validate and replace context_id
             new_context = await self.context_service.get_document(document_id=data.context_id)
 
             if observation_table.context_id and observation_table.context_id != data.context_id:
@@ -571,6 +571,21 @@ class ObservationTableService(
                     raise ObservationTableInvalidContextError(
                         "Cannot update Context as the entities are different from the existing Context."
                     )
+            elif new_context.primary_entity_ids != observation_table.primary_entity_ids:
+                raise ObservationTableInvalidContextError(
+                    "Cannot update Context as the primary_entity_ids are different from existing primary_entity_ids."
+                )
+
+        if data.context_id_to_remove:
+            # validate and replace context_id
+            updated_count = await self.update_documents(
+                query_filter={"_id": observation_table_id, "context_id": data.context_id_to_remove},
+                update={"$set": {"context_id": None}},
+            )
+            if updated_count == 0:
+                raise ObservationTableInvalidContextError(
+                    f"Cannot remove Context {data.context_id_to_remove} as it is not associated with ObservationTable {observation_table_id}."
+                )
 
         result: Optional[ObservationTableModel] = await self.update_document(
             document_id=observation_table_id, data=data, return_document=True

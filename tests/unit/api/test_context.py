@@ -63,6 +63,27 @@ def test_list_contexts(catalog, context_1, cust_id_entity):
     assert context_df.iloc[0]["primary_entity_ids"] == [str(cust_id_entity.id)]
 
 
+def test_add_remove_obs_table(catalog, cust_id_entity, target_table):
+    """
+    Test Context add/remove observation table methods
+    """
+    _ = catalog
+
+    entity_names = [cust_id_entity.name]
+    context = Context.create(name="test_context", primary_entity=entity_names)
+
+    context.add_observation_table(target_table.name)
+
+    obs_tables = context.list_observation_tables()
+    assert len(obs_tables) == 1
+    assert obs_tables.iloc[0]["name"] == target_table.name
+
+    context.remove_observation_table(target_table.name)
+
+    obs_tables = context.list_observation_tables()
+    assert len(obs_tables) == 0
+
+
 def test_update_context(catalog, cust_id_entity, target_table):
     """
     Test Context update methods

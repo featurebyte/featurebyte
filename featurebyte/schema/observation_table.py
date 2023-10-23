@@ -57,6 +57,7 @@ class ObservationTableUpdate(BaseDocumentServiceUpdateSchema):
     """
 
     context_id: Optional[PydanticObjectId]
+    context_id_to_remove: Optional[PydanticObjectId]
     use_case_id_to_add: Optional[PydanticObjectId]
     use_case_id_to_remove: Optional[PydanticObjectId]
 
