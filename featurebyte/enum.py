@@ -389,5 +389,14 @@ class FunctionParameterInputForm(StrEnum):
     COLUMN = "column"  # column is used as function argument
 
 
+class UploadFileFormat(StrEnum):
+    """
+    Upload file format
+    """
+
+    CSV = "csv"
+    PARQUET = "parquet"
+
+
 # enum used for handle conflict when saving object to persistent storage
 ConflictResolution = Literal["raise", "retrieve"]
