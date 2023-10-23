@@ -135,7 +135,7 @@ class ObservationTableModel(MaterializedTableModel):
     min_interval_secs_between_entities: Optional[float] = Field(default_factory=None)
     primary_entity_ids: Optional[List[PydanticObjectId]] = Field(default_factory=list)
 
-    _sort_feature_ids_validator = validator("primary_entity_ids", allow_reuse=True)(
+    _sort_primary_entity_ids_validator = validator("primary_entity_ids", allow_reuse=True)(
         construct_sort_validator()
     )
 
