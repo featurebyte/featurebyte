@@ -1001,3 +1001,12 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         # check deleted table
         response = test_api_client.get(f"/event_table/{table_id}")
         assert response.status_code == HTTPStatus.NOT_FOUND, response.json()
+
+    def test_delete_entity(self, test_api_client_persistent, create_success_response):
+        """Test delete entity used by the feature"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        entity_id = create_response_dict["entity_ids"][0]
+        response = test_api_client.delete(f"/entity/{entity_id}")
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert response.json()["detail"] == "Entity is referenced by Feature: sum_30m"

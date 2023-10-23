@@ -3,21 +3,34 @@ Entity API route controller
 """
 from __future__ import annotations
 
+from typing import Any, List, Tuple
+
 from bson.objectid import ObjectId
 
 from featurebyte.models.entity import EntityModel
+from featurebyte.models.persistent import QueryFilter
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.entity import EntityCreate, EntityList, EntityServiceUpdate, EntityUpdate
 from featurebyte.schema.info import EntityInfo
+from featurebyte.service.batch_feature_table import BatchFeatureTableService
+from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.service.catalog import CatalogService
+from featurebyte.service.context import ContextService
 from featurebyte.service.entity import EntityService
+from featurebyte.service.feature import FeatureService
+from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
+from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.relationship import EntityRelationshipService
+from featurebyte.service.table import TableService
+from featurebyte.service.target import TargetService
 
 
 class EntityController(BaseDocumentController[EntityModel, EntityService, EntityList]):
     """
     Entity Controller
     """
+
+    # pylint: disable=too-many-arguments, too-many-instance-attributes
 
     paginated_document_class = EntityList
 
@@ -26,10 +39,26 @@ class EntityController(BaseDocumentController[EntityModel, EntityService, Entity
         entity_service: EntityService,
         entity_relationship_service: EntityRelationshipService,
         catalog_service: CatalogService,
+        context_service: ContextService,
+        table_service: TableService,
+        observation_table_service: ObservationTableService,
+        historical_feature_table_service: HistoricalFeatureTableService,
+        batch_request_table_service: BatchRequestTableService,
+        batch_feature_table_service: BatchFeatureTableService,
+        feature_service: FeatureService,
+        target_service: TargetService,
     ):
         super().__init__(entity_service)
         self.relationship_service = entity_relationship_service
         self.catalog_service = catalog_service
+        self.context_service = context_service
+        self.table_service = table_service
+        self.observation_table_service = observation_table_service
+        self.historical_feature_table_service = historical_feature_table_service
+        self.batch_request_table_service = batch_request_table_service
+        self.batch_feature_table_service = batch_feature_table_service
+        self.feature_service = feature_service
+        self.target_service = target_service
 
     async def create_entity(
         self,
@@ -74,6 +103,20 @@ class EntityController(BaseDocumentController[EntityModel, EntityService, Entity
             document_id=entity_id, data=EntityServiceUpdate(**data.dict()), return_document=False
         )
         return await self.get(document_id=entity_id)
+
+    async def service_and_query_pairs_for_checking_reference(
+        self, document_id: ObjectId
+    ) -> List[Tuple[Any, QueryFilter]]:
+        return [
+            (self.feature_service, {"entity_ids": document_id}),
+            (self.target_service, {"entity_ids": document_id}),
+            (self.context_service, {"primary_entity_ids": document_id}),
+            (self.table_service, {"columns_info.entity_id": document_id}),
+            (self.observation_table_service, {"columns_info.entity_id": document_id}),
+            (self.historical_feature_table_service, {"columns_info.entity_id": document_id}),
+            (self.batch_request_table_service, {"columns_info.entity_id": document_id}),
+            (self.batch_feature_table_service, {"columns_info.entity_id": document_id}),
+        ]
 
     async def get_info(
         self,

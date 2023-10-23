@@ -343,3 +343,10 @@ def test_catalog_id(entity):
     entity = Entity.get_by_id(entity.id)
     catalog = Catalog.get_active()
     assert entity.catalog_id == catalog.id
+
+
+def test_delete(entity):
+    """Test delete entity"""
+    assert entity.saved is True
+    entity.delete()
+    assert entity.saved is False

@@ -757,3 +757,29 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
         assert credential_dict["feature_store_id"] == payload["_id"]
         assert credential_dict["database_credential_type"] == "USERNAME_PASSWORD"
         assert credential_dict["storage_credential_type"] == "S3"
+
+    def test_delete_200(self, test_api_client_persistent, create_success_response):
+        """Test delete feature store"""
+        test_api_client, _ = test_api_client_persistent
+        feature_store_id = create_success_response.json()["_id"]
+        response = test_api_client.delete(f"{self.base_route}/{feature_store_id}")
+        assert response.status_code == HTTPStatus.OK, response.json()
+
+        # check that feature store is deleted
+        response = test_api_client.get(f"{self.base_route}/{feature_store_id}")
+        assert response.status_code == HTTPStatus.NOT_FOUND, response.json()
+
+    def test_delete_422(self, test_api_client_persistent, create_success_response):
+        """Test delete feature store (unsuccessful)"""
+        test_api_client, _ = test_api_client_persistent
+        feature_store_id = create_success_response.json()["_id"]
+
+        # create a catalog using the feature store
+        catalog_payload = self.load_payload("tests/fixtures/request_payloads/catalog.json")
+        response = test_api_client.post("/catalog", json=catalog_payload)
+        assert response.status_code == HTTPStatus.CREATED, response.json()
+
+        # attempt to delete the feature store
+        response = test_api_client.delete(f"{self.base_route}/{feature_store_id}")
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert response.json()["detail"] == "FeatureStore is referenced by Catalog: grocery"

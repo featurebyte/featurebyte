@@ -431,3 +431,17 @@ class TestEventTableApi(BaseTableApiTestSuite):
         # check deleted table
         response = test_api_client.get(f"{self.base_route}/{doc_id}")
         assert response.status_code == HTTPStatus.NOT_FOUND, response.json()
+
+    def test_delete_entity(self, test_api_client_persistent, create_success_response):
+        """Test delete entity"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        columns_info = create_response_dict["columns_info"]
+        cust_columns_info = next(col for col in columns_info if col["name"] == "cust_id")
+        entity_id = cust_columns_info["entity_id"]
+        assert entity_id is not None
+
+        # attempt to delete entity
+        response = test_api_client.delete(f"/entity/{entity_id}")
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert response.json()["detail"] == "Entity is referenced by Table: sf_event_table"
