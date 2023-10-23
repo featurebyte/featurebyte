@@ -274,6 +274,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         upload_request = ObservationTableUpload(
             name="uploaded_observation_table",
             purpose="other",
+            primary_entity_ids=["63f94ed6ea1f050131379214"],
         )
         df = pd.DataFrame(
             {
