@@ -39,9 +39,9 @@ def test_create_use_case(catalog, float_target, context):
     assert use_case_df.iloc[0]["name"] == use_case.name
 
 
-def test_add_and_delete_observation_table(use_case, target_table):
+def test_add_and_remove_observation_table(use_case, target_table):
     """
-    Test UseCase.add_observation_table and UseCase.delete_observation_table method
+    Test UseCase.add_observation_table and UseCase.remove_observation_table method
     """
 
     use_case.add_observation_table(target_table.name)
@@ -54,7 +54,7 @@ def test_add_and_delete_observation_table(use_case, target_table):
     assert obs_table_df.iloc[0]["id"] == str(target_table.id)
     assert obs_table_df.iloc[0]["name"] == "my_target_table"
 
-    retrieved_use_case.delete_observation_table(target_table.name)
+    retrieved_use_case.remove_observation_table(target_table.name)
     obs_table_df = retrieved_use_case.list_observation_tables()
     assert len(obs_table_df) == 0
 

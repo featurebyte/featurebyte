@@ -323,3 +323,147 @@ class TestContextApi(BaseCatalogApiTestSuite):
         response = test_api_client.delete(f"/entity/{entity_id}")
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json()["detail"] == "Entity is referenced by Context: transaction_context"
+
+    @pytest.mark.asyncio
+    async def test_remove_observation_table(
+        self,
+        create_success_response,
+        test_api_client_persistent,
+        create_observation_table,
+    ):
+        """
+        Test remove observation table (success)
+        """
+        test_api_client, _ = test_api_client_persistent
+        response_dict = create_success_response.json()
+        context_id = response_dict["_id"]
+
+        ob_table_id_1 = ObjectId()
+        await create_observation_table(ob_table_id_1)
+
+        response = test_api_client.patch(
+            f"{self.base_route}/{context_id}",
+            json={"observation_table_id_to_remove": str(ob_table_id_1)},
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert (
+            response.json()["detail"]
+            == f"Cannot remove Context {context_id} as it is not associated with ObservationTable {str(ob_table_id_1)}."
+        )
+
+        ob_table_id_2 = ObjectId()
+        await create_observation_table(
+            ob_table_id_2,
+            context_id=context_id,
+        )
+        response = test_api_client.get(f"/observation_table/{ob_table_id_2}")
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["context_id"] == context_id
+
+        # remove observation table from context
+        response = test_api_client.patch(
+            f"{self.base_route}/{context_id}",
+            json={"observation_table_id_to_remove": str(ob_table_id_2)},
+        )
+        assert response.status_code == HTTPStatus.OK
+
+        response = test_api_client.get(f"/observation_table/{ob_table_id_2}")
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["context_id"] is None
+
+    @pytest.mark.asyncio
+    async def test_remove_observation_table__failed_obs_table_is_default_eda_or_preview(
+        self,
+        create_success_response,
+        test_api_client_persistent,
+        create_observation_table,
+    ):
+        """Test remove observation table (failed)"""
+
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        context_id = create_response_dict["_id"]
+
+        new_ob_table_id_1 = ObjectId()
+
+        response = test_api_client.patch(
+            f"{self.base_route}/{context_id}",
+            json={
+                "observation_table_id_to_remove": str(new_ob_table_id_1),
+                "default_preview_table_id": str(new_ob_table_id_1),
+            },
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert (
+            "observation_table_id_to_remove cannot be the same as default_preview_table_id"
+            in response.json()["detail"][0]["msg"]
+        )
+
+        await create_observation_table(
+            new_ob_table_id_1,
+            context_id=context_id,
+            entity_id=create_response_dict["primary_entity_ids"][0],
+        )
+
+        response = test_api_client.patch(
+            f"{self.base_route}/{context_id}",
+            json={
+                "default_eda_table_id": str(new_ob_table_id_1),
+            },
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+
+        # delete use case from observation table
+        response = test_api_client.patch(
+            f"{self.base_route}/{context_id}",
+            json={
+                "observation_table_id_to_remove": str(new_ob_table_id_1),
+            },
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert (
+            response.json()["detail"]
+            == f"Cannot remove observation_table {new_ob_table_id_1} as it is the default EDA table"
+        )
+
+        new_ob_table_id_2 = ObjectId()
+        await create_observation_table(
+            new_ob_table_id_2,
+            context_id=context_id,
+            entity_id=create_response_dict["primary_entity_ids"][0],
+        )
+
+        response = test_api_client.patch(
+            f"{self.base_route}/{context_id}",
+            json={
+                "default_preview_table_id": str(new_ob_table_id_2),
+            },
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        # delete use case from observation table
+        response = test_api_client.patch(
+            f"{self.base_route}/{context_id}",
+            json={
+                "observation_table_id_to_remove": str(new_ob_table_id_2),
+            },
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert (
+            response.json()["detail"]
+            == f"Cannot remove observation_table {new_ob_table_id_2} as it is the default preview table"
+        )
+
+        # update context_id for new observation table with different primary entity ids
+        new_ob_table_id_3 = ObjectId()
+        await create_observation_table(new_ob_table_id_3, context_empty=True)
+        response = test_api_client.patch(
+            f"{self.base_route}/{context_id}",
+            json={
+                "default_preview_table_id": str(new_ob_table_id_3),
+            },
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert (
+            response.json()["detail"]
+            == "Cannot update Context as the primary_entity_ids are different from existing primary_entity_ids."
+        )

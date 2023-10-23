@@ -7,7 +7,7 @@ from typing import Any, List, Tuple
 
 from bson import ObjectId
 
-from featurebyte.exception import DocumentCreationError
+from featurebyte.exception import DocumentCreationError, ObservationTableInvalidContextError
 from featurebyte.models.context import ContextModel
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.routes.common.base import BaseDocumentController
@@ -101,6 +101,11 @@ class ContextController(
         data: ContextUpdate
             Context update payload
 
+        Raises
+        ------
+        ObservationTableInvalidContextError
+            raise when observation table to remove is the default EDA table or default preview table
+
         Returns
         -------
         ContextModel
@@ -112,6 +117,24 @@ class ContextController(
                     observation_table_id=obs_id,
                     data=ObservationTableUpdate(context_id=context_id),
                 )
+
+        obs_table_id_remove = data.observation_table_id_to_remove
+        if obs_table_id_remove:
+            context = await self.get(document_id=context_id)
+            if context.default_eda_table_id == obs_table_id_remove:
+                raise ObservationTableInvalidContextError(
+                    f"Cannot remove observation_table {obs_table_id_remove} as it is the default EDA table"
+                )
+
+            if context.default_preview_table_id == obs_table_id_remove:
+                raise ObservationTableInvalidContextError(
+                    f"Cannot remove observation_table {obs_table_id_remove} as it is the default preview table"
+                )
+
+            await self.observation_table_service.update_observation_table(
+                observation_table_id=obs_table_id_remove,
+                data=ObservationTableUpdate(context_id_to_remove=context_id),
+            )
 
         await self.service.update_document(
             document_id=context_id, data=ContextUpdate(**data.dict()), return_document=False

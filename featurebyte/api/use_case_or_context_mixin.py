@@ -112,6 +112,27 @@ class UseCaseOrContextMixin(ApiObject):
         )
 
     @typechecked
+    def remove_observation_table(self, observation_table_name: str) -> None:
+        """
+        Remove observation table from the Use Case.
+
+        Parameters
+        ----------
+        observation_table_name: str
+            Name of new observation table to be removed.
+
+        Examples
+        --------
+        >>> use_case = catalog.get_use_case("use_case")
+        >>> use_case.remove_observation_table(observation_table_name)  # doctest: +SKIP
+        """
+        observation_table = ObservationTable.get(observation_table_name)
+        self.update(
+            update_payload={"observation_table_id_to_remove": observation_table.id},
+            allow_update_local=False,
+        )
+
+    @typechecked
     def _construct_table_result_df(self, result_dict: List[Dict[str, Any]]) -> pd.DataFrame:
         """
         Construct a pandas DataFrame from the result_dict returned by the API.
