@@ -275,7 +275,7 @@ async def test_request_input_get_row_count(observation_table_from_source_table, 
     assert query == expected_query
 
 
-def test_get_minimum_iet_sql_expr(observation_table_service, table_details):
+def test_get_minimum_iet_sql_expr(table_details):
     """
     Test get_minimum_iet_sql_expr
     """
