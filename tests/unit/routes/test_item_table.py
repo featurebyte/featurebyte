@@ -69,15 +69,27 @@ class TestItemTableApi(BaseTableApiTestSuite):
     update_unprocessable_payload_expected_detail_pairs = []
 
     @pytest.fixture(name="data_model_dict")
-    def data_model_dict_fixture(self, tabular_source, columns_info, user_id, feature_store_details):
+    def data_model_dict_fixture(
+        self,
+        tabular_source,
+        columns_info,
+        user_id,
+        feature_store_details,
+        test_api_client_persistent,
+    ):
         """Fixture for a Item Data dict"""
+        event_table_payload = self.load_payload("tests/fixtures/request_payloads/event_table.json")
+        test_api_client, _ = test_api_client_persistent
+        response = test_api_client.post("/event_table", json=event_table_payload)
+        assert response.status_code == HTTPStatus.CREATED
+
         item_table_dict = {
             "name": "订单表",
             "tabular_source": tabular_source,
             "columns_info": columns_info,
             "event_id_column": "event_id",
             "item_id_column": "item_id",
-            "event_table_id": str(ObjectId()),
+            "event_table_id": event_table_payload["_id"],
             "status": "PUBLISHED",
             "user_id": str(user_id),
         }
@@ -99,6 +111,16 @@ class TestItemTableApi(BaseTableApiTestSuite):
         """Item table update dict object"""
         return {"status": "PUBLISHED"}
 
+    def setup_creation_route(self, api_client):
+        super().setup_creation_route(api_client)
+        api_object_filename_pairs = [
+            ("event_table", "event_table"),
+        ]
+        for api_object, filename in api_object_filename_pairs:
+            payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
+            response = api_client.post(f"/{api_object}", json=payload)
+            assert response.status_code == HTTPStatus.CREATED
+
     @pytest.mark.asyncio
     async def test_item_id_semantic(self, data_response, app_container):
         """Test item id semantic is set correctly"""
@@ -118,13 +140,6 @@ class TestItemTableApi(BaseTableApiTestSuite):
     async def test_get_info_200(self, test_api_client_persistent, create_success_response):
         """Test retrieve info"""
         # save event table first so that it can be referenced in get_item_table_info
-        test_api_client, _ = test_api_client_persistent
-        payload = BaseTableApiTestSuite.load_payload(
-            "tests/fixtures/request_payloads/event_table.json"
-        )
-        response = test_api_client.post("/event_table", json=payload)
-        assert response.status_code == HTTPStatus.CREATED
-
         # test item table info
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()

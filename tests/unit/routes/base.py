@@ -1220,7 +1220,7 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):  # pylint: disable=too-man
         # test with default params
         test_api_client, _ = test_api_client_persistent
         _ = create_multiple_success_responses
-        response = test_api_client.get("/table")
+        response = test_api_client.get(self.base_route)
         assert response.status_code == HTTPStatus.OK
         response_dict = response.json()
         expected_paginated_info = {"page": 1, "page_size": 10, "total": 3}
@@ -1237,7 +1237,7 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):  # pylint: disable=too-man
 
         # test with pagination parameters (page 1)
         response_with_params = test_api_client.get(
-            "/table",
+            self.base_route,
             params={"sort_dir": "asc", "sort_by": "name", "page_size": 2, "page": 1},
         )
         assert response_with_params.status_code == HTTPStatus.OK
@@ -1251,7 +1251,7 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):  # pylint: disable=too-man
 
         # test with pagination parameters (page 2)
         response_with_params = test_api_client.get(
-            "/table",
+            self.base_route,
             params={"sort_dir": "asc", "sort_by": "name", "page_size": 2, "page": 2},
         )
         assert response_with_params.status_code == HTTPStatus.OK
@@ -1262,17 +1262,23 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):  # pylint: disable=too-man
 
         # test sort_by with some random unknown column name
         # should not throw error, just that the sort_by param has no real effect since column not found
-        response_with_params = test_api_client.get("/table", params={"sort_by": "random_name"})
+        response_with_params = test_api_client.get(
+            self.base_route, params={"sort_by": "random_name"}
+        )
         assert response_with_params.status_code == HTTPStatus.OK
 
         # test name parameter
-        response_with_params = test_api_client.get("/table", params={"name": expected_names[1]})
+        response_with_params = test_api_client.get(
+            self.base_route, params={"name": expected_names[1]}
+        )
         assert response_with_params.status_code == HTTPStatus.OK
         response_with_params_names = [elem["name"] for elem in response_with_params.json()["data"]]
         assert response_with_params_names == [expected_names[1]]
 
         # test bench_size_boundary
-        response_page_size_boundary = test_api_client.get("/table", params={"page_size": 100})
+        response_page_size_boundary = test_api_client.get(
+            self.base_route, params={"page_size": 100}
+        )
         assert response_page_size_boundary.status_code == HTTPStatus.OK
 
 
