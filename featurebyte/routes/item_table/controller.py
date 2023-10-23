@@ -7,7 +7,7 @@ from bson import ObjectId
 
 from featurebyte.enum import SemanticType
 from featurebyte.models.item_table import ItemTableModel
-from featurebyte.routes.common.base_table import BaseTableDocumentController, TableDocumentT
+from featurebyte.routes.common.base_table import BaseTableDocumentController
 from featurebyte.schema.info import ItemTableInfo
 from featurebyte.schema.item_table import ItemTableList, ItemTableServiceUpdate
 from featurebyte.service.entity import EntityService
@@ -55,7 +55,7 @@ class ItemTableController(
         self.table_info_service = table_info_service
         self.event_table_service = event_table_service
 
-    async def create_table(self, data: ItemTableModel) -> TableDocumentT:
+    async def create_table(self, data: ItemTableModel) -> ItemTableModel:
         # check existence of event table first before creating item table
         _ = await self.event_table_service.get_document(document_id=data.event_table_id)
         return await super().create_table(data=data)

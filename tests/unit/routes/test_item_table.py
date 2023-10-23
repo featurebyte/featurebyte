@@ -24,6 +24,7 @@ class TestItemTableApi(BaseTableApiTestSuite):
     data_create_schema_class = ItemTableCreate
     payload = BaseTableApiTestSuite.load_payload("tests/fixtures/request_payloads/item_table.json")
     document_name = "sf_item_table"
+    random_id = str(ObjectId())
     create_conflict_payload_expected_detail_pairs = [
         (
             payload,
@@ -64,6 +65,10 @@ class TestItemTableApi(BaseTableApiTestSuite):
                     "type": "value_error",
                 },
             ],
+        ),
+        (
+            {**payload, "event_table_id": random_id},
+            f'EventTable (id: "{random_id}") not found. Please save the EventTable object first.',
         ),
     ]
     update_unprocessable_payload_expected_detail_pairs = []
