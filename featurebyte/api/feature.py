@@ -38,7 +38,7 @@ from featurebyte.api.templates.feature_or_target_doc import (
 from featurebyte.api.templates.series_doc import ISNULL_DOC, NOTNULL_DOC
 from featurebyte.common.descriptor import ClassInstanceMethodDescriptor
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.typing import Scalar, ScalarSequence
+from featurebyte.common.typing import ScalarSequence
 from featurebyte.common.utils import enforce_observation_set_row_order
 from featurebyte.config import Configurations
 from featurebyte.core.accessor.count_dict import CdAccessorMixin
@@ -696,30 +696,6 @@ class Feature(
         >>> float_invoice_count_feature = feature.astype(float)
         """
         return super().astype(new_type=new_type)  # type: ignore[no-any-return,misc]
-
-    def binary_op_series_params(
-        self, other: Scalar | FrozenSeries | ScalarSequence
-    ) -> dict[str, Any]:
-        """
-        Parameters that will be passed to series-like constructor in _binary_op method
-
-
-        Parameters
-        ----------
-        other: other: Scalar | FrozenSeries | ScalarSequence
-            Other object
-
-        Returns
-        -------
-        dict[str, Any]
-        """
-        entity_ids = set(self.entity_ids)
-        if isinstance(other, FrozenSeries):
-            entity_ids = entity_ids.union(getattr(other, "entity_ids", []))
-        return {"entity_ids": sorted(entity_ids)}
-
-    def unary_op_series_params(self) -> dict[str, Any]:
-        return {"entity_ids": self.entity_ids}
 
     @substitute_docstring(
         doc_template=PREVIEW_DOC,

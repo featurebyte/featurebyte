@@ -136,17 +136,15 @@ def construct_binary_op_series_output(
     FrozenSeriesT
     """
     if input_series.binary_op_output_class_priority <= other.binary_op_output_class_priority:
-        output_type_series, other_series = input_series, other
+        output_type_series = input_series
     else:
-        output_type_series, other_series = other, input_series
-    kwargs = output_type_series.binary_op_series_params(other_series)
+        output_type_series = other
     return type(output_type_series)(  # type: ignore[return-value]
         feature_store=output_type_series.feature_store,
         tabular_source=output_type_series.tabular_source,
         node_name=node_name,
         name=None,
         dtype=output_var_type,
-        **kwargs,
     )
 
 
@@ -202,12 +200,10 @@ def series_binary_operation(
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[input_series.node],
     )
-    kwargs = input_series.binary_op_series_params(other)
     return type(input_series)(
         feature_store=input_series.feature_store,
         tabular_source=input_series.tabular_source,
         node_name=node.name,
         name=None,
         dtype=output_var_type,
-        **kwargs,
     )

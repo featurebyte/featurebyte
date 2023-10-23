@@ -30,7 +30,6 @@ COMMON_SKIPPED_ATTRIBUTES = [
     "json",
     "json_dict",
     "dict",
-    "binary_op_series_params",
     "extract_pruned_graph_and_node",
     "unary_op_series_params",
     "node_types_lineage",

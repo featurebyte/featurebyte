@@ -153,24 +153,6 @@ class FrozenSeries(
             **self.unary_op_series_params(),
         )
 
-    def binary_op_series_params(
-        self: FrozenSeriesT, other: Scalar | FrozenSeries | ScalarSequence
-    ) -> dict[str, Any]:
-        """
-        Parameters that will be passed to series-like constructor in _binary_op method
-
-        Parameters
-        ----------
-        other: Scalar | FrozenSeries | ScalarSequence
-            Other object
-
-        Returns
-        -------
-        dict[str, Any]
-        """
-        _ = other
-        return {}
-
     @property
     def binary_op_output_class_priority(self) -> int:
         """
