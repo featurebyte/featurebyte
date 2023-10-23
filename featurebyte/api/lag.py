@@ -88,5 +88,4 @@ class LaggableViewColumn(ViewColumn):
             node_name=node.name,
             name=None,
             dtype=self.dtype,
-            **self.unary_op_series_params(),
         )

@@ -87,7 +87,6 @@ class StringAccessor:
             node_type=NodeType.LENGTH,
             output_var_type=DBVarType.INT,
             node_params={},
-            **self._obj.unary_op_series_params(),
         )
 
     def lower(self) -> FrozenSeries:
@@ -119,7 +118,6 @@ class StringAccessor:
             node_type=NodeType.STR_CASE,
             output_var_type=DBVarType.VARCHAR,
             node_params={"case": "lower"},
-            **self._obj.unary_op_series_params(),
         )
 
     def upper(self) -> FrozenSeries:
@@ -151,7 +149,6 @@ class StringAccessor:
             node_type=NodeType.STR_CASE,
             output_var_type=DBVarType.VARCHAR,
             node_params={"case": "upper"},
-            **self._obj.unary_op_series_params(),
         )
 
     @typechecked
@@ -189,7 +186,6 @@ class StringAccessor:
             node_type=NodeType.TRIM,
             output_var_type=DBVarType.VARCHAR,
             node_params={"character": to_strip, "side": "both"},
-            **self._obj.unary_op_series_params(),
         )
 
     @typechecked
@@ -227,7 +223,6 @@ class StringAccessor:
             node_type=NodeType.TRIM,
             output_var_type=DBVarType.VARCHAR,
             node_params={"character": to_strip, "side": "left"},
-            **self._obj.unary_op_series_params(),
         )
 
     @typechecked
@@ -264,7 +259,6 @@ class StringAccessor:
             node_type=NodeType.TRIM,
             output_var_type=DBVarType.VARCHAR,
             node_params={"character": to_strip, "side": "right"},
-            **self._obj.unary_op_series_params(),
         )
 
     @typechecked
@@ -304,7 +298,6 @@ class StringAccessor:
             node_type=NodeType.REPLACE,
             output_var_type=DBVarType.VARCHAR,
             node_params={"pattern": pat, "replacement": repl},
-            **self._obj.unary_op_series_params(),
         )
 
     @typechecked
@@ -346,7 +339,6 @@ class StringAccessor:
             node_type=NodeType.PAD,
             output_var_type=DBVarType.VARCHAR,
             node_params={"side": side, "length": width, "pad": fillchar},
-            **self._obj.unary_op_series_params(),
         )
 
     @typechecked
@@ -386,7 +378,6 @@ class StringAccessor:
             node_type=NodeType.STR_CONTAINS,
             output_var_type=DBVarType.BOOL,
             node_params={"pattern": pat, "case": bool(case)},
-            **self._obj.unary_op_series_params(),
         )
 
     @typechecked
@@ -440,5 +431,4 @@ class StringAccessor:
             node_type=NodeType.SUBSTRING,
             output_var_type=DBVarType.VARCHAR,
             node_params={"start": start, "length": length},
-            **self._obj.unary_op_series_params(),
         )
