@@ -224,7 +224,6 @@ class ObservationTableService(
             file_format=file_format,
         )
 
-    # TODO: probably move this out for reuse with historical_feature_table
     async def validate_materialized_table_and_get_metadata(
         self,
         db_session: BaseSession,

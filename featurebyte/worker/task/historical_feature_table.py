@@ -13,6 +13,9 @@ from featurebyte.schema.worker.task.historical_feature_table import (
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 from featurebyte.service.historical_features import HistoricalFeaturesService
+from featurebyte.service.materialized_table_metadata_extractor import (
+    MaterializedTableMetadataExtractor,
+)
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin
@@ -37,6 +40,7 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask[HistoricalFeatureT
         historical_feature_table_service: HistoricalFeatureTableService,
         historical_features_service: HistoricalFeaturesService,
         task_progress_updater: TaskProgressUpdater,
+        materialized_table_metadata_extractor: MaterializedTableMetadataExtractor,
     ):
         super().__init__()
         self.feature_store_service = feature_store_service
@@ -45,6 +49,7 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask[HistoricalFeatureT
         self.historical_feature_table_service = historical_feature_table_service
         self.historical_features_service = historical_features_service
         self.task_progress_updater = task_progress_updater
+        self.materialized_table_metadata_extractor = materialized_table_metadata_extractor
 
     async def get_task_description(self, payload: HistoricalFeatureTableTaskPayload) -> str:
         return f'Save historical feature table "{payload.name}"'
@@ -77,6 +82,15 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask[HistoricalFeatureT
             ) = await self.historical_feature_table_service.get_columns_info_and_num_rows(
                 db_session, location.table_details
             )
+            min_interval_secs_between_entities = await self.materialized_table_metadata_extractor.get_min_interval_secs_between_entities(
+                db_session, columns_info, location.table_details
+            )
+            (
+                column_name_to_count,
+                point_in_time_stats,
+            ) = await self.materialized_table_metadata_extractor.get_column_name_to_entity_count(
+                feature_store, location.table_details, columns_info
+            )
             logger.debug(
                 "Creating a new HistoricalFeatureTable", extra=location.table_details.dict()
             )
@@ -89,5 +103,9 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask[HistoricalFeatureT
                 feature_list_id=payload.featurelist_get_historical_features.feature_list_id,
                 columns_info=columns_info,
                 num_rows=num_rows,
+                most_recent_point_in_time=point_in_time_stats.most_recent,
+                least_recent_point_in_time=point_in_time_stats.least_recent,
+                entity_column_name_to_count=column_name_to_count,
+                min_interval_secs_between_entities=min_interval_secs_between_entities,
             )
             await self.historical_feature_table_service.create_document(historical_feature_table)
