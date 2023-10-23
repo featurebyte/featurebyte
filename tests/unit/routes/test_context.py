@@ -86,8 +86,8 @@ class TestContextApi(BaseCatalogApiTestSuite):
         """Setup for post route"""
         api_object_filename_pairs = [
             ("entity", "entity"),
-            ("item_table", "item_table"),
             ("event_table", "event_table"),
+            ("item_table", "item_table"),
         ]
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
