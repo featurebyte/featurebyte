@@ -192,3 +192,11 @@ class TestTargetApi(BaseCatalogApiTestSuite):
                 {"cust_id": "1"},
             ],
         }
+
+    def test_delete_entity(self, test_api_client_persistent, create_success_response):
+        """Test delete entity"""
+        test_api_client, _ = test_api_client_persistent
+        entity_id = create_success_response.json()["entity_ids"][0]
+        response = test_api_client.delete(f"/entity/{entity_id}")
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert response.json()["detail"] == "Entity is referenced by Target: float_target"

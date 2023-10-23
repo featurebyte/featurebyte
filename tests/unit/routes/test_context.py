@@ -312,3 +312,14 @@ class TestContextApi(BaseCatalogApiTestSuite):
             response = test_api_client.post(f"{self.base_route}", json=payload)
             assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
             assert "Context entity ids must all be primary entity ids" in response.json()["detail"]
+
+    def test_delete_entity(self, test_api_client_persistent, create_success_response):
+        """Test delete entity fails when entity is referenced by context"""
+        create_response_dict = create_success_response.json()
+        entity_id = create_response_dict["primary_entity_ids"][0]
+
+        # attempt to delete entity
+        test_api_client, _ = test_api_client_persistent
+        response = test_api_client.delete(f"/entity/{entity_id}")
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.json()["detail"] == "Entity is referenced by Context: transaction_context"

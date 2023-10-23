@@ -256,3 +256,17 @@ class TestEntityApi(BaseCatalogApiTestSuite):
         verbose_response_dict = verbose_response.json()
         assert verbose_response_dict.items() > expected_info_response.items(), verbose_response.text
         assert "created_at" in verbose_response_dict
+
+    def test_delete_200(self, test_api_client_persistent, create_success_response):
+        """
+        Test delete entity
+        """
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        doc_id = create_response_dict["_id"]
+        response = test_api_client.delete(f"{self.base_route}/{doc_id}")
+        assert response.status_code == HTTPStatus.OK, response.json()
+
+        # test entity get deleted
+        response = test_api_client.get(f"{self.base_route}/{doc_id}")
+        assert response.status_code == HTTPStatus.NOT_FOUND, response.text

@@ -184,3 +184,12 @@ async def update_entity_description(
         description=data.description,
     )
     return entity
+
+
+@router.delete("/{entity_id}")
+async def delete_entity(request: Request, entity_id: PydanticObjectId) -> None:
+    """
+    Delete Entity
+    """
+    controller = request.state.app_container.entity_controller
+    await controller.delete(document_id=entity_id)
