@@ -11,6 +11,7 @@ from datetime import datetime  # pylint: disable=wrong-import-order
 import pymongo
 from pydantic import Field, StrictStr, validator
 
+from featurebyte.common.validator import construct_sort_validator
 from featurebyte.enum import StrEnum
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.materialized_table import MaterializedTableModel
@@ -133,6 +134,10 @@ class ObservationTableModel(MaterializedTableModel):
     entity_column_name_to_count: Optional[Dict[str, int]] = Field(default_factory=dict)
     min_interval_secs_between_entities: Optional[float] = Field(default_factory=None)
     primary_entity_ids: Optional[List[PydanticObjectId]] = Field(default_factory=list)
+
+    _sort_primary_entity_ids_validator = validator("primary_entity_ids", allow_reuse=True)(
+        construct_sort_validator()
+    )
 
     @validator("most_recent_point_in_time", "least_recent_point_in_time")
     @classmethod
