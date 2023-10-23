@@ -9,7 +9,7 @@ from bson import ObjectId
 from pandas import DataFrame
 
 from featurebyte.api.data_source import DataSource
-from featurebyte.api.savable_api_object import SavableApiObject
+from featurebyte.api.savable_api_object import DeletableApiObject, SavableApiObject
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import SourceType
 from featurebyte.exception import RecordRetrievalException
@@ -19,7 +19,7 @@ from featurebyte.query_graph.node.schema import DatabaseDetails
 from featurebyte.schema.feature_store import FeatureStoreCreate
 
 
-class FeatureStore(FeatureStoreModel, SavableApiObject):
+class FeatureStore(FeatureStoreModel, SavableApiObject, DeletableApiObject):
     """
     FeatureStore class to represent a feature store in FeatureByte.
     This class is used to manage a feature store in FeatureByte.
@@ -297,3 +297,15 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
         - [DataSource](/reference/featurebyte.api.data_source.DataSource/): DataSource class
         """
         return DataSource(feature_store_model=self)
+
+    def delete(self) -> None:
+        """
+        Deletes the feature store from the persistent data store. The feature store can only be deleted if it is not
+        being referenced by any catalog.
+
+        Examples
+        --------
+        >>> feature_store = fb.FeatureStore.get_by_id(<catalog_id>)  # doctest: +SKIP
+        >>> feature_store.delete()  # doctest: +SKIP
+        """
+        self._delete()

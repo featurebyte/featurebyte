@@ -304,3 +304,10 @@ def test_update_description(saved_snowflake_feature_store):
     saved_snowflake_feature_store.update_description(None)
     assert saved_snowflake_feature_store.description is None
     assert saved_snowflake_feature_store.info()["description"] is None
+
+
+def test_delete_feature_store(saved_snowflake_feature_store):
+    """Test delete feature store"""
+    assert saved_snowflake_feature_store.saved is True
+    saved_snowflake_feature_store.delete()
+    assert saved_snowflake_feature_store.saved is False
