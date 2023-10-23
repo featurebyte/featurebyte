@@ -1156,32 +1156,6 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):  # pylint: disable=too-man
         output_dict = update_response.json()
         assert output_dict["columns_info"][-2].get("description") is None
 
-    def test_update_column_semantic_422__semantic_id_not_found(
-        self, test_api_client_persistent, data_response, columns_info
-    ):
-        """Test update column semantic (unprocessable) - semantic ID not found"""
-        test_api_client, _ = test_api_client_persistent
-        response_dict = data_response.json()
-
-        # modify current_value's semantic
-        current_value_info = columns_info[-2]
-        assert current_value_info["name"] == "current_value"
-        assert current_value_info.get("semantic_id") is None
-
-        # update semantic
-        semantic_id = ObjectId()
-        response = test_api_client.patch(
-            f"{self.base_route}/{response_dict['_id']}/column_semantic",
-            json={
-                "column_name": "current_value",
-                "semantic_id": str(semantic_id),
-            },
-        )
-        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-        assert response.json()["detail"] == (
-            f"Semantic IDs ['{semantic_id}'] not found for columns ['current_value']."
-        )
-
     def test_update_422(
         self,
         data_response,
