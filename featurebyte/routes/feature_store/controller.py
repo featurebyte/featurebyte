@@ -3,13 +3,14 @@ FeatureStore API route controller
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Tuple
 
 from bson.objectid import ObjectId
 
 from featurebyte.logging import get_logger
 from featurebyte.models.credential import CredentialModel
 from featurebyte.models.feature_store import FeatureStoreModel
+from featurebyte.models.persistent import QueryFilter
 from featurebyte.query_graph.node.schema import ColumnSpec
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.credential import CredentialCreate
@@ -21,6 +22,7 @@ from featurebyte.schema.feature_store import (
     FeatureStoreShape,
 )
 from featurebyte.schema.info import FeatureStoreInfo
+from featurebyte.service.catalog import AllCatalogService
 from featurebyte.service.credential import CredentialService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
@@ -49,6 +51,7 @@ class FeatureStoreController(
         session_validator_service: SessionValidatorService,
         feature_store_warehouse_service: FeatureStoreWarehouseService,
         credential_service: CredentialService,
+        all_catalog_service: AllCatalogService,
     ):
         super().__init__(feature_store_service)
         self.preview_service = preview_service
@@ -56,6 +59,7 @@ class FeatureStoreController(
         self.session_validator_service = session_validator_service
         self.feature_store_warehouse_service = feature_store_warehouse_service
         self.credential_service = credential_service
+        self.all_catalog_service = all_catalog_service
 
     async def create_feature_store(
         self,
@@ -340,6 +344,11 @@ class FeatureStoreController(
             Dataframe converted to json string
         """
         return await self.preview_service.describe(sample=sample, size=size, seed=seed)
+
+    async def service_and_query_pairs_for_checking_reference(
+        self, document_id: ObjectId
+    ) -> List[Tuple[Any, QueryFilter]]:
+        return [(self.all_catalog_service, {"default_feature_store_ids": document_id})]
 
     async def get_info(
         self,
