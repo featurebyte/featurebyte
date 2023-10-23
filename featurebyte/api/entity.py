@@ -10,7 +10,7 @@ from pydantic import Field
 from typeguard import typechecked
 
 from featurebyte.api.api_object_util import NameAttributeUpdatableMixin
-from featurebyte.api.savable_api_object import SavableApiObject
+from featurebyte.api.savable_api_object import DeletableApiObject, SavableApiObject
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.base import PydanticObjectId
@@ -18,7 +18,7 @@ from featurebyte.models.entity import EntityModel, ParentEntity
 from featurebyte.schema.entity import EntityCreate, EntityUpdate
 
 
-class Entity(NameAttributeUpdatableMixin, SavableApiObject):
+class Entity(NameAttributeUpdatableMixin, SavableApiObject, DeletableApiObject):
     """
     Entity class to represent an entity in FeatureByte.
 
@@ -304,3 +304,18 @@ class Entity(NameAttributeUpdatableMixin, SavableApiObject):
         >>> entity.info()  # doctest: +SKIP
         """
         return super().info(verbose)
+
+    def delete(self) -> None:
+        """
+        Delete the entity from the persistent data store. The entity can only be deleted if
+
+        - the entity is not referenced by any other feature or target objects
+        - the entity is not referenced by any other context objects
+        - the entity is not referenced by any other table objects
+
+        Examples
+        --------
+        >>> entity = catalog.get_entity("grocerycustomer")
+        >>> entity.delete()  # doctest: +SKIP
+        """
+        super()._delete()
