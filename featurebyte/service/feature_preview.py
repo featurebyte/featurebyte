@@ -236,7 +236,7 @@ class FeaturePreviewService(PreviewService):
 
     async def preview_target(self, target_preview: TargetPreview) -> dict[str, Any]:
         """
-        Preview a Feature
+        Preview a Target
 
         Parameters
         ----------
