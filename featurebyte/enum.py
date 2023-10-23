@@ -389,11 +389,13 @@ class FunctionParameterInputForm(StrEnum):
     COLUMN = "column"  # column is used as function argument
 
 
-class FeatureOrTargetType(StrEnum):
-    """Feature or Target type"""
+class UploadFileFormat(StrEnum):
+    """
+    Upload file format
+    """
 
-    FEATURE = "feature"
-    TARGET = "target"
+    CSV = "csv"
+    PARQUET = "parquet"
 
 
 # enum used for handle conflict when saving object to persistent storage

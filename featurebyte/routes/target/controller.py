@@ -16,7 +16,7 @@ from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.routes.common.feature_metadata_extractor import FeatureOrTargetMetadataExtractor
 from featurebyte.routes.common.feature_or_target_helper import FeatureOrTargetHelper
 from featurebyte.schema.feature_list import SampleEntityServingNames
-from featurebyte.schema.preview import FeatureOrTargetPreview
+from featurebyte.schema.preview import TargetPreview
 from featurebyte.schema.target import TargetCreate, TargetInfo, TargetList
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature_preview import FeaturePreviewService
@@ -159,13 +159,13 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
             description=target_doc.description,
         )
 
-    async def preview(self, target_preview: FeatureOrTargetPreview) -> dict[str, Any]:
+    async def preview(self, target_preview: TargetPreview) -> dict[str, Any]:
         """
         Preview a Target
 
         Parameters
         ----------
-        target_preview: FeatureOrTargetPreview
+        target_preview: TargetPreview
             Target preview payload
 
         Returns
@@ -179,9 +179,7 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
             Invalid request payload
         """
         try:
-            return await self.feature_preview_service.preview_target_or_feature(
-                feature_or_target_preview=target_preview
-            )
+            return await self.feature_preview_service.preview_target(target_preview=target_preview)
         except (MissingPointInTimeColumnError, RequiredEntityNotProvidedError) as exc:
             raise HTTPException(
                 status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]

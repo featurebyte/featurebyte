@@ -47,7 +47,7 @@ class ObservationTableUploadTask(DataWarehouseMixin, BaseTask[ObservationTableUp
         self.catalog_service = catalog_service
 
     async def get_task_description(self, payload: ObservationTableUploadTaskPayload) -> str:
-        return f'Upload observation table "{payload.name}" from CSV.'
+        return f'Save observation table "{payload.name}" from {payload.file_format} file.'
 
     async def execute(self, payload: ObservationTableUploadTaskPayload) -> Any:
         catalog = await self.catalog_service.get_document(document_id=payload.catalog_id)

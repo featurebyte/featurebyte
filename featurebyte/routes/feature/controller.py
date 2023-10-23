@@ -33,7 +33,7 @@ from featurebyte.schema.feature import (
 )
 from featurebyte.schema.feature_list import SampleEntityServingNames
 from featurebyte.schema.info import FeatureInfo
-from featurebyte.schema.preview import FeatureOrTargetPreview
+from featurebyte.schema.preview import FeaturePreview
 from featurebyte.schema.task import Task
 from featurebyte.schema.worker.task.batch_feature_create import BatchFeatureCreateTaskPayload
 from featurebyte.service.catalog import CatalogService
@@ -289,14 +289,14 @@ class FeatureController(
         document_data["data"] = output
         return self.paginated_document_class(**document_data)
 
-    async def preview(self, feature_preview: FeatureOrTargetPreview) -> dict[str, Any]:
+    async def preview(self, feature_preview: FeaturePreview) -> dict[str, Any]:
         """
         Preview a Feature
 
         Parameters
         ----------
-        feature_preview: FeatureOrTargetPreview
-            FeatureOrTargetPreview object
+        feature_preview: FeaturePreview
+            FeaturePreview object
 
         Returns
         -------
@@ -309,8 +309,8 @@ class FeatureController(
             Invalid request payload
         """
         try:
-            return await self.feature_preview_service.preview_target_or_feature(
-                feature_or_target_preview=feature_preview
+            return await self.feature_preview_service.preview_feature(
+                feature_preview=feature_preview
             )
         except (MissingPointInTimeColumnError, RequiredEntityNotProvidedError) as exc:
             raise HTTPException(

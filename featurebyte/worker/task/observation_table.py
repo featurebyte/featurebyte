@@ -36,7 +36,7 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
         self.observation_table_service = observation_table_service
 
     async def get_task_description(self, payload: ObservationTableTaskPayload) -> str:
-        return f'Save observation table "{payload.name}"'
+        return f'Save observation table "{payload.name}" from source table.'
 
     async def execute(self, payload: ObservationTableTaskPayload) -> Any:
         feature_store = await self.feature_store_service.get_document(

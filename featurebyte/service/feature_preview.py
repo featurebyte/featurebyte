@@ -3,17 +3,15 @@ FeaturePreviewService class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple
 
 import pandas as pd
 
 from featurebyte.common.utils import dataframe_to_json
 from featurebyte.config import FEATURE_PREVIEW_ROW_LIMIT
-from featurebyte.enum import FeatureOrTargetType, SpecialColumnName
+from featurebyte.enum import SpecialColumnName
 from featurebyte.exception import LimitExceededError, MissingPointInTimeColumnError
 from featurebyte.logging import get_logger
-from featurebyte.models.feature import FeatureModel
-from featurebyte.models.target import TargetModel
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, sql_to_string
 from featurebyte.query_graph.sql.feature_historical import get_historical_features_expr
 from featurebyte.query_graph.sql.feature_preview import get_feature_or_target_preview_sql
@@ -25,7 +23,7 @@ from featurebyte.schema.feature_list import (
     FeatureListSQL,
     PreviewObservationSet,
 )
-from featurebyte.schema.preview import FeatureOrTargetPreview
+from featurebyte.schema.preview import FeatureOrTargetPreview, FeaturePreview, TargetPreview
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
@@ -161,29 +159,15 @@ class FeaturePreviewService(PreviewService):
         Parameters
         ----------
         feature_or_target_preview: FeatureOrTargetPreview
-            TargetPreview object
+            FeatureOrTargetPreview object
 
         Returns
         -------
         dict[str, Any]
             Dataframe converted to json string
         """
-        if feature_or_target_preview.feature_or_target is not None:
-            document: Union[FeatureModel, TargetModel]
-            service: Union[FeatureService, TargetService] = (
-                self.feature_service
-                if feature_or_target_preview.feature_or_target.type == FeatureOrTargetType.FEATURE
-                else self.target_service
-            )
-            document = await service.get_document(feature_or_target_preview.feature_or_target.id)
-            graph = document.graph
-            node_name = document.node_name
-        else:
-            assert feature_or_target_preview.graph
-            assert feature_or_target_preview.node_name
-            graph = feature_or_target_preview.graph
-            node_name = feature_or_target_preview.node_name
-
+        graph = feature_or_target_preview.graph
+        node_name = feature_or_target_preview.node_name
         feature_node = graph.get_node_by_name(node_name)
         operation_struction = graph.extract_operation_structure(
             feature_node, keep_all_source_columns=True
@@ -228,6 +212,48 @@ class FeaturePreviewService(PreviewService):
         if updated:
             result = result.drop(SpecialColumnName.POINT_IN_TIME, axis="columns")
         return dataframe_to_json(result)
+
+    async def preview_feature(self, feature_preview: FeaturePreview) -> dict[str, Any]:
+        """
+        Preview a Feature
+
+        Parameters
+        ----------
+        feature_preview: FeaturePreview
+            FeaturePreview object
+
+        Returns
+        -------
+        dict[str, Any]
+            Dataframe converted to json string
+        """
+        params = feature_preview.dict()
+        if feature_preview.feature_id is not None:
+            document = await self.feature_service.get_document(feature_preview.feature_id)
+            params["graph"] = document.graph
+            params["node_name"] = document.node_name
+        return await self.preview_target_or_feature(FeatureOrTargetPreview(**params))
+
+    async def preview_target(self, target_preview: TargetPreview) -> dict[str, Any]:
+        """
+        Preview a Target
+
+        Parameters
+        ----------
+        target_preview: TargetPreview
+            TargetPreview object
+
+        Returns
+        -------
+        dict[str, Any]
+            Dataframe converted to json string
+        """
+        params = target_preview.dict()
+        if target_preview.target_id is not None:
+            document = await self.target_service.get_document(target_preview.target_id)
+            params["graph"] = document.graph
+            params["node_name"] = document.node_name
+        return await self.preview_target_or_feature(FeatureOrTargetPreview(**params))
 
     async def preview_featurelist(self, featurelist_preview: FeatureListPreview) -> dict[str, Any]:
         """

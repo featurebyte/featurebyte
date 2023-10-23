@@ -25,9 +25,10 @@ async def test_get_task_description(catalog, app_container):
         request_input=UploadedFileInput(type=RequestInputType.UPLOADED_FILE),
         observation_set_storage_path="filepath",
         primary_entity_ids=["63f94ed6ea1f050131379214"],
+        file_format="csv",
     )
     task = app_container.get(ObservationTableUploadTask)
     assert (
         await task.get_task_description(payload)
-        == 'Upload observation table "Test Observation Table Upload" from CSV.'
+        == 'Save observation table "Test Observation Table Upload" from csv file.'
     )

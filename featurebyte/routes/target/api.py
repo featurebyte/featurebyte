@@ -24,7 +24,7 @@ from featurebyte.routes.common.schema import (
 )
 from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.feature_list import SampleEntityServingNames
-from featurebyte.schema.preview import FeatureOrTargetPreview
+from featurebyte.schema.preview import TargetPreview
 from featurebyte.schema.target import TargetCreate, TargetInfo, TargetList, TargetUpdate
 
 router = APIRouter(prefix="/target")
@@ -140,7 +140,7 @@ async def list_target_audit_logs(
 @router.post("/preview", response_model=Dict[str, Any])
 async def get_target_preview(
     request: Request,
-    target_preview: FeatureOrTargetPreview,
+    target_preview: TargetPreview,
 ) -> Dict[str, Any]:
     """
     Retrieve Target preview

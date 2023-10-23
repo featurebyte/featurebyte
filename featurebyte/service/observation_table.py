@@ -15,7 +15,13 @@ from sqlglot.expressions import Expression
 
 from featurebyte.api.source_table import SourceTable
 from featurebyte.common.utils import dataframe_from_json
-from featurebyte.enum import DBVarType, MaterializedTableNamePrefix, SourceType, SpecialColumnName
+from featurebyte.enum import (
+    DBVarType,
+    MaterializedTableNamePrefix,
+    SourceType,
+    SpecialColumnName,
+    UploadFileFormat,
+)
 from featurebyte.exception import (
     MissingPointInTimeColumnError,
     ObservationTableInvalidContextError,
@@ -204,6 +210,7 @@ class ObservationTableService(
         self,
         data: ObservationTableUpload,
         observation_set_dataframe: pd.DataFrame,
+        file_format: UploadFileFormat,
     ) -> ObservationTableUploadTaskPayload:
         """
         Validate and convert a ObservationTableUpload schema to a ObservationTableUploadTaskPayload schema
@@ -215,6 +222,8 @@ class ObservationTableService(
             ObservationTable upload payload
         observation_set_dataframe: pd.DataFrame
             Observation set DataFrame
+        file_format: UploadFileFormat
+            File format of the uploaded file
 
         Returns
         -------
@@ -239,6 +248,7 @@ class ObservationTableService(
             catalog_id=self.catalog_id,
             output_document_id=output_document_id,
             observation_set_storage_path=observation_set_storage_path,
+            file_format=file_format,
         )
 
     @staticmethod
