@@ -681,7 +681,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         # test preview using feature id
         feature_preview_payload.pop("graph")
         feature_preview_payload.pop("node_name")
-        feature_preview_payload["feature_or_target"] = {"type": "feature", "id": feature["_id"]}
+        feature_preview_payload["feature_id"] = feature["_id"]
         response = test_api_client.post(f"{self.base_route}/preview", json=feature_preview_payload)
         assert response.status_code == HTTPStatus.OK
         assert_frame_equal(dataframe_from_json(response.json()), expected_df)

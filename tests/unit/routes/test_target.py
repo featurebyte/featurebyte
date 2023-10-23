@@ -3,10 +3,14 @@ Test for target routes
 """
 from http import HTTPStatus
 from unittest import mock
+from unittest.mock import Mock
 
 import pandas as pd
+import pytest
 from bson import ObjectId
+from pandas._testing import assert_frame_equal
 
+from featurebyte.common.utils import dataframe_from_json
 from featurebyte.models import EntityModel
 from featurebyte.models.entity import ParentEntity
 from tests.unit.routes.base import BaseCatalogApiTestSuite
@@ -192,6 +196,76 @@ class TestTargetApi(BaseCatalogApiTestSuite):
                 {"cust_id": "1"},
             ],
         }
+
+    @pytest.fixture(name="target_preview_payload")
+    def target_preview_payload_fixture(self, create_success_response, test_api_client_persistent):
+        """
+        target_preview_payload fixture
+        """
+        test_api_client, _ = test_api_client_persistent
+        target = create_success_response.json()
+
+        feature_store_id = target["tabular_source"]["feature_store_id"]
+        response = test_api_client.get(f"/feature_store/{feature_store_id}")
+        assert response.status_code == HTTPStatus.OK
+        feature_store = response.json()
+
+        return {
+            "feature_store_name": feature_store["name"],
+            "graph": target["graph"],
+            "node_name": target["node_name"],
+            "point_in_time_and_serving_name_list": [
+                {
+                    "cust_id": "C1",
+                    "POINT_IN_TIME": "2022-04-01",
+                },
+                {
+                    "cust_id": "C3",
+                    "POINT_IN_TIME": "2022-04-03",
+                },
+            ],
+        }
+
+    def test_preview_200(
+        self,
+        test_api_client_persistent,
+        target_preview_payload,
+        mock_get_session,
+    ):
+        """Test target preview (success)"""
+        test_api_client, _ = test_api_client_persistent
+        expected_df = pd.DataFrame({"a": [0, 1, 2]})
+        mock_session = mock_get_session.return_value
+        mock_session.execute_query.return_value = expected_df
+        mock_session.generate_session_unique_id = Mock(return_value="1")
+
+        # test preview using graph and node name
+        response = test_api_client.post(f"{self.base_route}/preview", json=target_preview_payload)
+        assert response.status_code == HTTPStatus.OK
+        assert_frame_equal(dataframe_from_json(response.json()), expected_df)
+
+    def test_preview_using_target_id_200(
+        self,
+        test_api_client_persistent,
+        create_success_response,
+        target_preview_payload,
+        mock_get_session,
+    ):
+        """Test target preview (success)"""
+        test_api_client, _ = test_api_client_persistent
+        target = create_success_response.json()
+        expected_df = pd.DataFrame({"a": [0, 1, 2]})
+        mock_session = mock_get_session.return_value
+        mock_session.execute_query.return_value = expected_df
+        mock_session.generate_session_unique_id = Mock(return_value="1")
+
+        # test preview using target id
+        target_preview_payload.pop("graph")
+        target_preview_payload.pop("node_name")
+        target_preview_payload["target_id"] = target["_id"]
+        response = test_api_client.post(f"{self.base_route}/preview", json=target_preview_payload)
+        assert response.status_code == HTTPStatus.OK
+        assert_frame_equal(dataframe_from_json(response.json()), expected_df)
 
     def test_delete_entity(self, test_api_client_persistent, create_success_response):
         """Test delete entity"""

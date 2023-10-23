@@ -9,7 +9,7 @@ import pandas as pd
 from bson import ObjectId
 from fastapi import UploadFile
 
-from featurebyte.enum import SpecialColumnName
+from featurebyte.enum import SpecialColumnName, UploadFileFormat
 from featurebyte.exception import UnsupportedObservationTableUploadFileFormat
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.persistent import QueryFilter
@@ -109,6 +109,7 @@ class ObservationTableController(
             if the observation set file format is not supported
         """
         assert observation_set_file.filename is not None
+        file_format = UploadFileFormat.CSV
         if observation_set_file.filename.lower().endswith(".csv"):
             assert observation_set_file.content_type == "text/csv"
             observation_set_dataframe = pd.read_csv(observation_set_file.file)
@@ -117,6 +118,7 @@ class ObservationTableController(
                 observation_set_dataframe[SpecialColumnName.POINT_IN_TIME]
             )
         elif observation_set_file.filename.lower().endswith(".parquet"):
+            file_format = UploadFileFormat.PARQUET
             assert observation_set_file.content_type == "application/octet-stream"
             observation_set_dataframe = pd.read_parquet(observation_set_file.file)
         else:
@@ -124,7 +126,7 @@ class ObservationTableController(
                 "Only csv and parquet file formats are supported for observation set upload"
             )
         payload = await self.service.get_observation_table_upload_task_payload(
-            data=data, observation_set_dataframe=observation_set_dataframe
+            data=data, observation_set_dataframe=observation_set_dataframe, file_format=file_format
         )
         task_id = await self.task_manager.submit(payload=payload)
         return await self.task_controller.get_task(task_id=str(task_id))
