@@ -83,7 +83,9 @@ def _convert_ts_to_str(timestamp_str: str) -> str:
 
 
 def validate_columns_info(
-    columns_info: List[ColumnSpecWithEntityId], skip_entity_validation_checks: bool = False
+    columns_info: List[ColumnSpecWithEntityId],
+    primary_entity_ids: Optional[List[PydanticObjectId]] = None,
+    skip_entity_validation_checks: bool = False,
 ) -> None:
     """
     Validate column info.
@@ -92,6 +94,8 @@ def validate_columns_info(
     ----------
     columns_info: List[ColumnSpecWithEntityId]
         List of column specs with entity id
+    primary_entity_ids: Optional[List[PydanticObjectId]]
+        List of primary entity IDs
     skip_entity_validation_checks: bool
         Whether to skip entity validation checks
 
@@ -121,9 +125,20 @@ def validate_columns_info(
         )
 
     if not skip_entity_validation_checks:
+        entity_ids_from_cols = {
+            info.entity_id for info in columns_info if info.entity_id is not None
+        }
+
         # Check that there's at least one entity mapped in the columns info
-        if not any(info.entity_id is not None for info in columns_info):
+        if len(entity_ids_from_cols) == 0:
             raise ValueError("At least one entity column should be provided.")
+
+        # Check that primary entity IDs passed in are present in the column info
+        if primary_entity_ids is not None:
+            if not entity_ids_from_cols.issuperset(set(primary_entity_ids)):
+                raise ValueError(
+                    f"Primary entity IDs passed in are not present in the column info: {primary_entity_ids}"
+                )
 
 
 class ObservationTableService(
@@ -463,7 +478,11 @@ class ObservationTableService(
             )
 
         # Perform validation on column info
-        validate_columns_info(columns_info, skip_entity_validation_checks)
+        validate_columns_info(
+            columns_info,
+            primary_entity_ids=primary_entity_ids,
+            skip_entity_validation_checks=skip_entity_validation_checks,
+        )
         # Get entity column name to minimum interval mapping
         min_interval_secs_between_entities = await self._get_min_interval_secs_between_entities(
             db_session, columns_info, table_details

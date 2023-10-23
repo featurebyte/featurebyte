@@ -7,16 +7,19 @@ from unittest.mock import AsyncMock, Mock
 
 import pandas as pd
 import pytest
+from bson import ObjectId
 
-from featurebyte.enum import SourceType
+from featurebyte.enum import DBVarType, SourceType, SpecialColumnName
 from featurebyte.exception import (
     MissingPointInTimeColumnError,
     UnsupportedPointInTimeColumnTypeError,
 )
+from featurebyte.models.materialized_table import ColumnSpecWithEntityId
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.request_input import SourceTableRequestInput
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.service.observation_table import validate_columns_info
 from featurebyte.session.base import BaseSession
 
 
@@ -301,3 +304,45 @@ def test_get_minimum_iet_sql_expr(observation_table_service, table_details):
         """
     ).strip()
     assert expr_sql == expected_query
+
+
+ENTITY_ID_1 = ObjectId("646f6c1b0ed28a5271123456")
+ENTITY_ID_2 = ObjectId("646f6c1b0ed28a5271234567")
+POINT_IN_TIME_COL = ColumnSpecWithEntityId(
+    name=str(SpecialColumnName.POINT_IN_TIME), dtype=DBVarType.TIMESTAMP
+)
+INT_POINT_IN_TIME_COL = ColumnSpecWithEntityId(
+    name=str(SpecialColumnName.POINT_IN_TIME), dtype=DBVarType.INT
+)
+INT_COL = ColumnSpecWithEntityId(name="col2", dtype=DBVarType.INT, entity_id=None)
+INT_COL_WITH_ENTITY_1 = ColumnSpecWithEntityId(
+    name="col3", dtype=DBVarType.INT, entity_id=ENTITY_ID_1
+)
+INT_COL_WITH_ENTITY_2 = ColumnSpecWithEntityId(
+    name="col4", dtype=DBVarType.INT, entity_id=ENTITY_ID_2
+)
+
+
+@pytest.mark.parametrize(
+    "columns_info, primary_entity_ids, skip_entity_checks, expected_error",
+    [
+        ([POINT_IN_TIME_COL, INT_COL], [], False, ValueError),
+        ([POINT_IN_TIME_COL, INT_COL], [], True, None),
+        ([POINT_IN_TIME_COL, INT_COL_WITH_ENTITY_1], [], False, None),
+        ([INT_COL_WITH_ENTITY_1], [], False, MissingPointInTimeColumnError),
+        ([INT_POINT_IN_TIME_COL], [], False, UnsupportedPointInTimeColumnTypeError),
+        ([POINT_IN_TIME_COL, INT_COL_WITH_ENTITY_1], [ENTITY_ID_2], False, ValueError),
+        ([POINT_IN_TIME_COL, INT_COL_WITH_ENTITY_1], [ENTITY_ID_2], True, None),
+    ],
+)
+def test_validate_columns_info(
+    columns_info, primary_entity_ids, skip_entity_checks, expected_error
+):
+    """
+    Test validate_columns_info
+    """
+    if expected_error is not None:
+        with pytest.raises(expected_error):
+            validate_columns_info(columns_info, primary_entity_ids, skip_entity_checks)
+    else:
+        validate_columns_info(columns_info, primary_entity_ids, skip_entity_checks)
