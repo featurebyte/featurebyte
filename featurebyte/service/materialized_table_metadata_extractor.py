@@ -12,7 +12,7 @@ from sqlglot.expressions import Expression
 from featurebyte import SourceTable
 from featurebyte.common.utils import dataframe_from_json
 from featurebyte.enum import SourceType, SpecialColumnName
-from featurebyte.models import FeatureStoreModel
+from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.materialized_table import ColumnSpecWithEntityId
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
