@@ -17,6 +17,7 @@ from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.request_input import SourceTableRequestInput
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.service.materialized_table_metadata_extractor import get_minimum_iet_sql_expr
 from featurebyte.session.base import BaseSession
 
 
@@ -278,9 +279,7 @@ def test_get_minimum_iet_sql_expr(observation_table_service, table_details):
     """
     Test get_minimum_iet_sql_expr
     """
-    expr = observation_table_service.get_minimum_iet_sql_expr(
-        ["entity"], table_details, SourceType.SNOWFLAKE
-    )
+    expr = get_minimum_iet_sql_expr(["entity"], table_details, SourceType.SNOWFLAKE)
     expr_sql = expr.sql(pretty=True)
     expected_query = textwrap.dedent(
         """

@@ -87,6 +87,9 @@ from featurebyte.service.historical_features import (
     HistoricalFeaturesService,
 )
 from featurebyte.service.item_table import ItemTableService
+from featurebyte.service.materialized_table_metadata_extractor import (
+    MaterializedTableMetadataExtractor,
+)
 from featurebyte.service.namespace_handler import NamespaceHandler
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.online_enable import OnlineEnableService
@@ -305,6 +308,7 @@ app_container_config.register_class(WorkingSchemaService)
 app_container_config.register_class(UseCaseService)
 app_container_config.register_class(UseCaseController)
 app_container_config.register_class(PrimaryEntityValidator)
+app_container_config.register_class(MaterializedTableMetadataExtractor)
 
 # register tasks
 app_container_config.register_class(TargetTableTask)
