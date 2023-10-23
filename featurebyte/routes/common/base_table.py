@@ -301,28 +301,6 @@ class BaseTableDocumentController(
             data=description,
         )
 
-    async def update_column_semantic(
-        self, document_id: ObjectId, column_name: str, semantic_id: Optional[ObjectId]
-    ) -> TableDocumentT:
-        """
-        Update column semantic
-
-        Parameters
-        ----------
-        document_id: ObjectId
-            Table document ID
-        column_name: str
-            Column name
-        semantic_id: Optional[ObjectId]
-            Semantic ID
-        """
-        return await self.update_table_columns_info(
-            document_id=document_id,
-            column_name=column_name,
-            field="semantic_id",
-            data=semantic_id,
-        )
-
     async def service_and_query_pairs_for_checking_reference(
         self, document_id: ObjectId
     ) -> List[Tuple[Any, QueryFilter]]:

@@ -33,7 +33,6 @@ from featurebyte.schema.table import (
     ColumnCriticalDataInfoUpdate,
     ColumnDescriptionUpdate,
     ColumnEntityUpdate,
-    ColumnSemanticUpdate,
 )
 
 router = APIRouter(prefix="/dimension_table")
@@ -88,15 +87,6 @@ class DimensionTableRouter(
         self.router.add_api_route(
             "/{dimension_table_id}/column_critical_data_info",
             self.update_column_critical_data_info,
-            methods=["PATCH"],
-            response_model=DimensionTableModel,
-            status_code=HTTPStatus.OK,
-        )
-
-        # update column semantic route
-        self.router.add_api_route(
-            "/{dimension_table_id}/column_semantic",
-            self.update_column_semantic,
             methods=["PATCH"],
             response_model=DimensionTableModel,
             status_code=HTTPStatus.OK,
@@ -201,23 +191,6 @@ class DimensionTableRouter(
             document_id=dimension_table_id,
             column_name=data.column_name,
             critical_data_info=data.critical_data_info,  # type: ignore
-        )
-        return dimension_table
-
-    async def update_column_semantic(
-        self,
-        request: Request,
-        dimension_table_id: PydanticObjectId,
-        data: ColumnSemanticUpdate,
-    ) -> DimensionTableModel:
-        """
-        Update column semantic
-        """
-        controller = self.get_controller_for_request(request)
-        dimension_table: DimensionTableModel = await controller.update_column_semantic(
-            document_id=dimension_table_id,
-            column_name=data.column_name,
-            semantic_id=data.semantic_id,
         )
         return dimension_table
 

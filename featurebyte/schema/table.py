@@ -1,5 +1,5 @@
 """
-Data model's attribute payload schema
+Table model's attribute payload schema
 """
 from __future__ import annotations
 
