@@ -11,6 +11,7 @@ from bson.objectid import ObjectId
 from sqlglot import expressions
 
 from featurebyte.common.utils import dataframe_to_arrow_bytes
+from featurebyte.service.materialized_table_metadata_extractor import PointInTimeStats
 from tests.unit.routes.base import BaseMaterializedTableTestSuite
 
 
@@ -93,6 +94,27 @@ class TestHistoricalFeatureTableApi(BaseMaterializedTableTestSuite):
         Patch ObservationTableService so validate_materialized_table_and_get_metadata always passes
         """
         _ = patched_observation_table_service
+
+    @pytest.fixture(autouse=True)
+    def always_patch_get_min_interval_secs_between_entities(self):
+        """Patch get_min_interval_secs_between_entities to return 0"""
+        with patch(
+            "featurebyte.worker.task.historical_feature_table.MaterializedTableMetadataExtractor.get_min_interval_secs_between_entities",
+            return_value=0,
+        ):
+            yield
+
+    @pytest.fixture(autouse=True)
+    def always_patch_get_column_name_to_entity_count(self):
+        """Patch get_min_interval_secs_between_entities to return 0"""
+        with patch(
+            "featurebyte.worker.task.historical_feature_table.MaterializedTableMetadataExtractor.get_column_name_to_entity_count",
+        ) as mock_get_column_name_to_entity_count:
+            mock_get_column_name_to_entity_count.return_value = (
+                {},
+                PointInTimeStats(least_recent="least", most_recent="most"),
+            )
+            yield
 
     @pytest.fixture(autouse=True)
     def always_patched_get_historical_feature(self):
