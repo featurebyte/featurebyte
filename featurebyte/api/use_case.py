@@ -336,6 +336,57 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
         """
         super().update_default_eda_table(observation_table_name)
 
+    @typechecked
+    def remove_observation_table(self, observation_table_name: str) -> None:
+        """
+        Remove observation table from the Use Case.
+
+        Parameters
+        ----------
+        observation_table_name: str
+            Name of new observation table to be removed.
+
+        Examples
+        --------
+        >>> use_case = catalog.get_use_case("use_case")
+        >>> use_case.remove_observation_table(observation_table_name)  # doctest: +SKIP
+        """
+        super().remove_observation_table(observation_table_name)
+
+    def remove_default_eda_table(self) -> None:
+        """
+        Remove observation table from the Use Case.
+
+        Examples
+        --------
+        >>> use_case = catalog.get_use_case("use_case")
+        >>> use_case.remove_default_eda_table()  # doctest: +SKIP
+        """
+        self.update(
+            update_payload={"remove_default_eda_table": True},
+            url=f"{self._route}/{self.id}/default_table",
+            skip_update_schema_check=True,
+            allow_update_local=False,
+        )
+        self.default_eda_table_id = None
+
+    def remove_default_preview_table(self) -> None:
+        """
+        Remove observation table from the Use Case.
+
+        Examples
+        --------
+        >>> use_case = catalog.get_use_case("use_case")
+        >>> use_case.remove_default_preview_table()  # doctest: +SKIP
+        """
+        self.update(
+            update_payload={"remove_default_preview_table": True},
+            url=f"{self._route}/{self.id}/default_table",
+            skip_update_schema_check=True,
+            allow_update_local=False,
+        )
+        self.default_preview_table_id = None
+
     def list_observation_tables(self) -> pd.DataFrame:
         """
         List observation tables associated with the use case.

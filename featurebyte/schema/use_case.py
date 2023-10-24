@@ -3,7 +3,7 @@ Use Case API payload schema
 """
 from typing import Any, Dict, List, Optional
 
-from pydantic import Field, StrictStr, root_validator
+from pydantic import BaseModel, Field, StrictStr, root_validator
 
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.use_case import UseCaseModel
@@ -71,3 +71,12 @@ class UseCaseList(PaginationMixin):
     """
 
     data: List[UseCaseModel]
+
+
+class UseCaseRemoveDefaultTable(BaseModel):
+    """
+    Default Table Removal schema for use case
+    """
+
+    remove_default_eda_table: Optional[bool]
+    remove_default_preview_table: Optional[bool]
