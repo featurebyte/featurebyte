@@ -31,6 +31,7 @@ from featurebyte.schema.info import (
 )
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.entity import EntityService
+from featurebyte.service.entity_relationship_extractor import EntityRelationshipExtractorService
 from featurebyte.service.entity_serving_names import EntityServingNamesService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
@@ -134,6 +135,7 @@ class FeatureListService(
         feature_list_namespace_service: FeatureListNamespaceService,
         block_modification_handler: BlockModificationHandler,
         entity_serving_names_service: EntityServingNamesService,
+        entity_relationship_extractor_service: EntityRelationshipExtractorService,
     ):
         super().__init__(
             user=user,
@@ -146,6 +148,7 @@ class FeatureListService(
         self.feature_service = feature_service
         self.feature_list_namespace_service = feature_list_namespace_service
         self.entity_serving_names_service = entity_serving_names_service
+        self.entity_relationship_extractor_service = entity_relationship_extractor_service
 
     async def _feature_iterator(
         self, feature_ids: Sequence[ObjectId]
@@ -194,29 +197,9 @@ class FeatureListService(
         for feature in features:
             entity_ids.update(feature.entity_ids)
 
-        ancestor_entity_ids = set(entity_ids)
-        async for entity in self.entity_service.list_documents_iterator(
-            query_filter={"_id": {"$in": list(entity_ids)}}
-        ):
-            ancestor_entity_ids.update(entity.ancestor_ids)
-
-        descendant_entity_ids = set(entity_ids)
-        async for entity in self.entity_service.list_documents_iterator(
-            query_filter={"ancestor_ids": {"$in": list(entity_ids)}}
-        ):
-            descendant_entity_ids.add(entity.id)
-
-        relationships_info = [
-            EntityRelationshipInfo(**relationship_info)
-            async for relationship_info in self.relationship_info_service.list_documents_as_dict_iterator(
-                query_filter={
-                    "$or": [
-                        {"entity_id": {"$in": list(descendant_entity_ids)}},
-                        {"related_entity_id": {"$in": list(ancestor_entity_ids)}},
-                    ]
-                }
-            )
-        ]
+        relationships_info = await self.entity_relationship_extractor_service.extract(
+            entity_ids=list(entity_ids)
+        )
         return relationships_info
 
     async def _update_features(
