@@ -68,7 +68,6 @@ class ForwardAggregator(BaseAggregator):
         )
         self._validate_fill_value_and_skip_fill_na(fill_value=fill_value, skip_fill_na=skip_fill_na)
         # Create new node parameters
-        assert value_column is not None
         node_params = self._prepare_node_parameters(
             value_column=value_column,
             method=method,
@@ -96,7 +95,7 @@ class ForwardAggregator(BaseAggregator):
 
     def _prepare_node_parameters(
         self,
-        value_column: str,
+        value_column: Optional[str],
         method: str,
         window: Optional[str],
         target_name: Optional[str],
@@ -107,7 +106,7 @@ class ForwardAggregator(BaseAggregator):
 
         Parameters
         ----------
-        value_column: str
+        value_column: Optional[str]
             Column to be aggregated
         method: str
             Aggregation method

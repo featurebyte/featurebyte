@@ -10,7 +10,11 @@ import pandas as pd
 import pytest
 from bson import ObjectId
 
+from featurebyte import AggFunc
 from tests.integration.api.dataframe_helper import apply_agg_func_on_filtered_dataframe
+from tests.integration.api.feature_preview_utils import (
+    convert_preview_param_dict_to_feature_preview_resp,
+)
 from tests.integration.api.test_feature_correctness import sum_func
 from tests.util.helper import fb_assert_frame_equal
 
@@ -216,3 +220,23 @@ def test_forward_aggregate(
         assert target_observation_table.entity_ids == [user_entity.id]
         dataframe = target_observation_table.to_pandas()
         fb_assert_frame_equal(dataframe, expected_values, sort_by_columns=["POINT_IN_TIME"])
+
+
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+def test_forward_aggregate_with_count_and_value_column_none(event_table):
+    """
+    Test forward aggregate with count and value column None.
+    """
+    event_view = event_table.get_view()
+    count_target = event_view.groupby("ÜSER ID").forward_aggregate(
+        method=AggFunc.COUNT,
+        value_column=None,
+        window="7d",
+        target_name="count_target",
+    )
+    preview_params = {"POINT_IN_TIME": "2001-11-15 10:00:00", "üser id": 1}
+    target_preview = count_target.preview(pd.DataFrame([preview_params]))
+    assert target_preview.iloc[0].to_dict() == {
+        "count_target": 12,
+        **convert_preview_param_dict_to_feature_preview_resp(preview_params),
+    }
