@@ -96,6 +96,7 @@ async def test_get_document_by_name_and_version(
             namespace_handler=app_container.namespace_handler,
             block_modification_handler=app_container.block_modification_handler,
             entity_serving_names_service=app_container.entity_serving_names_service,
+            entity_relationship_extractor_service=app_container.entity_relationship_extractor_service,
         )
         await another_feat_service.get_document_by_name_and_version(
             name=feature.name, version=feature.version
