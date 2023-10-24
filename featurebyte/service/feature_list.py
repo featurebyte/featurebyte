@@ -10,9 +10,8 @@ from bson.objectid import ObjectId
 from featurebyte.common.model_util import get_version
 from featurebyte.exception import DocumentError, DocumentInconsistencyError, DocumentNotFoundError
 from featurebyte.models.base import VersionIdentifier
-from featurebyte.models.feature import FeatureModel
+from featurebyte.models.feature import EntityRelationshipInfo, FeatureModel
 from featurebyte.models.feature_list import (
-    EntityRelationshipInfo,
     FeatureCluster,
     FeatureListModel,
     FeatureListNamespaceModel,

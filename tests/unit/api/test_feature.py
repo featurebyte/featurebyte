@@ -512,6 +512,7 @@ def test_get_feature(saved_feature):
         "tabular_source.table_details.schema_name",
         "name",
         "readiness",
+        "relationships_info",
         "graph.edges",
         "graph.nodes",
         "dtype",

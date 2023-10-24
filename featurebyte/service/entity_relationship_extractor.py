@@ -5,7 +5,7 @@ from typing import List
 
 from bson import ObjectId
 
-from featurebyte.models.feature_list import EntityRelationshipInfo
+from featurebyte.models.feature import EntityRelationshipInfo
 from featurebyte.service.entity import EntityService
 from featurebyte.service.relationship_info import RelationshipInfoService
 
