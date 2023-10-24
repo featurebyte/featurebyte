@@ -1766,3 +1766,11 @@ class TestFeatureTestSuite(FeatureOrTargetBaseTestSuite):
     output.save(_id=ObjectId("{item_id}"))
     """
     )
+
+
+def test_feature_relationships_info(saved_feature, cust_id_entity, transaction_entity):
+    """Test feature relationships info"""
+    relationships_info = saved_feature.cached_model.relationships_info
+    assert len(relationships_info) == 1
+    assert relationships_info[0].entity_id == transaction_entity.id
+    assert relationships_info[0].related_entity_id == cust_id_entity.id
