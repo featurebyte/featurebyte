@@ -89,7 +89,11 @@ class TableColumnsInfoService(OpsServiceMixin):
             )
 
     async def update_columns_info(
-        self, service: TableDocumentService, document_id: ObjectId, columns_info: List[ColumnInfo]
+        self,
+        service: TableDocumentService,
+        document_id: ObjectId,
+        columns_info: List[ColumnInfo],
+        skip_block_modification_check: bool = False,
     ) -> None:
         """
         Update table columns info
@@ -102,6 +106,8 @@ class TableColumnsInfoService(OpsServiceMixin):
             Document ID
         columns_info: List[ColumnInfo]
             Columns info
+        skip_block_modification_check: bool
+            Flag to skip block modification check (used only when updating table column description)
         """
         document = await service.get_document(document_id=document_id)
 
@@ -125,6 +131,7 @@ class TableColumnsInfoService(OpsServiceMixin):
                 await service.update_document(
                     document_id=document_id,
                     data=service.document_update_class(columns_info=columns_info),  # type: ignore
+                    skip_block_modification_check=skip_block_modification_check,
                 )
 
                 # update entity table reference

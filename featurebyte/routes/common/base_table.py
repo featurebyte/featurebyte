@@ -178,7 +178,12 @@ class BaseTableDocumentController(
         return await self.get(document_id=document_id)
 
     async def update_table_columns_info(
-        self, document_id: ObjectId, column_name: str, field: str, data: Any
+        self,
+        document_id: ObjectId,
+        column_name: str,
+        field: str,
+        data: Any,
+        skip_block_modification_check: bool = False,
     ) -> TableDocumentT:
         """
         Update table columns info
@@ -193,6 +198,8 @@ class BaseTableDocumentController(
             Field to update
         data: Any
             Data to update
+        skip_block_modification_check: bool
+            Flag to skip block modification check (used only when updating table column description)
 
         Returns
         -------
@@ -217,6 +224,7 @@ class BaseTableDocumentController(
             table_id=document_id,
             columns_info=columns_info,
             service=self.service,
+            skip_block_modification_check=skip_block_modification_check,
         )
         return await self.get(document_id=document_id)
 
@@ -299,6 +307,7 @@ class BaseTableDocumentController(
             column_name=column_name,
             field="description",
             data=description,
+            skip_block_modification_check=True,
         )
 
     async def service_and_query_pairs_for_checking_reference(

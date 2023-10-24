@@ -137,6 +137,7 @@ class CredentialService(
         exclude_none: bool = True,
         document: Optional[CredentialModel] = None,
         return_document: bool = True,
+        skip_block_modification_check: bool = False,
     ) -> Optional[CredentialModel]:
         """
         Update document at persistent
@@ -153,6 +154,8 @@ class CredentialService(
             Credential to be updated (when provided, this method won't query persistent for retrieval)
         return_document: bool
             Whether to make additional query to retrieval updated document & return
+        skip_block_modification_check: bool
+            Whether to skip block modification check (used only when updating description)
 
         Returns
         -------
@@ -179,4 +182,5 @@ class CredentialService(
             exclude_none=exclude_none,
             document=document,
             return_document=return_document,
+            skip_block_modification_check=skip_block_modification_check,
         )

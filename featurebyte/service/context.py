@@ -107,6 +107,7 @@ class ContextService(BaseDocumentService[ContextModel, ContextCreate, ContextUpd
         exclude_none: bool = True,
         document: Optional[ContextModel] = None,
         return_document: bool = True,
+        skip_block_modification_check: bool = False,
     ) -> Optional[ContextModel]:
         document = await self.get_document(document_id=document_id)
         if data.graph and data.node_name:
@@ -122,5 +123,6 @@ class ContextService(BaseDocumentService[ContextModel, ContextCreate, ContextUpd
             data=data,
             exclude_none=exclude_none,
             return_document=return_document,
+            skip_block_modification_check=skip_block_modification_check,
         )
         return document
