@@ -499,6 +499,13 @@ async def test_document_not_modifiable_if_block_modification_by_not_empty(
         )
     assert expected_error in str(exc.value)
 
+    # try to update document description - should be no error
+    await document_service.update_document_description(
+        document_id=document.id, description="new_description"
+    )
+    document = await document_service.get_document(document_id=document.id)
+    assert document.description == "new_description"
+
     # try to delete document - expect an error
     with pytest.raises(DocumentModificationBlockedError) as exc:
         await document_service.delete_document(document_id=document.id)

@@ -71,6 +71,7 @@ class TableFacadeService:
         table_id: ObjectId,
         columns_info: List[ColumnInfo],
         service: Optional[TableDocumentService] = None,
+        skip_block_modification_check: bool = False,
     ) -> None:
         """
         Update table columns info
@@ -83,12 +84,17 @@ class TableFacadeService:
             Columns info
         service: Optional[TableDocumentService]
             Table document service
+        skip_block_modification_check: bool
+            Flag to skip block modification check (used only when updating table column description)
         """
         if service is None:
             table = await self.table_service.get_document(table_id)
             service = self.get_specific_table_service(table.type)
         await self.table_columns_info_service.update_columns_info(
-            service=service, document_id=table_id, columns_info=columns_info
+            service=service,
+            document_id=table_id,
+            columns_info=columns_info,
+            skip_block_modification_check=skip_block_modification_check,
         )
 
     async def update_table_column_cleaning_operations(

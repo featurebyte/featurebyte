@@ -31,5 +31,6 @@ class TableService(BaseDocumentService[BaseDataModel, TableCreate, TableServiceU
         exclude_none: bool = True,
         document: Optional[Document] = None,
         return_document: bool = True,
+        skip_block_modification_check: bool = False,
     ) -> Optional[Document]:
         raise NotImplementedError

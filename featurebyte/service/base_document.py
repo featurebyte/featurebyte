@@ -890,6 +890,7 @@ class BaseDocumentService(
         document: Document,
         update_dict: Dict[str, Any],
         update_document_class: Optional[Type[DocumentUpdateSchema]],
+        skip_block_modification_check: bool = False,
     ) -> None:
         """
         Update document to persistent
@@ -902,9 +903,13 @@ class BaseDocumentService(
             Update dictionary
         update_document_class: Optional[DocumentUpdateSchema]
             Document update schema class
+        skip_block_modification_check: bool
+            Whether to skip block modification check (use with caution,
+            should only be used when updating document description)
         """
-        # check if document is modifiable
-        self._check_document_modifiable(document=document.dict(by_alias=True))
+        if not skip_block_modification_check:
+            # check if document is modifiable
+            self._check_document_modifiable(document=document.dict(by_alias=True))
 
         # check any conflict with existing documents
         updated_document = self.document_class(**{**document.dict(by_alias=True), **update_dict})
@@ -931,6 +936,7 @@ class BaseDocumentService(
         exclude_none: bool = True,
         document: Optional[Document] = None,
         return_document: bool = True,
+        skip_block_modification_check: bool = False,
     ) -> Optional[Document]:
         """
         Update document at persistent
@@ -947,6 +953,8 @@ class BaseDocumentService(
             Document to be updated (when provided, this method won't query persistent for retrieval)
         return_document: bool
             Whether to make additional query to retrieval updated document & return
+        skip_block_modification_check: bool
+            Whether to skip block modification check (use with caution, only use when updating document description)
 
         Returns
         -------
@@ -960,7 +968,10 @@ class BaseDocumentService(
 
         # update document to persistent
         await self._update_document(
-            document=document, update_dict=update_dict, update_document_class=type(data)
+            document=document,
+            update_dict=update_dict,
+            update_document_class=type(data),
+            skip_block_modification_check=skip_block_modification_check,
         )
 
         if return_document:
@@ -1083,5 +1094,8 @@ class BaseDocumentService(
         """
         document = await self.get_document(document_id=document_id)
         await self._update_document(
-            document=document, update_dict={"description": description}, update_document_class=None
+            document=document,
+            update_dict={"description": description},
+            update_document_class=None,
+            skip_block_modification_check=True,
         )

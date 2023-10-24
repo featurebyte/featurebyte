@@ -2,14 +2,20 @@
 Test BaseTableDocumentService subclasses
 """
 import pytest
+from bson import ObjectId
 
-from featurebyte.exception import DocumentConflictError, DocumentNotFoundError
+from featurebyte.exception import (
+    DocumentConflictError,
+    DocumentModificationBlockedError,
+    DocumentNotFoundError,
+)
+from featurebyte.models.base import ReferenceInfo
 from featurebyte.schema.event_table import EventTableCreate
 from featurebyte.schema.item_table import ItemTableCreate
 
 
 @pytest.mark.asyncio
-async def test_data_document_services__retrieval(
+async def test_table_document_services__retrieval(
     event_table_service, item_table_service, event_table, item_table
 ):
     """Test table document services retrieval"""
@@ -46,7 +52,7 @@ async def test_data_document_services__retrieval(
 
 
 @pytest.mark.asyncio
-async def test_data_document_services__creation_conflict(
+async def test_table_document_services__creation_conflict(
     event_table_service, item_table_service, event_table, item_table
 ):
     """Test table document services - document creation conflict"""
@@ -71,3 +77,39 @@ async def test_data_document_services__creation_conflict(
         f'Get the existing object by `EventTable.get(name="{event_table.name}")`.'
     )
     assert expected_msg in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_table_document_service__update_column_description(
+    scd_table_service, scd_table, app_container, entity
+):
+    """Test table document service - update column description"""
+    # add block_by_modification
+    reference_info = ReferenceInfo(asset_name="Asset", document_id=ObjectId())
+    await scd_table_service.add_block_modification_by(
+        query_filter={"_id": scd_table.id},
+        reference_info=reference_info,
+    )
+
+    # update column description
+    columns_info = scd_table.columns_info
+    columns_info[0].description = "new description"
+    await app_container.table_facade_service.update_table_columns_info(
+        table_id=scd_table.id,
+        columns_info=columns_info,
+        service=scd_table_service,
+        skip_block_modification_check=True,
+    )
+
+    # check column description is updated
+    retrieved_event_table = await scd_table_service.get_document(document_id=scd_table.id)
+    assert retrieved_event_table.columns_info[0].description == "new description"
+
+    # attempt to update other column info (should fail)
+    columns_info[0].entity_id = entity.id
+    with pytest.raises(DocumentModificationBlockedError):
+        await app_container.table_facade_service.update_table_columns_info(
+            table_id=scd_table.id,
+            columns_info=columns_info,
+            service=scd_table_service,
+        )

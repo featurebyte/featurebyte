@@ -44,6 +44,7 @@ class FamilyDocumentService(BaseDocumentService):
         exclude_none=True,
         document=None,
         return_document=True,
+        skip_block_modification_check=False,
     ):
         await self.persistent.update_one(
             collection_name=self.collection_name,
