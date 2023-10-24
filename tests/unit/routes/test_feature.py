@@ -214,6 +214,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         response_dict = response.json()
         assert response.status_code == HTTPStatus.CREATED
         assert response_dict["version"] == {"name": get_version(), "suffix": 1}
+        assert response_dict["relationships_info"] == []
 
         # check feature job setting using the specified feature job setting
         graph = QueryGraphModel(**response_dict["graph"])
