@@ -78,6 +78,13 @@ def test_update_default_preview_table(use_case, target_table):
     assert obs_table_df.iloc[0]["id"] == str(target_table.id)
     assert obs_table_df.iloc[0]["name"] == "my_target_table"
 
+    # test remove default preview table
+    retrieved_use_case.remove_default_preview_table()
+    assert retrieved_use_case.default_preview_table is None
+
+    retrieved_use_case = UseCase.get_by_id(use_case.id)
+    assert retrieved_use_case.default_preview_table is None
+
 
 def test_update_default_eda_table(use_case, target_table):
     """
@@ -97,6 +104,13 @@ def test_update_default_eda_table(use_case, target_table):
     assert len(obs_table_df) == 1
     assert obs_table_df.iloc[0]["id"] == str(target_table.id)
     assert obs_table_df.iloc[0]["name"] == "my_target_table"
+
+    # test remove default preview table
+    retrieved_use_case.remove_default_eda_table()
+    assert retrieved_use_case.default_eda_table is None
+
+    retrieved_use_case = UseCase.get_by_id(use_case.id)
+    assert retrieved_use_case.default_eda_table is None
 
 
 def test_list_deployments(use_case, target_table, deployment):

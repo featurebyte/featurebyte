@@ -15,7 +15,12 @@ from featurebyte.models.use_case import UseCaseModel
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.info import EntityBriefInfo, EntityBriefInfoList, UseCaseInfo
 from featurebyte.schema.observation_table import ObservationTableUpdate
-from featurebyte.schema.use_case import UseCaseCreate, UseCaseList, UseCaseUpdate
+from featurebyte.schema.use_case import (
+    UseCaseCreate,
+    UseCaseList,
+    UseCaseRemoveDefaultTable,
+    UseCaseUpdate,
+)
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.context import ContextService
 from featurebyte.service.deployment import DeploymentService
@@ -165,6 +170,55 @@ class UseCaseController(
             )
 
         return await self.service.update_use_case(document_id=use_case_id, data=data)
+
+    async def remove_default_table(
+        self, use_case_id: ObjectId, data: UseCaseRemoveDefaultTable
+    ) -> UseCaseModel:
+        """
+        Remove default table from a UseCase
+
+        Parameters
+        ----------
+        use_case_id: ObjectId
+            use case id
+        data: UseCaseRemoveDefaultTable
+            use case remove default table data
+
+        Raises
+        ------
+        ObservationTableInvalidUseCaseError
+            if use case does not have a default preview or eda table
+
+        Returns
+        -------
+        UseCaseModel
+        """
+
+        use_case = await self.get(document_id=use_case_id)
+
+        if data.remove_default_preview_table:
+            if not use_case.default_preview_table_id:
+                raise ObservationTableInvalidUseCaseError(
+                    "Use case does not have a default preview table"
+                )
+
+            await self.service.update_documents(
+                query_filter={"_id": use_case_id},
+                update={"$set": {"default_preview_table_id": None}},
+            )
+
+        if data.remove_default_eda_table:
+            if not use_case.default_eda_table_id:
+                raise ObservationTableInvalidUseCaseError(
+                    "Use case does not have a default eda table"
+                )
+
+            await self.service.update_documents(
+                query_filter={"_id": use_case_id},
+                update={"$set": {"default_eda_table_id": None}},
+            )
+
+        return await self.get(document_id=use_case_id)
 
     async def service_and_query_pairs_for_checking_reference(
         self, document_id: ObjectId

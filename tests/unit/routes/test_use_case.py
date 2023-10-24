@@ -633,3 +633,67 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         assert response_dict["context_id"] == use_case_payload["context_id"]
         assert response_dict["target_namespace_id"] == target_namespace_id
         assert response_dict["target_id"] == target_id
+
+    @pytest.mark.asyncio
+    async def test_remove_default_table(
+        self, test_api_client_persistent, create_success_response, create_observation_table
+    ):
+        """Test delete observation_table (fail) that is already associated with a use case"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        use_case_id = create_response_dict["_id"]
+
+        new_ob_table_id = ObjectId()
+        await create_observation_table(
+            new_ob_table_id,
+            use_case_id=use_case_id,
+            context_id=self.payload["context_id"],
+            target_input=True,
+            target_id=self.payload["target_id"],
+        )
+
+        # test create and remove default preview table
+        response = test_api_client.patch(
+            f"{self.base_route}/{use_case_id}",
+            json={
+                "default_preview_table_id": str(new_ob_table_id),
+            },
+        )
+        assert response.status_code == HTTPStatus.OK
+        response = test_api_client.get(f"{self.base_route}/{use_case_id}")
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["default_preview_table_id"] == str(new_ob_table_id)
+
+        response = test_api_client.patch(
+            f"{self.base_route}/{use_case_id}/default_table",
+            json={
+                "remove_default_preview_table": True,
+            },
+        )
+        assert response.status_code == HTTPStatus.OK
+        response = test_api_client.get(f"{self.base_route}/{use_case_id}")
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["default_preview_table_id"] is None
+
+        # test create and remove default eda table
+        response = test_api_client.patch(
+            f"{self.base_route}/{use_case_id}",
+            json={
+                "default_eda_table_id": str(new_ob_table_id),
+            },
+        )
+        assert response.status_code == HTTPStatus.OK
+        response = test_api_client.get(f"{self.base_route}/{use_case_id}")
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["default_eda_table_id"] == str(new_ob_table_id)
+
+        response = test_api_client.patch(
+            f"{self.base_route}/{use_case_id}/default_table",
+            json={
+                "remove_default_eda_table": True,
+            },
+        )
+        assert response.status_code == HTTPStatus.OK
+        response = test_api_client.get(f"{self.base_route}/{use_case_id}")
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["default_eda_table_id"] is None

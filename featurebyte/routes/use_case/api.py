@@ -20,12 +20,18 @@ from featurebyte.routes.common.schema import (
     SortByQuery,
     SortDirQuery,
 )
+from featurebyte.routes.use_case.controller import UseCaseController
 from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.deployment import DeploymentList
 from featurebyte.schema.historical_feature_table import HistoricalFeatureTableList
 from featurebyte.schema.info import UseCaseInfo
 from featurebyte.schema.observation_table import ObservationTableList
-from featurebyte.schema.use_case import UseCaseCreate, UseCaseList, UseCaseUpdate
+from featurebyte.schema.use_case import (
+    UseCaseCreate,
+    UseCaseList,
+    UseCaseRemoveDefaultTable,
+    UseCaseUpdate,
+)
 
 router = APIRouter(prefix="/use_case")
 
@@ -138,6 +144,20 @@ async def update_use_case(
     """
     controller = request.state.app_container.use_case_controller
     use_case: UseCaseModel = await controller.update_use_case(use_case_id=use_case_id, data=data)
+    return use_case
+
+
+@router.patch("/{use_case_id}/default_table", response_model=UseCaseModel)
+async def remove_default_table(
+    request: Request, use_case_id: PydanticObjectId, data: UseCaseRemoveDefaultTable
+) -> UseCaseModel:
+    """
+    Remove Default Table
+    """
+    controller: UseCaseController = request.state.app_container.use_case_controller
+    use_case: UseCaseModel = await controller.remove_default_table(
+        use_case_id=use_case_id, data=data
+    )
     return use_case
 
 

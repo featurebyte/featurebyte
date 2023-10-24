@@ -257,6 +257,23 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         """
         super().update_default_eda_table(observation_table_name)
 
+    @typechecked
+    def remove_observation_table(self, observation_table_name: str) -> None:
+        """
+        Remove observation table from the Context.
+
+        Parameters
+        ----------
+        observation_table_name: str
+            Name of new observation table to be removed.
+
+        Examples
+        --------
+        >>> context = catalog.get_context("context")
+        >>> context.remove_observation_table(observation_table_name)  # doctest: +SKIP
+        """
+        super().remove_observation_table(observation_table_name)
+
     def list_observation_tables(self) -> pd.DataFrame:
         """
         List observation tables associated with the Context.
