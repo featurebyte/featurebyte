@@ -8,12 +8,13 @@ from typing import Any, Dict, List, Optional
 from datetime import datetime
 
 import pymongo
-from bson.objectid import ObjectId
+from bson import ObjectId
 from pydantic import Field, PrivateAttr, root_validator, validator
 
 from featurebyte.common.validator import version_validator
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import (
+    FeatureByteBaseModel,
     FeatureByteCatalogBaseDocumentModel,
     PydanticObjectId,
     UniqueConstraintResolutionSignature,
@@ -21,6 +22,7 @@ from featurebyte.models.base import (
     VersionIdentifier,
 )
 from featurebyte.models.feature_namespace import FeatureReadiness
+from featurebyte.models.relationship import RelationshipType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.feature_job_setting import (
@@ -42,6 +44,18 @@ from featurebyte.query_graph.transform.definition import (
     DefinitionHashExtractor,
     DefinitionHashOutput,
 )
+
+
+class EntityRelationshipInfo(FeatureByteBaseModel):
+    """
+    Schema for entity relationship information (subset of existing RelationshipInfo)
+    """
+
+    id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id", allow_mutation=False)
+    relationship_type: RelationshipType
+    entity_id: PydanticObjectId
+    related_entity_id: PydanticObjectId
+    relation_table_id: PydanticObjectId
 
 
 class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
@@ -68,6 +82,9 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
     primary_table_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
     user_defined_function_ids: List[PydanticObjectId] = Field(
         allow_mutation=False, default_factory=list
+    )
+    relationships_info: Optional[List[EntityRelationshipInfo]] = Field(
+        allow_mutation=False, default=None
     )
 
     # pydantic validators

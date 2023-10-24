@@ -73,6 +73,7 @@ def test_feature_model(feature_model_dict, api_object_to_id):
         "node_name": "project_1",
         "online_enabled": False,
         "readiness": "DRAFT",
+        "relationships_info": None,
         "tabular_source": {
             "feature_store_id": ObjectId(api_object_to_id["feature_store"]),
             "table_details": {

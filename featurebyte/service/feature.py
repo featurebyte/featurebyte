@@ -22,6 +22,7 @@ from featurebyte.schema.feature_namespace import (
     FeatureNamespaceServiceUpdate,
 )
 from featurebyte.service.base_namespace_service import BaseNamespaceService
+from featurebyte.service.entity_relationship_extractor import EntityRelationshipExtractorService
 from featurebyte.service.entity_serving_names import EntityServingNamesService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.namespace_handler import (
@@ -48,6 +49,7 @@ class FeatureService(BaseNamespaceService[FeatureModel, FeatureServiceCreate]):
         namespace_handler: NamespaceHandler,
         block_modification_handler: BlockModificationHandler,
         entity_serving_names_service: EntityServingNamesService,
+        entity_relationship_extractor_service: EntityRelationshipExtractorService,
     ):
         super().__init__(
             user=user,
@@ -59,6 +61,7 @@ class FeatureService(BaseNamespaceService[FeatureModel, FeatureServiceCreate]):
         self.feature_namespace_service = feature_namespace_service
         self.namespace_handler = namespace_handler
         self.entity_serving_names_service = entity_serving_names_service
+        self.entity_relationship_extractor_service = entity_relationship_extractor_service
 
     async def prepare_feature_model(
         self, data: FeatureServiceCreate, sanitize_for_definition: bool
@@ -87,12 +90,19 @@ class FeatureService(BaseNamespaceService[FeatureModel, FeatureServiceCreate]):
             node=node,
             sanitize_for_definition=sanitize_for_definition,
         )
+        # extract entity relationships
+        relationships_info = await self.entity_relationship_extractor_service.extract(
+            entity_ids=QueryGraph(**prepared_graph.dict(by_alias=True)).get_entity_ids(
+                node_name=prepared_node_name
+            )
+        )
         return FeatureModel(
             **{
                 **data_dict,
                 "graph": prepared_graph,
                 "node_name": prepared_node_name,
                 "readiness": FeatureReadiness.DRAFT,
+                "relationships_info": relationships_info,
                 "version": await self.get_document_version(data.name),
                 "user_id": self.user.id,
                 "catalog_id": self.catalog_id,
