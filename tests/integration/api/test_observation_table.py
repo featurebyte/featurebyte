@@ -173,9 +173,8 @@ async def test_observation_table_upload(
     _ = catalog, customer_entity
 
     # Upload observation table
-    file_path = os.path.join(
-        os.path.dirname(__file__), "fixtures", f"observation_table.{file_type}"
-    )
+    file_name = f"observation_table.{file_type}"
+    file_path = os.path.join(os.path.dirname(__file__), "fixtures", file_name)
     if file_type == "csv":
         df = pd.read_csv(file_path)
     elif file_type == "parquet":
@@ -190,7 +189,10 @@ async def test_observation_table_upload(
 
     # Assert response
     assert observation_table.name == f"uploaded_observation_table_{file_type}"
-    assert observation_table.request_input == UploadedFileInput(type=RequestInputType.UPLOADED_FILE)
+    assert observation_table.request_input == UploadedFileInput(
+        type=RequestInputType.UPLOADED_FILE,
+        file_name=file_name,
+    )
     expected_columns = {SpecialColumnName.POINT_IN_TIME, "cust_id"}
     actual_columns = {column.name for column in observation_table.columns_info}
     assert expected_columns == actual_columns

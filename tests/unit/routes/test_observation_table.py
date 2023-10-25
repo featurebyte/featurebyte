@@ -271,10 +271,12 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         test_api_client, _ = test_api_client_persistent
 
         # Prepare upload request
+        uploaded_file_name = f"uploaded_file.{file_type}"
         upload_request = ObservationTableUpload(
             name="uploaded_observation_table",
             purpose="other",
             primary_entity_ids=["63f94ed6ea1f050131379214"],
+            uploaded_file_name=uploaded_file_name,
         )
         df = pd.DataFrame(
             {
@@ -307,7 +309,10 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
 
         # Assert response
         assert response_dict["name"] == "uploaded_observation_table"
-        assert response_dict["request_input"] == {"type": "uploaded_file"}
+        assert response_dict["request_input"] == {
+            "type": "uploaded_file",
+            "file_name": uploaded_file_name,
+        }
         assert response_dict["purpose"] == "other"
         expected_columns = {"POINT_IN_TIME", "cust_id"}
         actual_columns = {column["name"] for column in response_dict["columns_info"]}

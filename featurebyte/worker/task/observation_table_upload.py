@@ -88,7 +88,10 @@ class ObservationTableUploadTask(DataWarehouseMixin, BaseTask[ObservationTableUp
                 user_id=payload.user_id,
                 name=payload.name,
                 location=location,
-                request_input=UploadedFileInput(type=RequestInputType.UPLOADED_FILE),
+                request_input=UploadedFileInput(
+                    type=RequestInputType.UPLOADED_FILE,
+                    file_name=payload.uploaded_file_name,
+                ),
                 purpose=payload.purpose,
                 primary_entity_ids=payload.primary_entity_ids,
                 **additional_metadata,

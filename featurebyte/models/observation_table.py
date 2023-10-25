@@ -74,6 +74,7 @@ class UploadedFileInput(FeatureByteBaseModel):
     """
 
     type: Literal[RequestInputType.UPLOADED_FILE]
+    file_name: Optional[str] = Field(default=None)
 
     async def materialize(
         self,
