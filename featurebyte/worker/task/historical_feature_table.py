@@ -17,7 +17,6 @@ from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin
 from featurebyte.worker.util.observation_set_helper import ObservationSetHelper
-from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
 
 logger = get_logger(__name__)
 
@@ -36,7 +35,6 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask[HistoricalFeatureT
         observation_set_helper: ObservationSetHelper,
         historical_feature_table_service: HistoricalFeatureTableService,
         historical_features_service: HistoricalFeaturesService,
-        task_progress_updater: TaskProgressUpdater,
     ):
         super().__init__()
         self.feature_store_service = feature_store_service
@@ -44,7 +42,6 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask[HistoricalFeatureT
         self.observation_set_helper = observation_set_helper
         self.historical_feature_table_service = historical_feature_table_service
         self.historical_features_service = historical_features_service
-        self.task_progress_updater = task_progress_updater
 
     async def get_task_description(self, payload: HistoricalFeatureTableTaskPayload) -> str:
         return f'Save historical feature table "{payload.name}"'
@@ -69,7 +66,6 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask[HistoricalFeatureT
                 observation_set=observation_set,
                 compute_request=payload.featurelist_get_historical_features,
                 output_table_details=location.table_details,
-                progress_callback=self.task_progress_updater.update_progress,
             )
             (
                 columns_info,

@@ -29,6 +29,7 @@ from featurebyte.service.target_helper.base_feature_or_target_computer import (
     ExecutorParams,
     QueryExecutor,
 )
+from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
 
 logger = get_logger(__name__)
 
@@ -104,12 +105,14 @@ class TargetComputer(Computer[ComputeTargetRequest, ExecutorParams]):
         entity_validation_service: EntityValidationService,
         session_manager_service: SessionManagerService,
         query_executor: QueryExecutor[ExecutorParams],
+        task_progress_updater: TaskProgressUpdater,
     ):
         super().__init__(
             feature_store_service,
             entity_validation_service,
             session_manager_service,
             query_executor,
+            task_progress_updater,
         )
 
     async def get_validation_parameters(
