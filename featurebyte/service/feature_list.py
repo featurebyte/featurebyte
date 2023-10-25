@@ -192,7 +192,7 @@ class FeatureListService(
             # validate entity relationships
             assert feature.name is not None
             if feature.relationships_info:
-                self.feature_list_entity_relationship_validator.validate(
+                await self.feature_list_entity_relationship_validator.validate(
                     relationships=feature.relationships_info, feature_name=feature.name
                 )
 

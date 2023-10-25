@@ -11,6 +11,7 @@ from bson import ObjectId
 from featurebyte.exception import EntityRelationshipConflictError
 from featurebyte.models.feature import EntityRelationshipInfo
 from featurebyte.models.relationship import RelationshipType
+from featurebyte.service.entity import EntityService
 
 
 @dataclass(frozen=True)
@@ -29,7 +30,8 @@ class FeatureListEntityRelationshipValidator:
     of features within a given feature list.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, entity_service: EntityService) -> None:
+        self.entity_service = entity_service
         self.id_to_ancestors: Dict[ObjectId, Set[AncestorData]] = defaultdict(set)
 
     def reset(self) -> None:
@@ -63,7 +65,7 @@ class FeatureListEntityRelationshipValidator:
                     )
                 )
 
-    def _validate_relationship(
+    async def _validate_relationship(
         self, relationship: EntityRelationshipInfo, feature_name: str
     ) -> None:
         """
@@ -87,15 +89,21 @@ class FeatureListEntityRelationshipValidator:
             for ancestor in parent_ancestors:
                 if ancestor.ancestor_id == relationship.entity_id:
                     feature_names = sorted(set(ancestor.feature_names))
+                    entity = await self.entity_service.get_document(
+                        document_id=relationship.entity_id
+                    )
+                    related_entity = await self.entity_service.get_document(
+                        document_id=relationship.related_entity_id
+                    )
                     raise EntityRelationshipConflictError(
-                        f"Entity {relationship.entity_id} is an ancestor of "
-                        f"{relationship.related_entity_id} (based on features: {feature_names}) "
+                        f"Entity '{entity.name}' is an ancestor of "
+                        f"'{related_entity.name}' (based on features: {feature_names}) "
                         f"but feature '{feature_name}' has a child-parent relationship between them."
                     )
 
         self._update_ancestor_mapping(relationship=relationship, feature_name=feature_name)
 
-    def validate(
+    async def validate(
         self,
         relationships: List[EntityRelationshipInfo],
         feature_name: str,
@@ -111,4 +119,4 @@ class FeatureListEntityRelationshipValidator:
             Feature name
         """
         for relationship in relationships:
-            self._validate_relationship(relationship=relationship, feature_name=feature_name)
+            await self._validate_relationship(relationship=relationship, feature_name=feature_name)

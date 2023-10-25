@@ -1390,7 +1390,7 @@ def test_feature_list_entity_relationship_validation(
         feature_list.save()
 
     expected_msg = (
-        f"Entity {cust_id_entity.id} is an ancestor of {transaction_entity.id} "
+        f"Entity 'customer' is an ancestor of 'transaction' "
         f"(based on features: ['sum_1d']) but feature 'another_feature' has a child-parent "
         "relationship between them."
     )
