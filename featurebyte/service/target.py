@@ -14,6 +14,7 @@ from featurebyte.models.target import TargetModel
 from featurebyte.models.target_namespace import TargetNamespaceModel
 from featurebyte.persistent import Persistent
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
+from featurebyte.routes.common.derive_primary_entity_helper import DerivePrimaryEntityHelper
 from featurebyte.schema.target import TargetCreate
 from featurebyte.schema.target_namespace import TargetNamespaceCreate, TargetNamespaceServiceUpdate
 from featurebyte.service.base_feature_service import BaseFeatureService
@@ -44,6 +45,7 @@ class TargetService(BaseFeatureService[TargetModel, TargetCreate]):
         catalog_id: Optional[ObjectId],
         block_modification_handler: BlockModificationHandler,
         entity_relationship_extractor_service: EntityRelationshipExtractorService,
+        derive_primary_entity_helper: DerivePrimaryEntityHelper,
         target_namespace_service: TargetNamespaceService,
         namespace_handler: NamespaceHandler,
         feature_store_service: FeatureStoreService,
@@ -58,6 +60,7 @@ class TargetService(BaseFeatureService[TargetModel, TargetCreate]):
             catalog_id=catalog_id,
             block_modification_handler=block_modification_handler,
             entity_relationship_extractor_service=entity_relationship_extractor_service,
+            derive_primary_entity_helper=derive_primary_entity_helper,
         )
         self.target_namespace_service = target_namespace_service
         self.namespace_handler = namespace_handler
@@ -107,6 +110,7 @@ class TargetService(BaseFeatureService[TargetModel, TargetCreate]):
                 **document.dict(by_alias=True),
                 "graph": graph,
                 "node_name": node_name,
+                "primary_entity_ids": derived_data.primary_entity_ids,
                 "relationships_info": derived_data.relationships_info,
             }
         )

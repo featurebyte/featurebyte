@@ -12,7 +12,6 @@ from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature import EntityRelationshipInfo
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.routes.common.derive_primary_entity_helper import DerivePrimaryEntityHelper
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
@@ -29,7 +28,7 @@ class FeatureOrTargetDerivedData:
     relationships_info: List[EntityRelationshipInfo]
 
 
-class BaseFeatureService(
+class BaseFeatureOrTargetService(
     BaseDocumentService[Document, DocumentCreateSchema, BaseDocumentServiceUpdateSchema]
 ):
     """
@@ -75,14 +74,14 @@ class BaseFeatureService(
         return VersionIdentifier(name=version_name, suffix=count or None)
 
     async def extract_derived_data(
-        self, graph: QueryGraphModel, node_name: str
+        self, graph: QueryGraph, node_name: str
     ) -> FeatureOrTargetDerivedData:
         """
         Extract derived data from a graph and node name
 
         Parameters
         ----------
-        graph: QueryGraphModel
+        graph: QueryGraph
             Query graph
         node_name: str
             Node name
@@ -91,16 +90,14 @@ class BaseFeatureService(
         -------
         FeatureOrTargetDerivedData
         """
-        query_graph = QueryGraph(**graph.dict(by_alias=True))
-        entity_ids = query_graph.get_entity_ids(node_name=node_name)
+        entity_ids = graph.get_entity_ids(node_name=node_name)
         primary_entity_ids = await self.derive_primary_entity_helper.derive_primary_entity_ids(
             entity_ids=entity_ids
         )
-        extractor = self.entity_relationship_extractor_service
-        relationships_info = await extractor.extract_relationship_from_primary_entity(
+        relationships_info = await self.entity_relationship_extractor_service.extract(
             entity_ids=entity_ids
         )
         return FeatureOrTargetDerivedData(
-            primary_entity_ids=primary_entity_ids,
+            primary_entity_ids=sorted(primary_entity_ids),
             relationships_info=relationships_info,
         )

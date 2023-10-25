@@ -16,7 +16,6 @@ from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.routes.common.base import BaseDocumentController
-from featurebyte.routes.common.derive_primary_entity_helper import DerivePrimaryEntityHelper
 from featurebyte.routes.common.feature_metadata_extractor import FeatureOrTargetMetadataExtractor
 from featurebyte.routes.feature_namespace.controller import FeatureNamespaceController
 from featurebyte.routes.task.controller import TaskController
@@ -67,7 +66,6 @@ class FeatureController(
         catalog_service: CatalogService,
         table_service: TableService,
         feature_namespace_controller: FeatureNamespaceController,
-        derive_primary_entity_helper: DerivePrimaryEntityHelper,
         feature_or_target_metadata_extractor: FeatureOrTargetMetadataExtractor,
         tile_job_log_service: TileJobLogService,
     ):
@@ -81,7 +79,6 @@ class FeatureController(
         self.catalog_service = catalog_service
         self.table_service = table_service
         self.feature_namespace_controller = feature_namespace_controller
-        self.derive_primary_entity_helper = derive_primary_entity_helper
         self.feature_or_target_metadata_extractor = feature_or_target_metadata_extractor
         self.tile_job_log_service = tile_job_log_service
 
@@ -149,9 +146,6 @@ class FeatureController(
         output = FeatureModelResponse(
             **document.dict(by_alias=True),
             is_default=namespace.default_feature_id == document.id,
-            primary_entity_ids=await self.derive_primary_entity_helper.derive_primary_entity_ids(
-                entity_ids=document.entity_ids
-            ),
         )
         return output
 
@@ -261,9 +255,6 @@ class FeatureController(
         )
 
         # prepare mappings to add additional attributes
-        entity_id_to_entity = await self.derive_primary_entity_helper.get_entity_id_to_entity(
-            doc_list=document_data["data"]
-        )
         namespace_ids = {document["feature_namespace_id"] for document in document_data["data"]}
         namespace_id_to_default_id = {}
         async for namespace in self.feature_namespace_service.list_documents_as_dict_iterator(
@@ -275,14 +266,10 @@ class FeatureController(
         output = []
         for feature in document_data["data"]:
             default_feature_id = namespace_id_to_default_id.get(feature["feature_namespace_id"])
-            primary_entity_ids = await self.derive_primary_entity_helper.derive_primary_entity_ids(
-                entity_ids=feature["entity_ids"], entity_id_to_entity=entity_id_to_entity
-            )
             output.append(
                 FeatureModelResponse(
                     **feature,
                     is_default=default_feature_id == feature["_id"],
-                    primary_entity_ids=primary_entity_ids,
                 )
             )
 

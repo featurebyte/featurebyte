@@ -100,7 +100,6 @@ class FeatureModelResponse(FeatureModel):
     """
 
     is_default: bool
-    primary_entity_ids: List[PydanticObjectId]
 
 
 class FeaturePaginatedList(PaginationMixin):

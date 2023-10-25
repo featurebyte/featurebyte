@@ -11,7 +11,7 @@ import pymongo
 from bson import ObjectId
 from pydantic import Field, PrivateAttr, root_validator, validator
 
-from featurebyte.common.validator import version_validator
+from featurebyte.common.validator import construct_sort_validator, version_validator
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import (
     FeatureByteBaseModel,
@@ -78,6 +78,7 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
 
     # list of IDs attached to this feature or target
     entity_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
+    primary_entity_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
     table_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
     primary_table_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
     user_defined_function_ids: List[PydanticObjectId] = Field(
@@ -95,6 +96,14 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
 
     # pydantic validators
     _version_validator = validator("version", pre=True, allow_reuse=True)(version_validator)
+    _sort_ids_validator = validator(
+        "table_ids",
+        "primary_table_ids",
+        "entity_ids",
+        "primary_entity_ids",
+        "user_defined_function_ids",
+        allow_reuse=True,
+    )(construct_sort_validator())
 
     @root_validator
     @classmethod
@@ -347,6 +356,7 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
             pymongo.operations.IndexModel("dtype"),
             pymongo.operations.IndexModel("version"),
             pymongo.operations.IndexModel("entity_ids"),
+            pymongo.operations.IndexModel("primary_entity_ids"),
             pymongo.operations.IndexModel("table_ids"),
             pymongo.operations.IndexModel("primary_table_ids"),
             pymongo.operations.IndexModel("user_defined_function_ids"),
