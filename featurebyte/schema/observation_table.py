@@ -35,6 +35,8 @@ class ObservationTableUpload(FeatureByteBaseModel):
     name: StrictStr
     purpose: Optional[Purpose] = Field(default=None)
     primary_entity_ids: List[PydanticObjectId]
+    # This is the name of the file that was uploaded by the user
+    uploaded_file_name: StrictStr
 
 
 class ObservationTableList(PaginationMixin):

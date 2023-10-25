@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from typing import List, Optional, Union
 
+import os
 from pathlib import Path
 
 import pandas as pd
@@ -23,6 +24,13 @@ from featurebyte.schema.observation_table import (
     ObservationTableUpdate,
     ObservationTableUpload,
 )
+
+
+def get_file_name(file_path: Union[str, Path]) -> str:
+    """
+    Return the file name from a file path.
+    """
+    return os.path.basename(file_path)
 
 
 class ObservationTable(ObservationTableModel, ApiObject, MaterializedTableMixin):
@@ -223,11 +231,11 @@ class ObservationTable(ObservationTableModel, ApiObject, MaterializedTableMixin)
         if primary_entities is not None:
             for entity_name in primary_entities:
                 primary_entity_ids.append(Entity.get(entity_name).id)
-
         payload = ObservationTableUpload(
             name=name,
             purpose=purpose,
             primary_entity_ids=primary_entity_ids,
+            uploaded_file_name=get_file_name(file_path),
         )
         with open(file_path, "rb") as file_object:
             observation_table_doc = cls.post_async_task(
