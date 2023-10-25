@@ -341,7 +341,7 @@ app_container_config.register_class(User, force_no_deps=True)
 app_container_config.register_class(Redis, force_no_deps=True)
 
 
-class CatalogId:
+class Placeholder:
     """
     This is a special placeholder class that is used to inject the container config.
     """
@@ -352,12 +352,14 @@ class CatalogId:
 # catalog_id directly into the `instance_map` in the LazyAppContainer constructor. As such, we need an item in the
 # app_container_config that is called `catalog_id`. This class of CatalogId will get parsed into `catalog_id`, and
 # as such, works as a placeholder.
-app_container_config.register_class(CatalogId, force_no_deps=True)
+app_container_config.register_class(Placeholder, force_no_deps=True, name_override="catalog_id")
 
 
 # Manually initialized via tasks.
-app_container_config.register_class(UUID, force_no_deps=True, name_override="task_id")
-app_container_config.register_class(Progress, force_no_deps=True)
+app_container_config.register_class(Placeholder, force_no_deps=True, name_override="redis_uri")
+app_container_config.register_class(Placeholder, force_no_deps=True, name_override="user_id")
+app_container_config.register_class(Placeholder, force_no_deps=True, name_override="task_id")
+app_container_config.register_class(Progress)
 
 # Validate the config after all classes have been registered.
 # This should be the last line in this module.
