@@ -125,6 +125,9 @@ from featurebyte.service.tile_scheduler import TileSchedulerService
 from featurebyte.service.use_case import UseCaseService
 from featurebyte.service.user_defined_function import UserDefinedFunctionService
 from featurebyte.service.user_service import UserService
+from featurebyte.service.validator.entity_relationship_validator import (
+    FeatureListEntityRelationshipValidator,
+)
 from featurebyte.service.validator.materialized_table_delete import ObservationTableDeleteValidator
 from featurebyte.service.validator.production_ready_validator import ProductionReadyValidator
 from featurebyte.service.version import VersionService
@@ -207,6 +210,7 @@ app_container_config.register_class(FeatureFacadeService)
 app_container_config.register_class(FeatureJobSettingAnalysisController)
 app_container_config.register_class(FeatureJobSettingAnalysisService)
 app_container_config.register_class(FeatureListController)
+app_container_config.register_class(FeatureListEntityRelationshipValidator)
 app_container_config.register_class(FeatureListFacadeService)
 app_container_config.register_class(FeatureListService)
 app_container_config.register_class(FeatureListNamespaceController)

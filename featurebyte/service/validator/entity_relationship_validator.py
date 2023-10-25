@@ -32,6 +32,12 @@ class FeatureListEntityRelationshipValidator:
     def __init__(self) -> None:
         self.id_to_ancestors: Dict[ObjectId, Set[AncestorData]] = defaultdict(set)
 
+    def reset(self) -> None:
+        """
+        Reset the validator
+        """
+        self.id_to_ancestors = defaultdict(set)
+
     def _update_ancestor_mapping(
         self, relationship: EntityRelationshipInfo, feature_name: str
     ) -> None:
