@@ -3,11 +3,12 @@ Test Feature Job Setting Analysis worker task
 """
 import copy
 import json
-from unittest.mock import call
+from unittest.mock import call, patch
 
 import pytest
 from bson import ObjectId
 
+from featurebyte import DatabricksDetails, SourceType, StorageType
 from featurebyte.exception import DocumentNotFoundError
 from featurebyte.models.event_table import EventTableModel
 from featurebyte.models.feature_job_setting_analysis import FeatureJobSettingAnalysisModel
@@ -236,4 +237,73 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         assert (
             await task.get_task_description(payload)
             == 'Analyze feature job settings for table "sf_event_table"'
+        )
+
+    @pytest.mark.asyncio
+    async def test_execute_with_databricks_store_success(  # pylint: disable=too-many-locals
+        self,
+        catalog,
+        mongo_persistent,
+        progress,
+        update_fixtures,
+        storage,
+        temp_storage,
+        app_container,
+        snowflake_feature_store,
+    ):
+        """
+        Test successful task execution using databricks feature store
+        """
+        persistent, _ = mongo_persistent
+        event_table_payload = self.load_payload("tests/fixtures/request_payloads/event_table.json")
+
+        # execute task
+        payload = copy.deepcopy(self.payload)
+        payload.pop("event_table_id", None)
+        payload["catalog_id"] = catalog.id
+        payload["event_table_candidate"] = {
+            "name": event_table_payload["name"],
+            "tabular_source": event_table_payload["tabular_source"],
+            "event_timestamp_column": event_table_payload["event_timestamp_column"],
+            "record_creation_timestamp_column": event_table_payload[
+                "record_creation_timestamp_column"
+            ],
+        }
+
+        with patch(
+            "featurebyte.worker.task.feature_job_setting_analysis.FeatureStoreService.get_document"
+        ) as mock_get_document, patch(
+            "featurebyte.worker.task.feature_job_setting_analysis.SessionManagerService.get_feature_store_session"
+        ):
+            feature_store = FeatureStoreModel(**snowflake_feature_store.dict(by_alias=True))
+            mock_get_document.return_value = feature_store
+            feature_store.details = DatabricksDetails(
+                host="hostname",
+                http_path="http_path",
+                featurebyte_catalog="spark_catalog",
+                featurebyte_schema="featurebyte",
+                storage_type=StorageType.S3,
+                storage_url="s3://featurebyte/featurebyte",
+                storage_spark_url="dbfs:/FileStore/featurebyte",
+            )
+            feature_store.type = SourceType.DATABRICKS
+
+            await self.execute_task(
+                task_class=self.task_class,
+                payload=payload,
+                persistent=persistent,
+                progress=progress,
+                storage=storage,
+                temp_storage=temp_storage,
+                app_container=app_container,
+            )
+
+        output_document_id = payload["output_document_id"]
+        await self._check_execution_result(
+            payload=payload,
+            output_document_id=output_document_id,
+            persistent=persistent,
+            storage=storage,
+            progress=progress,
+            update_fixtures=update_fixtures,
         )
