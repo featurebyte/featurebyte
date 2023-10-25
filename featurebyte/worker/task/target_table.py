@@ -7,6 +7,7 @@ from typing import Any
 
 from featurebyte.logging import get_logger
 from featurebyte.models.observation_table import ObservationTableModel
+from featurebyte.routes.common.derive_primary_entity_helper import DerivePrimaryEntityHelper
 from featurebyte.schema.target import ComputeTargetRequest
 from featurebyte.schema.worker.task.target_table import TargetTableTaskPayload
 from featurebyte.service.feature_store import FeatureStoreService
@@ -34,6 +35,7 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
         observation_set_helper: ObservationSetHelper,
         observation_table_service: ObservationTableService,
         target_computer: TargetComputer,
+        derive_primary_entity_helper: DerivePrimaryEntityHelper,
     ):
         super().__init__()
         self.feature_store_service = feature_store_service
@@ -41,6 +43,7 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
         self.observation_set_helper = observation_set_helper
         self.observation_table_service = observation_table_service
         self.target_computer = target_computer
+        self.derive_primary_entity_helper = derive_primary_entity_helper
 
     async def get_task_description(self, payload: TargetTableTaskPayload) -> str:
         return f'Save target table "{payload.name}"'
@@ -70,6 +73,10 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
                 ),
                 output_table_details=location.table_details,
             )
+            entity_ids = payload.graph.get_entity_ids(payload.node_names[0])
+            primary_entity_ids = await self.derive_primary_entity_helper.derive_primary_entity_ids(
+                entity_ids
+            )
 
             additional_metadata = (
                 await self.observation_table_service.validate_materialized_table_and_get_metadata(
@@ -78,6 +85,7 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
                     feature_store=feature_store,
                     serving_names_remapping=payload.serving_names_mapping,
                     skip_entity_validation_checks=payload.skip_entity_validation_checks,
+                    primary_entity_ids=primary_entity_ids,  # type: ignore[arg-type]
                 )
             )
 
@@ -88,6 +96,7 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
                 location=location,
                 context_id=payload.context_id,
                 request_input=payload.request_input,
+                primary_entity_ids=primary_entity_ids,
                 **additional_metadata,
             )
             await self.observation_table_service.create_document(observation_table)
