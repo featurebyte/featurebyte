@@ -26,13 +26,6 @@ from featurebyte.schema.observation_table import (
 )
 
 
-def get_file_name(file_path: Union[str, Path]) -> str:
-    """
-    Return the file name from a file path.
-    """
-    return os.path.basename(file_path)
-
-
 class ObservationTable(ObservationTableModel, ApiObject, MaterializedTableMixin):
     """
     ObservationTable class
@@ -235,7 +228,7 @@ class ObservationTable(ObservationTableModel, ApiObject, MaterializedTableMixin)
             name=name,
             purpose=purpose,
             primary_entity_ids=primary_entity_ids,
-            uploaded_file_name=get_file_name(file_path),
+            uploaded_file_name=os.path.basename(file_path),
         )
         with open(file_path, "rb") as file_object:
             observation_table_doc = cls.post_async_task(

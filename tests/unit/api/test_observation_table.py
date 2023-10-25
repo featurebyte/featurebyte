@@ -3,12 +3,11 @@ Unit tests for ObservationTable class
 """
 from typing import Any, Dict
 
-from pathlib import Path
 from unittest.mock import Mock, call, patch
 
 import pytest
 
-from featurebyte.api.observation_table import ObservationTable, get_file_name
+from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.source_table import SourceTable
 from tests.unit.api.base_materialize_table_test import BaseMaterializedTableApiTest
 
@@ -128,20 +127,3 @@ def test_describe(observation_table_from_source, mock_source_table):
     result = observation_table_from_source.describe(size=123, seed=456)
     assert mock_source_table.describe.call_args == call(size=123, seed=456)
     assert result is mock_source_table.describe.return_value
-
-
-@pytest.mark.parametrize(
-    "file_path, expected_file_name",
-    [
-        ("a/b.csv", "b.csv"),
-        ("b.csv", "b.csv"),
-        (Path("a/b.csv"), "b.csv"),
-        (Path("b.csv"), "b.csv"),
-    ],
-)
-def test_get_file_name(file_path, expected_file_name):
-    """
-    Test get_file_name() method
-    """
-    file_name = get_file_name(file_path)
-    assert expected_file_name == file_name
