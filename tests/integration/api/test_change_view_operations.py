@@ -22,7 +22,6 @@ def freeze_time_for_change_view():
         yield
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 @pytest.mark.usefixtures("freeze_time_for_change_view")
 def test_change_view(scd_table):
     """
@@ -64,7 +63,6 @@ def test_change_view(scd_table):
     }
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 @pytest.mark.usefixtures("freeze_time_for_change_view")
 def test_change_view__feature_no_entity(scd_table):
     """
@@ -101,7 +99,6 @@ def test_change_view__feature_no_entity(scd_table):
     assert df.iloc[0].to_dict() == expected
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 @pytest.mark.asyncio
 async def test_change_view_correctness(session, data_source):
     """

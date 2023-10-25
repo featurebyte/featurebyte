@@ -34,7 +34,6 @@ def count_item_type_dictionary_feature_fixture(item_table):
     )
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_dimension_lookup_features(dimension_view):
     """
     Test lookup features from DimensionView
