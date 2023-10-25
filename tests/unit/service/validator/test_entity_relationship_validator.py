@@ -181,7 +181,8 @@ async def test_validator__case_2(
 
 @pytest.mark.asyncio
 async def test_validator__conflict_case_1(
-    entity_relationship_validator, relationship_grandpa_father, grandpa_entity_id, father_entity_id
+    entity_relationship_validator,
+    relationship_grandpa_father,
 ):
     """Test validator conflict case 1"""
     validator = entity_relationship_validator
@@ -208,7 +209,6 @@ async def test_validator__conflict_case_2(
     entity_relationship_validator,
     relationship_grandpa_father,
     relationship_father_son,
-    grandpa_entity_id,
     father_entity_id,
     son_entity_id,
 ):
