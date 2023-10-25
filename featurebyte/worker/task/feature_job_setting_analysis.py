@@ -15,6 +15,7 @@ from featurebyte_freeware.feature_job_analysis.analysis import (
 from featurebyte_freeware.feature_job_analysis.database import EventDataset
 from featurebyte_freeware.feature_job_analysis.schema import FeatureJobSetting
 
+from featurebyte import SourceType
 from featurebyte.logging import get_logger
 from featurebyte.models.feature_job_setting_analysis import (
     BackTestSummary,
@@ -101,8 +102,11 @@ class FeatureJobSettingAnalysisTask(BaseTask[FeatureJobSettingAnalysisTaskPayloa
         # establish database session
         db_session = await self.session_manager_service.get_feature_store_session(feature_store)
 
+        database_type = feature_store.type
+        if database_type == SourceType.DATABRICKS:
+            database_type = SourceType.SPARK
         event_dataset = EventDataset(
-            database_type=feature_store.type,
+            database_type=database_type,
             event_table_name=event_table.name,
             table_details=event_table.tabular_source.table_details,
             creation_date_column=event_table.record_creation_timestamp_column,
