@@ -88,7 +88,7 @@ class FeatureListEntityRelationshipValidator:
             parent_ancestors = self.id_to_ancestors[relationship.related_entity_id]
             for ancestor in parent_ancestors:
                 if ancestor.ancestor_id == relationship.entity_id:
-                    feature_names = sorted(set(ancestor.feature_names))
+                    ancestor_feature_names = sorted(set(ancestor.feature_names))
                     entity = await self.entity_service.get_document(
                         document_id=relationship.entity_id
                     )
@@ -97,8 +97,9 @@ class FeatureListEntityRelationshipValidator:
                     )
                     raise EntityRelationshipConflictError(
                         f"Entity '{entity.name}' is an ancestor of "
-                        f"'{related_entity.name}' (based on features: {feature_names}) "
-                        f"but feature '{feature_name}' has a child-parent relationship between them."
+                        f"'{related_entity.name}' (based on features: {ancestor_feature_names}) "
+                        f"but '{entity.name}' is a child of '{related_entity.name}' based on '{feature_name}'. "
+                        f"Consider excluding '{feature_name}' from the Feature List to fix the error."
                     )
 
         self._update_ancestor_mapping(relationship=relationship, feature_name=feature_name)

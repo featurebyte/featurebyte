@@ -198,8 +198,9 @@ async def test_validator__conflict_case_1(
         await validator.validate([conflict_relationship], feature_name="feat2")
 
     expected_msg = (
-        "Entity 'grandpa' is an ancestor of 'father' "
-        "(based on features: ['feat1']) but feature 'feat2' has a child-parent relationship between them."
+        "Entity 'grandpa' is an ancestor of 'father' (based on features: ['feat1']) "
+        "but 'grandpa' is a child of 'father' based on 'feat2'. "
+        "Consider excluding 'feat2' from the Feature List to fix the error."
     )
     assert expected_msg in str(exc.value)
 
@@ -228,7 +229,8 @@ async def test_validator__conflict_case_2(
 
     expected_msg = (
         "Entity 'grandpa' is an ancestor of 'son' (based on features: ['feat1', 'feat2']) "
-        "but feature 'feat3' has a child-parent relationship between them."
+        "but 'grandpa' is a child of 'son' based on 'feat3'. "
+        "Consider excluding 'feat3' from the Feature List to fix the error."
     )
     assert expected_msg in str(exc.value)
 
@@ -243,6 +245,7 @@ async def test_validator__conflict_case_2(
 
     expected_msg = (
         "Entity 'father' is an ancestor of 'son' (based on features: ['feat2']) "
-        "but feature 'feat3' has a child-parent relationship between them."
+        "but 'father' is a child of 'son' based on 'feat3'. "
+        "Consider excluding 'feat3' from the Feature List to fix the error."
     )
     assert expected_msg in str(exc.value)
