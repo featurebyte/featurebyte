@@ -47,6 +47,7 @@ from featurebyte.service.target_helper.base_feature_or_target_computer import (
 )
 from featurebyte.service.tile_cache import TileCacheService
 from featurebyte.session.base import BaseSession
+from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
 
 logger = get_logger(__name__)
 
@@ -304,6 +305,7 @@ class HistoricalFeaturesService(
         entity_validation_service: EntityValidationService,
         session_manager_service: SessionManagerService,
         query_executor: QueryExecutor[HistoricalFeatureExecutorParams],
+        task_progress_updater: TaskProgressUpdater,
         feature_list_service: FeatureListService,
     ):
         super().__init__(
@@ -311,6 +313,7 @@ class HistoricalFeaturesService(
             entity_validation_service,
             session_manager_service,
             query_executor,
+            task_progress_updater,
         )
         self.feature_list_service = feature_list_service
 

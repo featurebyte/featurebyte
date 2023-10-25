@@ -22,6 +22,7 @@ from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.session.base import BaseSession
+from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
 
 ComputeRequestT = TypeVar("ComputeRequestT", bound=ComputeRequest)
 
@@ -92,11 +93,13 @@ class Computer(Generic[ComputeRequestT, ExecutorParamsT]):
         entity_validation_service: EntityValidationService,
         session_manager_service: SessionManagerService,
         query_executor: QueryExecutor[ExecutorParamsT],
+        task_progress_updater: TaskProgressUpdater,
     ):
         self.feature_store_service = feature_store_service
         self.entity_validation_service = entity_validation_service
         self.session_manager_service = session_manager_service
         self.query_executor = query_executor
+        self.task_progress_updater = task_progress_updater
 
     @abstractmethod
     async def get_validation_parameters(self, request: ComputeRequestT) -> ValidationParameters:
@@ -144,7 +147,6 @@ class Computer(Generic[ComputeRequestT, ExecutorParamsT]):
         observation_set: Union[pd.DataFrame, ObservationTableModel],
         compute_request: ComputeRequestT,
         output_table_details: TableDetails,
-        progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
     ) -> None:
         """
         Compute targets or features
@@ -157,8 +159,6 @@ class Computer(Generic[ComputeRequestT, ExecutorParamsT]):
             Compute request
         output_table_details: TableDetails
             Table details to write the results to
-        progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
-            Optional progress callback function
         """
         validation_parameters = await self.get_validation_parameters(compute_request)
 
@@ -185,7 +185,7 @@ class Computer(Generic[ComputeRequestT, ExecutorParamsT]):
                 session=db_session,
                 output_table_details=output_table_details,
                 parent_serving_preparation=parent_serving_preparation,
-                progress_callback=progress_callback,
+                progress_callback=self.task_progress_updater.update_progress,
                 observation_set=observation_set,
             ),
             validation_parameters=validation_parameters,

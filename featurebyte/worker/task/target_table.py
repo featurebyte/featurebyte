@@ -16,7 +16,6 @@ from featurebyte.service.target_helper.compute_target import TargetComputer
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin
 from featurebyte.worker.util.observation_set_helper import ObservationSetHelper
-from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
 
 logger = get_logger(__name__)
 
@@ -35,7 +34,6 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
         observation_set_helper: ObservationSetHelper,
         observation_table_service: ObservationTableService,
         target_computer: TargetComputer,
-        task_progress_updater: TaskProgressUpdater,
     ):
         super().__init__()
         self.feature_store_service = feature_store_service
@@ -43,7 +41,6 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
         self.observation_set_helper = observation_set_helper
         self.observation_table_service = observation_table_service
         self.target_computer = target_computer
-        self.task_progress_updater = task_progress_updater
 
     async def get_task_description(self, payload: TargetTableTaskPayload) -> str:
         return f'Save target table "{payload.name}"'
@@ -72,7 +69,6 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
                     target_id=payload.target_id,
                 ),
                 output_table_details=location.table_details,
-                progress_callback=self.task_progress_updater.update_progress,
             )
 
             additional_metadata = (

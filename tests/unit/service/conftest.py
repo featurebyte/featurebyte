@@ -9,6 +9,7 @@ from typing import Optional
 import json
 import os.path
 from unittest.mock import Mock, patch
+from uuid import uuid4
 
 import pytest
 import pytest_asyncio
@@ -36,6 +37,7 @@ from featurebyte.schema.scd_table import SCDTableCreate
 from featurebyte.schema.target import TargetCreate
 from featurebyte.service.catalog import CatalogService
 from featurebyte.storage import LocalTempStorage
+from featurebyte.utils.messaging import REDIS_URI
 from featurebyte.worker import get_celery, get_redis
 
 
@@ -57,16 +59,19 @@ def app_container_fixture(persistent, user, catalog):
     """
     Return an app container used in tests. This will allow us to easily retrieve instances of the right type.
     """
-    return LazyAppContainer(
-        user=user,
-        persistent=persistent,
-        temp_storage=LocalTempStorage(),
-        celery=get_celery(),
-        redis=get_redis(),
-        storage=LocalTempStorage(),
-        catalog_id=catalog.id,
-        app_container_config=app_container_config,
-    )
+    instance_map = {
+        "user": user,
+        "persistent": persistent,
+        "temp_storage": LocalTempStorage(),
+        "celery": get_celery(),
+        "redis": get_redis(),
+        "storage": LocalTempStorage(),
+        "catalog_id": catalog.id,
+        "user_id": user.id,
+        "task_id": uuid4(),
+        "redis_uri": REDIS_URI,
+    }
+    return LazyAppContainer(app_container_config=app_container_config, instance_map=instance_map)
 
 
 @pytest.fixture(name="feature_store_service")
