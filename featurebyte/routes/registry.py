@@ -3,7 +3,6 @@ Registrations module.
 
 This contains all the dependencies that we want to register in order to get our fast API app up and running.
 """
-from uuid import UUID
 
 from celery import Celery
 from redis import Redis
