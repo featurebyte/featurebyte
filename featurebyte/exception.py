@@ -366,6 +366,12 @@ class NoChangesInFeatureVersionError(DocumentError):
     """
 
 
+class EntityRelationshipConflictError(DocumentError):
+    """
+    Raise when the entity relationship is conflicting with existing ones
+    """
+
+
 class LimitExceededError(BaseUnprocessableEntityError):
     """
     Raised when limit is exceeded
