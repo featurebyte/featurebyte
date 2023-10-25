@@ -1290,7 +1290,6 @@ def test_non_float_tile_value_added_to_tile_table(event_view, source_type):
     }
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_create_observation_table(event_view):
     new_event_view = event_view.copy()
     new_event_view["POINT_IN_TIME"] = new_event_view["ËVENT_TIMESTAMP"]
@@ -1306,7 +1305,6 @@ def test_create_observation_table(event_view):
     assert set(observation_table.entity_ids) == expected_entity_ids
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_create_observation_table__errors_with_no_entities(event_view):
     new_event_view = event_view.copy()
     new_event_view["POINT_IN_TIME"] = new_event_view["ËVENT_TIMESTAMP"]
