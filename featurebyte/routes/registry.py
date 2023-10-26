@@ -5,7 +5,6 @@ This contains all the dependencies that we want to register in order to get our 
 """
 
 from celery import Celery
-from redis import Redis
 
 from featurebyte.migration.migration_data_service import SchemaMetadataService
 from featurebyte.migration.service.data_warehouse import (
