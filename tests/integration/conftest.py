@@ -1311,17 +1311,15 @@ def temp_storage_fixture():
 
 
 @pytest.fixture(name="mock_app_callbacks", scope="session")
-def mock_app_callbacks(storage, temp_storage):
+def mock_app_callbacks(storage, temp_storage, app_container: LazyAppContainer):
     """
     Mock app callbacks: get_credential, get_storage, get_temp_storage
 
     This fixture is used such that these callbacks are consistent with those used in
     mock_task_manager.
     """
-    with mock.patch("featurebyte.app.get_storage") as mock_get_storage, mock.patch(
-        "featurebyte.app.get_temp_storage"
-    ) as mock_get_temp_storage:
-        mock_get_storage.return_value = storage
+    app_container.override_instance_for_test("storage", storage)
+    with mock.patch("featurebyte.app.get_temp_storage") as mock_get_temp_storage:
         mock_get_temp_storage.return_value = temp_storage
         yield
 
