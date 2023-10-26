@@ -4,6 +4,7 @@ Common test fixtures used across unit test directories
 """
 import copy
 import json
+import logging
 import tempfile
 import traceback
 from datetime import datetime
@@ -38,6 +39,7 @@ from featurebyte.api.item_table import ItemTable
 from featurebyte.app import User, app, get_celery
 from featurebyte.enum import AggFunc, InternalName, SourceType
 from featurebyte.exception import DuplicatedRecordException, ObjectHasBeenSavedError
+from featurebyte.logging import CONSOLE_LOG_FORMATTER
 from featurebyte.models.credential import CredentialModel
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.models.task import Task as TaskModel
@@ -1715,3 +1717,25 @@ def mock_task_manager(request, persistent, storage, temp_storage):
                 mock_get_celery.return_value.AsyncResult.side_effect = get_task
                 mock_get_celery_worker.return_value.AsyncResult.side_effect = get_task
                 yield
+
+
+class MockLogHandler(logging.Handler):
+    """
+    Mock LogHandler to record logs for testing
+    """
+
+    records = []
+
+    def emit(self, record):
+        self.records.append(self.format(record))
+
+
+@pytest.fixture(name="mock_log_handler")
+def mock_log_handler_fixture():
+    """
+    Mock log handler fixture
+    """
+    mock_handler = MockLogHandler()
+    mock_handler.setFormatter(CONSOLE_LOG_FORMATTER)
+    mock_handler.records.clear()
+    return mock_handler
