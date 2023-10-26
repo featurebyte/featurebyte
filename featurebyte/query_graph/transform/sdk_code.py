@@ -263,6 +263,7 @@ class SDKCodeExtractor(BaseGraphExtractor[SDKCodeGlobalState, BaseModel, SDKCode
         feature_store_id: Optional[ObjectId] = None,
         table_id_to_info: Optional[Dict[ObjectId, Dict[str, Any]]] = None,
         output_id: Optional[ObjectId] = None,
+        last_statement_callback: Optional[Any] = None,
         **kwargs: Any,
     ) -> SDKCodeGlobalState:
         op_struct_info = OperationStructureExtractor(graph=self.graph).extract(node=node)
@@ -293,7 +294,13 @@ class SDKCodeExtractor(BaseGraphExtractor[SDKCodeGlobalState, BaseModel, SDKCode
         output_var = global_state.var_name_generator.convert_to_variable_name(
             final_output_name, node_name=None
         )
-        global_state.code_generator.add_statements(statements=[(output_var, var_name_or_expr)])
+        if last_statement_callback:
+            global_state.code_generator.add_statements(
+                statements=last_statement_callback(output_var, var_name_or_expr)
+            )
+        else:
+            global_state.code_generator.add_statements(statements=[(output_var, var_name_or_expr)])
+
         if output_id:
             statement = get_object_class_from_function_call(
                 callable_name=f"{output_var}.save", _id=ClassEnum.OBJECT_ID(output_id)

@@ -811,6 +811,7 @@ def test_create_observation_table_from_event_view__no_sample(
     assert isinstance(observation_table, ObservationTable)
     assert observation_table.name == "my_observation_table_from_event_view"
     assert observation_table.primary_entity_ids == [cust_id_entity.id]
+    assert observation_table.request_input.definition is not None
 
     # Check that the correct query was executed
     query = snowflake_execute_query.call_args[0][0]
