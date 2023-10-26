@@ -19,7 +19,7 @@ def get_definition_for_obs_table_creation_from_view(
     context_name: Optional[str] = None,
     skip_entity_validation_checks: Optional[bool] = False,
     primary_entities: Optional[List[str]] = None,
-):
+) -> str:
     """
     Helper method to get the definition for creating an observation table from a view.
 
@@ -43,6 +43,10 @@ def get_definition_for_obs_table_creation_from_view(
         Whether to skip entity validation checks
     primary_entities: Optional[List[str]]
         The primary entities to associate the observation table with
+
+    Returns
+    -------
+    str
     """
 
     def last_statement_callback(output_var, var_name):
