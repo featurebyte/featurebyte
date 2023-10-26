@@ -1359,3 +1359,39 @@ def test_create_new_version__no_new_version_created(saved_feature_list):
     """Test create new version when no new version is created"""
     feature_list = saved_feature_list.create_new_version(features=[])
     assert feature_list.id == saved_feature_list.id
+
+
+def test_feature_list_entity_relationship_validation(
+    float_feature, snowflake_event_table, cust_id_entity, transaction_entity
+):
+    """Test feature list entity relationship validation"""
+    float_feature.save()
+
+    # update relationship
+    snowflake_event_table.cust_id.as_entity(None)
+    snowflake_event_table.col_int.as_entity(None)
+    snowflake_event_table.cust_id.as_entity(transaction_entity.name)
+    snowflake_event_table.col_int.as_entity(cust_id_entity.name)
+
+    # construct another feature
+    event_view = snowflake_event_table.get_view()
+    another_feat = event_view.groupby("cust_id").aggregate_over(
+        value_column="col_float",
+        method="sum",
+        windows=["30m"],
+        feature_names=["another_feature"],
+    )["another_feature"]
+
+    # save the feature
+    another_feat.save()
+
+    feature_list = FeatureList([float_feature, another_feat], name="test_feature_list")
+    with pytest.raises(RecordCreationException) as exc:
+        feature_list.save()
+
+    expected_msg = (
+        "Entity 'customer' is an ancestor of 'transaction' (based on features: ['sum_1d']) "
+        "but 'customer' is a child of 'transaction' based on 'another_feature'. "
+        "Consider excluding 'another_feature' from the Feature List to fix the error."
+    )
+    assert expected_msg in str(exc.value)

@@ -1,5 +1,5 @@
 """
-Entity Relationship Extractor
+Entity Relationship Extractor Service
 """
 from typing import List
 

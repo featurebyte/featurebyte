@@ -36,6 +36,9 @@ from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
 from featurebyte.service.relationship_info import RelationshipInfoService
+from featurebyte.service.validator.entity_relationship_validator import (
+    FeatureListEntityRelationshipValidator,
+)
 
 
 async def validate_feature_list_version_and_namespace_consistency(
@@ -135,6 +138,7 @@ class FeatureListService(
         block_modification_handler: BlockModificationHandler,
         entity_serving_names_service: EntityServingNamesService,
         entity_relationship_extractor_service: EntityRelationshipExtractorService,
+        feature_list_entity_relationship_validator: FeatureListEntityRelationshipValidator,
     ):
         super().__init__(
             user=user,
@@ -148,6 +152,7 @@ class FeatureListService(
         self.feature_list_namespace_service = feature_list_namespace_service
         self.entity_serving_names_service = entity_serving_names_service
         self.entity_relationship_extractor_service = entity_relationship_extractor_service
+        self.feature_list_entity_relationship_validator = feature_list_entity_relationship_validator
 
     async def _feature_iterator(
         self, feature_ids: Sequence[ObjectId]
@@ -182,6 +187,9 @@ class FeatureListService(
 
             # store previous feature store id
             feature_store_id = feature.tabular_source.feature_store_id
+
+        # validate entity relationships
+        await self.feature_list_entity_relationship_validator.validate(features=features)
 
         derived_output = {
             "feature_store_id": feature_store_id,
