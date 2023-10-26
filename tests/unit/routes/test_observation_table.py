@@ -1,6 +1,7 @@
 """
 Tests for ObservationTable routes
 """
+import copy
 import tempfile
 from http import HTTPStatus
 
@@ -317,3 +318,14 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         expected_columns = {"POINT_IN_TIME", "cust_id"}
         actual_columns = {column["name"] for column in response_dict["columns_info"]}
         assert expected_columns == actual_columns
+
+    def test_create_without_primary_entity_ids_200(self, test_api_client_persistent):
+        """Test info route"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+        payload = copy.deepcopy(self.payload)
+        payload["primary_entity_ids"] = None
+        response = self.post(test_api_client, payload)
+        response = self.wait_for_results(test_api_client, response)
+        response_dict = response.json()
+        assert response_dict["status"] == "SUCCESS", response_dict["traceback"]

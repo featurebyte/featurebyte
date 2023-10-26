@@ -66,6 +66,7 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
             )
 
             logger.debug("Creating a new ObservationTable", extra=location.table_details.dict())
+            primary_entity_ids = payload.primary_entity_ids or []
             observation_table = ObservationTableModel(
                 _id=payload.output_document_id,
                 user_id=payload.user_id,
@@ -74,7 +75,7 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
                 context_id=payload.context_id,
                 request_input=payload.request_input,
                 purpose=payload.purpose,
-                primary_entity_ids=payload.primary_entity_ids,
+                primary_entity_ids=primary_entity_ids,
                 **additional_metadata,
             )
             await self.observation_table_service.create_document(observation_table)
