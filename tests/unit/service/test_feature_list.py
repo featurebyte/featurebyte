@@ -146,7 +146,7 @@ async def test_feature_list__contains_relationships_info(
     target_entity_id = feature.entity_ids[0]
 
     # create a parent & child entity & associate them with the target entity
-    ancestor_ids, descendant_ids, sibling_ids = await create_entity_family(
+    ancestor_ids, descendant_ids, _ = await create_entity_family(
         entity_service,
         app_container.table_columns_info_service,
         app_container.entity_relationship_service,
@@ -160,8 +160,8 @@ async def test_feature_list__contains_relationships_info(
         data=FeatureListServiceCreate(name="my_feature_list", feature_ids=[feature.id])
     )
     relationships_info = feature_list.relationships_info
-    assert len(relationships_info) == 5
-    expected_entities = set(ancestor_ids + descendant_ids + sibling_ids + [target_entity_id])
+    assert len(relationships_info) == 4
+    expected_entities = set(ancestor_ids + descendant_ids + [target_entity_id])
     for relationship_info in relationships_info:
         assert relationship_info.entity_id in expected_entities
         assert relationship_info.related_entity_id in expected_entities
@@ -205,7 +205,7 @@ async def test_feature_list__contains_relationships_info(
     expected_entities = set(
         entity_id for entity_id in expected_entities if entity_id != grand_parent_entity_id
     )
-    assert len(relationships_info) == 4
+    assert len(relationships_info) == 3
     for relationship_info in relationships_info:
         assert relationship_info.entity_id in expected_entities
         assert relationship_info.related_entity_id in expected_entities

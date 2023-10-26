@@ -1362,30 +1362,50 @@ def test_create_new_version__no_new_version_created(saved_feature_list):
 
 
 def test_feature_list_entity_relationship_validation(
-    float_feature, snowflake_event_table, cust_id_entity, transaction_entity
+    snowflake_event_table_with_entity,
+    cust_id_entity,
+    transaction_entity,
+    arbitrary_default_feature_job_setting,
 ):
     """Test feature list entity relationship validation"""
-    float_feature.save()
+    event_view = snowflake_event_table_with_entity.get_view()
+    feat = event_view.groupby("col_int").aggregate_over(
+        value_column="col_float",
+        method="sum",
+        windows=["1d"],
+        feature_names=["sum_1d"],
+        feature_job_setting=arbitrary_default_feature_job_setting,
+    )["sum_1d"]
+    feat.save()
+    relationships_info = feat.cached_model.relationships_info
+    assert len(relationships_info) == 1
+    assert relationships_info[0].entity_id == transaction_entity.id
+    assert relationships_info[0].related_entity_id == cust_id_entity.id
 
     # update relationship
-    snowflake_event_table.cust_id.as_entity(None)
-    snowflake_event_table.col_int.as_entity(None)
-    snowflake_event_table.cust_id.as_entity(transaction_entity.name)
-    snowflake_event_table.col_int.as_entity(cust_id_entity.name)
+    snowflake_event_table_with_entity.cust_id.as_entity(None)
+    snowflake_event_table_with_entity.col_int.as_entity(None)
+    snowflake_event_table_with_entity.cust_id.as_entity(transaction_entity.name)
+    snowflake_event_table_with_entity.col_int.as_entity(cust_id_entity.name)
 
     # construct another feature
-    event_view = snowflake_event_table.get_view()
-    another_feat = event_view.groupby("cust_id").aggregate_over(
+    event_view = snowflake_event_table_with_entity.get_view()
+    another_feat = event_view.groupby("col_int").aggregate_over(
         value_column="col_float",
         method="sum",
         windows=["30m"],
         feature_names=["another_feature"],
+        feature_job_setting=arbitrary_default_feature_job_setting,
     )["another_feature"]
 
     # save the feature
     another_feat.save()
+    relationships_info = another_feat.cached_model.relationships_info
+    assert len(relationships_info) == 1
+    assert relationships_info[0].entity_id == cust_id_entity.id
+    assert relationships_info[0].related_entity_id == transaction_entity.id
 
-    feature_list = FeatureList([float_feature, another_feat], name="test_feature_list")
+    feature_list = FeatureList([feat, another_feat], name="test_feature_list")
     with pytest.raises(RecordCreationException) as exc:
         feature_list.save()
 

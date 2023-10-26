@@ -94,7 +94,8 @@ class FeatureService(BaseNamespaceService[FeatureModel, FeatureServiceCreate]):
         relationships_info = await self.entity_relationship_extractor_service.extract(
             entity_ids=QueryGraph(**prepared_graph.dict(by_alias=True)).get_entity_ids(
                 node_name=prepared_node_name
-            )
+            ),
+            keep_all_descendants=False,
         )
         return FeatureModel(
             **{
