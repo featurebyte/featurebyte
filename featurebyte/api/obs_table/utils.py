@@ -1,7 +1,7 @@
 """
 Observation table utils
 """
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
@@ -49,7 +49,7 @@ def get_definition_for_obs_table_creation_from_view(
     str
     """
 
-    def last_statement_callback(output_var, var_name):
+    def last_statement_callback(output_var: Any, var_name: Any) -> List[Tuple[Any, ExpressionStr]]:
         param_rows = [f'name="{name}"']
         if sample_rows is not None:
             param_rows.append(f"sample_rows={sample_rows}")
