@@ -1,11 +1,13 @@
 """
 Unit test for SourceTable
 """
+import logging
 from unittest.mock import AsyncMock, Mock, patch
 
 import pandas as pd
 import pytest
 
+from featurebyte import get_logger
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.exception import RecordCreationException
@@ -186,12 +188,32 @@ def test_get_or_create_scd_table__create(snowflake_database_table_scd_table):
 
 @pytest.mark.usefixtures("patched_observation_table_service")
 def test_create_observation_table(
-    snowflake_database_table, snowflake_execute_query, catalog, cust_id_entity
+    snowflake_database_table, snowflake_execute_query, catalog, cust_id_entity, mock_log_handler
 ):
     """
     Test creating ObservationTable from SourceTable
     """
     _ = catalog
+
+    # without primary entities
+    from featurebyte.api.source_table import logger
+
+    logger.addHandler(mock_log_handler)
+    logger.setLevel(logging.DEBUG)
+
+    # should not fail but log a warning
+    snowflake_database_table.create_observation_table(
+        "my_observation_table_no_primary_entities",
+        columns=["event_timestamp", "cust_id"],
+        columns_rename_mapping={"event_timestamp": "POINT_IN_TIME"},
+    )
+    assert len(mock_log_handler.records) == 1
+    parts = mock_log_handler.records[0].split("|")
+    assert "|".join(parts[1:]) == (
+        " WARNING  | featurebyte.api.source_table | create_observation_table:1034 | "
+        "Primary entities will be a mandatory parameter in SDK version 0.7."
+    )
+
     observation_table = snowflake_database_table.create_observation_table(
         "my_observation_table",
         columns=["event_timestamp", "cust_id"],

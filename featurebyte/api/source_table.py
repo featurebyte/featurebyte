@@ -1030,6 +1030,8 @@ class SourceTable(AbstractTableData):
         if primary_entities is not None:
             for entity_name in primary_entities:
                 primary_entity_ids.append(Entity.get(entity_name).id)
+        else:
+            logger.warning("Primary entities will be a mandatory parameter in SDK version 0.7.")
 
         payload = ObservationTableCreate(
             name=name,
