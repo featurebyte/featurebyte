@@ -84,7 +84,7 @@ def build_class_with_deps(class_definition: ClassDefinition, instance_map: Dict[
     depend_instances = []
     for s_name in depends:
         depend_instances.append(instance_map[s_name])
-    getter = class_definition.class_
+    getter = class_definition.getter
     # If the getter is a class constructor, call it with the dependencies.
     if isinstance(getter, type):
         return getter(*depend_instances)

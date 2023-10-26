@@ -218,7 +218,7 @@ def get_class_def(key: str, deps: List[str]) -> ClassDefinition:
     """
     return ClassDefinition(
         name=key,
-        class_=TestService,
+        getter=TestService,
         dependencies=deps,
     )
 
