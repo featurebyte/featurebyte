@@ -1,4 +1,5 @@
 """Unit tests for SDK code generation"""
+import pandas as pd
 import pytest
 
 from featurebyte import FeatureJobSetting
@@ -579,5 +580,33 @@ def test_conditional_assign_feature_sdk_code_generation(saved_event_table, trans
     grouped = event_view.as_features(column_names=["col_float"], feature_names=["feat_col_float"])
     feat = grouped["feat_col_float"]
 
-    # check that the feature can be saved without throw graph inconsistency error
+    # check that the feature can be saved without throwing graph inconsistency error
     feat.save()
+
+
+def test_timestamp_filtering_sdk_code_generation(
+    snowflake_event_table_with_entity, feature_group_feature_job_setting, update_fixtures
+):
+    """Test SDK code generation for feature created with timestamp filtering"""
+    event_view = snowflake_event_table_with_entity.get_view()
+    cond = event_view["event_timestamp"] > pd.Timestamp("2001-01-01")
+    filtered_view = event_view[cond]
+    feature = filtered_view.groupby("cust_id").aggregate_over(
+        value_column="col_float",
+        method="sum",
+        windows=["30m"],
+        feature_job_setting=feature_group_feature_job_setting,
+        feature_names=["sum_30m"],
+    )["sum_30m"]
+
+    # check that the feature can be saved without throwing error
+    feature.save()
+
+    check_sdk_code_generation(
+        feature,
+        to_use_saved_data=True,
+        to_format=True,
+        fixture_path="tests/fixtures/sdk_code/feature_with_timestamp_filtering.py",
+        update_fixtures=update_fixtures,
+        table_id=snowflake_event_table_with_entity.id,
+    )

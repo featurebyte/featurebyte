@@ -22,6 +22,7 @@ from featurebyte.query_graph.node.metadata.operation import (
     PostAggregationColumn,
 )
 from featurebyte.query_graph.node.metadata.sdk_code import (
+    ClassEnum,
     CodeGenerationConfig,
     CodeGenerationContext,
     ExpressionStr,
@@ -33,7 +34,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     VarNameExpressionInfo,
     VarNameExpressionStr,
 )
-from featurebyte.query_graph.node.scalar import ValueParameterType
+from featurebyte.query_graph.node.scalar import TimestampValue, ValueParameterType
 from featurebyte.query_graph.util import hash_input_node_hashes
 
 NODE_TYPES = []
@@ -817,11 +818,23 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         input_var_name_expressions = self._assert_no_info_dict(node_inputs)
         left_operand: str = input_var_name_expressions[0].as_input()
-        right_operand: str = ValueStr.create(self.parameters.value).as_input()
+        statements = []
+        if isinstance(self.parameters.value, TimestampValue):
+            timestamp_val = var_name_generator.convert_to_variable_name(
+                variable_name_prefix="timestamp_value",
+                node_name=self.name,
+            )
+            statements.append(
+                (timestamp_val, ClassEnum.PD_TIMESTAMP(self.parameters.value.iso_format_str))
+            )
+            right_operand = timestamp_val
+        else:
+            right_operand = ValueStr.create(self.parameters.value).as_input()
+
         if len(input_var_name_expressions) == 2:
             right_operand = input_var_name_expressions[1].as_input()
         left_operand, right_operand = self._reorder_operands(left_operand, right_operand)
-        return [], ExpressionStr(self.generate_expression(left_operand, right_operand))
+        return statements, ExpressionStr(self.generate_expression(left_operand, right_operand))
 
 
 class BinaryLogicalOpNode(BaseSeriesOutputWithAScalarParamNode):
