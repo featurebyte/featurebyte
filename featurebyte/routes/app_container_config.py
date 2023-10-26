@@ -133,10 +133,14 @@ class AppContainerConfig:
         name_override: str
             name override
         """
-        return_type = get_type_hints(factory_method)["return"]
+        name_to_use = (
+            name_override
+            if name_override is not None
+            else _get_class_name(get_type_hints(factory_method)["return"].__name__)
+        )
         self.classes_with_deps.append(
             ClassDefinition(
-                name=_get_class_name(return_type.__name__, name_override),
+                name=name_to_use,
                 getter=factory_method,
                 dependencies=[],
             )
