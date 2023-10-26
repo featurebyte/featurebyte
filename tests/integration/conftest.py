@@ -1311,7 +1311,7 @@ def temp_storage_fixture():
 
 
 @pytest.fixture(name="mock_app_callbacks", scope="session")
-def mock_app_callbacks(storage, temp_storage):
+def mock_app_callbacks(temp_storage):
     """
     Mock app callbacks: get_credential, get_storage, get_temp_storage
 
