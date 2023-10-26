@@ -23,6 +23,15 @@ class NoDeps:
         self.no_deps = []
 
 
+class TestServiceWithOneDep:
+    """
+    Test service with one dep
+    """
+
+    def __init__(self, no_deps: NoDeps):
+        self.no_deps = no_deps
+
+
 class TestService:
     """
     Test service
@@ -109,6 +118,25 @@ def test_lazy_initialization(test_app_config, app_container_constructor_params):
     assert test_controller is not None
     instance_map = lazy_app_container.instance_map
     assert "test_controller" in instance_map
+
+
+def test_getting_instance_with_factory_method(app_container_constructor_params):
+    """
+    Test retrieving an instance that has a dependency that is constructed via a factory method.
+    """
+    app_container_config = AppContainerConfig()
+
+    def no_deps_factory() -> NoDeps:
+        return NoDeps()
+
+    app_container_config.register_class(TestServiceWithOneDep)
+    app_container_config.register_factory_method(no_deps_factory)
+    app_container = LazyAppContainer(
+        app_container_config=app_container_config,
+        **app_container_constructor_params,
+    )
+    instance = app_container.get(TestServiceWithOneDep)
+    assert instance is not None
 
 
 def test_construction__get_attr(app_container_constructor_params):

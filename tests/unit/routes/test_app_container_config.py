@@ -120,3 +120,18 @@ def test_get_constructor_params_from_class():
     """
     params = _get_constructor_params_from_class(TestClassC)
     assert params == ["test_class_d"]
+
+
+def test_register_factory_method():
+    """
+    Test register_factory_method
+    """
+    config = AppContainerConfig()
+
+    def get_test_class_a() -> TestClassA:
+        return TestClassA()
+
+    config.register_factory_method(get_test_class_a)
+    config.register_class(TestClassB)
+
+    assert len(config.classes_with_deps) == 2
