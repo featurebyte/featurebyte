@@ -1,7 +1,7 @@
 """
 Observation table utils
 """
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
@@ -14,8 +14,8 @@ def get_definition_for_obs_table_creation_from_view(
     node: Node,
     name: str,
     sample_rows: Optional[int] = None,
-    columns: Optional[list[str]] = None,
-    columns_rename_mapping: Optional[dict[str, str]] = None,
+    columns: Optional[List[str]] = None,
+    columns_rename_mapping: Optional[Dict[str, str]] = None,
     context_name: Optional[str] = None,
     skip_entity_validation_checks: Optional[bool] = False,
     primary_entities: Optional[List[str]] = None,
@@ -33,9 +33,9 @@ def get_definition_for_obs_table_creation_from_view(
         The name of the observation table
     sample_rows: Optional[int]
         The number of rows to sample from the view
-    columns: Optional[list[str]]
+    columns: Optional[List[str]]
         The columns to include in the observation table
-    columns_rename_mapping: Optional[dict[str, str]]
+    columns_rename_mapping: Optional[Dict[str, str]]
         The columns to rename in the observation table
     context_name: Optional[str]
         The name of the context to associate the observation table with

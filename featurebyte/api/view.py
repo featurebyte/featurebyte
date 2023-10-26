@@ -68,9 +68,7 @@ from featurebyte.query_graph.node.cleaning_operation import (
 )
 from featurebyte.query_graph.node.generic import JoinMetadata, ProjectNode
 from featurebyte.query_graph.node.input import InputNode
-from featurebyte.query_graph.node.metadata.sdk_code import ExpressionStr, VariableNameStr
 from featurebyte.query_graph.node.nested import BaseGraphNode
-from featurebyte.query_graph.transform.sdk_code import SDKCodeExtractor
 from featurebyte.schema.batch_request_table import BatchRequestTableCreate
 from featurebyte.schema.observation_table import ObservationTableCreate
 from featurebyte.schema.static_source_table import StaticSourceTableCreate
