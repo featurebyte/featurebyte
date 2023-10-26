@@ -91,11 +91,11 @@ class FeatureService(BaseNamespaceService[FeatureModel, FeatureServiceCreate]):
             sanitize_for_definition=sanitize_for_definition,
         )
         # extract entity relationships
-        relationships_info = await self.entity_relationship_extractor_service.extract(
+        extractor = self.entity_relationship_extractor_service
+        relationships_info = await extractor.extract_relationship_from_primary_entity(
             entity_ids=QueryGraph(**prepared_graph.dict(by_alias=True)).get_entity_ids(
                 node_name=prepared_node_name
             ),
-            keep_all_descendants=False,
         )
         return FeatureModel(
             **{
