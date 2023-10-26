@@ -589,7 +589,9 @@ def test_timestamp_filtering_sdk_code_generation(
 ):
     """Test SDK code generation for feature created with timestamp filtering"""
     event_view = snowflake_event_table_with_entity.get_view()
-    cond = event_view["event_timestamp"] > pd.Timestamp("2001-01-01")
+    cond = (event_view["event_timestamp"] > pd.Timestamp("2001-01-01")) & (
+        event_view["event_timestamp"] < pd.Timestamp("2050-01-01")
+    )
     filtered_view = event_view[cond]
     feature = filtered_view.groupby("cust_id").aggregate_over(
         value_column="col_float",

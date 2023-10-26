@@ -12,7 +12,9 @@ event_view = event_table.get_view(
 )
 col = event_view["event_timestamp"]
 timestamp_value = Timestamp("2001-01-01T00:00:00")
-view = event_view[(col > timestamp_value)]
+timestamp_value_1 = Timestamp("2050-01-01T00:00:00")
+col_1 = (col > timestamp_value) & (col < timestamp_value_1)
+view = event_view[col_1]
 grouped = view.groupby(by_keys=["cust_id"], category=None).aggregate_over(
     value_column="col_float",
     method="sum",
