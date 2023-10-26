@@ -59,6 +59,9 @@ class ContextUpdate(BaseDocumentServiceUpdateSchema):
     default_eda_table_id: Optional[PydanticObjectId]
     observation_table_id_to_remove: Optional[PydanticObjectId]
 
+    remove_default_eda_table: Optional[bool]
+    remove_default_preview_table: Optional[bool]
+
     @root_validator(pre=True)
     @classmethod
     def _validate_parameters(cls, values: Dict[str, Any]) -> Dict[str, Any]:

@@ -132,6 +132,36 @@ class UseCaseOrContextMixin(ApiObject):
             allow_update_local=False,
         )
 
+    def remove_default_eda_table(self) -> None:
+        """
+        Remove observation table from the Use Case.
+
+        Examples
+        --------
+        >>> use_case = catalog.get_use_case("use_case")
+        >>> use_case.remove_default_eda_table()  # doctest: +SKIP
+        """
+        self.update(
+            update_payload={"remove_default_eda_table": True, "default_eda_table_id": None},
+            allow_update_local=False,
+        )
+        self.default_eda_table_id = None
+
+    def remove_default_preview_table(self) -> None:
+        """
+        Remove observation table from the Use Case.
+
+        Examples
+        --------
+        >>> use_case = catalog.get_use_case("use_case")
+        >>> use_case.remove_default_preview_table()  # doctest: +SKIP
+        """
+        self.update(
+            update_payload={"remove_default_preview_table": True, "default_preview_table_id": None},
+            allow_update_local=False,
+        )
+        self.default_preview_table_id = None
+
     @typechecked
     def _construct_table_result_df(self, result_dict: List[Dict[str, Any]]) -> pd.DataFrame:
         """
