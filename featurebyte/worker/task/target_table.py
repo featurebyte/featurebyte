@@ -62,18 +62,23 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
         async with self.drop_table_on_error(
             db_session=db_session, table_details=location.table_details, payload=payload
         ):
+            # Graphs and nodes being processed in this task should not be None anymore.
+            graph = payload.graph
+            node_names = payload.node_names
+            assert graph is not None
+            assert node_names is not None
             await self.target_computer.compute(
                 observation_set=observation_set,
                 compute_request=ComputeTargetRequest(
                     feature_store_id=payload.feature_store_id,
-                    graph=payload.graph,
-                    node_names=payload.node_names,
+                    graph=graph,
+                    node_names=node_names,
                     serving_names_mapping=payload.serving_names_mapping,
                     target_id=payload.target_id,
                 ),
                 output_table_details=location.table_details,
             )
-            entity_ids = payload.graph.get_entity_ids(payload.node_names[0])
+            entity_ids = graph.get_entity_ids(node_names[0])
             primary_entity_ids = await self.derive_primary_entity_helper.derive_primary_entity_ids(
                 entity_ids
             )
