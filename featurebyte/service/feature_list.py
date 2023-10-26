@@ -165,7 +165,6 @@ class FeatureListService(
         feature_store_id: Optional[ObjectId] = None
         feature_namespace_ids = set()
         features = []
-        self.feature_list_entity_relationship_validator.reset()
         async for feature in self._feature_iterator(feature_ids=document.feature_ids):
             # retrieve feature from the persistent
             features.append(feature)
@@ -189,12 +188,8 @@ class FeatureListService(
             # store previous feature store id
             feature_store_id = feature.tabular_source.feature_store_id
 
-            # validate entity relationships
-            assert feature.name is not None
-            if feature.relationships_info:
-                await self.feature_list_entity_relationship_validator.validate(
-                    relationships=feature.relationships_info, feature_name=feature.name
-                )
+        # validate entity relationships
+        await self.feature_list_entity_relationship_validator.validate(features=features)
 
         derived_output = {
             "feature_store_id": feature_store_id,

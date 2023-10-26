@@ -1,6 +1,7 @@
 """
 Test entity relationship validator
 """
+# pylint: disable=protected-access
 import pytest
 import pytest_asyncio
 from bson import ObjectId
@@ -165,8 +166,8 @@ async def test_validator__case_1(
     first_relationships = [relationship_grandpa_father, relationship_father_son]
     second_relationships = [relationship_granny_father, relationship_father_son]
     validator = entity_relationship_validator
-    await validator.validate(first_relationships, feature_name="feat1")
-    await validator.validate(second_relationships, feature_name="feat2")
+    await validator._validate(first_relationships, feature_name="feat1")
+    await validator._validate(second_relationships, feature_name="feat2")
 
 
 @pytest.mark.asyncio
@@ -175,8 +176,8 @@ async def test_validator__case_2(
 ):
     """Test validator case 2"""
     validator = entity_relationship_validator
-    await validator.validate([relationship_grandpa_father], feature_name="feat1")
-    await validator.validate([relationship_mother_son], feature_name="feat2")
+    await validator._validate([relationship_grandpa_father], feature_name="feat1")
+    await validator._validate([relationship_mother_son], feature_name="feat2")
 
 
 @pytest.mark.asyncio
@@ -186,7 +187,7 @@ async def test_validator__conflict_case_1(
 ):
     """Test validator conflict case 1"""
     validator = entity_relationship_validator
-    await validator.validate([relationship_grandpa_father], feature_name="feat1")
+    await validator._validate([relationship_grandpa_father], feature_name="feat1")
 
     conflict_relationship = EntityRelationshipInfo(
         relationship_type=RelationshipType.CHILD_PARENT,
@@ -195,7 +196,7 @@ async def test_validator__conflict_case_1(
         relation_table_id=ObjectId(),
     )
     with pytest.raises(EntityRelationshipConflictError) as exc:
-        await validator.validate([conflict_relationship], feature_name="feat2")
+        await validator._validate([conflict_relationship], feature_name="feat2")
 
     expected_msg = (
         "Entity 'grandpa' is an ancestor of 'father' (based on features: ['feat1']) "
@@ -215,8 +216,8 @@ async def test_validator__conflict_case_2(
 ):
     """Test validator conflict case 2"""
     validator = entity_relationship_validator
-    await validator.validate([relationship_grandpa_father], feature_name="feat1")
-    await validator.validate([relationship_father_son], feature_name="feat2")
+    await validator._validate([relationship_grandpa_father], feature_name="feat1")
+    await validator._validate([relationship_father_son], feature_name="feat2")
 
     conflict_relationship = EntityRelationshipInfo(
         relationship_type=RelationshipType.CHILD_PARENT,
@@ -225,7 +226,7 @@ async def test_validator__conflict_case_2(
         relation_table_id=ObjectId(),
     )
     with pytest.raises(EntityRelationshipConflictError) as exc:
-        await validator.validate([conflict_relationship], feature_name="feat3")
+        await validator._validate([conflict_relationship], feature_name="feat3")
 
     expected_msg = (
         "Entity 'grandpa' is an ancestor of 'son' (based on features: ['feat1', 'feat2']) "
@@ -241,7 +242,7 @@ async def test_validator__conflict_case_2(
         relation_table_id=ObjectId(),
     )
     with pytest.raises(EntityRelationshipConflictError) as exc:
-        await validator.validate([conflict_relationship], feature_name="feat3")
+        await validator._validate([conflict_relationship], feature_name="feat3")
 
     expected_msg = (
         "Entity 'father' is an ancestor of 'son' (based on features: ['feat2']) "

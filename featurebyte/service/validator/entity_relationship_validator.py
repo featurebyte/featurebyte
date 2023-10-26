@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from bson import ObjectId
 
 from featurebyte.exception import EntityRelationshipConflictError
-from featurebyte.models.feature import EntityRelationshipInfo
+from featurebyte.models.feature import EntityRelationshipInfo, FeatureModel
 from featurebyte.models.relationship import RelationshipType
 from featurebyte.service.entity import EntityService
 
@@ -32,13 +32,7 @@ class FeatureListEntityRelationshipValidator:
 
     def __init__(self, entity_service: EntityService) -> None:
         self.entity_service = entity_service
-        self.id_to_ancestors: Dict[ObjectId, Set[AncestorData]] = defaultdict(set)
-
-    def reset(self) -> None:
-        """
-        Reset the validator
-        """
-        self.id_to_ancestors = defaultdict(set)
+        self._id_to_ancestors: Dict[ObjectId, Set[AncestorData]] = defaultdict(set)
 
     def _update_ancestor_mapping(
         self, relationship: EntityRelationshipInfo, feature_name: str
@@ -56,9 +50,9 @@ class FeatureListEntityRelationshipValidator:
         if relationship.relationship_type == RelationshipType.CHILD_PARENT:
             entity_id = relationship.entity_id
             parent_entity_id = relationship.related_entity_id
-            self.id_to_ancestors[entity_id].add(AncestorData(parent_entity_id, (feature_name,)))
-            for ancestor in self.id_to_ancestors[parent_entity_id]:
-                self.id_to_ancestors[entity_id].add(
+            self._id_to_ancestors[entity_id].add(AncestorData(parent_entity_id, (feature_name,)))
+            for ancestor in self._id_to_ancestors[parent_entity_id]:
+                self._id_to_ancestors[entity_id].add(
                     AncestorData(
                         ancestor_id=ancestor.ancestor_id,
                         feature_names=ancestor.feature_names + (feature_name,),
@@ -85,7 +79,7 @@ class FeatureListEntityRelationshipValidator:
         """
         if relationship.relationship_type == RelationshipType.CHILD_PARENT:
             # check if the relationship conflicts with existing relationships
-            parent_ancestors = self.id_to_ancestors[relationship.related_entity_id]
+            parent_ancestors = self._id_to_ancestors[relationship.related_entity_id]
             for ancestor in parent_ancestors:
                 if ancestor.ancestor_id == relationship.entity_id:
                     ancestor_feature_names = sorted(set(ancestor.feature_names))
@@ -104,13 +98,13 @@ class FeatureListEntityRelationshipValidator:
 
         self._update_ancestor_mapping(relationship=relationship, feature_name=feature_name)
 
-    async def validate(
+    async def _validate(
         self,
         relationships: List[EntityRelationshipInfo],
         feature_name: str,
     ) -> None:
         """
-        Combine entity relationships
+        Helper to validate entity relationships of a feature
 
         Parameters
         ----------
@@ -121,3 +115,21 @@ class FeatureListEntityRelationshipValidator:
         """
         for relationship in relationships:
             await self._validate_relationship(relationship=relationship, feature_name=feature_name)
+
+    async def validate(self, features: List[FeatureModel]) -> None:
+        """
+        Validate entity relationships of features
+
+        Parameters
+        ----------
+        features: List[FeatureModel]
+            List of Feature model
+        """
+        self._id_to_ancestors = defaultdict(set)
+        for feature in features:
+            if feature.relationships_info:
+                assert feature.name is not None
+                await self._validate(
+                    relationships=feature.relationships_info,
+                    feature_name=feature.name,
+                )
