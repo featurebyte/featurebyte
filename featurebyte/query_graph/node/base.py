@@ -818,7 +818,8 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         input_var_name_expressions = self._assert_no_info_dict(node_inputs)
         left_operand: str = input_var_name_expressions[0].as_input()
-        statements = []
+        statements: List[StatementT] = []
+        right_operand: Union[str, VariableNameStr]
         if isinstance(self.parameters.value, TimestampValue):
             timestamp_val = var_name_generator.convert_to_variable_name(
                 variable_name_prefix="timestamp_value",
