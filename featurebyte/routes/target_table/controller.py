@@ -6,8 +6,10 @@ from __future__ import annotations
 from typing import Any, Optional
 
 import pandas as pd
+from fastapi import UploadFile
 
 from featurebyte.models.target_table import TargetTableModel
+from featurebyte.models.task import Task
 from featurebyte.routes.common.feature_or_target_table import (
     FeatureOrTargetTableController,
     ValidationParameters,
@@ -84,3 +86,16 @@ class TargetTableController(
     async def get_additional_info_params(self, document: TargetTableModel) -> dict[str, Any]:
         target = await self.target_service.get_document(document.target_id)
         return {"target_name": target.name}
+
+    async def create_table(
+        self,
+        data: TargetTableCreate,
+        observation_set: Optional[UploadFile],
+    ) -> Task:
+        if data.graph is None:
+            data_dict = data.dict()
+            target_doc = await self.target_service.get_document(data.target_id)
+            data_dict["graph"] = target_doc.graph
+            data_dict["node_names"] = [target_doc.node_name]
+            data = TargetTableCreate(**data_dict)
+        return await super().create_table(data=data, observation_set=observation_set)

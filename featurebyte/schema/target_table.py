@@ -23,9 +23,9 @@ class TargetTableCreate(FeatureOrTargetTableCreate):
     """
 
     serving_names_mapping: Optional[Dict[str, str]]
-    target_id: Optional[PydanticObjectId]
-    graph: QueryGraph
-    node_names: List[StrictStr]
+    target_id: PydanticObjectId
+    graph: Optional[QueryGraph]
+    node_names: Optional[List[StrictStr]]
     request_input: ObservationInput
     context_id: Optional[PydanticObjectId]
     skip_entity_validation_checks: bool = Field(default=False)
