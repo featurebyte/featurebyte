@@ -58,7 +58,7 @@ def get_definition_for_obs_table_creation_from_view(
         if columns_rename_mapping is not None:
             param_rows.append(f"columns_rename_mapping={columns_rename_mapping}")
         if context_name is not None:
-            param_rows.append(f"context_name={context_name}")
+            param_rows.append(f'context_name="{context_name}"')
         if skip_entity_validation_checks:
             param_rows.append(f"skip_entity_validation_checks={skip_entity_validation_checks}")
         if primary_entities is not None:

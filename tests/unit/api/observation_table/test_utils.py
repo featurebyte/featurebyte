@@ -42,7 +42,7 @@ def test_get_definition_for_obs_table_creation_from_view(catalog, snowflake_even
         sample_rows=100,
         columns=["event_id", "event_name"],
         columns_rename_mapping={{"event_id": "id"}},
-        context_name=test_context,
+        context_name="test_context",
         skip_entity_validation_checks=True,
         primary_entities=["event_id"],
     )
