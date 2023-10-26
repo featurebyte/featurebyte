@@ -104,6 +104,15 @@ def test_update_context(catalog, cust_id_entity, target_table):
     assert len(obs_tables) == 1
     assert obs_tables.iloc[0]["name"] == target_table.name
 
+    # test remove default table
+    context.remove_default_eda_table()
+    retrieved_context = Context.get_by_id(context.id)
+    assert retrieved_context.default_eda_table is None
+
+    context.remove_default_preview_table()
+    retrieved_context = Context.get_by_id(context.id)
+    assert retrieved_context.default_preview_table is None
+
 
 def test_info(context_1, float_target, target_table, cust_id_entity):
     """

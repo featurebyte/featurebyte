@@ -3,7 +3,7 @@ Use Case API payload schema
 """
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field, StrictStr, root_validator
+from pydantic import Field, StrictStr, root_validator
 
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.use_case import UseCaseModel
@@ -41,6 +41,9 @@ class UseCaseUpdate(BaseDocumentServiceUpdateSchema):
     default_eda_table_id: Optional[PydanticObjectId]
     observation_table_id_to_remove: Optional[PydanticObjectId]
 
+    remove_default_eda_table: Optional[bool]
+    remove_default_preview_table: Optional[bool]
+
     @root_validator(pre=True)
     @classmethod
     def _validate_input(cls, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -71,12 +74,3 @@ class UseCaseList(PaginationMixin):
     """
 
     data: List[UseCaseModel]
-
-
-class UseCaseRemoveDefaultTable(BaseModel):
-    """
-    Default Table Removal schema for use case
-    """
-
-    remove_default_eda_table: Optional[bool]
-    remove_default_preview_table: Optional[bool]

@@ -362,13 +362,7 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
         >>> use_case = catalog.get_use_case("use_case")
         >>> use_case.remove_default_eda_table()  # doctest: +SKIP
         """
-        self.update(
-            update_payload={"remove_default_eda_table": True},
-            url=f"{self._route}/{self.id}/default_table",
-            skip_update_schema_check=True,
-            allow_update_local=False,
-        )
-        self.default_eda_table_id = None
+        super().remove_default_eda_table()
 
     def remove_default_preview_table(self) -> None:
         """
@@ -379,13 +373,7 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
         >>> use_case = catalog.get_use_case("use_case")
         >>> use_case.remove_default_preview_table()  # doctest: +SKIP
         """
-        self.update(
-            update_payload={"remove_default_preview_table": True},
-            url=f"{self._route}/{self.id}/default_table",
-            skip_update_schema_check=True,
-            allow_update_local=False,
-        )
-        self.default_preview_table_id = None
+        super().remove_default_preview_table()
 
     def list_observation_tables(self) -> pd.DataFrame:
         """

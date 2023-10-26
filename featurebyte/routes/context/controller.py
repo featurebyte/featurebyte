@@ -136,9 +136,34 @@ class ContextController(
                 data=ObservationTableUpdate(context_id_to_remove=context_id),
             )
 
+        if data.remove_default_preview_table:
+            context = await self.get(document_id=context_id)
+            if not context.default_preview_table_id:
+                raise ObservationTableInvalidContextError(
+                    "Context does not have a default preview table"
+                )
+
+            await self.service.update_documents(
+                query_filter={"_id": context_id},
+                update={"$set": {"default_preview_table_id": None}},
+            )
+
+        if data.remove_default_eda_table:
+            context = await self.get(document_id=context_id)
+            if not context.default_eda_table_id:
+                raise ObservationTableInvalidContextError(
+                    "Context does not have a default eda table"
+                )
+
+            await self.service.update_documents(
+                query_filter={"_id": context_id},
+                update={"$set": {"default_eda_table_id": None}},
+            )
+
         await self.service.update_document(
             document_id=context_id, data=ContextUpdate(**data.dict()), return_document=False
         )
+
         return await self.get(document_id=context_id)
 
     async def service_and_query_pairs_for_checking_reference(

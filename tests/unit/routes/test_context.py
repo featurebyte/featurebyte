@@ -467,3 +467,64 @@ class TestContextApi(BaseCatalogApiTestSuite):
             response.json()["detail"]
             == "Cannot update Context as the primary_entity_ids are different from existing primary_entity_ids."
         )
+
+    @pytest.mark.asyncio
+    async def test_remove_default_table(
+        self, test_api_client_persistent, create_success_response, create_observation_table
+    ):
+        """Test delete observation_table (fail) that is already associated with a context"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        context_id = create_response_dict["_id"]
+
+        new_ob_table_id = ObjectId()
+        await create_observation_table(
+            new_ob_table_id,
+            context_id=context_id,
+        )
+
+        # test create and remove default preview table
+        response = test_api_client.patch(
+            f"{self.base_route}/{context_id}",
+            json={
+                "default_preview_table_id": str(new_ob_table_id),
+            },
+        )
+        assert response.status_code == HTTPStatus.OK
+        response = test_api_client.get(f"{self.base_route}/{context_id}")
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["default_preview_table_id"] == str(new_ob_table_id)
+
+        response = test_api_client.patch(
+            f"{self.base_route}/{context_id}",
+            json={
+                "remove_default_preview_table": True,
+            },
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        response = test_api_client.get(f"{self.base_route}/{context_id}")
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["default_preview_table_id"] is None
+
+        # test create and remove default eda table
+        response = test_api_client.patch(
+            f"{self.base_route}/{context_id}",
+            json={
+                "default_eda_table_id": str(new_ob_table_id),
+            },
+        )
+        assert response.status_code == HTTPStatus.OK
+        response = test_api_client.get(f"{self.base_route}/{context_id}")
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["default_eda_table_id"] == str(new_ob_table_id)
+
+        response = test_api_client.patch(
+            f"{self.base_route}/{context_id}",
+            json={
+                "remove_default_eda_table": True,
+            },
+        )
+        assert response.status_code == HTTPStatus.OK
+        response = test_api_client.get(f"{self.base_route}/{context_id}")
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["default_eda_table_id"] is None

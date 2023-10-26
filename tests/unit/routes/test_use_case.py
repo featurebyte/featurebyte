@@ -665,7 +665,7 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         assert response.json()["default_preview_table_id"] == str(new_ob_table_id)
 
         response = test_api_client.patch(
-            f"{self.base_route}/{use_case_id}/default_table",
+            f"{self.base_route}/{use_case_id}",
             json={
                 "remove_default_preview_table": True,
             },
@@ -688,7 +688,7 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         assert response.json()["default_eda_table_id"] == str(new_ob_table_id)
 
         response = test_api_client.patch(
-            f"{self.base_route}/{use_case_id}/default_table",
+            f"{self.base_route}/{use_case_id}",
             json={
                 "remove_default_eda_table": True,
             },
