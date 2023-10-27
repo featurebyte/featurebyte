@@ -55,3 +55,34 @@ class TestTargetNamespaceApi(BaseCatalogApiTestSuite):
             target_payload["_id"] = str(ObjectId())
             target_payload["name"] = f'{target_payload["name"]}_{i}'
             yield target_payload
+
+    def test_delete_target_namespace(self, test_api_client_persistent, create_success_response):
+        """Test delete target namespace"""
+        test_api_client, _ = test_api_client_persistent
+        target_namespace_id = create_success_response.json()["_id"]
+        response = test_api_client.delete(f"/target_namespace/{target_namespace_id}")
+        assert response.status_code == HTTPStatus.OK, response.json()
+
+    def test_delete_target_namespace_referenced_in_use_case(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test delete target namespace referenced in use case"""
+        test_api_client, _ = test_api_client_persistent
+        target_namespace_id = create_success_response.json()["_id"]
+        api_object_filename_pairs = [
+            ("context", "context"),
+            ("use_case", "use_case"),
+        ]
+        for api_object, filename in api_object_filename_pairs:
+            payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
+            if api_object == "use_case":
+                payload["target_namespace_id"] = target_namespace_id
+                payload["target_id"] = None
+            response = test_api_client.post(f"/{api_object}", json=payload)
+            assert response.status_code == HTTPStatus.CREATED, response.json()
+
+        response = test_api_client.delete(f"/target_namespace/{target_namespace_id}")
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert (
+            response.json()["detail"] == "TargetNamespace is referenced by UseCase: test_use_case "
+        )
