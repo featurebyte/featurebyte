@@ -29,6 +29,8 @@ class ViewObservationInput(ViewRequestInput):
     ViewObservationInput is a ViewRequestInput that is used to create an ObservationTableModel
     """
 
+    definition: Optional[str] = Field(default=None)
+
 
 class SourceTableObservationInput(SourceTableRequestInput):
     """

@@ -30,6 +30,7 @@ from featurebyte.api.batch_request_table import BatchRequestTable
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_group import FeatureGroup
+from featurebyte.api.obs_table.utils import get_definition_for_obs_table_creation_from_view
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.static_source_table import StaticSourceTable
 from featurebyte.api.target import Target
@@ -1720,7 +1721,17 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
                 primary_entity_ids.append(Entity.get(entity_name).id)
 
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
-
+        definition = get_definition_for_obs_table_creation_from_view(
+            pruned_graph,
+            mapped_node,
+            name,
+            sample_rows,
+            columns,
+            columns_rename_mapping,
+            context_name,
+            skip_entity_validation_checks,
+            primary_entities,
+        )
         payload = ObservationTableCreate(
             name=name,
             feature_store_id=self.feature_store.id,
@@ -1729,6 +1740,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
                 node_name=mapped_node.name,
                 columns=columns,
                 columns_rename_mapping=columns_rename_mapping,
+                definition=definition,
             ),
             sample_rows=sample_rows,
             context_id=context_id,
