@@ -3,7 +3,7 @@ Unit test for Context class
 """
 import pytest
 
-from featurebyte import Context, UseCase
+from featurebyte import Context, TargetNamespace, UseCase
 
 
 @pytest.fixture(name="context_1")
@@ -119,9 +119,11 @@ def test_info(context_1, float_target, target_table, cust_id_entity):
     Test Context.info method
     """
 
+    target_namespace = TargetNamespace.get(float_target.name)
     use_case = UseCase(
         name="test_use_case",
         target_id=float_target.id,
+        target_namespace_id=target_namespace.id,
         context_id=context_1.id,
         description="test_use_case description",
     )
