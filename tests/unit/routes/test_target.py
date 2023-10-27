@@ -282,6 +282,9 @@ class TestTargetApi(BaseCatalogApiTestSuite):
     async def test_creating_target_table_with_just_target_id(
         self, test_api_client_persistent, create_success_response, create_observation_table
     ):
+        """
+        Test that we can create a target table without a graph and node_names, but with just the target id.
+        """
         test_api_client, _ = test_api_client_persistent
         target = create_success_response.json()
         # Create an observation table
