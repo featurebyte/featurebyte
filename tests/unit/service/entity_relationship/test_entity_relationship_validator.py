@@ -3,13 +3,11 @@ Test entity relationship validator
 """
 # pylint: disable=protected-access
 import pytest
-import pytest_asyncio
 from bson import ObjectId
 
 from featurebyte.exception import EntityRelationshipConflictError
 from featurebyte.models.feature import EntityRelationshipInfo
 from featurebyte.models.relationship import RelationshipType
-from featurebyte.schema.entity import EntityCreate
 from featurebyte.service.validator.entity_relationship_validator import (
     FeatureListEntityRelationshipValidator,
 )
@@ -21,138 +19,6 @@ def entity_relationship_validator_fixture(entity_service):
     Get entity relationship validator
     """
     return FeatureListEntityRelationshipValidator(entity_service)
-
-
-@pytest_asyncio.fixture(name="son_entity_id")
-async def son_entity_id_fixture(entity_service):
-    """
-    Get son entity ID
-    """
-    entity_id = ObjectId("653878db7b71f90acc09311d")
-    await entity_service.create_document(
-        data=EntityCreate(
-            _id=entity_id,
-            name="son",
-            serving_name="son",
-        )
-    )
-    return entity_id
-
-
-@pytest_asyncio.fixture(name="father_entity_id")
-async def father_entity_id_fixture(entity_service):
-    """
-    Get father entity ID
-    """
-    entity_id = ObjectId("653878db7b71f90acc09311a")
-    await entity_service.create_document(
-        data=EntityCreate(
-            _id=entity_id,
-            name="father",
-            serving_name="father",
-        )
-    )
-    return entity_id
-
-
-@pytest_asyncio.fixture(name="mother_entity_id")
-async def mother_entity_id_fixture(entity_service):
-    """
-    Get mother entity ID
-    """
-    entity_id = ObjectId("653878db7b71f90acc09312a")
-    await entity_service.create_document(
-        data=EntityCreate(
-            _id=entity_id,
-            name="mother",
-            serving_name="mother",
-        )
-    )
-    return entity_id
-
-
-@pytest_asyncio.fixture(name="grandpa_entity_id")
-async def grandpa_entity_id_fixture(entity_service):
-    """
-    Get grandpa entity ID
-    """
-    entity_id = ObjectId("653878db7b71f90acc09311b")
-    await entity_service.create_document(
-        data=EntityCreate(
-            _id=entity_id,
-            name="grandpa",
-            serving_name="grandpa",
-        )
-    )
-    return entity_id
-
-
-@pytest_asyncio.fixture(name="granny_entity_id")
-async def granny_entity_id_fixture(entity_service):
-    """
-    Get granny entity ID
-    """
-    entity_id = ObjectId("653878db7b71f90acc09311c")
-    await entity_service.create_document(
-        data=EntityCreate(
-            _id=entity_id,
-            name="granny",
-            serving_name="granny",
-        )
-    )
-    return entity_id
-
-
-@pytest.fixture(name="relationship_grandpa_father")
-def relationship_grandpa_father_fixture(father_entity_id, grandpa_entity_id):
-    """
-    Get a relationship between father and grandpa
-    """
-    return EntityRelationshipInfo(
-        relationship_type=RelationshipType.CHILD_PARENT,
-        entity_id=father_entity_id,
-        related_entity_id=grandpa_entity_id,
-        relation_table_id=ObjectId("653878db7b71f90acc09311e"),
-    )
-
-
-@pytest.fixture(name="relationship_granny_father")
-def relationship_granny_father_fixture(father_entity_id, granny_entity_id):
-    """
-    Get a relationship between father and granny
-    """
-    return EntityRelationshipInfo(
-        relationship_type=RelationshipType.CHILD_PARENT,
-        entity_id=father_entity_id,
-        related_entity_id=granny_entity_id,
-        relation_table_id=ObjectId("653878db7b71f90acc09311f"),
-    )
-
-
-@pytest.fixture(name="relationship_father_son")
-def relationship_father_son_fixture(son_entity_id, father_entity_id):
-    """
-    Get a relationship between son and father
-    """
-    return EntityRelationshipInfo(
-        relationship_type=RelationshipType.CHILD_PARENT,
-        entity_id=son_entity_id,
-        related_entity_id=father_entity_id,
-        relation_table_id=ObjectId("653878db7b71f90acc093120"),
-    )
-
-
-@pytest.fixture(name="relationship_mother_son")
-def relationship_mother_son_fixture(son_entity_id, mother_entity_id):
-    """
-    Get a relationship between son and mother
-    """
-    return EntityRelationshipInfo(
-        relationship_type=RelationshipType.CHILD_PARENT,
-        entity_id=son_entity_id,
-        related_entity_id=mother_entity_id,
-        relation_table_id=ObjectId("653878db7b71f90acc093121"),
-    )
 
 
 @pytest.mark.asyncio

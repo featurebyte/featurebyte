@@ -83,6 +83,12 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
     user_defined_function_ids: List[PydanticObjectId] = Field(
         allow_mutation=False, default_factory=list
     )
+
+    # relationship info contains the bare enough entity relationship information between all the entities
+    # for example, if there are following entity relationship (child -> parent):
+    # transaction -> order -> customer -> city -> state
+    # if the feature uses order & city entities, the relationship info will be (order -> customer -> city)
+    # transaction and state will not be included as they are not used by the feature.
     relationships_info: Optional[List[EntityRelationshipInfo]] = Field(
         allow_mutation=False, default=None
     )
