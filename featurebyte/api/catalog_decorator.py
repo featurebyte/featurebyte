@@ -5,7 +5,10 @@ from typing import Any
 
 from functools import wraps
 
+from featurebyte.logging import get_logger
 from featurebyte.models.base import activate_catalog, get_active_catalog_id
+
+logger = get_logger(__name__)
 
 
 def update_and_reset_catalog(func: Any) -> Any:
@@ -36,6 +39,15 @@ def update_and_reset_catalog(func: Any) -> Any:
         # If the catalog is already active, just call the function
         if self.id == active_catalog_id:
             return func(self, *args, **kwargs)
+        # Log when the active catalog is not the same as the catalog of the object being queried from.
+        # This is done to try to prevent common user error where users view objects from a catalog, thinking that
+        # it is the current active catalog.
+        # We check for None because we some of our setup scripts call a bunch of functions before a catalog is active
+        # to do some cleanup. We don't want to log a warning in that case as it's noisy.
+        if active_catalog_id is not None:
+            logger.info(
+                f"NOTE: the data you are looking at is _not_ from the current active catalog (id: {active_catalog_id})"
+            )
         # Activate catalog of object
         activate_catalog(self.id)
         try:
