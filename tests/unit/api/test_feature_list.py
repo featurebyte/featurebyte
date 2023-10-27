@@ -1361,6 +1361,27 @@ def test_create_new_version__no_new_version_created(saved_feature_list):
     assert feature_list.id == saved_feature_list.id
 
 
+def create_feature_with_multiple_entity_relationships(event_view, feature_name):
+    """Create a feature with multiple entity relationships"""
+    feat_components = []
+    for group_by_key in ["col_int", "cust_id"]:
+        feat_name = f"sum_1d_{group_by_key}"
+        feat_component = event_view.groupby(group_by_key).aggregate_over(
+            value_column="col_float",
+            method="sum",
+            windows=["1d"],
+            feature_names=[feat_name],
+            feature_job_setting=FeatureJobSetting(
+                blind_spot="75m", frequency="30m", time_modulo_frequency="15m"
+            ),
+        )[feat_name]
+        feat_components.append(feat_component)
+
+    feat = feat_components[0] + feat_components[1]
+    feat.name = feature_name
+    return feat
+
+
 def test_feature_list_entity_relationship_validation(
     snowflake_event_table_with_entity,
     cust_id_entity,
@@ -1369,13 +1390,7 @@ def test_feature_list_entity_relationship_validation(
 ):
     """Test feature list entity relationship validation"""
     event_view = snowflake_event_table_with_entity.get_view()
-    feat = event_view.groupby("col_int").aggregate_over(
-        value_column="col_float",
-        method="sum",
-        windows=["1d"],
-        feature_names=["sum_1d"],
-        feature_job_setting=arbitrary_default_feature_job_setting,
-    )["sum_1d"]
+    feat = create_feature_with_multiple_entity_relationships(event_view, "sum_1d")
     feat.save()
     relationships_info = feat.cached_model.relationships_info
     assert len(relationships_info) == 1
@@ -1390,15 +1405,7 @@ def test_feature_list_entity_relationship_validation(
 
     # construct another feature
     event_view = snowflake_event_table_with_entity.get_view()
-    another_feat = event_view.groupby("col_int").aggregate_over(
-        value_column="col_float",
-        method="sum",
-        windows=["30m"],
-        feature_names=["another_feature"],
-        feature_job_setting=arbitrary_default_feature_job_setting,
-    )["another_feature"]
-
-    # save the feature
+    another_feat = create_feature_with_multiple_entity_relationships(event_view, "another_feature")
     another_feat.save()
     relationships_info = another_feat.cached_model.relationships_info
     assert len(relationships_info) == 1

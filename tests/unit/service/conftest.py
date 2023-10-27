@@ -496,7 +496,7 @@ async def scd_table_fixture(test_dir, feature_store, scd_table_service):
 
 
 @pytest.fixture(name="feature_factory")
-def feature_factory_fixture(test_dir, feature_service):
+def feature_factory_fixture(test_dir, feature_service, entity_service):
     """
     Feature factory
 
@@ -505,6 +505,13 @@ def feature_factory_fixture(test_dir, feature_service):
     """
 
     async def factory():
+        # save entity used in feature
+        fixture_path = os.path.join(test_dir, "fixtures/request_payloads/entity.json")
+        with open(fixture_path, encoding="utf") as fhandle:
+            payload = json.loads(fhandle.read())
+            await entity_service.create_document(data=EntityCreate(**payload))
+
+        # save feature
         fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_sum_30m.json")
         with open(fixture_path, encoding="utf") as fhandle:
             payload = json.loads(fhandle.read())
