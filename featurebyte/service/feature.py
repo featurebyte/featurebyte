@@ -21,7 +21,7 @@ from featurebyte.schema.feature_namespace import (
     FeatureNamespaceCreate,
     FeatureNamespaceServiceUpdate,
 )
-from featurebyte.service.base_namespace_service import BaseNamespaceService
+from featurebyte.service.base_feature_service import BaseFeatureService
 from featurebyte.service.entity_relationship_extractor import EntityRelationshipExtractorService
 from featurebyte.service.entity_serving_names import EntityServingNamesService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
@@ -32,7 +32,7 @@ from featurebyte.service.namespace_handler import (
 from featurebyte.service.table import TableService
 
 
-class FeatureService(BaseNamespaceService[FeatureModel, FeatureServiceCreate]):
+class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
     """
     FeatureService class
     """
@@ -44,24 +44,24 @@ class FeatureService(BaseNamespaceService[FeatureModel, FeatureServiceCreate]):
         user: Any,
         persistent: Persistent,
         catalog_id: Optional[ObjectId],
+        block_modification_handler: BlockModificationHandler,
+        entity_relationship_extractor_service: EntityRelationshipExtractorService,
         table_service: TableService,
         feature_namespace_service: FeatureNamespaceService,
         namespace_handler: NamespaceHandler,
-        block_modification_handler: BlockModificationHandler,
         entity_serving_names_service: EntityServingNamesService,
-        entity_relationship_extractor_service: EntityRelationshipExtractorService,
     ):
         super().__init__(
             user=user,
             persistent=persistent,
             catalog_id=catalog_id,
             block_modification_handler=block_modification_handler,
+            entity_relationship_extractor_service=entity_relationship_extractor_service,
         )
         self.table_service = table_service
         self.feature_namespace_service = feature_namespace_service
         self.namespace_handler = namespace_handler
         self.entity_serving_names_service = entity_serving_names_service
-        self.entity_relationship_extractor_service = entity_relationship_extractor_service
 
     async def prepare_feature_model(
         self, data: FeatureServiceCreate, sanitize_for_definition: bool
@@ -90,20 +90,17 @@ class FeatureService(BaseNamespaceService[FeatureModel, FeatureServiceCreate]):
             node=node,
             sanitize_for_definition=sanitize_for_definition,
         )
-        # extract entity relationships
-        extractor = self.entity_relationship_extractor_service
-        relationships_info = await extractor.extract_relationship_from_primary_entity(
-            entity_ids=QueryGraph(**prepared_graph.dict(by_alias=True)).get_entity_ids(
-                node_name=prepared_node_name
-            ),
+        derived_data = await self.extract_derived_data(
+            graph=prepared_graph, node_name=prepared_node_name
         )
+
         return FeatureModel(
             **{
                 **data_dict,
                 "graph": prepared_graph,
                 "node_name": prepared_node_name,
+                "relationships_info": derived_data.relationships_info,
                 "readiness": FeatureReadiness.DRAFT,
-                "relationships_info": relationships_info,
                 "version": await self.get_document_version(data.name),
                 "user_id": self.user.id,
                 "catalog_id": self.catalog_id,
