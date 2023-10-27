@@ -3,15 +3,24 @@ Test observation table utils
 """
 import textwrap
 
-from featurebyte import get_version
+from featurebyte import Context, get_version
 from featurebyte.api.obs_table.utils import get_definition_for_obs_table_creation_from_view
 
 
-def test_get_definition_for_obs_table_creation_from_view(catalog, snowflake_event_table):
+def test_get_definition_for_obs_table_creation_from_view(
+    catalog,
+    snowflake_event_table,
+    cust_id_entity,
+    patched_observation_table_service,
+    snowflake_execute_query_for_materialized_table,
+):
     """
     Test get_definition_for_obs_table_creation_from_view
     """
-    _ = catalog
+    _ = catalog, patched_observation_table_service, snowflake_execute_query_for_materialized_table
+    entity_names = [cust_id_entity.name]
+    context = Context.create(name="test_context", primary_entity=entity_names)
+
     view = snowflake_event_table.get_view()
     pruned_graph, mapped_node = view.extract_pruned_graph_and_node()
     definition = get_definition_for_obs_table_creation_from_view(
@@ -19,11 +28,11 @@ def test_get_definition_for_obs_table_creation_from_view(catalog, snowflake_even
         node=mapped_node,
         name="test_obs_table",
         sample_rows=100,
-        columns=["event_id", "event_name"],
-        columns_rename_mapping={"event_id": "id"},
-        context_name="test_context",
+        columns=["cust_id", "col_float"],
+        columns_rename_mapping={"cust_id": "id"},
+        context_name=context.name,
         skip_entity_validation_checks=True,
-        primary_entities=["event_id"],
+        primary_entities=[cust_id_entity.name],
     )
     version = get_version()
     expected_definition = f"""
@@ -40,11 +49,17 @@ def test_get_definition_for_obs_table_creation_from_view(catalog, snowflake_even
     output = event_view.create_observation_table(
         name="test_obs_table",
         sample_rows=100,
-        columns=["event_id", "event_name"],
-        columns_rename_mapping={{"event_id": "id"}},
+        columns=["cust_id", "col_float"],
+        columns_rename_mapping={{"cust_id": "id"}},
         context_name="test_context",
         skip_entity_validation_checks=True,
-        primary_entities=["event_id"],
+        primary_entities=["customer"],
     )
     """
     assert textwrap.dedent(definition).strip() == textwrap.dedent(expected_definition).strip()
+
+    # Try to run the code to test that it works
+    local_vars = {}
+    exec(definition, {}, local_vars)  # pylint: disable=exec-used
+    observation_table = local_vars["output"]
+    assert observation_table.name == "test_obs_table"
