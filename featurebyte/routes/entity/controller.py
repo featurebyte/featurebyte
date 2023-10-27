@@ -18,6 +18,7 @@ from featurebyte.service.catalog import CatalogService
 from featurebyte.service.context import ContextService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature import FeatureService
+from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.relationship import EntityRelationshipService
@@ -47,6 +48,7 @@ class EntityController(BaseDocumentController[EntityModel, EntityService, Entity
         batch_feature_table_service: BatchFeatureTableService,
         feature_service: FeatureService,
         target_service: TargetService,
+        feature_list_service: FeatureListService,
     ):
         super().__init__(entity_service)
         self.relationship_service = entity_relationship_service
@@ -59,6 +61,7 @@ class EntityController(BaseDocumentController[EntityModel, EntityService, Entity
         self.batch_feature_table_service = batch_feature_table_service
         self.feature_service = feature_service
         self.target_service = target_service
+        self.feature_list_service = feature_list_service
 
     async def create_entity(
         self,
@@ -108,8 +111,35 @@ class EntityController(BaseDocumentController[EntityModel, EntityService, Entity
         self, document_id: ObjectId
     ) -> List[Tuple[Any, QueryFilter]]:
         return [
-            (self.feature_service, {"entity_ids": document_id}),
-            (self.target_service, {"entity_ids": document_id}),
+            (
+                self.feature_service,
+                {
+                    "$or": [
+                        {"entity_ids": document_id},
+                        {"relationships_info.entity_id": document_id},
+                        {"relationships_info.related_entity_id": document_id},
+                    ]
+                },
+            ),
+            (
+                self.target_service,
+                {
+                    "$or": [
+                        {"entity_ids": document_id},
+                        {"relationships_info.entity_id": document_id},
+                        {"relationships_info.related_entity_id": document_id},
+                    ]
+                },
+            ),
+            (
+                self.feature_list_service,
+                {
+                    "$or": [
+                        {"relationships_info.entity_id": document_id},
+                        {"relationships_info.related_entity_id": document_id},
+                    ]
+                },
+            ),
             (self.context_service, {"primary_entity_ids": document_id}),
             (self.table_service, {"columns_info.entity_id": document_id}),
             (self.observation_table_service, {"columns_info.entity_id": document_id}),

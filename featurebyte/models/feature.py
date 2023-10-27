@@ -350,6 +350,7 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
             pymongo.operations.IndexModel("table_ids"),
             pymongo.operations.IndexModel("primary_table_ids"),
             pymongo.operations.IndexModel("user_defined_function_ids"),
+            pymongo.operations.IndexModel("relationships_info"),
             pymongo.operations.IndexModel(
                 [
                     ("name", pymongo.TEXT),

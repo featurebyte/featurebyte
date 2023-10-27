@@ -22,11 +22,13 @@ from featurebyte.service.dimension_table import DimensionTableService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_table import EventTableService
 from featurebyte.service.feature import FeatureService
+from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.item_table import ItemTableService
 from featurebyte.service.scd_table import SCDTableService
 from featurebyte.service.semantic import SemanticService
 from featurebyte.service.table_columns_info import TableDocumentService
 from featurebyte.service.table_facade import TableFacadeService
+from featurebyte.service.target import TargetService
 
 TableDocumentT = TypeVar(
     "TableDocumentT", EventTableModel, ItemTableModel, DimensionTableModel, SCDTableModel
@@ -59,12 +61,16 @@ class BaseTableDocumentController(
         semantic_service: SemanticService,
         entity_service: EntityService,
         feature_service: FeatureService,
+        target_service: TargetService,
+        feature_list_service: FeatureListService,
     ):
         super().__init__(service)  # type: ignore[arg-type]
         self.table_facade_service = table_facade_service
         self.semantic_service = semantic_service
         self.entity_service = entity_service
         self.feature_service = feature_service
+        self.target_service = target_service
+        self.feature_list_service = feature_list_service
 
     async def _get_column_semantic_map(self, document: TableDocumentT) -> dict[str, Any]:
         """
@@ -315,5 +321,26 @@ class BaseTableDocumentController(
     ) -> List[Tuple[Any, QueryFilter]]:
         return [
             (self.entity_service, {"primary_table_ids": document_id}),
-            (self.feature_service, {"table_ids": document_id}),
+            (
+                self.feature_service,
+                {
+                    "$or": [
+                        {"table_ids": document_id},
+                        {"relationships_info.relation_table_id": document_id},
+                    ]
+                },
+            ),
+            (
+                self.target_service,
+                {
+                    "$or": [
+                        {"table_ids": document_id},
+                        {"relationships_info.relation_table_id": document_id},
+                    ]
+                },
+            ),
+            (
+                self.feature_list_service,
+                {"relationships_info.relation_table_id": document_id},
+            ),
         ]
