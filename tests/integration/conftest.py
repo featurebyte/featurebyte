@@ -1310,25 +1310,11 @@ def temp_storage_fixture():
     yield LocalTempStorage()
 
 
-@pytest.fixture(name="mock_app_callbacks", scope="session")
-def mock_app_callbacks(temp_storage):
-    """
-    Mock app callbacks: get_credential, get_storage, get_temp_storage
-
-    This fixture is used such that these callbacks are consistent with those used in
-    mock_task_manager.
-    """
-    with mock.patch("featurebyte.app.get_temp_storage") as mock_get_temp_storage:
-        mock_get_temp_storage.return_value = temp_storage
-        yield
-
-
 @pytest.fixture(autouse=True, scope="module")
-def mock_task_manager(request, persistent, storage, temp_storage, mock_app_callbacks):
+def mock_task_manager(request, persistent, storage, temp_storage):
     """
     Mock celery task manager for testing
     """
-    _ = mock_app_callbacks
     if request.module.__name__ == "test_task_manager":
         yield
     else:

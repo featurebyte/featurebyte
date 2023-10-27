@@ -10,7 +10,6 @@ from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.routes.app_container_config import AppContainerConfig, ClassDefinition
 from featurebyte.routes.lazy_app_container import LazyAppContainer, get_all_deps_for_key
 from featurebyte.utils.persistent import MongoDBImpl
-from featurebyte.utils.storage import get_temp_storage
 from featurebyte.worker import get_celery
 
 
@@ -72,7 +71,6 @@ def app_container_constructor_params_fixture():
     user = User()
     return {
         "user": user,
-        "temp_storage": get_temp_storage(),
         "celery": get_celery(),
         "catalog_id": DEFAULT_CATALOG_ID,
     }

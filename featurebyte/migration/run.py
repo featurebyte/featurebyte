@@ -31,7 +31,6 @@ from featurebyte.routes.registry import app_container_config
 from featurebyte.service.catalog import AllCatalogService
 from featurebyte.storage import Storage
 from featurebyte.utils.credential import MongoBackedCredentialProvider
-from featurebyte.utils.storage import get_temp_storage
 from featurebyte.worker import get_celery
 
 logger = get_logger(__name__)
@@ -216,7 +215,6 @@ async def migrate_method_generator(
         user=user,
         persistent=persistent,
         catalog_id=DEFAULT_CATALOG_ID,
-        temp_storage=get_temp_storage(),
         celery=get_celery(),
         app_container_config=app_container_config,
     )

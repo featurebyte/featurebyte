@@ -168,18 +168,19 @@ class LazyAppContainer:
 
         # Used to cache instances if they've already been built.
         # Pre-load with some default deps if they're not provided.
+        default_instance_map = {
+            "catalog_id": catalog_id,
+            "celery": celery,
+            "redis": redis,
+            "persistent": persistent,
+            "storage": storage,
+            # "temp_storage": temp_storage,
+            "user": user,
+        }
+        if temp_storage is not None:
+            default_instance_map["temp_storage"] = temp_storage
         self.instance_map: Dict[str, Any] = (
-            {
-                "catalog_id": catalog_id,
-                "celery": celery,
-                "redis": redis,
-                "persistent": persistent,
-                "storage": storage,
-                "temp_storage": temp_storage,
-                "user": user,
-            }
-            if instance_map is None
-            else instance_map
+            instance_map if instance_map is not None else default_instance_map
         )
 
     def _get_key(self, key: str) -> Any:

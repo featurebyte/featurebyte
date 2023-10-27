@@ -32,13 +32,11 @@ def api_client_persistent(persistent, user_id, temp_storage):
     Test API client
     """
     with patch("featurebyte.app.MongoDBImpl") as mock_get_persistent:
-        with patch("featurebyte.app.get_temp_storage") as mock_get_temp_storage:
-            with patch("featurebyte.app.User") as mock_user:
-                mock_user.return_value.id = user_id
-                mock_get_persistent.return_value = persistent
-                mock_get_temp_storage.return_value = temp_storage
-                with TestClient(app) as client:
-                    yield client, persistent
+        with patch("featurebyte.app.User") as mock_user:
+            mock_user.return_value.id = user_id
+            mock_get_persistent.return_value = persistent
+            with TestClient(app) as client:
+                yield client, persistent
 
 
 @pytest.fixture(name="mock_get_session")
