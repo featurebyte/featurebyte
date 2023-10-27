@@ -1,7 +1,7 @@
 """
 Fixture for Service related unit tests
 """
-# pylint: disable=duplicate-code
+# pylint: disable=too-many-lines
 from __future__ import annotations
 
 from typing import Optional
@@ -495,13 +495,14 @@ async def scd_table_fixture(test_dir, feature_store, scd_table_service):
 
 
 @pytest.fixture(name="feature_factory")
-def feature_factory_fixture(test_dir, feature_service):
+def feature_factory_fixture(test_dir, feature_service, entity):
     """
     Feature factory
 
     Note that this will only create the feature, and might throw an error if used alone. You'll need to make sure that
     you've created the event table and entity models first.
     """
+    _ = entity
 
     async def factory():
         fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_sum_30m.json")

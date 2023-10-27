@@ -16,8 +16,9 @@ from featurebyte.persistent import Persistent
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.schema.target import TargetCreate
 from featurebyte.schema.target_namespace import TargetNamespaceCreate, TargetNamespaceServiceUpdate
-from featurebyte.service.base_namespace_service import BaseNamespaceService
+from featurebyte.service.base_feature_service import BaseFeatureService
 from featurebyte.service.entity import EntityService
+from featurebyte.service.entity_relationship_extractor import EntityRelationshipExtractorService
 from featurebyte.service.entity_serving_names import EntityServingNamesService
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_store import FeatureStoreService
@@ -29,7 +30,7 @@ from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.target_namespace import TargetNamespaceService
 
 
-class TargetService(BaseNamespaceService[TargetModel, TargetCreate]):
+class TargetService(BaseFeatureService[TargetModel, TargetCreate]):
     """
     TargetService class
     """
@@ -41,13 +42,14 @@ class TargetService(BaseNamespaceService[TargetModel, TargetCreate]):
         user: Any,
         persistent: Persistent,
         catalog_id: Optional[ObjectId],
+        block_modification_handler: BlockModificationHandler,
+        entity_relationship_extractor_service: EntityRelationshipExtractorService,
         target_namespace_service: TargetNamespaceService,
         namespace_handler: NamespaceHandler,
         feature_store_service: FeatureStoreService,
         entity_validation_service: EntityValidationService,
         session_manager_service: SessionManagerService,
         entity_service: EntityService,
-        block_modification_handler: BlockModificationHandler,
         entity_serving_names_service: EntityServingNamesService,
     ):
         super().__init__(
@@ -55,6 +57,7 @@ class TargetService(BaseNamespaceService[TargetModel, TargetCreate]):
             persistent=persistent,
             catalog_id=catalog_id,
             block_modification_handler=block_modification_handler,
+            entity_relationship_extractor_service=entity_relationship_extractor_service,
         )
         self.target_namespace_service = target_namespace_service
         self.namespace_handler = namespace_handler
@@ -96,10 +99,16 @@ class TargetService(BaseNamespaceService[TargetModel, TargetCreate]):
             node=document.node,
             sanitize_for_definition=sanitize_for_definition,
         )
+        derived_data = await self.extract_derived_data(graph=graph, node_name=node_name)
 
         # create a new target document (so that the derived attributes like table_ids is generated properly)
         return TargetModel(
-            **{**document.dict(by_alias=True), "graph": graph, "node_name": node_name}
+            **{
+                **document.dict(by_alias=True),
+                "graph": graph,
+                "node_name": node_name,
+                "relationships_info": derived_data.relationships_info,
+            }
         )
 
     @staticmethod
