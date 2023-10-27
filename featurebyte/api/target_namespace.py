@@ -12,7 +12,7 @@ from featurebyte.api.api_handler.target_namespace import TargetNamespaceListHand
 from featurebyte.api.api_object_util import ForeignKeyMapping
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature_or_target_namespace_mixin import FeatureOrTargetNamespaceMixin
-from featurebyte.api.savable_api_object import SavableApiObject
+from featurebyte.api.savable_api_object import DeletableApiObject, SavableApiObject
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.base import PydanticObjectId
@@ -20,7 +20,7 @@ from featurebyte.models.target_namespace import TargetNamespaceModel
 from featurebyte.schema.target_namespace import TargetNamespaceUpdate
 
 
-class TargetNamespace(FeatureOrTargetNamespaceMixin, SavableApiObject):
+class TargetNamespace(FeatureOrTargetNamespaceMixin, DeletableApiObject, SavableApiObject):
     """
     TargetNamespace represents a Target set, in which all the targets in the set have the same name. The different
     elements typically refer to different versions of a Target.
@@ -123,3 +123,22 @@ class TargetNamespace(FeatureOrTargetNamespaceMixin, SavableApiObject):
             list_fields=cls._list_fields,
             list_foreign_keys=cls._list_foreign_keys,
         )
+
+    def delete(self) -> None:
+        """
+        Delete a target namespace from the persistent data store. A target namespace can only be deleted
+        from the persistent data store if
+
+        - the target namespace is not used in any use case
+        - the target namespace is not used in any target
+
+        Examples
+        --------
+        >>> target_namespace = fb.TargetNamespace.create(  # doctest: +SKIP
+        ...     name="amount_7d_target",
+        ...     window="7d",
+        ...     primary_entity=["customer"]
+        ... )
+        >>> target_namespace.delete()  # doctest: +SKIP
+        """
+        self._delete()
