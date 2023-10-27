@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import pytest
 
+from featurebyte import FeatureList
 from featurebyte.api.dimension_table import DimensionTable
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_table import EventTable
@@ -165,3 +166,48 @@ def test_delete_table_and_entity_referenced_in_feature_entity_relationship(
     with pytest.raises(RecordDeletionException) as exc:
         saved_dimension_table.delete()
     assert "DimensionTable is referenced by Feature: feat" in str(exc.value)
+
+
+def test_delete_table_and_entity_referenced_in_feature_list_entity_relationship(
+    saved_event_table, saved_dimension_table, float_feature, transaction_entity, cust_id_entity
+):
+    """Test delete table (and entity) referenced in feature list's relationships_info"""
+    # construct following entity relationship
+    # sub_transaction -> transaction -> cust_id
+    sub_transaction = Entity.create(name="sub_transaction", serving_names=["sub_transaction"])
+    saved_dimension_table.col_int.as_entity(sub_transaction.name)
+    saved_dimension_table.col_text.as_entity(transaction_entity.name)
+
+    # save the feature list so that the entity relationship is captured
+    feature_list = FeatureList([float_feature], name="test_feature_list")
+    feature_list.save()
+
+    # note that
+    # * sub_transaction entity is captured only in relationships
+    # * dimension table is captured only in relationships
+    relation_entity_triples = set(
+        (relation.entity_id, relation.related_entity_id, relation.relation_table_id)
+        for relation in feature_list.cached_model.relationships_info
+    )
+    assert relation_entity_triples == {
+        (sub_transaction.id, transaction_entity.id, saved_dimension_table.id),
+        (transaction_entity.id, cust_id_entity.id, saved_event_table.id),
+    }
+
+    # attempt to delete sub_transaction entity
+    with pytest.raises(RecordDeletionException) as exc:
+        sub_transaction.delete()
+    assert "Entity is referenced by FeatureList: test_feature_list" in str(exc.value)
+
+    # attempt to delete dimension table
+    with pytest.raises(RecordDeletionException) as exc:
+        saved_dimension_table.delete()
+    assert "DimensionTable is referenced by Entity: sub_transaction" in str(exc.value)
+
+    # untag sub_transaction from dimension table and attempt to delete dimension table again
+    saved_dimension_table.col_int.as_entity(None)
+
+    # expect to fail because feature list still references dimension table in its relationships
+    with pytest.raises(RecordDeletionException) as exc:
+        saved_dimension_table.delete()
+    assert "DimensionTable is referenced by FeatureList: test_feature_list" in str(exc.value)
