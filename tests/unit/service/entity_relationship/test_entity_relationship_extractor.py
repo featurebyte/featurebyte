@@ -13,7 +13,7 @@ def relationship_info_service_fixture(app_container):
 
 
 @pytest.mark.asyncio
-async def test_extract_ancestor_descendant_relationships(
+async def test_extract_all_relationships(
     entity_relationship_extractor,
     relationship_grandpa_father,
     relationship_granny_father,
@@ -24,21 +24,20 @@ async def test_extract_ancestor_descendant_relationships(
 ):
     """Test extractor"""
     extractor = entity_relationship_extractor
-    output = await extractor.extract_ancestor_descendant_relationships(
-        entity_ids=[father_entity_id]
-    )
+    output = await extractor.extract_all_relationships(entity_ids=[father_entity_id])
     relationship_ids = set(relationship.id for relationship in output)
     assert relationship_ids == {
         relationship_grandpa_father.id,
         relationship_granny_father.id,
         relationship_father_son.id,
+        relationship_mother_son.id,
     }
 
-    output = await extractor.extract_ancestor_descendant_relationships(
+    output = await extractor.extract_all_relationships(
         entity_ids=[mother_entity_id],
     )
     relationship_ids = set(relationship.id for relationship in output)
-    assert relationship_ids == {relationship_mother_son.id}
+    assert relationship_ids == {relationship_mother_son.id, relationship_father_son.id}
 
 
 @pytest.mark.asyncio

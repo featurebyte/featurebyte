@@ -205,9 +205,7 @@ class FeatureListService(
             entity_ids.update(feature.entity_ids)
 
         extractor = self.entity_relationship_extractor_service
-        relationships_info = await extractor.extract_ancestor_descendant_relationships(
-            entity_ids=list(entity_ids)
-        )
+        relationships_info = await extractor.extract_all_relationships(entity_ids=list(entity_ids))
         return relationships_info
 
     async def _update_features(
