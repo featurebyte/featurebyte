@@ -13,7 +13,6 @@ from featurebyte.models.feature_namespace import DefaultVersionMode
 from featurebyte.models.target import TargetModel
 from featurebyte.models.target_namespace import TargetNamespaceModel
 from featurebyte.persistent import Persistent
-from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.routes.common.derive_primary_entity_helper import DerivePrimaryEntityHelper
 from featurebyte.schema.target import TargetCreate

@@ -98,7 +98,7 @@ class BaseFeatureService(
         )
         extractor = self.entity_relationship_extractor_service
         relationships_info = await extractor.extract_relationship_from_primary_entity(
-            entity_ids=entity_ids
+            entity_ids=entity_ids, primary_entity_ids=primary_entity_ids
         )
         return FeatureOrTargetDerivedData(
             primary_entity_ids=primary_entity_ids,
