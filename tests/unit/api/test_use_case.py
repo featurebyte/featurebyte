@@ -1,7 +1,31 @@
 """
 Unit test for UseCase class
 """
-from featurebyte import ObservationTable, UseCase
+from featurebyte import ObservationTable, TargetNamespace, UseCase
+
+
+def test_create_use_case_with_descriptive_target(catalog, cust_id_entity, context):
+    """
+    Test create use case with descriptive target
+    """
+    if not context.saved:
+        context.save()
+
+    target_name = "target_name"
+    namespace = TargetNamespace.create(
+        name=target_name,
+        window="28d",
+        primary_entity=[cust_id_entity.name],
+    )
+    assert namespace.name == target_name
+    use_case = UseCase.create(
+        name="test_use_case_1",
+        target_name=target_name,
+        context_name=context.name,
+        description="test_use_case_1 description",
+    )
+    assert use_case.target_namespace_id == namespace.id
+    assert use_case.target is None
 
 
 def test_create_use_case(catalog, float_target, context):

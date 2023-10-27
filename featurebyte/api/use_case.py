@@ -18,6 +18,7 @@ from featurebyte.api.context import Context
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.savable_api_object import DeletableApiObject, SavableApiObject
 from featurebyte.api.target import Target
+from featurebyte.api.target_namespace import TargetNamespace
 from featurebyte.api.use_case_or_context_mixin import UseCaseOrContextMixin
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import ConflictResolution
@@ -59,19 +60,22 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
     ]
 
     # pydantic instance variable (public)
-    target_id: PydanticObjectId
+    target_id: Optional[PydanticObjectId]
+    target_namespace_id: PydanticObjectId
     context_id: PydanticObjectId
 
     @property
-    def target(self) -> Target:
+    def target(self) -> Optional[Target]:
         """
         Returns the target object of the UseCase.
 
         Returns
         -------
-        Target
+        Optional[Target]
             The target object of the UseCase.
         """
+        if self.target_id is None:
+            return None
         return Target.get_by_id(self.target_id)
 
     @property
@@ -124,9 +128,11 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
         ... )
         >>> use_case_1 = catalog.get_use_case("use_case_1")  # doctest: +SKIP
         """
+        target_namespace = TargetNamespace.get(target_name)
         use_case = UseCase(
             name=name,
-            target_id=Target.get(target_name).id,
+            target_id=target_namespace.default_target_id,
+            target_namespace_id=target_namespace.id,
             context_id=Context.get(context_name).id,
             description=description,
         )

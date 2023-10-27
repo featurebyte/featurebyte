@@ -10,7 +10,7 @@ import pytest
 from bson.objectid import ObjectId
 from pandas.testing import assert_frame_equal
 
-from featurebyte import Catalog, UseCase
+from featurebyte import Catalog, TargetNamespace, UseCase
 from featurebyte.api.base_table import TableColumn
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_table import EventTable
@@ -395,10 +395,12 @@ def use_case_fixture(catalog, float_target, context):
     """
     _ = catalog
     float_target.save()
+    target_namespace = TargetNamespace.get(float_target.name)
 
     use_case = UseCase(
         name="test_use_case",
         target_id=float_target.id,
+        target_namespace_id=target_namespace.id,
         context_id=context.id,
         description="test_use_case description",
     )
