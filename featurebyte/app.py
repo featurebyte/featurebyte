@@ -50,8 +50,8 @@ from featurebyte.schema import APIServiceStatus
 from featurebyte.schema.task import TaskId
 from featurebyte.utils.messaging import REDIS_URI
 from featurebyte.utils.persistent import MongoDBImpl
-from featurebyte.utils.storage import get_storage, get_temp_storage
-from featurebyte.worker import get_celery, get_redis
+from featurebyte.utils.storage import get_temp_storage
+from featurebyte.worker import get_celery
 
 logger = get_logger(__name__)
 
@@ -75,8 +75,6 @@ def _dep_injection_func(
         persistent=MongoDBImpl(),
         temp_storage=get_temp_storage(),
         celery=get_celery(),
-        redis=get_redis(),
-        storage=get_storage(),
         catalog_id=active_catalog_id,
         app_container_config=app_container_config,
     )

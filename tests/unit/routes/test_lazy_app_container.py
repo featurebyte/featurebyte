@@ -10,8 +10,8 @@ from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.routes.app_container_config import AppContainerConfig, ClassDefinition
 from featurebyte.routes.lazy_app_container import LazyAppContainer, get_all_deps_for_key
 from featurebyte.utils.persistent import MongoDBImpl
-from featurebyte.utils.storage import get_storage, get_temp_storage
-from featurebyte.worker import get_celery, get_redis
+from featurebyte.utils.storage import get_temp_storage
+from featurebyte.worker import get_celery
 
 
 class NoDeps:
@@ -21,6 +21,15 @@ class NoDeps:
 
     def __init__(self):
         self.no_deps = []
+
+
+class TestServiceWithOneDep:
+    """
+    Test service with one dep
+    """
+
+    def __init__(self, no_deps: NoDeps):
+        self.no_deps = no_deps
 
 
 class TestService:
@@ -64,9 +73,7 @@ def app_container_constructor_params_fixture():
     return {
         "user": user,
         "temp_storage": get_temp_storage(),
-        "storage": get_storage(),
         "celery": get_celery(),
-        "redis": get_redis(),
         "catalog_id": DEFAULT_CATALOG_ID,
     }
 
@@ -111,6 +118,25 @@ def test_lazy_initialization(test_app_config, app_container_constructor_params):
     assert "test_controller" in instance_map
 
 
+def test_getting_instance_with_factory_method(app_container_constructor_params):
+    """
+    Test retrieving an instance that has a dependency that is constructed via a factory method.
+    """
+    app_container_config = AppContainerConfig()
+
+    def no_deps_factory() -> NoDeps:
+        return NoDeps()
+
+    app_container_config.register_class(TestServiceWithOneDep)
+    app_container_config.register_factory_method(no_deps_factory)
+    app_container = LazyAppContainer(
+        app_container_config=app_container_config,
+        **app_container_constructor_params,
+    )
+    instance = app_container.get(TestServiceWithOneDep)
+    assert instance is not None
+
+
 def test_construction__get_attr(app_container_constructor_params):
     """
     Test __get_attr__ works
@@ -121,7 +147,7 @@ def test_construction__get_attr(app_container_constructor_params):
         app_container_config=app_container_config,
     )
     # This has been initialized
-    assert app_container.redis is not None
+    assert app_container.celery is not None
 
     # random_item has not been initialized
     with pytest.raises(KeyError):
@@ -191,7 +217,7 @@ def get_class_def(key: str, deps: List[str]) -> ClassDefinition:
     """
     return ClassDefinition(
         name=key,
-        class_=TestService,
+        getter=TestService,
         dependencies=deps,
     )
 

@@ -27,8 +27,8 @@ from featurebyte.routes.block_modification_handler import BlockModificationHandl
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
 from featurebyte.utils.credential import MongoBackedCredentialProvider
-from featurebyte.utils.storage import get_storage, get_temp_storage
-from featurebyte.worker import get_celery, get_redis
+from featurebyte.utils.storage import get_temp_storage
+from featurebyte.worker import get_celery
 
 logger = get_logger(__name__)
 
@@ -142,8 +142,6 @@ async def migrate_method_generator(
         catalog_id=DEFAULT_CATALOG_ID,
         temp_storage=get_temp_storage(),
         celery=get_celery(),
-        redis=get_redis(),
-        storage=get_storage(),
         app_container_config=app_container_config,
     )
     migrate_methods = retrieve_all_migration_methods()

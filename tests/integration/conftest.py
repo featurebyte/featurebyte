@@ -65,7 +65,7 @@ from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.base_spark import BaseSparkSchemaInitializer
 from featurebyte.session.manager import SessionManager
 from featurebyte.storage import LocalStorage, LocalTempStorage
-from featurebyte.worker import get_celery, get_redis
+from featurebyte.worker import get_celery
 from featurebyte.worker.registry import TASK_REGISTRY_MAP
 
 # Static testing mongodb connection from docker/test/docker-compose.yml
@@ -1311,17 +1311,14 @@ def temp_storage_fixture():
 
 
 @pytest.fixture(name="mock_app_callbacks", scope="session")
-def mock_app_callbacks(storage, temp_storage):
+def mock_app_callbacks(temp_storage):
     """
     Mock app callbacks: get_credential, get_storage, get_temp_storage
 
     This fixture is used such that these callbacks are consistent with those used in
     mock_task_manager.
     """
-    with mock.patch("featurebyte.app.get_storage") as mock_get_storage, mock.patch(
-        "featurebyte.app.get_temp_storage"
-    ) as mock_get_temp_storage:
-        mock_get_storage.return_value = storage
+    with mock.patch("featurebyte.app.get_temp_storage") as mock_get_temp_storage:
         mock_get_temp_storage.return_value = temp_storage
         yield
 
@@ -1462,7 +1459,6 @@ def app_container_fixture(persistent, user, catalog):
         persistent=persistent,
         temp_storage=LocalTempStorage(),
         celery=get_celery(),
-        redis=get_redis(),
         storage=LocalTempStorage(),
         catalog_id=catalog.id,
         app_container_config=app_container_config,

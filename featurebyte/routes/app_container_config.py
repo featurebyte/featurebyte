@@ -5,7 +5,7 @@ This contains all our registrations for dependency injection.
 """
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union, get_type_hints
 
 import inspect
 from dataclasses import dataclass
@@ -89,7 +89,7 @@ class ClassDefinition:
     # This allows us to provide overrides to the names, and also allows us to better support multiple classes with
     # the same name.
     name: str
-    class_: type
+    getter: Union[type, Callable[..., Any]]
     dependencies: List[str]
 
 
@@ -114,6 +114,37 @@ class AppContainerConfig:
         for dep in self.classes_with_deps:
             self.dependency_mapping[dep.name] = dep
         return self.dependency_mapping
+
+    def register_factory_method(
+        self, factory_method: Callable[..., Any], name_override: Optional[str] = None
+    ) -> None:
+        """
+        Register a factory method. The name of the dependency will be based the name of the class that the factory
+        method returns. For example, if the factory method returns a `TestClassA`, the name of the dependency will be
+        `test_class_a`.
+
+        Callers can use the name_override in a similar fashion to register_class if they want to provide a different
+        name.
+
+        Parameters
+        ----------
+        factory_method: Callable[..., Any]
+            factory method
+        name_override: str
+            name override
+        """
+        name_to_use = (
+            name_override
+            if name_override is not None
+            else _get_class_name(get_type_hints(factory_method)["return"].__name__)
+        )
+        self.classes_with_deps.append(
+            ClassDefinition(
+                name=name_to_use,
+                getter=factory_method,
+                dependencies=[],
+            )
+        )
 
     def register_class(
         self,
@@ -151,7 +182,7 @@ class AppContainerConfig:
         self.classes_with_deps.append(
             ClassDefinition(
                 name=_get_class_name(class_.__name__, name_override),
-                class_=class_,
+                getter=class_,
                 dependencies=deps,
             )
         )
