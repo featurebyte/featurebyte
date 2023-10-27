@@ -168,3 +168,15 @@ async def update_target_namespace_description(
         description=data.description,
     )
     return target_namespace
+
+
+@router.delete("/{target_namespace_id}")
+async def delete_target_namespace(
+    request: Request,
+    target_namespace_id: PydanticObjectId,
+) -> None:
+    """
+    Delete TargetNamespace
+    """
+    controller = request.state.app_container.target_namespace_controller
+    await controller.delete(document_id=target_namespace_id)

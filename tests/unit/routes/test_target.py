@@ -274,3 +274,11 @@ class TestTargetApi(BaseCatalogApiTestSuite):
         response = test_api_client.delete(f"/entity/{entity_id}")
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
         assert response.json()["detail"] == "Entity is referenced by Target: float_target"
+
+    def test_delete_target_namespace(self, test_api_client_persistent, create_success_response):
+        """Test delete target namespace"""
+        test_api_client, _ = test_api_client_persistent
+        namespace_id = create_success_response.json()["target_namespace_id"]
+        response = test_api_client.delete(f"/target_namespace/{namespace_id}")
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert response.json()["detail"] == "TargetNamespace is referenced by Target: float_target"

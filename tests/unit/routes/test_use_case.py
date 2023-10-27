@@ -108,7 +108,7 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         assert response.json()["total"] == 1
         assert response.json()["data"][0]["_id"] == str(target_ob_table_id)
 
-    async def test_create_use_case__non_existent_target_and_context(
+    def test_create_use_case__non_existent_target_and_context(
         self,
         test_api_client_persistent,
         create_success_response,
@@ -572,7 +572,7 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         assert data[0]["name"] == "test_deployment"
         assert data[0]["use_case_id"] == use_case_id
 
-    async def test_create_use_case__target_and_context_with_different_entities(
+    def test_create_use_case__target_and_context_with_different_entities(
         self,
         test_api_client_persistent,
         create_success_response,
@@ -605,7 +605,7 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
         assert "Target and context must have the same entities" in response.json()["detail"]
 
-    async def test_create_use_case__with_target_namespace_id(
+    def test_create_use_case__with_target_namespace_id(
         self,
         test_api_client_persistent,
         create_success_response,
