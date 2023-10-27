@@ -30,6 +30,19 @@ class TargetTableCreate(FeatureOrTargetTableCreate):
     context_id: Optional[PydanticObjectId]
     skip_entity_validation_checks: bool = Field(default=False)
 
+    @root_validator(pre=True)
+    @classmethod
+    def _check_graph_and_node_names(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        graph = values["graph"]
+        node_names = values["node_names"]
+        both_are_none = graph is None and node_names is None
+        both_are_not_none = graph is not None and node_names is not None
+        if both_are_not_none or both_are_none:
+            return values
+        raise ValueError(
+            "Both graph and node_names should be provided, or neither should be provided."
+        )
+
     @property
     def nodes(self) -> List[Node]:
         """
