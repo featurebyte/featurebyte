@@ -6,11 +6,12 @@ from __future__ import annotations
 import pytest
 
 from featurebyte.api.dimension_table import DimensionTable
+from featurebyte.api.entity import Entity
 from featurebyte.api.event_table import EventTable
 from featurebyte.api.item_table import ItemTable
 from featurebyte.api.scd_table import SCDTable
 from featurebyte.api.table import Table
-from featurebyte.exception import RecordRetrievalException
+from featurebyte.exception import RecordDeletionException, RecordRetrievalException
 
 
 def test_get_event_table(saved_event_table, snowflake_event_table):
@@ -87,3 +88,80 @@ def test_get_dimension_table(saved_dimension_table, snowflake_dimension_table):
         'Table (name: "unknown_dimension_table") not found. ' "Please save the Table object first."
     )
     assert expected_msg in str(exc.value)
+
+
+def test_delete_table_and_entity_referenced_in_feature_entity_relationship(
+    saved_event_table, saved_scd_table, saved_dimension_table, feature_group_feature_job_setting
+):
+    """
+    Test delete table (and entity) referenced in feature's relationships_info but not in feature's table_ids
+    (feature's entity_ids)
+    """
+    # transaction -> order -> customer
+    transaction = Entity.create(name="transaction", serving_names=["transaction"])
+    order = Entity.create(name="order", serving_names=["order"])
+    customer = Entity.create(name="customer", serving_names=["customer"])
+
+    # event table's event id column: col_int
+    # dimension table's dimension id column: col_int
+    # scd table's natural key column: col_text
+    saved_event_table.col_int.as_entity(transaction.name)
+    saved_event_table.col_text.as_entity(order.name)
+    saved_dimension_table.col_int.as_entity(order.name)
+    saved_dimension_table.col_text.as_entity(customer.name)
+    saved_scd_table.col_text.as_entity(customer.name)
+    event_view = saved_event_table.get_view()
+    scd_view = saved_scd_table.get_view()
+
+    # create feat comp1 with transaction entity
+    feat_comp1 = event_view.groupby("col_int").aggregate_over(
+        None,
+        "count",
+        windows=["1d"],
+        feature_names=["1d_count"],
+        feature_job_setting=feature_group_feature_job_setting,
+    )["1d_count"]
+    assert feat_comp1.entity_ids == [transaction.id]
+
+    # create feat comp2 with customer entity
+    feat_comp2 = scd_view["col_int"].as_feature("col_int")
+    assert feat_comp2.entity_ids == [customer.id]
+
+    # create a feat with feat comp1 and feat comp2
+    feat = feat_comp1 + feat_comp2
+    feat.name = "feat"
+    feat.save()
+
+    # note that
+    # * order entity is in relationships but not in entity_ids
+    # * dimension table is in relationships but not in table_ids
+    assert set(feat.entity_ids) == {transaction.id, customer.id}
+    relation_entity_triples = set(
+        (relation.entity_id, relation.related_entity_id, relation.relation_table_id)
+        for relation in feat.cached_model.relationships_info
+    )
+    assert relation_entity_triples == {
+        (transaction.id, order.id, saved_event_table.id),
+        (order.id, customer.id, saved_dimension_table.id),
+    }
+
+    # expect to fail because feat still references order entity in its relationships
+    with pytest.raises(RecordDeletionException) as exc:
+        order.delete()
+    assert "Entity is referenced by Feature: feat" in str(exc.value)
+
+    # check feature table
+    assert set(feat.table_ids) == {saved_event_table.id, saved_scd_table.id}
+
+    # check delete dimension table
+    with pytest.raises(RecordDeletionException) as exc:
+        saved_dimension_table.delete()
+    assert "DimensionTable is referenced by Entity: order" in str(exc.value)
+
+    # untag order from dimension table and attempt to delete dimension table again
+    saved_dimension_table.col_int.as_entity(None)
+
+    # expect to fail because feat still references dimension table in its relationships
+    with pytest.raises(RecordDeletionException) as exc:
+        saved_dimension_table.delete()
+    assert "DimensionTable is referenced by Feature: feat" in str(exc.value)

@@ -17,11 +17,13 @@ from featurebyte.service.entity import EntityService
 from featurebyte.service.event_table import EventTableService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_job_setting_analysis import FeatureJobSettingAnalysisService
+from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.item_table import ItemTableService
 from featurebyte.service.semantic import SemanticService
 from featurebyte.service.table_columns_info import TableDocumentService
 from featurebyte.service.table_facade import TableFacadeService
 from featurebyte.service.table_info import TableInfoService
+from featurebyte.service.target import TargetService
 
 
 class EventTableController(
@@ -40,13 +42,15 @@ class EventTableController(
         "event_timestamp_timezone_offset_column": SemanticType.TIME_ZONE,
     }
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         event_table_service: TableDocumentService,
         table_facade_service: TableFacadeService,
         semantic_service: SemanticService,
         entity_service: EntityService,
         feature_service: FeatureService,
+        target_service: TargetService,
+        feature_list_service: FeatureListService,
         table_info_service: TableInfoService,
         item_table_service: ItemTableService,
         feature_job_setting_analysis_service: FeatureJobSettingAnalysisService,
@@ -57,6 +61,8 @@ class EventTableController(
             semantic_service=semantic_service,
             entity_service=entity_service,
             feature_service=feature_service,
+            target_service=target_service,
+            feature_list_service=feature_list_service,
         )
         self.table_info_service = table_info_service
         self.item_table_service = item_table_service

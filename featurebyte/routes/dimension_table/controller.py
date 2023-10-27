@@ -13,10 +13,12 @@ from featurebyte.schema.info import DimensionTableInfo
 from featurebyte.service.dimension_table import DimensionTableService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature import FeatureService
+from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.semantic import SemanticService
 from featurebyte.service.table_columns_info import TableDocumentService
 from featurebyte.service.table_facade import TableFacadeService
 from featurebyte.service.table_info import TableInfoService
+from featurebyte.service.target import TargetService
 
 
 class DimensionTableController(
@@ -40,6 +42,8 @@ class DimensionTableController(
         semantic_service: SemanticService,
         entity_service: EntityService,
         feature_service: FeatureService,
+        target_service: TargetService,
+        feature_list_service: FeatureListService,
         table_info_service: TableInfoService,
     ):
         super().__init__(
@@ -48,6 +52,8 @@ class DimensionTableController(
             semantic_service=semantic_service,
             entity_service=entity_service,
             feature_service=feature_service,
+            target_service=target_service,
+            feature_list_service=feature_list_service,
         )
         self.table_info_service = table_info_service
 

@@ -12,11 +12,13 @@ from featurebyte.schema.info import SCDTableInfo
 from featurebyte.schema.scd_table import SCDTableList, SCDTableServiceUpdate
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature import FeatureService
+from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.scd_table import SCDTableService
 from featurebyte.service.semantic import SemanticService
 from featurebyte.service.table_columns_info import TableDocumentService
 from featurebyte.service.table_facade import TableFacadeService
 from featurebyte.service.table_info import TableInfoService
+from featurebyte.service.target import TargetService
 
 
 class SCDTableController(BaseTableDocumentController[SCDTableModel, SCDTableService, SCDTableList]):
@@ -43,6 +45,8 @@ class SCDTableController(BaseTableDocumentController[SCDTableModel, SCDTableServ
         table_info_service: TableInfoService,
         entity_service: EntityService,
         feature_service: FeatureService,
+        target_service: TargetService,
+        feature_list_service: FeatureListService,
     ):
         super().__init__(
             service=scd_table_service,
@@ -50,6 +54,8 @@ class SCDTableController(BaseTableDocumentController[SCDTableModel, SCDTableServ
             semantic_service=semantic_service,
             entity_service=entity_service,
             feature_service=feature_service,
+            target_service=target_service,
+            feature_list_service=feature_list_service,
         )
         self.table_info_service = table_info_service
 

@@ -13,11 +13,13 @@ from featurebyte.schema.item_table import ItemTableList, ItemTableServiceUpdate
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_table import EventTableService
 from featurebyte.service.feature import FeatureService
+from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.item_table import ItemTableService
 from featurebyte.service.semantic import SemanticService
 from featurebyte.service.table_columns_info import TableDocumentService
 from featurebyte.service.table_facade import TableFacadeService
 from featurebyte.service.table_info import TableInfoService
+from featurebyte.service.target import TargetService
 
 
 class ItemTableController(
@@ -42,6 +44,8 @@ class ItemTableController(
         semantic_service: SemanticService,
         entity_service: EntityService,
         feature_service: FeatureService,
+        target_service: TargetService,
+        feature_list_service: FeatureListService,
         table_info_service: TableInfoService,
         event_table_service: EventTableService,
     ):
@@ -51,6 +55,8 @@ class ItemTableController(
             semantic_service=semantic_service,
             entity_service=entity_service,
             feature_service=feature_service,
+            target_service=target_service,
+            feature_list_service=feature_list_service,
         )
         self.table_info_service = table_info_service
         self.event_table_service = event_table_service
