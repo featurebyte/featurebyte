@@ -16,6 +16,7 @@ from featurebyte.models.feature_namespace import DefaultVersionMode, FeatureRead
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
+from featurebyte.routes.common.derive_primary_entity_helper import DerivePrimaryEntityHelper
 from featurebyte.schema.feature import FeatureServiceCreate
 from featurebyte.schema.feature_namespace import (
     FeatureNamespaceCreate,
@@ -39,13 +40,14 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
 
     document_class = FeatureModel
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         user: Any,
         persistent: Persistent,
         catalog_id: Optional[ObjectId],
         block_modification_handler: BlockModificationHandler,
         entity_relationship_extractor_service: EntityRelationshipExtractorService,
+        derive_primary_entity_helper: DerivePrimaryEntityHelper,
         table_service: TableService,
         feature_namespace_service: FeatureNamespaceService,
         namespace_handler: NamespaceHandler,
@@ -57,6 +59,7 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
             catalog_id=catalog_id,
             block_modification_handler=block_modification_handler,
             entity_relationship_extractor_service=entity_relationship_extractor_service,
+            derive_primary_entity_helper=derive_primary_entity_helper,
         )
         self.table_service = table_service
         self.feature_namespace_service = feature_namespace_service
@@ -90,6 +93,8 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
             node=node,
             sanitize_for_definition=sanitize_for_definition,
         )
+
+        # derived attributes
         derived_data = await self.extract_derived_data(
             graph=prepared_graph, node_name=prepared_node_name
         )
@@ -99,8 +104,9 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
                 **data_dict,
                 "graph": prepared_graph,
                 "node_name": prepared_node_name,
-                "relationships_info": derived_data.relationships_info,
                 "readiness": FeatureReadiness.DRAFT,
+                "primary_entity_ids": derived_data.primary_entity_ids,
+                "relationships_info": derived_data.relationships_info,
                 "version": await self.get_document_version(data.name),
                 "user_id": self.user.id,
                 "catalog_id": self.catalog_id,

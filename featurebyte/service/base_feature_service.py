@@ -14,6 +14,7 @@ from featurebyte.persistent import Persistent
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
+from featurebyte.routes.common.derive_primary_entity_helper import DerivePrimaryEntityHelper
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.entity_relationship_extractor import EntityRelationshipExtractorService
@@ -24,6 +25,7 @@ from featurebyte.service.mixin import Document, DocumentCreateSchema
 class FeatureOrTargetDerivedData:
     """Feature or Target data"""
 
+    primary_entity_ids: List[ObjectId]
     relationships_info: List[EntityRelationshipInfo]
 
 
@@ -41,6 +43,7 @@ class BaseFeatureService(
         catalog_id: Optional[ObjectId],
         block_modification_handler: BlockModificationHandler,
         entity_relationship_extractor_service: EntityRelationshipExtractorService,
+        derive_primary_entity_helper: DerivePrimaryEntityHelper,
     ):
         super().__init__(
             user=user,
@@ -49,6 +52,7 @@ class BaseFeatureService(
             block_modification_handler=block_modification_handler,
         )
         self.entity_relationship_extractor_service = entity_relationship_extractor_service
+        self.derive_primary_entity_helper = derive_primary_entity_helper
 
     async def get_document_version(self, name: str) -> VersionIdentifier:
         """
@@ -89,10 +93,14 @@ class BaseFeatureService(
         """
         query_graph = QueryGraph(**graph.dict(by_alias=True))
         entity_ids = query_graph.get_entity_ids(node_name=node_name)
-        extractor = self.entity_relationship_extractor_service
-        relationships_info = await extractor.extract_relationship_from_primary_entity(
+        primary_entity_ids = await self.derive_primary_entity_helper.derive_primary_entity_ids(
             entity_ids=entity_ids
         )
+        extractor = self.entity_relationship_extractor_service
+        relationships_info = await extractor.extract_relationship_from_primary_entity(
+            entity_ids=entity_ids, primary_entity_ids=primary_entity_ids
+        )
         return FeatureOrTargetDerivedData(
+            primary_entity_ids=primary_entity_ids,
             relationships_info=relationships_info,
         )

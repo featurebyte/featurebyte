@@ -1,7 +1,7 @@
 """
 Entity Relationship Extractor Service
 """
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from collections import defaultdict
 from dataclasses import dataclass
@@ -101,6 +101,7 @@ class EntityRelationshipExtractorService:
     async def extract_relationship_from_primary_entity(
         self,
         entity_ids: List[ObjectId],
+        primary_entity_ids: Optional[List[ObjectId]] = None,
     ) -> List[EntityRelationshipInfo]:
         """
         Extract relationships between entity ids and primary entity ids
@@ -109,14 +110,17 @@ class EntityRelationshipExtractorService:
         ----------
         entity_ids: List[ObjectId]
             List of entity ids
+        primary_entity_ids: Optional[List[ObjectId]]
+            List of primary entity ids
 
         Returns
         -------
         List[EntityRelationshipInfo]
         """
-        primary_entity_ids = await self.derive_primary_entity_helper.derive_primary_entity_ids(
-            entity_ids=entity_ids
-        )
+        if primary_entity_ids is None:
+            primary_entity_ids = await self.derive_primary_entity_helper.derive_primary_entity_ids(
+                entity_ids=entity_ids
+            )
 
         ancestor_entity_ids = set()
         async for entity in self.entity_service.list_documents_iterator(

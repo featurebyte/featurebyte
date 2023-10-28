@@ -495,6 +495,7 @@ def test_get_feature(saved_feature):
         "updated_at",
         "tabular_source.feature_store_id",
         "table_ids",
+        "primary_entity_ids",
         "primary_table_ids",
         "user_id",
         "tabular_source.table_details.database_name",
