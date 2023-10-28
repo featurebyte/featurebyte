@@ -178,8 +178,6 @@ class FeatureNamespaceController(
         tables = await self.table_service.list_documents_as_dict(
             page=1, page_size=0, query_filter={"_id": {"$in": namespace.table_ids}}
         )
-
-        # derive primary tables
         feature = await self.feature_service.get_document(document_id=namespace.default_feature_id)
         entities = await self.entity_service.list_documents_as_dict(
             page=1, page_size=0, query_filter={"_id": {"$in": feature.entity_ids}}
@@ -191,7 +189,7 @@ class FeatureNamespaceController(
         )
         entities, tables = updated_docs
 
-        # derive primary entity & primary table
+        # prepare primary entity & primary table
         primary_entity = copy.deepcopy(entities)
         primary_entity["data"] = [
             entity for entity in entities["data"] if entity["_id"] in feature.primary_entity_ids
