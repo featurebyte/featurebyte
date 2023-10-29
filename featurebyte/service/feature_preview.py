@@ -188,7 +188,6 @@ class FeaturePreviewService(PreviewService):
         feature_store, session = await self._get_feature_store_session(
             graph=graph,
             node_name=node_name,
-            feature_store_name=feature_or_target_preview.feature_store_name,
         )
         parent_serving_preparation = (
             await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(

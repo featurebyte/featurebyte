@@ -280,7 +280,6 @@ class SampleMixin:
         """
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)
         payload = FeatureStorePreview(
-            feature_store_name=self.feature_store.name,
             graph=pruned_graph,
             node_name=mapped_node.name,
         )
@@ -315,7 +314,6 @@ class SampleMixin:
 
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)
         return FeatureStoreSample(
-            feature_store_name=self.feature_store.name,
             graph=pruned_graph,
             node_name=mapped_node.name,
             from_timestamp=from_timestamp,
@@ -351,7 +349,6 @@ class SampleMixin:
         """
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)
         payload = FeatureStorePreview(
-            feature_store_name=self.feature_store.name,
             graph=pruned_graph,
             node_name=mapped_node.name,
         )
@@ -502,7 +499,6 @@ class SampleMixin:
 
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)
         payload = FeatureStoreSample(
-            feature_store_name=self.feature_store.name,
             graph=pruned_graph,
             node_name=mapped_node.name,
             from_timestamp=from_timestamp,

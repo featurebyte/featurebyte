@@ -198,20 +198,12 @@ class TestTargetApi(BaseCatalogApiTestSuite):
         }
 
     @pytest.fixture(name="target_preview_payload")
-    def target_preview_payload_fixture(self, create_success_response, test_api_client_persistent):
+    def target_preview_payload_fixture(self, create_success_response):
         """
         target_preview_payload fixture
         """
-        test_api_client, _ = test_api_client_persistent
         target = create_success_response.json()
-
-        feature_store_id = target["tabular_source"]["feature_store_id"]
-        response = test_api_client.get(f"/feature_store/{feature_store_id}")
-        assert response.status_code == HTTPStatus.OK
-        feature_store = response.json()
-
         return {
-            "feature_store_name": feature_store["name"],
             "graph": target["graph"],
             "node_name": target["node_name"],
             "point_in_time_and_serving_name_list": [

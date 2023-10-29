@@ -86,7 +86,6 @@ class FeatureOrTargetMixin(QueryObject, ApiObject):
 
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
         preview_params = {
-            "feature_store_name": self.feature_store.name,
             "graph": pruned_graph,
             "node_name": mapped_node.name,
         }

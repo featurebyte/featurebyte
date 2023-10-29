@@ -44,7 +44,6 @@ class FeatureStorePreview(FeatureByteBaseModel):
     Generic preview schema
     """
 
-    feature_store_name: StrictStr
     graph: QueryGraph
     node_name: str
 

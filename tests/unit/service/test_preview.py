@@ -40,7 +40,6 @@ def feature_store_preview_fixture(feature_store):
     Fixture for a FeatureStorePreview
     """
     return FeatureStorePreview(
-        feature_store_name=feature_store.name,
         graph={
             "edges": [{"source": "input_1", "target": "project_1"}],
             "nodes": [

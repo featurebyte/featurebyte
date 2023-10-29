@@ -49,7 +49,7 @@ class PreviewService:
         self.session_manager_service = session_manager_service
 
     async def _get_feature_store_session(
-        self, graph: QueryGraph, node_name: str, feature_store_name: str
+        self, graph: QueryGraph, node_name: str
     ) -> Tuple[FeatureStoreModel, BaseSession]:
         """
         Get feature store and session from a graph
@@ -60,15 +60,23 @@ class PreviewService:
             Query graph to use
         node_name: str
             Name of node to use
-        feature_store_name: str
-            Name of feature store
 
         Returns
         -------
         Tuple[FeatureStoreModel, BaseSession]
         """
         feature_store_dict = graph.get_input_node(node_name).parameters.feature_store_details.dict()
-        feature_store = FeatureStoreModel(**feature_store_dict, name=feature_store_name)
+
+        # get feature store
+        feature_stores = self.feature_store_service.list_documents_iterator(
+            query_filter={
+                "type": feature_store_dict["type"],
+                "details": feature_store_dict["details"],
+            }
+        )
+        feature_store = await feature_stores.__anext__()
+        assert feature_store
+
         session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store,
         )
@@ -91,7 +99,6 @@ class PreviewService:
         feature_store, session = await self._get_feature_store_session(
             graph=preview.graph,
             node_name=preview.node_name,
-            feature_store_name=preview.feature_store_name,
         )
         shape_sql, num_cols = GraphInterpreter(
             preview.graph, source_type=feature_store.type
@@ -123,7 +130,6 @@ class PreviewService:
         feature_store, session = await self._get_feature_store_session(
             graph=preview.graph,
             node_name=preview.node_name,
-            feature_store_name=preview.feature_store_name,
         )
         preview_sql, type_conversions = GraphInterpreter(
             preview.graph, source_type=feature_store.type
@@ -152,7 +158,6 @@ class PreviewService:
         feature_store, session = await self._get_feature_store_session(
             graph=sample.graph,
             node_name=sample.node_name,
-            feature_store_name=sample.feature_store_name,
         )
         sample_sql, type_conversions = GraphInterpreter(
             sample.graph, source_type=feature_store.type
@@ -188,7 +193,6 @@ class PreviewService:
         feature_store, session = await self._get_feature_store_session(
             graph=sample.graph,
             node_name=sample.node_name,
-            feature_store_name=sample.feature_store_name,
         )
 
         describe_sql, type_conversions, row_names, columns = GraphInterpreter(
@@ -241,7 +245,6 @@ class PreviewService:
         feature_store, session = await self._get_feature_store_session(
             graph=preview.graph,
             node_name=preview.node_name,
-            feature_store_name=preview.feature_store_name,
         )
         value_counts_sql = GraphInterpreter(
             preview.graph, source_type=feature_store.type
