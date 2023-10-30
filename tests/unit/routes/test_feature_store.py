@@ -351,7 +351,6 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
         data_response_dict = response.json()
         snowflake_feature_store = FeatureStore(**snowflake_feature_store_params, type="snowflake")
         return FeatureStoreSample(
-            feature_store_name=snowflake_feature_store.name,
             graph={
                 "edges": [{"source": "input_1", "target": "project_1"}],
                 "nodes": [

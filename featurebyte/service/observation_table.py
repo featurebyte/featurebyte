@@ -406,7 +406,6 @@ class ObservationTableService(
         )
         graph, node = source_table.frame.extract_pruned_graph_and_node()
         sample = FeatureStoreSample(
-            feature_store_name=feature_store.name,
             graph=graph,
             node_name=node.name,
             stats_names=["unique", "max", "min"],
