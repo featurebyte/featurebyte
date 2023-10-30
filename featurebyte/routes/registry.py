@@ -8,10 +8,11 @@ from celery import Celery
 
 from featurebyte.migration.migration_data_service import SchemaMetadataService
 from featurebyte.migration.service.data_warehouse import (
-    DataWarehouseMigrationServiceV6,
-    DataWarehouseMigrationServiceV8,
+    DataWarehouseMigrationServiceV1,
+    DataWarehouseMigrationServiceV3,
     TileColumnTypeExtractor,
 )
+from featurebyte.migration.service.feature import FeatureMigrationServiceV4
 from featurebyte.migration.service.mixin import DataWarehouseMigrationMixin
 from featurebyte.models.base import User
 from featurebyte.routes.app_container_config import AppContainerConfig
@@ -188,8 +189,6 @@ app_container_config.register_class(CredentialController)
 app_container_config.register_class(CredentialService)
 app_container_config.register_class(ContextService)
 app_container_config.register_class(DataWarehouseMigrationMixin)
-app_container_config.register_class(DataWarehouseMigrationServiceV6)
-app_container_config.register_class(DataWarehouseMigrationServiceV8)
 app_container_config.register_class(DeployService)
 app_container_config.register_class(DeploymentController)
 app_container_config.register_class(DeploymentService)
@@ -336,6 +335,11 @@ app_container_config.register_class(TaskProgressUpdater)
 app_container_config.register_class(BatchFeatureCreator)
 app_container_config.register_class(BlockModificationHandler)
 app_container_config.register_class(MongoDBImpl, name_override="persistent")
+
+# register migration services
+app_container_config.register_class(DataWarehouseMigrationServiceV1)
+app_container_config.register_class(DataWarehouseMigrationServiceV3)
+app_container_config.register_class(FeatureMigrationServiceV4)
 
 app_container_config.register_factory_method(get_storage)
 app_container_config.register_factory_method(get_redis, name_override="redis")

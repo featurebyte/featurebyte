@@ -3,7 +3,7 @@ MigrationServiceMixin class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from abc import ABC, abstractmethod
 
@@ -106,6 +106,81 @@ class BaseMigrationServiceMixin:
             page += 1
 
         logger.info(f'Complete migration (collection: "{self.delegate_service.collection_name}")')
+
+
+class BaseMongoCollectionMigration(BaseMigrationServiceMixin, ABC):
+    """
+    BaseMongoCollectionMigration class
+
+    Provides common functionalities required for migrating mongo collection
+    """
+
+    @property
+    def collection_name(self) -> str:
+        """
+        Collection name to be migrated
+
+        Returns
+        -------
+        str
+        """
+        return self.delegate_service.collection_name
+
+    @property
+    def is_catalog_specific(self) -> bool:
+        """
+        Whether the migration is catalog specific
+
+        Returns
+        -------
+        bool
+        """
+        return self.delegate_service.is_catalog_specific
+
+    def migrate_document_record(self, record: dict[str, Any]) -> dict[str, Any]:
+        """
+        Migrate older document record to the current document record format
+
+        Parameters
+        ----------
+        record: dict[str, Any]
+            Older document record
+
+        Returns
+        -------
+        dict[str, Any]
+            Record in newer format
+        """
+        document_class = self.delegate_service.document_class
+        return document_class(**record).dict(by_alias=True)
+
+    async def migrate_record(self, document: Document, version: Optional[int]) -> None:
+        _ = version
+        await self.persistent.migrate_record(
+            collection_name=self.collection_name,
+            document=document,
+            migrate_func=self.migrate_document_record,
+        )
+
+    async def get_total_migration_records(self, query_filter: Dict[str, Any]) -> int:
+        """
+        Get the total number of records to be migrated
+
+        Parameters
+        ----------
+        query_filter: Dict[str, Any]
+            Query filter used to filter the documents used for migration
+
+        Returns
+        -------
+        int
+        """
+        _, total_record = await self.persistent.find(
+            collection_name=self.collection_name,
+            query_filter=query_filter,
+            page_size=1,  # only need to get the total count
+        )
+        return total_record
 
 
 class DataWarehouseMigrationMixin(BaseMigrationServiceMixin, ABC):
