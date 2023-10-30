@@ -27,7 +27,7 @@ def user_id():
 
 
 @pytest.fixture()
-def api_client_persistent(persistent, user_id, temp_storage):
+def api_client_persistent(persistent, user_id):
     """
     Test API client
     """
