@@ -174,7 +174,6 @@ class LazyAppContainer:
             "redis": redis,
             "persistent": persistent,
             "storage": storage,
-            # "temp_storage": temp_storage,
             "user": user,
         }
         if temp_storage is not None:

@@ -126,15 +126,6 @@ def storage_fixture():
         yield LocalStorage(base_path=tempdir)
 
 
-# @pytest.fixture(name="temp_storage")
-# def temp_storage_fixture():
-#     """
-#     Storage object fixture
-#     """
-#     with tempfile.TemporaryDirectory() as tempdir:
-#         yield LocalStorage(base_path=tempdir)
-
-
 @pytest.fixture(name="mock_get_persistent")
 def mock_get_persistent_function(mongo_persistent):
     """
