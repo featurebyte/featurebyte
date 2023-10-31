@@ -73,7 +73,6 @@ class TestRelationshipInfoApi(BaseCatalogApiTestSuite):
         instance_map = {
             "user": User(id=user_id),
             "persistent": persistent,
-            "temp_storage": LocalTempStorage(),
             "celery": get_celery(),
             "storage": LocalTempStorage(),
             "catalog_id": catalog_id,
