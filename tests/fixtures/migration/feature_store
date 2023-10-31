@@ -5,10 +5,10 @@
     },
     "type": "snowflake",
     "details": {
-      "account": "fm54506.us-central1.gcp",
+      "account": "demo_account",
       "warehouse": "DEMO",
       "database": "DEMO",
-      "sf_schema": "FEATUREBYTE_PROD_V2"
+      "sf_schema": "demo_schema"
     },
     "user_id": {
       "$oid": "64645f76cfc8e397f762c868"
