@@ -72,7 +72,7 @@ class EntityRelationshipExtractorService:
     ) -> Dict[ObjectId, List[EntityRelationshipData]]:
         """
         Extract parent-child or child-parent entity relationship map from anchored entity IDs
-        to its ancestors or descendants. If parent_to_child is True, the parent-child relationship map
+        to its ancestors or descendants. If to_descendant is True, the parent-child relationship map
         will be extracted from the anchored entity IDs to its descendants. Otherwise, the child-parent
         relationship map will be extracted from anchored entity IDs to its ancestors.
 
@@ -196,7 +196,7 @@ class EntityRelationshipExtractorService:
         child_to_parent_map = await self._extract_relationship_map(
             anchored_entity_ids=ancestor_entity_ids, to_descendant=False
         )
-        path_map: Dict[ObjectId, List[ObjectId]] = {}
+        path_map: Dict[ObjectId, List[ObjectId]] = defaultdict(list)
         for entity_id in primary_entity_ids:
             path_map = self._extract_entity_relationship_paths(
                 relationship_map=child_to_parent_map,
@@ -236,7 +236,7 @@ class EntityRelationshipExtractorService:
         parent_to_child_map = await self._extract_relationship_map(
             anchored_entity_ids=descendant_entity_ids, to_descendant=True
         )
-        path_map: Dict[ObjectId, List[ObjectId]] = {}
+        path_map: Dict[ObjectId, List[ObjectId]] = defaultdict(list)
         for entity_id in primary_entity_ids:
             path_map = self._extract_entity_relationship_paths(
                 relationship_map=parent_to_child_map,

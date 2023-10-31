@@ -136,6 +136,12 @@ async def test_extract_primary_entity_descendant_relationship__case_1(
     assert relationship_ids == {relationship_mother_son.id}
 
     output = await extractor.extract_primary_entity_descendant_relationship(
+        primary_entity_ids=[father_entity_id, mother_entity_id],
+    )
+    relationship_ids = set(relationship.id for relationship in output)
+    assert relationship_ids == {relationship_father_son.id, relationship_mother_son.id}
+
+    output = await extractor.extract_primary_entity_descendant_relationship(
         primary_entity_ids=[son_entity_id],
     )
     assert output == []
