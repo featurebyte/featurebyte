@@ -1303,7 +1303,7 @@ def storage_fixture():
 
 
 @pytest.fixture(autouse=True, scope="module")
-def mock_task_manager(request, persistent, storage, temp_storage):
+def mock_task_manager(request, persistent, storage):
     """
     Mock celery task manager for testing
     """
@@ -1436,7 +1436,6 @@ def app_container_fixture(persistent, user, catalog):
     instance_map = {
         "user": user,
         "persistent": persistent,
-        "temp_storage": LocalTempStorage(),
         "celery": get_celery(),
         "storage": LocalTempStorage(),
         "catalog_id": catalog.id,
