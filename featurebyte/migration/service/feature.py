@@ -95,6 +95,8 @@ class FeatureMigrationServiceV4(BaseMongoCollectionMigration):
             output = super().migrate_document_record(record)
             return output
         except Exception as exc:  # pylint: disable=broad-except
+            # for some bad records, we just log the error and return the original record
+            # so that the migration can continue
             logger.info(
                 "Record (id: %s, name: %s) encountered error: %s",
                 record["_id"],
@@ -126,6 +128,10 @@ class FeatureMigrationServiceV4(BaseMongoCollectionMigration):
         )
         assert total_before == total_after, (total_before, total_after)
         for doc in sample_docs_after:
+            # after migration, relationships_info should not be None
             assert isinstance(doc.get("relationships_info"), list), doc.get("relationships_info")
+            if doc.get("entity_ids"):
+                # after migration, if entity_ids is not empty, primary_entity_ids should not be empty
+                assert len(doc["primary_entity_ids"]) > 0, doc["primary_entity_ids"]
 
         logger.info("Migrated all records successfully (total: %d)", total_after)
