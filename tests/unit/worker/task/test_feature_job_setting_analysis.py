@@ -144,13 +144,12 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         )
 
     @pytest.mark.asyncio
-    async def test_execute_fail(
-        self, mongo_persistent, progress, storage, temp_storage, app_container
-    ):
+    async def test_execute_fail(self, mongo_persistent, progress, storage, app_container):
         """
         Test failed task execution
         """
         persistent, _ = mongo_persistent
+        temp_storage = app_container.temp_storage
 
         # execute task with payload
         event_table_id = ObjectId()
@@ -184,7 +183,6 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         progress,
         update_fixtures,
         storage,
-        temp_storage,
         app_container,
     ):
         """
@@ -211,7 +209,7 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
             persistent=persistent,
             progress=progress,
             storage=storage,
-            temp_storage=temp_storage,
+            temp_storage=app_container.temp_storage,
             app_container=app_container,
         )
 
@@ -226,20 +224,6 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         )
 
     @pytest.mark.asyncio
-    async def test_get_task_description(self, persistent, catalog, app_container: LazyAppContainer):
-        """
-        Test get task description
-        """
-        app_container.override_instance_for_test("catalog_id", catalog.id)
-        app_container.override_instance_for_test("persistent", persistent)
-        task = app_container.get(FeatureJobSettingAnalysisTask)
-        payload = task.get_payload_obj(self.payload)
-        assert (
-            await task.get_task_description(payload)
-            == 'Analyze feature job settings for table "sf_event_table"'
-        )
-
-    @pytest.mark.asyncio
     async def test_execute_with_databricks_store_success(  # pylint: disable=too-many-locals
         self,
         catalog,
@@ -247,7 +231,6 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         progress,
         update_fixtures,
         storage,
-        temp_storage,
         app_container,
         snowflake_feature_store,
     ):
@@ -294,7 +277,7 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
                 persistent=persistent,
                 progress=progress,
                 storage=storage,
-                temp_storage=temp_storage,
+                temp_storage=app_container.temp_storage,
                 app_container=app_container,
             )
 
@@ -306,4 +289,18 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
             storage=storage,
             progress=progress,
             update_fixtures=update_fixtures,
+        )
+
+    @pytest.mark.asyncio
+    async def test_get_task_description(self, persistent, catalog, app_container: LazyAppContainer):
+        """
+        Test get task description
+        """
+        app_container.override_instance_for_test("catalog_id", catalog.id)
+        app_container.override_instance_for_test("persistent", persistent)
+        task = app_container.get(FeatureJobSettingAnalysisTask)
+        payload = task.get_payload_obj(self.payload)
+        assert (
+            await task.get_task_description(payload)
+            == 'Analyze feature job settings for table "sf_event_table"'
         )

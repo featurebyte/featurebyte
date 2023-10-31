@@ -200,12 +200,13 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
 
     @pytest.mark.asyncio
     async def test_backtest(
-        self, test_api_client_persistent, create_success_response, temp_storage, backtest_result
+        self, test_api_client_persistent, create_success_response, app_container, backtest_result
     ):
         """
         Run backtest for existing analysis
         """
         _ = create_success_response
+        temp_storage = app_container.temp_storage
         test_api_client, _ = test_api_client_persistent
         payload = self.load_payload(
             "tests/fixtures/request_payloads/feature_job_settings_analysis_backtest.json"

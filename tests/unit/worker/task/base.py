@@ -57,12 +57,14 @@ class BaseTaskTestSuite:
         yield
 
     @pytest_asyncio.fixture(autouse=True)
-    async def setup(self, mongo_persistent, storage, temp_storage, catalog):
+    async def setup(self, mongo_persistent, storage, app_container, catalog):
         """
         Run setup
         """
         persistent, _ = mongo_persistent
-        await self.setup_persistent_storage(persistent, storage, temp_storage, catalog)
+        await self.setup_persistent_storage(
+            persistent, storage, app_container.temp_storage, catalog
+        )
 
     @pytest.fixture(name="progress")
     def mock_progress(self):
@@ -96,9 +98,7 @@ class BaseTaskTestSuite:
         await task.execute(task_payload)
 
     @pytest_asyncio.fixture()
-    async def task_completed(
-        self, mongo_persistent, progress, storage, temp_storage, catalog, app_container
-    ):
+    async def task_completed(self, mongo_persistent, progress, storage, catalog, app_container):
         """
         Test execution of the task
         """
@@ -111,6 +111,6 @@ class BaseTaskTestSuite:
             persistent=persistent,
             progress=progress,
             storage=storage,
-            temp_storage=temp_storage,
+            temp_storage=app_container.temp_storage,
             app_container=app_container,
         )

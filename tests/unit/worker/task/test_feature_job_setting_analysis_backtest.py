@@ -64,7 +64,6 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
         self,
         mongo_persistent,
         storage,
-        temp_storage,
         mock_event_dataset,
         catalog,
         insert_credential,
@@ -72,7 +71,9 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
     ):
         _ = mock_event_dataset, insert_credential
         persistent, _ = mongo_persistent
-        await self.setup_persistent_storage(persistent, storage, temp_storage, catalog)
+        await self.setup_persistent_storage(
+            persistent, storage, app_container.temp_storage, catalog
+        )
 
         # save analyse
         payload = self.load_payload(
@@ -85,7 +86,7 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
             persistent=persistent,
             progress=None,
             storage=storage,
-            temp_storage=temp_storage,
+            temp_storage=app_container.temp_storage,
             app_container=app_container,
         )
 
@@ -95,7 +96,7 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
         mongo_persistent,
         task_completed,
         progress,
-        temp_storage,
+        app_container,
         update_fixtures,
     ):
         """
@@ -103,6 +104,7 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
         """
         _ = task_completed
         persistent, _ = mongo_persistent
+        temp_storage = app_container.temp_storage
         output_document_id = self.payload["output_document_id"]
 
         # check storage of results in temp storage
@@ -157,9 +159,7 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
         }
 
     @pytest.mark.asyncio
-    async def test_execute_fail(
-        self, mongo_persistent, progress, storage, temp_storage, app_container
-    ):
+    async def test_execute_fail(self, mongo_persistent, progress, storage, app_container):
         """
         Test failed task execution
         """
@@ -178,7 +178,7 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
                 persistent=persistent,
                 progress=progress,
                 storage=storage,
-                temp_storage=temp_storage,
+                temp_storage=app_container.temp_storage,
                 app_container=app_container,
             )
         assert str(excinfo.value) == (
