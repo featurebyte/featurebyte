@@ -86,7 +86,6 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
             persistent=persistent,
             progress=None,
             storage=storage,
-            temp_storage=app_container.temp_storage,
             app_container=app_container,
         )
 
@@ -178,7 +177,6 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
                 persistent=persistent,
                 progress=progress,
                 storage=storage,
-                temp_storage=app_container.temp_storage,
                 app_container=app_container,
             )
         assert str(excinfo.value) == (

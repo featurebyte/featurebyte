@@ -1582,7 +1582,6 @@ def app_container_fixture(persistent, user, catalog):
         instance_map={
             "user": user,
             "persistent": persistent,
-            # "temp_storage": temp_storage,
             "celery": get_celery(),
             "storage": LocalTempStorage(),
             "catalog_id": catalog.id,

@@ -149,7 +149,6 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         Test failed task execution
         """
         persistent, _ = mongo_persistent
-        temp_storage = app_container.temp_storage
 
         # execute task with payload
         event_table_id = ObjectId()
@@ -162,7 +161,6 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
                 persistent=persistent,
                 progress=progress,
                 storage=storage,
-                temp_storage=temp_storage,
                 app_container=app_container,
             )
         assert (
@@ -209,7 +207,6 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
             persistent=persistent,
             progress=progress,
             storage=storage,
-            temp_storage=app_container.temp_storage,
             app_container=app_container,
         )
 
@@ -277,7 +274,6 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
                 persistent=persistent,
                 progress=progress,
                 storage=storage,
-                temp_storage=app_container.temp_storage,
                 app_container=app_container,
             )
 

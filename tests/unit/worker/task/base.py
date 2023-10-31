@@ -80,7 +80,6 @@ class BaseTaskTestSuite:
         persistent,
         progress,
         storage,
-        temp_storage,
         app_container: LazyAppContainer,
     ):
         """
@@ -90,7 +89,6 @@ class BaseTaskTestSuite:
         user = User(id=payload.get("user_id"))
         app_container.override_instance_for_test("persistent", persistent)
         app_container.override_instance_for_test("user", user)
-        app_container.override_instance_for_test("temp_storage", temp_storage)
         app_container.override_instance_for_test("storage", storage)
         app_container.override_instance_for_test("progress", progress)
         task = app_container.get(task_class)
@@ -105,12 +103,12 @@ class BaseTaskTestSuite:
         persistent, _ = mongo_persistent
         self.payload["catalog_id"] = catalog.id
         app_container.invalidate_dep_for_test(TaskProgressUpdater)
+        app_container.invalidate_dep_for_test("temp_storage")
         await self.execute_task(
             task_class=self.task_class,
             payload=self.payload,
             persistent=persistent,
             progress=progress,
             storage=storage,
-            temp_storage=app_container.temp_storage,
             app_container=app_container,
         )
