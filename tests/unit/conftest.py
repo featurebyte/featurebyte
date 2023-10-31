@@ -126,6 +126,15 @@ def storage_fixture():
         yield LocalStorage(base_path=tempdir)
 
 
+@pytest.fixture(name="temp_storage")
+def temp_storage_fixture():
+    """
+    Storage object fixture
+    """
+    with tempfile.TemporaryDirectory() as tempdir:
+        yield LocalStorage(base_path=tempdir)
+
+
 @pytest.fixture(name="mock_get_persistent")
 def mock_get_persistent_function(mongo_persistent):
     """
@@ -1568,7 +1577,7 @@ def catalog_fixture(snowflake_feature_store):
 
 
 @pytest.fixture(name="app_container")
-def app_container_fixture(persistent, user, catalog):
+def app_container_fixture(persistent, user, catalog, temp_storage):
     """
     Return an app container used in tests. This will allow us to easily retrieve instances of the right type.
 
@@ -1583,6 +1592,7 @@ def app_container_fixture(persistent, user, catalog):
             "user": user,
             "persistent": persistent,
             "celery": get_celery(),
+            "temp_storage": temp_storage,
             "storage": LocalTempStorage(),
             "catalog_id": catalog.id,
             "task_id": uuid4(),
@@ -1631,7 +1641,7 @@ TEST_TASK_REGISTRY_MAP[Command.LONG_RUNNING_COMMAND] = LongRunningTask
 
 
 @pytest.fixture(autouse=True, scope="function")
-def mock_task_manager(request, persistent, storage):
+def mock_task_manager(request, persistent, storage, temp_storage):
     """
     Mock celery task manager for testing
     """
@@ -1652,6 +1662,7 @@ def mock_task_manager(request, persistent, storage):
                     "celery": get_celery(),
                     "redis": get_redis(),
                     "storage": storage,
+                    "temp_storage": temp_storage,
                     "catalog_id": payload.catalog_id,
                 }
                 app_container = LazyAppContainer(

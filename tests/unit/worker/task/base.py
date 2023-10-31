@@ -103,7 +103,6 @@ class BaseTaskTestSuite:
         persistent, _ = mongo_persistent
         self.payload["catalog_id"] = catalog.id
         app_container.invalidate_dep_for_test(TaskProgressUpdater)
-        app_container.invalidate_dep_for_test("temp_storage")
         await self.execute_task(
             task_class=self.task_class,
             payload=self.payload,
