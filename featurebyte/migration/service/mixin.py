@@ -122,6 +122,10 @@ class BaseMongoCollectionMigration(BaseMigrationServiceMixin, ABC):
     Provides common functionalities required for migrating mongo collection
     """
 
+    # Flag to skip audit migration. Audit migration can be expensive for collections with a large number
+    # of records and audit records (e.g., feature collections). It can also be expensive for collections
+    # with expensive document serialization (e.g., feature models), as the time history traversal used
+    # for audit migration is computationally expensive.
     skip_audit_migration: bool = False
 
     @property
