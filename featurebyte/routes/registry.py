@@ -132,7 +132,6 @@ from featurebyte.service.validator.production_ready_validator import ProductionR
 from featurebyte.service.version import VersionService
 from featurebyte.service.view_construction import ViewConstructionService
 from featurebyte.service.working_schema import WorkingSchemaService
-from featurebyte.storage import Storage
 from featurebyte.utils.credential import MongoBackedCredentialProvider
 from featurebyte.utils.messaging import Progress
 from featurebyte.utils.persistent import MongoDBImpl
