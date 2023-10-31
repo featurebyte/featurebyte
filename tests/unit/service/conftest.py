@@ -63,7 +63,6 @@ def app_container_fixture(persistent, user, catalog):
         "user": user,
         "persistent": persistent,
         "temp_storage": LocalTempStorage(),
-        "celery": get_celery(),
         "storage": LocalTempStorage(),
         "catalog_id": catalog.id,
         "user_id": user.id,
