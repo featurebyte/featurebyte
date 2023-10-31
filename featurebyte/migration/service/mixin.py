@@ -175,14 +175,14 @@ class BaseMongoCollectionMigration(BaseMigrationServiceMixin, ABC):
             skip_audit=self.skip_audit_migration,
         )
 
-    async def get_total_migration_records(self, query_filter: Dict[str, Any]) -> int:
+    async def get_total_record(self, query_filter: Dict[str, Any]) -> int:
         """
-        Get the total number of records to be migrated
+        Get the total number of records given the query filter
 
         Parameters
         ----------
         query_filter: Dict[str, Any]
-            Query filter used to filter the documents used for migration
+            Query filter used to filter the documents
 
         Returns
         -------
