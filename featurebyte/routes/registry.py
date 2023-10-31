@@ -142,9 +142,9 @@ from featurebyte.worker.task.batch_feature_create import BatchFeatureCreateTask
 from featurebyte.worker.task.batch_feature_table import BatchFeatureTableTask
 from featurebyte.worker.task.batch_request_table import BatchRequestTableTask
 from featurebyte.worker.task.deployment_create_update import DeploymentCreateUpdateTask
-from featurebyte.worker.task.feature_job_setting_analysis import (
+from featurebyte.worker.task.feature_job_setting_analysis import FeatureJobSettingAnalysisTask
+from featurebyte.worker.task.feature_job_setting_analysis_backtest import (
     FeatureJobSettingAnalysisBacktestTask,
-    FeatureJobSettingAnalysisTask,
 )
 from featurebyte.worker.task.feature_list_batch_feature_create import (
     FeatureListCreateWithBatchFeatureCreationTask,

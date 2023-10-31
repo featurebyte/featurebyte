@@ -133,7 +133,7 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
         Apply patch to analysis result class
         """
         with patch(
-            "featurebyte.worker.task.feature_job_setting_analysis.FeatureJobSettingsAnalysisResult.from_dict",
+            "featurebyte.worker.task.feature_job_setting_analysis_backtest.FeatureJobSettingsAnalysisResult.from_dict",
         ) as mock_analysis_result_from_dict:
             mock_analysis_result = mock_analysis_result_from_dict.return_value
             mock_analysis_result.backtest.return_value = backtest_result

@@ -16,9 +16,9 @@ from featurebyte.models.event_table import EventTableModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent import DuplicateDocumentError
 from featurebyte.routes.lazy_app_container import LazyAppContainer
-from featurebyte.worker.task.feature_job_setting_analysis import (
+from featurebyte.worker.task.feature_job_setting_analysis import FeatureJobSettingAnalysisTask
+from featurebyte.worker.task.feature_job_setting_analysis_backtest import (
     FeatureJobSettingAnalysisBacktestTask,
-    FeatureJobSettingAnalysisTask,
 )
 from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
 from tests.unit.worker.task.base import BaseTaskTestSuite
