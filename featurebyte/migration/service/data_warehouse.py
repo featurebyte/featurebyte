@@ -108,7 +108,7 @@ class TileColumnTypeExtractor:
         return value_column_names.str.replace('"', "").str.split(",").apply(_transform)
 
 
-class DataWarehouseMigrationServiceV6(DataWarehouseMigrationMixin):
+class DataWarehouseMigrationServiceV1(DataWarehouseMigrationMixin):
     """
     DataWarehouseMigrationService class
 
@@ -219,7 +219,7 @@ class DataWarehouseMigrationServiceV6(DataWarehouseMigrationMixin):
                     pass
 
 
-class DataWarehouseMigrationServiceV8(DataWarehouseMigrationMixin):
+class DataWarehouseMigrationServiceV3(DataWarehouseMigrationMixin):
     """
     Reset working schema from scratch due to major changes in the warehouse schema in order to:
 

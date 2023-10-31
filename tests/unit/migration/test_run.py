@@ -21,7 +21,10 @@ from featurebyte.migration.run import (
     retrieve_all_migration_methods,
     run_migration,
 )
-from featurebyte.migration.service.mixin import DataWarehouseMigrationMixin
+from featurebyte.migration.service.mixin import (
+    BaseMongoCollectionMigration,
+    DataWarehouseMigrationMixin,
+)
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.node.schema import SnowflakeDetails
 from featurebyte.schema.feature_store import FeatureStoreCreate
@@ -141,7 +144,7 @@ async def migration_check_user_persistent_fixture(test_dir, persistent):
 async def test_post_migration_sanity_check(app_container):
     """Test post_migration_sanity_check"""
     service = app_container.feature_store_service
-    migration_service = app_container.data_warehouse_migration_service_v6
+    migration_service = app_container.data_warehouse_migration_service_v1
     docs = []
     for i in range(20):
         doc = await service.create_document(
@@ -211,15 +214,20 @@ async def test_run_migration(
         if marker.version == version:
             description = marker.description
 
-        docs = await service.list_documents()
-        assert docs["total"] > 0, service
+        delegate_service = service.delegate_service
+        with delegate_service.allow_use_raw_query_filter():
+            docs = await delegate_service.list_documents_as_dict(use_raw_query_filter=True)
+            assert docs["total"] > 0, delegate_service
 
-        # check that must be at least 3 records in the audit docs
-        max_audit_record_nums = 0
-        for doc in docs["data"]:
-            audit_docs = await service.list_document_audits(document_id=doc["_id"])
-            max_audit_record_nums = max(max_audit_record_nums, audit_docs["total"])
-        assert max_audit_record_nums > 1, service
+        if isinstance(service, BaseMongoCollectionMigration) and not service.skip_audit_migration:
+            # check audit records only if skip_audit_migration is False
+            max_audit_record_nums = 0
+            for doc in docs["data"]:
+                audit_docs = await delegate_service.list_document_audits(document_id=doc["_id"])
+                max_audit_record_nums = max(max_audit_record_nums, audit_docs["total"])
+
+            # check that must be at least 3 records in the audit docs
+            assert max_audit_record_nums > 3, delegate_service
 
     # check version in schema_metadata after migration
     schema_metadata = await schema_metadata_service.get_or_create_document(

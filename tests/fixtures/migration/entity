@@ -1,0 +1,65 @@
+[
+  {
+    "_id": {
+      "$oid": "64708932ea4c4876a77d2b85"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "grocerycustomer",
+    "created_at": {
+      "$date": "2023-05-26T10:25:55.909Z"
+    },
+    "updated_at": {
+      "$date": "2023-08-03T08:52:30.666Z"
+    },
+    "catalog_id": {
+      "$oid": "64708919ea4c4876a77d2b80"
+    },
+    "parents": [
+      {
+        "id": {
+          "$oid": "64708936ea4c4876a77d2b88"
+        },
+        "table_type": "scd_table",
+        "table_id": {
+          "$oid": "64708925ea4c4876a77d2b83"
+        }
+      },
+      {
+        "id": {
+          "$oid": "64708937ea4c4876a77d2b89"
+        },
+        "table_type": "scd_table",
+        "table_id": {
+          "$oid": "64708925ea4c4876a77d2b83"
+        }
+      }
+    ],
+    "ancestor_ids": [
+      {
+        "$oid": "64708936ea4c4876a77d2b88"
+      },
+      {
+        "$oid": "64708937ea4c4876a77d2b89"
+      }
+    ],
+    "serving_names": [
+      "GROCERYCUSTOMERGUID"
+    ],
+    "table_ids": [
+      {
+        "$oid": "6470891bea4c4876a77d2b81"
+      },
+      {
+        "$oid": "64708925ea4c4876a77d2b83"
+      }
+    ],
+    "primary_table_ids": [
+      {
+        "$oid": "64708925ea4c4876a77d2b83"
+      }
+    ],
+    "description": "Grocery Store Customer"
+  }
+]

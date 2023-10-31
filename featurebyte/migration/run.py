@@ -3,8 +3,9 @@ Migration script
 """
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator, Callable, cast
+from typing import Any, AsyncGenerator, Callable, Set, cast
 
+import asyncio
 import importlib
 import inspect
 
@@ -17,6 +18,7 @@ from featurebyte.migration.model import MigrationMetadata, SchemaMetadataModel, 
 from featurebyte.migration.service import MigrationInfo
 from featurebyte.migration.service.mixin import (
     BaseMigrationServiceMixin,
+    BaseMongoCollectionMigration,
     DataWarehouseMigrationMixin,
 )
 from featurebyte.models.base import DEFAULT_CATALOG_ID, User
@@ -26,6 +28,8 @@ from featurebyte.routes.app_container_config import _get_class_name
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
+from featurebyte.service.catalog import AllCatalogService
+from featurebyte.storage import Storage
 from featurebyte.utils.credential import MongoBackedCredentialProvider
 from featurebyte.utils.storage import get_temp_storage
 from featurebyte.worker import get_celery
@@ -103,6 +107,78 @@ def retrieve_all_migration_methods(data_warehouse_migrations_only: bool = False)
     return migrate_methods
 
 
+async def catalog_specific_migration_method_constructor(
+    all_catalog_service: AllCatalogService,
+    user: Any,
+    persistent: Persistent,
+    temp_storage: Storage,
+    celery: Celery,
+    migrate_service_instance_name: str,
+    migrate_method_name: str,
+    migration_marker: MigrationInfo,
+    max_concurrency: int = 10,
+) -> Callable[[], Any]:
+    """
+    Decorator for catalog specific migration method. This decorator will loop through all the catalogs
+    and run the migration method for each catalog.
+
+    Parameters
+    ----------
+    all_catalog_service: AllCatalogService
+        Catalog service to retrieve all the catalogs
+    user: Any
+        User object
+    persistent: Persistent
+        Persistent storage object
+    temp_storage: Storage
+        Temporary storage object
+    celery: Celery
+        Celery object
+    migrate_service_instance_name: str
+        Migrate service instance name
+    migrate_method_name: str
+        Migrate method name
+    migration_marker: MigrationInfo
+        Migration marker
+    max_concurrency: int
+        Maximum number of concurrent tasks
+
+    Returns
+    -------
+    Callable[[], Any]
+    """
+
+    async def decorated_migrate_method() -> None:
+        tasks: Set[Any] = set()
+        async for catalog in all_catalog_service.list_documents_iterator(query_filter={}):
+            logger.info(f"Run migration for catalog {catalog.id}")
+
+            # construct the app container for the catalog & retrieve the migrate method
+            app_container = LazyAppContainer(
+                user=user,
+                persistent=persistent,
+                catalog_id=catalog.id,
+                temp_storage=temp_storage,
+                celery=celery,
+                app_container_config=app_container_config,
+            )
+            migrate_service = app_container.get(migrate_service_instance_name)
+            migrate_method = getattr(migrate_service, migrate_method_name)
+
+            if len(tasks) >= max_concurrency:
+                # wait for one of the tasks to finish first
+                _, tasks = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+
+            # add the task to the task list
+            tasks.add(asyncio.create_task(migrate_method()))
+
+        # wait for all the tasks to finish
+        if tasks:
+            await asyncio.wait(tasks)
+
+    return migration_marker(decorated_migrate_method)
+
+
 async def migrate_method_generator(
     user: Any,
     persistent: Persistent,
@@ -150,13 +226,29 @@ async def migrate_method_generator(
         migrate_method_data = migrate_methods[version]
         module = importlib.import_module(migrate_method_data["module"])
         migrate_service_class = getattr(module, migrate_method_data["class"])
-        migrate_service = app_container.get(_get_class_name(migrate_service_class.__name__))
+        migrate_service_instance_name = _get_class_name(migrate_service_class.__name__)
+        migrate_service = app_container.get(migrate_service_instance_name)
         if isinstance(migrate_service, DataWarehouseMigrationMixin):
             if not include_data_warehouse_migrations:
                 continue
             migrate_service.set_credential_callback(get_credential)
             migrate_service.set_celery(celery)
-        migrate_method = getattr(migrate_service, migrate_method_data["method"])
+
+        migrate_method_name = migrate_method_data["method"]
+        migrate_method = getattr(migrate_service, migrate_method_name)
+        if isinstance(migrate_service, BaseMongoCollectionMigration):
+            if migrate_service.is_catalog_specific:
+                migrate_method = await catalog_specific_migration_method_constructor(
+                    all_catalog_service=app_container.all_catalog_service,
+                    user=user,
+                    persistent=persistent,
+                    temp_storage=app_container.temp_storage,
+                    celery=app_container.celery,
+                    migrate_service_instance_name=migrate_service_instance_name,
+                    migrate_method_name=migrate_method_name,
+                    migration_marker=_extract_migrate_method_marker(migrate_method),
+                )
+
         yield migrate_service, migrate_method
 
 

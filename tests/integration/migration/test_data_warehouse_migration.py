@@ -9,7 +9,7 @@ from bson import ObjectId
 
 from featurebyte import Feature, FeatureJobSetting, FeatureList
 from featurebyte.enum import InternalName
-from featurebyte.migration.service.data_warehouse import DataWarehouseMigrationServiceV6
+from featurebyte.migration.service.data_warehouse import DataWarehouseMigrationServiceV1
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 
 
@@ -213,7 +213,7 @@ async def test_data_warehouse_migration_v6(
         )
 
         # Run migration
-        service = DataWarehouseMigrationServiceV6(
+        service = DataWarehouseMigrationServiceV1(
             user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
         )
         service.set_credential_callback(get_credential)
