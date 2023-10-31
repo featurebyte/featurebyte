@@ -154,13 +154,16 @@ async def catalog_specific_migration_method_constructor(
             logger.info(f"Run migration for catalog {catalog.id}")
 
             # construct the app container for the catalog & retrieve the migrate method
+            instance_map = {
+                "user": user,
+                "persistent": persistent,
+                "catalog_id": catalog.id,
+                "temp_storage": temp_storage,
+                "celery": celery,
+            }
             app_container = LazyAppContainer(
-                user=user,
-                persistent=persistent,
-                catalog_id=catalog.id,
-                temp_storage=temp_storage,
-                celery=celery,
                 app_container_config=app_container_config,
+                instance_map=instance_map,
             )
             migrate_service = app_container.get(migrate_service_instance_name)
             migrate_method = getattr(migrate_service, migrate_method_name)
@@ -212,13 +215,16 @@ async def migrate_method_generator(
     migrate_method
         Migration method
     """
+    instance_map = {
+        "user": user,
+        "persistent": persistent,
+        "catalog_id": DEFAULT_CATALOG_ID,
+        "temp_storage": get_temp_storage(),
+        "celery": get_celery(),
+    }
     app_container = LazyAppContainer(
-        user=user,
-        persistent=persistent,
-        catalog_id=DEFAULT_CATALOG_ID,
-        temp_storage=get_temp_storage(),
-        celery=get_celery(),
         app_container_config=app_container_config,
+        instance_map=instance_map,
     )
     migrate_methods = retrieve_all_migration_methods()
     version_start = schema_metadata.version + 1

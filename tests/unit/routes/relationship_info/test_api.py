@@ -70,15 +70,17 @@ class TestRelationshipInfoApi(BaseCatalogApiTestSuite):
     @staticmethod
     def create_app_container(persistent, user_id, catalog_id):
         """App container fixture"""
-        user = User(id=user_id)
+        instance_map = {
+            "user": User(id=user_id),
+            "persistent": persistent,
+            "temp_storage": LocalTempStorage(),
+            "celery": get_celery(),
+            "storage": LocalTempStorage(),
+            "catalog_id": catalog_id,
+        }
         return LazyAppContainer(
-            user=user,
-            persistent=persistent,
-            temp_storage=LocalTempStorage(),
-            celery=get_celery(),
-            storage=LocalTempStorage(),
-            catalog_id=catalog_id,
             app_container_config=app_container_config,
+            instance_map=instance_map,
         )
 
     @pytest_asyncio.fixture

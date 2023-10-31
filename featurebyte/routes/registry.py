@@ -136,7 +136,7 @@ from featurebyte.storage import Storage
 from featurebyte.utils.credential import MongoBackedCredentialProvider
 from featurebyte.utils.messaging import Progress
 from featurebyte.utils.persistent import MongoDBImpl
-from featurebyte.utils.storage import get_storage
+from featurebyte.utils.storage import get_storage, get_temp_storage
 from featurebyte.worker import get_redis
 from featurebyte.worker.task.batch_feature_create import BatchFeatureCreateTask
 from featurebyte.worker.task.batch_feature_table import BatchFeatureTableTask
@@ -343,10 +343,10 @@ app_container_config.register_class(FeatureMigrationServiceV4)
 
 app_container_config.register_factory_method(get_storage)
 app_container_config.register_factory_method(get_redis, name_override="redis")
+app_container_config.register_factory_method(get_temp_storage, name_override="temp_storage")
 
 # These have force_no_deps set as True, as they are manually initialized.
 app_container_config.register_class(Celery, force_no_deps=True)
-app_container_config.register_class(Storage, force_no_deps=True, name_override="temp_storage")
 app_container_config.register_class(User, force_no_deps=True)
 
 
