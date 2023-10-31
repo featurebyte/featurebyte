@@ -3,7 +3,7 @@ MigrationServiceMixin class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from abc import ABC, abstractmethod
 
@@ -68,6 +68,7 @@ class BaseMigrationServiceMixin:
         query_filter: Optional[QueryFilter] = None,
         page_size: int = DEFAULT_PAGE_SIZE,
         version: Optional[int] = None,
+        batch_preprocess_document_func: Optional[Any] = None,
     ) -> None:
         """
         Migrate all records in this service's collection & audit collection
@@ -80,6 +81,8 @@ class BaseMigrationServiceMixin:
             Page size
         version: Optional[int]
             Optional migration version number
+        batch_preprocess_document_func: Optional[Any]
+            Optional function to preprocess the document before migration
         """
         # migrate all records and audit records
         if query_filter is None:
@@ -99,6 +102,9 @@ class BaseMigrationServiceMixin:
                 page=page,
                 page_size=page_size,
             )
+            if batch_preprocess_document_func is not None:
+                docs = await batch_preprocess_document_func(docs)
+
             for doc in docs:
                 await self.migrate_record(doc, version)
 
@@ -106,6 +112,88 @@ class BaseMigrationServiceMixin:
             page += 1
 
         logger.info(f'Complete migration (collection: "{self.delegate_service.collection_name}")')
+
+
+class BaseMongoCollectionMigration(BaseMigrationServiceMixin, ABC):
+    """
+    BaseMongoCollectionMigration class
+
+    Provides common functionalities required for migrating mongo collection
+    """
+
+    # Flag to skip audit migration. Audit migration can be expensive for collections with a large number
+    # of records and audit records (e.g., feature collections). It can also be expensive for collections
+    # with expensive document serialization (e.g., feature models), as the time history traversal used
+    # for audit migration is computationally expensive.
+    skip_audit_migration: bool = False
+
+    @property
+    def collection_name(self) -> str:
+        """
+        Collection name to be migrated
+
+        Returns
+        -------
+        str
+        """
+        return self.delegate_service.collection_name
+
+    @property
+    def is_catalog_specific(self) -> bool:
+        """
+        Whether the migration is catalog specific
+
+        Returns
+        -------
+        bool
+        """
+        return self.delegate_service.is_catalog_specific
+
+    def migrate_document_record(self, record: dict[str, Any]) -> dict[str, Any]:
+        """
+        Migrate older document record to the current document record format
+
+        Parameters
+        ----------
+        record: dict[str, Any]
+            Older document record
+
+        Returns
+        -------
+        dict[str, Any]
+            Record in newer format
+        """
+        document_class = self.delegate_service.document_class
+        return document_class(**record).dict(by_alias=True)
+
+    async def migrate_record(self, document: Document, version: Optional[int]) -> None:
+        _ = version
+        await self.persistent.migrate_record(
+            collection_name=self.collection_name,
+            document=document,
+            migrate_func=self.migrate_document_record,
+            skip_audit=self.skip_audit_migration,
+        )
+
+    async def get_total_record(self, query_filter: Dict[str, Any]) -> int:
+        """
+        Get the total number of records given the query filter
+
+        Parameters
+        ----------
+        query_filter: Dict[str, Any]
+            Query filter used to filter the documents
+
+        Returns
+        -------
+        int
+        """
+        _, total_record = await self.persistent.find(
+            collection_name=self.collection_name,
+            query_filter=query_filter,
+            page_size=1,  # only need to get the total count
+        )
+        return total_record
 
 
 class DataWarehouseMigrationMixin(BaseMigrationServiceMixin, ABC):
