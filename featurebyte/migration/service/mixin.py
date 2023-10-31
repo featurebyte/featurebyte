@@ -68,6 +68,7 @@ class BaseMigrationServiceMixin:
         query_filter: Optional[QueryFilter] = None,
         page_size: int = DEFAULT_PAGE_SIZE,
         version: Optional[int] = None,
+        batch_preprocess_document_func: Optional[Any] = None,
     ) -> None:
         """
         Migrate all records in this service's collection & audit collection
@@ -80,6 +81,8 @@ class BaseMigrationServiceMixin:
             Page size
         version: Optional[int]
             Optional migration version number
+        batch_preprocess_document_func: Optional[Any]
+            Optional function to preprocess the document before migration
         """
         # migrate all records and audit records
         if query_filter is None:
@@ -92,6 +95,7 @@ class BaseMigrationServiceMixin:
             f'Start migrating all records (collection: "{self.delegate_service.collection_name}")'
         )
         to_iterate, page = True, 1
+
         while to_iterate:
             docs, total = await self.persistent.find(
                 collection_name=self.delegate_service.collection_name,
@@ -99,6 +103,9 @@ class BaseMigrationServiceMixin:
                 page=page,
                 page_size=page_size,
             )
+            if batch_preprocess_document_func is not None:
+                docs = await batch_preprocess_document_func(docs)
+
             for doc in docs:
                 await self.migrate_record(doc, version)
 
@@ -114,6 +121,8 @@ class BaseMongoCollectionMigration(BaseMigrationServiceMixin, ABC):
 
     Provides common functionalities required for migrating mongo collection
     """
+
+    skip_audit_migration: bool = False
 
     @property
     def collection_name(self) -> str:
@@ -160,6 +169,7 @@ class BaseMongoCollectionMigration(BaseMigrationServiceMixin, ABC):
             collection_name=self.collection_name,
             document=document,
             migrate_func=self.migrate_document_record,
+            skip_audit=self.skip_audit_migration,
         )
 
     async def get_total_migration_records(self, query_filter: Dict[str, Any]) -> int:

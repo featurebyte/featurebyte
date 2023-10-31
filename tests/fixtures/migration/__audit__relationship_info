@@ -1,0 +1,134 @@
+[
+  {
+    "_id": {
+      "$oid": "6470893ddc5e0118a048d53b"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "insert: \"64708934ea4c4876a77d2b86_64708932ea4c4876a77d2b85\"",
+    "document_id": {
+      "$oid": "6470893ddc5e0118a048d53a"
+    },
+    "action_at": {
+      "$date": "2023-05-26T10:26:05.128Z"
+    },
+    "action_type": "INSERT",
+    "previous_values": {},
+    "current_values": {
+      "user_id": {
+        "$oid": "64645f76cfc8e397f762c868"
+      },
+      "name": "64708934ea4c4876a77d2b86_64708932ea4c4876a77d2b85",
+      "created_at": {
+        "$date": "2023-05-26T10:26:05.122Z"
+      },
+      "updated_at": null,
+      "catalog_id": {
+        "$oid": "64708919ea4c4876a77d2b80"
+      },
+      "relationship_type": "child_parent",
+      "entity_id": {
+        "$oid": "64708934ea4c4876a77d2b86"
+      },
+      "related_entity_id": {
+        "$oid": "64708932ea4c4876a77d2b85"
+      },
+      "relation_table_id": {
+        "$oid": "6470891bea4c4876a77d2b81"
+      },
+      "enabled": true,
+      "updated_by": {
+        "$oid": "64645f76cfc8e397f762c868"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6470894ddc5e0118a048d541"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "insert: \"64708932ea4c4876a77d2b85_64708936ea4c4876a77d2b88\"",
+    "document_id": {
+      "$oid": "6470894ddc5e0118a048d540"
+    },
+    "action_at": {
+      "$date": "2023-05-26T10:26:21.071Z"
+    },
+    "action_type": "INSERT",
+    "previous_values": {},
+    "current_values": {
+      "user_id": {
+        "$oid": "64645f76cfc8e397f762c868"
+      },
+      "name": "64708932ea4c4876a77d2b85_64708936ea4c4876a77d2b88",
+      "created_at": {
+        "$date": "2023-05-26T10:26:21.067Z"
+      },
+      "updated_at": null,
+      "catalog_id": {
+        "$oid": "64708919ea4c4876a77d2b80"
+      },
+      "relationship_type": "child_parent",
+      "entity_id": {
+        "$oid": "64708932ea4c4876a77d2b85"
+      },
+      "related_entity_id": {
+        "$oid": "64708936ea4c4876a77d2b88"
+      },
+      "relation_table_id": {
+        "$oid": "64708925ea4c4876a77d2b83"
+      },
+      "enabled": true,
+      "updated_by": {
+        "$oid": "64645f76cfc8e397f762c868"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6470894ddc5e0118a048d547"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "insert: \"64708932ea4c4876a77d2b85_64708937ea4c4876a77d2b89\"",
+    "document_id": {
+      "$oid": "6470894ddc5e0118a048d546"
+    },
+    "action_at": {
+      "$date": "2023-05-26T10:26:21.865Z"
+    },
+    "action_type": "INSERT",
+    "previous_values": {},
+    "current_values": {
+      "user_id": {
+        "$oid": "64645f76cfc8e397f762c868"
+      },
+      "name": "64708932ea4c4876a77d2b85_64708937ea4c4876a77d2b89",
+      "created_at": {
+        "$date": "2023-05-26T10:26:21.860Z"
+      },
+      "updated_at": null,
+      "catalog_id": {
+        "$oid": "64708919ea4c4876a77d2b80"
+      },
+      "relationship_type": "child_parent",
+      "entity_id": {
+        "$oid": "64708932ea4c4876a77d2b85"
+      },
+      "related_entity_id": {
+        "$oid": "64708937ea4c4876a77d2b89"
+      },
+      "relation_table_id": {
+        "$oid": "64708925ea4c4876a77d2b83"
+      },
+      "enabled": true,
+      "updated_by": {
+        "$oid": "64645f76cfc8e397f762c868"
+      }
+    }
+  }
+]

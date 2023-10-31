@@ -497,6 +497,7 @@ class Persistent(ABC):
         collection_name: str,
         document: Document,
         migrate_func: Callable[[dict[str, Any]], dict[str, Any]],
+        skip_audit: bool = False,
     ) -> None:
         """
         Migrate record & its audit records
@@ -509,17 +510,20 @@ class Persistent(ABC):
             Document to be migrated
         migrate_func: Callable[[dict[str, Any]], dict[str, Any]]
             Function to migrate the record from old to new format
+        skip_audit: bool
+            Whether to skip migrating audit records
         """
         await self._migrate_record(
             collection_name=collection_name,
             document=document,
             migrate_func=migrate_func,
         )
-        await self._migrate_audit_records(
-            collection_name=collection_name,
-            document_id=document["_id"],
-            migrate_func=migrate_func,
-        )
+        if not skip_audit:
+            await self._migrate_audit_records(
+                collection_name=collection_name,
+                document_id=document["_id"],
+                migrate_func=migrate_func,
+            )
 
     async def _migrate_record(
         self,

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Any, AsyncGenerator, Callable, cast
 
+import asyncio
 import importlib
 import inspect
 
@@ -17,6 +18,7 @@ from featurebyte.migration.model import MigrationMetadata, SchemaMetadataModel, 
 from featurebyte.migration.service import MigrationInfo
 from featurebyte.migration.service.mixin import (
     BaseMigrationServiceMixin,
+    BaseMongoCollectionMigration,
     DataWarehouseMigrationMixin,
 )
 from featurebyte.models.base import DEFAULT_CATALOG_ID, User
@@ -114,6 +116,7 @@ async def catalog_specific_migration_method_constructor(
     migrate_service_instance_name: str,
     migrate_method_name: str,
     migration_marker: MigrationInfo,
+    max_concurrency: int = 10,
 ) -> Callable[[], Any]:
     """
     Decorator for catalog specific migration method. This decorator will loop through all the catalogs
@@ -137,6 +140,8 @@ async def catalog_specific_migration_method_constructor(
         Migrate method name
     migration_marker: MigrationInfo
         Migration marker
+    max_concurrency: int
+        Maximum number of concurrent tasks
 
     Returns
     -------
@@ -144,8 +149,10 @@ async def catalog_specific_migration_method_constructor(
     """
 
     async def decorated_migrate_method() -> None:
-        # loop through all the catalogs & run the migration method
+        tasks = set()
         async for catalog in all_catalog_service.list_documents_iterator(query_filter={}):
+            logger.info(f"Run migration for catalog {catalog.id}")
+            # add the task to the task list
             app_container = LazyAppContainer(
                 user=user,
                 persistent=persistent,
@@ -156,7 +163,16 @@ async def catalog_specific_migration_method_constructor(
             )
             migrate_service = app_container.get(migrate_service_instance_name)
             migrate_method = getattr(migrate_service, migrate_method_name)
-            await migrate_method()
+
+            if len(tasks) >= max_concurrency:
+                # wait for one of the tasks to finish first
+                _, tasks = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+
+            tasks.add(asyncio.create_task(migrate_method()))
+
+        # wait for all the tasks to finish
+        if tasks:
+            await asyncio.wait(tasks)
 
     return migration_marker(decorated_migrate_method)
 
@@ -218,17 +234,18 @@ async def migrate_method_generator(
 
         migrate_method_name = migrate_method_data["method"]
         migrate_method = getattr(migrate_service, migrate_method_name)
-        if migrate_service.is_catalog_specific:
-            migrate_method = await catalog_specific_migration_method_constructor(
-                all_catalog_service=app_container.all_catalog_service,
-                user=user,
-                persistent=persistent,
-                temp_storage=app_container.temp_storage,
-                celery=app_container.celery,
-                migrate_service_instance_name=migrate_service_instance_name,
-                migrate_method_name=migrate_method_name,
-                migration_marker=_extract_migrate_method_marker(migrate_method),
-            )
+        if isinstance(migrate_service, BaseMongoCollectionMigration):
+            if migrate_service.is_catalog_specific:
+                migrate_method = await catalog_specific_migration_method_constructor(
+                    all_catalog_service=app_container.all_catalog_service,
+                    user=user,
+                    persistent=persistent,
+                    temp_storage=app_container.temp_storage,
+                    celery=app_container.celery,
+                    migrate_service_instance_name=migrate_service_instance_name,
+                    migrate_method_name=migrate_method_name,
+                    migration_marker=_extract_migrate_method_marker(migrate_method),
+                )
 
         yield migrate_service, migrate_method
 

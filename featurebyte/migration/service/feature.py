@@ -1,17 +1,24 @@
 """
 Feature migration service
 """
-from typing import Optional
+from typing import Any, Dict, List
 
+from bson import ObjectId
+
+from featurebyte.logging import get_logger
 from featurebyte.migration.service import migrate
 from featurebyte.migration.service.mixin import BaseMongoCollectionMigration
+from featurebyte.models import EntityModel
 from featurebyte.models.persistent import Document
 from featurebyte.persistent import Persistent
-from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.routes.common.derive_primary_entity_helper import DerivePrimaryEntityHelper
+from featurebyte.service.entity import EntityService
 from featurebyte.service.entity_relationship_extractor import EntityRelationshipExtractorService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.relationship import BaseDocumentServiceT
+from featurebyte.service.relationship_info import RelationshipInfoService
+
+logger = get_logger(__name__)
 
 
 class FeatureMigrationServiceV4(BaseMongoCollectionMigration):
@@ -21,15 +28,22 @@ class FeatureMigrationServiceV4(BaseMongoCollectionMigration):
     This class is used to migrate the feature records to add relationships_info field.
     """
 
+    # skip audit migration for this migration
+    skip_audit_migration = True
+
     def __init__(
         self,
         persistent: Persistent,
         feature_service: FeatureService,
+        entity_service: EntityService,
+        relationship_info_service: RelationshipInfoService,
         entity_relationship_extractor_service: EntityRelationshipExtractorService,
         derive_primary_entity_helper: DerivePrimaryEntityHelper,
     ):
         super().__init__(persistent)
         self.feature_service = feature_service
+        self.entity_service = entity_service
+        self.relationship_info_service = relationship_info_service
         self.entity_relationship_extractor_service = entity_relationship_extractor_service
         self.derive_primary_entity_helper = derive_primary_entity_helper
 
@@ -37,27 +51,57 @@ class FeatureMigrationServiceV4(BaseMongoCollectionMigration):
     def delegate_service(self) -> BaseDocumentServiceT:
         return self.feature_service  # type: ignore[return-value]
 
-    async def migrate_record(self, document: Document, version: Optional[int]) -> None:
-        # derive relationships_info and add to the document
-        query_graph = QueryGraph(**document["graph"])
-        entity_ids = query_graph.get_entity_ids(node_name=document["node_name"])
-        primary_entity_ids = await self.derive_primary_entity_helper.derive_primary_entity_ids(
-            entity_ids=entity_ids
-        )
-        extractor = self.entity_relationship_extractor_service
-        relationships_info = await extractor.extract_relationship_from_primary_entity(
-            entity_ids=entity_ids, primary_entity_ids=primary_entity_ids
-        )
-        document["primary_entity_ids"] = sorted(primary_entity_ids)
-        document["relationships_info"] = [
-            relationship.dict(by_alias=True) for relationship in relationships_info
-        ]
+    async def batch_preprocess_document(self, documents: List[Document]) -> List[Document]:
+        """
+        Preprocess the documents before migration
 
-        await self.persistent.migrate_record(
-            collection_name=self.collection_name,
-            document=document,
-            migrate_func=self.migrate_document_record,
-        )
+        Parameters
+        ----------
+        documents: List[Document]
+            List of documents to be migrated
+
+        Returns
+        -------
+        List[Document]
+        """
+        all_entity_ids = set()
+        for document in documents:
+            all_entity_ids.update(document["entity_ids"])
+
+        # get all entity first to reduce the number of queries
+        entity_id_to_entity: Dict[ObjectId, EntityModel] = {
+            entity.id: entity
+            async for entity in self.entity_service.list_documents_iterator(
+                query_filter={"_id": {"$in": list(all_entity_ids)}}
+            )
+        }
+        extractor = self.entity_relationship_extractor_service
+        for document in documents:
+            primary_entity_ids = await self.derive_primary_entity_helper.derive_primary_entity_ids(
+                entity_ids=document["entity_ids"], entity_id_to_entity=entity_id_to_entity
+            )
+            relationships_info = await extractor.extract_relationship_from_primary_entity(
+                entity_ids=document["entity_ids"],
+                primary_entity_ids=primary_entity_ids,
+            )
+            document["primary_entity_ids"] = sorted(primary_entity_ids)
+            document["relationships_info"] = [
+                relationship.dict(by_alias=True) for relationship in relationships_info
+            ]
+        return documents
+
+    def migrate_document_record(self, record: Dict[str, Any]) -> Dict[str, Any]:
+        try:
+            output = super().migrate_document_record(record)
+            return output
+        except Exception as exc:  # pylint: disable=broad-except
+            logger.info(
+                "Record (id: %s, name: %s) encountered error: %s",
+                record["_id"],
+                record["name"],
+                str(exc),
+            )
+            return record
 
     @migrate(version=4, description="Add relationships_info to feature record")
     async def add_relationships_info(self) -> None:
@@ -69,7 +113,10 @@ class FeatureMigrationServiceV4(BaseMongoCollectionMigration):
         total_before = await self.get_total_migration_records(query_filter=query_filter)  # type: ignore
 
         # migrate all records and audit records
-        await self.migrate_all_records(query_filter=query_filter)
+        await self.migrate_all_records(
+            query_filter=query_filter,
+            batch_preprocess_document_func=self.batch_preprocess_document,
+        )
 
         # check the sample records after migration
         sample_docs_after, total_after = await self.persistent.find(
@@ -80,3 +127,5 @@ class FeatureMigrationServiceV4(BaseMongoCollectionMigration):
         assert total_before == total_after, (total_before, total_after)
         for doc in sample_docs_after:
             assert isinstance(doc.get("relationships_info"), list), doc.get("relationships_info")
+
+        logger.info("Migrated all records successfully (total: %d)", total_after)

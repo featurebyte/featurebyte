@@ -1,0 +1,255 @@
+[
+  {
+    "_id": {
+      "$oid": "64708933dc5e0118a048d532"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "insert: \"grocerycustomer\"",
+    "document_id": {
+      "$oid": "64708932ea4c4876a77d2b85"
+    },
+    "action_at": {
+      "$date": "2023-05-26T10:25:55.996Z"
+    },
+    "action_type": "INSERT",
+    "previous_values": {},
+    "current_values": {
+      "user_id": {
+        "$oid": "64645f76cfc8e397f762c868"
+      },
+      "name": "grocerycustomer",
+      "created_at": {
+        "$date": "2023-05-26T10:25:55.909Z"
+      },
+      "updated_at": null,
+      "catalog_id": {
+        "$oid": "64708919ea4c4876a77d2b80"
+      },
+      "parents": [],
+      "ancestor_ids": [],
+      "serving_names": [
+        "GROCERYCUSTOMERGUID"
+      ],
+      "table_ids": [],
+      "primary_table_ids": []
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6470893ddc5e0118a048d538"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"grocerycustomer\"",
+    "document_id": {
+      "$oid": "64708932ea4c4876a77d2b85"
+    },
+    "action_at": {
+      "$date": "2023-05-26T10:26:05.038Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": null,
+      "table_ids": []
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-05-26T10:26:05.033Z"
+      },
+      "table_ids": [
+        {
+          "$oid": "6470891bea4c4876a77d2b81"
+        }
+      ]
+    }
+  },
+  {
+    "_id": {
+      "$oid": "64708940e6afaa67f96f0d0f"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"grocerycustomer\"",
+    "document_id": {
+      "$oid": "64708932ea4c4876a77d2b85"
+    },
+    "action_at": {
+      "$date": "2023-05-26T10:26:08.397Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-05-26T10:26:05.033Z"
+      },
+      "table_ids": [
+        {
+          "$oid": "6470891bea4c4876a77d2b81"
+        }
+      ],
+      "primary_table_ids": []
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-05-26T10:26:08.393Z"
+      },
+      "table_ids": [
+        {
+          "$oid": "6470891bea4c4876a77d2b81"
+        },
+        {
+          "$oid": "64708925ea4c4876a77d2b83"
+        }
+      ],
+      "primary_table_ids": [
+        {
+          "$oid": "64708925ea4c4876a77d2b83"
+        }
+      ]
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6470894ddc5e0118a048d53e"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"grocerycustomer\"",
+    "document_id": {
+      "$oid": "64708932ea4c4876a77d2b85"
+    },
+    "action_at": {
+      "$date": "2023-05-26T10:26:21.048Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-05-26T10:26:08.393Z"
+      },
+      "parents": [],
+      "ancestor_ids": []
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-05-26T10:26:21.044Z"
+      },
+      "parents": [
+        {
+          "id": {
+            "$oid": "64708936ea4c4876a77d2b88"
+          },
+          "table_type": "scd_table",
+          "table_id": {
+            "$oid": "64708925ea4c4876a77d2b83"
+          }
+        }
+      ],
+      "ancestor_ids": [
+        {
+          "$oid": "64708936ea4c4876a77d2b88"
+        }
+      ]
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6470894ddc5e0118a048d544"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"grocerycustomer\"",
+    "document_id": {
+      "$oid": "64708932ea4c4876a77d2b85"
+    },
+    "action_at": {
+      "$date": "2023-05-26T10:26:21.834Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-05-26T10:26:21.044Z"
+      },
+      "parents": [
+        {
+          "id": {
+            "$oid": "64708936ea4c4876a77d2b88"
+          },
+          "table_type": "scd_table",
+          "table_id": {
+            "$oid": "64708925ea4c4876a77d2b83"
+          }
+        }
+      ],
+      "ancestor_ids": [
+        {
+          "$oid": "64708936ea4c4876a77d2b88"
+        }
+      ]
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-05-26T10:26:21.830Z"
+      },
+      "parents": [
+        {
+          "id": {
+            "$oid": "64708936ea4c4876a77d2b88"
+          },
+          "table_type": "scd_table",
+          "table_id": {
+            "$oid": "64708925ea4c4876a77d2b83"
+          }
+        },
+        {
+          "id": {
+            "$oid": "64708937ea4c4876a77d2b89"
+          },
+          "table_type": "scd_table",
+          "table_id": {
+            "$oid": "64708925ea4c4876a77d2b83"
+          }
+        }
+      ],
+      "ancestor_ids": [
+        {
+          "$oid": "64708936ea4c4876a77d2b88"
+        },
+        {
+          "$oid": "64708937ea4c4876a77d2b89"
+        }
+      ]
+    }
+  },
+  {
+    "_id": {
+      "$oid": "64cb6ace928336e3740e4e00"
+    },
+    "user_id": {
+      "$oid": "6478af6f173590eb5f404716"
+    },
+    "name": "update: \"grocerycustomer\"",
+    "document_id": {
+      "$oid": "64708932ea4c4876a77d2b85"
+    },
+    "action_at": {
+      "$date": "2023-08-03T08:52:30.674Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-05-26T10:26:21.830Z"
+      }
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-08-03T08:52:30.666Z"
+      },
+      "description": "Grocery Store Customer"
+    }
+  }
+]

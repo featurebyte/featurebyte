@@ -1,0 +1,3353 @@
+[
+  {
+    "_id": {
+      "$oid": "64776ccc6de4a7e9688b5f0c"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "insert: \"city_state\"",
+    "document_id": {
+      "$oid": "64776b0e5c0291fd4ffbea35"
+    },
+    "action_at": {
+      "$date": "2023-05-31T15:50:36.713Z"
+    },
+    "action_type": "INSERT",
+    "previous_values": {},
+    "current_values": {
+      "user_id": {
+        "$oid": "64645f76cfc8e397f762c868"
+      },
+      "name": "city_state",
+      "created_at": {
+        "$date": "2023-05-31T15:50:36.585Z"
+      },
+      "updated_at": null,
+      "catalog_id": {
+        "$oid": "64708919ea4c4876a77d2b80"
+      },
+      "dtype": "VARCHAR",
+      "graph": {
+        "edges": [
+          {
+            "source": "input_1",
+            "target": "graph_1"
+          },
+          {
+            "source": "graph_1",
+            "target": "project_1"
+          },
+          {
+            "source": "project_1",
+            "target": "concat_1"
+          },
+          {
+            "source": "graph_1",
+            "target": "project_2"
+          },
+          {
+            "source": "concat_1",
+            "target": "concat_2"
+          },
+          {
+            "source": "project_2",
+            "target": "concat_2"
+          },
+          {
+            "source": "graph_1",
+            "target": "assign_1"
+          },
+          {
+            "source": "concat_2",
+            "target": "assign_1"
+          },
+          {
+            "source": "assign_1",
+            "target": "lookup_1"
+          },
+          {
+            "source": "lookup_1",
+            "target": "project_3"
+          }
+        ],
+        "nodes": [
+          {
+            "name": "input_1",
+            "type": "input",
+            "output_type": "frame",
+            "parameters": {
+              "columns": [
+                {
+                  "name": "RowID",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "GroceryCustomerGuid",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "ValidFrom",
+                  "dtype": "TIMESTAMP"
+                },
+                {
+                  "name": "Gender",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "Title",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "GivenName",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "MiddleInitial",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "Surname",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "StreetAddress",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "City",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "State",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "PostalCode",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "BrowserUserAgent",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "DateOfBirth",
+                  "dtype": "TIMESTAMP"
+                },
+                {
+                  "name": "Latitude",
+                  "dtype": "FLOAT"
+                },
+                {
+                  "name": "Longitude",
+                  "dtype": "FLOAT"
+                },
+                {
+                  "name": "record_available_at",
+                  "dtype": "TIMESTAMP"
+                },
+                {
+                  "name": "CurrentRecord",
+                  "dtype": "BOOL"
+                }
+              ],
+              "table_details": {
+                "database_name": "DEMO_DATASETS",
+                "schema_name": "GROCERY",
+                "table_name": "GROCERYCUSTOMER"
+              },
+              "feature_store_details": {
+                "type": "snowflake",
+                "details": {
+                  "account": "fm54506.us-central1.gcp",
+                  "warehouse": "DEMO",
+                  "database": "DEMO",
+                  "sf_schema": "FEATUREBYTE_PROD_V2"
+                }
+              },
+              "type": "scd_table",
+              "id": {
+                "$oid": "64708925ea4c4876a77d2b83"
+              },
+              "natural_key_column": "GroceryCustomerGuid",
+              "effective_timestamp_column": "ValidFrom",
+              "surrogate_key_column": null,
+              "end_timestamp_column": null,
+              "current_flag_column": "CurrentRecord"
+            }
+          },
+          {
+            "name": "graph_1",
+            "type": "graph",
+            "output_type": "frame",
+            "parameters": {
+              "graph": {
+                "edges": [
+                  {
+                    "source": "proxy_input_1",
+                    "target": "project_1"
+                  }
+                ],
+                "nodes": [
+                  {
+                    "name": "proxy_input_1",
+                    "type": "proxy_input",
+                    "output_type": "frame",
+                    "parameters": {
+                      "input_order": 0
+                    }
+                  },
+                  {
+                    "name": "project_1",
+                    "type": "project",
+                    "output_type": "frame",
+                    "parameters": {
+                      "columns": [
+                        "RowID",
+                        "GroceryCustomerGuid",
+                        "ValidFrom",
+                        "Gender",
+                        "Title",
+                        "GivenName",
+                        "MiddleInitial",
+                        "Surname",
+                        "StreetAddress",
+                        "City",
+                        "State",
+                        "PostalCode",
+                        "BrowserUserAgent",
+                        "DateOfBirth",
+                        "Latitude",
+                        "Longitude",
+                        "record_available_at"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "output_node_name": "project_1",
+              "type": "scd_view",
+              "metadata": {
+                "view_mode": "auto",
+                "drop_column_names": [
+                  "CurrentRecord"
+                ],
+                "column_cleaning_operations": [],
+                "table_id": {
+                  "$oid": "64708925ea4c4876a77d2b83"
+                }
+              }
+            }
+          },
+          {
+            "name": "project_1",
+            "type": "project",
+            "output_type": "series",
+            "parameters": {
+              "columns": [
+                "City"
+              ]
+            }
+          },
+          {
+            "name": "concat_1",
+            "type": "concat",
+            "output_type": "series",
+            "parameters": {
+              "value": "_",
+              "right_op": false
+            }
+          },
+          {
+            "name": "project_2",
+            "type": "project",
+            "output_type": "series",
+            "parameters": {
+              "columns": [
+                "State"
+              ]
+            }
+          },
+          {
+            "name": "concat_2",
+            "type": "concat",
+            "output_type": "series",
+            "parameters": {
+              "value": null,
+              "right_op": false
+            }
+          },
+          {
+            "name": "assign_1",
+            "type": "assign",
+            "output_type": "frame",
+            "parameters": {
+              "name": "city_state",
+              "value": null
+            }
+          },
+          {
+            "name": "lookup_1",
+            "type": "lookup",
+            "output_type": "frame",
+            "parameters": {
+              "input_column_names": [
+                "city_state"
+              ],
+              "feature_names": [
+                "city_state"
+              ],
+              "entity_column": "GroceryCustomerGuid",
+              "serving_name": "GROCERYCUSTOMERGUID",
+              "entity_id": {
+                "$oid": "64708932ea4c4876a77d2b85"
+              },
+              "scd_parameters": {
+                "effective_timestamp_column": "ValidFrom",
+                "natural_key_column": "GroceryCustomerGuid",
+                "current_flag_column": "CurrentRecord",
+                "end_timestamp_column": null,
+                "offset": null
+              },
+              "event_parameters": null
+            }
+          },
+          {
+            "name": "project_3",
+            "type": "project",
+            "output_type": "series",
+            "parameters": {
+              "columns": [
+                "city_state"
+              ]
+            }
+          }
+        ]
+      },
+      "node_name": "project_3",
+      "tabular_source": {
+        "feature_store_id": {
+          "$oid": "646cb1cef1d0ea5b3693e111"
+        },
+        "table_details": {
+          "database_name": "DEMO_DATASETS",
+          "schema_name": "GROCERY",
+          "table_name": "GROCERYCUSTOMER"
+        }
+      },
+      "readiness": "DRAFT",
+      "version": {
+        "name": "V230531",
+        "suffix": null
+      },
+      "online_enabled": false,
+      "definition": "# Generated by SDK version: 0.2.0.dev104\nfrom bson import ObjectId\nfrom featurebyte import SCDTable\n\n\n# scd_table name: \"GROCERYCUSTOMER\"\nscd_table = SCDTable.get_by_id(ObjectId(\"64708925ea4c4876a77d2b83\"))\nscd_view = scd_table.get_view(\n    view_mode=\"manual\",\n    drop_column_names=[\"CurrentRecord\"],\n    column_cleaning_operations=[],\n)\ncol = scd_view[\"City\"]\ncol_1 = scd_view[\"State\"]\nview = scd_view.copy()\nview[\"city_state\"] = (col + \"_\") + col_1\ngrouped = view.as_features(\n    column_names=[\"city_state\"], feature_names=[\"city_state\"], offset=None\n)\nfeat = grouped[\"city_state\"]\noutput = feat\noutput.save(_id=ObjectId(\"64776b0e5c0291fd4ffbea35\"))\n",
+      "entity_ids": [
+        {
+          "$oid": "64708932ea4c4876a77d2b85"
+        }
+      ],
+      "table_ids": [
+        {
+          "$oid": "64708925ea4c4876a77d2b83"
+        }
+      ],
+      "primary_table_ids": [
+        {
+          "$oid": "64708925ea4c4876a77d2b83"
+        }
+      ],
+      "feature_namespace_id": {
+        "$oid": "64776ccc6de4a7e9688b5f0a"
+      },
+      "feature_list_ids": [],
+      "deployed_feature_list_ids": [],
+      "raw_graph": {
+        "edges": [
+          {
+            "source": "input_1",
+            "target": "graph_1"
+          },
+          {
+            "source": "graph_1",
+            "target": "project_1"
+          },
+          {
+            "source": "project_1",
+            "target": "concat_1"
+          },
+          {
+            "source": "graph_1",
+            "target": "project_2"
+          },
+          {
+            "source": "concat_1",
+            "target": "concat_2"
+          },
+          {
+            "source": "project_2",
+            "target": "concat_2"
+          },
+          {
+            "source": "graph_1",
+            "target": "assign_1"
+          },
+          {
+            "source": "concat_2",
+            "target": "assign_1"
+          },
+          {
+            "source": "assign_1",
+            "target": "lookup_1"
+          },
+          {
+            "source": "lookup_1",
+            "target": "project_3"
+          }
+        ],
+        "nodes": [
+          {
+            "name": "input_1",
+            "type": "input",
+            "output_type": "frame",
+            "parameters": {
+              "columns": [
+                {
+                  "name": "RowID",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "GroceryCustomerGuid",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "ValidFrom",
+                  "dtype": "TIMESTAMP"
+                },
+                {
+                  "name": "Gender",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "Title",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "GivenName",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "MiddleInitial",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "Surname",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "StreetAddress",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "City",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "State",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "PostalCode",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "BrowserUserAgent",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "DateOfBirth",
+                  "dtype": "TIMESTAMP"
+                },
+                {
+                  "name": "Latitude",
+                  "dtype": "FLOAT"
+                },
+                {
+                  "name": "Longitude",
+                  "dtype": "FLOAT"
+                },
+                {
+                  "name": "record_available_at",
+                  "dtype": "TIMESTAMP"
+                },
+                {
+                  "name": "CurrentRecord",
+                  "dtype": "BOOL"
+                }
+              ],
+              "table_details": {
+                "database_name": "DEMO_DATASETS",
+                "schema_name": "GROCERY",
+                "table_name": "GROCERYCUSTOMER"
+              },
+              "feature_store_details": {
+                "type": "snowflake",
+                "details": {
+                  "account": "fm54506.us-central1.gcp",
+                  "warehouse": "DEMO",
+                  "database": "DEMO",
+                  "sf_schema": "FEATUREBYTE_PROD_V2"
+                }
+              },
+              "type": "scd_table",
+              "id": {
+                "$oid": "64708925ea4c4876a77d2b83"
+              },
+              "natural_key_column": "GroceryCustomerGuid",
+              "effective_timestamp_column": "ValidFrom",
+              "surrogate_key_column": null,
+              "end_timestamp_column": null,
+              "current_flag_column": "CurrentRecord"
+            }
+          },
+          {
+            "name": "graph_1",
+            "type": "graph",
+            "output_type": "frame",
+            "parameters": {
+              "graph": {
+                "edges": [
+                  {
+                    "source": "proxy_input_1",
+                    "target": "project_1"
+                  }
+                ],
+                "nodes": [
+                  {
+                    "name": "proxy_input_1",
+                    "type": "proxy_input",
+                    "output_type": "frame",
+                    "parameters": {
+                      "input_order": 0
+                    }
+                  },
+                  {
+                    "name": "project_1",
+                    "type": "project",
+                    "output_type": "frame",
+                    "parameters": {
+                      "columns": [
+                        "RowID",
+                        "GroceryCustomerGuid",
+                        "ValidFrom",
+                        "Gender",
+                        "Title",
+                        "GivenName",
+                        "MiddleInitial",
+                        "Surname",
+                        "StreetAddress",
+                        "City",
+                        "State",
+                        "PostalCode",
+                        "BrowserUserAgent",
+                        "DateOfBirth",
+                        "Latitude",
+                        "Longitude",
+                        "record_available_at"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "output_node_name": "project_1",
+              "type": "scd_view",
+              "metadata": {
+                "view_mode": "auto",
+                "drop_column_names": [
+                  "CurrentRecord"
+                ],
+                "column_cleaning_operations": [],
+                "table_id": {
+                  "$oid": "64708925ea4c4876a77d2b83"
+                }
+              }
+            }
+          },
+          {
+            "name": "project_1",
+            "type": "project",
+            "output_type": "series",
+            "parameters": {
+              "columns": [
+                "City"
+              ]
+            }
+          },
+          {
+            "name": "concat_1",
+            "type": "concat",
+            "output_type": "series",
+            "parameters": {
+              "value": "_",
+              "right_op": false
+            }
+          },
+          {
+            "name": "project_2",
+            "type": "project",
+            "output_type": "series",
+            "parameters": {
+              "columns": [
+                "State"
+              ]
+            }
+          },
+          {
+            "name": "concat_2",
+            "type": "concat",
+            "output_type": "series",
+            "parameters": {
+              "value": null,
+              "right_op": false
+            }
+          },
+          {
+            "name": "assign_1",
+            "type": "assign",
+            "output_type": "frame",
+            "parameters": {
+              "name": "city_state",
+              "value": null
+            }
+          },
+          {
+            "name": "lookup_1",
+            "type": "lookup",
+            "output_type": "frame",
+            "parameters": {
+              "input_column_names": [
+                "city_state"
+              ],
+              "feature_names": [
+                "city_state"
+              ],
+              "entity_column": "GroceryCustomerGuid",
+              "serving_name": "GROCERYCUSTOMERGUID",
+              "entity_id": {
+                "$oid": "64708932ea4c4876a77d2b85"
+              },
+              "scd_parameters": {
+                "effective_timestamp_column": "ValidFrom",
+                "natural_key_column": "GroceryCustomerGuid",
+                "current_flag_column": "CurrentRecord",
+                "end_timestamp_column": null,
+                "offset": null
+              },
+              "event_parameters": null
+            }
+          },
+          {
+            "name": "project_3",
+            "type": "project",
+            "output_type": "series",
+            "parameters": {
+              "columns": [
+                "city_state"
+              ]
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "64776cd1173590eb5f40434d"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "insert: \"PostalCode_state\"",
+    "document_id": {
+      "$oid": "64776b0f5c0291fd4ffbea36"
+    },
+    "action_at": {
+      "$date": "2023-05-31T15:50:41.641Z"
+    },
+    "action_type": "INSERT",
+    "previous_values": {},
+    "current_values": {
+      "user_id": {
+        "$oid": "64645f76cfc8e397f762c868"
+      },
+      "name": "PostalCode_state",
+      "created_at": {
+        "$date": "2023-05-31T15:50:41.631Z"
+      },
+      "updated_at": null,
+      "catalog_id": {
+        "$oid": "64708919ea4c4876a77d2b80"
+      },
+      "dtype": "VARCHAR",
+      "graph": {
+        "edges": [
+          {
+            "source": "input_1",
+            "target": "graph_1"
+          },
+          {
+            "source": "graph_1",
+            "target": "project_1"
+          },
+          {
+            "source": "project_1",
+            "target": "cast_1"
+          },
+          {
+            "source": "cast_1",
+            "target": "concat_1"
+          },
+          {
+            "source": "graph_1",
+            "target": "project_2"
+          },
+          {
+            "source": "concat_1",
+            "target": "concat_2"
+          },
+          {
+            "source": "project_2",
+            "target": "concat_2"
+          },
+          {
+            "source": "graph_1",
+            "target": "assign_1"
+          },
+          {
+            "source": "concat_2",
+            "target": "assign_1"
+          },
+          {
+            "source": "assign_1",
+            "target": "lookup_1"
+          },
+          {
+            "source": "lookup_1",
+            "target": "project_3"
+          }
+        ],
+        "nodes": [
+          {
+            "name": "input_1",
+            "type": "input",
+            "output_type": "frame",
+            "parameters": {
+              "columns": [
+                {
+                  "name": "RowID",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "GroceryCustomerGuid",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "ValidFrom",
+                  "dtype": "TIMESTAMP"
+                },
+                {
+                  "name": "Gender",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "Title",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "GivenName",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "MiddleInitial",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "Surname",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "StreetAddress",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "City",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "State",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "PostalCode",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "BrowserUserAgent",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "DateOfBirth",
+                  "dtype": "TIMESTAMP"
+                },
+                {
+                  "name": "Latitude",
+                  "dtype": "FLOAT"
+                },
+                {
+                  "name": "Longitude",
+                  "dtype": "FLOAT"
+                },
+                {
+                  "name": "record_available_at",
+                  "dtype": "TIMESTAMP"
+                },
+                {
+                  "name": "CurrentRecord",
+                  "dtype": "BOOL"
+                }
+              ],
+              "table_details": {
+                "database_name": "DEMO_DATASETS",
+                "schema_name": "GROCERY",
+                "table_name": "GROCERYCUSTOMER"
+              },
+              "feature_store_details": {
+                "type": "snowflake",
+                "details": {
+                  "account": "fm54506.us-central1.gcp",
+                  "warehouse": "DEMO",
+                  "database": "DEMO",
+                  "sf_schema": "FEATUREBYTE_PROD_V2"
+                }
+              },
+              "type": "scd_table",
+              "id": {
+                "$oid": "64708925ea4c4876a77d2b83"
+              },
+              "natural_key_column": "GroceryCustomerGuid",
+              "effective_timestamp_column": "ValidFrom",
+              "surrogate_key_column": null,
+              "end_timestamp_column": null,
+              "current_flag_column": "CurrentRecord"
+            }
+          },
+          {
+            "name": "graph_1",
+            "type": "graph",
+            "output_type": "frame",
+            "parameters": {
+              "graph": {
+                "edges": [
+                  {
+                    "source": "proxy_input_1",
+                    "target": "project_1"
+                  }
+                ],
+                "nodes": [
+                  {
+                    "name": "proxy_input_1",
+                    "type": "proxy_input",
+                    "output_type": "frame",
+                    "parameters": {
+                      "input_order": 0
+                    }
+                  },
+                  {
+                    "name": "project_1",
+                    "type": "project",
+                    "output_type": "frame",
+                    "parameters": {
+                      "columns": [
+                        "RowID",
+                        "GroceryCustomerGuid",
+                        "ValidFrom",
+                        "Gender",
+                        "Title",
+                        "GivenName",
+                        "MiddleInitial",
+                        "Surname",
+                        "StreetAddress",
+                        "City",
+                        "State",
+                        "PostalCode",
+                        "BrowserUserAgent",
+                        "DateOfBirth",
+                        "Latitude",
+                        "Longitude",
+                        "record_available_at"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "output_node_name": "project_1",
+              "type": "scd_view",
+              "metadata": {
+                "view_mode": "auto",
+                "drop_column_names": [
+                  "CurrentRecord"
+                ],
+                "column_cleaning_operations": [],
+                "table_id": {
+                  "$oid": "64708925ea4c4876a77d2b83"
+                }
+              }
+            }
+          },
+          {
+            "name": "project_1",
+            "type": "project",
+            "output_type": "series",
+            "parameters": {
+              "columns": [
+                "PostalCode"
+              ]
+            }
+          },
+          {
+            "name": "cast_1",
+            "type": "cast",
+            "output_type": "series",
+            "parameters": {
+              "type": "str",
+              "from_dtype": "VARCHAR"
+            }
+          },
+          {
+            "name": "concat_1",
+            "type": "concat",
+            "output_type": "series",
+            "parameters": {
+              "value": "_",
+              "right_op": false
+            }
+          },
+          {
+            "name": "project_2",
+            "type": "project",
+            "output_type": "series",
+            "parameters": {
+              "columns": [
+                "State"
+              ]
+            }
+          },
+          {
+            "name": "concat_2",
+            "type": "concat",
+            "output_type": "series",
+            "parameters": {
+              "value": null,
+              "right_op": false
+            }
+          },
+          {
+            "name": "assign_1",
+            "type": "assign",
+            "output_type": "frame",
+            "parameters": {
+              "name": "PostalCode_state",
+              "value": null
+            }
+          },
+          {
+            "name": "lookup_1",
+            "type": "lookup",
+            "output_type": "frame",
+            "parameters": {
+              "input_column_names": [
+                "PostalCode_state"
+              ],
+              "feature_names": [
+                "PostalCode_state"
+              ],
+              "entity_column": "GroceryCustomerGuid",
+              "serving_name": "GROCERYCUSTOMERGUID",
+              "entity_id": {
+                "$oid": "64708932ea4c4876a77d2b85"
+              },
+              "scd_parameters": {
+                "effective_timestamp_column": "ValidFrom",
+                "natural_key_column": "GroceryCustomerGuid",
+                "current_flag_column": "CurrentRecord",
+                "end_timestamp_column": null,
+                "offset": null
+              },
+              "event_parameters": null
+            }
+          },
+          {
+            "name": "project_3",
+            "type": "project",
+            "output_type": "series",
+            "parameters": {
+              "columns": [
+                "PostalCode_state"
+              ]
+            }
+          }
+        ]
+      },
+      "node_name": "project_3",
+      "tabular_source": {
+        "feature_store_id": {
+          "$oid": "646cb1cef1d0ea5b3693e111"
+        },
+        "table_details": {
+          "database_name": "DEMO_DATASETS",
+          "schema_name": "GROCERY",
+          "table_name": "GROCERYCUSTOMER"
+        }
+      },
+      "readiness": "DRAFT",
+      "version": {
+        "name": "V230531",
+        "suffix": null
+      },
+      "online_enabled": false,
+      "definition": "# Generated by SDK version: 0.2.0.dev104\nfrom bson import ObjectId\nfrom featurebyte import SCDTable\n\n\n# scd_table name: \"GROCERYCUSTOMER\"\nscd_table = SCDTable.get_by_id(ObjectId(\"64708925ea4c4876a77d2b83\"))\nscd_view = scd_table.get_view(\n    view_mode=\"manual\",\n    drop_column_names=[\"CurrentRecord\"],\n    column_cleaning_operations=[],\n)\ncol = scd_view[\"PostalCode\"]\ncol_1 = scd_view[\"State\"]\nview = scd_view.copy()\nview[\"PostalCode_state\"] = (col.astype(str) + \"_\") + col_1\ngrouped = view.as_features(\n    column_names=[\"PostalCode_state\"],\n    feature_names=[\"PostalCode_state\"],\n    offset=None,\n)\nfeat = grouped[\"PostalCode_state\"]\noutput = feat\noutput.save(_id=ObjectId(\"64776b0f5c0291fd4ffbea36\"))\n",
+      "entity_ids": [
+        {
+          "$oid": "64708932ea4c4876a77d2b85"
+        }
+      ],
+      "table_ids": [
+        {
+          "$oid": "64708925ea4c4876a77d2b83"
+        }
+      ],
+      "primary_table_ids": [
+        {
+          "$oid": "64708925ea4c4876a77d2b83"
+        }
+      ],
+      "feature_namespace_id": {
+        "$oid": "64776cd1173590eb5f40434b"
+      },
+      "feature_list_ids": [],
+      "deployed_feature_list_ids": [],
+      "raw_graph": {
+        "edges": [
+          {
+            "source": "input_1",
+            "target": "graph_1"
+          },
+          {
+            "source": "graph_1",
+            "target": "project_1"
+          },
+          {
+            "source": "project_1",
+            "target": "concat_1"
+          },
+          {
+            "source": "graph_1",
+            "target": "project_2"
+          },
+          {
+            "source": "concat_1",
+            "target": "concat_2"
+          },
+          {
+            "source": "project_2",
+            "target": "concat_2"
+          },
+          {
+            "source": "graph_1",
+            "target": "assign_1"
+          },
+          {
+            "source": "concat_2",
+            "target": "assign_1"
+          },
+          {
+            "source": "assign_1",
+            "target": "project_3"
+          },
+          {
+            "source": "project_3",
+            "target": "cast_1"
+          },
+          {
+            "source": "cast_1",
+            "target": "concat_3"
+          },
+          {
+            "source": "assign_1",
+            "target": "project_4"
+          },
+          {
+            "source": "concat_3",
+            "target": "concat_4"
+          },
+          {
+            "source": "project_4",
+            "target": "concat_4"
+          },
+          {
+            "source": "assign_1",
+            "target": "assign_2"
+          },
+          {
+            "source": "concat_4",
+            "target": "assign_2"
+          },
+          {
+            "source": "assign_2",
+            "target": "lookup_1"
+          },
+          {
+            "source": "lookup_1",
+            "target": "project_5"
+          }
+        ],
+        "nodes": [
+          {
+            "name": "input_1",
+            "type": "input",
+            "output_type": "frame",
+            "parameters": {
+              "columns": [
+                {
+                  "name": "RowID",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "GroceryCustomerGuid",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "ValidFrom",
+                  "dtype": "TIMESTAMP"
+                },
+                {
+                  "name": "Gender",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "Title",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "GivenName",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "MiddleInitial",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "Surname",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "StreetAddress",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "City",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "State",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "PostalCode",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "BrowserUserAgent",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "DateOfBirth",
+                  "dtype": "TIMESTAMP"
+                },
+                {
+                  "name": "Latitude",
+                  "dtype": "FLOAT"
+                },
+                {
+                  "name": "Longitude",
+                  "dtype": "FLOAT"
+                },
+                {
+                  "name": "record_available_at",
+                  "dtype": "TIMESTAMP"
+                },
+                {
+                  "name": "CurrentRecord",
+                  "dtype": "BOOL"
+                }
+              ],
+              "table_details": {
+                "database_name": "DEMO_DATASETS",
+                "schema_name": "GROCERY",
+                "table_name": "GROCERYCUSTOMER"
+              },
+              "feature_store_details": {
+                "type": "snowflake",
+                "details": {
+                  "account": "fm54506.us-central1.gcp",
+                  "warehouse": "DEMO",
+                  "database": "DEMO",
+                  "sf_schema": "FEATUREBYTE_PROD_V2"
+                }
+              },
+              "type": "scd_table",
+              "id": {
+                "$oid": "64708925ea4c4876a77d2b83"
+              },
+              "natural_key_column": "GroceryCustomerGuid",
+              "effective_timestamp_column": "ValidFrom",
+              "surrogate_key_column": null,
+              "end_timestamp_column": null,
+              "current_flag_column": "CurrentRecord"
+            }
+          },
+          {
+            "name": "graph_1",
+            "type": "graph",
+            "output_type": "frame",
+            "parameters": {
+              "graph": {
+                "edges": [
+                  {
+                    "source": "proxy_input_1",
+                    "target": "project_1"
+                  }
+                ],
+                "nodes": [
+                  {
+                    "name": "proxy_input_1",
+                    "type": "proxy_input",
+                    "output_type": "frame",
+                    "parameters": {
+                      "input_order": 0
+                    }
+                  },
+                  {
+                    "name": "project_1",
+                    "type": "project",
+                    "output_type": "frame",
+                    "parameters": {
+                      "columns": [
+                        "RowID",
+                        "GroceryCustomerGuid",
+                        "ValidFrom",
+                        "Gender",
+                        "Title",
+                        "GivenName",
+                        "MiddleInitial",
+                        "Surname",
+                        "StreetAddress",
+                        "City",
+                        "State",
+                        "PostalCode",
+                        "BrowserUserAgent",
+                        "DateOfBirth",
+                        "Latitude",
+                        "Longitude",
+                        "record_available_at"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "output_node_name": "project_1",
+              "type": "scd_view",
+              "metadata": {
+                "view_mode": "auto",
+                "drop_column_names": [
+                  "CurrentRecord"
+                ],
+                "column_cleaning_operations": [],
+                "table_id": {
+                  "$oid": "64708925ea4c4876a77d2b83"
+                }
+              }
+            }
+          },
+          {
+            "name": "project_1",
+            "type": "project",
+            "output_type": "series",
+            "parameters": {
+              "columns": [
+                "City"
+              ]
+            }
+          },
+          {
+            "name": "concat_1",
+            "type": "concat",
+            "output_type": "series",
+            "parameters": {
+              "value": "_",
+              "right_op": false
+            }
+          },
+          {
+            "name": "project_2",
+            "type": "project",
+            "output_type": "series",
+            "parameters": {
+              "columns": [
+                "State"
+              ]
+            }
+          },
+          {
+            "name": "concat_2",
+            "type": "concat",
+            "output_type": "series",
+            "parameters": {
+              "value": null,
+              "right_op": false
+            }
+          },
+          {
+            "name": "assign_1",
+            "type": "assign",
+            "output_type": "frame",
+            "parameters": {
+              "name": "city_state",
+              "value": null
+            }
+          },
+          {
+            "name": "project_3",
+            "type": "project",
+            "output_type": "series",
+            "parameters": {
+              "columns": [
+                "PostalCode"
+              ]
+            }
+          },
+          {
+            "name": "cast_1",
+            "type": "cast",
+            "output_type": "series",
+            "parameters": {
+              "type": "str",
+              "from_dtype": "VARCHAR"
+            }
+          },
+          {
+            "name": "concat_3",
+            "type": "concat",
+            "output_type": "series",
+            "parameters": {
+              "value": "_",
+              "right_op": false
+            }
+          },
+          {
+            "name": "project_4",
+            "type": "project",
+            "output_type": "series",
+            "parameters": {
+              "columns": [
+                "State"
+              ]
+            }
+          },
+          {
+            "name": "concat_4",
+            "type": "concat",
+            "output_type": "series",
+            "parameters": {
+              "value": null,
+              "right_op": false
+            }
+          },
+          {
+            "name": "assign_2",
+            "type": "assign",
+            "output_type": "frame",
+            "parameters": {
+              "name": "PostalCode_state",
+              "value": null
+            }
+          },
+          {
+            "name": "lookup_1",
+            "type": "lookup",
+            "output_type": "frame",
+            "parameters": {
+              "input_column_names": [
+                "PostalCode_state"
+              ],
+              "feature_names": [
+                "PostalCode_state"
+              ],
+              "entity_column": "GroceryCustomerGuid",
+              "serving_name": "GROCERYCUSTOMERGUID",
+              "entity_id": {
+                "$oid": "64708932ea4c4876a77d2b85"
+              },
+              "scd_parameters": {
+                "effective_timestamp_column": "ValidFrom",
+                "natural_key_column": "GroceryCustomerGuid",
+                "current_flag_column": "CurrentRecord",
+                "end_timestamp_column": null,
+                "offset": null
+              },
+              "event_parameters": null
+            }
+          },
+          {
+            "name": "project_5",
+            "type": "project",
+            "output_type": "series",
+            "parameters": {
+              "columns": [
+                "PostalCode_state"
+              ]
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "64776cd56de4a7e9688b5f14"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "insert: \"Customer_gender\"",
+    "document_id": {
+      "$oid": "64776b105c0291fd4ffbea37"
+    },
+    "action_at": {
+      "$date": "2023-05-31T15:50:45.762Z"
+    },
+    "action_type": "INSERT",
+    "previous_values": {},
+    "current_values": {
+      "user_id": {
+        "$oid": "64645f76cfc8e397f762c868"
+      },
+      "name": "Customer_gender",
+      "created_at": {
+        "$date": "2023-05-31T15:50:45.756Z"
+      },
+      "updated_at": null,
+      "catalog_id": {
+        "$oid": "64708919ea4c4876a77d2b80"
+      },
+      "dtype": "VARCHAR",
+      "graph": {
+        "edges": [
+          {
+            "source": "input_1",
+            "target": "graph_1"
+          },
+          {
+            "source": "graph_1",
+            "target": "lookup_1"
+          },
+          {
+            "source": "lookup_1",
+            "target": "project_1"
+          }
+        ],
+        "nodes": [
+          {
+            "name": "input_1",
+            "type": "input",
+            "output_type": "frame",
+            "parameters": {
+              "columns": [
+                {
+                  "name": "RowID",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "GroceryCustomerGuid",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "ValidFrom",
+                  "dtype": "TIMESTAMP"
+                },
+                {
+                  "name": "Gender",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "Title",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "GivenName",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "MiddleInitial",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "Surname",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "StreetAddress",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "City",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "State",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "PostalCode",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "BrowserUserAgent",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "DateOfBirth",
+                  "dtype": "TIMESTAMP"
+                },
+                {
+                  "name": "Latitude",
+                  "dtype": "FLOAT"
+                },
+                {
+                  "name": "Longitude",
+                  "dtype": "FLOAT"
+                },
+                {
+                  "name": "record_available_at",
+                  "dtype": "TIMESTAMP"
+                },
+                {
+                  "name": "CurrentRecord",
+                  "dtype": "BOOL"
+                }
+              ],
+              "table_details": {
+                "database_name": "DEMO_DATASETS",
+                "schema_name": "GROCERY",
+                "table_name": "GROCERYCUSTOMER"
+              },
+              "feature_store_details": {
+                "type": "snowflake",
+                "details": {
+                  "account": "fm54506.us-central1.gcp",
+                  "warehouse": "DEMO",
+                  "database": "DEMO",
+                  "sf_schema": "FEATUREBYTE_PROD_V2"
+                }
+              },
+              "type": "scd_table",
+              "id": {
+                "$oid": "64708925ea4c4876a77d2b83"
+              },
+              "natural_key_column": "GroceryCustomerGuid",
+              "effective_timestamp_column": "ValidFrom",
+              "surrogate_key_column": null,
+              "end_timestamp_column": null,
+              "current_flag_column": "CurrentRecord"
+            }
+          },
+          {
+            "name": "graph_1",
+            "type": "graph",
+            "output_type": "frame",
+            "parameters": {
+              "graph": {
+                "edges": [
+                  {
+                    "source": "proxy_input_1",
+                    "target": "project_1"
+                  }
+                ],
+                "nodes": [
+                  {
+                    "name": "proxy_input_1",
+                    "type": "proxy_input",
+                    "output_type": "frame",
+                    "parameters": {
+                      "input_order": 0
+                    }
+                  },
+                  {
+                    "name": "project_1",
+                    "type": "project",
+                    "output_type": "frame",
+                    "parameters": {
+                      "columns": [
+                        "RowID",
+                        "GroceryCustomerGuid",
+                        "ValidFrom",
+                        "Gender",
+                        "Title",
+                        "GivenName",
+                        "MiddleInitial",
+                        "Surname",
+                        "StreetAddress",
+                        "City",
+                        "State",
+                        "PostalCode",
+                        "BrowserUserAgent",
+                        "DateOfBirth",
+                        "Latitude",
+                        "Longitude",
+                        "record_available_at"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "output_node_name": "project_1",
+              "type": "scd_view",
+              "metadata": {
+                "view_mode": "auto",
+                "drop_column_names": [
+                  "CurrentRecord"
+                ],
+                "column_cleaning_operations": [],
+                "table_id": {
+                  "$oid": "64708925ea4c4876a77d2b83"
+                }
+              }
+            }
+          },
+          {
+            "name": "lookup_1",
+            "type": "lookup",
+            "output_type": "frame",
+            "parameters": {
+              "input_column_names": [
+                "Gender"
+              ],
+              "feature_names": [
+                "Customer_gender"
+              ],
+              "entity_column": "GroceryCustomerGuid",
+              "serving_name": "GROCERYCUSTOMERGUID",
+              "entity_id": {
+                "$oid": "64708932ea4c4876a77d2b85"
+              },
+              "scd_parameters": {
+                "effective_timestamp_column": "ValidFrom",
+                "natural_key_column": "GroceryCustomerGuid",
+                "current_flag_column": "CurrentRecord",
+                "end_timestamp_column": null,
+                "offset": null
+              },
+              "event_parameters": null
+            }
+          },
+          {
+            "name": "project_1",
+            "type": "project",
+            "output_type": "series",
+            "parameters": {
+              "columns": [
+                "Customer_gender"
+              ]
+            }
+          }
+        ]
+      },
+      "node_name": "project_1",
+      "tabular_source": {
+        "feature_store_id": {
+          "$oid": "646cb1cef1d0ea5b3693e111"
+        },
+        "table_details": {
+          "database_name": "DEMO_DATASETS",
+          "schema_name": "GROCERY",
+          "table_name": "GROCERYCUSTOMER"
+        }
+      },
+      "readiness": "DRAFT",
+      "version": {
+        "name": "V230531",
+        "suffix": null
+      },
+      "online_enabled": false,
+      "definition": "# Generated by SDK version: 0.2.0.dev104\nfrom bson import ObjectId\nfrom featurebyte import SCDTable\n\n\n# scd_table name: \"GROCERYCUSTOMER\"\nscd_table = SCDTable.get_by_id(ObjectId(\"64708925ea4c4876a77d2b83\"))\nscd_view = scd_table.get_view(\n    view_mode=\"manual\",\n    drop_column_names=[\"CurrentRecord\"],\n    column_cleaning_operations=[],\n)\ngrouped = scd_view.as_features(\n    column_names=[\"Gender\"], feature_names=[\"Customer_gender\"], offset=None\n)\nfeat = grouped[\"Customer_gender\"]\noutput = feat\noutput.save(_id=ObjectId(\"64776b105c0291fd4ffbea37\"))\n",
+      "entity_ids": [
+        {
+          "$oid": "64708932ea4c4876a77d2b85"
+        }
+      ],
+      "table_ids": [
+        {
+          "$oid": "64708925ea4c4876a77d2b83"
+        }
+      ],
+      "primary_table_ids": [
+        {
+          "$oid": "64708925ea4c4876a77d2b83"
+        }
+      ],
+      "feature_namespace_id": {
+        "$oid": "64776cd56de4a7e9688b5f12"
+      },
+      "feature_list_ids": [],
+      "deployed_feature_list_ids": [],
+      "raw_graph": {
+        "edges": [
+          {
+            "source": "input_1",
+            "target": "graph_1"
+          },
+          {
+            "source": "graph_1",
+            "target": "project_1"
+          },
+          {
+            "source": "project_1",
+            "target": "concat_1"
+          },
+          {
+            "source": "graph_1",
+            "target": "project_2"
+          },
+          {
+            "source": "concat_1",
+            "target": "concat_2"
+          },
+          {
+            "source": "project_2",
+            "target": "concat_2"
+          },
+          {
+            "source": "graph_1",
+            "target": "assign_1"
+          },
+          {
+            "source": "concat_2",
+            "target": "assign_1"
+          },
+          {
+            "source": "assign_1",
+            "target": "project_3"
+          },
+          {
+            "source": "project_3",
+            "target": "cast_1"
+          },
+          {
+            "source": "cast_1",
+            "target": "concat_3"
+          },
+          {
+            "source": "assign_1",
+            "target": "project_4"
+          },
+          {
+            "source": "concat_3",
+            "target": "concat_4"
+          },
+          {
+            "source": "project_4",
+            "target": "concat_4"
+          },
+          {
+            "source": "assign_1",
+            "target": "assign_2"
+          },
+          {
+            "source": "concat_4",
+            "target": "assign_2"
+          },
+          {
+            "source": "assign_2",
+            "target": "lookup_1"
+          },
+          {
+            "source": "lookup_1",
+            "target": "project_5"
+          }
+        ],
+        "nodes": [
+          {
+            "name": "input_1",
+            "type": "input",
+            "output_type": "frame",
+            "parameters": {
+              "columns": [
+                {
+                  "name": "RowID",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "GroceryCustomerGuid",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "ValidFrom",
+                  "dtype": "TIMESTAMP"
+                },
+                {
+                  "name": "Gender",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "Title",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "GivenName",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "MiddleInitial",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "Surname",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "StreetAddress",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "City",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "State",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "PostalCode",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "BrowserUserAgent",
+                  "dtype": "VARCHAR"
+                },
+                {
+                  "name": "DateOfBirth",
+                  "dtype": "TIMESTAMP"
+                },
+                {
+                  "name": "Latitude",
+                  "dtype": "FLOAT"
+                },
+                {
+                  "name": "Longitude",
+                  "dtype": "FLOAT"
+                },
+                {
+                  "name": "record_available_at",
+                  "dtype": "TIMESTAMP"
+                },
+                {
+                  "name": "CurrentRecord",
+                  "dtype": "BOOL"
+                }
+              ],
+              "table_details": {
+                "database_name": "DEMO_DATASETS",
+                "schema_name": "GROCERY",
+                "table_name": "GROCERYCUSTOMER"
+              },
+              "feature_store_details": {
+                "type": "snowflake",
+                "details": {
+                  "account": "fm54506.us-central1.gcp",
+                  "warehouse": "DEMO",
+                  "database": "DEMO",
+                  "sf_schema": "FEATUREBYTE_PROD_V2"
+                }
+              },
+              "type": "scd_table",
+              "id": {
+                "$oid": "64708925ea4c4876a77d2b83"
+              },
+              "natural_key_column": "GroceryCustomerGuid",
+              "effective_timestamp_column": "ValidFrom",
+              "surrogate_key_column": null,
+              "end_timestamp_column": null,
+              "current_flag_column": "CurrentRecord"
+            }
+          },
+          {
+            "name": "graph_1",
+            "type": "graph",
+            "output_type": "frame",
+            "parameters": {
+              "graph": {
+                "edges": [
+                  {
+                    "source": "proxy_input_1",
+                    "target": "project_1"
+                  }
+                ],
+                "nodes": [
+                  {
+                    "name": "proxy_input_1",
+                    "type": "proxy_input",
+                    "output_type": "frame",
+                    "parameters": {
+                      "input_order": 0
+                    }
+                  },
+                  {
+                    "name": "project_1",
+                    "type": "project",
+                    "output_type": "frame",
+                    "parameters": {
+                      "columns": [
+                        "RowID",
+                        "GroceryCustomerGuid",
+                        "ValidFrom",
+                        "Gender",
+                        "Title",
+                        "GivenName",
+                        "MiddleInitial",
+                        "Surname",
+                        "StreetAddress",
+                        "City",
+                        "State",
+                        "PostalCode",
+                        "BrowserUserAgent",
+                        "DateOfBirth",
+                        "Latitude",
+                        "Longitude",
+                        "record_available_at"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "output_node_name": "project_1",
+              "type": "scd_view",
+              "metadata": {
+                "view_mode": "auto",
+                "drop_column_names": [
+                  "CurrentRecord"
+                ],
+                "column_cleaning_operations": [],
+                "table_id": {
+                  "$oid": "64708925ea4c4876a77d2b83"
+                }
+              }
+            }
+          },
+          {
+            "name": "project_1",
+            "type": "project",
+            "output_type": "series",
+            "parameters": {
+              "columns": [
+                "City"
+              ]
+            }
+          },
+          {
+            "name": "concat_1",
+            "type": "concat",
+            "output_type": "series",
+            "parameters": {
+              "value": "_",
+              "right_op": false
+            }
+          },
+          {
+            "name": "project_2",
+            "type": "project",
+            "output_type": "series",
+            "parameters": {
+              "columns": [
+                "State"
+              ]
+            }
+          },
+          {
+            "name": "concat_2",
+            "type": "concat",
+            "output_type": "series",
+            "parameters": {
+              "value": null,
+              "right_op": false
+            }
+          },
+          {
+            "name": "assign_1",
+            "type": "assign",
+            "output_type": "frame",
+            "parameters": {
+              "name": "city_state",
+              "value": null
+            }
+          },
+          {
+            "name": "project_3",
+            "type": "project",
+            "output_type": "series",
+            "parameters": {
+              "columns": [
+                "PostalCode"
+              ]
+            }
+          },
+          {
+            "name": "cast_1",
+            "type": "cast",
+            "output_type": "series",
+            "parameters": {
+              "type": "str",
+              "from_dtype": "VARCHAR"
+            }
+          },
+          {
+            "name": "concat_3",
+            "type": "concat",
+            "output_type": "series",
+            "parameters": {
+              "value": "_",
+              "right_op": false
+            }
+          },
+          {
+            "name": "project_4",
+            "type": "project",
+            "output_type": "series",
+            "parameters": {
+              "columns": [
+                "State"
+              ]
+            }
+          },
+          {
+            "name": "concat_4",
+            "type": "concat",
+            "output_type": "series",
+            "parameters": {
+              "value": null,
+              "right_op": false
+            }
+          },
+          {
+            "name": "assign_2",
+            "type": "assign",
+            "output_type": "frame",
+            "parameters": {
+              "name": "PostalCode_state",
+              "value": null
+            }
+          },
+          {
+            "name": "lookup_1",
+            "type": "lookup",
+            "output_type": "frame",
+            "parameters": {
+              "input_column_names": [
+                "Gender"
+              ],
+              "feature_names": [
+                "Customer_gender"
+              ],
+              "entity_column": "GroceryCustomerGuid",
+              "serving_name": "GROCERYCUSTOMERGUID",
+              "entity_id": {
+                "$oid": "64708932ea4c4876a77d2b85"
+              },
+              "scd_parameters": {
+                "effective_timestamp_column": "ValidFrom",
+                "natural_key_column": "GroceryCustomerGuid",
+                "current_flag_column": "CurrentRecord",
+                "end_timestamp_column": null,
+                "offset": null
+              },
+              "event_parameters": null
+            }
+          },
+          {
+            "name": "project_5",
+            "type": "project",
+            "output_type": "series",
+            "parameters": {
+              "columns": [
+                "Customer_gender"
+              ]
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "647fdffdae221e7763dca96f"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"Customer_gender\"",
+    "document_id": {
+      "$oid": "64776b105c0291fd4ffbea37"
+    },
+    "action_at": {
+      "$date": "2023-06-07T01:40:13.606Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": null,
+      "feature_list_ids": []
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-06-07T01:40:13.595Z"
+      },
+      "feature_list_ids": [
+        {
+          "$oid": "647fde74c4233b65559aab2d"
+        }
+      ]
+    }
+  },
+  {
+    "_id": {
+      "$oid": "647fdffdae221e7763dca970"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"PostalCode_state\"",
+    "document_id": {
+      "$oid": "64776b0f5c0291fd4ffbea36"
+    },
+    "action_at": {
+      "$date": "2023-06-07T01:40:13.715Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": null,
+      "feature_list_ids": []
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-06-07T01:40:13.707Z"
+      },
+      "feature_list_ids": [
+        {
+          "$oid": "647fde74c4233b65559aab2d"
+        }
+      ]
+    }
+  },
+  {
+    "_id": {
+      "$oid": "647fdffdae221e7763dca971"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"city_state\"",
+    "document_id": {
+      "$oid": "64776b0e5c0291fd4ffbea35"
+    },
+    "action_at": {
+      "$date": "2023-06-07T01:40:13.818Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": null,
+      "feature_list_ids": []
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-06-07T01:40:13.809Z"
+      },
+      "feature_list_ids": [
+        {
+          "$oid": "647fde74c4233b65559aab2d"
+        }
+      ]
+    }
+  },
+  {
+    "_id": {
+      "$oid": "647fe334ae221e7763dcab10"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"Customer_gender\"",
+    "document_id": {
+      "$oid": "64776b105c0291fd4ffbea37"
+    },
+    "action_at": {
+      "$date": "2023-06-07T01:53:56.598Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-06-07T01:40:13.595Z"
+      },
+      "readiness": "DRAFT"
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-06-07T01:53:56.592Z"
+      },
+      "readiness": "PRODUCTION_READY"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "647fe335ae221e7763dcab14"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"PostalCode_state\"",
+    "document_id": {
+      "$oid": "64776b0f5c0291fd4ffbea36"
+    },
+    "action_at": {
+      "$date": "2023-06-07T01:53:57.961Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-06-07T01:40:13.707Z"
+      },
+      "readiness": "DRAFT"
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-06-07T01:53:57.955Z"
+      },
+      "readiness": "PRODUCTION_READY"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "647fe337ae221e7763dcab18"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"city_state\"",
+    "document_id": {
+      "$oid": "64776b0e5c0291fd4ffbea35"
+    },
+    "action_at": {
+      "$date": "2023-06-07T01:53:59.455Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-06-07T01:40:13.809Z"
+      },
+      "readiness": "DRAFT"
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-06-07T01:53:59.445Z"
+      },
+      "readiness": "PRODUCTION_READY"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "647ffbc4c48d34ece438b5ea"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"Customer_gender\"",
+    "document_id": {
+      "$oid": "64776b105c0291fd4ffbea37"
+    },
+    "action_at": {
+      "$date": "2023-06-07T03:38:44.628Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-06-07T01:53:56.592Z"
+      },
+      "online_enabled": false
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-06-07T03:38:44.621Z"
+      },
+      "online_enabled": true
+    }
+  },
+  {
+    "_id": {
+      "$oid": "647ffbc5c48d34ece438b5ed"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"Customer_gender\"",
+    "document_id": {
+      "$oid": "64776b105c0291fd4ffbea37"
+    },
+    "action_at": {
+      "$date": "2023-06-07T03:38:45.302Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-06-07T03:38:44.621Z"
+      },
+      "deployed_feature_list_ids": []
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-06-07T03:38:45.295Z"
+      },
+      "deployed_feature_list_ids": [
+        {
+          "$oid": "647fde74c4233b65559aab2d"
+        }
+      ]
+    }
+  },
+  {
+    "_id": {
+      "$oid": "647ffbc5c48d34ece438b5ef"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"PostalCode_state\"",
+    "document_id": {
+      "$oid": "64776b0f5c0291fd4ffbea36"
+    },
+    "action_at": {
+      "$date": "2023-06-07T03:38:45.858Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-06-07T01:53:57.955Z"
+      },
+      "online_enabled": false
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-06-07T03:38:45.851Z"
+      },
+      "online_enabled": true
+    }
+  },
+  {
+    "_id": {
+      "$oid": "647ffbc6c48d34ece438b5f2"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"PostalCode_state\"",
+    "document_id": {
+      "$oid": "64776b0f5c0291fd4ffbea36"
+    },
+    "action_at": {
+      "$date": "2023-06-07T03:38:46.637Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-06-07T03:38:45.851Z"
+      },
+      "deployed_feature_list_ids": []
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-06-07T03:38:46.631Z"
+      },
+      "deployed_feature_list_ids": [
+        {
+          "$oid": "647fde74c4233b65559aab2d"
+        }
+      ]
+    }
+  },
+  {
+    "_id": {
+      "$oid": "647ffbc7c48d34ece438b5f4"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"city_state\"",
+    "document_id": {
+      "$oid": "64776b0e5c0291fd4ffbea35"
+    },
+    "action_at": {
+      "$date": "2023-06-07T03:38:47.258Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-06-07T01:53:59.445Z"
+      },
+      "online_enabled": false
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-06-07T03:38:47.251Z"
+      },
+      "online_enabled": true
+    }
+  },
+  {
+    "_id": {
+      "$oid": "647ffbc8c48d34ece438b5f7"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"city_state\"",
+    "document_id": {
+      "$oid": "64776b0e5c0291fd4ffbea35"
+    },
+    "action_at": {
+      "$date": "2023-06-07T03:38:48.019Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-06-07T03:38:47.251Z"
+      },
+      "deployed_feature_list_ids": []
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-06-07T03:38:48.011Z"
+      },
+      "deployed_feature_list_ids": [
+        {
+          "$oid": "647fde74c4233b65559aab2d"
+        }
+      ]
+    }
+  },
+  {
+    "_id": {
+      "$oid": "64801281c48d34ece438b91f"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"Customer_gender\"",
+    "document_id": {
+      "$oid": "64776b105c0291fd4ffbea37"
+    },
+    "action_at": {
+      "$date": "2023-06-07T05:15:45.590Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-06-07T03:38:45.295Z"
+      },
+      "online_enabled": true
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-06-07T05:15:45.583Z"
+      },
+      "online_enabled": false
+    }
+  },
+  {
+    "_id": {
+      "$oid": "64801282c48d34ece438b922"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"Customer_gender\"",
+    "document_id": {
+      "$oid": "64776b105c0291fd4ffbea37"
+    },
+    "action_at": {
+      "$date": "2023-06-07T05:15:46.305Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-06-07T05:15:45.583Z"
+      },
+      "deployed_feature_list_ids": [
+        {
+          "$oid": "647fde74c4233b65559aab2d"
+        }
+      ]
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-06-07T05:15:46.298Z"
+      },
+      "deployed_feature_list_ids": []
+    }
+  },
+  {
+    "_id": {
+      "$oid": "64801282c48d34ece438b924"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"PostalCode_state\"",
+    "document_id": {
+      "$oid": "64776b0f5c0291fd4ffbea36"
+    },
+    "action_at": {
+      "$date": "2023-06-07T05:15:46.851Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-06-07T03:38:46.631Z"
+      },
+      "online_enabled": true
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-06-07T05:15:46.845Z"
+      },
+      "online_enabled": false
+    }
+  },
+  {
+    "_id": {
+      "$oid": "64801283c48d34ece438b927"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"PostalCode_state\"",
+    "document_id": {
+      "$oid": "64776b0f5c0291fd4ffbea36"
+    },
+    "action_at": {
+      "$date": "2023-06-07T05:15:47.617Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-06-07T05:15:46.845Z"
+      },
+      "deployed_feature_list_ids": [
+        {
+          "$oid": "647fde74c4233b65559aab2d"
+        }
+      ]
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-06-07T05:15:47.610Z"
+      },
+      "deployed_feature_list_ids": []
+    }
+  },
+  {
+    "_id": {
+      "$oid": "64801284c48d34ece438b929"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"city_state\"",
+    "document_id": {
+      "$oid": "64776b0e5c0291fd4ffbea35"
+    },
+    "action_at": {
+      "$date": "2023-06-07T05:15:48.267Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-06-07T03:38:48.011Z"
+      },
+      "online_enabled": true
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-06-07T05:15:48.261Z"
+      },
+      "online_enabled": false
+    }
+  },
+  {
+    "_id": {
+      "$oid": "64801285c48d34ece438b92c"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"city_state\"",
+    "document_id": {
+      "$oid": "64776b0e5c0291fd4ffbea35"
+    },
+    "action_at": {
+      "$date": "2023-06-07T05:15:49.490Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-06-07T05:15:48.261Z"
+      },
+      "deployed_feature_list_ids": [
+        {
+          "$oid": "647fde74c4233b65559aab2d"
+        }
+      ]
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-06-07T05:15:49.483Z"
+      },
+      "deployed_feature_list_ids": []
+    }
+  },
+  {
+    "_id": {
+      "$oid": "649197ef8befa19a638ace0e"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"Customer_gender\"",
+    "document_id": {
+      "$oid": "64776b105c0291fd4ffbea37"
+    },
+    "action_at": {
+      "$date": "2023-06-20T12:13:35.632Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-06-07T05:15:46.298Z"
+      },
+      "online_enabled": false
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-06-20T12:13:35.626Z"
+      },
+      "online_enabled": true
+    }
+  },
+  {
+    "_id": {
+      "$oid": "649197ef8befa19a638ace11"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"Customer_gender\"",
+    "document_id": {
+      "$oid": "64776b105c0291fd4ffbea37"
+    },
+    "action_at": {
+      "$date": "2023-06-20T12:13:35.808Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-06-20T12:13:35.626Z"
+      },
+      "deployed_feature_list_ids": []
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-06-20T12:13:35.802Z"
+      },
+      "deployed_feature_list_ids": [
+        {
+          "$oid": "647fde74c4233b65559aab2d"
+        }
+      ]
+    }
+  },
+  {
+    "_id": {
+      "$oid": "649197ef8befa19a638ace12"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"PostalCode_state\"",
+    "document_id": {
+      "$oid": "64776b0f5c0291fd4ffbea36"
+    },
+    "action_at": {
+      "$date": "2023-06-20T12:13:35.854Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-06-07T05:15:47.610Z"
+      },
+      "online_enabled": false
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-06-20T12:13:35.848Z"
+      },
+      "online_enabled": true
+    }
+  },
+  {
+    "_id": {
+      "$oid": "649197f08befa19a638ace15"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"PostalCode_state\"",
+    "document_id": {
+      "$oid": "64776b0f5c0291fd4ffbea36"
+    },
+    "action_at": {
+      "$date": "2023-06-20T12:13:36.031Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-06-20T12:13:35.848Z"
+      },
+      "deployed_feature_list_ids": []
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-06-20T12:13:36.026Z"
+      },
+      "deployed_feature_list_ids": [
+        {
+          "$oid": "647fde74c4233b65559aab2d"
+        }
+      ]
+    }
+  },
+  {
+    "_id": {
+      "$oid": "649197f08befa19a638ace16"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"city_state\"",
+    "document_id": {
+      "$oid": "64776b0e5c0291fd4ffbea35"
+    },
+    "action_at": {
+      "$date": "2023-06-20T12:13:36.079Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-06-07T05:15:49.483Z"
+      },
+      "online_enabled": false
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-06-20T12:13:36.073Z"
+      },
+      "online_enabled": true
+    }
+  },
+  {
+    "_id": {
+      "$oid": "649197f08befa19a638ace19"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"city_state\"",
+    "document_id": {
+      "$oid": "64776b0e5c0291fd4ffbea35"
+    },
+    "action_at": {
+      "$date": "2023-06-20T12:13:36.262Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-06-20T12:13:36.073Z"
+      },
+      "deployed_feature_list_ids": []
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-06-20T12:13:36.256Z"
+      },
+      "deployed_feature_list_ids": [
+        {
+          "$oid": "647fde74c4233b65559aab2d"
+        }
+      ]
+    }
+  },
+  {
+    "_id": {
+      "$oid": "64919eb58befa19a638ad280"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"Customer_gender\"",
+    "document_id": {
+      "$oid": "64776b105c0291fd4ffbea37"
+    },
+    "action_at": {
+      "$date": "2023-06-20T12:42:29.214Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-06-20T12:13:35.802Z"
+      },
+      "online_enabled": true
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-06-20T12:42:29.209Z"
+      },
+      "online_enabled": false
+    }
+  },
+  {
+    "_id": {
+      "$oid": "64919eb58befa19a638ad283"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"Customer_gender\"",
+    "document_id": {
+      "$oid": "64776b105c0291fd4ffbea37"
+    },
+    "action_at": {
+      "$date": "2023-06-20T12:42:29.386Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-06-20T12:42:29.209Z"
+      },
+      "deployed_feature_list_ids": [
+        {
+          "$oid": "647fde74c4233b65559aab2d"
+        }
+      ]
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-06-20T12:42:29.380Z"
+      },
+      "deployed_feature_list_ids": []
+    }
+  },
+  {
+    "_id": {
+      "$oid": "64919eb58befa19a638ad284"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"PostalCode_state\"",
+    "document_id": {
+      "$oid": "64776b0f5c0291fd4ffbea36"
+    },
+    "action_at": {
+      "$date": "2023-06-20T12:42:29.433Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-06-20T12:13:36.026Z"
+      },
+      "online_enabled": true
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-06-20T12:42:29.427Z"
+      },
+      "online_enabled": false
+    }
+  },
+  {
+    "_id": {
+      "$oid": "64919eb58befa19a638ad287"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"PostalCode_state\"",
+    "document_id": {
+      "$oid": "64776b0f5c0291fd4ffbea36"
+    },
+    "action_at": {
+      "$date": "2023-06-20T12:42:29.604Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-06-20T12:42:29.427Z"
+      },
+      "deployed_feature_list_ids": [
+        {
+          "$oid": "647fde74c4233b65559aab2d"
+        }
+      ]
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-06-20T12:42:29.598Z"
+      },
+      "deployed_feature_list_ids": []
+    }
+  },
+  {
+    "_id": {
+      "$oid": "64919eb58befa19a638ad288"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"city_state\"",
+    "document_id": {
+      "$oid": "64776b0e5c0291fd4ffbea35"
+    },
+    "action_at": {
+      "$date": "2023-06-20T12:42:29.653Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-06-20T12:13:36.256Z"
+      },
+      "online_enabled": true
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-06-20T12:42:29.647Z"
+      },
+      "online_enabled": false
+    }
+  },
+  {
+    "_id": {
+      "$oid": "64919eb58befa19a638ad28b"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"city_state\"",
+    "document_id": {
+      "$oid": "64776b0e5c0291fd4ffbea35"
+    },
+    "action_at": {
+      "$date": "2023-06-20T12:42:29.820Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-06-20T12:42:29.647Z"
+      },
+      "deployed_feature_list_ids": [
+        {
+          "$oid": "647fde74c4233b65559aab2d"
+        }
+      ]
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-06-20T12:42:29.814Z"
+      },
+      "deployed_feature_list_ids": []
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6491a92b18307bcba7f9a302"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"Customer_gender\"",
+    "document_id": {
+      "$oid": "64776b105c0291fd4ffbea37"
+    },
+    "action_at": {
+      "$date": "2023-06-20T13:27:07.453Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-06-20T12:42:29.380Z"
+      },
+      "online_enabled": false
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-06-20T13:27:07.446Z"
+      },
+      "online_enabled": true
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6491a92c18307bcba7f9a305"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"Customer_gender\"",
+    "document_id": {
+      "$oid": "64776b105c0291fd4ffbea37"
+    },
+    "action_at": {
+      "$date": "2023-06-20T13:27:08.116Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-06-20T13:27:07.446Z"
+      },
+      "deployed_feature_list_ids": []
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-06-20T13:27:08.109Z"
+      },
+      "deployed_feature_list_ids": [
+        {
+          "$oid": "647fde74c4233b65559aab2d"
+        }
+      ]
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6491a92c18307bcba7f9a306"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"PostalCode_state\"",
+    "document_id": {
+      "$oid": "64776b0f5c0291fd4ffbea36"
+    },
+    "action_at": {
+      "$date": "2023-06-20T13:27:08.191Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-06-20T12:42:29.598Z"
+      },
+      "online_enabled": false
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-06-20T13:27:08.181Z"
+      },
+      "online_enabled": true
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6491a92c18307bcba7f9a309"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"PostalCode_state\"",
+    "document_id": {
+      "$oid": "64776b0f5c0291fd4ffbea36"
+    },
+    "action_at": {
+      "$date": "2023-06-20T13:27:08.381Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-06-20T13:27:08.181Z"
+      },
+      "deployed_feature_list_ids": []
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-06-20T13:27:08.373Z"
+      },
+      "deployed_feature_list_ids": [
+        {
+          "$oid": "647fde74c4233b65559aab2d"
+        }
+      ]
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6491a92c18307bcba7f9a30a"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"city_state\"",
+    "document_id": {
+      "$oid": "64776b0e5c0291fd4ffbea35"
+    },
+    "action_at": {
+      "$date": "2023-06-20T13:27:08.444Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-06-20T12:42:29.814Z"
+      },
+      "online_enabled": false
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-06-20T13:27:08.436Z"
+      },
+      "online_enabled": true
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6491a92c18307bcba7f9a30d"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"city_state\"",
+    "document_id": {
+      "$oid": "64776b0e5c0291fd4ffbea35"
+    },
+    "action_at": {
+      "$date": "2023-06-20T13:27:08.644Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-06-20T13:27:08.436Z"
+      },
+      "deployed_feature_list_ids": []
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-06-20T13:27:08.634Z"
+      },
+      "deployed_feature_list_ids": [
+        {
+          "$oid": "647fde74c4233b65559aab2d"
+        }
+      ]
+    }
+  },
+  {
+    "_id": {
+      "$oid": "649d391f10d4994f4803e5dc"
+    },
+    "user_id": {
+      "$oid": "6478af6f173590eb5f404716"
+    },
+    "name": "update: \"Customer_gender\"",
+    "document_id": {
+      "$oid": "64776b105c0291fd4ffbea37"
+    },
+    "action_at": {
+      "$date": "2023-06-29T07:56:15.782Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-06-20T13:27:08.109Z"
+      },
+      "online_enabled": true
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-06-29T07:56:15.776Z"
+      },
+      "online_enabled": false
+    }
+  },
+  {
+    "_id": {
+      "$oid": "649d391f10d4994f4803e5df"
+    },
+    "user_id": {
+      "$oid": "6478af6f173590eb5f404716"
+    },
+    "name": "update: \"Customer_gender\"",
+    "document_id": {
+      "$oid": "64776b105c0291fd4ffbea37"
+    },
+    "action_at": {
+      "$date": "2023-06-29T07:56:15.977Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-06-29T07:56:15.776Z"
+      },
+      "deployed_feature_list_ids": [
+        {
+          "$oid": "647fde74c4233b65559aab2d"
+        }
+      ]
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-06-29T07:56:15.969Z"
+      },
+      "deployed_feature_list_ids": []
+    }
+  },
+  {
+    "_id": {
+      "$oid": "649d392010d4994f4803e5e0"
+    },
+    "user_id": {
+      "$oid": "6478af6f173590eb5f404716"
+    },
+    "name": "update: \"PostalCode_state\"",
+    "document_id": {
+      "$oid": "64776b0f5c0291fd4ffbea36"
+    },
+    "action_at": {
+      "$date": "2023-06-29T07:56:16.023Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-06-20T13:27:08.373Z"
+      },
+      "online_enabled": true
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-06-29T07:56:16.016Z"
+      },
+      "online_enabled": false
+    }
+  },
+  {
+    "_id": {
+      "$oid": "649d392010d4994f4803e5e3"
+    },
+    "user_id": {
+      "$oid": "6478af6f173590eb5f404716"
+    },
+    "name": "update: \"PostalCode_state\"",
+    "document_id": {
+      "$oid": "64776b0f5c0291fd4ffbea36"
+    },
+    "action_at": {
+      "$date": "2023-06-29T07:56:16.213Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-06-29T07:56:16.016Z"
+      },
+      "deployed_feature_list_ids": [
+        {
+          "$oid": "647fde74c4233b65559aab2d"
+        }
+      ]
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-06-29T07:56:16.206Z"
+      },
+      "deployed_feature_list_ids": []
+    }
+  },
+  {
+    "_id": {
+      "$oid": "649d392010d4994f4803e5e4"
+    },
+    "user_id": {
+      "$oid": "6478af6f173590eb5f404716"
+    },
+    "name": "update: \"city_state\"",
+    "document_id": {
+      "$oid": "64776b0e5c0291fd4ffbea35"
+    },
+    "action_at": {
+      "$date": "2023-06-29T07:56:16.267Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-06-20T13:27:08.634Z"
+      },
+      "online_enabled": true
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-06-29T07:56:16.259Z"
+      },
+      "online_enabled": false
+    }
+  },
+  {
+    "_id": {
+      "$oid": "649d392010d4994f4803e5e7"
+    },
+    "user_id": {
+      "$oid": "6478af6f173590eb5f404716"
+    },
+    "name": "update: \"city_state\"",
+    "document_id": {
+      "$oid": "64776b0e5c0291fd4ffbea35"
+    },
+    "action_at": {
+      "$date": "2023-06-29T07:56:16.462Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-06-29T07:56:16.259Z"
+      },
+      "deployed_feature_list_ids": [
+        {
+          "$oid": "647fde74c4233b65559aab2d"
+        }
+      ]
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-06-29T07:56:16.456Z"
+      },
+      "deployed_feature_list_ids": []
+    }
+  }
+]

@@ -1,0 +1,20 @@
+[
+  {
+    "_id": {
+      "$oid": "64708919ea4c4876a77d2b80"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "Grocery - Snowflake Feature Store (snowflake)",
+    "created_at": {
+      "$date": "2023-05-26T10:25:29.671Z"
+    },
+    "updated_at": null,
+    "default_feature_store_ids": [
+      {
+        "$oid": "646cb1cef1d0ea5b3693e111"
+      }
+    ]
+  }
+]

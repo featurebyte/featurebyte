@@ -1,0 +1,34 @@
+[
+  {
+    "_id": {
+      "$oid": "64708919dc5e0118a048d52a"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "insert: \"Grocery - Snowflake Feature Store (snowflake)\"",
+    "document_id": {
+      "$oid": "64708919ea4c4876a77d2b80"
+    },
+    "action_at": {
+      "$date": "2023-05-26T10:25:29.812Z"
+    },
+    "action_type": "INSERT",
+    "previous_values": {},
+    "current_values": {
+      "user_id": {
+        "$oid": "64645f76cfc8e397f762c868"
+      },
+      "name": "Grocery - Snowflake Feature Store (snowflake)",
+      "created_at": {
+        "$date": "2023-05-26T10:25:29.671Z"
+      },
+      "updated_at": null,
+      "default_feature_store_ids": [
+        {
+          "$oid": "646cb1cef1d0ea5b3693e111"
+        }
+      ]
+    }
+  }
+]

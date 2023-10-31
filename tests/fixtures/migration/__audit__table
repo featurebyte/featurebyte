@@ -1,0 +1,1758 @@
+[
+  {
+    "_id": {
+      "$oid": "6470891ddc5e0118a048d52b"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "insert: \"GROCERYINVOICE\"",
+    "document_id": {
+      "$oid": "6470891bea4c4876a77d2b81"
+    },
+    "action_at": {
+      "$date": "2023-05-26T10:25:33.666Z"
+    },
+    "action_type": "INSERT",
+    "previous_values": {},
+    "current_values": {
+      "user_id": {
+        "$oid": "64645f76cfc8e397f762c868"
+      },
+      "name": "GROCERYINVOICE",
+      "created_at": {
+        "$date": "2023-05-26T10:25:33.613Z"
+      },
+      "updated_at": null,
+      "catalog_id": {
+        "$oid": "64708919ea4c4876a77d2b80"
+      },
+      "type": "event_table",
+      "columns_info": [
+        {
+          "name": "GroceryInvoiceGuid",
+          "dtype": "VARCHAR",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "GroceryCustomerGuid",
+          "dtype": "VARCHAR",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "Timestamp",
+          "dtype": "TIMESTAMP",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "tz_offset",
+          "dtype": "VARCHAR",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "record_available_at",
+          "dtype": "TIMESTAMP",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "Amount",
+          "dtype": "FLOAT",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        }
+      ],
+      "tabular_source": {
+        "feature_store_id": {
+          "$oid": "646cb1cef1d0ea5b3693e111"
+        },
+        "table_details": {
+          "database_name": "DEMO_DATASETS",
+          "schema_name": "GROCERY",
+          "table_name": "GROCERYINVOICE"
+        }
+      },
+      "status": "PUBLIC_DRAFT",
+      "record_creation_timestamp_column": "record_available_at",
+      "event_timestamp_column": "Timestamp",
+      "event_id_column": "GroceryInvoiceGuid",
+      "event_timestamp_timezone_offset": null,
+      "event_timestamp_timezone_offset_column": null,
+      "default_feature_job_setting": null
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6470891edc5e0118a048d52c"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"GROCERYINVOICE\"",
+    "document_id": {
+      "$oid": "6470891bea4c4876a77d2b81"
+    },
+    "action_at": {
+      "$date": "2023-05-26T10:25:34.012Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": null,
+      "columns_info": [
+        {
+          "name": "GroceryInvoiceGuid",
+          "dtype": "VARCHAR",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "GroceryCustomerGuid",
+          "dtype": "VARCHAR",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "Timestamp",
+          "dtype": "TIMESTAMP",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "tz_offset",
+          "dtype": "VARCHAR",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "record_available_at",
+          "dtype": "TIMESTAMP",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "Amount",
+          "dtype": "FLOAT",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        }
+      ]
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-05-26T10:25:34.006Z"
+      },
+      "columns_info": [
+        {
+          "name": "GroceryInvoiceGuid",
+          "dtype": "VARCHAR",
+          "semantic_id": {
+            "$oid": "646cc0c49c2b441adab7c776"
+          }
+        },
+        {
+          "name": "GroceryCustomerGuid",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "Timestamp",
+          "dtype": "TIMESTAMP",
+          "semantic_id": {
+            "$oid": "646cc0c49c2b441adab7c774"
+          }
+        },
+        {
+          "name": "tz_offset",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "record_available_at",
+          "dtype": "TIMESTAMP"
+        },
+        {
+          "name": "Amount",
+          "dtype": "FLOAT"
+        }
+      ]
+    }
+  },
+  {
+    "_id": {
+      "$oid": "64708927dc5e0118a048d52d"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "insert: \"GROCERYCUSTOMER\"",
+    "document_id": {
+      "$oid": "64708925ea4c4876a77d2b83"
+    },
+    "action_at": {
+      "$date": "2023-05-26T10:25:43.832Z"
+    },
+    "action_type": "INSERT",
+    "previous_values": {},
+    "current_values": {
+      "user_id": {
+        "$oid": "64645f76cfc8e397f762c868"
+      },
+      "name": "GROCERYCUSTOMER",
+      "created_at": {
+        "$date": "2023-05-26T10:25:43.825Z"
+      },
+      "updated_at": null,
+      "catalog_id": {
+        "$oid": "64708919ea4c4876a77d2b80"
+      },
+      "type": "scd_table",
+      "columns_info": [
+        {
+          "name": "RowID",
+          "dtype": "VARCHAR",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "GroceryCustomerGuid",
+          "dtype": "VARCHAR",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "ValidFrom",
+          "dtype": "TIMESTAMP",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "Gender",
+          "dtype": "VARCHAR",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "Title",
+          "dtype": "VARCHAR",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "GivenName",
+          "dtype": "VARCHAR",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "MiddleInitial",
+          "dtype": "VARCHAR",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "Surname",
+          "dtype": "VARCHAR",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "StreetAddress",
+          "dtype": "VARCHAR",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "City",
+          "dtype": "VARCHAR",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "State",
+          "dtype": "VARCHAR",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "PostalCode",
+          "dtype": "VARCHAR",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "BrowserUserAgent",
+          "dtype": "VARCHAR",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "DateOfBirth",
+          "dtype": "VARCHAR",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "Latitude",
+          "dtype": "FLOAT",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "Longitude",
+          "dtype": "FLOAT",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "record_available_at",
+          "dtype": "TIMESTAMP",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "CurrentRecord",
+          "dtype": "BOOL",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        }
+      ],
+      "tabular_source": {
+        "feature_store_id": {
+          "$oid": "646cb1cef1d0ea5b3693e111"
+        },
+        "table_details": {
+          "database_name": "DEMO_DATASETS",
+          "schema_name": "GROCERY",
+          "table_name": "GROCERYCUSTOMER"
+        }
+      },
+      "status": "PUBLIC_DRAFT",
+      "record_creation_timestamp_column": null,
+      "natural_key_column": "GroceryCustomerGuid",
+      "effective_timestamp_column": "ValidFrom",
+      "surrogate_key_column": null,
+      "end_timestamp_column": null,
+      "current_flag_column": "CurrentRecord"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "64708927dc5e0118a048d52e"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"GROCERYCUSTOMER\"",
+    "document_id": {
+      "$oid": "64708925ea4c4876a77d2b83"
+    },
+    "action_at": {
+      "$date": "2023-05-26T10:25:43.863Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": null,
+      "columns_info": [
+        {
+          "name": "RowID",
+          "dtype": "VARCHAR",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "GroceryCustomerGuid",
+          "dtype": "VARCHAR",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "ValidFrom",
+          "dtype": "TIMESTAMP",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "Gender",
+          "dtype": "VARCHAR",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "Title",
+          "dtype": "VARCHAR",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "GivenName",
+          "dtype": "VARCHAR",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "MiddleInitial",
+          "dtype": "VARCHAR",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "Surname",
+          "dtype": "VARCHAR",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "StreetAddress",
+          "dtype": "VARCHAR",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "City",
+          "dtype": "VARCHAR",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "State",
+          "dtype": "VARCHAR",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "PostalCode",
+          "dtype": "VARCHAR",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "BrowserUserAgent",
+          "dtype": "VARCHAR",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "DateOfBirth",
+          "dtype": "VARCHAR",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "Latitude",
+          "dtype": "FLOAT",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "Longitude",
+          "dtype": "FLOAT",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "record_available_at",
+          "dtype": "TIMESTAMP",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        },
+        {
+          "name": "CurrentRecord",
+          "dtype": "BOOL",
+          "entity_id": null,
+          "semantic_id": null,
+          "critical_data_info": null
+        }
+      ]
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-05-26T10:25:43.859Z"
+      },
+      "columns_info": [
+        {
+          "name": "RowID",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "GroceryCustomerGuid",
+          "dtype": "VARCHAR",
+          "semantic_id": {
+            "$oid": "646cc0ccfd6cc029a5a28ef2"
+          }
+        },
+        {
+          "name": "ValidFrom",
+          "dtype": "TIMESTAMP"
+        },
+        {
+          "name": "Gender",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "Title",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "GivenName",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "MiddleInitial",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "Surname",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "StreetAddress",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "City",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "State",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "PostalCode",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "BrowserUserAgent",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "DateOfBirth",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "Latitude",
+          "dtype": "FLOAT"
+        },
+        {
+          "name": "Longitude",
+          "dtype": "FLOAT"
+        },
+        {
+          "name": "record_available_at",
+          "dtype": "TIMESTAMP"
+        },
+        {
+          "name": "CurrentRecord",
+          "dtype": "BOOL"
+        }
+      ]
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6470892be6afaa67f96f0d08"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"GROCERYINVOICE\"",
+    "document_id": {
+      "$oid": "6470891bea4c4876a77d2b81"
+    },
+    "action_at": {
+      "$date": "2023-05-26T10:25:47.923Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-05-26T10:25:34.006Z"
+      },
+      "default_feature_job_setting": null
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-05-26T10:25:47.918Z"
+      },
+      "default_feature_job_setting": {
+        "blind_spot": "1h",
+        "frequency": "1h",
+        "time_modulo_frequency": "60s"
+      }
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6470893cdc5e0118a048d535"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"GROCERYINVOICE\"",
+    "document_id": {
+      "$oid": "6470891bea4c4876a77d2b81"
+    },
+    "action_at": {
+      "$date": "2023-05-26T10:26:04.187Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-05-26T10:25:47.918Z"
+      },
+      "columns_info": [
+        {
+          "name": "GroceryInvoiceGuid",
+          "dtype": "VARCHAR",
+          "semantic_id": {
+            "$oid": "646cc0c49c2b441adab7c776"
+          }
+        },
+        {
+          "name": "GroceryCustomerGuid",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "Timestamp",
+          "dtype": "TIMESTAMP",
+          "semantic_id": {
+            "$oid": "646cc0c49c2b441adab7c774"
+          }
+        },
+        {
+          "name": "tz_offset",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "record_available_at",
+          "dtype": "TIMESTAMP"
+        },
+        {
+          "name": "Amount",
+          "dtype": "FLOAT"
+        }
+      ]
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-05-26T10:26:04.179Z"
+      },
+      "columns_info": [
+        {
+          "name": "GroceryInvoiceGuid",
+          "dtype": "VARCHAR",
+          "entity_id": {
+            "$oid": "64708934ea4c4876a77d2b86"
+          },
+          "semantic_id": {
+            "$oid": "646cc0c49c2b441adab7c776"
+          }
+        },
+        {
+          "name": "GroceryCustomerGuid",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "Timestamp",
+          "dtype": "TIMESTAMP",
+          "semantic_id": {
+            "$oid": "646cc0c49c2b441adab7c774"
+          }
+        },
+        {
+          "name": "tz_offset",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "record_available_at",
+          "dtype": "TIMESTAMP"
+        },
+        {
+          "name": "Amount",
+          "dtype": "FLOAT"
+        }
+      ]
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6470893ddc5e0118a048d537"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"GROCERYINVOICE\"",
+    "document_id": {
+      "$oid": "6470891bea4c4876a77d2b81"
+    },
+    "action_at": {
+      "$date": "2023-05-26T10:26:05.022Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-05-26T10:26:04.179Z"
+      },
+      "columns_info": [
+        {
+          "name": "GroceryInvoiceGuid",
+          "dtype": "VARCHAR",
+          "entity_id": {
+            "$oid": "64708934ea4c4876a77d2b86"
+          },
+          "semantic_id": {
+            "$oid": "646cc0c49c2b441adab7c776"
+          }
+        },
+        {
+          "name": "GroceryCustomerGuid",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "Timestamp",
+          "dtype": "TIMESTAMP",
+          "semantic_id": {
+            "$oid": "646cc0c49c2b441adab7c774"
+          }
+        },
+        {
+          "name": "tz_offset",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "record_available_at",
+          "dtype": "TIMESTAMP"
+        },
+        {
+          "name": "Amount",
+          "dtype": "FLOAT"
+        }
+      ]
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-05-26T10:26:05.016Z"
+      },
+      "columns_info": [
+        {
+          "name": "GroceryInvoiceGuid",
+          "dtype": "VARCHAR",
+          "entity_id": {
+            "$oid": "64708934ea4c4876a77d2b86"
+          },
+          "semantic_id": {
+            "$oid": "646cc0c49c2b441adab7c776"
+          }
+        },
+        {
+          "name": "GroceryCustomerGuid",
+          "dtype": "VARCHAR",
+          "entity_id": {
+            "$oid": "64708932ea4c4876a77d2b85"
+          }
+        },
+        {
+          "name": "Timestamp",
+          "dtype": "TIMESTAMP",
+          "semantic_id": {
+            "$oid": "646cc0c49c2b441adab7c774"
+          }
+        },
+        {
+          "name": "tz_offset",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "record_available_at",
+          "dtype": "TIMESTAMP"
+        },
+        {
+          "name": "Amount",
+          "dtype": "FLOAT"
+        }
+      ]
+    }
+  },
+  {
+    "_id": {
+      "$oid": "64708940e6afaa67f96f0d0e"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"GROCERYCUSTOMER\"",
+    "document_id": {
+      "$oid": "64708925ea4c4876a77d2b83"
+    },
+    "action_at": {
+      "$date": "2023-05-26T10:26:08.386Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-05-26T10:25:43.859Z"
+      },
+      "columns_info": [
+        {
+          "name": "RowID",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "GroceryCustomerGuid",
+          "dtype": "VARCHAR",
+          "semantic_id": {
+            "$oid": "646cc0ccfd6cc029a5a28ef2"
+          }
+        },
+        {
+          "name": "ValidFrom",
+          "dtype": "TIMESTAMP"
+        },
+        {
+          "name": "Gender",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "Title",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "GivenName",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "MiddleInitial",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "Surname",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "StreetAddress",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "City",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "State",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "PostalCode",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "BrowserUserAgent",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "DateOfBirth",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "Latitude",
+          "dtype": "FLOAT"
+        },
+        {
+          "name": "Longitude",
+          "dtype": "FLOAT"
+        },
+        {
+          "name": "record_available_at",
+          "dtype": "TIMESTAMP"
+        },
+        {
+          "name": "CurrentRecord",
+          "dtype": "BOOL"
+        }
+      ]
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-05-26T10:26:08.381Z"
+      },
+      "columns_info": [
+        {
+          "name": "RowID",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "GroceryCustomerGuid",
+          "dtype": "VARCHAR",
+          "entity_id": {
+            "$oid": "64708932ea4c4876a77d2b85"
+          },
+          "semantic_id": {
+            "$oid": "646cc0ccfd6cc029a5a28ef2"
+          }
+        },
+        {
+          "name": "ValidFrom",
+          "dtype": "TIMESTAMP"
+        },
+        {
+          "name": "Gender",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "Title",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "GivenName",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "MiddleInitial",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "Surname",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "StreetAddress",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "City",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "State",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "PostalCode",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "BrowserUserAgent",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "DateOfBirth",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "Latitude",
+          "dtype": "FLOAT"
+        },
+        {
+          "name": "Longitude",
+          "dtype": "FLOAT"
+        },
+        {
+          "name": "record_available_at",
+          "dtype": "TIMESTAMP"
+        },
+        {
+          "name": "CurrentRecord",
+          "dtype": "BOOL"
+        }
+      ]
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6470894ddc5e0118a048d53c"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"GROCERYCUSTOMER\"",
+    "document_id": {
+      "$oid": "64708925ea4c4876a77d2b83"
+    },
+    "action_at": {
+      "$date": "2023-05-26T10:26:21.019Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-05-26T10:26:08.381Z"
+      },
+      "columns_info": [
+        {
+          "name": "RowID",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "GroceryCustomerGuid",
+          "dtype": "VARCHAR",
+          "entity_id": {
+            "$oid": "64708932ea4c4876a77d2b85"
+          },
+          "semantic_id": {
+            "$oid": "646cc0ccfd6cc029a5a28ef2"
+          }
+        },
+        {
+          "name": "ValidFrom",
+          "dtype": "TIMESTAMP"
+        },
+        {
+          "name": "Gender",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "Title",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "GivenName",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "MiddleInitial",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "Surname",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "StreetAddress",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "City",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "State",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "PostalCode",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "BrowserUserAgent",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "DateOfBirth",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "Latitude",
+          "dtype": "FLOAT"
+        },
+        {
+          "name": "Longitude",
+          "dtype": "FLOAT"
+        },
+        {
+          "name": "record_available_at",
+          "dtype": "TIMESTAMP"
+        },
+        {
+          "name": "CurrentRecord",
+          "dtype": "BOOL"
+        }
+      ]
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-05-26T10:26:21.013Z"
+      },
+      "columns_info": [
+        {
+          "name": "RowID",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "GroceryCustomerGuid",
+          "dtype": "VARCHAR",
+          "entity_id": {
+            "$oid": "64708932ea4c4876a77d2b85"
+          },
+          "semantic_id": {
+            "$oid": "646cc0ccfd6cc029a5a28ef2"
+          }
+        },
+        {
+          "name": "ValidFrom",
+          "dtype": "TIMESTAMP"
+        },
+        {
+          "name": "Gender",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "Title",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "GivenName",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "MiddleInitial",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "Surname",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "StreetAddress",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "City",
+          "dtype": "VARCHAR",
+          "entity_id": {
+            "$oid": "64708936ea4c4876a77d2b88"
+          }
+        },
+        {
+          "name": "State",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "PostalCode",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "BrowserUserAgent",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "DateOfBirth",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "Latitude",
+          "dtype": "FLOAT"
+        },
+        {
+          "name": "Longitude",
+          "dtype": "FLOAT"
+        },
+        {
+          "name": "record_available_at",
+          "dtype": "TIMESTAMP"
+        },
+        {
+          "name": "CurrentRecord",
+          "dtype": "BOOL"
+        }
+      ]
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6470894ddc5e0118a048d542"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"GROCERYCUSTOMER\"",
+    "document_id": {
+      "$oid": "64708925ea4c4876a77d2b83"
+    },
+    "action_at": {
+      "$date": "2023-05-26T10:26:21.803Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-05-26T10:26:21.013Z"
+      },
+      "columns_info": [
+        {
+          "name": "RowID",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "GroceryCustomerGuid",
+          "dtype": "VARCHAR",
+          "entity_id": {
+            "$oid": "64708932ea4c4876a77d2b85"
+          },
+          "semantic_id": {
+            "$oid": "646cc0ccfd6cc029a5a28ef2"
+          }
+        },
+        {
+          "name": "ValidFrom",
+          "dtype": "TIMESTAMP"
+        },
+        {
+          "name": "Gender",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "Title",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "GivenName",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "MiddleInitial",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "Surname",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "StreetAddress",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "City",
+          "dtype": "VARCHAR",
+          "entity_id": {
+            "$oid": "64708936ea4c4876a77d2b88"
+          }
+        },
+        {
+          "name": "State",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "PostalCode",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "BrowserUserAgent",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "DateOfBirth",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "Latitude",
+          "dtype": "FLOAT"
+        },
+        {
+          "name": "Longitude",
+          "dtype": "FLOAT"
+        },
+        {
+          "name": "record_available_at",
+          "dtype": "TIMESTAMP"
+        },
+        {
+          "name": "CurrentRecord",
+          "dtype": "BOOL"
+        }
+      ]
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-05-26T10:26:21.799Z"
+      },
+      "columns_info": [
+        {
+          "name": "RowID",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "GroceryCustomerGuid",
+          "dtype": "VARCHAR",
+          "entity_id": {
+            "$oid": "64708932ea4c4876a77d2b85"
+          },
+          "semantic_id": {
+            "$oid": "646cc0ccfd6cc029a5a28ef2"
+          }
+        },
+        {
+          "name": "ValidFrom",
+          "dtype": "TIMESTAMP"
+        },
+        {
+          "name": "Gender",
+          "dtype": "VARCHAR",
+          "entity_id": {
+            "$oid": "64708937ea4c4876a77d2b89"
+          }
+        },
+        {
+          "name": "Title",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "GivenName",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "MiddleInitial",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "Surname",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "StreetAddress",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "City",
+          "dtype": "VARCHAR",
+          "entity_id": {
+            "$oid": "64708936ea4c4876a77d2b88"
+          }
+        },
+        {
+          "name": "State",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "PostalCode",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "BrowserUserAgent",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "DateOfBirth",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "Latitude",
+          "dtype": "FLOAT"
+        },
+        {
+          "name": "Longitude",
+          "dtype": "FLOAT"
+        },
+        {
+          "name": "record_available_at",
+          "dtype": "TIMESTAMP"
+        },
+        {
+          "name": "CurrentRecord",
+          "dtype": "BOOL"
+        }
+      ]
+    }
+  },
+  {
+    "_id": {
+      "$oid": "64708fb3e6afaa67f96f0d16"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"GROCERYCUSTOMER\"",
+    "document_id": {
+      "$oid": "64708925ea4c4876a77d2b83"
+    },
+    "action_at": {
+      "$date": "2023-05-26T10:53:39.506Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-05-26T10:26:21.799Z"
+      },
+      "columns_info": [
+        {
+          "name": "RowID",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "GroceryCustomerGuid",
+          "dtype": "VARCHAR",
+          "entity_id": {
+            "$oid": "64708932ea4c4876a77d2b85"
+          },
+          "semantic_id": {
+            "$oid": "646cc0ccfd6cc029a5a28ef2"
+          }
+        },
+        {
+          "name": "ValidFrom",
+          "dtype": "TIMESTAMP"
+        },
+        {
+          "name": "Gender",
+          "dtype": "VARCHAR",
+          "entity_id": {
+            "$oid": "64708937ea4c4876a77d2b89"
+          }
+        },
+        {
+          "name": "Title",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "GivenName",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "MiddleInitial",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "Surname",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "StreetAddress",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "City",
+          "dtype": "VARCHAR",
+          "entity_id": {
+            "$oid": "64708936ea4c4876a77d2b88"
+          }
+        },
+        {
+          "name": "State",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "PostalCode",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "BrowserUserAgent",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "DateOfBirth",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "Latitude",
+          "dtype": "FLOAT"
+        },
+        {
+          "name": "Longitude",
+          "dtype": "FLOAT"
+        },
+        {
+          "name": "record_available_at",
+          "dtype": "TIMESTAMP"
+        },
+        {
+          "name": "CurrentRecord",
+          "dtype": "BOOL"
+        }
+      ]
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-05-26T10:53:39.502Z"
+      },
+      "columns_info": [
+        {
+          "name": "RowID",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "GroceryCustomerGuid",
+          "dtype": "VARCHAR",
+          "entity_id": {
+            "$oid": "64708932ea4c4876a77d2b85"
+          },
+          "semantic_id": {
+            "$oid": "646cc0ccfd6cc029a5a28ef2"
+          }
+        },
+        {
+          "name": "ValidFrom",
+          "dtype": "TIMESTAMP"
+        },
+        {
+          "name": "Gender",
+          "dtype": "VARCHAR",
+          "entity_id": {
+            "$oid": "64708937ea4c4876a77d2b89"
+          }
+        },
+        {
+          "name": "Title",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "GivenName",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "MiddleInitial",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "Surname",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "StreetAddress",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "City",
+          "dtype": "VARCHAR",
+          "entity_id": {
+            "$oid": "64708936ea4c4876a77d2b88"
+          }
+        },
+        {
+          "name": "State",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "PostalCode",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "BrowserUserAgent",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "DateOfBirth",
+          "dtype": "TIMESTAMP"
+        },
+        {
+          "name": "Latitude",
+          "dtype": "FLOAT"
+        },
+        {
+          "name": "Longitude",
+          "dtype": "FLOAT"
+        },
+        {
+          "name": "record_available_at",
+          "dtype": "TIMESTAMP"
+        },
+        {
+          "name": "CurrentRecord",
+          "dtype": "BOOL"
+        }
+      ]
+    }
+  },
+  {
+    "_id": {
+      "$oid": "64764398e6afaa67f96f0d1d"
+    },
+    "user_id": {
+      "$oid": "646cac35fd6cc029a5a28eda"
+    },
+    "name": "update: \"GROCERYINVOICE\"",
+    "document_id": {
+      "$oid": "6470891bea4c4876a77d2b81"
+    },
+    "action_at": {
+      "$date": "2023-05-30T18:42:32.582Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-05-26T10:26:05.016Z"
+      },
+      "columns_info": [
+        {
+          "name": "GroceryInvoiceGuid",
+          "dtype": "VARCHAR",
+          "entity_id": {
+            "$oid": "64708934ea4c4876a77d2b86"
+          },
+          "semantic_id": {
+            "$oid": "646cc0c49c2b441adab7c776"
+          }
+        },
+        {
+          "name": "GroceryCustomerGuid",
+          "dtype": "VARCHAR",
+          "entity_id": {
+            "$oid": "64708932ea4c4876a77d2b85"
+          }
+        },
+        {
+          "name": "Timestamp",
+          "dtype": "TIMESTAMP",
+          "semantic_id": {
+            "$oid": "646cc0c49c2b441adab7c774"
+          }
+        },
+        {
+          "name": "tz_offset",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "record_available_at",
+          "dtype": "TIMESTAMP"
+        },
+        {
+          "name": "Amount",
+          "dtype": "FLOAT"
+        }
+      ]
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-05-30T18:42:32.578Z"
+      },
+      "columns_info": [
+        {
+          "name": "GroceryInvoiceGuid",
+          "dtype": "VARCHAR",
+          "entity_id": {
+            "$oid": "64708934ea4c4876a77d2b86"
+          },
+          "semantic_id": {
+            "$oid": "646cc0c49c2b441adab7c776"
+          }
+        },
+        {
+          "name": "GroceryCustomerGuid",
+          "dtype": "VARCHAR",
+          "entity_id": {
+            "$oid": "64708932ea4c4876a77d2b85"
+          }
+        },
+        {
+          "name": "Timestamp",
+          "dtype": "TIMESTAMP",
+          "semantic_id": {
+            "$oid": "646cc0c49c2b441adab7c774"
+          }
+        },
+        {
+          "name": "tz_offset",
+          "dtype": "VARCHAR"
+        },
+        {
+          "name": "record_available_at",
+          "dtype": "TIMESTAMP"
+        },
+        {
+          "name": "Amount",
+          "dtype": "FLOAT",
+          "critical_data_info": {
+            "cleaning_operations": [
+              {
+                "imputed_value": 0,
+                "type": "missing"
+              },
+              {
+                "imputed_value": 0,
+                "type": "less_than",
+                "end_point": 0
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "_id": {
+      "$oid": "64cb2387cd3890d8516ae1c5"
+    },
+    "user_id": {
+      "$oid": "6478af6f173590eb5f404716"
+    },
+    "name": "update: \"GROCERYINVOICE\"",
+    "document_id": {
+      "$oid": "6470891bea4c4876a77d2b81"
+    },
+    "action_at": {
+      "$date": "2023-08-03T03:48:23.032Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-05-30T18:42:32.578Z"
+      }
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-08-03T03:48:23.025Z"
+      },
+      "description": "Grocery invoice records."
+    }
+  },
+  {
+    "_id": {
+      "$oid": "64d08896cd3890d8516b34ca"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "update: \"GROCERYINVOICE\"",
+    "document_id": {
+      "$oid": "6470891bea4c4876a77d2b81"
+    },
+    "action_at": {
+      "$date": "2023-08-07T06:00:54.609Z"
+    },
+    "action_type": "UPDATE",
+    "previous_values": {
+      "updated_at": {
+        "$date": "2023-08-03T03:48:23.025Z"
+      },
+      "description": "Grocery invoice records."
+    },
+    "current_values": {
+      "updated_at": {
+        "$date": "2023-08-07T06:00:54.487Z"
+      },
+      "description": "Grocery invoice record"
+    }
+  }
+]
