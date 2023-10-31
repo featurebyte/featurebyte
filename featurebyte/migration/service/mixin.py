@@ -95,7 +95,6 @@ class BaseMigrationServiceMixin:
             f'Start migrating all records (collection: "{self.delegate_service.collection_name}")'
         )
         to_iterate, page = True, 1
-
         while to_iterate:
             docs, total = await self.persistent.find(
                 collection_name=self.delegate_service.collection_name,

@@ -219,15 +219,15 @@ async def test_run_migration(
             docs = await delegate_service.list_documents_as_dict(use_raw_query_filter=True)
             assert docs["total"] > 0, delegate_service
 
-        # check that must be at least 3 records in the audit docs
-        max_audit_record_nums = 0
-        for doc in docs["data"]:
-            audit_docs = await delegate_service.list_document_audits(document_id=doc["_id"])
-            max_audit_record_nums = max(max_audit_record_nums, audit_docs["total"])
-
         if isinstance(service, BaseMongoCollectionMigration) and not service.skip_audit_migration:
             # check audit records only if skip_audit_migration is False
-            assert max_audit_record_nums > 0, delegate_service
+            max_audit_record_nums = 0
+            for doc in docs["data"]:
+                audit_docs = await delegate_service.list_document_audits(document_id=doc["_id"])
+                max_audit_record_nums = max(max_audit_record_nums, audit_docs["total"])
+
+            # check that must be at least 3 records in the audit docs
+            assert max_audit_record_nums > 3, delegate_service
 
     # check version in schema_metadata after migration
     schema_metadata = await schema_metadata_service.get_or_create_document(
