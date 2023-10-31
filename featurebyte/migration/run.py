@@ -152,7 +152,8 @@ async def catalog_specific_migration_method_constructor(
         tasks: Set[Any] = set()
         async for catalog in all_catalog_service.list_documents_iterator(query_filter={}):
             logger.info(f"Run migration for catalog {catalog.id}")
-            # add the task to the task list
+
+            # construct the app container for the catalog & retrieve the migrate method
             app_container = LazyAppContainer(
                 user=user,
                 persistent=persistent,
@@ -168,6 +169,7 @@ async def catalog_specific_migration_method_constructor(
                 # wait for one of the tasks to finish first
                 _, tasks = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
 
+            # add the task to the task list
             tasks.add(asyncio.create_task(migrate_method()))
 
         # wait for all the tasks to finish
