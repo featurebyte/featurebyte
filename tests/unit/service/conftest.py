@@ -55,14 +55,13 @@ def get_credential_fixture(credentials):
 
 
 @pytest.fixture(name="app_container")
-def app_container_fixture(persistent, user, catalog, temp_storage):
+def app_container_fixture(persistent, user, catalog):
     """
     Return an app container used in tests. This will allow us to easily retrieve instances of the right type.
     """
     instance_map = {
         "user": user,
         "persistent": persistent,
-        # "temp_storage": temp_storage,
         "celery": get_celery(),
         "storage": LocalTempStorage(),
         "catalog_id": catalog.id,
