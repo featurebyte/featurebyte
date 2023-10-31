@@ -12,9 +12,6 @@ services:
       - MONGO_HOSTNAME=mongo-rs
     volumes:
       - mongodb:/data/
-    ports:
-      - "0.0.0.0:27021:27021"
-      - "0.0.0.0:27022:27022"
     healthcheck:
       start_period: 10s
       interval: 5s
