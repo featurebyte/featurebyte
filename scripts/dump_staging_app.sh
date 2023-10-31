@@ -7,8 +7,8 @@ MONGO_DUMP_FILENAME=mongodb-staging.tar.gz
 
 # download staging data & dump it to the mongo
 gsutil cp gs://featurebyte_staging_backup/$MONGO_DUMP_FILENAME
-docker cp $MONGO_DUMP_FILENAME mongo-rs:/
-docker exec mongo-rs mongorestore --gzip --drop \
+docker cp $MONGO_DUMP_FILENAME mongo-testrs:/
+docker exec mongo-testrs mongorestore --gzip --drop \
     --nsInclude="featurebyte.*catalog" \
     --nsInclude="featurebyte.*feature_store" \
     --nsInclude="featurebyte.*entity" \
