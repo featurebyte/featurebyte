@@ -21,7 +21,10 @@ from featurebyte.migration.run import (
     retrieve_all_migration_methods,
     run_migration,
 )
-from featurebyte.migration.service.mixin import DataWarehouseMigrationMixin
+from featurebyte.migration.service.mixin import (
+    BaseMongoCollectionMigration,
+    DataWarehouseMigrationMixin,
+)
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.node.schema import SnowflakeDetails
 from featurebyte.schema.feature_store import FeatureStoreCreate
@@ -221,7 +224,10 @@ async def test_run_migration(
         for doc in docs["data"]:
             audit_docs = await delegate_service.list_document_audits(document_id=doc["_id"])
             max_audit_record_nums = max(max_audit_record_nums, audit_docs["total"])
-        assert max_audit_record_nums > 0, delegate_service
+
+        if isinstance(service, BaseMongoCollectionMigration) and not service.skip_audit_migration:
+            # check audit records only if skip_audit_migration is False
+            assert max_audit_record_nums > 0, delegate_service
 
     # check version in schema_metadata after migration
     schema_metadata = await schema_metadata_service.get_or_create_document(
