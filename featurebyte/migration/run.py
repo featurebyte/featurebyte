@@ -109,7 +109,6 @@ async def catalog_specific_migration_method_constructor(
     all_catalog_service: AllCatalogService,
     user: Any,
     persistent: Persistent,
-    celery: Celery,
     migrate_service_instance_name: str,
     migrate_method_name: str,
     migration_marker: MigrationInfo,
@@ -127,8 +126,6 @@ async def catalog_specific_migration_method_constructor(
         User object
     persistent: Persistent
         Persistent storage object
-    celery: Celery
-        Celery object
     migrate_service_instance_name: str
         Migrate service instance name
     migrate_method_name: str
@@ -153,7 +150,6 @@ async def catalog_specific_migration_method_constructor(
                 "user": user,
                 "persistent": persistent,
                 "catalog_id": catalog.id,
-                "celery": celery,
             }
             app_container = LazyAppContainer(
                 app_container_config=app_container_config,
@@ -213,7 +209,6 @@ async def migrate_method_generator(
         "user": user,
         "persistent": persistent,
         "catalog_id": DEFAULT_CATALOG_ID,
-        "celery": get_celery(),
     }
     app_container = LazyAppContainer(
         app_container_config=app_container_config,
@@ -241,7 +236,6 @@ async def migrate_method_generator(
                     all_catalog_service=app_container.all_catalog_service,
                     user=user,
                     persistent=persistent,
-                    celery=app_container.celery,
                     migrate_service_instance_name=migrate_service_instance_name,
                     migrate_method_name=migrate_method_name,
                     migration_marker=_extract_migrate_method_marker(migrate_method),
