@@ -5,6 +5,8 @@ from http import HTTPStatus
 
 import pytest
 
+from featurebyte.routes.lazy_app_container import LazyAppContainer
+
 
 class TestTempDataApi:
     """Test suite for Temp Data API"""
@@ -13,10 +15,13 @@ class TestTempDataApi:
     base_route = "/temp_data"
 
     @pytest.mark.asyncio
-    async def test_retrieve_html(self, api_client_persistent, app_container):
+    async def test_retrieve_html(
+        self, api_client_persistent, app_container: LazyAppContainer, temp_storage
+    ):
         """
         Retrieve temp html file
         """
+        app_container.override_instance_for_test("temp_storage", temp_storage)
         temp_storage = app_container.temp_storage
         test_api_client, _ = api_client_persistent
 
@@ -34,11 +39,15 @@ class TestTempDataApi:
         assert response.content.decode("utf-8") == expected_content
 
     @pytest.mark.asyncio
-    async def test_retrieve_parquet(self, api_client_persistent, temp_storage):
+    async def test_retrieve_parquet(
+        self, api_client_persistent, app_container: LazyAppContainer, temp_storage
+    ):
         """
         Retrieve temp parquet file
         """
         test_api_client, _ = api_client_persistent
+        app_container.override_instance_for_test("temp_storage", temp_storage)
+        temp_storage = app_container.temp_storage
 
         source_file = "tests/fixtures/feature_job_setting_analysis/backtest.parquet"
         dest_path = "feature_job_setting_analysis/backtest/62f301e841b9a757c9ff871b.parquet"

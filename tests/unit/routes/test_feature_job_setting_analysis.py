@@ -19,6 +19,7 @@ from featurebyte_freeware.feature_job_analysis.schema import (
 )
 from pandas.testing import assert_frame_equal
 
+from featurebyte.routes.lazy_app_container import LazyAppContainer
 from tests.unit.routes.base import BaseAsyncApiTestSuite
 
 
@@ -200,7 +201,11 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
 
     @pytest.mark.asyncio
     async def test_backtest(
-        self, test_api_client_persistent, create_success_response, app_container, backtest_result
+        self,
+        test_api_client_persistent,
+        create_success_response,
+        app_container: LazyAppContainer,
+        backtest_result,
     ):
         """
         Run backtest for existing analysis

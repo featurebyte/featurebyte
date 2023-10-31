@@ -96,13 +96,16 @@ class BaseTaskTestSuite:
         await task.execute(task_payload)
 
     @pytest_asyncio.fixture()
-    async def task_completed(self, mongo_persistent, progress, storage, catalog, app_container):
+    async def task_completed(
+        self, mongo_persistent, progress, storage, catalog, app_container, temp_storage
+    ):
         """
         Test execution of the task
         """
         persistent, _ = mongo_persistent
         self.payload["catalog_id"] = catalog.id
         app_container.invalidate_dep_for_test(TaskProgressUpdater)
+        app_container.override_instance_for_test("temp_storage", temp_storage)
         await self.execute_task(
             task_class=self.task_class,
             payload=self.payload,

@@ -96,6 +96,7 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
         task_completed,
         progress,
         app_container,
+        temp_storage,
         update_fixtures,
     ):
         """

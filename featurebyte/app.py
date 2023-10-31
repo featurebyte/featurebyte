@@ -75,9 +75,6 @@ def _dep_injection_func(
         "celery": get_celery(),
         "catalog_id": active_catalog_id,
     }
-    # the temp storage created by the default app is different from the one being passed in.
-    # this ie because the one in conftest has a temporary directory that gets cleaned up after each test
-    # if we remove this, will need to figure out a way to clean up the temp directory after each test
     request.state.app_container = LazyAppContainer(
         app_container_config=app_container_config,
         instance_map=instance_map,
