@@ -106,8 +106,8 @@ class FeatureMigrationServiceV4(BaseMongoCollectionMigration):
             return record
 
     @migrate(version=4, description="Add relationships_info to feature record")
-    async def add_relationships_info(self) -> None:
-        """Change field name from event_data_ids to tabular_data_ids"""
+    async def add_primary_entity_ids_relationships_info(self) -> None:
+        """Add primary_entity_ids & relationships_info to feature record"""
         sanity_check_sample_size = 10
 
         # use the normal query filter (contains catalog ID filter)

@@ -132,13 +132,13 @@ class EntityRelationshipExtractorService:
         -------
         Dict[ObjectId, List[ObjectId]]
         """
-        path_map[entity_id] = relationship_ids
+        path_map[entity_id].extend(relationship_ids)
         for relation_data in relationship_map[entity_id]:
             path_map = cls._extract_entity_relationship_paths(
                 relationship_map=relationship_map,
                 path_map=path_map,
                 entity_id=relation_data.entity_id,
-                relationship_ids=relationship_ids + [relation_data.relationship_id],
+                relationship_ids=path_map[entity_id] + [relation_data.relationship_id],
             )
 
         return path_map
