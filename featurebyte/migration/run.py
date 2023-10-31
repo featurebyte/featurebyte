@@ -29,7 +29,6 @@ from featurebyte.routes.block_modification_handler import BlockModificationHandl
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
 from featurebyte.service.catalog import AllCatalogService
-from featurebyte.storage import Storage
 from featurebyte.utils.credential import MongoBackedCredentialProvider
 from featurebyte.worker import get_celery
 
@@ -110,7 +109,6 @@ async def catalog_specific_migration_method_constructor(
     all_catalog_service: AllCatalogService,
     user: Any,
     persistent: Persistent,
-    temp_storage: Storage,
     celery: Celery,
     migrate_service_instance_name: str,
     migrate_method_name: str,
@@ -129,8 +127,6 @@ async def catalog_specific_migration_method_constructor(
         User object
     persistent: Persistent
         Persistent storage object
-    temp_storage: Storage
-        Temporary storage object
     celery: Celery
         Celery object
     migrate_service_instance_name: str
@@ -157,7 +153,6 @@ async def catalog_specific_migration_method_constructor(
                 "user": user,
                 "persistent": persistent,
                 "catalog_id": catalog.id,
-                "temp_storage": temp_storage,
                 "celery": celery,
             }
             app_container = LazyAppContainer(
@@ -246,7 +241,6 @@ async def migrate_method_generator(
                     all_catalog_service=app_container.all_catalog_service,
                     user=user,
                     persistent=persistent,
-                    temp_storage=app_container.temp_storage,
                     celery=app_container.celery,
                     migrate_service_instance_name=migrate_service_instance_name,
                     migrate_method_name=migrate_method_name,
