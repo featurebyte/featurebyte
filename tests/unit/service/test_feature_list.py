@@ -146,7 +146,7 @@ async def test_feature_list__contains_relationships_info(
     target_entity_id = feature.entity_ids[0]
 
     # create a parent & child entity & associate them with the target entity
-    ancestor_ids, descendant_ids, sibling_ids = await create_entity_family(
+    _, descendant_ids, _ = await create_entity_family(
         entity_service,
         app_container.table_columns_info_service,
         app_container.entity_relationship_service,
@@ -155,26 +155,26 @@ async def test_feature_list__contains_relationships_info(
         item_table,
     )
 
-    # check these relationships are included in the feature list
+    # check only descendant relationships are included
     feature_list = await feature_list_service.create_document(
         data=FeatureListServiceCreate(name="my_feature_list", feature_ids=[feature.id])
     )
     relationships_info = feature_list.relationships_info
-    assert len(relationships_info) == 5
-    expected_entities = set(ancestor_ids + descendant_ids + sibling_ids + [target_entity_id])
+    assert len(relationships_info) == 2
+    expected_entities = set(descendant_ids + [target_entity_id])
     for relationship_info in relationships_info:
         assert relationship_info.entity_id in expected_entities
         assert relationship_info.related_entity_id in expected_entities
     expected_relationships_info = relationships_info
 
     # remove relationship and check relationship info is updated when create a new feature list version
-    grand_parent_entity_id, parent_entity_id = ancestor_ids
+    descendant_id_to_remove = descendant_ids[0]  # child_entity
     await app_container.table_columns_info_service._remove_parent_entity_ids(
-        primary_entity_id=parent_entity_id,
-        parent_entity_ids_to_remove=[grand_parent_entity_id],
+        primary_entity_id=descendant_id_to_remove,
+        parent_entity_ids_to_remove=[target_entity_id],
     )
     await app_container.entity_relationship_service.remove_relationship(
-        parent_id=grand_parent_entity_id, child_id=parent_entity_id
+        parent_id=target_entity_id, child_id=descendant_id_to_remove
     )
     new_feature = await app_container.version_service.create_new_feature_version(
         data=FeatureNewVersionCreate(
@@ -200,15 +200,10 @@ async def test_feature_list__contains_relationships_info(
     feature_list = await feature_list_service.get_document(document_id=feature_list.id)
     assert feature_list.relationships_info == expected_relationships_info
 
-    # check the newly created feature list
-    relationships_info = new_feature_list.relationships_info
-    expected_entities = set(
-        entity_id for entity_id in expected_entities if entity_id != grand_parent_entity_id
-    )
-    assert len(relationships_info) == 4
-    for relationship_info in relationships_info:
-        assert relationship_info.entity_id in expected_entities
-        assert relationship_info.related_entity_id in expected_entities
+    # check the newly created feature list, the relationship info should be empty as
+    # the child entity is no longer a descendant of the target entity,
+    # and grand_child_entity is not included in the feature list
+    assert new_feature_list.relationships_info == []
 
 
 @pytest.mark.asyncio
