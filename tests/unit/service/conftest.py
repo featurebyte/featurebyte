@@ -38,7 +38,6 @@ from featurebyte.schema.target import TargetCreate
 from featurebyte.service.catalog import CatalogService
 from featurebyte.storage import LocalTempStorage
 from featurebyte.utils.messaging import REDIS_URI
-from featurebyte.worker import get_celery
 
 
 @pytest.fixture(name="get_credential")
