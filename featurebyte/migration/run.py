@@ -3,7 +3,7 @@ Migration script
 """
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator, Callable, cast
+from typing import Any, AsyncGenerator, Callable, Set, cast
 
 import asyncio
 import importlib
@@ -149,7 +149,7 @@ async def catalog_specific_migration_method_constructor(
     """
 
     async def decorated_migrate_method() -> None:
-        tasks = set()
+        tasks: Set[Any] = set()
         async for catalog in all_catalog_service.list_documents_iterator(query_filter={}):
             logger.info(f"Run migration for catalog {catalog.id}")
             # add the task to the task list

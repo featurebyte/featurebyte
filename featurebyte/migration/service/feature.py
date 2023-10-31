@@ -8,7 +8,7 @@ from bson import ObjectId
 from featurebyte.logging import get_logger
 from featurebyte.migration.service import migrate
 from featurebyte.migration.service.mixin import BaseMongoCollectionMigration
-from featurebyte.models import EntityModel
+from featurebyte.models.entity import EntityModel
 from featurebyte.models.persistent import Document
 from featurebyte.persistent import Persistent
 from featurebyte.routes.common.derive_primary_entity_helper import DerivePrimaryEntityHelper
