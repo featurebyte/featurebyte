@@ -621,8 +621,10 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
             pymongo.operations.IndexModel("feature_list_namespace_id"),
             pymongo.operations.IndexModel("version"),
             pymongo.operations.IndexModel("online_enabled_feature_ids"),
+            pymongo.operations.IndexModel("primary_entity_ids"),
             pymongo.operations.IndexModel("deployed"),
             pymongo.operations.IndexModel("relationships_info"),
+            pymongo.operations.IndexModel("supported_serving_entity_ids"),
             [
                 ("name", pymongo.TEXT),
                 ("version", pymongo.TEXT),
