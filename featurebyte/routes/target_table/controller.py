@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Any, Optional
 
 import pandas as pd
+from fastapi import UploadFile
 
 from featurebyte.models.target_table import TargetTableModel
 from featurebyte.routes.common.feature_or_target_table import (
@@ -15,6 +16,7 @@ from featurebyte.routes.common.feature_or_target_table import (
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.info import TargetTableInfo
 from featurebyte.schema.target_table import TargetTableCreate, TargetTableList
+from featurebyte.schema.task import Task
 from featurebyte.schema.worker.task.target_table import TargetTableTaskPayload
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_store import FeatureStoreService
@@ -74,8 +76,10 @@ class TargetTableController(
         feature_store = await self.feature_store_service.get_document(
             document_id=table_create.feature_store_id
         )
+        graph = table_create.graph
+        assert graph is not None
         return ValidationParameters(
-            graph=table_create.graph,
+            graph=graph,
             nodes=table_create.nodes,
             feature_store=feature_store,
             serving_names_mapping=table_create.serving_names_mapping,
@@ -84,3 +88,17 @@ class TargetTableController(
     async def get_additional_info_params(self, document: TargetTableModel) -> dict[str, Any]:
         target = await self.target_service.get_document(document.target_id)
         return {"target_name": target.name}
+
+    async def create_table(
+        self,
+        data: TargetTableCreate,
+        observation_set: Optional[UploadFile],
+    ) -> Task:
+        if data.graph is None and data.target_id is not None:
+            data_dict = data.dict()
+            target_doc = await self.target_service.get_document(data.target_id)
+            data_dict["target_id"] = None
+            data_dict["graph"] = target_doc.graph
+            data_dict["node_name"] = target_doc.node_name
+            data = TargetTableCreate(**data_dict)
+        return await super().create_table(data=data, observation_set=observation_set)

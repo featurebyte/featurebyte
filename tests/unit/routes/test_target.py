@@ -13,6 +13,9 @@ from pandas._testing import assert_frame_equal
 from featurebyte.common.utils import dataframe_from_json
 from featurebyte.models import EntityModel
 from featurebyte.models.entity import ParentEntity
+from featurebyte.models.observation_table import UploadedFileInput
+from featurebyte.models.request_input import RequestInputType
+from featurebyte.schema.target_table import TargetTableCreate
 from tests.unit.routes.base import BaseCatalogApiTestSuite
 
 
@@ -274,3 +277,41 @@ class TestTargetApi(BaseCatalogApiTestSuite):
         response = test_api_client.delete(f"/target_namespace/{namespace_id}")
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
         assert response.json()["detail"] == "TargetNamespace is referenced by Target: float_target"
+
+    @pytest.mark.asyncio
+    async def test_creating_target_table_with_just_target_id(
+        self, test_api_client_persistent, create_success_response, create_observation_table
+    ):
+        """
+        Test that we can create a target table without a graph and node_names, but with just the target id.
+        """
+        test_api_client, _ = test_api_client_persistent
+        target = create_success_response.json()
+        # Create an observation table
+        obs_table_id = ObjectId()
+        await create_observation_table(obs_table_id)
+
+        # Create payload with no graph and no node names
+        create = TargetTableCreate(
+            name="target_name",
+            feature_store_id=ObjectId(),
+            serving_names_mapping={},
+            target_id=target["_id"],
+            context_id=None,
+            request_input=UploadedFileInput(
+                type=RequestInputType.UPLOADED_FILE,
+                file_name="random_file_name",
+            ),
+            observation_table_id=obs_table_id,
+        )
+        data = {"payload": create.json()}
+
+        with mock.patch(
+            "featurebyte.routes.common.feature_or_target_table.FeatureOrTargetTableController.create_table"
+        ) as mock_create_table:
+            test_api_client.post("/target_table", data=data)
+            assert mock_create_table.call_count == 1
+            call_args = mock_create_table.call_args_list[0][1]
+            # Check that node names is in the call args of mock_create_table
+            assert call_args["data"].node_name == "project_1"
+            assert call_args["data"].graph is not None

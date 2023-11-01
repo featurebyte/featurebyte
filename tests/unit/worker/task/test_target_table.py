@@ -22,9 +22,8 @@ async def test_get_task_description(catalog, app_container):
         name="Test Target Table",
         feature_store_id=ObjectId(),
         catalog_id=catalog.id,
-        target_id=ObjectId(),
         graph=QueryGraph(),
-        node_names=["node_1"],
+        node_name="node_1",
         request_input=SourceTableObservationInput(
             source=TabularSource(
                 feature_store_id=ObjectId(),
