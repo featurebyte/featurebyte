@@ -1,8 +1,9 @@
 """
 Entity Relationship Extractor Service
 """
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set
 
+import itertools
 from collections import defaultdict
 from dataclasses import dataclass
 
@@ -22,6 +23,150 @@ class EntityRelationshipData:
 
     entity_id: ObjectId
     relationship_id: ObjectId
+
+
+@dataclass
+class ServingEntityEnumeration:
+    """
+    Serving entity enumeration
+    """
+
+    entity_id_to_ancestor_ids: Dict[ObjectId, Set[ObjectId]]
+    entity_id_to_descendant_ids: Dict[ObjectId, Set[ObjectId]]
+    parent_to_child_entity_ids: Dict[ObjectId, Set[ObjectId]]
+    child_to_parent_entity_ids: Dict[ObjectId, Set[ObjectId]]
+
+    @classmethod
+    def _depth_first_search(
+        cls,
+        ancestors_or_descendants_map: Dict[ObjectId, Set[ObjectId]],
+        relation_map: Dict[ObjectId, Set[ObjectId]],
+        entity_id: ObjectId,
+        ancestor_or_descendant_ids: Set[ObjectId],
+        depth: int,
+        max_depth: int,
+    ) -> None:
+        if depth > max_depth:
+            return
+
+        ancestors_or_descendants_map[entity_id].update(ancestor_or_descendant_ids)
+        for next_entity_id in relation_map[entity_id]:
+            cls._depth_first_search(
+                ancestors_or_descendants_map=ancestors_or_descendants_map,
+                relation_map=relation_map,
+                entity_id=next_entity_id,
+                ancestor_or_descendant_ids=ancestor_or_descendant_ids | {entity_id},
+                depth=depth + 1,
+                max_depth=max_depth,
+            )
+
+    @classmethod
+    def create(
+        cls, relationships_info: List[EntityRelationshipInfo], max_depth: int = 5
+    ) -> "ServingEntityEnumeration":
+        """
+        Create entity relationship graph from relationships info
+
+        Parameters
+        ----------
+        relationships_info: List[EntityRelationshipInfo]
+            List of entity relationships info
+        max_depth: int
+            Maximum depth to explore
+
+        Returns
+        -------
+        EntityRelationshipGraph
+        """
+        parent_to_child_entity_ids: Dict[ObjectId, Set[ObjectId]] = defaultdict(set)
+        child_to_parent_entity_ids: Dict[ObjectId, Set[ObjectId]] = defaultdict(set)
+        for relationship_info in relationships_info:
+            child_entity_id = relationship_info.entity_id
+            parent_entity_id = relationship_info.related_entity_id
+            parent_to_child_entity_ids[parent_entity_id].add(child_entity_id)
+            child_to_parent_entity_ids[child_entity_id].add(parent_entity_id)
+
+        entity_id_to_ancestor_ids: Dict[ObjectId, Set[ObjectId]] = defaultdict(set)
+        entity_id_to_descendant_ids: Dict[ObjectId, Set[ObjectId]] = defaultdict(set)
+        for parent_entity_id in list(parent_to_child_entity_ids):
+            cls._depth_first_search(
+                ancestors_or_descendants_map=entity_id_to_ancestor_ids,
+                relation_map=parent_to_child_entity_ids,
+                entity_id=parent_entity_id,
+                ancestor_or_descendant_ids=set(),
+                depth=0,
+                max_depth=max_depth,
+            )
+
+        for child_entity_id in list(child_to_parent_entity_ids):
+            cls._depth_first_search(
+                ancestors_or_descendants_map=entity_id_to_descendant_ids,
+                relation_map=child_to_parent_entity_ids,
+                entity_id=child_entity_id,
+                ancestor_or_descendant_ids=set(),
+                depth=0,
+                max_depth=max_depth,
+            )
+
+        return cls(
+            entity_id_to_ancestor_ids=entity_id_to_ancestor_ids,
+            entity_id_to_descendant_ids=entity_id_to_descendant_ids,
+            parent_to_child_entity_ids=parent_to_child_entity_ids,
+            child_to_parent_entity_ids=child_to_parent_entity_ids,
+        )
+
+    def _reduce_entity_ids(self, entity_ids: List[ObjectId]) -> List[ObjectId]:
+        """
+        Reduce entity IDs to only contain the given entity IDs that are not ancestors of any other entity IDs
+
+        Parameters
+        ----------
+        entity_ids: List[ObjectId]
+            List of entity IDs
+
+        Returns
+        -------
+        List[ObjectId]
+        """
+        all_ancestors_ids = set()
+        for entity_id in entity_ids:
+            all_ancestors_ids.update(self.entity_id_to_ancestor_ids[entity_id])
+
+        reduced_entity_ids = set()
+        for entity_id in entity_ids:
+            if entity_id not in all_ancestors_ids:
+                reduced_entity_ids.add(entity_id)
+        return sorted(reduced_entity_ids)
+
+    def generate(self, entity_ids: List[ObjectId]) -> List[List[ObjectId]]:
+        """
+        Enumerate all serving entity IDs from the given entity IDs
+
+        Parameters
+        ----------
+        entity_ids: List[ObjectId]
+            List of entity IDs
+
+        Returns
+        -------
+        List[List[ObjectId]]
+        """
+        reduced_entity_ids = self._reduce_entity_ids(entity_ids=entity_ids)
+        entity_with_descendants_iterable = [
+            self.entity_id_to_descendant_ids[entity_id] | {entity_id}
+            for entity_id in reduced_entity_ids
+        ]
+        all_serving_entity_ids = set()
+        for entity_id_combination in itertools.product(*entity_with_descendants_iterable):
+            all_serving_entity_ids.add(
+                tuple(self._reduce_entity_ids(entity_ids=list(entity_id_combination)))
+            )
+
+        output = [
+            list(serving_entity_ids)
+            for serving_entity_ids in sorted(all_serving_entity_ids, key=lambda e: (len(e), e))
+        ]
+        return output
 
 
 class EntityRelationshipExtractorService:
@@ -138,7 +283,7 @@ class EntityRelationshipExtractorService:
                 relationship_map=relationship_map,
                 path_map=path_map,
                 entity_id=relation_data.entity_id,
-                relationship_ids=path_map[entity_id] + [relation_data.relationship_id],
+                relationship_ids=relationship_ids + [relation_data.relationship_id],
             )
 
         return path_map
