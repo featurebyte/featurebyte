@@ -64,7 +64,7 @@ class ServingEntityEnumeration:
         cls, relationships_info: List[EntityRelationshipInfo], max_depth: int = 5
     ) -> "ServingEntityEnumeration":
         """
-        Create entity relationship graph from relationships info
+        Create serving entity enumeration from entity relationships info
 
         Parameters
         ----------
@@ -75,7 +75,7 @@ class ServingEntityEnumeration:
 
         Returns
         -------
-        EntityRelationshipGraph
+        ServingEntityEnumeration
         """
         parent_to_child_entity_ids: Dict[ObjectId, Set[ObjectId]] = defaultdict(set)
         child_to_parent_entity_ids: Dict[ObjectId, Set[ObjectId]] = defaultdict(set)
