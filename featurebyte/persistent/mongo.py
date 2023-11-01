@@ -3,7 +3,7 @@ Persistent storage using MongoDB
 """
 from __future__ import annotations
 
-from typing import Any, AsyncIterator, Iterable, List, Literal, Optional, Tuple, cast
+from typing import Any, AsyncIterator, Iterable, Literal, Optional, cast
 
 import asyncio
 from contextlib import asynccontextmanager
@@ -88,7 +88,7 @@ class MongoDB(Persistent):
 
     async def _insert_many(
         self, collection_name: str, documents: Iterable[Document]
-    ) -> List[ObjectId]:
+    ) -> list[ObjectId]:
         """
         Insert records into collection
 
@@ -101,7 +101,7 @@ class MongoDB(Persistent):
 
         Returns
         -------
-        List[ObjectId]
+        list[ObjectId]
             Ids of the inserted document
 
         Raises
@@ -118,7 +118,10 @@ class MongoDB(Persistent):
             raise DuplicateDocumentError() from exc
 
     async def _find_one(
-        self, collection_name: str, query_filter: QueryFilter
+        self,
+        collection_name: str,
+        query_filter: QueryFilter,
+        projection: Optional[dict[str, Any]] = None,
     ) -> Optional[Document]:
         """
         Find one record from collection
@@ -129,6 +132,8 @@ class MongoDB(Persistent):
             Name of collection to use
         query_filter: QueryFilter
             Conditions to filter on
+        projection: Optional[dict[str, Any]]
+            Fields to project
 
         Returns
         -------
@@ -136,7 +141,7 @@ class MongoDB(Persistent):
             Retrieved document
         """
         result: Optional[Document] = await self._db[collection_name].find_one(
-            query_filter, session=self._session
+            filter=query_filter, projection=projection, session=self._session
         )
         return result
 
@@ -144,11 +149,12 @@ class MongoDB(Persistent):
         self,
         collection_name: str,
         query_filter: QueryFilter,
+        projection: Optional[dict[str, Any]] = None,
         sort_by: Optional[str] = None,
         sort_dir: Optional[Literal["asc", "desc"]] = "asc",
         page: int = 1,
         page_size: int = 0,
-    ) -> Tuple[Iterable[Document], int]:
+    ) -> tuple[Iterable[Document], int]:
         """
         Find all records from collection
 
@@ -158,6 +164,8 @@ class MongoDB(Persistent):
             Name of collection to use
         query_filter: QueryFilter
             Conditions to filter on
+        projection: Optional[dict[str, Any]]
+            Fields to project
         sort_by: Optional[str]
             Column to sort by
         sort_dir: Optional[Literal["asc", "desc"]]
@@ -169,10 +177,12 @@ class MongoDB(Persistent):
 
         Returns
         -------
-        Tuple[Iterable[Document], int]
+        tuple[Iterable[Document], int]
             Retrieved documents and total count
         """
-        cursor = self._db[collection_name].find(query_filter, session=self._session)
+        cursor = self._db[collection_name].find(
+            filter=query_filter, projection=projection, session=self._session
+        )
         total = await self._db[collection_name].count_documents(query_filter, session=self._session)
 
         if sort_by:
@@ -187,7 +197,7 @@ class MongoDB(Persistent):
             skips = page_size * (page - 1)
             cursor = cursor.skip(skips).limit(page_size)
 
-        result: List[Document] = await cursor.to_list(total)
+        result: list[Document] = await cursor.to_list(total)
         return result, total
 
     async def _update_one(
@@ -316,8 +326,8 @@ class MongoDB(Persistent):
         )
         return result.deleted_count
 
-    async def list_collection_names(self) -> List[str]:
-        return cast(List[str], await self._db.list_collection_names())
+    async def list_collection_names(self) -> list[str]:
+        return cast(list[str], await self._db.list_collection_names())
 
     async def _rename_collection(self, collection_name: str, new_collection_name: str) -> None:
         """
