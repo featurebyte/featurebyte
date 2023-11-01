@@ -13,7 +13,7 @@ from featurebyte.common.model_util import parse_duration_string
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature import BaseFeatureModel
 from featurebyte.query_graph.enum import NodeType
-from featurebyte.query_graph.node.generic import ForwardAggregateNode
+from featurebyte.query_graph.node.generic import ForwardAggregateNode, LookupTargetNode
 
 
 class TargetModel(BaseFeatureModel):
@@ -63,6 +63,7 @@ class TargetModel(BaseFeatureModel):
         """
         window_to_durations = {}
         target_node = self.graph.get_node_by_name(self.node_name)
+        # Iterate through forward aggregate targets
         for node in self.graph.iterate_nodes(
             target_node=target_node, node_type=NodeType.FORWARD_AGGREGATE
         ):
@@ -70,6 +71,15 @@ class TargetModel(BaseFeatureModel):
             if node.parameters.window:
                 duration = parse_duration_string(node.parameters.window)
                 window_to_durations[node.parameters.window] = duration
+
+        # Iterate through lookup targets
+        for node in self.graph.iterate_nodes(
+            target_node=target_node, node_type=NodeType.LOOKUP_TARGET
+        ):
+            assert isinstance(node, LookupTargetNode)
+            if node.parameters.offset:
+                duration = parse_duration_string(node.parameters.offset)
+                window_to_durations[node.parameters.offset] = duration
 
         if not window_to_durations:
             return None

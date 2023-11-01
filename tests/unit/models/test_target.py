@@ -33,3 +33,27 @@ def test_duration_validator(snowflake_event_table):
             tabular_source=snowflake_event_table.tabular_source,
         )
     assert "window" in str(exc)
+
+
+@pytest.fixture(name="lookup_target")
+def lookup_target_fixture(snowflake_event_view_with_entity):
+    """
+    Lookup target fixture
+    """
+    return snowflake_event_view_with_entity["col_float"].as_target("lookup_target", "7d")
+
+
+@pytest.mark.asyncio
+async def test_derive_window(float_target, lookup_target, app_container):
+    """
+    Test that derive window works as expected
+    """
+    float_target.save()
+    target = await app_container.target_service.get_document(document_id=float_target.id)
+    assert target.derive_window() == "1d"
+
+    lookup_target.save()
+    lookup_target_doc = await app_container.target_service.get_document(
+        document_id=lookup_target.id
+    )
+    assert lookup_target_doc.derive_window() == "7d"
