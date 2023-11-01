@@ -1656,15 +1656,18 @@ def mock_task_manager(request, persistent, storage, temp_storage):
                 kwargs["task_output_path"] = payload.task_output_path
                 task_id = str(uuid4())
                 user = User(id=kwargs.get("user_id"))
+                instance_map = {
+                    "user": user,
+                    "persistent": persistent,
+                    "temp_storage": temp_storage,
+                    "celery": get_celery(),
+                    "redis": get_redis(),
+                    "storage": storage,
+                    "catalog_id": payload.catalog_id,
+                }
                 app_container = LazyAppContainer(
-                    user=user,
-                    persistent=persistent,
-                    temp_storage=temp_storage,
-                    celery=get_celery(),
-                    redis=get_redis(),
-                    storage=storage,
-                    catalog_id=payload.catalog_id,
                     app_container_config=app_container_config,
+                    instance_map=instance_map,
                 )
                 app_container.override_instance_for_test("task_id", UUID(task_id))
                 app_container.override_instance_for_test("progress", Mock())

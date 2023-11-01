@@ -4,8 +4,6 @@ Registrations module.
 This contains all the dependencies that we want to register in order to get our fast API app up and running.
 """
 
-from celery import Celery
-
 from featurebyte.migration.migration_data_service import SchemaMetadataService
 from featurebyte.migration.service.data_warehouse import (
     DataWarehouseMigrationServiceV1,
@@ -132,12 +130,11 @@ from featurebyte.service.validator.production_ready_validator import ProductionR
 from featurebyte.service.version import VersionService
 from featurebyte.service.view_construction import ViewConstructionService
 from featurebyte.service.working_schema import WorkingSchemaService
-from featurebyte.storage import Storage
 from featurebyte.utils.credential import MongoBackedCredentialProvider
 from featurebyte.utils.messaging import Progress
 from featurebyte.utils.persistent import MongoDBImpl
-from featurebyte.utils.storage import get_storage
-from featurebyte.worker import get_redis
+from featurebyte.utils.storage import get_storage, get_temp_storage
+from featurebyte.worker import get_celery, get_redis
 from featurebyte.worker.task.batch_feature_create import BatchFeatureCreateTask
 from featurebyte.worker.task.batch_feature_table import BatchFeatureTableTask
 from featurebyte.worker.task.batch_request_table import BatchRequestTableTask
@@ -343,10 +340,10 @@ app_container_config.register_class(FeatureMigrationServiceV4)
 
 app_container_config.register_factory_method(get_storage)
 app_container_config.register_factory_method(get_redis, name_override="redis")
+app_container_config.register_factory_method(get_temp_storage, name_override="temp_storage")
+app_container_config.register_factory_method(get_celery)
 
 # These have force_no_deps set as True, as they are manually initialized.
-app_container_config.register_class(Celery, force_no_deps=True)
-app_container_config.register_class(Storage, force_no_deps=True, name_override="temp_storage")
 app_container_config.register_class(User, force_no_deps=True)
 
 

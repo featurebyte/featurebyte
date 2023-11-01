@@ -1302,33 +1302,11 @@ def storage_fixture():
         yield LocalStorage(base_path=tempdir)
 
 
-@pytest.fixture(name="temp_storage", scope="session")
-def temp_storage_fixture():
-    """
-    Storage object fixture
-    """
-    yield LocalTempStorage()
-
-
-@pytest.fixture(name="mock_app_callbacks", scope="session")
-def mock_app_callbacks(temp_storage):
-    """
-    Mock app callbacks: get_credential, get_storage, get_temp_storage
-
-    This fixture is used such that these callbacks are consistent with those used in
-    mock_task_manager.
-    """
-    with mock.patch("featurebyte.app.get_temp_storage") as mock_get_temp_storage:
-        mock_get_temp_storage.return_value = temp_storage
-        yield
-
-
 @pytest.fixture(autouse=True, scope="module")
-def mock_task_manager(request, persistent, storage, temp_storage, mock_app_callbacks):
+def mock_task_manager(request, persistent, storage):
     """
     Mock celery task manager for testing
     """
-    _ = mock_app_callbacks
     if request.module.__name__ == "test_task_manager":
         yield
     else:
@@ -1340,15 +1318,16 @@ def mock_task_manager(request, persistent, storage, temp_storage, mock_app_callb
                 kwargs["task_output_path"] = payload.task_output_path
                 task_id = str(uuid4())
                 user = User(id=kwargs.get("user_id"))
+                instance_map = {
+                    "user": user,
+                    "persistent": persistent,
+                    "celery": Mock(),
+                    "redis": Mock(),
+                    "storage": storage,
+                    "catalog_id": payload.catalog_id,
+                }
                 app_container = LazyAppContainer(
-                    user=user,
-                    persistent=persistent,
-                    temp_storage=temp_storage,
-                    celery=Mock(),
-                    redis=Mock(),
-                    storage=storage,
-                    catalog_id=payload.catalog_id,
-                    app_container_config=app_container_config,
+                    app_container_config=app_container_config, instance_map=instance_map
                 )
                 app_container.override_instance_for_test("task_id", UUID(task_id))
                 app_container.override_instance_for_test("progress", Mock())
@@ -1454,15 +1433,14 @@ def app_container_fixture(persistent, user, catalog):
     """
     Return an app container used in tests. This will allow us to easily retrieve instances of the right type.
     """
-    return LazyAppContainer(
-        user=user,
-        persistent=persistent,
-        temp_storage=LocalTempStorage(),
-        celery=get_celery(),
-        storage=LocalTempStorage(),
-        catalog_id=catalog.id,
-        app_container_config=app_container_config,
-    )
+    instance_map = {
+        "user": user,
+        "persistent": persistent,
+        "celery": get_celery(),
+        "storage": LocalTempStorage(),
+        "catalog_id": catalog.id,
+    }
+    return LazyAppContainer(app_container_config=app_container_config, instance_map=instance_map)
 
 
 @pytest.fixture(name="feature_manager_service")

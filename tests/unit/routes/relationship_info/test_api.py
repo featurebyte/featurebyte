@@ -12,7 +12,6 @@ from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
 from featurebyte.schema.relationship_info import RelationshipInfoCreate, RelationshipInfoUpdate
 from featurebyte.storage import LocalTempStorage
-from featurebyte.worker import get_celery
 from tests.unit.routes.base import BaseCatalogApiTestSuite
 
 
@@ -70,15 +69,15 @@ class TestRelationshipInfoApi(BaseCatalogApiTestSuite):
     @staticmethod
     def create_app_container(persistent, user_id, catalog_id):
         """App container fixture"""
-        user = User(id=user_id)
+        instance_map = {
+            "user": User(id=user_id),
+            "persistent": persistent,
+            "storage": LocalTempStorage(),
+            "catalog_id": catalog_id,
+        }
         return LazyAppContainer(
-            user=user,
-            persistent=persistent,
-            temp_storage=LocalTempStorage(),
-            celery=get_celery(),
-            storage=LocalTempStorage(),
-            catalog_id=catalog_id,
             app_container_config=app_container_config,
+            instance_map=instance_map,
         )
 
     @pytest_asyncio.fixture

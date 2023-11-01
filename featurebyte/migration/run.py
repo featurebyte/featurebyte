@@ -29,9 +29,7 @@ from featurebyte.routes.block_modification_handler import BlockModificationHandl
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
 from featurebyte.service.catalog import AllCatalogService
-from featurebyte.storage import Storage
 from featurebyte.utils.credential import MongoBackedCredentialProvider
-from featurebyte.utils.storage import get_temp_storage
 from featurebyte.worker import get_celery
 
 logger = get_logger(__name__)
@@ -111,8 +109,6 @@ async def catalog_specific_migration_method_constructor(
     all_catalog_service: AllCatalogService,
     user: Any,
     persistent: Persistent,
-    temp_storage: Storage,
-    celery: Celery,
     migrate_service_instance_name: str,
     migrate_method_name: str,
     migration_marker: MigrationInfo,
@@ -130,10 +126,6 @@ async def catalog_specific_migration_method_constructor(
         User object
     persistent: Persistent
         Persistent storage object
-    temp_storage: Storage
-        Temporary storage object
-    celery: Celery
-        Celery object
     migrate_service_instance_name: str
         Migrate service instance name
     migrate_method_name: str
@@ -154,13 +146,14 @@ async def catalog_specific_migration_method_constructor(
             logger.info(f"Run migration for catalog {catalog.id}")
 
             # construct the app container for the catalog & retrieve the migrate method
+            instance_map = {
+                "user": user,
+                "persistent": persistent,
+                "catalog_id": catalog.id,
+            }
             app_container = LazyAppContainer(
-                user=user,
-                persistent=persistent,
-                catalog_id=catalog.id,
-                temp_storage=temp_storage,
-                celery=celery,
                 app_container_config=app_container_config,
+                instance_map=instance_map,
             )
             migrate_service = app_container.get(migrate_service_instance_name)
             migrate_method = getattr(migrate_service, migrate_method_name)
@@ -212,13 +205,14 @@ async def migrate_method_generator(
     migrate_method
         Migration method
     """
+    instance_map = {
+        "user": user,
+        "persistent": persistent,
+        "catalog_id": DEFAULT_CATALOG_ID,
+    }
     app_container = LazyAppContainer(
-        user=user,
-        persistent=persistent,
-        catalog_id=DEFAULT_CATALOG_ID,
-        temp_storage=get_temp_storage(),
-        celery=get_celery(),
         app_container_config=app_container_config,
+        instance_map=instance_map,
     )
     migrate_methods = retrieve_all_migration_methods()
     version_start = schema_metadata.version + 1
@@ -242,8 +236,6 @@ async def migrate_method_generator(
                     all_catalog_service=app_container.all_catalog_service,
                     user=user,
                     persistent=persistent,
-                    temp_storage=app_container.temp_storage,
-                    celery=app_container.celery,
                     migrate_service_instance_name=migrate_service_instance_name,
                     migrate_method_name=migrate_method_name,
                     migration_marker=_extract_migrate_method_marker(migrate_method),
