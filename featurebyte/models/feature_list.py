@@ -482,6 +482,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
 
     # list of IDs attached to this feature list
     feature_ids: List[PydanticObjectId]
+    primary_entity_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
     feature_list_namespace_id: PydanticObjectId = Field(
         allow_mutation=False, default_factory=ObjectId
     )
@@ -490,9 +491,9 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
     )
 
     # pydantic validators
-    _sort_feature_ids_validator = validator("online_enabled_feature_ids", allow_reuse=True)(
-        construct_sort_validator()
-    )
+    _sort_ids_validator = validator(
+        "online_enabled_feature_ids", "primary_entity_ids", allow_reuse=True
+    )(construct_sort_validator())
     _version_validator = validator("version", pre=True, allow_reuse=True)(version_validator)
 
     @validator("supported_serving_entity_ids")

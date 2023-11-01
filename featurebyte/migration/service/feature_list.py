@@ -10,10 +10,6 @@ from featurebyte.migration.service import migrate
 from featurebyte.migration.service.mixin import BaseDocumentServiceT, BaseMongoCollectionMigration
 from featurebyte.models.persistent import Document
 from featurebyte.persistent import Persistent
-from featurebyte.service.entity_relationship_extractor import (
-    EntityRelationshipExtractorService,
-    ServingEntityEnumeration,
-)
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 
@@ -36,12 +32,10 @@ class FeatureListMigrationServiceV5(BaseMongoCollectionMigration):
         persistent: Persistent,
         feature_list_service: FeatureListService,
         feature_service: FeatureService,
-        entity_relationship_extractor_service: EntityRelationshipExtractorService,
     ):
         super().__init__(persistent)
         self.feature_list_service = feature_list_service
         self.feature_service = feature_service
-        self.entity_relationship_extractor_service = entity_relationship_extractor_service
 
     @property
     def delegate_service(self) -> BaseDocumentServiceT:
@@ -71,26 +65,16 @@ class FeatureListMigrationServiceV5(BaseMongoCollectionMigration):
                 query_filter={"_id": {"$in": list(all_feature_ids)}}
             )
         }
-        extractor = self.entity_relationship_extractor_service
         for document in documents:
-            combined_primary_entity_ids = set().union(
-                *(
+            derived_data = await self.feature_list_service.extract_entity_relationship_data(
+                feature_primary_entity_ids=[
                     feature_id_to_primary_entity_ids[feature_id]
                     for feature_id in document["feature_ids"]
-                )
+                ]
             )
-            primary_entity_ids = list(combined_primary_entity_ids)
-            relationships_info = await extractor.extract_primary_entity_descendant_relationship(
-                primary_entity_ids=primary_entity_ids
-            )
-            serving_entity_enumeration = ServingEntityEnumeration.create(
-                relationships_info=relationships_info
-            )
-            supported_serving_entity_ids = serving_entity_enumeration.generate(
-                entity_ids=primary_entity_ids
-            )
-            document["relationships_info"] = relationships_info
-            document["supported_serving_entity_ids"] = supported_serving_entity_ids
+            document["primary_entity_ids"] = derived_data.primary_entity_ids
+            document["relationships_info"] = derived_data.relationships_info
+            document["supported_serving_entity_ids"] = derived_data.supported_serving_entity_ids
         return documents
 
     @migrate(
@@ -122,5 +106,6 @@ class FeatureListMigrationServiceV5(BaseMongoCollectionMigration):
             # after migration, relationships_info should not be None & supported_serving_entity_ids should not be empty
             assert isinstance(doc.get("relationships_info"), list), doc.get("relationships_info")
             assert len(doc["supported_serving_entity_ids"]) > 0, doc["supported_serving_entity_ids"]
+            assert "primary_entity_ids" in doc, doc
 
         logger.info("Migrated all records successfully (total: %d)", total_after)

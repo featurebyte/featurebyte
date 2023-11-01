@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import Any, AsyncIterator, Dict, List, Optional, Sequence
 
+from dataclasses import dataclass
+
 from bson.objectid import ObjectId
 
 from featurebyte.common.model_util import get_version
@@ -120,6 +122,17 @@ def compute_default_feature_fraction(
     )
 
 
+@dataclass
+class FeatureListEntityRelationshipData:
+    """
+    FeatureListEntityRelationshipData class
+    """
+
+    primary_entity_ids: List[ObjectId]
+    relationships_info: List[EntityRelationshipInfo]
+    supported_serving_entity_ids: List[List[ObjectId]]
+
+
 class FeatureListService(
     BaseDocumentService[FeatureListModel, FeatureListServiceCreate, FeatureListServiceUpdate]
 ):
@@ -160,6 +173,8 @@ class FeatureListService(
     async def _feature_iterator(
         self, feature_ids: Sequence[ObjectId]
     ) -> AsyncIterator[FeatureModel]:
+        # use this iterator to check whether the feature(s) in the feature list saved to persistent or not
+        # if not, raise DocumentNotFoundError
         for feature_id in feature_ids:
             feature = await self.feature_service.get_document(document_id=feature_id)
             yield feature
@@ -199,6 +214,42 @@ class FeatureListService(
             "features": features,
         }
         return derived_output
+
+    async def extract_entity_relationship_data(
+        self, feature_primary_entity_ids: List[List[ObjectId]]
+    ) -> FeatureListEntityRelationshipData:
+        """
+        Extract entity relationship data from feature primary entity ids
+
+        Parameters
+        ----------
+        feature_primary_entity_ids: List[List[ObjectId]]
+            List of feature primary entity ids
+
+        Returns
+        -------
+        FeatureListEntityRelationshipData
+        """
+        combined_primary_entity_ids = set().union(*feature_primary_entity_ids)
+        primary_entity_ids = list(combined_primary_entity_ids)
+        extractor = self.entity_relationship_extractor_service
+        relationships_info = await extractor.extract_primary_entity_descendant_relationship(
+            primary_entity_ids=primary_entity_ids
+        )
+        serving_entity_enumeration = ServingEntityEnumeration.create(
+            relationships_info=relationships_info
+        )
+        fl_primary_entity_ids = serving_entity_enumeration.reduce_entity_ids(
+            entity_ids=primary_entity_ids
+        )
+        supported_serving_entity_ids = serving_entity_enumeration.generate(
+            entity_ids=fl_primary_entity_ids
+        )
+        return FeatureListEntityRelationshipData(
+            primary_entity_ids=fl_primary_entity_ids,
+            relationships_info=relationships_info,
+            supported_serving_entity_ids=supported_serving_entity_ids,
+        )
 
     async def _extract_relationships_info(
         self, features: List[FeatureModel]
@@ -254,23 +305,20 @@ class FeatureListService(
 
         # check whether the feature(s) in the feature list saved to persistent or not
         feature_data = await self._extract_feature_data(document)
-        relationships_info = await self._extract_relationships_info(feature_data["features"])
-        serving_entity_enumeration = ServingEntityEnumeration.create(
-            relationships_info=relationships_info
+        entity_relationship_data = await self.extract_entity_relationship_data(
+            feature_primary_entity_ids=[
+                feature.primary_entity_ids for feature in feature_data["features"]
+            ]
         )
-        primary_entity_ids = set()
-        for feature in feature_data["features"]:
-            primary_entity_ids.update(feature.primary_entity_ids)
 
         # update document with derived output
         document = FeatureListModel(
             **{
                 **document.dict(by_alias=True),
                 "features": feature_data["features"],
-                "relationships_info": relationships_info,
-                "supported_serving_entity_ids": serving_entity_enumeration.generate(
-                    entity_ids=list(primary_entity_ids)
-                ),
+                "primary_entity_ids": entity_relationship_data.primary_entity_ids,
+                "relationships_info": entity_relationship_data.relationships_info,
+                "supported_serving_entity_ids": entity_relationship_data.supported_serving_entity_ids,
             }
         )
 
