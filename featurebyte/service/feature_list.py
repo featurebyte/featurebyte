@@ -251,19 +251,6 @@ class FeatureListService(
             supported_serving_entity_ids=supported_serving_entity_ids,
         )
 
-    async def _extract_relationships_info(
-        self, features: List[FeatureModel]
-    ) -> List[EntityRelationshipInfo]:
-        entity_ids = set()
-        for feature in features:
-            entity_ids.update(feature.primary_entity_ids)
-
-        extractor = self.entity_relationship_extractor_service
-        relationships_info = await extractor.extract_primary_entity_descendant_relationship(
-            primary_entity_ids=list(entity_ids)
-        )
-        return relationships_info
-
     async def _update_features(
         self,
         feature_ids: Sequence[ObjectId],
