@@ -30,7 +30,10 @@ from featurebyte.schema.info import (
 )
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.entity import EntityService
-from featurebyte.service.entity_relationship_extractor import EntityRelationshipExtractorService
+from featurebyte.service.entity_relationship_extractor import (
+    EntityRelationshipExtractorService,
+    ServingEntityEnumeration,
+)
 from featurebyte.service.entity_serving_names import EntityServingNamesService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
@@ -252,6 +255,12 @@ class FeatureListService(
         # check whether the feature(s) in the feature list saved to persistent or not
         feature_data = await self._extract_feature_data(document)
         relationships_info = await self._extract_relationships_info(feature_data["features"])
+        serving_entity_enumeration = ServingEntityEnumeration.create(
+            relationships_info=relationships_info
+        )
+        primary_entity_ids = set()
+        for feature in feature_data["features"]:
+            primary_entity_ids.update(feature.primary_entity_ids)
 
         # update document with derived output
         document = FeatureListModel(
@@ -259,6 +268,9 @@ class FeatureListService(
                 **document.dict(by_alias=True),
                 "features": feature_data["features"],
                 "relationships_info": relationships_info,
+                "supported_serving_entity_ids": serving_entity_enumeration.generate(
+                    entity_ids=list(primary_entity_ids)
+                ),
             }
         )
 

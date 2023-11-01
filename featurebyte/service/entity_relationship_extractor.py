@@ -163,8 +163,8 @@ class ServingEntityEnumeration:
             )
 
         output = [
-            list(serving_entity_ids)
-            for serving_entity_ids in sorted(all_serving_entity_ids, key=lambda e: (len(e), e))
+            list(serving_entity)
+            for serving_entity in sorted(all_serving_entity_ids, key=lambda e: (len(e), e))
         ]
         return output
 

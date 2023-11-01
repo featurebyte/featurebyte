@@ -459,7 +459,7 @@ def test_info(saved_feature_list):
     }, verbose_info_dict
 
 
-def test_get_feature_list(saved_feature_list, catalog):
+def test_get_feature_list(saved_feature_list, catalog, cust_id_entity, transaction_entity):
     """
     Test get feature list using feature list name
     """
@@ -503,6 +503,10 @@ def test_get_feature_list(saved_feature_list, catalog):
             ("online_enabled_feature_ids", []),
             ("readiness_distribution", [{"readiness": "DRAFT", "count": 1}]),
             ("relationships_info", audit_history.new_value.iloc[11]),
+            (
+                "supported_serving_entity_ids",
+                sorted([[str(cust_id_entity.id)], [str(transaction_entity.id)]]),
+            ),
             ("updated_at", None),
             ("user_id", None),
             ("version.name", saved_feature_list.version),
