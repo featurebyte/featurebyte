@@ -88,21 +88,21 @@ class ServingEntityEnumeration:
 
         entity_id_to_ancestor_ids: Dict[ObjectId, Set[ObjectId]] = defaultdict(set)
         entity_id_to_descendant_ids: Dict[ObjectId, Set[ObjectId]] = defaultdict(set)
-        for parent_entity_id in list(parent_to_child_entity_ids):
+        for entity_id in list(parent_to_child_entity_ids):
             cls._depth_first_search(
                 ancestors_or_descendants_map=entity_id_to_ancestor_ids,
                 relation_map=parent_to_child_entity_ids,
-                entity_id=parent_entity_id,
+                entity_id=entity_id,
                 ancestor_or_descendant_ids=set(),
                 depth=0,
                 max_depth=max_depth,
             )
 
-        for child_entity_id in list(child_to_parent_entity_ids):
+        for entity_id in list(child_to_parent_entity_ids):
             cls._depth_first_search(
                 ancestors_or_descendants_map=entity_id_to_descendant_ids,
                 relation_map=child_to_parent_entity_ids,
-                entity_id=child_entity_id,
+                entity_id=entity_id,
                 ancestor_or_descendant_ids=set(),
                 depth=0,
                 max_depth=max_depth,

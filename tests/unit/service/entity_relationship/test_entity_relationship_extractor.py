@@ -16,6 +16,17 @@ def relationship_info_service_fixture(app_container):
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "entities,expected_relationships",
+    [
+        ([], []),
+        (["son"], []),
+        (["grandpa", "granny", "son"], ["grandpa_father", "granny_father", "father_son"]),
+        (["granny", "son"], ["granny_father", "father_son"]),
+        (["granny", "father", "son"], ["granny_father", "father_son"]),
+        (["father", "mother", "son"], ["father_son", "mother_son"]),
+    ],
+)
 async def test_extract_relationship_from_primary_entity_case_1(
     entity_relationship_extractor,
     relationship_grandpa_father,
@@ -27,44 +38,52 @@ async def test_extract_relationship_from_primary_entity_case_1(
     father_entity_id,
     mother_entity_id,
     son_entity_id,
+    entities,
+    expected_relationships,
 ):
-    """Test extract_relationship_from_primary_entity (case 1)"""
+    """
+    Test extract_relationship_from_primary_entity (case 1)
+
+    === Family Tree ===
+     grandpa  granny
+        \     /
+        father    mother
+            \     /
+              son
+    """
     extractor = entity_relationship_extractor
-    output = await extractor.extract_relationship_from_primary_entity(
-        entity_ids=[grandpa_entity_id, granny_entity_id, son_entity_id],
-    )
-    relationship_ids = set(relationship.id for relationship in output)
-    assert relationship_ids == {
-        relationship_grandpa_father.id,
-        relationship_granny_father.id,
-        relationship_father_son.id,
+    id_map = {
+        # relationship
+        "grandpa_father": relationship_grandpa_father.id,
+        "granny_father": relationship_granny_father.id,
+        "father_son": relationship_father_son.id,
+        "mother_son": relationship_mother_son.id,
+        # entity
+        "grandpa": grandpa_entity_id,
+        "granny": granny_entity_id,
+        "father": father_entity_id,
+        "mother": mother_entity_id,
+        "son": son_entity_id,
     }
-
+    entity_ids = [id_map[entity] for entity in entities]
+    expected_relationship_ids = set(id_map[relationship] for relationship in expected_relationships)
     output = await extractor.extract_relationship_from_primary_entity(
-        entity_ids=[granny_entity_id, son_entity_id],
+        entity_ids=entity_ids,
     )
     relationship_ids = set(relationship.id for relationship in output)
-    assert relationship_ids == {relationship_granny_father.id, relationship_father_son.id}
-
-    output = await extractor.extract_relationship_from_primary_entity(
-        entity_ids=[granny_entity_id, father_entity_id, son_entity_id],
-    )
-    relationship_ids = set(relationship.id for relationship in output)
-    assert relationship_ids == {relationship_granny_father.id, relationship_father_son.id}
-
-    output = await extractor.extract_relationship_from_primary_entity(
-        entity_ids=[father_entity_id, mother_entity_id, son_entity_id],
-    )
-    relationship_ids = set(relationship.id for relationship in output)
-    assert relationship_ids == {relationship_father_son.id, relationship_mother_son.id}
-
-    output = await extractor.extract_relationship_from_primary_entity(
-        entity_ids=[son_entity_id],
-    )
-    assert output == []
+    assert relationship_ids == expected_relationship_ids
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "entities,expected_relationships",
+    [
+        (["father", "mother"], []),
+        (["granny", "mother"], []),
+        (["granny", "father", "mother"], ["granny_father"]),
+        (["grandpa", "father"], ["grandpa_father"]),
+    ],
+)
 async def test_extract_relationship_from_primary_entity_case_2(
     entity_relationship_extractor,
     relationship_grandpa_father,
@@ -73,33 +92,50 @@ async def test_extract_relationship_from_primary_entity_case_2(
     granny_entity_id,
     father_entity_id,
     mother_entity_id,
+    entities,
+    expected_relationships,
 ):
-    """Test extract_relationship_from_primary_entity (case 2)"""
+    """
+    Test extract_relationship_from_primary_entity (case 2)
+
+    === Family Tree ===
+     grandpa  granny
+        \     /
+        father    mother
+    """
     extractor = entity_relationship_extractor
+    id_map = {
+        # relationship
+        "grandpa_father": relationship_grandpa_father.id,
+        "granny_father": relationship_granny_father.id,
+        # entity
+        "grandpa": grandpa_entity_id,
+        "granny": granny_entity_id,
+        "father": father_entity_id,
+        "mother": mother_entity_id,
+    }
+    entity_ids = [id_map[entity] for entity in entities]
+    expected_relationship_ids = set(id_map[relationship] for relationship in expected_relationships)
     output = await extractor.extract_relationship_from_primary_entity(
-        entity_ids=[father_entity_id, mother_entity_id],
-    )
-    assert output == []
-
-    output = await extractor.extract_relationship_from_primary_entity(
-        entity_ids=[granny_entity_id, mother_entity_id],
-    )
-    assert output == []
-
-    output = await extractor.extract_relationship_from_primary_entity(
-        entity_ids=[granny_entity_id, father_entity_id, mother_entity_id],
-    )
-    relationship_ids = set(relationship.id for relationship in output)
-    assert relationship_ids == {relationship_granny_father.id}
-
-    output = await extractor.extract_relationship_from_primary_entity(
-        entity_ids=[grandpa_entity_id, father_entity_id]
+        entity_ids=entity_ids,
     )
     relationship_ids = set(relationship.id for relationship in output)
-    assert relationship_ids == {relationship_grandpa_father.id}
+    assert relationship_ids == expected_relationship_ids
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "entities,expected_relationships",
+    [
+        (["grandpa"], ["grandpa_father", "father_son"]),
+        (["granny"], ["granny_father", "father_son"]),
+        (["father"], ["father_son"]),
+        (["mother"], ["mother_son"]),
+        (["father", "mother"], ["father_son", "mother_son"]),
+        (["son"], []),
+        ([], []),
+    ],
+)
 async def test_extract_primary_entity_descendant_relationship__case_1(
     entity_relationship_extractor,
     relationship_grandpa_father,
@@ -111,46 +147,52 @@ async def test_extract_primary_entity_descendant_relationship__case_1(
     father_entity_id,
     mother_entity_id,
     son_entity_id,
+    entities,
+    expected_relationships,
 ):
-    """Test extract_primary_entity_descendant_relationship (case 1)"""
+    """
+    Test extract_primary_entity_descendant_relationship (case 1)
+
+    === Family Tree ===
+     grandpa  granny
+        \     /
+        father    mother
+            \     /
+              son
+    """
     extractor = entity_relationship_extractor
+    id_map = {
+        # relationship
+        "grandpa_father": relationship_grandpa_father.id,
+        "granny_father": relationship_granny_father.id,
+        "father_son": relationship_father_son.id,
+        "mother_son": relationship_mother_son.id,
+        # entity
+        "grandpa": grandpa_entity_id,
+        "granny": granny_entity_id,
+        "father": father_entity_id,
+        "mother": mother_entity_id,
+        "son": son_entity_id,
+    }
+    primary_entity_ids = [id_map[entity] for entity in entities]
+    expected_relationship_ids = set(id_map[relationship] for relationship in expected_relationships)
     output = await extractor.extract_primary_entity_descendant_relationship(
-        primary_entity_ids=[grandpa_entity_id],
+        primary_entity_ids=primary_entity_ids,
     )
     relationship_ids = set(relationship.id for relationship in output)
-    assert relationship_ids == {relationship_grandpa_father.id, relationship_father_son.id}
-
-    output = await extractor.extract_primary_entity_descendant_relationship(
-        primary_entity_ids=[granny_entity_id],
-    )
-    relationship_ids = set(relationship.id for relationship in output)
-    assert relationship_ids == {relationship_granny_father.id, relationship_father_son.id}
-
-    output = await extractor.extract_primary_entity_descendant_relationship(
-        primary_entity_ids=[father_entity_id],
-    )
-    relationship_ids = set(relationship.id for relationship in output)
-    assert relationship_ids == {relationship_father_son.id}
-
-    output = await extractor.extract_primary_entity_descendant_relationship(
-        primary_entity_ids=[mother_entity_id],
-    )
-    relationship_ids = set(relationship.id for relationship in output)
-    assert relationship_ids == {relationship_mother_son.id}
-
-    output = await extractor.extract_primary_entity_descendant_relationship(
-        primary_entity_ids=[father_entity_id, mother_entity_id],
-    )
-    relationship_ids = set(relationship.id for relationship in output)
-    assert relationship_ids == {relationship_father_son.id, relationship_mother_son.id}
-
-    output = await extractor.extract_primary_entity_descendant_relationship(
-        primary_entity_ids=[son_entity_id],
-    )
-    assert output == []
+    assert relationship_ids == expected_relationship_ids
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "entities,expected_relationships",
+    [
+        (["grandpa"], ["grandpa_father"]),
+        (["father"], []),
+        (["mother"], ["mother_son"]),
+        (["father", "mother"], ["mother_son"]),
+    ],
+)
 async def test_extract_primary_entity_descendant_relationship__case_2(
     entity_relationship_extractor,
     relationship_grandpa_father,
@@ -159,30 +201,37 @@ async def test_extract_primary_entity_descendant_relationship__case_2(
     father_entity_id,
     mother_entity_id,
     son_entity_id,
+    entities,
+    expected_relationships,
 ):
-    """Test extract_primary_entity_descendant_relationship (case 2)"""
+    """
+    Test extract_primary_entity_descendant_relationship (case 2)
+
+    === Family Tree ===
+        grandpa
+          /
+     father  mother
+              /
+            son
+    """
     extractor = entity_relationship_extractor
+    id_map = {
+        # relationship
+        "grandpa_father": relationship_grandpa_father.id,
+        "mother_son": relationship_mother_son.id,
+        # entity
+        "grandpa": grandpa_entity_id,
+        "father": father_entity_id,
+        "mother": mother_entity_id,
+        "son": son_entity_id,
+    }
+    primary_entity_ids = [id_map[entity] for entity in entities]
+    expected_relationship_ids = set(id_map[relationship] for relationship in expected_relationships)
     output = await extractor.extract_primary_entity_descendant_relationship(
-        primary_entity_ids=[grandpa_entity_id],
+        primary_entity_ids=primary_entity_ids,
     )
     relationship_ids = set(relationship.id for relationship in output)
-    assert relationship_ids == {relationship_grandpa_father.id}
-
-    output = await extractor.extract_primary_entity_descendant_relationship(
-        primary_entity_ids=[father_entity_id],
-    )
-    assert output == []
-
-    output = await extractor.extract_primary_entity_descendant_relationship(
-        primary_entity_ids=[mother_entity_id],
-    )
-    relationship_ids = set(relationship.id for relationship in output)
-    assert relationship_ids == {relationship_mother_son.id}
-
-    output = await extractor.extract_primary_entity_descendant_relationship(
-        primary_entity_ids=[son_entity_id],
-    )
-    assert output == []
+    assert relationship_ids == expected_relationship_ids
 
 
 @pytest.mark.asyncio
