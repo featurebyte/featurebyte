@@ -1,0 +1,491 @@
+[
+  {
+    "_id": {
+      "$oid": "6478ab35b68c91fb84f1e147"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "Single Feature",
+    "created_at": {
+      "$date": "2023-06-01T14:29:11.120Z"
+    },
+    "updated_at": {
+      "$date": "2023-07-07T00:35:14.724Z"
+    },
+    "block_modification_by": [],
+    "description": null,
+    "catalog_id": {
+      "$oid": "64708919ea4c4876a77d2b80"
+    },
+    "version": {
+      "name": "V230601",
+      "suffix": null
+    },
+    "relationships_info": [
+      {
+        "_id": {
+          "$oid": "6470893ddc5e0118a048d53a"
+        },
+        "relationship_type": "child_parent",
+        "entity_id": {
+          "$oid": "64708934ea4c4876a77d2b86"
+        },
+        "related_entity_id": {
+          "$oid": "64708932ea4c4876a77d2b85"
+        },
+        "relation_table_id": {
+          "$oid": "6470891bea4c4876a77d2b81"
+        }
+      }
+    ],
+    "supported_serving_entity_ids": [
+      [
+        {
+          "$oid": "64708932ea4c4876a77d2b85"
+        }
+      ],
+      [
+        {
+          "$oid": "64708934ea4c4876a77d2b86"
+        }
+      ]
+    ],
+    "readiness_distribution": [
+      {
+        "readiness": "PRODUCTION_READY",
+        "count": 1
+      }
+    ],
+    "deployed": false,
+    "feature_clusters": [
+      {
+        "feature_store_id": {
+          "$oid": "646cb1cef1d0ea5b3693e111"
+        },
+        "graph": {
+          "edges": [
+            {
+              "source": "input_2",
+              "target": "graph_1"
+            },
+            {
+              "source": "input_1",
+              "target": "graph_2"
+            },
+            {
+              "source": "graph_1",
+              "target": "graph_2"
+            },
+            {
+              "source": "graph_2",
+              "target": "groupby_1"
+            },
+            {
+              "source": "groupby_1",
+              "target": "project_1"
+            },
+            {
+              "source": "groupby_1",
+              "target": "project_2"
+            },
+            {
+              "source": "project_2",
+              "target": "cosine_similarity_1"
+            },
+            {
+              "source": "project_1",
+              "target": "cosine_similarity_1"
+            },
+            {
+              "source": "cosine_similarity_1",
+              "target": "alias_1"
+            }
+          ],
+          "nodes": [
+            {
+              "name": "input_1",
+              "type": "input",
+              "output_type": "frame",
+              "parameters": {
+                "columns": [
+                  {
+                    "name": "GroceryInvoiceItemGuid",
+                    "dtype": "VARCHAR"
+                  },
+                  {
+                    "name": "GroceryInvoiceGuid",
+                    "dtype": "VARCHAR"
+                  },
+                  {
+                    "name": "GroceryProductGuid",
+                    "dtype": "VARCHAR"
+                  },
+                  {
+                    "name": "Quantity",
+                    "dtype": "FLOAT"
+                  },
+                  {
+                    "name": "UnitPrice",
+                    "dtype": "FLOAT"
+                  },
+                  {
+                    "name": "TotalCost",
+                    "dtype": "FLOAT"
+                  },
+                  {
+                    "name": "Discount",
+                    "dtype": "FLOAT"
+                  },
+                  {
+                    "name": "record_available_at",
+                    "dtype": "TIMESTAMP"
+                  }
+                ],
+                "table_details": {
+                  "database_name": "DEMO_DATASETS",
+                  "schema_name": "GROCERY",
+                  "table_name": "INVOICEITEMS"
+                },
+                "feature_store_details": {
+                  "type": "snowflake",
+                  "details": {
+                    "account": "fm54506.us-central1.gcp",
+                    "warehouse": "DEMO",
+                    "database": "DEMO",
+                    "sf_schema": "FEATUREBYTE_PROD_V2"
+                  }
+                },
+                "type": "item_table",
+                "id": {
+                  "$oid": "64708920ea4c4876a77d2b82"
+                },
+                "id_column": "GroceryInvoiceItemGuid",
+                "event_table_id": {
+                  "$oid": "6470891bea4c4876a77d2b81"
+                },
+                "event_id_column": "GroceryInvoiceGuid"
+              }
+            },
+            {
+              "name": "input_2",
+              "type": "input",
+              "output_type": "frame",
+              "parameters": {
+                "columns": [
+                  {
+                    "name": "GroceryInvoiceGuid",
+                    "dtype": "VARCHAR"
+                  },
+                  {
+                    "name": "GroceryCustomerGuid",
+                    "dtype": "VARCHAR"
+                  },
+                  {
+                    "name": "Timestamp",
+                    "dtype": "TIMESTAMP"
+                  },
+                  {
+                    "name": "tz_offset",
+                    "dtype": "VARCHAR"
+                  },
+                  {
+                    "name": "record_available_at",
+                    "dtype": "TIMESTAMP"
+                  },
+                  {
+                    "name": "Amount",
+                    "dtype": "FLOAT"
+                  }
+                ],
+                "table_details": {
+                  "database_name": "DEMO_DATASETS",
+                  "schema_name": "GROCERY",
+                  "table_name": "GROCERYINVOICE"
+                },
+                "feature_store_details": {
+                  "type": "snowflake",
+                  "details": {
+                    "account": "fm54506.us-central1.gcp",
+                    "warehouse": "DEMO",
+                    "database": "DEMO",
+                    "sf_schema": "FEATUREBYTE_PROD_V2"
+                  }
+                },
+                "type": "event_table",
+                "id": {
+                  "$oid": "6470891bea4c4876a77d2b81"
+                },
+                "timestamp_column": "Timestamp",
+                "id_column": "GroceryInvoiceGuid",
+                "event_timestamp_timezone_offset": null,
+                "event_timestamp_timezone_offset_column": null
+              }
+            },
+            {
+              "name": "graph_1",
+              "type": "graph",
+              "output_type": "frame",
+              "parameters": {
+                "graph": {
+                  "edges": [
+                    {
+                      "source": "proxy_input_1",
+                      "target": "project_1"
+                    }
+                  ],
+                  "nodes": [
+                    {
+                      "name": "proxy_input_1",
+                      "type": "proxy_input",
+                      "output_type": "frame",
+                      "parameters": {
+                        "input_order": 0
+                      }
+                    },
+                    {
+                      "name": "project_1",
+                      "type": "project",
+                      "output_type": "frame",
+                      "parameters": {
+                        "columns": [
+                          "GroceryInvoiceGuid",
+                          "GroceryCustomerGuid",
+                          "Timestamp",
+                          "tz_offset",
+                          "Amount"
+                        ]
+                      }
+                    }
+                  ]
+                },
+                "output_node_name": "project_1",
+                "type": "event_view",
+                "metadata": {
+                  "view_mode": "auto",
+                  "drop_column_names": [
+                    "record_available_at"
+                  ],
+                  "column_cleaning_operations": [],
+                  "table_id": {
+                    "$oid": "6470891bea4c4876a77d2b81"
+                  }
+                }
+              }
+            },
+            {
+              "name": "graph_2",
+              "type": "graph",
+              "output_type": "frame",
+              "parameters": {
+                "graph": {
+                  "edges": [
+                    {
+                      "source": "proxy_input_1",
+                      "target": "project_1"
+                    },
+                    {
+                      "source": "project_1",
+                      "target": "join_1"
+                    },
+                    {
+                      "source": "proxy_input_2",
+                      "target": "join_1"
+                    }
+                  ],
+                  "nodes": [
+                    {
+                      "name": "proxy_input_1",
+                      "type": "proxy_input",
+                      "output_type": "frame",
+                      "parameters": {
+                        "input_order": 0
+                      }
+                    },
+                    {
+                      "name": "proxy_input_2",
+                      "type": "proxy_input",
+                      "output_type": "frame",
+                      "parameters": {
+                        "input_order": 1
+                      }
+                    },
+                    {
+                      "name": "project_1",
+                      "type": "project",
+                      "output_type": "frame",
+                      "parameters": {
+                        "columns": [
+                          "GroceryInvoiceItemGuid",
+                          "GroceryInvoiceGuid",
+                          "GroceryProductGuid",
+                          "Quantity",
+                          "UnitPrice",
+                          "TotalCost",
+                          "Discount",
+                          "record_available_at"
+                        ]
+                      }
+                    },
+                    {
+                      "name": "join_1",
+                      "type": "join",
+                      "output_type": "frame",
+                      "parameters": {
+                        "left_on": "GroceryInvoiceGuid",
+                        "right_on": "GroceryInvoiceGuid",
+                        "left_input_columns": [
+                          "GroceryInvoiceItemGuid",
+                          "GroceryInvoiceGuid",
+                          "GroceryProductGuid",
+                          "Quantity",
+                          "UnitPrice",
+                          "TotalCost",
+                          "Discount",
+                          "record_available_at"
+                        ],
+                        "left_output_columns": [
+                          "GroceryInvoiceItemGuid",
+                          "GroceryInvoiceGuid",
+                          "GroceryProductGuid",
+                          "Quantity",
+                          "UnitPrice",
+                          "TotalCost",
+                          "Discount",
+                          "record_available_at"
+                        ],
+                        "right_input_columns": [
+                          "Timestamp",
+                          "GroceryCustomerGuid"
+                        ],
+                        "right_output_columns": [
+                          "Timestamp",
+                          "GroceryCustomerGuid"
+                        ],
+                        "join_type": "left",
+                        "scd_parameters": null,
+                        "metadata": {
+                          "type": "join_event_table_attributes",
+                          "columns": [
+                            "Timestamp",
+                            "GroceryInvoiceGuid",
+                            "GroceryCustomerGuid"
+                          ],
+                          "event_suffix": null
+                        }
+                      }
+                    }
+                  ]
+                },
+                "output_node_name": "join_1",
+                "type": "item_view",
+                "metadata": {
+                  "view_mode": "auto",
+                  "drop_column_names": [],
+                  "column_cleaning_operations": [],
+                  "table_id": {
+                    "$oid": "64708920ea4c4876a77d2b82"
+                  },
+                  "event_suffix": null,
+                  "event_drop_column_names": [
+                    "record_available_at"
+                  ],
+                  "event_column_cleaning_operations": [],
+                  "event_join_column_names": [
+                    "Timestamp",
+                    "GroceryInvoiceGuid",
+                    "GroceryCustomerGuid"
+                  ],
+                  "event_table_id": {
+                    "$oid": "6470891bea4c4876a77d2b81"
+                  }
+                }
+              }
+            },
+            {
+              "name": "groupby_1",
+              "type": "groupby",
+              "output_type": "frame",
+              "parameters": {
+                "keys": [
+                  "GroceryCustomerGuid"
+                ],
+                "parent": "TotalCost",
+                "agg_func": "sum",
+                "value_by": "GroceryProductGuid",
+                "serving_names": [
+                  "GROCERYCUSTOMERGUID"
+                ],
+                "entity_ids": [
+                  {
+                    "$oid": "64708932ea4c4876a77d2b85"
+                  }
+                ],
+                "windows": [
+                  "7d",
+                  "28d"
+                ],
+                "timestamp": "Timestamp",
+                "blind_spot": 3600,
+                "time_modulo_frequency": 60,
+                "frequency": 3600,
+                "names": [
+                  "CustomerSpending_7d",
+                  "CustomerSpending_28d"
+                ],
+                "tile_id": "TILE_F3600_M60_B3600_D70D77255471287A982E850A9B3F2AC7C14AD42D",
+                "aggregation_id": "sum_30859358949bfa56e6e202b633edaeb881bdbf64"
+              }
+            },
+            {
+              "name": "project_1",
+              "type": "project",
+              "output_type": "series",
+              "parameters": {
+                "columns": [
+                  "CustomerSpending_28d"
+                ]
+              }
+            },
+            {
+              "name": "project_2",
+              "type": "project",
+              "output_type": "series",
+              "parameters": {
+                "columns": [
+                  "CustomerSpending_7d"
+                ]
+              }
+            },
+            {
+              "name": "cosine_similarity_1",
+              "type": "cosine_similarity",
+              "output_type": "series",
+              "parameters": {}
+            },
+            {
+              "name": "alias_1",
+              "type": "alias",
+              "output_type": "series",
+              "parameters": {
+                "name": "CustomerSpendingStability_7d28d"
+              }
+            }
+          ]
+        },
+        "node_names": [
+          "alias_1"
+        ]
+      }
+    ],
+    "feature_ids": [
+      {
+        "$oid": "64776cc85c0291fd4ffbebb8"
+      }
+    ],
+    "feature_list_namespace_id": {
+      "$oid": "6478ab36173590eb5f4046ca"
+    },
+    "online_enabled_feature_ids": []
+  }
+]

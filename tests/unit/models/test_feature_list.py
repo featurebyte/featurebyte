@@ -29,6 +29,7 @@ def feature_list_model_dict_fixture():
         "feature_list_namespace_id": ObjectId(),
         "deployed": False,
         "online_enabled_feature_ids": [],
+        "primary_entity_ids": [],
         "feature_clusters": None,
         "catalog_id": DEFAULT_CATALOG_ID,
         "relationships_info": None,

@@ -142,14 +142,24 @@ async def catalog_specific_migration_method_constructor(
 
     async def decorated_migrate_method() -> None:
         tasks: Set[Any] = set()
-        async for catalog in all_catalog_service.list_documents_iterator(query_filter={}):
-            logger.info(f"Run migration for catalog {catalog.id}")
+
+        # use raw query filter to retrieve all the catalogs (including deleted ones)
+        with all_catalog_service.allow_use_raw_query_filter():
+            catalog_ids = {
+                catalog.id
+                async for catalog in all_catalog_service.list_documents_iterator(
+                    query_filter={}, use_raw_query_filter=True
+                )
+            }
+
+        for catalog_id in catalog_ids:
+            logger.info(f"Run migration for catalog {catalog_id}")
 
             # construct the app container for the catalog & retrieve the migrate method
             instance_map = {
                 "user": user,
                 "persistent": persistent,
-                "catalog_id": catalog.id,
+                "catalog_id": catalog_id,
             }
             app_container = LazyAppContainer(
                 app_container_config=app_container_config,

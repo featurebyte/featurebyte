@@ -501,8 +501,9 @@ def test_get_feature_list(saved_feature_list, catalog, cust_id_entity, transacti
             ("feature_list_namespace_id", str(saved_feature_list.feature_list_namespace.id)),
             ("name", "my_feature_list"),
             ("online_enabled_feature_ids", []),
+            ("primary_entity_ids", [str(cust_id_entity.id)]),
             ("readiness_distribution", [{"readiness": "DRAFT", "count": 1}]),
-            ("relationships_info", audit_history.new_value.iloc[11]),
+            ("relationships_info", audit_history.new_value.iloc[12]),
             (
                 "supported_serving_entity_ids",
                 sorted([[str(cust_id_entity.id)], [str(transaction_entity.id)]]),

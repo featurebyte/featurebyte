@@ -64,7 +64,7 @@ class ServingEntityEnumeration:
         cls, relationships_info: List[EntityRelationshipInfo], max_depth: int = 5
     ) -> "ServingEntityEnumeration":
         """
-        Create entity relationship graph from relationships info
+        Create serving entity enumeration from entity relationships info
 
         Parameters
         ----------
@@ -75,7 +75,7 @@ class ServingEntityEnumeration:
 
         Returns
         -------
-        EntityRelationshipGraph
+        ServingEntityEnumeration
         """
         parent_to_child_entity_ids: Dict[ObjectId, Set[ObjectId]] = defaultdict(set)
         child_to_parent_entity_ids: Dict[ObjectId, Set[ObjectId]] = defaultdict(set)
@@ -112,7 +112,7 @@ class ServingEntityEnumeration:
             entity_id_to_descendant_ids=entity_id_to_descendant_ids,
         )
 
-    def _reduce_entity_ids(self, entity_ids: List[ObjectId]) -> List[ObjectId]:
+    def reduce_entity_ids(self, entity_ids: List[ObjectId]) -> List[ObjectId]:
         """
         Reduce entity IDs to only contain the given entity IDs that are not ancestors of any other entity IDs
 
@@ -148,7 +148,7 @@ class ServingEntityEnumeration:
         -------
         List[List[ObjectId]]
         """
-        reduced_entity_ids = self._reduce_entity_ids(entity_ids=entity_ids)
+        reduced_entity_ids = self.reduce_entity_ids(entity_ids=entity_ids)
         entity_with_descendants_iterable = [
             self.entity_id_to_descendant_ids[entity_id] | {entity_id}
             for entity_id in reduced_entity_ids
@@ -156,7 +156,7 @@ class ServingEntityEnumeration:
         all_serving_entity_ids = set()
         for entity_id_combination in itertools.product(*entity_with_descendants_iterable):
             all_serving_entity_ids.add(
-                tuple(self._reduce_entity_ids(entity_ids=list(entity_id_combination)))
+                tuple(self.reduce_entity_ids(entity_ids=list(entity_id_combination)))
             )
 
         output = [

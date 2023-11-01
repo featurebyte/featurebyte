@@ -26,7 +26,8 @@ class CatalogService(BaseDocumentService[CatalogModel, CatalogCreate, CatalogSer
         query_filter = super()._construct_get_query_filter(
             document_id=document_id, use_raw_query_filter=use_raw_query_filter, **kwargs
         )
-        query_filter["is_deleted"] = {"$ne": True}
+        if not use_raw_query_filter:
+            query_filter["is_deleted"] = {"$ne": True}
         return query_filter
 
     def construct_list_query_filter(
@@ -38,7 +39,8 @@ class CatalogService(BaseDocumentService[CatalogModel, CatalogCreate, CatalogSer
         query_filter = super().construct_list_query_filter(
             query_filter=query_filter, use_raw_query_filter=use_raw_query_filter, **kwargs
         )
-        query_filter["is_deleted"] = {"$ne": True}
+        if not use_raw_query_filter:
+            query_filter["is_deleted"] = {"$ne": True}
         return query_filter
 
     async def soft_delete(

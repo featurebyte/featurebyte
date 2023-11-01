@@ -93,6 +93,124 @@
   },
   {
     "_id": {
+      "$oid": "64708920ea4c4876a77d2b82"
+    },
+    "user_id": {
+      "$oid": "64645f76cfc8e397f762c868"
+    },
+    "name": "INVOICEITEMS",
+    "created_at": {
+      "$date": "2023-05-26T10:25:39.830Z"
+    },
+    "updated_at": {
+      "$date": "2023-05-26T10:26:15.765Z"
+    },
+    "catalog_id": {
+      "$oid": "64708919ea4c4876a77d2b80"
+    },
+    "type": "item_table",
+    "columns_info": [
+      {
+        "name": "GroceryInvoiceItemGuid",
+        "dtype": "VARCHAR",
+        "semantic_id": {
+          "$oid": "646cc0c99c2b441adab7c77a"
+        }
+      },
+      {
+        "name": "GroceryInvoiceGuid",
+        "dtype": "VARCHAR",
+        "entity_id": {
+          "$oid": "64708934ea4c4876a77d2b86"
+        }
+      },
+      {
+        "name": "GroceryProductGuid",
+        "dtype": "VARCHAR",
+        "entity_id": {
+          "$oid": "64708935ea4c4876a77d2b87"
+        }
+      },
+      {
+        "name": "Quantity",
+        "dtype": "FLOAT",
+        "critical_data_info": {
+          "cleaning_operations": [
+            {
+              "imputed_value": 0,
+              "type": "missing"
+            },
+            {
+              "imputed_value": 0,
+              "type": "less_than",
+              "end_point": 0
+            }
+          ]
+        }
+      },
+      {
+        "name": "UnitPrice",
+        "dtype": "FLOAT",
+        "critical_data_info": {
+          "cleaning_operations": [
+            {
+              "imputed_value": 0,
+              "type": "missing"
+            },
+            {
+              "imputed_value": 0,
+              "type": "less_than",
+              "end_point": 0
+            }
+          ]
+        }
+      },
+      {
+        "name": "TotalCost",
+        "dtype": "FLOAT"
+      },
+      {
+        "name": "Discount",
+        "dtype": "FLOAT",
+        "critical_data_info": {
+          "cleaning_operations": [
+            {
+              "imputed_value": 0,
+              "type": "missing"
+            },
+            {
+              "imputed_value": 0,
+              "type": "less_than",
+              "end_point": 0
+            }
+          ]
+        }
+      },
+      {
+        "name": "record_available_at",
+        "dtype": "TIMESTAMP"
+      }
+    ],
+    "tabular_source": {
+      "feature_store_id": {
+        "$oid": "646cb1cef1d0ea5b3693e111"
+      },
+      "table_details": {
+        "database_name": "DEMO_DATASETS",
+        "schema_name": "GROCERY",
+        "table_name": "INVOICEITEMS"
+      }
+    },
+    "status": "PUBLIC_DRAFT",
+    "record_creation_timestamp_column": null,
+    "event_id_column": "GroceryInvoiceGuid",
+    "item_id_column": "GroceryInvoiceItemGuid",
+    "event_table_id": {
+      "$oid": "6470891bea4c4876a77d2b81"
+    }
+  },
+  {
+    "_id": {
       "$oid": "64708925ea4c4876a77d2b83"
     },
     "user_id": {
