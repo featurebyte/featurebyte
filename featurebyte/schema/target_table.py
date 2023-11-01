@@ -23,7 +23,7 @@ class TargetTableCreate(FeatureOrTargetTableCreate):
     """
 
     serving_names_mapping: Optional[Dict[str, str]]
-    target_id: PydanticObjectId
+    target_id: Optional[PydanticObjectId]
     graph: Optional[QueryGraph] = Field(default=None)
     node_name: Optional[StrictStr] = Field(default=None)
     request_input: ObservationInput
@@ -35,9 +35,21 @@ class TargetTableCreate(FeatureOrTargetTableCreate):
     def _check_graph_and_node_names(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         graph = values.get("graph", None)
         node_names = values.get("node_name", None)
+        target_id = values.get("target_id", None)
         both_are_none = graph is None and node_names is None
+
+        # Check if target is provided
+        if target_id is not None:
+            # Valid if target_id is provided, and no graph and node_names are provided
+            if both_are_none:
+                return values
+            raise ValueError(
+                "If target_id is provided, graph and node_names should not be provided."
+            )
+
+        # If target is not provided, graph and node_names should be provided.
         both_are_not_none = graph is not None and node_names is not None
-        if both_are_not_none or both_are_none:
+        if both_are_not_none:
             return values
         raise ValueError(
             "Both graph and node_names should be provided, or neither should be provided."

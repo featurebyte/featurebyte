@@ -94,9 +94,10 @@ class TargetTableController(
         data: TargetTableCreate,
         observation_set: Optional[UploadFile],
     ) -> Task:
-        if data.graph is None:
+        if data.graph is None and data.target_id is not None:
             data_dict = data.dict()
             target_doc = await self.target_service.get_document(data.target_id)
+            data_dict["target_id"] = None
             data_dict["graph"] = target_doc.graph
             data_dict["node_name"] = target_doc.node_name
             data = TargetTableCreate(**data_dict)

@@ -11,19 +11,22 @@ from featurebyte.schema.target_table import TargetTableCreate
 
 
 @pytest.mark.parametrize(
-    "graph, node_name, expected_error",
+    "target_id, graph, node_name, expected_error",
     [
-        (None, None, None),
-        (None, "node_name", ValueError),
-        (QueryGraphModel(), None, ValueError),
-        (QueryGraphModel(), "node_name", None),
+        (ObjectId(), None, None, None),
+        (ObjectId(), None, "node_name", ValueError),
+        (ObjectId(), QueryGraphModel(), None, ValueError),
+        (ObjectId(), QueryGraphModel(), "node_name", ValueError),
+        (None, None, None, ValueError),
+        (None, None, "node_name", ValueError),
+        (None, QueryGraphModel(), None, ValueError),
+        (None, QueryGraphModel(), "node_name", None),
     ],
 )
-def test_target_table_create(graph, node_name, expected_error):
+def test_target_table_create(target_id, graph, node_name, expected_error):
     """
     Test target table create schema
     """
-    target_id = ObjectId()
     common_params = {
         "name": "target_name",
         "feature_store_id": ObjectId(),
