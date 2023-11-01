@@ -428,6 +428,9 @@ class FeatureListNamespaceModel(FrozenFeatureListNamespaceModel):
         ]
 
 
+ServingEntity = List[PydanticObjectId]
+
+
 class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
     """
     Model for feature list entity
@@ -444,6 +447,10 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         Feature readiness distribution of this feature list
     version: VersionIdentifier
         Feature list version
+    relationships_info: Optional[List[EntityRelationshipInfo]]
+        List of entity relationship info for the feature list
+    supported_serving_entity_ids: List[ServingEntity]
+        List of supported serving entity ids, serving entity id is a list of entity ids for serving
     deployed: bool
         Whether to deploy this feature list version
     feature_list_namespace_id: PydanticObjectId
@@ -457,6 +464,9 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
     version: VersionIdentifier = Field(allow_mutation=False, description="Feature list version")
     relationships_info: Optional[List[EntityRelationshipInfo]] = Field(
         allow_mutation=False, default=None  # DEV-556
+    )
+    supported_serving_entity_ids: List[ServingEntity] = Field(
+        allow_mutation=False, default_factory=list
     )
     readiness_distribution: FeatureReadinessDistribution = Field(
         allow_mutation=False, default_factory=list
@@ -484,6 +494,16 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         construct_sort_validator()
     )
     _version_validator = validator("version", pre=True, allow_reuse=True)(version_validator)
+
+    @validator("supported_serving_entity_ids")
+    @classmethod
+    def _validate_supported_serving_entity_ids(
+        cls, value: List[ServingEntity]
+    ) -> List[ServingEntity]:
+        return [
+            sorted(set(serving_entity))
+            for serving_entity in sorted(value, key=lambda e: (len(e), e))
+        ]
 
     @root_validator(pre=True)
     @classmethod
