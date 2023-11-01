@@ -105,8 +105,8 @@ class FeatureMigrationServiceV4(BaseMongoCollectionMigration):
             )
             return record
 
-    @migrate(version=4, description="Add relationships_info to feature record")
-    async def add_primary_entity_ids_relationships_info(self) -> None:
+    @migrate(version=4, description="Add primary_entity_ids & relationships_info to feature record")
+    async def add_primary_entity_ids_and_relationships_info(self) -> None:
         """Add primary_entity_ids & relationships_info to feature record"""
         sanity_check_sample_size = 10
 
