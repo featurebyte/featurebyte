@@ -18,7 +18,7 @@ from featurebyte.service.relationship_info import RelationshipInfoService
 @dataclass
 class EntityRelationshipData:
     """
-    Parent data
+    Entity relationship data
     """
 
     entity_id: ObjectId
@@ -28,13 +28,12 @@ class EntityRelationshipData:
 @dataclass
 class ServingEntityEnumeration:
     """
-    Serving entity enumeration
+    Serving entity enumeration class is used to enumerate
+    all serving entity IDs from the given entity IDs
     """
 
     entity_id_to_ancestor_ids: Dict[ObjectId, Set[ObjectId]]
     entity_id_to_descendant_ids: Dict[ObjectId, Set[ObjectId]]
-    parent_to_child_entity_ids: Dict[ObjectId, Set[ObjectId]]
-    child_to_parent_entity_ids: Dict[ObjectId, Set[ObjectId]]
 
     @classmethod
     def _depth_first_search(
@@ -111,8 +110,6 @@ class ServingEntityEnumeration:
         return cls(
             entity_id_to_ancestor_ids=entity_id_to_ancestor_ids,
             entity_id_to_descendant_ids=entity_id_to_descendant_ids,
-            parent_to_child_entity_ids=parent_to_child_entity_ids,
-            child_to_parent_entity_ids=child_to_parent_entity_ids,
         )
 
     def _reduce_entity_ids(self, entity_ids: List[ObjectId]) -> List[ObjectId]:
