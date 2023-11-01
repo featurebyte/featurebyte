@@ -98,6 +98,6 @@ class TargetTableController(
             data_dict = data.dict()
             target_doc = await self.target_service.get_document(data.target_id)
             data_dict["graph"] = target_doc.graph
-            data_dict["node_names"] = [target_doc.node_name]
+            data_dict["node_name"] = target_doc.node_name
             data = TargetTableCreate(**data_dict)
         return await super().create_table(data=data, observation_set=observation_set)

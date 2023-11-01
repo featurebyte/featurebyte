@@ -64,21 +64,21 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
         ):
             # Graphs and nodes being processed in this task should not be None anymore.
             graph = payload.graph
-            node_names = payload.node_names
+            node_name = payload.node_name
             assert graph is not None
-            assert node_names is not None
+            assert node_name is not None
             await self.target_computer.compute(
                 observation_set=observation_set,
                 compute_request=ComputeTargetRequest(
                     feature_store_id=payload.feature_store_id,
                     graph=graph,
-                    node_names=node_names,
+                    node_names=[node_name],
                     serving_names_mapping=payload.serving_names_mapping,
                     target_id=payload.target_id,
                 ),
                 output_table_details=location.table_details,
             )
-            entity_ids = graph.get_entity_ids(node_names[0])
+            entity_ids = graph.get_entity_ids(node_name)
             primary_entity_ids = await self.derive_primary_entity_helper.derive_primary_entity_ids(
                 entity_ids
             )

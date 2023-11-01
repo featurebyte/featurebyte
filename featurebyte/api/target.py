@@ -352,7 +352,7 @@ class Target(
             serving_names_mapping=serving_names_mapping,
             target_id=self.id,
             graph=self.graph,
-            node_names=[self.node.name],
+            node_name=self.node.name,
             request_input=TargetInput(
                 target_id=self.id,
                 observation_table_id=observation_table_id,
