@@ -28,6 +28,9 @@ class FeatureListMigrationServiceV5(BaseMongoCollectionMigration):
     relationships_info and supported_serving_entity_ids fields.
     """
 
+    # skip audit migration for this migration
+    skip_audit_migration = True
+
     def __init__(
         self,
         persistent: Persistent,
