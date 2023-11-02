@@ -17,7 +17,7 @@ WITH REQUEST_TABLE AS (
     FROM (
       SELECT
         *,
-        F_TIMESTAMP_TO_INDEX(`ts`, 1800, 900, 60) AS index
+        F_TIMESTAMP_TO_INDEX(CAST(`ts` AS TIMESTAMP), 1800, 900, 60) AS index
       FROM (
         WITH __FB_ENTITY_TABLE_NAME AS (
           (

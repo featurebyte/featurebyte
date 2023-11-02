@@ -373,15 +373,24 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
         return await self.session.execute_query(query)
 
     async def _list_functions(self) -> list[str]:
-        def _function_name_to_identifier(function_name: str) -> str:
+        def _function_name_to_identifier(function_name: str) -> Optional[str]:
             # function names returned from SHOW FUNCTIONS are three part fully qualified, but
             # identifiers are based on function names only
-            return function_name.rsplit(".", 1)[1]
+            parts = function_name.rsplit(".", 1)
+            if len(parts) > 1:
+                return parts[1]
+            return None
 
         df_result = await self.list_objects("USER FUNCTIONS")
         out = []
         if df_result is not None:
-            out.extend(df_result["function"].apply(_function_name_to_identifier))
+            out.extend(
+                [
+                    function_name
+                    for function_name in df_result["function"].apply(_function_name_to_identifier)
+                    if function_name is not None
+                ]
+            )
         return out
 
     async def register_missing_objects(self) -> None:

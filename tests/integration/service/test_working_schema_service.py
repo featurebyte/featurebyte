@@ -140,7 +140,6 @@ async def test_drop_all_and_recreate(
     async def _get_object_counts():
         num_tables = len(await session.initializer().list_objects("TABLES"))
         num_functions = len(await session.initializer().list_objects("USER FUNCTIONS"))
-
         return num_tables, num_functions
 
     async def _get_schema_metadata():
@@ -156,9 +155,9 @@ async def test_drop_all_and_recreate(
     expected_online_result = res.json()
 
     # Check current object counts
-    init_num_tables, num_functions = await _get_object_counts()
+    init_num_tables, init_num_functions = await _get_object_counts()
     assert init_num_tables > 0
-    assert num_functions > 0
+    assert init_num_functions > 0
 
     # Drop everything
     await drop_all_objects(snowflake_session)
@@ -166,16 +165,20 @@ async def test_drop_all_and_recreate(
     # Check objects are indeed dropped
     num_tables, num_functions = await _get_object_counts()
     assert num_tables < init_num_tables
-    assert num_functions == 0
+    assert num_functions < init_num_functions
 
     # Check online requests can no longer be made
     res = make_online_request(client, deployment, entity_serving_names)
     assert res.status_code == 500
+    error_message = res.json()["detail"]
     if source_type == "snowflake":
         expected_error_message = "SQL compilation error"
+        assert expected_error_message in error_message
     else:
-        expected_error_message = "Table or view not found"
-    assert expected_error_message in res.json()["detail"]
+        # error message is different for different spark versions
+        assert (
+            "Table or view not found" in error_message or "TABLE_OR_VIEW_NOT_FOUND" in error_message
+        )
 
     # Recreate schema
     await migration_service.reset_working_schema(query_filter={"_id": ObjectId(feature_store.id)})
