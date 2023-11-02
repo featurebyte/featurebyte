@@ -6,8 +6,9 @@ from typing import Any, Dict, List, Optional, Sequence
 from bson import ObjectId
 
 from featurebyte.models.feature_store import FeatureStoreModel, TableModel
+from featurebyte.models.relationship_analysis import derive_primary_entity
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
-from featurebyte.service.entity import EntityService, get_primary_entity_from_entities
+from featurebyte.service.entity import EntityService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.table import TableService
@@ -91,13 +92,16 @@ class EntityServingNamesService:
         -------
         List[Dict[str, str]]
         """
-        entities_docs = await self.entity_service.list_documents_as_dict(
-            page=1, page_size=0, query_filter={"_id": {"$in": entity_ids}}
+        primary_entity = derive_primary_entity(
+            entities=[
+                entity
+                async for entity in self.entity_service.list_documents_iterator(
+                    query_filter={"_id": {"$in": list(entity_ids)}}
+                )
+            ]
         )
-        primary_entity = get_primary_entity_from_entities(entities_docs)
-        entities = {
-            entity["_id"]: {"serving_name": entity["serving_names"]}
-            for entity in primary_entity["data"]
+        entities: Dict[ObjectId, Dict[str, List[str]]] = {
+            entity.id: {"serving_name": entity.serving_names} for entity in primary_entity
         }
         tables = self.table_service.list_documents_iterator(
             query_filter={"_id": {"$in": table_ids}}
@@ -121,6 +125,7 @@ class EntityServingNamesService:
             if entity_columns:
                 for column in entity_columns:
                     # skip if sample values already exists unless column is a primary key for the table
+                    assert column.entity_id is not None, column
                     existing_sample_values = entities[column.entity_id].get("sample_value")
                     if existing_sample_values and column.name not in table.primary_key_columns:
                         continue

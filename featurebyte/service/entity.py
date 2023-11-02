@@ -5,43 +5,15 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-import copy
-
 from bson import ObjectId
 
 from featurebyte.models.entity import EntityModel
-from featurebyte.models.relationship_analysis import derive_primary_entity
 from featurebyte.persistent import Persistent
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.routes.catalog.catalog_name_injector import CatalogNameInjector
 from featurebyte.schema.entity import EntityCreate, EntityServiceUpdate
 from featurebyte.schema.info import EntityBriefInfoList
 from featurebyte.service.base_document import BaseDocumentService
-
-
-def get_primary_entity_from_entities(entities: dict[str, Any]) -> dict[str, Any]:
-    """
-    Get primary entity from entities data
-
-    Parameters
-    ----------
-    entities: dict[str, Any]
-        Entities listing result (with a "data" key and extras)
-
-    Returns
-    -------
-    dict[str, Any]
-        Filtered list of entities that are the main entities
-    """
-    main_entity_ids = {
-        entity.id
-        for entity in derive_primary_entity(
-            [EntityModel(**entity_dict) for entity_dict in entities["data"]]
-        )
-    }
-    primary_entity = copy.deepcopy(entities)
-    primary_entity["data"] = [d for d in entities["data"] if d["_id"] in main_entity_ids]
-    return primary_entity
 
 
 class EntityService(BaseDocumentService[EntityModel, EntityCreate, EntityServiceUpdate]):

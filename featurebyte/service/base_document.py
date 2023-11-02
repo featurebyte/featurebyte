@@ -568,6 +568,7 @@ class BaseDocumentService(
         AsyncIterator[Document]
             List query output
         """
+        assert page_size > 0, "page_size must be greater than 0"
         async for doc in self.list_documents_as_dict_iterator(
             query_filter=query_filter,
             page_size=page_size,

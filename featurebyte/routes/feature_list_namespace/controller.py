@@ -9,13 +9,13 @@ from bson.objectid import ObjectId
 
 from featurebyte.models.feature_list import FeatureListNamespaceModel
 from featurebyte.routes.common.base import BaseDocumentController, PaginatedDocument
-from featurebyte.routes.common.derive_primary_entity_helper import DerivePrimaryEntityHelper
 from featurebyte.schema.feature_list_namespace import (
     FeatureListNamespaceList,
     FeatureListNamespaceModelResponse,
     FeatureListNamespaceUpdate,
 )
 from featurebyte.schema.info import FeatureListNamespaceInfo
+from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_facade import FeatureListFacadeService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.mixin import DEFAULT_PAGE_SIZE, Document
@@ -35,12 +35,12 @@ class FeatureListNamespaceController(
     def __init__(
         self,
         feature_list_namespace_service: FeatureListNamespaceService,
+        feature_list_service: FeatureListService,
         feature_list_facade_service: FeatureListFacadeService,
-        derive_primary_entity_helper: DerivePrimaryEntityHelper,
     ):
         super().__init__(feature_list_namespace_service)
+        self.feature_list_service = feature_list_service
         self.feature_list_facade_service = feature_list_facade_service
-        self.derive_primary_entity_helper = derive_primary_entity_helper
 
     async def get(
         self,
@@ -50,11 +50,13 @@ class FeatureListNamespaceController(
         document = await self.service.get_document(
             document_id=document_id, exception_detail=exception_detail
         )
+        default_feature_list_doc = await self.feature_list_service.get_document_as_dict(
+            document_id=document.default_feature_list_id,
+            projection={"_id": 1, "primary_entity_ids": 1},
+        )
         output = FeatureListNamespaceModelResponse(
             **document.dict(by_alias=True),
-            primary_entity_ids=await self.derive_primary_entity_helper.derive_primary_entity_ids(
-                entity_ids=document.entity_ids
-            ),
+            primary_entity_ids=default_feature_list_doc["primary_entity_ids"],
         )
         return cast(Document, output)
 
@@ -75,19 +77,24 @@ class FeatureListNamespaceController(
         )
 
         # compute primary entity ids of each feature list namespace
-        entity_id_to_entity = await self.derive_primary_entity_helper.get_entity_id_to_entity(
-            doc_list=document_data["data"]
-        )
+        default_feature_list_ids = [
+            document["default_feature_list_id"] for document in document_data["data"]
+        ]
+        feature_list_to_primary_entity_ids = {
+            doc["_id"]: doc["primary_entity_ids"]
+            async for doc in self.feature_list_service.list_documents_as_dict_iterator(
+                query_filter={"_id": {"$in": default_feature_list_ids}},
+                projection={"_id": 1, "primary_entity_ids": 1},
+            )
+        }
         output = []
         for feature_list_namespace in document_data["data"]:
-            primary_entity_ids = await self.derive_primary_entity_helper.derive_primary_entity_ids(
-                entity_ids=feature_list_namespace["entity_ids"],
-                entity_id_to_entity=entity_id_to_entity,
-            )
             output.append(
                 FeatureListNamespaceModelResponse(
                     **feature_list_namespace,
-                    primary_entity_ids=primary_entity_ids,
+                    primary_entity_ids=feature_list_to_primary_entity_ids[
+                        feature_list_namespace["default_feature_list_id"]
+                    ],
                 )
             )
 
