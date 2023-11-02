@@ -18,3 +18,5 @@ class ObservationTableUploadTaskPayload(BaseTaskPayload, ObservationTableUpload)
     command = WorkerCommand.OBSERVATION_TABLE_UPLOAD
     observation_set_storage_path: str
     file_format: UploadFileFormat
+    # This is the name of the file that was uploaded by the user
+    uploaded_file_name: str

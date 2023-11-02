@@ -2,6 +2,7 @@
 Tests for ObservationTable routes
 """
 import copy
+import os
 import tempfile
 from http import HTTPStatus
 
@@ -272,12 +273,10 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         test_api_client, _ = test_api_client_persistent
 
         # Prepare upload request
-        uploaded_file_name = f"uploaded_file.{file_type}"
         upload_request = ObservationTableUpload(
             name="uploaded_observation_table",
             purpose="other",
             primary_entity_ids=["63f94ed6ea1f050131379214"],
-            uploaded_file_name=uploaded_file_name,
         )
         df = pd.DataFrame(
             {
@@ -286,6 +285,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
             }
         )
         with tempfile.NamedTemporaryFile(mode="wb", suffix=f".{file_type}") as write_file_obj:
+            uploaded_file_name = os.path.basename(write_file_obj.name)
             if file_type == "csv":
                 df.to_csv(write_file_obj, index=False)
             elif file_type == "parquet":

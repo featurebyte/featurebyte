@@ -226,6 +226,7 @@ class ObservationTableService(
         data: ObservationTableUpload,
         observation_set_dataframe: pd.DataFrame,
         file_format: UploadFileFormat,
+        uploaded_file_name: str,
     ) -> ObservationTableUploadTaskPayload:
         """
         Validate and convert a ObservationTableUpload schema to a ObservationTableUploadTaskPayload schema
@@ -239,6 +240,8 @@ class ObservationTableService(
             Observation set DataFrame
         file_format: UploadFileFormat
             File format of the uploaded file
+        uploaded_file_name: str
+            Name of the uploaded file
 
         Returns
         -------
@@ -264,6 +267,7 @@ class ObservationTableService(
             output_document_id=output_document_id,
             observation_set_storage_path=observation_set_storage_path,
             file_format=file_format,
+            uploaded_file_name=uploaded_file_name,
         )
 
     @staticmethod
