@@ -470,3 +470,10 @@ def test_check_mongo_persistent_is_not_shared():
     persistent1 = MongoDBImpl()
     persistent2 = MongoDBImpl()
     assert id(persistent1) != id(persistent2)
+
+
+@pytest.mark.asyncio
+async def test_list_collection_names(persistent):
+    """Test list collection names"""
+    names = await persistent.list_collection_names()
+    assert names == []
