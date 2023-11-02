@@ -546,7 +546,7 @@ def test_list(saved_feature_list):
                 "online_frac": 0.0,
                 "tables": [["sf_event_table"]],
                 "entities": [["customer"]],
-                "primary_entities": [["customer"]],
+                "primary_entity": [["customer"]],
                 "created_at": [saved_feature_list_namespace.created_at.isoformat()],
             }
         ),
@@ -1401,6 +1401,8 @@ def test_feature_list_entity_relationship_validation(
     assert len(relationships_info) == 1
     assert relationships_info[0].entity_id == transaction_entity.id
     assert relationships_info[0].related_entity_id == cust_id_entity.id
+    feat_list = FeatureList([feat], name="feat_list")
+    feat_list.save()
 
     # update relationship
     snowflake_event_table_with_entity.cust_id.as_entity(None)
@@ -1416,6 +1418,17 @@ def test_feature_list_entity_relationship_validation(
     assert len(relationships_info) == 1
     assert relationships_info[0].entity_id == cust_id_entity.id
     assert relationships_info[0].related_entity_id == transaction_entity.id
+    another_feat_list = FeatureList([another_feat], name="another_feat_list")
+    another_feat_list.save()
+
+    # check feature & feature list primary entity
+    # (should base on the entity relationship during the feature & feature list creation time)
+    feat_primary_entity = [ent.name for ent in feat_list.primary_entity]
+    feat_list_primary_entity = [ent.name for ent in feat_list.primary_entity]
+    assert feat_primary_entity == feat_list_primary_entity == ["transaction"]
+    another_feat_primary_entity = [ent.name for ent in another_feat_list.primary_entity]
+    another_feat_list_primary_entity = [ent.name for ent in another_feat_list.primary_entity]
+    assert another_feat_primary_entity == another_feat_list_primary_entity == ["customer"]
 
     feature_list = FeatureList([feat, another_feat], name="test_feature_list")
     with pytest.raises(RecordCreationException) as exc:

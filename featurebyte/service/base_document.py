@@ -8,6 +8,7 @@ from typing import Any, AsyncIterator, Dict, Generic, Iterator, List, Optional, 
 
 import copy
 from contextlib import contextmanager
+from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
@@ -55,6 +56,18 @@ RAW_QUERY_FILTER_WARNING = (
 
 
 logger = get_logger(__name__)
+
+
+@dataclass
+class UniqueConstraintData:
+    """
+    Unique constraint data
+    """
+
+    query_filter: QueryFilter
+    projection: Dict[str, Any]
+    conflict_signature: Dict[str, Any]
+    resolution_signature: Optional[UniqueConstraintResolutionSignature]
 
 
 def as_object_id(object_id: Any) -> ObjectId:
@@ -568,6 +581,7 @@ class BaseDocumentService(
         AsyncIterator[Document]
             List query output
         """
+        assert page_size > 0, "page_size must be greater than 0"
         async for doc in self.list_documents_as_dict_iterator(
             query_filter=query_filter,
             page_size=page_size,
@@ -817,14 +831,7 @@ class BaseDocumentService(
         document: FeatureByteBaseDocumentModel,
         document_class: Union[Type[Document], Type[DocumentUpdateSchema]],
         original_document: Optional[FeatureByteBaseDocumentModel],
-    ) -> Iterator[
-        tuple[
-            dict[str, Any],
-            dict[str, Any],
-            dict[str, Any],
-            Optional[UniqueConstraintResolutionSignature],
-        ]
-    ]:
+    ) -> Iterator[UniqueConstraintData]:
         """
         Generator used to extract uniqueness constraints from document model setting
 
@@ -839,8 +846,8 @@ class BaseDocumentService(
 
         Yields
         ------
-        Iterator[dict[str, Any], dict[str, Any], dict[str, Any] Optional[UniqueConstraintResolutionSignature]]
-            List of tuples used to construct unique constraint validations
+        Iterator[UniqueConstraintData]
+            List of unique constraint data
         """
         doc_dict = document.dict(by_alias=True)
         original_dict = original_document.dict(by_alias=True) if original_document else None
@@ -870,7 +877,13 @@ class BaseDocumentService(
                 conflict_signature["version"] = VersionIdentifier(
                     **conflict_signature["version"]
                 ).to_str()
-            yield query_filter, projection, conflict_signature, constraint.resolution_signature
+
+            yield UniqueConstraintData(
+                query_filter=query_filter,
+                projection=projection,
+                conflict_signature=conflict_signature,
+                resolution_signature=constraint.resolution_signature,
+            )
 
     async def _check_document_unique_constraints(
         self,
@@ -890,21 +903,16 @@ class BaseDocumentService(
         original_document: Optional[FeatureByteBaseDocumentModel]
             Original document before update (provide when checking document update conflict)
         """
-        for (
-            query_filter,
-            projection,
-            conflict_signature,
-            resolution_signature,
-        ) in self._get_unique_constraints(
+        for unique_constraint in self._get_unique_constraints(
             document=document,
             document_class=document_class or self.document_class,
             original_document=original_document,
         ):
             await self._check_document_unique_constraint(
-                query_filter=query_filter,
-                projection=projection,
-                conflict_signature=conflict_signature,
-                resolution_signature=resolution_signature,
+                query_filter=unique_constraint.query_filter,
+                projection=unique_constraint.projection,
+                conflict_signature=unique_constraint.conflict_signature,
+                resolution_signature=unique_constraint.resolution_signature,
             )
 
     def _check_document_modifiable(self, document: Dict[str, Any]) -> None:

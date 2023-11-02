@@ -5,9 +5,13 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
+import copy
+
 from bson import ObjectId
 
+from featurebyte.models.entity import EntityModel
 from featurebyte.models.feature_list import FeatureListNamespaceModel
+from featurebyte.models.relationship_analysis import derive_primary_entity
 from featurebyte.persistent import Persistent
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.routes.catalog.catalog_name_injector import CatalogNameInjector
@@ -18,7 +22,7 @@ from featurebyte.schema.info import (
     TableBriefInfoList,
 )
 from featurebyte.service.base_document import BaseDocumentService
-from featurebyte.service.entity import EntityService, get_primary_entity_from_entities
+from featurebyte.service.entity import EntityService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.table import TableService
 
@@ -73,7 +77,9 @@ class FeatureListNamespaceService(
         entities = await self.entity_service.list_documents_as_dict(
             page=1, page_size=0, query_filter={"_id": {"$in": namespace.entity_ids}}
         )
-        primary_entity = get_primary_entity_from_entities(entities)
+        primary_entity = derive_primary_entity(
+            entities=[EntityModel(**entity_doc) for entity_doc in entities["data"]]
+        )
 
         tables = await self.table_service.list_documents_as_dict(
             page=1, page_size=0, query_filter={"_id": {"$in": namespace.table_ids}}
@@ -84,6 +90,12 @@ class FeatureListNamespaceService(
             namespace.catalog_id, [entities, tables]
         )
         entities, tables = updated_docs
+        primary_entity_data = copy.deepcopy(entities)
+        primary_entity_ids = set(entity.id for entity in primary_entity)
+        primary_entity_data["data"] = sorted(
+            [entity for entity in entities["data"] if entity["_id"] in primary_entity_ids],
+            key=lambda doc: doc["_id"],  # type: ignore
+        )
 
         # get default feature ids
         feat_namespace_to_default_id = {}
@@ -100,7 +112,9 @@ class FeatureListNamespaceService(
             created_at=namespace.created_at,
             updated_at=namespace.updated_at,
             entities=EntityBriefInfoList.from_paginated_data(entities),
-            primary_entity=EntityBriefInfoList.from_paginated_data(primary_entity),
+            primary_entity=EntityBriefInfoList.from_paginated_data(
+                paginated_data=primary_entity_data
+            ),
             tables=TableBriefInfoList.from_paginated_data(tables),
             default_feature_list_id=namespace.default_feature_list_id,
             dtype_distribution=namespace.dtype_distribution,

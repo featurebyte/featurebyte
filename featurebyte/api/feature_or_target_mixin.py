@@ -62,6 +62,18 @@ class FeatureOrTargetMixin(QueryObject, ApiObject):
         except RecordRetrievalException:
             return self.graph.get_entity_ids(node_name=self.node_name)
 
+    def _get_primary_entity(self) -> List[Entity]:
+        try:
+            primary_entity_ids = (
+                self._cast_cached_model.primary_entity_ids  # pylint: disable=no-member
+            )
+            return [Entity.get_by_id(entity_id) for entity_id in primary_entity_ids]
+        except RecordRetrievalException:
+            entities = []
+            for entity_id in self._get_entity_ids():
+                entities.append(Entity.get_by_id(entity_id))
+            return derive_primary_entity(entities)  # type: ignore
+
     def _get_table_ids(self) -> Sequence[ObjectId]:
         try:
             return self._cast_cached_model.table_ids  # pylint: disable=no-member
@@ -106,21 +118,6 @@ class FeatureOrTargetMixin(QueryObject, ApiObject):
         elapsed = time.time() - tic
         logger.debug(f"Preview took {elapsed:.2f}s")
         return dataframe_from_json(result)  # pylint: disable=no-member
-
-    def _primary_entity(self) -> List[Entity]:
-        """
-        Returns the primary entity of the Feature object.
-
-        Returns
-        -------
-        List[Entity]
-            Primary entity
-        """
-        entities = []
-        for entity_id in self._get_entity_ids():
-            entities.append(Entity.get_by_id(entity_id))
-        primary_entity = derive_primary_entity(entities)  # type: ignore
-        return primary_entity
 
     @typechecked
     def __setattr__(self, key: str, value: Any) -> Any:
