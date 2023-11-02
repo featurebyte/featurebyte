@@ -958,7 +958,7 @@ def test_databricks_source(query_graph_with_groupby, groupby_node_aggregation_id
         FROM (
           SELECT
             *,
-            F_TIMESTAMP_TO_INDEX(`ts`, 1800, 900, 60) AS index
+            F_TIMESTAMP_TO_INDEX(CAST(`ts` AS TIMESTAMP), 1800, 900, 60) AS index
           FROM (
             SELECT
               *

@@ -351,7 +351,11 @@ class SparkSession(BaseSparkSession):
             {metadata[0]: self._get_pyarrow_type(metadata[1]) for metadata in cursor.description}
         )
         while True:
-            record_batch = self._read_batch(cursor, schema)
+            try:
+                record_batch = self._read_batch(cursor, schema)
+            except TypeError:
+                # TypeError is raised on DDL queries in Spark 3.4 and above
+                break
             yield record_batch
             if record_batch.num_rows == 0:
                 break

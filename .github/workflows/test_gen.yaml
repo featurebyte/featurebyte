@@ -194,6 +194,9 @@ jobs:
       matrix:
         python-version:
         - 3.8.12
+        spark-version:
+        - 3.3.1
+        - 3.5.0
     steps:
     - uses: actions/checkout@v4
     - uses: arduino/setup-task@v1
@@ -233,7 +236,7 @@ jobs:
       continue-on-error: true
       run: |-
         set +e
-        task test-integration-spark
+        SPARK_VERSION=${{ matrix.spark-version }} task test-integration-spark
         # capture the exit code from the test run before stashing logs
         EXIT_CODE=$?
         echo $EXIT_CODE > status.txt
