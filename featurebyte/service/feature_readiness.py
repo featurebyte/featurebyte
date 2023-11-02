@@ -255,8 +255,11 @@ class FeatureReadinessService:
             assert (
                 document.default_feature_id not in excluded_feature_ids
             ), "default feature should not be deleted"
+            # use projection to reduce the amount of data transfer &
+            # default feature is used within this function only
             default_feature = await self.feature_service.get_document_as_dict(
-                document_id=document.default_feature_id
+                document_id=document.default_feature_id,
+                projection={"readiness": 1},
             )
             default_feature_readiness = FeatureReadiness(default_feature["readiness"])
             if default_feature_readiness != document.readiness:
@@ -340,7 +343,12 @@ class FeatureReadinessService:
                 await self.feature_service.update_readiness(
                     document_id=feature_id, readiness=readiness
                 )
-                feature = await self.feature_service.get_document_as_dict(document_id=feature_id)
+                # use projection to reduce the amount of data transfer &
+                # feature is used within this function only
+                feature = await self.feature_service.get_document_as_dict(
+                    document_id=feature_id,
+                    projection={"feature_namespace_id": 1, "feature_list_ids": 1, "readiness": 1},
+                )
                 await self.update_feature_namespace(
                     feature_namespace_id=feature["feature_namespace_id"],
                 )

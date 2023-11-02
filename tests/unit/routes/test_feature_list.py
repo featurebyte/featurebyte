@@ -401,6 +401,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         )
         response_dict = response.json()
         create_response_dict["is_default"] = False
+        create_response_dict.pop("feature_clusters")  # feature_clusters is not returned
         assert response_dict["total"] == 1
         assert response_dict["data"] == [create_response_dict]
 
@@ -410,8 +411,10 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
             params={"name": create_response_dict["name"], "version": f"{version}_1"},
         )
         response_dict = response.json()
+        new_version_response_dict = new_version_response.json()
+        new_version_response_dict.pop("feature_clusters")  # feature_clusters is not returned
         assert response_dict["total"] == 1
-        assert response_dict["data"] == [new_version_response.json()]
+        assert response_dict["data"] == [new_version_response_dict]
 
     def _make_production_ready_and_deploy(self, client, feature_list_doc):
         doc_id = feature_list_doc["_id"]
@@ -801,7 +804,14 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         test_api_client, _ = test_api_client_persistent
         featurelist = create_success_response.json()
         feature_list_id = featurelist["_id"]
-        graph = QueryGraphModel(**featurelist["feature_clusters"][0]["graph"])
+
+        # use the feature payload to get the aggregation id
+        feature_ids = featurelist["feature_ids"]
+        feature_payload = self.load_payload("tests/fixtures/request_payloads/feature_sum_30m.json")
+        assert (
+            feature_payload["_id"] in feature_ids
+        ), "Feature payload not matched with feature list"
+        graph = QueryGraphModel(**feature_payload["graph"])
         groupby_node = graph.get_node_by_name("groupby_1")
         aggregation_id = groupby_node.parameters.aggregation_id
 

@@ -32,6 +32,7 @@ class FeatureListMakeProductionReadyTask(BaseTask[FeatureListMakeProductionReady
     async def get_task_description(self, payload: FeatureListMakeProductionReadyTaskPayload) -> str:
         feature_list_doc = await self.feature_list_service.get_document_as_dict(
             document_id=payload.feature_list_id,
+            projection={"name": 1},
         )
         feature_list_name = feature_list_doc["name"]
         return f'Make all features of feature list "{feature_list_name}" production ready'

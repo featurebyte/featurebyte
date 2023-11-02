@@ -390,6 +390,7 @@ class AllDeploymentController(
             feature_list_documents = await self.feature_list_service.list_documents_as_dict(
                 page_size=0,
                 query_filter={"_id": {"$in": list(feature_list_ids)}},
+                projection={"feature_clusters": 0},  # exclude feature clusters
                 use_raw_query_filter=True,
             )
             deployment_id_to_feature_list = {

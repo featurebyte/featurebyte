@@ -252,7 +252,10 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
         readiness: FeatureReadiness
             Feature readiness
         """
-        document = await self.get_document_as_dict(document_id=document_id)
+        document = await self.get_document_as_dict(
+            document_id=document_id,
+            projection={"block_modification_by": 1},
+        )
         self._check_document_modifiable(document=document)
 
         await self.persistent.update_one(

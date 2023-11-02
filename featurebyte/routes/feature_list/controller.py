@@ -28,6 +28,7 @@ from featurebyte.schema.feature_list import (
     FeatureListGetHistoricalFeatures,
     FeatureListModelResponse,
     FeatureListNewVersionCreate,
+    FeatureListPaginatedItem,
     FeatureListPaginatedList,
     FeatureListPreview,
     FeatureListServiceCreate,
@@ -247,6 +248,7 @@ class FeatureListController(
             page_size=page_size,
             sort_by=sort_by,
             sort_dir=sort_dir,
+            projection={"feature_clusters": 0},  # exclude feature_clusters
             **params,
         )
 
@@ -267,7 +269,7 @@ class FeatureListController(
                 feature_list["feature_list_namespace_id"]
             )
             output.append(
-                FeatureListModelResponse(
+                FeatureListPaginatedItem(
                     **feature_list,
                     is_default=default_feature_list_id == feature_list["_id"],
                 )
