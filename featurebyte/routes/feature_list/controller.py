@@ -258,7 +258,8 @@ class FeatureListController(
         }
         namespace_id_to_default_id = {}
         async for namespace in self.feature_list_namespace_service.list_documents_as_dict_iterator(
-            query_filter={"_id": {"$in": list(namespace_ids)}}
+            query_filter={"_id": {"$in": list(namespace_ids)}},
+            projection={"_id": 1, "default_feature_list_id": 1},
         ):
             namespace_id_to_default_id[namespace["_id"]] = namespace["default_feature_list_id"]
 

@@ -506,6 +506,7 @@ class BaseDocumentService(
     async def list_documents_as_dict_iterator(
         self,
         query_filter: QueryFilter,
+        projection: Optional[Dict[str, Any]] = None,
         page_size: int = DEFAULT_PAGE_SIZE,
         use_raw_query_filter: bool = False,
     ) -> AsyncIterator[Dict[str, Any]]:
@@ -516,6 +517,8 @@ class BaseDocumentService(
         ----------
         query_filter: QueryFilter
             Query filter
+        projection: Optional[Dict[str, Any]]
+            Project fields to return from the query
         page_size: int
             Page size
         use_raw_query_filter: bool
@@ -533,6 +536,7 @@ class BaseDocumentService(
                 page=page,
                 page_size=page_size,
                 query_filter=query_filter,
+                projection=projection,
                 use_raw_query_filter=use_raw_query_filter,
             )
             for doc in list_results["data"]:
@@ -814,7 +818,12 @@ class BaseDocumentService(
         document_class: Union[Type[Document], Type[DocumentUpdateSchema]],
         original_document: Optional[FeatureByteBaseDocumentModel],
     ) -> Iterator[
-        tuple[dict[str, Any], dict[str, Any], Optional[UniqueConstraintResolutionSignature]]
+        tuple[
+            dict[str, Any],
+            dict[str, Any],
+            dict[str, Any],
+            Optional[UniqueConstraintResolutionSignature],
+        ]
     ]:
         """
         Generator used to extract uniqueness constraints from document model setting
@@ -830,7 +839,7 @@ class BaseDocumentService(
 
         Yields
         ------
-        Iterator[dict[str, Any], dict[str, Any], Optional[UniqueConstraintResolutionSignature]]
+        Iterator[dict[str, Any], dict[str, Any], dict[str, Any] Optional[UniqueConstraintResolutionSignature]]
             List of tuples used to construct unique constraint validations
         """
         doc_dict = document.dict(by_alias=True)

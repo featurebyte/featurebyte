@@ -115,7 +115,8 @@ class BatchFeatureCreator:
         """
         saved_feature_ids = set()
         async for doc in self.feature_service.list_documents_as_dict_iterator(
-            query_filter={"_id": {"$in": feature_ids}}
+            query_filter={"_id": {"$in": feature_ids}},
+            projection={"_id": 1},
         ):
             saved_feature_ids.add(doc["_id"])
         return saved_feature_ids

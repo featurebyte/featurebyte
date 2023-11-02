@@ -187,7 +187,8 @@ class RelationshipService(OpsServiceMixin):
             # update all objects which have child_id in their ancestor_ids
             query_filter = {"ancestor_ids": {"$in": [child_id]}}
             async for obj in self.document_service.list_documents_as_dict_iterator(
-                query_filter=query_filter
+                query_filter=query_filter,
+                projection={"_id": 1, "ancestor_ids": 1, "parents": 1},
             ):
                 await self.document_service.update_document(
                     document_id=obj["_id"],

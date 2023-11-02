@@ -84,7 +84,7 @@ class OnlineStoreComputeQueryService(
             If there is no document with the given result_name
         """
         query_filter = {"result_name": result_name}
-        async for doc in self.list_documents_as_dict_iterator(query_filter):
+        async for doc in self.list_documents_as_dict_iterator(query_filter, projection={"_id": 1}):
             document_id = doc["_id"]
             break
         else:

@@ -304,10 +304,12 @@ class FeatureManagerService:
             },
         }
         aggregation_result_names_still_in_use = set()
-        async for feature_model in self.feature_service.list_documents_as_dict_iterator(
-            query_filter=query_filter
+        async for feature_doc in self.feature_service.list_documents_as_dict_iterator(
+            query_filter=query_filter,
+            projection={"aggregation_result_names": 1},
         ):
-            aggregation_result_names_still_in_use.update(feature_model["aggregation_result_names"])
+            aggregation_result_names_still_in_use.update(feature_doc["aggregation_result_names"])
+
         for result_name in aggregation_result_names:
             if result_name not in aggregation_result_names_still_in_use:
                 try:
@@ -338,10 +340,12 @@ class FeatureManagerService:
             },
         }
         online_store_table_names_still_in_use = set()
-        async for feature_model in self.feature_service.list_documents_as_dict_iterator(
-            query_filter=query_filter
+        async for feature_doc in self.feature_service.list_documents_as_dict_iterator(
+            query_filter=query_filter,
+            projection={"online_store_table_names": 1},
         ):
-            online_store_table_names_still_in_use.update(feature_model["online_store_table_names"])
+            online_store_table_names_still_in_use.update(feature_doc["online_store_table_names"])
+
         for table_name in online_store_table_names:
             if table_name not in online_store_table_names_still_in_use:
                 await self.online_store_cleanup_scheduler_service.stop_job(table_name)

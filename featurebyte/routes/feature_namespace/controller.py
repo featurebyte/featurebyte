@@ -98,7 +98,8 @@ class FeatureNamespaceController(
         feature_id_to_primary_table_ids = {}
         feature_id_to_primary_entity_ids = {}
         async for feature in self.feature_service.list_documents_as_dict_iterator(
-            query_filter={"_id": {"$in": list(default_feature_ids)}}
+            query_filter={"_id": {"$in": list(default_feature_ids)}},
+            projection={"primary_table_ids": 1, "primary_entity_ids": 1},
         ):
             feature_id_to_primary_table_ids[feature["_id"]] = feature["primary_table_ids"]
             feature_id_to_primary_entity_ids[feature["_id"]] = feature["primary_entity_ids"]

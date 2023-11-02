@@ -43,7 +43,9 @@ class OnlineStoreTableVersionService(
             Version of the OnlineStoreTableVersion
         """
         query_filter = {"aggregation_result_name": aggregation_result_name}
-        async for doc in self.list_documents_as_dict_iterator(query_filter):
+        async for doc in self.list_documents_as_dict_iterator(
+            query_filter, projection={"version": 1}
+        ):
             return int(doc["version"])
         return None
 
@@ -63,7 +65,9 @@ class OnlineStoreTableVersionService(
         """
         query_filter = {"aggregation_result_name": {"$in": aggregation_result_names}}
         out = {}
-        async for doc in self.list_documents_as_dict_iterator(query_filter):
+        async for doc in self.list_documents_as_dict_iterator(
+            query_filter, projection={"aggregation_result_name": 1, "version": 1}
+        ):
             out[doc["aggregation_result_name"]] = doc["version"]
         return out
 
@@ -85,7 +89,7 @@ class OnlineStoreTableVersionService(
         """
         query_filter = {"aggregation_result_name": aggregation_result_name}
         document_id = None
-        async for doc in self.list_documents_as_dict_iterator(query_filter):
+        async for doc in self.list_documents_as_dict_iterator(query_filter, projection={"_id": 1}):
             document_id = doc["_id"]
             break
         if document_id is None:

@@ -185,7 +185,8 @@ class FeatureFacadeService:
         max_readiness = FeatureReadiness(new_default_feature.readiness)
         version: Optional[str] = None
         async for feature_dict in self.feature_service.list_documents_as_dict_iterator(
-            query_filter={"_id": {"$in": feature_namespace.feature_ids}}
+            query_filter={"_id": {"$in": feature_namespace.feature_ids}},
+            projection={"_id": 1, "readiness": 1, "version": 1},
         ):
             max_readiness = max(max_readiness, FeatureReadiness(feature_dict["readiness"]))
             if feature_dict["readiness"] == max_readiness:
@@ -244,7 +245,8 @@ class FeatureFacadeService:
         if feature.feature_list_ids:
             feature_list_info = []
             async for feature_list in self.feature_list_service.list_documents_as_dict_iterator(
-                query_filter={"_id": {"$in": feature.feature_list_ids}}
+                query_filter={"_id": {"$in": feature.feature_list_ids}},
+                projection={"_id": 1, "name": 1, "version": 1},
             ):
                 feature_list_info.append(
                     {

@@ -338,6 +338,7 @@ class AllDeploymentController(
         with self.feature_list_service.allow_use_raw_query_filter():
             async for feature_list in self.feature_list_service.list_documents_as_dict_iterator(
                 query_filter={"_id": {"$in": list(feature_list_ids)}},
+                projection={"feature_ids": 1},
                 use_raw_query_filter=True,
             ):
                 feature_ids.update(set(feature_list["feature_ids"]))
