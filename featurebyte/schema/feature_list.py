@@ -109,12 +109,23 @@ class FeatureListModelResponse(FeatureListModel):
     is_default: bool
 
 
+class FeatureListPaginatedItem(FeatureListModelResponse):
+    """
+    Paginated item of FeatureList
+    """
+
+    # exclude this field from the response
+    internal_feature_clusters: Optional[List[Any]] = Field(
+        allow_mutation=False, alias="feature_clusters", exclude=True
+    )
+
+
 class FeatureListPaginatedList(PaginationMixin):
     """
     Paginated list of Entity
     """
 
-    data: List[FeatureListModelResponse]
+    data: List[FeatureListPaginatedItem]
 
 
 class FeatureListUpdate(FeatureByteBaseModel):

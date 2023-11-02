@@ -204,7 +204,9 @@ class BaseDocumentController(Generic[Document, DocumentServiceT, PaginatedDocume
             document_id=document_id
         )
         for service, query_filter in service_query_filter_pairs:
-            async for doc in service.list_documents_as_dict_iterator(query_filter=query_filter):
+            async for doc in service.list_documents_as_dict_iterator(
+                query_filter=query_filter, projection={"name": 1}
+            ):
                 raise exception_class(
                     f"{asset_class_name} is referenced by {service.class_name}: {doc['name']}"
                 )

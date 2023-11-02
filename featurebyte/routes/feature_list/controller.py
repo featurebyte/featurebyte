@@ -28,6 +28,7 @@ from featurebyte.schema.feature_list import (
     FeatureListGetHistoricalFeatures,
     FeatureListModelResponse,
     FeatureListNewVersionCreate,
+    FeatureListPaginatedItem,
     FeatureListPaginatedList,
     FeatureListPreview,
     FeatureListServiceCreate,
@@ -247,6 +248,7 @@ class FeatureListController(
             page_size=page_size,
             sort_by=sort_by,
             sort_dir=sort_dir,
+            projection={"feature_clusters": 0},  # exclude feature_clusters
             **params,
         )
 
@@ -256,7 +258,8 @@ class FeatureListController(
         }
         namespace_id_to_default_id = {}
         async for namespace in self.feature_list_namespace_service.list_documents_as_dict_iterator(
-            query_filter={"_id": {"$in": list(namespace_ids)}}
+            query_filter={"_id": {"$in": list(namespace_ids)}},
+            projection={"_id": 1, "default_feature_list_id": 1},
         ):
             namespace_id_to_default_id[namespace["_id"]] = namespace["default_feature_list_id"]
 
@@ -267,7 +270,7 @@ class FeatureListController(
                 feature_list["feature_list_namespace_id"]
             )
             output.append(
-                FeatureListModelResponse(
+                FeatureListPaginatedItem(
                     **feature_list,
                     is_default=default_feature_list_id == feature_list["_id"],
                 )

@@ -3,18 +3,7 @@ Persistent base class
 """
 from __future__ import annotations
 
-from typing import (
-    Any,
-    AsyncIterator,
-    Callable,
-    Dict,
-    Iterable,
-    List,
-    Literal,
-    Optional,
-    Tuple,
-    cast,
-)
+from typing import Any, AsyncIterator, Callable, Iterable, Literal, Optional, cast
 
 import copy
 from abc import ABC, abstractmethod
@@ -90,7 +79,7 @@ class Persistent(ABC):
         documents: Iterable[Document],
         user_id: Optional[ObjectId],  # pylint: disable=unused-argument
         disable_audit: bool = False,  # pylint: disable=unused-argument
-    ) -> List[ObjectId]:
+    ) -> list[ObjectId]:
         """
         Insert records into collection. Note that when using this method inside a non BaseDocumentService,
         please use with caution as it does not inject user_id and catalog_id into the document automatically.
@@ -108,7 +97,7 @@ class Persistent(ABC):
 
         Returns
         -------
-        List[ObjectId]
+        list[ObjectId]
             Ids of the inserted document
         """
         utc_now = get_utc_now()
@@ -121,6 +110,7 @@ class Persistent(ABC):
         self,
         collection_name: str,
         query_filter: QueryFilter,
+        projection: Optional[dict[str, Any]] = None,
         user_id: Optional[ObjectId] = None,  # pylint: disable=unused-argument
     ) -> Optional[Document]:  # pylint: disable=unused-argument
         """
@@ -133,6 +123,8 @@ class Persistent(ABC):
             Name of collection to use
         query_filter: QueryFilter
             Conditions to filter on
+        projection: Optional[dict[str, Any]]
+            Fields to project
         user_id: Optional[ObjectId]
             ID of user who performed this operation
 
@@ -141,18 +133,21 @@ class Persistent(ABC):
         Optional[Document]
             Retrieved document
         """
-        return await self._find_one(collection_name=collection_name, query_filter=query_filter)
+        return await self._find_one(
+            collection_name=collection_name, query_filter=query_filter, projection=projection
+        )
 
     async def find(
         self,
         collection_name: str,
         query_filter: QueryFilter,
+        projection: Optional[dict[str, Any]] = None,
         sort_by: Optional[str] = None,
         sort_dir: Optional[Literal["asc", "desc"]] = "asc",
         page: int = 1,
         page_size: int = 0,
         user_id: Optional[ObjectId] = None,  # pylint: disable=unused-argument
-    ) -> Tuple[Iterable[Document], int]:
+    ) -> tuple[Iterable[Document], int]:
         """
         Find all records from collection. Note that when using this method inside a non BaseDocumentService,
         please use with caution as it does not inject catalog_id into the query filter automatically.
@@ -163,6 +158,8 @@ class Persistent(ABC):
             Name of collection to use
         query_filter: QueryFilter
             Conditions to filter on
+        projection: Optional[dict[str, Any]]
+            Fields to project
         sort_by: Optional[str]
             Column to sort by
         sort_dir: Optional[Literal["asc", "desc"]]
@@ -176,12 +173,13 @@ class Persistent(ABC):
 
         Returns
         -------
-        Tuple[Iterable[Document], int]
+        tuple[Iterable[Document], int]
             Retrieved documents and total count
         """
         return await self._find(
             collection_name=collection_name,
             query_filter=query_filter,
+            projection=projection,
             sort_by=sort_by,
             sort_dir=sort_dir,
             page=page,
@@ -411,11 +409,12 @@ class Persistent(ABC):
         collection_name: str,
         document_id: ObjectId,
         query_filter: Optional[QueryFilter] = None,
+        projection: Optional[dict[str, Any]] = None,
         sort_by: Optional[str] = "_id",
         sort_dir: Optional[Literal["asc", "desc"]] = "desc",
         page: int = 1,
         page_size: int = 0,
-    ) -> Tuple[Iterable[Document], int]:
+    ) -> tuple[Iterable[Document], int]:
         """
         Retrieve audit records for a document
 
@@ -427,6 +426,8 @@ class Persistent(ABC):
             ID of document to use
         query_filter: Optional[QueryFilter]
             Conditions to filter on
+        projection: Optional[dict[str, Any]]
+            Fields to project
         sort_by: Optional[str]
             Column to sort by
         sort_dir: Optional[Literal["asc", "desc"]]
@@ -438,13 +439,14 @@ class Persistent(ABC):
 
         Returns
         -------
-        List[Document]
+        list[Document]
         """
         _query_filter = copy.deepcopy(query_filter) if query_filter else {}
         _query_filter["document_id"] = document_id
         return await self._find(
             collection_name=get_audit_collection_name(collection_name),
             query_filter=_query_filter,
+            projection=projection,
             sort_by=sort_by,
             sort_dir=sort_dir,
             page=page,
@@ -547,7 +549,7 @@ class Persistent(ABC):
         await self._replace_one(
             collection_name=collection_name,
             query_filter=query_filter,
-            replacement=migrate_func(cast(Dict[str, Any], document)),
+            replacement=migrate_func(cast(dict[str, Any], document)),
         )
 
     async def _migrate_audit_records(
@@ -625,12 +627,15 @@ class Persistent(ABC):
     @abstractmethod
     async def _insert_many(
         self, collection_name: str, documents: Iterable[Document]
-    ) -> List[ObjectId]:
+    ) -> list[ObjectId]:
         pass
 
     @abstractmethod
     async def _find_one(
-        self, collection_name: str, query_filter: QueryFilter
+        self,
+        collection_name: str,
+        query_filter: QueryFilter,
+        projection: Optional[dict[str, Any]] = None,
     ) -> Optional[Document]:
         pass
 
@@ -639,11 +644,12 @@ class Persistent(ABC):
         self,
         collection_name: str,
         query_filter: QueryFilter,
+        projection: Optional[dict[str, Any]] = None,
         sort_by: Optional[str] = None,
         sort_dir: Optional[Literal["asc", "desc"]] = "asc",
         page: int = 1,
         page_size: int = 0,
-    ) -> Tuple[Iterable[Document], int]:
+    ) -> tuple[Iterable[Document], int]:
         pass
 
     @abstractmethod

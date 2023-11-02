@@ -66,13 +66,15 @@ class ObservationTableDeleteValidator:
         reference_ids = [
             str(doc["_id"])
             async for doc in self.historical_feature_table_service.list_documents_as_dict_iterator(
-                query_filter={"observation_table_id": document.id}
+                query_filter={"observation_table_id": document.id},
+                projection={"_id": 1},
             )
         ]
         target_reference_ids = [
             str(doc["_id"])
             async for doc in self.target_table_service.list_documents_as_dict_iterator(
-                query_filter={"observation_table_id": document.id}
+                query_filter={"observation_table_id": document.id},
+                projection={"_id": 1},
             )
         ]
 
@@ -80,7 +82,8 @@ class ObservationTableDeleteValidator:
         use_case_ids = [
             str(doc["_id"])
             async for doc in self.use_case_service.list_documents_as_dict_iterator(
-                query_filter={"_id": {"$in": document.use_case_ids}}
+                query_filter={"_id": {"$in": document.use_case_ids}},
+                projection={"_id": 1},
             )
         ]
 
@@ -135,7 +138,8 @@ async def check_delete_batch_request_table(
     reference_ids = [
         str(doc["_id"])
         async for doc in batch_feature_table_service.list_documents_as_dict_iterator(
-            query_filter={"batch_request_table_id": document.id}
+            query_filter={"batch_request_table_id": document.id},
+            projection={"_id": 1},
         )
     ]
     if reference_ids:
@@ -181,7 +185,8 @@ async def check_delete_static_source_table(
     reference_ids = [
         str(doc["_id"])
         async for doc in table_service.list_documents_as_dict_iterator(
-            query_filter={"tabular_source": document.location.dict()}
+            query_filter={"tabular_source": document.location.dict()},
+            projection={"_id": 1},
         )
     ]
     if reference_ids:

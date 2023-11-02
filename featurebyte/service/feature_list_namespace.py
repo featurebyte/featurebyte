@@ -88,7 +88,8 @@ class FeatureListNamespaceService(
         # get default feature ids
         feat_namespace_to_default_id = {}
         async for feat_namespace in self.feature_namespace_service.list_documents_as_dict_iterator(
-            query_filter={"_id": {"$in": namespace.feature_namespace_ids}}
+            query_filter={"_id": {"$in": namespace.feature_namespace_ids}},
+            projection={"_id": 1, "default_feature_id": 1},
         ):
             feat_namespace_to_default_id[feat_namespace["_id"]] = feat_namespace[
                 "default_feature_id"

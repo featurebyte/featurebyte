@@ -267,6 +267,7 @@ class BaseDocumentService(
         document_id: ObjectId,
         exception_detail: str | None = None,
         use_raw_query_filter: bool = False,
+        projection: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
     ) -> Dict[str, Any]:
         """
@@ -280,6 +281,8 @@ class BaseDocumentService(
             Exception detail message
         use_raw_query_filter: bool
             Use only provided query filter
+        projection: Optional[Dict[str, Any]]
+            Project fields to return from the query
         kwargs: Any
             Additional keyword arguments
 
@@ -298,6 +301,7 @@ class BaseDocumentService(
         document_dict = await self.persistent.find_one(
             collection_name=self.collection_name,
             query_filter=query_filter,
+            projection=projection,
             user_id=self.user.id,
         )
         if document_dict is None:
@@ -448,6 +452,7 @@ class BaseDocumentService(
         sort_by: str | None = "created_at",
         sort_dir: SortDir = "desc",
         use_raw_query_filter: bool = False,
+        projection: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
     ) -> dict[str, Any]:
         """
@@ -465,6 +470,8 @@ class BaseDocumentService(
             Sorting the returning documents in ascending order or descending order
         use_raw_query_filter: bool
             Use only provided query filter
+        projection: Optional[Dict[str, Any]]
+            Project fields to return from the query
         kwargs: Any
             Additional keyword arguments
 
@@ -485,6 +492,7 @@ class BaseDocumentService(
             docs, total = await self.persistent.find(
                 collection_name=self.collection_name,
                 query_filter=query_filter,
+                projection=projection,
                 sort_by=sort_by,
                 sort_dir=sort_dir,
                 page=page,
@@ -498,6 +506,7 @@ class BaseDocumentService(
     async def list_documents_as_dict_iterator(
         self,
         query_filter: QueryFilter,
+        projection: Optional[Dict[str, Any]] = None,
         page_size: int = DEFAULT_PAGE_SIZE,
         use_raw_query_filter: bool = False,
     ) -> AsyncIterator[Dict[str, Any]]:
@@ -508,6 +517,8 @@ class BaseDocumentService(
         ----------
         query_filter: QueryFilter
             Query filter
+        projection: Optional[Dict[str, Any]]
+            Project fields to return from the query
         page_size: int
             Page size
         use_raw_query_filter: bool
@@ -525,6 +536,7 @@ class BaseDocumentService(
                 page=page,
                 page_size=page_size,
                 query_filter=query_filter,
+                projection=projection,
                 use_raw_query_filter=use_raw_query_filter,
             )
             for doc in list_results["data"]:
@@ -759,6 +771,7 @@ class BaseDocumentService(
     async def _check_document_unique_constraint(
         self,
         query_filter: QueryFilter,
+        projection: Dict[str, Any],
         conflict_signature: dict[str, Any],
         resolution_signature: UniqueConstraintResolutionSignature | None,
     ) -> None:
@@ -769,6 +782,8 @@ class BaseDocumentService(
         ----------
         query_filter: QueryFilter
             Query filter that will be passed to persistent
+        projection: Dict[str, Any]
+            Projection fields to return from the query
         conflict_signature: dict[str, Any]
             Document representation that shows user the conflict fields
         resolution_signature: UniqueConstraintResolutionSignature | None
@@ -786,6 +801,7 @@ class BaseDocumentService(
         conflict_doc = await self.persistent.find_one(
             collection_name=self.collection_name,
             query_filter=query_filter,
+            projection=projection,
             user_id=self.user.id,
         )
         if conflict_doc:
@@ -802,7 +818,12 @@ class BaseDocumentService(
         document_class: Union[Type[Document], Type[DocumentUpdateSchema]],
         original_document: Optional[FeatureByteBaseDocumentModel],
     ) -> Iterator[
-        tuple[dict[str, Any], dict[str, Any], Optional[UniqueConstraintResolutionSignature]]
+        tuple[
+            dict[str, Any],
+            dict[str, Any],
+            dict[str, Any],
+            Optional[UniqueConstraintResolutionSignature],
+        ]
     ]:
         """
         Generator used to extract uniqueness constraints from document model setting
@@ -818,21 +839,28 @@ class BaseDocumentService(
 
         Yields
         ------
-        Iterator[dict[str, Any], dict[str, Any], Optional[UniqueConstraintResolutionSignature]]
+        Iterator[dict[str, Any], dict[str, Any], dict[str, Any] Optional[UniqueConstraintResolutionSignature]]
             List of tuples used to construct unique constraint validations
         """
         doc_dict = document.dict(by_alias=True)
         original_dict = original_document.dict(by_alias=True) if original_document else None
         for constraint in document_class.Settings.unique_constraints:
             query_filter = {field: doc_dict[field] for field in constraint.fields}
+
+            # default projection will only include _id, name, type (if exists)
+            projection = {"_id": 1, "name": 1, "type": 1}
             if original_dict:
                 # skip checking if the original document value are the same with the updated one
                 original_value = {field: original_dict[field] for field in constraint.fields}
                 if original_value == query_filter:
                     continue
 
+                # update projection to include query filter fields
+                projection.update({field: 1 for field in constraint.fields})
+
             if constraint.extra_query_params is not None:
                 query_filter.update(constraint.extra_query_params)
+                projection.update({field: 1 for field in constraint.extra_query_params})
 
             conflict_signature = {
                 name: get_field_path_value(doc_dict, fields)
@@ -842,7 +870,7 @@ class BaseDocumentService(
                 conflict_signature["version"] = VersionIdentifier(
                     **conflict_signature["version"]
                 ).to_str()
-            yield query_filter, conflict_signature, constraint.resolution_signature
+            yield query_filter, projection, conflict_signature, constraint.resolution_signature
 
     async def _check_document_unique_constraints(
         self,
@@ -862,13 +890,19 @@ class BaseDocumentService(
         original_document: Optional[FeatureByteBaseDocumentModel]
             Original document before update (provide when checking document update conflict)
         """
-        for query_filter, conflict_signature, resolution_signature in self._get_unique_constraints(
+        for (
+            query_filter,
+            projection,
+            conflict_signature,
+            resolution_signature,
+        ) in self._get_unique_constraints(
             document=document,
             document_class=document_class or self.document_class,
             original_document=original_document,
         ):
             await self._check_document_unique_constraint(
                 query_filter=query_filter,
+                projection=projection,
                 conflict_signature=conflict_signature,
                 resolution_signature=resolution_signature,
             )

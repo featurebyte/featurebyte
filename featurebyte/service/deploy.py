@@ -166,7 +166,7 @@ class DeployService(OpsServiceMixin):
             # if enabling deployment, check is there any feature with readiness not equal to production ready
             query_filter = {"_id": {"$in": feature_list.feature_ids}}
             async for feature in self.feature_service.list_documents_as_dict_iterator(
-                query_filter=query_filter
+                query_filter=query_filter, projection={"readiness": 1}
             ):
                 if FeatureReadiness(feature["readiness"]) != FeatureReadiness.PRODUCTION_READY:
                     raise DocumentUpdateError(

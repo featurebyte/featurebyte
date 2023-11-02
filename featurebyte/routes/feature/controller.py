@@ -258,7 +258,8 @@ class FeatureController(
         namespace_ids = {document["feature_namespace_id"] for document in document_data["data"]}
         namespace_id_to_default_id = {}
         async for namespace in self.feature_namespace_service.list_documents_as_dict_iterator(
-            query_filter={"_id": {"$in": list(namespace_ids)}}
+            query_filter={"_id": {"$in": list(namespace_ids)}},
+            projection={"_id": 1, "default_feature_id": 1},
         ):
             namespace_id_to_default_id[namespace["_id"]] = namespace["default_feature_id"]
 
@@ -324,15 +325,13 @@ class FeatureController(
         InfoDocument
         """
         feature = await self.service.get_document(document_id=document_id)
-        catalog = await self.catalog_service.get_document(feature.catalog_id)
-        data_id_to_doc = {}
-        async for doc in self.table_service.list_documents_as_dict_iterator(
-            query_filter={"_id": {"$in": feature.table_ids}}
-        ):
-            doc["catalog_name"] = catalog.name
-            data_id_to_doc[doc["_id"]] = doc
-
-        data_id_to_name = {key: value["name"] for key, value in data_id_to_doc.items()}
+        data_id_to_name = {
+            doc["_id"]: doc["name"]
+            async for doc in self.table_service.list_documents_as_dict_iterator(
+                query_filter={"_id": {"$in": feature.table_ids}},
+                projection={"_id": 1, "name": 1},
+            )
+        }
         namespace_info = await self.feature_namespace_controller.get_info(
             document_id=feature.feature_namespace_id,
             verbose=verbose,

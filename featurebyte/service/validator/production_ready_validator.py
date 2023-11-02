@@ -133,7 +133,7 @@ class ProductionReadyValidator:
             "readiness": FeatureReadiness.PRODUCTION_READY.value,
         }
         async for feature in self.feature_service.list_documents_as_dict_iterator(
-            query_filter=query_filter
+            query_filter=query_filter, projection={"_id": 1}
         ):
             feature_id = feature["_id"]
             if feature_id != promoted_feature.id:

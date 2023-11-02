@@ -138,6 +138,7 @@ async def test_check_document_creation_conflict(
             block_modification_handler=BlockModificationHandler(),
         )._check_document_unique_constraint(
             query_filter=query_filter,
+            projection={"_id": 1, "name": 1},  # not used
             conflict_signature=conflict_signature,
             resolution_signature=resolution_signature,
         )

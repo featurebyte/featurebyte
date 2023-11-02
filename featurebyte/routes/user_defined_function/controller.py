@@ -238,6 +238,7 @@ class UserDefinedFunctionController(
         features_info: List[UserDefinedFunctionFeatureInfo] = []
         features = await self.feature_service.list_documents_as_dict(
             query_filter={"user_defined_function_ids": {"$in": [document_id]}},
+            projection={"_id": 1, "name": 1},
         )
         if features["total"]:
             for doc in features["data"]:
