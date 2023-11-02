@@ -172,7 +172,7 @@ class DatabricksAdapter(BaseAdapter):
     @classmethod
     def convert_to_utc_timestamp(cls, timestamp_expr: Expression) -> Expression:
         # timestamps do not have timezone information
-        return timestamp_expr
+        return expressions.Cast(this=timestamp_expr, to=expressions.DataType.build("TIMESTAMP"))
 
     @classmethod
     def current_timestamp(cls) -> Expression:

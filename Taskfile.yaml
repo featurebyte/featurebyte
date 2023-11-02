@@ -356,6 +356,8 @@ tasks:
 
   test-teardown:
     desc: "Teardown the test environment"
+    env:
+      SPARK_VERSION: '{{default "3.3.1"}}'
     preconditions:
       - sh: docker compose ls | grep 'featurebyte-test'
         msg: "Test environment is not running."
