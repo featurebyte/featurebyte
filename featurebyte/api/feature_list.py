@@ -38,6 +38,8 @@ from featurebyte.api.feature_job import FeatureJobMixin, FeatureJobStatusResult
 from featurebyte.api.historical_feature_table import HistoricalFeatureTable
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.savable_api_object import DeletableApiObject, SavableApiObject
+from featurebyte.api.templates.doc_util import substitute_docstring
+from featurebyte.api.templates.feature_or_target_doc import PRIMARY_ENTITY_DOC
 from featurebyte.api.use_case import UseCase
 from featurebyte.common.descriptor import ClassInstanceMethodDescriptor
 from featurebyte.common.doc_util import FBAutoDoc
@@ -139,13 +141,13 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
         "online_frac",
         "tables",
         "entities",
-        "primary_entities",
+        "primary_entity",
         "created_at",
     ]
     _list_foreign_keys = [
         ForeignKeyMapping("entity_ids", Entity, "entities"),
         ForeignKeyMapping("table_ids", TableApiObject, "tables"),
-        ForeignKeyMapping("primary_entity_ids", Entity, "primary_entities"),
+        ForeignKeyMapping("primary_entity_ids", Entity, "primary_entity"),
     ]
 
     @property
@@ -250,9 +252,7 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
         target_entities = convert_to_list_of_strings(primary_entity)
         if target_entities:
             feature_lists = feature_lists[
-                feature_lists.primary_entities.apply(
-                    lambda primary_entities: set(target_entities).issubset(primary_entities)
-                )
+                feature_lists.primary_entity.apply(lambda ent: set(target_entities).issubset(ent))
             ]
         if entity:
             feature_lists = feature_lists[
@@ -381,6 +381,16 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
             return cast(FeatureListModel, self.cached_model).catalog_id
         except RecordRetrievalException:
             return self.internal_catalog_id
+
+    @property
+    @substitute_docstring(
+        doc_template=PRIMARY_ENTITY_DOC, format_kwargs={"class_name": "FeatureList"}
+    )
+    def primary_entity(self) -> List[Entity]:
+        if self.saved:
+            primary_entity_ids = self.cached_model.primary_entity_ids  # type: ignore
+            return [Entity.get_by_id(entity_id) for entity_id in primary_entity_ids]
+        return super().primary_entity
 
     def _get_init_params_from_object(self) -> dict[str, Any]:
         return {"items": self.items}
@@ -1022,9 +1032,9 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         Examples
         --------
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
-        >>> display_columns = ["name", "version", "dtype", "primary_tables", "primary_entities"]
+        >>> display_columns = ["name", "version", "dtype", "primary_tables", "primary_entity"]
         >>> feature_list.list_features().sort_values("created_at")[display_columns]  # doctest: +SKIP
-                          name  version  dtype    primary_tables   primary_entities
+                          name  version  dtype    primary_tables   primary_entity
         0  InvoiceCount_60days  V230330  FLOAT  [GROCERYINVOICE]  [grocerycustomer]
 
         See Also
