@@ -126,7 +126,10 @@ class ObservationTableController(
                 "Only csv and parquet file formats are supported for observation set upload"
             )
         payload = await self.service.get_observation_table_upload_task_payload(
-            data=data, observation_set_dataframe=observation_set_dataframe, file_format=file_format
+            data=data,
+            observation_set_dataframe=observation_set_dataframe,
+            file_format=file_format,
+            uploaded_file_name=observation_set_file.filename,
         )
         task_id = await self.task_manager.submit(payload=payload)
         return await self.task_controller.get_task(task_id=str(task_id))
