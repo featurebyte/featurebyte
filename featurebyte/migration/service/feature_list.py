@@ -17,12 +17,11 @@ from featurebyte.service.feature_list import FeatureListService
 logger = get_logger(__name__)
 
 
-class FeatureListMigrationServiceV5(BaseMongoCollectionMigration):
+class BaseFeatureListMigrationService(BaseMongoCollectionMigration):
     """
-    FeatureListMigrationService class
+    BaseFeatureListMigrationService class
 
-    This class is used to migrate the feature list records to add
-    relationships_info and supported_serving_entity_ids fields.
+    This class is used to migrate the feature list records.
     """
 
     # skip audit migration for this migration
@@ -42,7 +41,18 @@ class FeatureListMigrationServiceV5(BaseMongoCollectionMigration):
     def delegate_service(self) -> BaseDocumentServiceT:
         return self.feature_list_service  # type: ignore[return-value]
 
-    async def batch_preprocess_document_v5(self, documents: List[Document]) -> List[Document]:
+
+class FeatureListMigrationServiceV5(BaseFeatureListMigrationService):
+    """
+    FeatureListMigrationService class
+
+    This class is used to migrate the feature list records to add following fields:
+    - relationships_info
+    - supported_serving_entity_ids
+    - primary_entity_ids
+    """
+
+    async def batch_preprocess_document(self, documents: List[Document]) -> List[Document]:
         """
         Preprocess the documents before migration
 
@@ -93,7 +103,7 @@ class FeatureListMigrationServiceV5(BaseMongoCollectionMigration):
         # migrate all records and audit records
         await self.migrate_all_records(
             query_filter=query_filter,
-            batch_preprocess_document_func=self.batch_preprocess_document_v5,
+            batch_preprocess_document_func=self.batch_preprocess_document,
         )
 
         # check the sample records after migration
@@ -111,7 +121,18 @@ class FeatureListMigrationServiceV5(BaseMongoCollectionMigration):
 
         logger.info("Migrated all records successfully (total: %d)", total_after)
 
-    async def batch_preprocess_document_v6(self, documents: List[Document]) -> List[Document]:
+
+class FeatureListMigrationServiceV6(BaseFeatureListMigrationService):
+    """
+    FeatureListMigrationService class
+
+    This class is used to migrate the feature list records to add following fields:
+    - dtype_distribution
+    - features_primary_entity_ids
+    - entity_ids
+    """
+
+    async def batch_preprocess_document(self, documents: List[Document]) -> List[Document]:
         """
         Preprocess the documents before migration
 
@@ -156,7 +177,7 @@ class FeatureListMigrationServiceV5(BaseMongoCollectionMigration):
         # migrate all records and audit records
         await self.migrate_all_records(
             query_filter=query_filter,
-            batch_preprocess_document_func=self.batch_preprocess_document_v6,
+            batch_preprocess_document_func=self.batch_preprocess_document,
         )
 
         # check the sample records after migration

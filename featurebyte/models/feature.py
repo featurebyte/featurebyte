@@ -449,7 +449,13 @@ class FeatureModel(BaseFeatureModel):
 
         interpreter = GraphInterpreter(graph, feature_store_type)
         node = graph.get_node_by_name(node_name)
-        tile_infos = interpreter.construct_tile_gen_sql(node, is_on_demand=False)
+
+        try:
+            tile_infos = interpreter.construct_tile_gen_sql(node, is_on_demand=False)
+        except StopIteration:
+            # add a try except block here for the old features that may trigger StopIteration,
+            # in this case, we will not add tile related attributes
+            return values
 
         aggregation_ids = []
         for info in tile_infos:

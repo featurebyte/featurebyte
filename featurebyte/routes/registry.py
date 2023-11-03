@@ -11,7 +11,10 @@ from featurebyte.migration.service.data_warehouse import (
     TileColumnTypeExtractor,
 )
 from featurebyte.migration.service.feature import FeatureMigrationServiceV4
-from featurebyte.migration.service.feature_list import FeatureListMigrationServiceV5
+from featurebyte.migration.service.feature_list import (
+    FeatureListMigrationServiceV5,
+    FeatureListMigrationServiceV6,
+)
 from featurebyte.migration.service.mixin import DataWarehouseMigrationMixin
 from featurebyte.models.base import User
 from featurebyte.routes.app_container_config import AppContainerConfig
@@ -339,6 +342,7 @@ app_container_config.register_class(DataWarehouseMigrationServiceV1)
 app_container_config.register_class(DataWarehouseMigrationServiceV3)
 app_container_config.register_class(FeatureMigrationServiceV4)
 app_container_config.register_class(FeatureListMigrationServiceV5)
+app_container_config.register_class(FeatureListMigrationServiceV6)
 
 app_container_config.register_factory_method(get_storage)
 app_container_config.register_factory_method(get_redis, name_override="redis")
