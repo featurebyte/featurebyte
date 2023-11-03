@@ -526,7 +526,12 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
             features = values["features"]
             values["readiness_distribution"] = cls.derive_readiness_distribution(features)
             values["dtype_distribution"] = cls.derive_dtype_distribution(features)
-            values["feature_clusters"] = cls.derive_feature_clusters(features)
+            try:
+                values["feature_clusters"] = cls.derive_feature_clusters(features)
+            except StopIteration:
+                # add a try except block here for the old features that may trigger StopIteration,
+                # in this case, we will not add feature_clusters
+                pass
 
             # add other entity related attributes
             entity_ids = set()
