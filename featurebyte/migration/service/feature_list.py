@@ -3,9 +3,6 @@ Feature list migration service
 """
 from typing import Dict, List
 
-import sys
-import traceback
-
 from bson import ObjectId
 
 from featurebyte.logging import get_logger
