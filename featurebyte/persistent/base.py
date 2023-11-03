@@ -3,7 +3,7 @@ Persistent base class
 """
 from __future__ import annotations
 
-from typing import Any, AsyncIterator, Callable, Iterable, Literal, Optional, cast
+from typing import Any, AsyncIterator, Callable, Dict, Iterable, Literal, Optional, cast
 
 import copy
 from abc import ABC, abstractmethod
@@ -549,7 +549,7 @@ class Persistent(ABC):
         await self._replace_one(
             collection_name=collection_name,
             query_filter=query_filter,
-            replacement=migrate_func(cast(dict[str, Any], document)),
+            replacement=migrate_func(cast(Dict[str, Any], document)),
         )
 
     async def _migrate_audit_records(
