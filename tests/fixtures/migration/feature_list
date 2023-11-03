@@ -13,8 +13,6 @@
     "updated_at": {
       "$date": "2023-07-07T00:35:14.724Z"
     },
-    "block_modification_by": [],
-    "description": null,
     "catalog_id": {
       "$oid": "64708919ea4c4876a77d2b80"
     },
@@ -22,42 +20,6 @@
       "name": "V230601",
       "suffix": null
     },
-    "relationships_info": [
-      {
-        "_id": {
-          "$oid": "6470893ddc5e0118a048d53a"
-        },
-        "relationship_type": "child_parent",
-        "entity_id": {
-          "$oid": "64708934ea4c4876a77d2b86"
-        },
-        "related_entity_id": {
-          "$oid": "64708932ea4c4876a77d2b85"
-        },
-        "relation_table_id": {
-          "$oid": "6470891bea4c4876a77d2b81"
-        }
-      }
-    ],
-    "supported_serving_entity_ids": [
-      [
-        {
-          "$oid": "64708932ea4c4876a77d2b85"
-        }
-      ],
-      [
-        {
-          "$oid": "64708934ea4c4876a77d2b86"
-        }
-      ]
-    ],
-    "readiness_distribution": [
-      {
-        "readiness": "PRODUCTION_READY",
-        "count": 1
-      }
-    ],
-    "deployed": false,
     "feature_clusters": [
       {
         "feature_store_id": {
@@ -478,6 +440,60 @@
         ]
       }
     ],
+    "relationships_info": [
+      {
+        "_id": {
+          "$oid": "6470894ddc5e0118a048d546"
+        },
+        "relationship_type": "child_parent",
+        "entity_id": {
+          "$oid": "64708932ea4c4876a77d2b85"
+        },
+        "related_entity_id": {
+          "$oid": "64708937ea4c4876a77d2b89"
+        },
+        "relation_table_id": {
+          "$oid": "64708925ea4c4876a77d2b83"
+        }
+      },
+      {
+        "_id": {
+          "$oid": "6470894ddc5e0118a048d540"
+        },
+        "relationship_type": "child_parent",
+        "entity_id": {
+          "$oid": "64708932ea4c4876a77d2b85"
+        },
+        "related_entity_id": {
+          "$oid": "64708936ea4c4876a77d2b88"
+        },
+        "relation_table_id": {
+          "$oid": "64708925ea4c4876a77d2b83"
+        }
+      },
+      {
+        "_id": {
+          "$oid": "6470893ddc5e0118a048d53a"
+        },
+        "relationship_type": "child_parent",
+        "entity_id": {
+          "$oid": "64708934ea4c4876a77d2b86"
+        },
+        "related_entity_id": {
+          "$oid": "64708932ea4c4876a77d2b85"
+        },
+        "relation_table_id": {
+          "$oid": "6470891bea4c4876a77d2b81"
+        }
+      }
+    ],
+    "readiness_distribution": [
+      {
+        "readiness": "PRODUCTION_READY",
+        "count": 1
+      }
+    ],
+    "deployed": false,
     "feature_ids": [
       {
         "$oid": "64776cc85c0291fd4ffbebb8"
