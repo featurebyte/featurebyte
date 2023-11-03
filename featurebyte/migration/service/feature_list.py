@@ -129,7 +129,7 @@ class FeatureListMigrationServiceV5(BaseMongoCollectionMigration):
             all_feature_ids.update(document["feature_ids"])
 
         # get all feature first to reduce the number of queries
-        feature_id_to_feature: Dict[ObjectId, List[FeatureModel]] = {
+        feature_id_to_feature: Dict[ObjectId, FeatureModel] = {
             feature.id: feature
             async for feature in self.feature_service.list_documents_iterator(
                 query_filter={"_id": {"$in": list(all_feature_ids)}}
@@ -170,5 +170,7 @@ class FeatureListMigrationServiceV5(BaseMongoCollectionMigration):
         for doc in sample_docs_after:
             # after migration, dtype_distribution should not be empty
             assert doc["dtype_distribution"], doc["dtype_distribution"]
+            assert doc["features_primary_entity_ids"], doc["features_primary_entity_ids"]
+            assert set(doc["primary_entity_ids"]).issubset(doc["entity_ids"]), doc
 
         logger.info("Migrated all records successfully (total: %d)", total_after)
