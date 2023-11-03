@@ -471,6 +471,9 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
     readiness_distribution: FeatureReadinessDistribution = Field(
         allow_mutation=False, default_factory=list
     )
+    dtype_distribution: List[FeatureTypeFeatureCount] = Field(
+        allow_mutation=False, default_factory=list
+    )
     deployed: bool = Field(allow_mutation=False, default=False)
 
     # special handling for those attributes that are expensive to deserialize
@@ -512,8 +515,10 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         # "features" is not an attribute to the FeatureList model, when it appears in the input to
         # constructor, it is intended to be used to derive other feature-related attributes
         if "features" in values:
-            values["readiness_distribution"] = cls.derive_readiness_distribution(values["features"])
-            values["feature_clusters"] = cls.derive_feature_clusters(values["features"])
+            features = values["features"]
+            values["readiness_distribution"] = cls.derive_readiness_distribution(features)
+            values["dtype_distribution"] = cls.derive_dtype_distribution(features)
+            values["feature_clusters"] = cls.derive_feature_clusters(features)
             total_count = sum(
                 read_count.count for read_count in values["readiness_distribution"].__root__
             )
@@ -546,6 +551,28 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
                 for readiness, count in readiness_count_map.items()
             ]
         )
+
+    @staticmethod
+    def derive_dtype_distribution(features: List[FeatureModel]) -> List[FeatureTypeFeatureCount]:
+        """
+        Derive feature table type distribution from features
+
+        Parameters
+        ----------
+        features: List[FeatureModel]
+            List of features
+
+        Returns
+        -------
+        List[FeatureTypeFeatureCount]
+        """
+        dtype_count_map: dict[DBVarType, int] = defaultdict(int)
+        for feature in features:
+            dtype_count_map[feature.dtype] += 1
+        return [
+            FeatureTypeFeatureCount(dtype=dtype, count=count)
+            for dtype, count in dtype_count_map.items()
+        ]
 
     @staticmethod
     def derive_feature_clusters(features: List[FeatureModel]) -> List[FeatureCluster]:

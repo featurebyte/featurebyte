@@ -77,6 +77,7 @@ def test_feature_list_model(feature_list_model_dict):
         key: sorted(value) if key.endswith("_ids") and key != "feature_ids" else value
         for key, value in feature_list_model_dict.items()
     }
+    feature_list_dict_sorted_ids["dtype_distribution"] = []
     assert serialized_feature_list == feature_list_dict_sorted_ids
 
     feature_list_json = feature_list.json(by_alias=True)
