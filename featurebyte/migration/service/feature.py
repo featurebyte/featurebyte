@@ -1,7 +1,7 @@
 """
 Feature migration service
 """
-from typing import Any, Dict, List
+from typing import Dict, List
 
 from bson import ObjectId
 
@@ -89,21 +89,6 @@ class FeatureMigrationServiceV4(BaseMongoCollectionMigration):
                 relationship.dict(by_alias=True) for relationship in relationships_info
             ]
         return documents
-
-    def migrate_document_record(self, record: Dict[str, Any]) -> Dict[str, Any]:
-        try:
-            output = super().migrate_document_record(record)
-            return output
-        except Exception as exc:  # pylint: disable=broad-except
-            # for some bad records, we just log the error and return the original record
-            # so that the migration can continue
-            logger.info(
-                "Record (id: %s, name: %s) encountered error: %s",
-                record["_id"],
-                record["name"],
-                str(exc),
-            )
-            return record
 
     @migrate(version=4, description="Add primary_entity_ids & relationships_info to feature record")
     async def add_primary_entity_ids_and_relationships_info(self) -> None:

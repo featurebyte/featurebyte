@@ -177,7 +177,13 @@ async def catalog_specific_migration_method_constructor(
 
         # wait for all the tasks to finish
         if tasks:
-            await asyncio.wait(tasks)
+            done, pending = await asyncio.wait(tasks)
+            # make sure all the tasks are done
+            assert pending == set()
+
+            # check whether any of the tasks failed
+            for task in done:
+                task.result()
 
     return migration_marker(decorated_migrate_method)
 

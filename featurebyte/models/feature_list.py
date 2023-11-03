@@ -471,6 +471,9 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
     readiness_distribution: FeatureReadinessDistribution = Field(
         allow_mutation=False, default_factory=list
     )
+    dtype_distribution: List[FeatureTypeFeatureCount] = Field(
+        allow_mutation=False, default_factory=list
+    )
     deployed: bool = Field(allow_mutation=False, default=False)
 
     # special handling for those attributes that are expensive to deserialize
@@ -483,6 +486,10 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
     # list of IDs attached to this feature list
     feature_ids: List[PydanticObjectId]
     primary_entity_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
+    entity_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
+    features_primary_entity_ids: List[List[PydanticObjectId]] = Field(
+        allow_mutation=False, default_factory=list
+    )
     feature_list_namespace_id: PydanticObjectId = Field(
         allow_mutation=False, default_factory=ObjectId
     )
@@ -492,7 +499,11 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
 
     # pydantic validators
     _sort_ids_validator = validator(
-        "online_enabled_feature_ids", "primary_entity_ids", allow_reuse=True
+        "online_enabled_feature_ids",
+        "features_primary_entity_ids",
+        "primary_entity_ids",
+        "entity_ids",
+        allow_reuse=True,
     )(construct_sort_validator())
     _version_validator = validator("version", pre=True, allow_reuse=True)(version_validator)
 
@@ -512,8 +523,27 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         # "features" is not an attribute to the FeatureList model, when it appears in the input to
         # constructor, it is intended to be used to derive other feature-related attributes
         if "features" in values:
-            values["readiness_distribution"] = cls.derive_readiness_distribution(values["features"])
-            values["feature_clusters"] = cls.derive_feature_clusters(values["features"])
+            features = values["features"]
+            values["readiness_distribution"] = cls.derive_readiness_distribution(features)
+            values["dtype_distribution"] = cls.derive_dtype_distribution(features)
+            try:
+                values["feature_clusters"] = cls.derive_feature_clusters(features)
+            except StopIteration:
+                # add a try except block here for the old features that may trigger StopIteration,
+                # in this case, we will not add feature_clusters
+                pass
+
+            # add other entity related attributes
+            entity_ids = set()
+            features_primary_entity_ids = set()
+            for feature in features:
+                entity_ids.update(feature.entity_ids)
+                features_primary_entity_ids.add(tuple(feature.primary_entity_ids))
+
+            values["entity_ids"] = sorted(entity_ids)
+            values["features_primary_entity_ids"] = sorted(features_primary_entity_ids)
+
+            # some sanity check
             total_count = sum(
                 read_count.count for read_count in values["readiness_distribution"].__root__
             )
@@ -546,6 +576,28 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
                 for readiness, count in readiness_count_map.items()
             ]
         )
+
+    @staticmethod
+    def derive_dtype_distribution(features: List[FeatureModel]) -> List[FeatureTypeFeatureCount]:
+        """
+        Derive feature table type distribution from features
+
+        Parameters
+        ----------
+        features: List[FeatureModel]
+            List of features
+
+        Returns
+        -------
+        List[FeatureTypeFeatureCount]
+        """
+        dtype_count_map: dict[DBVarType, int] = defaultdict(int)
+        for feature in features:
+            dtype_count_map[feature.dtype] += 1
+        return [
+            FeatureTypeFeatureCount(dtype=dtype, count=count)
+            for dtype, count in dtype_count_map.items()
+        ]
 
     @staticmethod
     def derive_feature_clusters(features: List[FeatureModel]) -> List[FeatureCluster]:
