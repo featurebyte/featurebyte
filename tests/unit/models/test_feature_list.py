@@ -80,6 +80,7 @@ def test_feature_list_model(feature_list_model_dict):
     feature_list_dict_sorted_ids["dtype_distribution"] = []
     feature_list_dict_sorted_ids["entity_ids"] = []
     feature_list_dict_sorted_ids["features_primary_entity_ids"] = []
+    feature_list_dict_sorted_ids["table_ids"] = []
     assert serialized_feature_list == feature_list_dict_sorted_ids
 
     feature_list_json = feature_list.json(by_alias=True)
