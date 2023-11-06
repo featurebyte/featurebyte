@@ -3,8 +3,9 @@ FeatureList API route controller
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Literal, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Set, Union
 
+import copy
 from http import HTTPStatus
 
 from bson.objectid import ObjectId
@@ -19,7 +20,8 @@ from featurebyte.exception import (
 )
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.base import VersionIdentifier
-from featurebyte.models.feature_list import FeatureListModel
+from featurebyte.models.feature_list import FeatureListModel, FeatureReadinessDistribution
+from featurebyte.routes.catalog.catalog_name_injector import CatalogNameInjector
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.feature_list import (
@@ -36,7 +38,12 @@ from featurebyte.schema.feature_list import (
     FeatureListUpdate,
     SampleEntityServingNames,
 )
-from featurebyte.schema.info import FeatureListInfo
+from featurebyte.schema.info import (
+    EntityBriefInfoList,
+    FeatureListBriefInfoList,
+    FeatureListInfo,
+    TableBriefInfoList,
+)
 from featurebyte.schema.task import Task
 from featurebyte.schema.worker.task.feature_list_batch_feature_create import (
     FeatureListCreateWithBatchFeatureCreationTaskPayload,
@@ -44,12 +51,14 @@ from featurebyte.schema.worker.task.feature_list_batch_feature_create import (
 from featurebyte.schema.worker.task.feature_list_make_production_ready import (
     FeatureListMakeProductionReadyTaskPayload,
 )
+from featurebyte.service.entity import EntityService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_facade import FeatureListFacadeService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_preview import FeaturePreviewService
 from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
+from featurebyte.service.table import TableService
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.service.tile_job_log import TileJobLogService
 
@@ -71,6 +80,9 @@ class FeatureListController(
         feature_list_facade_service: FeatureListFacadeService,
         feature_list_namespace_service: FeatureListNamespaceService,
         feature_service: FeatureService,
+        entity_service: EntityService,
+        table_service: TableService,
+        catalog_name_injector: CatalogNameInjector,
         feature_preview_service: FeaturePreviewService,
         tile_job_log_service: TileJobLogService,
         task_controller: TaskController,
@@ -80,6 +92,9 @@ class FeatureListController(
         self.feature_list_facade_service = feature_list_facade_service
         self.feature_list_namespace_service = feature_list_namespace_service
         self.feature_service = feature_service
+        self.entity_service = entity_service
+        self.table_service = table_service
+        self.catalog_name_injector = catalog_name_injector
         self.feature_preview_service = feature_preview_service
         self.tile_job_log_service = tile_job_log_service
         self.task_controller = task_controller
@@ -326,10 +341,103 @@ class FeatureListController(
         -------
         InfoDocument
         """
-        info_document = await self.service.get_feature_list_info(
-            document_id=document_id, verbose=verbose
+
+        def _to_version_str(version_dict: Optional[Dict[str, Any]]) -> Optional[str]:
+            if not version_dict:
+                return None
+            return VersionIdentifier(**version_dict).to_str()
+
+        def _to_prod_ready_fraction(readiness_dist: List[Dict[str, Any]]) -> float:
+            return FeatureReadinessDistribution(
+                __root__=readiness_dist
+            ).derive_production_ready_fraction()
+
+        def _to_default_feature_fraction(
+            feature_ids: List[ObjectId], default_feat_ids: Set[ObjectId]
+        ) -> float:
+            count = 0
+            for feat_id in feature_ids:
+                if feat_id in default_feat_ids:
+                    count += 1
+            return count / len(feature_ids)
+
+        feature_list = await self.service.get_document_as_dict(document_id=document_id)
+        namespace = await self.feature_list_namespace_service.get_document_as_dict(
+            document_id=feature_list["feature_list_namespace_id"]
         )
-        return info_document
+        entities = await self.entity_service.list_documents_as_dict(
+            page=1, page_size=0, query_filter={"_id": {"$in": feature_list["entity_ids"]}}
+        )
+        tables = await self.table_service.list_documents_as_dict(
+            page=1, page_size=0, query_filter={"_id": {"$in": feature_list["table_ids"]}}
+        )
+        # get catalog info
+        catalog_name, updated_docs = await self.catalog_name_injector.add_name(
+            namespace["catalog_id"], [entities, tables]
+        )
+        entities, tables = updated_docs
+        primary_entity_data = copy.deepcopy(entities)
+        primary_entity_data["data"] = sorted(
+            [
+                entity
+                for entity in entities["data"]
+                if entity["_id"] in feature_list["primary_entity_ids"]
+            ],
+            key=lambda doc: doc["_id"],  # type: ignore
+        )
+        default_feature_list = await self.service.get_document_as_dict(
+            document_id=namespace["default_feature_list_id"]
+        )
+
+        versions_info = None
+        if verbose:
+            versions_info = FeatureListBriefInfoList.from_paginated_data(
+                await self.service.list_documents_as_dict(
+                    page=1,
+                    page_size=0,
+                    query_filter={"_id": {"$in": namespace["feature_list_ids"]}},
+                    projection={
+                        "readiness_distribution": 1,
+                        "version": 1,
+                        "created_at": 1,
+                    },
+                )
+            )
+
+        default_feature_ids = set(default_feature_list["feature_ids"])
+        return FeatureListInfo(
+            version={
+                "this": _to_version_str(feature_list["version"]),
+                "default": _to_version_str(default_feature_list["version"]),
+            },
+            production_ready_fraction={
+                "this": _to_prod_ready_fraction(feature_list["readiness_distribution"]),
+                "default": _to_prod_ready_fraction(default_feature_list["readiness_distribution"]),
+            },
+            default_feature_fraction={
+                "this": _to_default_feature_fraction(
+                    feature_list["feature_ids"], default_feature_ids
+                ),
+                "default": _to_default_feature_fraction(
+                    default_feature_list["feature_ids"], default_feature_ids
+                ),
+            },
+            versions_info=versions_info,
+            catalog_name=catalog_name,
+            entities=EntityBriefInfoList.from_paginated_data(entities),
+            primary_entity=EntityBriefInfoList.from_paginated_data(primary_entity_data),
+            tables=TableBriefInfoList.from_paginated_data(tables),
+            name=namespace["name"],
+            namespace_description=namespace["description"],
+            default_feature_list_id=namespace["default_feature_list_id"],
+            version_count=len(namespace["feature_list_ids"]),
+            dtype_distribution=feature_list["dtype_distribution"],
+            deployed=feature_list["deployed"],
+            description=feature_list["description"],
+            status=namespace["status"],
+            feature_count=len(feature_list["feature_ids"]),
+            created_at=feature_list["created_at"],
+        )
 
     async def sql(self, featurelist_sql: FeatureListSQL) -> str:
         """

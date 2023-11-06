@@ -244,90 +244,11 @@ class FrozenFeatureListNamespaceModel(FeatureByteCatalogBaseDocumentModel):
     """
 
     feature_namespace_ids: List[PydanticObjectId] = Field(allow_mutation=False)
-    dtype_distribution: List[FeatureTypeFeatureCount] = Field(allow_mutation=False)
-    entity_ids: List[PydanticObjectId] = Field(allow_mutation=False)
-    table_ids: List[PydanticObjectId] = Field(allow_mutation=False)
 
     # pydantic validators
-    _sort_ids_validator = validator(
-        "feature_namespace_ids", "entity_ids", "table_ids", allow_reuse=True
-    )(construct_sort_validator())
-
-    @staticmethod
-    def derive_feature_namespace_ids(features: List[FeatureModel]) -> List[PydanticObjectId]:
-        """
-        Derive feature namespace id from features
-
-        Parameters
-        ----------
-        features: List[FeatureModel]
-            List of features
-
-        Returns
-        -------
-        List[PydanticObjectId]
-        """
-        return [feature.feature_namespace_id for feature in features]
-
-    @staticmethod
-    def derive_dtype_distribution(features: List[FeatureModel]) -> List[FeatureTypeFeatureCount]:
-        """
-        Derive feature table type distribution from features
-
-        Parameters
-        ----------
-        features: List[FeatureModel]
-            List of features
-
-        Returns
-        -------
-        List[FeatureTypeFeatureCount]
-        """
-        dtype_count_map: dict[DBVarType, int] = defaultdict(int)
-        for feature in features:
-            dtype_count_map[feature.dtype] += 1
-        return [
-            FeatureTypeFeatureCount(dtype=dtype, count=count)
-            for dtype, count in dtype_count_map.items()
-        ]
-
-    @staticmethod
-    def derive_entity_ids(features: List[FeatureModel]) -> List[ObjectId]:
-        """
-        Derive entity ids from features
-
-        Parameters
-        ----------
-        features: List[FeatureModel]
-            List of features
-
-        Returns
-        -------
-        List of entity ids
-        """
-        entity_ids = []
-        for feature in features:
-            entity_ids.extend(feature.entity_ids)
-        return sorted(set(entity_ids))
-
-    @staticmethod
-    def derive_table_ids(features: List[FeatureModel]) -> List[ObjectId]:
-        """
-        Derive table IDs from features
-
-        Parameters
-        ----------
-        features: List[FeatureModel]
-            List of features
-
-        Returns
-        -------
-        List of table ids
-        """
-        table_ids = []
-        for feature in features:
-            table_ids.extend(feature.table_ids)
-        return sorted(set(table_ids))
+    _sort_ids_validator = validator("feature_namespace_ids", allow_reuse=True)(
+        construct_sort_validator()
+    )
 
     @root_validator(pre=True)
     @classmethod
@@ -336,10 +257,7 @@ class FrozenFeatureListNamespaceModel(FeatureByteCatalogBaseDocumentModel):
         # constructor, it is intended to be used to derive other feature-related attributes
         if "features" in values:
             features = values["features"]
-            values["feature_namespace_ids"] = cls.derive_feature_namespace_ids(features)
-            values["dtype_distribution"] = cls.derive_dtype_distribution(features)
-            values["entity_ids"] = cls.derive_entity_ids(features)
-            values["table_ids"] = cls.derive_table_ids(features)
+            values["feature_namespace_ids"] = [feature.feature_namespace_id for feature in features]
         return values
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
@@ -363,8 +281,6 @@ class FrozenFeatureListNamespaceModel(FeatureByteCatalogBaseDocumentModel):
 
         indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
             pymongo.operations.IndexModel("feature_namespace_ids"),
-            pymongo.operations.IndexModel("entity_ids"),
-            pymongo.operations.IndexModel("table_ids"),
         ]
 
 
@@ -402,14 +318,13 @@ class FeatureListNamespaceModel(FrozenFeatureListNamespaceModel):
     deployed_feature_list_ids: List[PydanticObjectId] = Field(
         allow_mutation=False, default_factory=list
     )
-    readiness_distribution: FeatureReadinessDistribution = Field(allow_mutation=False)
     default_feature_list_id: PydanticObjectId = Field(allow_mutation=False)
     status: FeatureListStatus = Field(allow_mutation=False, default=FeatureListStatus.DRAFT)
 
     # pydantic validators
-    _sort_feature_list_ids_validator = validator("feature_list_ids", allow_reuse=True)(
-        construct_sort_validator()
-    )
+    _sort_feature_list_ids_validator = validator(
+        "feature_list_ids", "deployed_feature_list_ids", allow_reuse=True
+    )(construct_sort_validator())
 
     class Settings(FrozenFeatureListNamespaceModel.Settings):
         """

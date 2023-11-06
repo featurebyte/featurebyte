@@ -629,13 +629,10 @@ async def test_get_feature_list_info(feature_list_service, feature_list, feature
 
 
 @pytest.mark.asyncio
-async def test_get_feature_list_namespace_info(
-    feature_list_namespace_service, feature_list_namespace, feature
-):
+async def test_get_feature_list_namespace_info(feature_list_namespace, feature, app_container):
     """Test get_feature_list_namespace_info"""
-    info = await feature_list_namespace_service.get_feature_list_namespace_info(
-        document_id=feature_list_namespace.id, verbose=False
-    )
+    controller = app_container.feature_list_namespace_controller
+    info = await controller.get_info(document_id=feature_list_namespace.id, verbose=False)
     expected_info = FeatureListNamespaceInfo(
         name="sf_feature_list",
         entities=[
@@ -661,9 +658,7 @@ async def test_get_feature_list_namespace_info(
     )
     assert info == expected_info
 
-    info = await feature_list_namespace_service.get_feature_list_namespace_info(
-        document_id=feature_list_namespace.id, verbose=True
-    )
+    info = await controller.get_info(document_id=feature_list_namespace.id, verbose=True)
     assert info == expected_info
 
 

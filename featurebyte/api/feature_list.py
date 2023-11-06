@@ -173,17 +173,6 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
         return self.cached_model.deployed_feature_list_ids
 
     @property
-    def readiness_distribution(self) -> FeatureReadinessDistribution:
-        """
-        Feature readiness distribution of the default feature list of this feature list namespace
-
-        Returns
-        -------
-        FeatureReadinessDistribution
-        """
-        return self.cached_model.readiness_distribution
-
-    @property
     def default_feature_list_id(self) -> PydanticObjectId:
         """
         Default feature list ID of this feature list namespace
