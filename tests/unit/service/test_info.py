@@ -575,11 +575,10 @@ async def test_get_feature_namespace_info(app_container, feature_namespace):
 
 
 @pytest.mark.asyncio
-async def test_get_feature_list_info(feature_list_service, feature_list, feature_list_namespace):
+async def test_get_feature_list_info(app_container, feature_list, feature_list_namespace):
     """Test get_feature_list_info"""
-    info = await feature_list_service.get_feature_list_info(
-        document_id=feature_list.id, verbose=False
-    )
+    controller = app_container.feature_list_controller
+    info = await controller.get_info(document_id=feature_list.id, verbose=False)
     expected_info = FeatureListInfo(
         name="sf_feature_list",
         entities=[
@@ -601,7 +600,7 @@ async def test_get_feature_list_info(feature_list_service, feature_list, feature
         ),
         production_ready_fraction={"this": 0.0, "default": 0.0},
         default_feature_fraction={"this": 1.0, "default": 1.0},
-        created_at=feature_list_namespace.created_at,
+        created_at=feature_list.created_at,
         updated_at=None,
         deployed=False,
         serving_endpoint=None,
@@ -610,9 +609,7 @@ async def test_get_feature_list_info(feature_list_service, feature_list, feature
     )
     assert info == expected_info
 
-    info = await feature_list_service.get_feature_list_info(
-        document_id=feature_list.id, verbose=True
-    )
+    info = await controller.get_info(document_id=feature_list.id, verbose=True)
     assert info == FeatureListInfo(
         **{
             **expected_info.dict(),

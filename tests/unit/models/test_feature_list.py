@@ -47,22 +47,16 @@ def feature_list_namespace_model_dict_fixture():
         ObjectId("631af7f5b02b7992313dd578"),
     ]
     feature_list_ids = [ObjectId("631af7f5b02b7992313dd585"), ObjectId("631af7f5b02b7992313dd584")]
-    entity_ids = [ObjectId("631af7f5b02b7992313dd581"), ObjectId("631af7f5b02b7992313dd580")]
-    table_ids = [ObjectId("631af7f5b02b7992313dd583"), ObjectId("631af7f5b02b7992313dd582")]
     return {
         "name": "my_feature_list",
         "feature_namespace_ids": feature_namespace_ids,
-        "dtype_distribution": [{"dtype": "FLOAT", "count": 2}],
         "feature_list_ids": feature_list_ids,
         "deployed_feature_list_ids": [],
-        "readiness_distribution": [{"readiness": "DRAFT", "count": 2}],
         "status": "DRAFT",
         "default_feature_list_id": feature_list_ids[0],
         "created_at": None,
         "updated_at": None,
         "user_id": None,
-        "entity_ids": entity_ids,
-        "table_ids": table_ids,
         "catalog_id": DEFAULT_CATALOG_ID,
         "block_modification_by": [],
         "description": None,

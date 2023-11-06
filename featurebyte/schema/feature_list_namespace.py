@@ -17,7 +17,10 @@ class FeatureListNamespaceModelResponse(FeatureListNamespaceModel):
     Extended FeatureListNamespace model
     """
 
+    readiness_distribution: FeatureReadinessDistribution
     primary_entity_ids: List[PydanticObjectId]
+    entity_ids: List[PydanticObjectId]
+    table_ids: List[PydanticObjectId]
 
 
 class FeatureListNamespaceList(PaginationMixin):

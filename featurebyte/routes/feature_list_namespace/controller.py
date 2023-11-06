@@ -70,11 +70,20 @@ class FeatureListNamespaceController(
         )
         default_feature_list_doc = await self.feature_list_service.get_document_as_dict(
             document_id=document.default_feature_list_id,
-            projection={"_id": 1, "primary_entity_ids": 1},
+            projection={
+                "_id": 1,
+                "primary_entity_ids": 1,
+                "entity_ids": 1,
+                "table_ids": 1,
+                "readiness_distribution": 1,
+            },
         )
         output = FeatureListNamespaceModelResponse(
             **document.dict(by_alias=True),
             primary_entity_ids=default_feature_list_doc["primary_entity_ids"],
+            entity_ids=default_feature_list_doc["entity_ids"],
+            table_ids=default_feature_list_doc["table_ids"],
+            readiness_distribution=default_feature_list_doc["readiness_distribution"],
         )
         return cast(Document, output)
 
@@ -98,21 +107,31 @@ class FeatureListNamespaceController(
         default_feature_list_ids = [
             document["default_feature_list_id"] for document in document_data["data"]
         ]
-        feature_list_to_primary_entity_ids = {
-            doc["_id"]: doc["primary_entity_ids"]
+        feature_list_id_to_doc = {
+            doc["_id"]: doc
             async for doc in self.feature_list_service.list_documents_as_dict_iterator(
                 query_filter={"_id": {"$in": default_feature_list_ids}},
-                projection={"_id": 1, "primary_entity_ids": 1},
+                projection={
+                    "_id": 1,
+                    "primary_entity_ids": 1,
+                    "entity_ids": 1,
+                    "table_ids": 1,
+                    "readiness_distribution": 1,
+                },
             )
         }
         output = []
         for feature_list_namespace in document_data["data"]:
+            feature_list_doc = feature_list_id_to_doc[
+                feature_list_namespace["default_feature_list_id"]
+            ]
             output.append(
                 FeatureListNamespaceModelResponse(
                     **feature_list_namespace,
-                    primary_entity_ids=feature_list_to_primary_entity_ids[
-                        feature_list_namespace["default_feature_list_id"]
-                    ],
+                    primary_entity_ids=feature_list_doc["primary_entity_ids"],
+                    entity_ids=feature_list_doc["entity_ids"],
+                    table_ids=feature_list_doc["table_ids"],
+                    readiness_distribution=feature_list_doc["readiness_distribution"],
                 )
             )
 
