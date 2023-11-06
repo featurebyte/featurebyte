@@ -382,6 +382,7 @@ def saved_feature_list_fixture(
     assert feature_list_namespace.name == "my_feature_list"
     assert feature_list_namespace.feature_list_ids == [feature_list.id]
     assert feature_list_namespace.default_feature_list_id == feature_list.id
+    assert feature_list_namespace.readiness_distribution == feature_list.readiness_distribution
     return feature_list
 
 
