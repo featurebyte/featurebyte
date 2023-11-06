@@ -302,7 +302,6 @@ class FeatureListService(
                         _id=document.feature_list_namespace_id or ObjectId(),
                         name=document.name,
                         feature_list_ids=[insert_id],
-                        readiness_distribution=document.readiness_distribution,
                         default_feature_list_id=insert_id,
                         features=feature_data["features"],
                     )

@@ -238,17 +238,38 @@ class FeatureCluster(FeatureByteBaseModel):
         return [self.graph.get_node_by_name(name) for name in self.node_names]
 
 
-class FrozenFeatureListNamespaceModel(FeatureByteCatalogBaseDocumentModel):
+class FeatureListNamespaceModel(FeatureByteCatalogBaseDocumentModel):
     """
-    FrozenFeatureListNamespaceModel store all the attributes that are fixed after object construction.
+    Feature list set with the same feature list name
+
+    id: PydanticObjectId
+        Feature namespace id
+    name: str
+        Feature name
+    feature_list_ids: List[PydanticObjectId]
+        List of feature list ids
+    deployed_feature_list_ids: List[PydanticObjectId]
+        List of deployed feature list ids
+    feature_namespace_ids: List[PydanticObjectId]
+        List of feature namespace ids
+    default_feature_list_id: PydanticObjectId
+        Default feature list id
+    status: FeatureListStatus
+        Feature list status
     """
 
+    feature_list_ids: List[PydanticObjectId] = Field(allow_mutation=False)
     feature_namespace_ids: List[PydanticObjectId] = Field(allow_mutation=False)
+    deployed_feature_list_ids: List[PydanticObjectId] = Field(
+        allow_mutation=False, default_factory=list
+    )
+    default_feature_list_id: PydanticObjectId = Field(allow_mutation=False)
+    status: FeatureListStatus = Field(allow_mutation=False, default=FeatureListStatus.DRAFT)
 
     # pydantic validators
-    _sort_ids_validator = validator("feature_namespace_ids", allow_reuse=True)(
-        construct_sort_validator()
-    )
+    _sort_feature_list_ids_validator = validator(
+        "feature_list_ids", "feature_namespace_ids", "deployed_feature_list_ids", allow_reuse=True
+    )(construct_sort_validator())
 
     @root_validator(pre=True)
     @classmethod
@@ -278,61 +299,9 @@ class FrozenFeatureListNamespaceModel(FeatureByteCatalogBaseDocumentModel):
                 resolution_signature=UniqueConstraintResolutionSignature.RENAME,
             ),
         ]
-
         indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
-            pymongo.operations.IndexModel("feature_namespace_ids"),
-        ]
-
-
-class FeatureListNamespaceModel(FrozenFeatureListNamespaceModel):
-    """
-    Feature list set with the same feature list name
-
-    id: PydanticObjectId
-        Feature namespace id
-    name: str
-        Feature name
-    feature_list_ids: List[PydanticObjectId]
-        List of feature list ids
-    deployed_feature_list_ids: List[PydanticObjectId]
-        List of deployed feature list ids
-    feature_namespace_ids: List[PydanticObjectId]
-        List of feature namespace ids
-    dtype_distribution: List[FeatureTypeFeatureCount]
-        Feature type distribution
-    readiness_distribution: FeatureReadinessDistribution
-        Feature readiness distribution of the default feature list
-    default_feature_list_id: PydanticObjectId
-        Default feature list id
-    default_version_mode: DefaultVersionMode
-        Default feature version mode
-    status: FeatureListStatus
-        Feature list status
-    entity_ids: List[PydanticObjectId]
-        Entity IDs used in the feature list
-    table_ids: List[PydanticObjectId]
-        Table IDs used in the feature list
-    """
-
-    feature_list_ids: List[PydanticObjectId] = Field(allow_mutation=False)
-    deployed_feature_list_ids: List[PydanticObjectId] = Field(
-        allow_mutation=False, default_factory=list
-    )
-    default_feature_list_id: PydanticObjectId = Field(allow_mutation=False)
-    status: FeatureListStatus = Field(allow_mutation=False, default=FeatureListStatus.DRAFT)
-
-    # pydantic validators
-    _sort_feature_list_ids_validator = validator(
-        "feature_list_ids", "deployed_feature_list_ids", allow_reuse=True
-    )(construct_sort_validator())
-
-    class Settings(FrozenFeatureListNamespaceModel.Settings):
-        """
-        MongoDB settings
-        """
-
-        indexes = FrozenFeatureListNamespaceModel.Settings.indexes + [
             pymongo.operations.IndexModel("feature_list_ids"),
+            pymongo.operations.IndexModel("feature_namespace_ids"),
             pymongo.operations.IndexModel("deployed_feature_list_ids"),
             pymongo.operations.IndexModel("default_feature_list_id"),
             pymongo.operations.IndexModel("status"),

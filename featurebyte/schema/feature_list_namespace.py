@@ -48,5 +48,4 @@ class FeatureListNamespaceServiceUpdate(
 
     feature_list_ids: Optional[List[PydanticObjectId]]
     deployed_feature_list_ids: Optional[List[PydanticObjectId]]
-    readiness_distribution: Optional[FeatureReadinessDistribution]
     default_feature_list_id: Optional[PydanticObjectId]

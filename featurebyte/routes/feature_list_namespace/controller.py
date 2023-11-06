@@ -79,11 +79,13 @@ class FeatureListNamespaceController(
             },
         )
         output = FeatureListNamespaceModelResponse(
-            **document.dict(by_alias=True),
-            primary_entity_ids=default_feature_list_doc["primary_entity_ids"],
-            entity_ids=default_feature_list_doc["entity_ids"],
-            table_ids=default_feature_list_doc["table_ids"],
-            readiness_distribution=default_feature_list_doc["readiness_distribution"],
+            **{
+                **document.dict(by_alias=True),
+                "primary_entity_ids": default_feature_list_doc["primary_entity_ids"],
+                "entity_ids": default_feature_list_doc["entity_ids"],
+                "table_ids": default_feature_list_doc["table_ids"],
+                "readiness_distribution": default_feature_list_doc["readiness_distribution"],
+            }
         )
         return cast(Document, output)
 
@@ -127,11 +129,13 @@ class FeatureListNamespaceController(
             ]
             output.append(
                 FeatureListNamespaceModelResponse(
-                    **feature_list_namespace,
-                    primary_entity_ids=feature_list_doc["primary_entity_ids"],
-                    entity_ids=feature_list_doc["entity_ids"],
-                    table_ids=feature_list_doc["table_ids"],
-                    readiness_distribution=feature_list_doc["readiness_distribution"],
+                    **{
+                        **feature_list_namespace,
+                        "primary_entity_ids": feature_list_doc["primary_entity_ids"],
+                        "entity_ids": feature_list_doc["entity_ids"],
+                        "table_ids": feature_list_doc["table_ids"],
+                        "readiness_distribution": feature_list_doc["readiness_distribution"],
+                    }
                 )
             )
 

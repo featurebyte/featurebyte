@@ -7,20 +7,10 @@ from unittest.mock import Mock, patch
 
 import pandas as pd
 import pytest
-from bson import ObjectId
 from pandas.testing import assert_frame_equal
 
 from featurebyte.api.api_object import ApiObject
-from featurebyte.api.feature import FeatureNamespace
-from featurebyte.api.feature_list import FeatureListNamespace
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
-from featurebyte.models.feature_list import (
-    FeatureListNamespaceModel,
-    FrozenFeatureListNamespaceModel,
-)
-from featurebyte.models.feature_namespace import BaseFeatureNamespaceModel, FeatureNamespaceModel
-from featurebyte.schema.feature_list_namespace import FeatureListNamespaceUpdate
-from featurebyte.schema.feature_namespace import FeatureNamespaceUpdate
 from featurebyte.schema.task import TaskStatus
 
 
