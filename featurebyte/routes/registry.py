@@ -14,6 +14,7 @@ from featurebyte.migration.service.feature import FeatureMigrationServiceV4
 from featurebyte.migration.service.feature_list import (
     FeatureListMigrationServiceV5,
     FeatureListMigrationServiceV6,
+    FeatureListMigrationServiceV7,
 )
 from featurebyte.migration.service.mixin import DataWarehouseMigrationMixin
 from featurebyte.models.base import User
@@ -343,6 +344,7 @@ app_container_config.register_class(DataWarehouseMigrationServiceV3)
 app_container_config.register_class(FeatureMigrationServiceV4)
 app_container_config.register_class(FeatureListMigrationServiceV5)
 app_container_config.register_class(FeatureListMigrationServiceV6)
+app_container_config.register_class(FeatureListMigrationServiceV7)
 
 app_container_config.register_factory_method(get_storage)
 app_container_config.register_factory_method(get_redis, name_override="redis")
