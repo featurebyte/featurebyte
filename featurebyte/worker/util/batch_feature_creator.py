@@ -266,8 +266,12 @@ class BatchFeatureCreator:
         -------
         Sequence[ObjectId]
             List of saved or resolved feature ids
-        """
 
+        Raises
+        ------
+        DocumentInconsistencyError
+            If the generated feature is not the same as the expected feature
+        """
         # identify the saved feature ids & prepare conflict resolution feature id mapping
         feature_ids = [feature.id for feature in payload.features]
         feature_names = [feature.name for feature in payload.features]
