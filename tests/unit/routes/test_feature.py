@@ -887,13 +887,17 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
     ):
         """Test batch feature create async task"""
         _ = mock_snowflake_session
-        mock_is_generated_feature_consistent.return_value = False
+        mock_is_generated_feature_consistent.side_effect = [False, True]
         test_api_client, _ = test_api_client_persistent
         self.setup_creation_route(test_api_client)
 
         # prepare batch feature create payload
-        feature_create = FeatureCreate(**self.payload)
-        batch_feature_create = create_batch_feature_create(features=[feature_create])
+        another_payload = self.load_payload("tests/fixtures/request_payloads/feature_sum_2h.json")
+        feature_create1 = FeatureCreate(**self.payload)
+        feature_create2 = FeatureCreate(**another_payload)
+        batch_feature_create = create_batch_feature_create(
+            features=[feature_create1, feature_create2]
+        )
 
         # create batch feature create task
         task_response = test_api_client.post(
@@ -901,13 +905,20 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         )
         response = self.wait_for_results(test_api_client, task_response)
         response_dict = response.json()
-        expected_traceback = "featurebyte.exception.DocumentInconsistencyError: Inconsistent feature definition detected!"
+        expected_traceback = (
+            "Inconsistent feature definitions detected: sum_30m\n"
+            "The inconsistent features have been deleted."
+        )
         assert expected_traceback in response_dict["traceback"]
         assert response_dict["status"] == "FAILURE"
 
-        # check feature is not created
-        response = test_api_client.get(f"{self.base_route}/{feature_create.id}")
+        # check feature1 is not created
+        response = test_api_client.get(f"{self.base_route}/{feature_create1.id}")
         assert response.status_code == HTTPStatus.NOT_FOUND
+
+        # check feature2 is created
+        response = test_api_client.get(f"{self.base_route}/{feature_create2.id}")
+        assert response.status_code == HTTPStatus.OK
 
     def test_aggregation_result_names_based_on_pruned_graph(self, create_success_response):
         """

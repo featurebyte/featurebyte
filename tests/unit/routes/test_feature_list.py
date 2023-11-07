@@ -923,16 +923,18 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
     ):
         """Test batch feature create async task"""
         _ = mock_snowflake_session
-        mock_is_generated_feature_consistent.return_value = False
+        mock_is_generated_feature_consistent.side_effect = [False, True]
         test_api_client, _ = test_api_client_persistent
         self.setup_creation_route(test_api_client)
 
         # prepare batch feature create payload
-        payload = self.load_payload("tests/fixtures/request_payloads/feature_sum_2h.json")
-        feature_create = FeatureCreate(**payload)
+        payload1 = self.load_payload("tests/fixtures/request_payloads/feature_sum_2h.json")
+        payload2 = self.load_payload("tests/fixtures/request_payloads/feature_sum_30m.json")
+        feature_create1 = FeatureCreate(**payload1)
+        feature_create2 = FeatureCreate(**payload2)
         feature_list_name, feature_list_id = "test_feature_list", ObjectId()
         feature_list_batch_feature_create = create_feature_list_batch_feature_create(
-            features=[feature_create],
+            features=[feature_create1, feature_create2],
             feature_list_name=feature_list_name,
             feature_list_id=feature_list_id,
             conflict_resolution="raise",
@@ -949,16 +951,23 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         # retrieve task results
         response = self.wait_for_results(test_api_client, task_response)
         response_dict = response.json()
-        expected_traceback = "featurebyte.exception.DocumentInconsistencyError: Inconsistent feature definition detected!"
+        expected_traceback = (
+            "Inconsistent feature definitions detected: sum_2h\n"
+            "The inconsistent features have been deleted."
+        )
         assert expected_traceback in response_dict["traceback"]
         assert response_dict["status"] == "FAILURE"
 
-        # check feature list &feature is not created
+        # check feature list & feature1 is not created
         response = test_api_client.get(f"{self.base_route}/{feature_list_id}")
         assert response.status_code == HTTPStatus.NOT_FOUND
 
-        response = test_api_client.get(f"feature/{feature_create.id}")
+        response = test_api_client.get(f"feature/{feature_create1.id}")
         assert response.status_code == HTTPStatus.NOT_FOUND
+
+        # check feature2 is created
+        response = test_api_client.get(f"feature/{feature_create2.id}")
+        assert response.status_code == HTTPStatus.OK
 
     def test_request_sample_entity_serving_names(
         self,

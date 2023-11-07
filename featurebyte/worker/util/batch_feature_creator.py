@@ -176,6 +176,7 @@ class BatchFeatureCreator:
             logger.error(
                 "Generated feature is not the same as the expected feature",
                 extra={
+                    "feature_name": document.name,
                     "expected_hash": expected_hash,
                     "generated_hash": generated_hash,
                     "expected_node_name_to_ref": document.graph.node_name_to_ref,
@@ -265,8 +266,12 @@ class BatchFeatureCreator:
         -------
         Sequence[ObjectId]
             List of saved or resolved feature ids
-        """
 
+        Raises
+        ------
+        DocumentInconsistencyError
+            If the generated feature is not the same as the expected feature
+        """
         # identify the saved feature ids & prepare conflict resolution feature id mapping
         feature_ids = [feature.id for feature in payload.features]
         feature_names = [feature.name for feature in payload.features]
@@ -287,6 +292,7 @@ class BatchFeatureCreator:
         await ranged_progress_update(0, "Started saving features")
 
         output_feature_ids = []
+        inconsistent_feature_names = []
         for i, feature_item in enumerate(payload.features):
             if feature_item.id in saved_feature_ids:
                 # skip if the feature is already saved
@@ -302,17 +308,27 @@ class BatchFeatureCreator:
                 output_feature_ids.append(resolved_feature_id)
             else:
                 # create the feature & save the feature id to the output feature ids
-                document = await self.create_feature(
-                    graph=payload.graph,
-                    feature_item=feature_item,
-                    catalog_id=payload.catalog_id,
-                )
-                output_feature_ids.append(document.id)
+                try:
+                    document = await self.create_feature(
+                        graph=payload.graph,
+                        feature_item=feature_item,
+                        catalog_id=payload.catalog_id,
+                    )
+                    output_feature_ids.append(document.id)
+                except DocumentInconsistencyError:
+                    inconsistent_feature_names.append(feature_item.name)
 
             # update the progress
             percent = int(100 * (i + 1) / total_features)
             message = f"Completed {i+1}/{total_features} features"
             await ranged_progress_update(percent, message)
+
+        if inconsistent_feature_names:
+            combined_names = ", ".join(inconsistent_feature_names)
+            raise DocumentInconsistencyError(
+                f"Inconsistent feature definitions detected: {combined_names}\n"
+                "The inconsistent features have been deleted."
+            )
 
         await ranged_progress_update(100, "Completed saving features")
         return output_feature_ids
