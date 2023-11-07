@@ -127,7 +127,6 @@ class FeatureReadinessService:
         if feature_list_ids:
             default_feature_list = await self._get_default_feature_list_doc(feature_list_ids)
             update_dict["default_feature_list_id"] = default_feature_list["_id"]
-            update_dict["readiness_distribution"] = default_feature_list["readiness_distribution"]
 
         if update_dict:
             await self.feature_list_namespace_service.update_document(

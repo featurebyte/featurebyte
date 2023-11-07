@@ -162,11 +162,26 @@ class FeatureListMigrationServiceV6(BaseFeatureListMigrationService):
             ]
         return documents
 
+    @staticmethod
+    def post_migration_check(doc: Document) -> None:
+        """
+        Post migration check
+
+        Parameters
+        ----------
+        doc: Document
+            Document to be checked
+        """
+        # after migration, dtype_distribution should not be empty
+        assert doc["dtype_distribution"], doc["dtype_distribution"]
+        assert doc["features_primary_entity_ids"], doc["features_primary_entity_ids"]
+        assert set(doc["primary_entity_ids"]).issubset(doc["entity_ids"]), doc
+
     @migrate(
         version=6,
         description="Add dtype_distribution to feature list record",
     )
-    async def add_dtype_distribution(self) -> None:
+    async def run_migration(self) -> None:
         """Add dtype_distribution to feature list record"""
         sanity_check_sample_size = 10
 
@@ -190,8 +205,23 @@ class FeatureListMigrationServiceV6(BaseFeatureListMigrationService):
         assert total_before == total_after, (total_before, total_after)
         for doc in sample_docs_after:
             # after migration, dtype_distribution should not be empty
-            assert doc["dtype_distribution"], doc["dtype_distribution"]
-            assert doc["features_primary_entity_ids"], doc["features_primary_entity_ids"]
-            assert set(doc["primary_entity_ids"]).issubset(doc["entity_ids"]), doc
+            self.post_migration_check(doc)
 
         logger.info("Migrated all records successfully (total: %d)", total_after)
+
+
+class FeatureListMigrationServiceV7(FeatureListMigrationServiceV6):
+    """
+    FeatureListMigrationService class
+
+    This class is used to migrate the feature list records to add following fields:
+    - table_ids
+    """
+
+    @staticmethod
+    def post_migration_check(doc: Document) -> None:
+        assert "table_ids" in doc, "table_ids should be added to feature list record"
+
+    @migrate(version=7, description="Add table_ids to feature list record")
+    async def run_migration(self) -> None:
+        await super().run_migration()

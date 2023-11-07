@@ -57,7 +57,6 @@ from featurebyte.models.feature_list import (
     FeatureListModel,
     FeatureListStatus,
     FeatureReadinessDistribution,
-    FrozenFeatureListNamespaceModel,
 )
 from featurebyte.models.tile import TileSpec
 from featurebyte.schema.deployment import DeploymentCreate
@@ -107,7 +106,7 @@ class FeatureListNamespaceListHandler(ListHandler):
         return feature_lists
 
 
-class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
+class FeatureListNamespace(ApiObject):
     """
     FeatureListNamespace represents all the versions of the FeatureList that have the same FeatureList name.
 

@@ -196,7 +196,6 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         )
         namespace_response_dict = namespace_response.json()
         assert namespace_response_dict["feature_list_ids"] == [result["_id"], new_fl_dict["_id"]]
-        assert namespace_response_dict["readiness_distribution"] == expected_readiness_dist
         assert namespace_response_dict["default_feature_list_id"] == new_fl_dict["_id"]
 
     def test_create_201_multiple_features(self, test_api_client_persistent, user_id):

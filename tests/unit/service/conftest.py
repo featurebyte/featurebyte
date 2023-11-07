@@ -721,7 +721,6 @@ async def setup_for_feature_readiness_fixture(
     assert new_flist.id in flist_namespace.feature_list_ids
     assert new_flist.feature_list_namespace_id == feature_list.feature_list_namespace_id
     assert flist_namespace.default_feature_list_id == feature_list.id
-    assert flist_namespace.readiness_distribution.__root__ == [{"readiness": "DRAFT", "count": 1}]
     yield new_feature_id, new_flist.id
 
 

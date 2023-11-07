@@ -238,96 +238,38 @@ class FeatureCluster(FeatureByteBaseModel):
         return [self.graph.get_node_by_name(name) for name in self.node_names]
 
 
-class FrozenFeatureListNamespaceModel(FeatureByteCatalogBaseDocumentModel):
+class FeatureListNamespaceModel(FeatureByteCatalogBaseDocumentModel):
     """
-    FrozenFeatureListNamespaceModel store all the attributes that are fixed after object construction.
+    Feature list set with the same feature list name
+
+    id: PydanticObjectId
+        Feature namespace id
+    name: str
+        Feature name
+    feature_list_ids: List[PydanticObjectId]
+        List of feature list ids
+    deployed_feature_list_ids: List[PydanticObjectId]
+        List of deployed feature list ids
+    feature_namespace_ids: List[PydanticObjectId]
+        List of feature namespace ids
+    default_feature_list_id: PydanticObjectId
+        Default feature list id
+    status: FeatureListStatus
+        Feature list status
     """
 
+    feature_list_ids: List[PydanticObjectId] = Field(allow_mutation=False)
     feature_namespace_ids: List[PydanticObjectId] = Field(allow_mutation=False)
-    dtype_distribution: List[FeatureTypeFeatureCount] = Field(allow_mutation=False)
-    entity_ids: List[PydanticObjectId] = Field(allow_mutation=False)
-    table_ids: List[PydanticObjectId] = Field(allow_mutation=False)
+    deployed_feature_list_ids: List[PydanticObjectId] = Field(
+        allow_mutation=False, default_factory=list
+    )
+    default_feature_list_id: PydanticObjectId = Field(allow_mutation=False)
+    status: FeatureListStatus = Field(allow_mutation=False, default=FeatureListStatus.DRAFT)
 
     # pydantic validators
-    _sort_ids_validator = validator(
-        "feature_namespace_ids", "entity_ids", "table_ids", allow_reuse=True
+    _sort_feature_list_ids_validator = validator(
+        "feature_list_ids", "feature_namespace_ids", "deployed_feature_list_ids", allow_reuse=True
     )(construct_sort_validator())
-
-    @staticmethod
-    def derive_feature_namespace_ids(features: List[FeatureModel]) -> List[PydanticObjectId]:
-        """
-        Derive feature namespace id from features
-
-        Parameters
-        ----------
-        features: List[FeatureModel]
-            List of features
-
-        Returns
-        -------
-        List[PydanticObjectId]
-        """
-        return [feature.feature_namespace_id for feature in features]
-
-    @staticmethod
-    def derive_dtype_distribution(features: List[FeatureModel]) -> List[FeatureTypeFeatureCount]:
-        """
-        Derive feature table type distribution from features
-
-        Parameters
-        ----------
-        features: List[FeatureModel]
-            List of features
-
-        Returns
-        -------
-        List[FeatureTypeFeatureCount]
-        """
-        dtype_count_map: dict[DBVarType, int] = defaultdict(int)
-        for feature in features:
-            dtype_count_map[feature.dtype] += 1
-        return [
-            FeatureTypeFeatureCount(dtype=dtype, count=count)
-            for dtype, count in dtype_count_map.items()
-        ]
-
-    @staticmethod
-    def derive_entity_ids(features: List[FeatureModel]) -> List[ObjectId]:
-        """
-        Derive entity ids from features
-
-        Parameters
-        ----------
-        features: List[FeatureModel]
-            List of features
-
-        Returns
-        -------
-        List of entity ids
-        """
-        entity_ids = []
-        for feature in features:
-            entity_ids.extend(feature.entity_ids)
-        return sorted(set(entity_ids))
-
-    @staticmethod
-    def derive_table_ids(features: List[FeatureModel]) -> List[ObjectId]:
-        """
-        Derive table IDs from features
-
-        Parameters
-        ----------
-        features: List[FeatureModel]
-            List of features
-
-        Returns
-        -------
-        List of table ids
-        """
-        table_ids = []
-        for feature in features:
-            table_ids.extend(feature.table_ids)
-        return sorted(set(table_ids))
 
     @root_validator(pre=True)
     @classmethod
@@ -336,10 +278,7 @@ class FrozenFeatureListNamespaceModel(FeatureByteCatalogBaseDocumentModel):
         # constructor, it is intended to be used to derive other feature-related attributes
         if "features" in values:
             features = values["features"]
-            values["feature_namespace_ids"] = cls.derive_feature_namespace_ids(features)
-            values["dtype_distribution"] = cls.derive_dtype_distribution(features)
-            values["entity_ids"] = cls.derive_entity_ids(features)
-            values["table_ids"] = cls.derive_table_ids(features)
+            values["feature_namespace_ids"] = [feature.feature_namespace_id for feature in features]
         return values
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
@@ -360,64 +299,9 @@ class FrozenFeatureListNamespaceModel(FeatureByteCatalogBaseDocumentModel):
                 resolution_signature=UniqueConstraintResolutionSignature.RENAME,
             ),
         ]
-
         indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
-            pymongo.operations.IndexModel("feature_namespace_ids"),
-            pymongo.operations.IndexModel("entity_ids"),
-            pymongo.operations.IndexModel("table_ids"),
-        ]
-
-
-class FeatureListNamespaceModel(FrozenFeatureListNamespaceModel):
-    """
-    Feature list set with the same feature list name
-
-    id: PydanticObjectId
-        Feature namespace id
-    name: str
-        Feature name
-    feature_list_ids: List[PydanticObjectId]
-        List of feature list ids
-    deployed_feature_list_ids: List[PydanticObjectId]
-        List of deployed feature list ids
-    feature_namespace_ids: List[PydanticObjectId]
-        List of feature namespace ids
-    dtype_distribution: List[FeatureTypeFeatureCount]
-        Feature type distribution
-    readiness_distribution: FeatureReadinessDistribution
-        Feature readiness distribution of the default feature list
-    default_feature_list_id: PydanticObjectId
-        Default feature list id
-    default_version_mode: DefaultVersionMode
-        Default feature version mode
-    status: FeatureListStatus
-        Feature list status
-    entity_ids: List[PydanticObjectId]
-        Entity IDs used in the feature list
-    table_ids: List[PydanticObjectId]
-        Table IDs used in the feature list
-    """
-
-    feature_list_ids: List[PydanticObjectId] = Field(allow_mutation=False)
-    deployed_feature_list_ids: List[PydanticObjectId] = Field(
-        allow_mutation=False, default_factory=list
-    )
-    readiness_distribution: FeatureReadinessDistribution = Field(allow_mutation=False)
-    default_feature_list_id: PydanticObjectId = Field(allow_mutation=False)
-    status: FeatureListStatus = Field(allow_mutation=False, default=FeatureListStatus.DRAFT)
-
-    # pydantic validators
-    _sort_feature_list_ids_validator = validator("feature_list_ids", allow_reuse=True)(
-        construct_sort_validator()
-    )
-
-    class Settings(FrozenFeatureListNamespaceModel.Settings):
-        """
-        MongoDB settings
-        """
-
-        indexes = FrozenFeatureListNamespaceModel.Settings.indexes + [
             pymongo.operations.IndexModel("feature_list_ids"),
+            pymongo.operations.IndexModel("feature_namespace_ids"),
             pymongo.operations.IndexModel("deployed_feature_list_ids"),
             pymongo.operations.IndexModel("default_feature_list_id"),
             pymongo.operations.IndexModel("status"),
@@ -490,6 +374,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
     features_primary_entity_ids: List[List[PydanticObjectId]] = Field(
         allow_mutation=False, default_factory=list
     )
+    table_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
     feature_list_namespace_id: PydanticObjectId = Field(
         allow_mutation=False, default_factory=ObjectId
     )
@@ -503,6 +388,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         "features_primary_entity_ids",
         "primary_entity_ids",
         "entity_ids",
+        "table_ids",
         allow_reuse=True,
     )(construct_sort_validator())
     _version_validator = validator("version", pre=True, allow_reuse=True)(version_validator)
@@ -535,13 +421,16 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
 
             # add other entity related attributes
             entity_ids = set()
+            table_ids = set()
             features_primary_entity_ids = set()
             for feature in features:
                 entity_ids.update(feature.entity_ids)
                 features_primary_entity_ids.add(tuple(feature.primary_entity_ids))
+                table_ids.update(feature.table_ids)
 
             values["entity_ids"] = sorted(entity_ids)
             values["features_primary_entity_ids"] = sorted(features_primary_entity_ids)
+            values["table_ids"] = sorted(table_ids)
 
             # some sanity check
             total_count = sum(
