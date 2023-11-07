@@ -901,7 +901,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         )
         response = self.wait_for_results(test_api_client, task_response)
         response_dict = response.json()
-        expected_traceback = "featurebyte.exception.DocumentInconsistencyError: Inconsistent feature definition detected!"
+        expected_traceback = "Inconsistent feature definitions detected: sum_30m\nThe inconsistent features have been deleted."
         assert expected_traceback in response_dict["traceback"]
         assert response_dict["status"] == "FAILURE"
 
