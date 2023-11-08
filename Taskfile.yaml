@@ -425,6 +425,11 @@ tasks:
       - rm -rf ~/.spark
       - rm -rf ~/.featurebyte/data
 
+  docker-tag-featurebyte-version:
+    desc: "Tag the featurebyte-server docker image with the version extracted from running 'featurebyte version'."
+    cmds:
+      - docker tag featurebyte-server:latest featurebyte/featurebyte-server:$(featurebyte version | cut -d' ' -f2)
+
   publish-mongodb:
     desc: "Publish mongodb package to public featurebyte registry"
     dir: docker/
