@@ -241,5 +241,8 @@ def test_describe_empty_view(event_table):
     view = event_view[event_view["ÀMOUNT"] > 10000000]
     assert view.preview().shape[0] == 0
 
+    # check describe should not error
     describe_df = view.describe()
-    assert describe_df.loc["%missing"].isnull().all()
+
+    # rows with all NaN in describe result are dropped, so only 3 rows (e.g. %missing is dropped)
+    assert describe_df.index.tolist() == ["dtype", "unique", "entropy"]
