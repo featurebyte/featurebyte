@@ -55,7 +55,6 @@ jobs:
         echo "EOF" >> $GITHUB_ENV
     - uses: mshick/add-pr-comment@v2
       with:
-        message: |-
+        message: |
           **Changelog entries**
-
           ${{ env.CHANGELOG }}
