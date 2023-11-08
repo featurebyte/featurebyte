@@ -60,8 +60,6 @@ jobs:
       run: |-
         sudo apt-get update
         sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
-    - name: Install packages needed for Kerberos
-      run: sudo apt-get install libkrb5-dev
     - name: Install wkhtmltopdf
       run: |-
         sudo apt-get update

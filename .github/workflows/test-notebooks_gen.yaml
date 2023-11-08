@@ -52,8 +52,6 @@ jobs:
       run: |-
         sudo apt-get update
         sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
-    - name: Install packages needed for Kerberos
-      run: sudo apt-get install libkrb5-dev
     - name: Set Github Committer Settings
       run: |-
         git config --global user.name "featurebyte[bot]"
@@ -101,8 +99,6 @@ jobs:
       run: |-
         sudo apt-get update
         sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
-    - name: Install packages needed for Kerberos
-      run: sudo apt-get install libkrb5-dev
     - name: Set Github Committer Settings
       run: |-
         git config --global user.name "featurebyte[bot]"
@@ -150,8 +146,6 @@ jobs:
       run: |-
         sudo apt-get update
         sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
-    - name: Install packages needed for Kerberos
-      run: sudo apt-get install libkrb5-dev
     - name: Set Github Committer Settings
       run: |-
         git config --global user.name "featurebyte[bot]"

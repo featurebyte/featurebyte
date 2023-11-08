@@ -101,8 +101,6 @@ jobs:
       run: |-
         sudo apt-get update
         sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
-    - name: Install packages needed for Kerberos
-      run: sudo apt-get install libkrb5-dev
     - name: Install wkhtmltopdf
       run: |-
         sudo apt-get update
@@ -163,8 +161,6 @@ jobs:
       run: |-
         sudo apt-get update
         sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
-    - name: Install packages needed for Kerberos
-      run: sudo apt-get install libkrb5-dev
     - name: Install wkhtmltopdf
       run: |-
         sudo apt-get update
@@ -227,8 +223,6 @@ jobs:
       run: |-
         sudo apt-get update
         sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
-    - name: Install packages needed for Kerberos
-      run: sudo apt-get install libkrb5-dev
     - name: Install wkhtmltopdf
       run: |-
         sudo apt-get update
@@ -310,8 +304,6 @@ jobs:
       run: |-
         sudo apt-get update
         sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
-    - name: Install packages needed for Kerberos
-      run: sudo apt-get install libkrb5-dev
     - name: Install wkhtmltopdf
       run: |-
         sudo apt-get update
@@ -370,8 +362,6 @@ jobs:
       run: |-
         sudo apt-get update
         sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
-    - name: Install packages needed for Kerberos
-      run: sudo apt-get install libkrb5-dev
     - name: Install wkhtmltopdf
       run: |-
         sudo apt-get update
@@ -470,7 +460,7 @@ jobs:
         fi
     - name: Update Coverage Badge
       if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-      uses: schneegans/dynamic-badges-action@v1.6.0
+      uses: schneegans/dynamic-badges-action@v1.7.0
       with:
         auth: ${{ secrets.GIST_SECRET }}
         gistID: 773e2960183c0a6fe24c644d95d71fdb
