@@ -522,6 +522,7 @@ class BaseDocumentService(
         projection: Optional[Dict[str, Any]] = None,
         page_size: int = DEFAULT_PAGE_SIZE,
         use_raw_query_filter: bool = False,
+        **kwargs: Any,
     ) -> AsyncIterator[Dict[str, Any]]:
         """
         List documents iterator to retrieve all the results based on given document service & query filter
@@ -536,6 +537,8 @@ class BaseDocumentService(
             Page size
         use_raw_query_filter: bool
             Use only provided query filter
+        kwargs: Any
+            Additional keyword arguments passed to the list_documents_as_dict
 
         Yields
         ------
@@ -551,6 +554,7 @@ class BaseDocumentService(
                 query_filter=query_filter,
                 projection=projection,
                 use_raw_query_filter=use_raw_query_filter,
+                **kwargs,
             )
             for doc in list_results["data"]:
                 yield doc
