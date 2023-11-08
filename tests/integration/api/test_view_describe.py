@@ -231,3 +231,15 @@ def test_scd_view_describe(scd_table):
     assert describe_df.shape == (len(expected_row_idx), 4)
     assert _to_utc_no_offset(describe_df["Effective Timestamp"]["min"]) == expected_min_timestamp
     assert _to_utc_no_offset(describe_df["Effective Timestamp"]["max"]) == expected_max_timestamp
+
+
+def test_describe_empty_view(event_table):
+    """
+    Test describe for an empty view
+    """
+    event_view = event_table.get_view()
+    view = event_view[event_view["ÀMOUNT"] > 10000000]
+    assert view.preview().shape[0] == 0
+
+    describe_df = view.describe()
+    assert describe_df.loc["%missing"].isnull().all()

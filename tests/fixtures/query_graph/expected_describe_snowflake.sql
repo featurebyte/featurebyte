@@ -117,7 +117,7 @@ WITH data AS (
   SELECT
     COUNT(DISTINCT "ts") AS "unique__0",
     (
-      1.0 - COUNT("ts") / COUNT('*')
+      1.0 - COUNT("ts") / NULLIF(COUNT(*), 0)
     ) * 100 AS "%missing__0",
     NULL AS "%empty__0",
     NULL AS "mean__0",
@@ -131,7 +131,7 @@ WITH data AS (
     NULL AS "max TZ offset__0",
     COUNT(DISTINCT "cust_id") AS "unique__1",
     (
-      1.0 - COUNT("cust_id") / COUNT('*')
+      1.0 - COUNT("cust_id") / NULLIF(COUNT(*), 0)
     ) * 100 AS "%missing__1",
     COUNT_IF("cust_id" = '') AS "%empty__1",
     NULL AS "mean__1",
@@ -145,7 +145,7 @@ WITH data AS (
     NULL AS "max TZ offset__1",
     COUNT(DISTINCT "a") AS "unique__2",
     (
-      1.0 - COUNT("a") / COUNT('*')
+      1.0 - COUNT("a") / NULLIF(COUNT(*), 0)
     ) * 100 AS "%missing__2",
     NULL AS "%empty__2",
     AVG(CAST("a" AS DOUBLE)) AS "mean__2",
@@ -162,7 +162,7 @@ WITH data AS (
     NULL AS "max TZ offset__2",
     COUNT(DISTINCT "b") AS "unique__3",
     (
-      1.0 - COUNT("b") / COUNT('*')
+      1.0 - COUNT("b") / NULLIF(COUNT(*), 0)
     ) * 100 AS "%missing__3",
     NULL AS "%empty__3",
     AVG(CAST("b" AS DOUBLE)) AS "mean__3",
@@ -179,7 +179,7 @@ WITH data AS (
     NULL AS "max TZ offset__3",
     COUNT(DISTINCT "a_copy") AS "unique__4",
     (
-      1.0 - COUNT("a_copy") / COUNT('*')
+      1.0 - COUNT("a_copy") / NULLIF(COUNT(*), 0)
     ) * 100 AS "%missing__4",
     NULL AS "%empty__4",
     AVG(CAST("a_copy" AS DOUBLE)) AS "mean__4",
