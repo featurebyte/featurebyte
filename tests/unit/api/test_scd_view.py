@@ -371,3 +371,39 @@ def test_change_view_join_scd_view_with_rprefix(snowflake_scd_table):
         "past_col_boolean",
         "new_col_float",
     ]
+
+
+def test_join_parameters_columns__should_not_trigger_graph_inconsistency(
+    snowflake_scd_view, snowflake_event_view_with_entity, feature_group_feature_job_setting
+):
+    """Test join parameters column order"""
+    # reassigned an existing column to cause a change in column order
+    original_columns = snowflake_scd_view.columns
+    assert "col_float" in original_columns and original_columns != "col_float"
+    snowflake_scd_view["col_float"] = snowflake_scd_view["col_float"].astype(int)
+    assert snowflake_scd_view.columns[-1] == "col_float"
+
+    # create a feature without using the assigned column so that the assign operation is going to be pruned
+    joined_view = snowflake_event_view_with_entity.join(snowflake_scd_view, rsuffix="_scd")
+    filtered_joined_view = joined_view[joined_view["col_boolean_scd"] == True]
+    feature = filtered_joined_view.groupby("cust_id").aggregate_over(
+        value_column="col_int",
+        method="max",
+        feature_names=["col_int_max"],
+        windows=["3d"],
+        feature_job_setting=feature_group_feature_job_setting,
+    )["col_int_max"]
+
+    # check the feature is savable
+    feature.save()
+
+    # check that the col_float is not at the end of the column list
+    join_node_parameters = feature.cached_model.graph.get_node_by_name("join_1").parameters
+    assert join_node_parameters.right_input_columns == [
+        "col_float",
+        "col_binary",
+        "col_boolean",
+        "date_of_birth",
+        "created_at",
+        "cust_id",
+    ]
