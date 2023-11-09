@@ -54,7 +54,7 @@ WITH data AS (
   SELECT
     COUNT(DISTINCT "col_float") AS "unique__0",
     (
-      1.0 - COUNT("col_float") / COUNT('*')
+      1.0 - COUNT("col_float") / NULLIF(COUNT(*), 0)
     ) * 100 AS "%missing__0",
     NULL AS "%empty__0",
     AVG(CAST("col_float" AS DOUBLE)) AS "mean__0",
@@ -71,7 +71,7 @@ WITH data AS (
     NULL AS "max TZ offset__0",
     COUNT(DISTINCT "col_text") AS "unique__1",
     (
-      1.0 - COUNT("col_text") / COUNT('*')
+      1.0 - COUNT("col_text") / NULLIF(COUNT(*), 0)
     ) * 100 AS "%missing__1",
     COUNT_IF("col_text" = '') AS "%empty__1",
     NULL AS "mean__1",

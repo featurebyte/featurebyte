@@ -378,7 +378,13 @@ class PreviewMixin(BaseGraphInterpreter):
                         this=make_literal_value(1.0),
                         expression=expressions.Div(
                             this=expressions.Count(this=[col_expr]),
-                            expression=expressions.Count(this=[make_literal_value("*")]),
+                            expression=expressions.Anonymous(
+                                this="NULLIF",
+                                expressions=[
+                                    expressions.Count(this=[expressions.Star()]),
+                                    make_literal_value(0),
+                                ],
+                            ),
                         ),
                     ),
                 ),
