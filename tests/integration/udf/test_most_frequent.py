@@ -4,8 +4,10 @@ Tests for most frequent UDF
 import numpy as np
 import pytest
 
+from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
+
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS, indirect=True)
 @pytest.mark.parametrize(
     "counts, expected",
     [
@@ -32,7 +34,7 @@ async def test_most_frequent_udf(session, to_object, counts, expected):
     assert actual == expected
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS, indirect=True)
 @pytest.mark.parametrize(
     "counts, expected",
     [

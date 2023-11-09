@@ -6,6 +6,7 @@ import pandas as pd
 import pytest
 import pytest_asyncio
 
+from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS
 from tests.util.helper import fb_assert_frame_equal
 
 
@@ -51,7 +52,7 @@ def _get_query(aggregate_function: str) -> str:
     """
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS, indirect=True)
 @pytest.mark.asyncio
 async def test_vector_aggregate_max(setup_test_data, session):
     """
@@ -68,7 +69,7 @@ async def test_vector_aggregate_max(setup_test_data, session):
     fb_assert_frame_equal(df, expected_df, sort_by_columns=["ID_COL"])
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS, indirect=True)
 @pytest.mark.asyncio
 async def test_vector_aggregate_sum(setup_test_data, session):
     """
@@ -85,7 +86,7 @@ async def test_vector_aggregate_sum(setup_test_data, session):
     fb_assert_frame_equal(df, expected_df, sort_by_columns=["ID_COL"])
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS, indirect=True)
 @pytest.mark.asyncio
 async def test_vector_aggregate_simple_avg(setup_test_data, session):
     """
@@ -102,7 +103,7 @@ async def test_vector_aggregate_simple_avg(setup_test_data, session):
     fb_assert_frame_equal(df, expected_df, sort_by_columns=["ID_COL"])
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS, indirect=True)
 @pytest.mark.asyncio
 async def test_vector_aggregate_avg(setup_test_data, session):
     """
