@@ -15,8 +15,7 @@ from pydantic import Field
 
 from featurebyte import AccessTokenCredential
 from featurebyte.enum import DBVarType, SourceType
-from featurebyte.session.base import BaseSchemaInitializer
-from featurebyte.session.base_spark import BaseSparkSchemaInitializer, BaseSparkSession
+from featurebyte.session.base_spark import BaseSparkSession
 
 try:
     from databricks import sql as databricks_sql
