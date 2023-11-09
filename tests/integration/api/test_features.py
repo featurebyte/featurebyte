@@ -1,6 +1,7 @@
 """
 Tests for more features
 """
+import numpy as np
 import pandas as pd
 import pytest
 from pandas._testing import assert_frame_equal
@@ -121,6 +122,31 @@ def test_combined_simple_aggregate_and_window_aggregate(event_table, item_table)
     feature_list = FeatureList([feature], name="my_feature_list")
     df_feature_list_preview = feature_list.preview(observation_table)
     assert_frame_equal(df_feature_preview, df_feature_list_preview)
+
+
+def test_preview_with_numpy_array(item_table):
+    item_view = item_table.get_view()
+    item_feature = item_view.groupby("order_id").aggregate(
+        method="count", feature_name="my_item_feature"
+    )
+    df_observation = pd.DataFrame(
+        {
+            "POINT_IN_TIME": pd.to_datetime(["2001-11-15 10:00:00"]),
+            "order_id": ["T1"],
+            "array_field": [np.array([0.0, 1.0])],
+        }
+    )
+    df_preview = item_feature.preview(df_observation)
+
+    expected = [
+        {
+            "POINT_IN_TIME": pd.Timestamp("2001-11-15 10:00:00"),
+            "array_field": [0, 1],
+            "my_item_feature": 3,
+            "order_id": "T1",
+        }
+    ]
+    assert df_preview.to_dict("records") == expected
 
 
 def test_relative_frequency_with_filter(event_table, scd_table):

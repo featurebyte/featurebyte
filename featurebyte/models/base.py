@@ -9,6 +9,7 @@ import json
 import re
 from datetime import datetime
 
+import numpy as np
 from bson.errors import InvalidId
 from bson.objectid import ObjectId
 from pydantic import BaseModel, Field, StrictStr, root_validator, validator
@@ -140,7 +141,10 @@ class FeatureByteBaseModel(BaseModel):
         use_enum_values = True
 
         # With this mapping, `ObjectId` type attribute is converted to string during json serialization.
-        json_encoders = {ObjectId: str}
+        json_encoders = {
+            ObjectId: str,
+            np.ndarray: lambda arr: arr.tolist(),
+        }
 
 
 class UniqueConstraintResolutionSignature(StrEnum):

@@ -573,3 +573,7 @@ docs/notebooks/.ipynb_checkpoints/
 model.pkl
 training_data.csv
 training_data.parquet
+
+# sublime
+*.sublime-project
+*.sublime-workspace
