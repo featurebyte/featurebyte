@@ -49,6 +49,22 @@ def test_describe_specify_count_based_stats_only(simple_graph, update_fixtures):
     assert_equal_with_expected_fixture(sql_code, expected_filename, update_fixtures)
 
 
+def test_describe_specify_empty_stats(simple_graph, update_fixtures):
+    """
+    Test describe sql with empty stats edge case
+    """
+    graph, node = simple_graph
+    interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
+
+    sql_code, _, rows, columns = interpreter.construct_describe_sql(
+        node.name, num_rows=10, seed=1234, stats_names=[]
+    )
+    assert rows == ["dtype"]
+    assert [column.name for column in columns] == ["ts", "cust_id", "a", "b", "a_copy"]
+    expected_filename = f"tests/fixtures/query_graph/expected_describe_empty_stats.sql"
+    assert_equal_with_expected_fixture(sql_code, expected_filename, update_fixtures)
+
+
 def test_value_counts_sql(project_from_simple_graph, update_fixtures):
     """Test value counts sql"""
     graph, node = project_from_simple_graph

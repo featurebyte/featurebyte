@@ -765,19 +765,23 @@ class PreviewMixin(BaseGraphInterpreter):
                     )
 
         # get statistics
+        all_tables = []
         if stats_selections:
             sql_tree = expressions.select(*stats_selections).from_("data")
             cte_statements.append(("stats", sql_tree))
-            sql_tree = construct_cte_sql(cte_statements).select(*final_selections).from_("stats")
-        else:
-            assert count_tables
-            sql_tree = (
-                construct_cte_sql(cte_statements).select(*final_selections).from_(count_tables[0])
-            )
-            count_tables = count_tables[1:]
+            all_tables.append("stats")
 
-        for table_name in count_tables:
-            sql_tree = sql_tree.join(expression=table_name, join_type="LEFT")
+        if cte_statements:
+            sql_tree = construct_cte_sql(cte_statements)
+        else:
+            sql_tree = expressions.select()
+
+        sql_tree = sql_tree.select(*final_selections)
+        all_tables.extend(count_tables)
+        if all_tables:
+            sql_tree = sql_tree.from_(all_tables[0])
+            for table_name in all_tables[1:]:
+                sql_tree = sql_tree.join(expression=table_name, join_type="LEFT")
 
         return sql_tree, ["dtype"] + list(required_stats_expressions.keys()), output_columns
 
