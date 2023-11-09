@@ -1186,15 +1186,24 @@ class JoinNode(BasePrunableNode):
         return list(set(self.parameters.right_input_columns).union([self.parameters.right_on]))
 
     @staticmethod
-    def _filter_columns(
-        input_columns: Sequence[str], output_columns: Sequence[str], available_columns: Set[str]
+    def _filter_and_reorder_columns(
+        input_columns: Sequence[str], output_columns: Sequence[str], available_columns: List[str]
     ) -> Tuple[List[str], List[str]]:
         # filter input & output columns using the available columns
         in_cols, out_cols = [], []
+        in_to_out_col = {}
         for in_col, out_col in zip(input_columns, output_columns):
             if in_col in available_columns:
                 in_cols.append(in_col)
-                out_cols.append(out_col)
+                in_to_out_col[in_col] = out_col
+
+        # reorder the input & output columns so that it is aligned with the input column order
+        # without this, the output column order may be different from the input column order.
+        # when it is different, it will cause graph inconsistency issue when the graph is
+        # regenerated from feature definition.
+        column_order = {col: i for i, col in enumerate(available_columns)}
+        in_cols = sorted(in_cols, key=lambda col: column_order[col])
+        out_cols = [in_to_out_col[col] for col in in_cols]
         return in_cols, out_cols
 
     def prune(
@@ -1205,13 +1214,13 @@ class JoinNode(BasePrunableNode):
         # Prune the join node parameters by using the available columns. If the input column is not found in the
         # input operation structure, remove it & its corresponding output column name from the join node parameters.
         assert len(input_operation_structures) == 2
-        left_avail_columns = set(col.name for col in input_operation_structures[0].columns)
-        right_avail_columns = set(col.name for col in input_operation_structures[1].columns)
+        left_avail_columns = [col.name for col in input_operation_structures[0].columns]
+        right_avail_columns = [col.name for col in input_operation_structures[1].columns]
         node_params = self.parameters.dict()
         (
             node_params["left_input_columns"],
             node_params["left_output_columns"],
-        ) = self._filter_columns(  # type: ignore[attr-defined]
+        ) = self._filter_and_reorder_columns(  # type: ignore[attr-defined]
             self.parameters.left_input_columns,  # type: ignore[attr-defined]
             self.parameters.left_output_columns,  # type: ignore[attr-defined]
             left_avail_columns,
@@ -1219,7 +1228,7 @@ class JoinNode(BasePrunableNode):
         (
             node_params["right_input_columns"],
             node_params["right_output_columns"],
-        ) = self._filter_columns(  # type: ignore[attr-defined]
+        ) = self._filter_and_reorder_columns(  # type: ignore[attr-defined]
             self.parameters.right_input_columns,  # type: ignore[attr-defined]
             self.parameters.right_output_columns,  # type: ignore[attr-defined]
             right_avail_columns,

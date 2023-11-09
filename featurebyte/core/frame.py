@@ -66,7 +66,7 @@ class BaseFrame(QueryObject, SampleMixin):
         -------
         list[str]
         """
-        return list(self.column_var_type_map)
+        return [col.name for col in self.columns_info]
 
 
 FrozenFrameT = TypeVar("FrozenFrameT", bound="FrozenFrame")

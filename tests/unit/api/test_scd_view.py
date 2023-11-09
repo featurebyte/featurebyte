@@ -371,3 +371,21 @@ def test_change_view_join_scd_view_with_rprefix(snowflake_scd_table):
         "past_col_boolean",
         "new_col_float",
     ]
+
+
+def test_join_parameters_columns__should_not_trigger_graph_inconsistency(
+    snowflake_scd_view, snowflake_event_view_with_entity, feature_group_feature_job_setting
+):
+    """Test join parameters column order"""
+    snowflake_scd_view["col_float"] = snowflake_scd_view["col_float"].astype(int)
+    joined_view = snowflake_event_view_with_entity.join(snowflake_scd_view, rsuffix="_scd")
+    filtered_joined_view = joined_view[joined_view["col_boolean_scd"] == True]
+    feature = filtered_joined_view.groupby("cust_id").aggregate_over(
+        value_column="col_int",
+        method="max",
+        feature_names=["col_int_max"],
+        windows=["3d"],
+        feature_job_setting=feature_group_feature_job_setting,
+    )["col_int_max"]
+    feature.save()
+    assert feature.saved

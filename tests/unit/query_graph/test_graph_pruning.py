@@ -310,9 +310,9 @@ def test_join_with_assign_node__join_node_parameters_pruning(
         "left_input_columns": ["cust_id", "order_id", "order_method"],
         "left_on": "order_id",
         "left_output_columns": ["cust_id", "order_id", "order_method"],
-        "right_input_columns": ["item_type", "item_name"],
+        "right_input_columns": ["item_name", "item_type"],
         "right_on": "order_id",
-        "right_output_columns": ["item_type", "item_name"],
+        "right_output_columns": ["item_name", "item_type"],
         "scd_parameters": None,
         "metadata": join_node_parameters["metadata"],
     }
