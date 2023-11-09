@@ -15,7 +15,8 @@ from pydantic import Field
 
 from featurebyte import AccessTokenCredential
 from featurebyte.enum import DBVarType, SourceType
-from featurebyte.session.base_spark import BaseSparkSession
+from featurebyte.session.base import BaseSchemaInitializer
+from featurebyte.session.base_spark import BaseSparkSchemaInitializer, BaseSparkSession
 
 try:
     from databricks import sql as databricks_sql
@@ -167,3 +168,15 @@ class DatabricksSession(BaseSparkSession):
                     break
                 for record_batch in arrow_table.to_batches():
                     yield record_batch
+
+
+class DatabricksUnitySession(DatabricksSession):
+    """
+    Databricks Unity session class
+    """
+
+    source_type: SourceType = Field(SourceType.DATABRICKS_UNITY, const=True)
+
+    def initializer(self) -> BaseSchemaInitializer:
+        # TODO: need to update this to handle function registration properly
+        return BaseSparkSchemaInitializer(self)

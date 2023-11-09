@@ -225,6 +225,7 @@ class SourceType(StrEnum):
     SNOWFLAKE = "snowflake", "Snowflake connection details."
     SQLITE = "sqlite", "SQLite connection details."
     DATABRICKS = "databricks", "DataBricks connection details."
+    DATABRICKS_UNITY = "databricks_unity", "DataBricks Unity Catalog connection details."
     SPARK = "spark", "Spark connection details."
 
     # TEST source type should only be used for mocking in unit tests.
@@ -239,7 +240,7 @@ class SourceType(StrEnum):
         -------
         list[str]
         """
-        return [cls.SNOWFLAKE, cls.DATABRICKS]
+        return [cls.SNOWFLAKE, cls.DATABRICKS, cls.DATABRICKS_UNITY]
 
 
 class StorageType(StrEnum):

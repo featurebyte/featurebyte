@@ -32,7 +32,7 @@ def get_sql_adapter(source_type: SourceType) -> BaseAdapter:
     BaseAdapter
         Instance of BaseAdapter
     """
-    if source_type == SourceType.DATABRICKS:
+    if source_type in {SourceType.DATABRICKS, SourceType.DATABRICKS_UNITY}:
         return DatabricksAdapter()
     if source_type == SourceType.SPARK:
         return SparkAdapter()
