@@ -407,8 +407,10 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
         )
         await super().register_missing_objects()
 
-    async def register_missing_functions(self, functions: list[dict[str, Any]]) -> None:
-        await super().register_missing_functions(functions)
+    async def register_functions_from_jar(self) -> None:
+        """
+        Register functions from jar file
+        """
         # Note that Spark does not seem to be able to reload the same class until the spark app is restarted.
         # To ensure functionality is updated for a function we should create a new class
         # and re-register the function with the new class
@@ -452,12 +454,16 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
             )
             await self.session.execute_query(
                 f"""
-                DROP FUNCTION IF EXISTS {function_name}
-                """
+                        DROP FUNCTION IF EXISTS {function_name}
+                        """
             )
             await self.session.execute_query(
                 f"""
-                CREATE OR REPLACE FUNCTION {function_name} AS '{class_name}'
-                USING JAR '{self.udf_jar_spark_reference_path}';
-                """
+                        CREATE OR REPLACE FUNCTION {function_name} AS '{class_name}'
+                        USING JAR '{self.udf_jar_spark_reference_path}';
+                        """
             )
+
+    async def register_missing_functions(self, functions: list[dict[str, Any]]) -> None:
+        await super().register_missing_functions(functions)
+        await self.register_functions_from_jar()
