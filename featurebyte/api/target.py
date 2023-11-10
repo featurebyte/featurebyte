@@ -352,7 +352,7 @@ class Target(
             else RequestInputType.DATAFRAME
         )
 
-        target_id = self.id
+        target_id: Optional[ObjectId] = self.id
         pruned_graph, pruned_node_name = None, None
         if not self.saved:
             # if the target is not saved, we use the graph & node to run the target table creation
@@ -369,6 +369,7 @@ class Target(
             serving_names_mapping=serving_names_mapping,
             graph=pruned_graph,
             node_name=pruned_node_name,
+            target_id=target_id,
             request_input=TargetInput(
                 target_id=target_id,
                 observation_table_id=observation_table_id,
