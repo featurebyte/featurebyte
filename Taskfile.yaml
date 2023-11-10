@@ -425,8 +425,11 @@ tasks:
 
   docker-tag-featurebyte-version:
     desc: "Tag the featurebyte-server docker image with the version extracted from running 'featurebyte version'."
+    vars:
+      FB_VERSION:
+        sh: poetry run featurebyte version | cut -d' ' -f2
     cmds:
-      - poetry run docker tag featurebyte-server:latest featurebyte/featurebyte-server:$(featurebyte version | cut -d' ' -f2)
+      - poetry run docker tag featurebyte-server:latest featurebyte/featurebyte-server:{{.FB_VERSION}}
 
   publish-mongodb:
     desc: "Publish mongodb package to public featurebyte registry"
