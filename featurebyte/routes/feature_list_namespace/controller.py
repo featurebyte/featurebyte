@@ -76,6 +76,7 @@ class FeatureListNamespaceController(
                 "entity_ids": 1,
                 "table_ids": 1,
                 "readiness_distribution": 1,
+                "dtype_distribution": 1,
             },
         )
         output = FeatureListNamespaceModelResponse(
@@ -85,6 +86,7 @@ class FeatureListNamespaceController(
                 "entity_ids": default_feature_list_doc["entity_ids"],
                 "table_ids": default_feature_list_doc["table_ids"],
                 "readiness_distribution": default_feature_list_doc["readiness_distribution"],
+                "dtype_distribution": default_feature_list_doc["dtype_distribution"],
             }
         )
         return cast(Document, output)
@@ -119,6 +121,7 @@ class FeatureListNamespaceController(
                     "entity_ids": 1,
                     "table_ids": 1,
                     "readiness_distribution": 1,
+                    "dtype_distribution": 1,
                 },
             )
         }
@@ -135,6 +138,7 @@ class FeatureListNamespaceController(
                         "entity_ids": feature_list_doc["entity_ids"],
                         "table_ids": feature_list_doc["table_ids"],
                         "readiness_distribution": feature_list_doc["readiness_distribution"],
+                        "dtype_distribution": feature_list_doc["dtype_distribution"],
                     }
                 )
             )

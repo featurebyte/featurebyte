@@ -8,6 +8,7 @@ from featurebyte.models.feature_list import (
     FeatureListNamespaceModel,
     FeatureListStatus,
     FeatureReadinessDistribution,
+    FeatureTypeFeatureCount,
 )
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 
@@ -18,6 +19,7 @@ class FeatureListNamespaceModelResponse(FeatureListNamespaceModel):
     """
 
     readiness_distribution: FeatureReadinessDistribution
+    dtype_distribution: List[FeatureTypeFeatureCount]
     primary_entity_ids: List[PydanticObjectId]
     entity_ids: List[PydanticObjectId]
     table_ids: List[PydanticObjectId]
