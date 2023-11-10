@@ -54,7 +54,6 @@ class TargetTableCreate(FeatureOrTargetTableCreate):
         raise ValueError(
             "Both graph and node_names should be provided, or neither should be provided."
         )
-        return values
 
     @property
     def nodes(self) -> List[Node]:
