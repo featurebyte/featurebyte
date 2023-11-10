@@ -37,7 +37,6 @@ from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.observation_table import TargetInput
 from featurebyte.models.request_input import RequestInputType
 from featurebyte.models.target import TargetModel
-from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.schema.target import TargetCreate, TargetUpdate
 from featurebyte.schema.target_table import TargetTableCreate
@@ -351,25 +350,13 @@ class Target(
             if is_input_observation_table
             else RequestInputType.DATAFRAME
         )
-
-        target_id: Optional[ObjectId] = self.id
-        pruned_graph, pruned_node_name = None, None
-        if not self.saved:
-            # if the target is not saved, we use the graph & node to run the target table creation
-            target_id = None
-            pruned_graph, node_name_map = GlobalQueryGraph().quick_prune(
-                target_node_names=[self.node.name]
-            )
-            pruned_node_name = node_name_map[self.node.name]
-
         target_table_create_params = TargetTableCreate(
             name=observation_table_name,
             observation_table_id=observation_table_id,
             feature_store_id=self.feature_store.id,
             serving_names_mapping=serving_names_mapping,
-            graph=pruned_graph,
-            node_name=pruned_node_name,
-            target_id=target_id,
+            graph=self.graph,
+            node_name=self.node.name,
             request_input=TargetInput(
                 target_id=self.id,
                 observation_table_id=observation_table_id,
