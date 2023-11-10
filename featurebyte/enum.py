@@ -157,6 +157,27 @@ class DBVarType(StrEnum):
         """
         return {cls.VARCHAR, cls.INT}
 
+    @classmethod
+    def primitive_types(cls) -> set[DBVarType]:
+        """
+        List of non-primitive types (not supported by all databases)
+
+        Returns
+        -------
+        set[DBVarType]
+        """
+        return {
+            cls.INT,
+            cls.FLOAT,
+            cls.DATE,
+            cls.TIME,
+            cls.TIMESTAMP,
+            cls.TIMESTAMP_TZ,
+            cls.BOOL,
+            cls.CHAR,
+            cls.VARCHAR,
+        }
+
     def to_type_str(self) -> str | None:
         """
         Convert DBVarType to internal type string

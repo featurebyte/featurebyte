@@ -145,13 +145,7 @@ def test_column_info__valid_construction_with_value_beyond_endpoint_imputation(
 
 
 NON_PRIMITIVE_TYPES = [
-    DBVarType.BINARY,
-    DBVarType.OBJECT,
-    DBVarType.TIMEDELTA,
-    DBVarType.VOID,
-    DBVarType.MAP,
-    DBVarType.STRUCT,
-    DBVarType.UNKNOWN,
+    var_type for var_type in DBVarType if var_type not in DBVarType.primitive_types()
 ]
 
 

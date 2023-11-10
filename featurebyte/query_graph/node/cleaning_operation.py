@@ -236,17 +236,7 @@ class DisguisedValueImputation(BaseCleaningOperation):
         description="List of values that need to be replaced."
     )
 
-    supported_dtypes: ClassVar[Optional[Set[DBVarType]]] = {
-        DBVarType.INT,
-        DBVarType.FLOAT,
-        DBVarType.DATE,
-        DBVarType.TIME,
-        DBVarType.TIMESTAMP,
-        DBVarType.TIMESTAMP_TZ,
-        DBVarType.BOOL,
-        DBVarType.CHAR,
-        DBVarType.VARCHAR,
-    }
+    supported_dtypes: ClassVar[Optional[Set[DBVarType]]] = DBVarType.primitive_types()
 
     def cast(self, dtype: DBVarType) -> None:
         super().cast(dtype)
@@ -293,17 +283,7 @@ class UnexpectedValueImputation(BaseCleaningOperation):
         description="List of values that are expected to be present."
     )
 
-    supported_dtypes: ClassVar[Optional[Set[DBVarType]]] = {
-        DBVarType.INT,
-        DBVarType.FLOAT,
-        DBVarType.DATE,
-        DBVarType.TIME,
-        DBVarType.TIMESTAMP,
-        DBVarType.TIMESTAMP_TZ,
-        DBVarType.BOOL,
-        DBVarType.CHAR,
-        DBVarType.VARCHAR,
-    }
+    supported_dtypes: ClassVar[Optional[Set[DBVarType]]] = DBVarType.primitive_types()
 
     def cast(self, dtype: DBVarType) -> None:
         super().cast(dtype)
