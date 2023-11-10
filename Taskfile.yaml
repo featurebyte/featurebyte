@@ -28,6 +28,12 @@ tasks:
     cmds:
       - poetry install -n --sync --extras=server
 
+  install-published-featurebyte:
+    desc: "Install the published version of the featurebyte SDK"
+    cmds:
+      - poetry run pip uninstall --yes featurebyte
+      - poetry run pip install featurebyte
+
   lint-java:
     desc: "Run linter for java"
     sources:
