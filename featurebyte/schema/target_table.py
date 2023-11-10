@@ -47,14 +47,13 @@ class TargetTableCreate(FeatureOrTargetTableCreate):
                 "If target_id is provided, graph and node_names should not be provided."
             )
 
-        # DEV-2594: skip the following check until we fix the issue
-        # # If target is not provided, graph and node_names should be provided.
-        # both_are_not_none = graph is not None and node_names is not None
-        # if both_are_not_none:
-        #     return values
-        # raise ValueError(
-        #     "Both graph and node_names should be provided, or neither should be provided."
-        # )
+        # If target is not provided, graph and node_names should be provided.
+        both_are_not_none = graph is not None and node_names is not None
+        if both_are_not_none:
+            return values
+        raise ValueError(
+            "Both graph and node_names should be provided, or neither should be provided."
+        )
         return values
 
     @property
