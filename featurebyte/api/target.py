@@ -371,7 +371,7 @@ class Target(
             node_name=pruned_node_name,
             target_id=target_id,
             request_input=TargetInput(
-                target_id=target_id,
+                target_id=self.id,
                 observation_table_id=observation_table_id,
                 type=input_type,
             ),
