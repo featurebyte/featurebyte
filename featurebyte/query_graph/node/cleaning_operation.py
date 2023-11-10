@@ -11,7 +11,7 @@ import pandas as pd
 from pydantic import Field, validator
 
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.typing import Numeric, OptionalScalar, Scalar
+from featurebyte.common.typing import OptionalScalar, Scalar
 from featurebyte.enum import DBVarType, StrEnum
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
