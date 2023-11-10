@@ -301,22 +301,22 @@ tasks:
   test-notebooks:
     desc: "Runs the notebook tests"
     cmds:
-      - poetry run pytest --junitxml=pytest.xml tests/notebooks
+      - pytest --junitxml=pytest.xml tests/notebooks
 
   test-quick-start-notebooks:
     desc: "Runs the notebook tests"
     cmds:
-      - poetry run pytest --junitxml=pytest-quick.xml -k quick tests/notebooks
+      - pytest --junitxml=pytest-quick.xml -k quick tests/notebooks
 
   test-deep-dive-notebooks:
     desc: "Runs the notebook tests"
     cmds:
-      - poetry run pytest --junitxml=pytest.xml -k deep tests/notebooks
+      - pytest --junitxml=pytest.xml -k deep tests/notebooks
 
   test-playground-notebooks:
     desc: "Runs the notebook tests"
     cmds:
-      - poetry run pytest --junitxml=pytest.xml -k playground tests/notebooks
+      - pytest --junitxml=pytest.xml -k playground tests/notebooks
 
   test-setup:
     desc: "Setup the test environment"
