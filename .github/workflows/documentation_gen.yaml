@@ -24,7 +24,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   build-updated-docs:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-4-cores
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'Documentation Changes Confirmed') }}
     strategy:
       matrix:
