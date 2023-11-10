@@ -18,7 +18,7 @@ event_view = event_table.get_view(
             column_name="col_float",
             cleaning_operations=[
                 DisguisedValueImputation(
-                    imputed_value=-1, disguised_values=[-99]
+                    imputed_value=-1.0, disguised_values=[-99.0]
                 )
             ],
         ),

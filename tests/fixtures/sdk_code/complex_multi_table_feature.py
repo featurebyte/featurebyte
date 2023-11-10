@@ -14,7 +14,7 @@ item_view = item_table.get_view(
     column_cleaning_operations=[
         ColumnCleaningOperation(
             column_name="event_id_col",
-            cleaning_operations=[MissingValueImputation(imputed_value=0.0)],
+            cleaning_operations=[MissingValueImputation(imputed_value=0)],
         ),
         ColumnCleaningOperation(
             column_name="item_amount",
@@ -25,7 +25,7 @@ item_view = item_table.get_view(
     event_column_cleaning_operations=[
         ColumnCleaningOperation(
             column_name="col_int",
-            cleaning_operations=[MissingValueImputation(imputed_value=0.0)],
+            cleaning_operations=[MissingValueImputation(imputed_value=0)],
         ),
         ColumnCleaningOperation(
             column_name="col_float",
@@ -33,7 +33,7 @@ item_view = item_table.get_view(
         ),
         ColumnCleaningOperation(
             column_name="cust_id",
-            cleaning_operations=[MissingValueImputation(imputed_value=0.0)],
+            cleaning_operations=[MissingValueImputation(imputed_value=0)],
         ),
     ],
     event_join_column_names=["event_timestamp", "cust_id"],
@@ -45,7 +45,7 @@ event_view = event_table.get_view(
     column_cleaning_operations=[
         ColumnCleaningOperation(
             column_name="col_int",
-            cleaning_operations=[MissingValueImputation(imputed_value=0.0)],
+            cleaning_operations=[MissingValueImputation(imputed_value=0)],
         ),
         ColumnCleaningOperation(
             column_name="col_float",
@@ -53,7 +53,7 @@ event_view = event_table.get_view(
         ),
         ColumnCleaningOperation(
             column_name="cust_id",
-            cleaning_operations=[MissingValueImputation(imputed_value=0.0)],
+            cleaning_operations=[MissingValueImputation(imputed_value=0)],
         ),
     ],
 )
@@ -61,10 +61,10 @@ joined_view = item_view.join_event_table_attributes(
     columns=["col_float", "col_char", "col_boolean"],
     event_suffix="_event_table",
 )
-col = joined_view["item_amount"]
-col_1 = joined_view["col_float_event_table"]
+col = joined_view["col_float_event_table"]
+col_1 = joined_view["item_amount"]
 view = joined_view.copy()
-view["percent"] = col / col_1
+view["percent"] = col_1 / col
 col_2 = view.groupby(by_keys=["event_id_col"], category=None).aggregate(
     value_column="percent",
     method="max",
