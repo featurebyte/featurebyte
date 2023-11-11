@@ -34,7 +34,7 @@ from featurebyte.query_graph.node.cleaning_operation import (
         (DBVarType.DATE, "2023-11-09T11:59:15", "2023-11-09"),
         (DBVarType.TIMESTAMP, "2023-11-09T11:59:15", "2023-11-09T11:59:15"),
         (DBVarType.TIMESTAMP, "2023-11-09", "2023-11-09T00:00:00"),
-        (DBVarType.TIMESTAMP, "2021-01-01 00:00:00-0800", "2021-01-01T00:00:00"),
+        (DBVarType.TIMESTAMP, "2021-01-01 00:00:00-0800", "2021-01-01T08:00:00"),
         (DBVarType.TIMESTAMP_TZ, "2023-11-09T11:59:15", "2023-11-09T11:59:15"),
         (DBVarType.TIMESTAMP_TZ, "2021-01-01 00:00:00-0800", "2021-01-01T00:00:00-0800"),
         # failed cast (expected imputed value is None)
@@ -121,7 +121,7 @@ def test_column_info__valid_construction_with_disguised_value_and_unexpected_val
         (DBVarType.FLOAT, 0, 0, 0.0, 0.0),
         (DBVarType.DATE, None, "2020-01-01", None, "2020-01-01"),
         (DBVarType.TIME, None, "12:00:00", None, "12:00:00"),
-        (DBVarType.TIMESTAMP, None, "2021-01-01 00:00:00-0800", None, "2021-01-01T00:00:00"),
+        (DBVarType.TIMESTAMP, None, "2021-01-01 00:00:00-0800", None, "2021-01-01T08:00:00"),
     ],
 )
 def test_column_info__valid_construction_with_value_beyond_endpoint_imputation(

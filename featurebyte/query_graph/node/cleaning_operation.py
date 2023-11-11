@@ -99,7 +99,11 @@ class BaseCleaningOperation(FeatureByteBaseModel):
             if dtype == DBVarType.BOOL:
                 return bool(value)
             if dtype == DBVarType.TIMESTAMP:
-                return pd.Timestamp(str(value)).strftime("%Y-%m-%dT%H:%M:%S")
+                ts = pd.Timestamp(str(value))
+                if ts.tz:
+                    # convert to UTC if timestamp has timezone
+                    return ts.tz_convert("UTC").strftime("%Y-%m-%dT%H:%M:%S")
+                return ts.strftime("%Y-%m-%dT%H:%M:%S")
             if dtype == DBVarType.TIMESTAMP_TZ:
                 return pd.Timestamp(str(value)).strftime("%Y-%m-%dT%H:%M:%S%z")
             if dtype == DBVarType.DATE:
