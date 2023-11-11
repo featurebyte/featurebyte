@@ -30,7 +30,7 @@ class TargetTableCreate(FeatureOrTargetTableCreate):
     context_id: Optional[PydanticObjectId]
     skip_entity_validation_checks: bool = Field(default=False)
 
-    @root_validator(pre=True)
+    # @root_validator(pre=True)  # DEV-2594: disable this to fix backward compatibility for release client
     @classmethod
     def _check_graph_and_node_names(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         graph = values.get("graph", None)
