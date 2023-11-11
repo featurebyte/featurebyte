@@ -269,7 +269,8 @@ class BaseFeatureGroup(AsyncMixin):
         -------
         List[FeatureCluster]
         """
-        return FeatureListModel.derive_feature_clusters(cast(List[FeatureModel], self._features))
+        feature_models = [FeatureModel(**feature.dict(by_alias=True)) for feature in self._features]
+        return FeatureListModel.derive_feature_clusters(feature_models)
 
     @enforce_observation_set_row_order
     @typechecked
