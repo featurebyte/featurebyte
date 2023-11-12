@@ -10,6 +10,7 @@ from featurebyte.models.item_table import ItemTableModel
 from featurebyte.routes.common.base_table import BaseTableDocumentController
 from featurebyte.schema.info import ItemTableInfo
 from featurebyte.schema.item_table import ItemTableList, ItemTableServiceUpdate
+from featurebyte.service.column_attributes import ColumnAttributesDetectionService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_table import EventTableService
 from featurebyte.service.feature import FeatureService
@@ -37,7 +38,7 @@ class ItemTableController(
         "item_id_column": SemanticType.ITEM_ID,
     }
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         item_table_service: TableDocumentService,
         table_facade_service: TableFacadeService,
@@ -48,6 +49,7 @@ class ItemTableController(
         feature_list_service: FeatureListService,
         table_info_service: TableInfoService,
         event_table_service: EventTableService,
+        column_attributes_detection_service: ColumnAttributesDetectionService,
     ):
         super().__init__(
             service=item_table_service,
@@ -57,6 +59,7 @@ class ItemTableController(
             feature_service=feature_service,
             target_service=target_service,
             feature_list_service=feature_list_service,
+            column_attributes_detection_service=column_attributes_detection_service,
         )
         self.table_info_service = table_info_service
         self.event_table_service = event_table_service

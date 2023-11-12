@@ -463,7 +463,7 @@ def mock_settings_env_vars(mock_config_path_env, mock_get_persistent):
 
 
 @pytest.fixture(name="transaction_data", scope="session")
-def transaction_dataframe():
+def transaction_dataframe(source_type):
     """
     Simulated transaction Dataframe
     """
@@ -519,6 +519,17 @@ def transaction_dataframe():
     )
     data["tz_offset"] = formatted_offsets
     data["transaction_id"] = [f"T{i}" for i in range(data.shape[0])]
+
+    if source_type != "sqlite":
+        data["embedding_array"] = [rng.random(10).tolist() for _ in range(row_number)]
+        data["array"] = [rng.random(rng.randint(5, 10)).tolist() for _ in range(row_number)]
+        data["flat_dict"] = [
+            {"a": rng.randint(0, 10), "b": rng.randint(0, 10)} for _ in range(row_number)
+        ]
+        data["nested_dict"] = [
+            {"a": {"b": rng.randint(0, 10)}, "c": rng.randint(0, 10)} for _ in range(row_number)
+        ]
+
     yield data
 
 
@@ -690,15 +701,18 @@ def expected_joined_event_item_dataframe_fixture(transaction_data_upper_case, it
 
 
 @pytest.fixture(name="sqlite_filename", scope="session")
-def sqlite_filename_fixture(transaction_data):
+def sqlite_filename_fixture(transaction_data, source_type):
     """
     Create SQLite database file with table for testing
     """
-    with tempfile.NamedTemporaryFile() as file_handle:
-        connection = sqlite3.connect(file_handle.name)
-        transaction_data.to_sql(name="test_table", con=connection, index=False)
-        connection.commit()
-        yield file_handle.name
+    if source_type == "sqlite":
+        with tempfile.NamedTemporaryFile() as file_handle:
+            connection = sqlite3.connect(file_handle.name)
+            transaction_data.to_sql(name="test_table", con=connection, index=False)
+            connection.commit()
+            yield file_handle.name
+    else:
+        yield
 
 
 @pytest.fixture(name="session_manager", scope="session")
@@ -1093,6 +1107,10 @@ def create_transactions_event_table_from_data_source(
             "ÀMOUNT": "FLOAT",
             "TZ_OFFSET": "VARCHAR",
             "TRANSACTION_ID": "VARCHAR",
+            "EMBEDDING_ARRAY": "ARRAY",
+            "ARRAY": "ARRAY",
+            "FLAT_DICT": "OBJECT" if data_source.type == SourceType.SNOWFLAKE else "STRUCT",
+            "NESTED_DICT": "OBJECT" if data_source.type == SourceType.SNOWFLAKE else "STRUCT",
         }
     )
     pd.testing.assert_series_equal(expected_dtypes, database_table.dtypes)

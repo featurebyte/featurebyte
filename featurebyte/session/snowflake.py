@@ -243,6 +243,7 @@ class SnowflakeSession(BaseSession):
             SnowflakeDataType.DATE: DBVarType.DATE,
             SnowflakeDataType.TIME: DBVarType.TIME,
             SnowflakeDataType.ARRAY: DBVarType.ARRAY,
+            SnowflakeDataType.OBJECT: DBVarType.OBJECT,
         }
         if snowflake_var_info["type"] in to_internal_variable_map:
             return to_internal_variable_map[snowflake_var_info["type"]]
@@ -315,6 +316,12 @@ class SnowflakeSession(BaseSession):
             ):
                 # Consider the type as an ARRAY if all elements are None, or a list.
                 db_type = "ARRAY"
+            elif (
+                dataframe.shape[0] > 0
+                and dataframe[colname].apply(lambda x: x is None or isinstance(x, dict)).all()
+            ):
+                # Consider the type as an OBJECT if all elements are None, or a dict.
+                db_type = "OBJECT"
             else:
                 db_type = "VARCHAR"
             schema.append((colname, db_type))

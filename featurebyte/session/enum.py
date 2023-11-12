@@ -17,6 +17,7 @@ class SnowflakeDataType(StrEnum):
     DATE = "DATE"
     TIME = "TIME"
     ARRAY = "ARRAY"
+    OBJECT = "OBJECT"
     TIMESTAMP_LTZ = "TIMESTAMP_LTZ"
     TIMESTAMP_NTZ = "TIMESTAMP_NTZ"
     TIMESTAMP_TZ = "TIMESTAMP_TZ"

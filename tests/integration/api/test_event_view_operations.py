@@ -119,6 +119,10 @@ def event_view_fixture(event_table):
         "ÀMOUNT",
         "TZ_OFFSET",
         "TRANSACTION_ID",
+        "EMBEDDING_ARRAY",
+        "ARRAY",
+        "FLAT_DICT",
+        "NESTED_DICT",
     ]
     return event_view
 
