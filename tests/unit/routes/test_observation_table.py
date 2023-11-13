@@ -5,6 +5,7 @@ import copy
 import os
 import tempfile
 from http import HTTPStatus
+from unittest.mock import patch
 
 import pandas as pd
 import pytest
@@ -46,6 +47,14 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
             f'Context (id: "{unknown_context_id}") not found. Please save the Context object first.',
         )
     ]
+
+    @pytest.fixture(autouse=True)
+    def mock_add_columns_attributes(self):
+        """Mock columns attributes service excecution"""
+        with patch(
+            "featurebyte.service.column_attributes.ColumnAttributesDetectionService.add_columns_attributes"
+        ):
+            yield
 
     def setup_creation_route(self, api_client):
         """

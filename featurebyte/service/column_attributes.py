@@ -1,6 +1,8 @@
 """Module with extra services for data type info detection like embedding columns or flat (non-nested) dicts"""
 from __future__ import annotations
 
+from typing import Any
+
 import json
 from abc import ABC, abstractmethod
 
@@ -71,8 +73,9 @@ class ColumnAttributesDetectionService:
                 seed=RANDOM_SEED,
             )
         )
-        for detector in self.detectors:
-            await detector.detect(table.columns_info, sample)
+        if sample.shape[0] > 0:  # pylint: disable=no-member
+            for detector in self.detectors:
+                await detector.detect(table.columns_info, sample)
 
 
 class BaseColumnAttributesDetector(ABC):
@@ -105,6 +108,7 @@ class ArrayEmbeddingColumnAttributesDetector(BaseColumnAttributesDetector):
         for column in columns_info:
             if str(column.dtype) == DBVarType.ARRAY.value:
                 series = sample[column.name]
+                series = series[pd.notnull(series)]
                 shapes = series.apply(len)
 
                 if shapes.unique().ravel().shape != (1,):
@@ -125,12 +129,12 @@ class ArrayEmbeddingColumnAttributesDetector(BaseColumnAttributesDetector):
 class FlatDictColumnAttributesDetector(BaseColumnAttributesDetector):
     """Detect and add attributes to columns which are flat (not nested) dicts."""
 
-    def is_flat_dict(self, data: str) -> bool:
+    def is_flat_dict(self, data: Any) -> bool:
         """Check dict value is flat (non-nested).
 
         Parameters
         ----------
-        data : str
+        data : Any
             Input value to check.
 
         Returns
@@ -138,7 +142,10 @@ class FlatDictColumnAttributesDetector(BaseColumnAttributesDetector):
         bool
             True if flat, False otherwise.
         """
-        value = json.loads(data)
+        if isinstance(data, str):
+            value = json.loads(data)
+        else:
+            value = data
         return isinstance(value, dict) and all(not isinstance(val, dict) for val in value.values())
 
     async def detect(self, columns_info: list[ColumnInfo], sample: pd.DataFrame) -> None:

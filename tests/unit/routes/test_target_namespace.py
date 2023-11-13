@@ -2,7 +2,9 @@
 Test for target namespace routes
 """
 from http import HTTPStatus
+from unittest.mock import patch
 
+import pytest
 from bson import ObjectId
 
 from tests.unit.routes.base import BaseCatalogApiTestSuite
@@ -31,6 +33,14 @@ class TestTargetNamespaceApi(BaseCatalogApiTestSuite):
             f'TargetNamespace (id: "{unknown_id}") not found. Please save the TargetNamespace object first.',
         )
     ]
+
+    @pytest.fixture(autouse=True)
+    def mock_add_columns_attributes(self):
+        """Mock columns attributes service excecution"""
+        with patch(
+            "featurebyte.service.column_attributes.ColumnAttributesDetectionService.add_columns_attributes"
+        ):
+            yield
 
     def setup_creation_route(self, api_client):
         """

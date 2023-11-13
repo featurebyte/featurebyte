@@ -2,6 +2,7 @@
 Test relationship info routes
 """
 from http import HTTPStatus
+from unittest.mock import patch
 
 import pytest
 import pytest_asyncio
@@ -27,6 +28,14 @@ class TestRelationshipInfoApi(BaseCatalogApiTestSuite):
     )
     create_conflict_payload_expected_detail_pairs = []
     create_unprocessable_payload_expected_detail_pairs = []
+
+    @pytest.fixture(autouse=True)
+    def mock_add_columns_attributes(self):
+        """Mock columns attributes service excecution"""
+        with patch(
+            "featurebyte.service.column_attributes.ColumnAttributesDetectionService.add_columns_attributes"
+        ):
+            yield
 
     def multiple_success_payload_generator(self, api_client):
         """Create multiple payload for setting up create_multiple_success_responses fixture"""
