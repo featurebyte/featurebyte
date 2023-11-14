@@ -756,7 +756,7 @@ class PreviewMixin(BaseGraphInterpreter):
             all_tables.append("stats")
         all_tables.extend(count_tables)
 
-        sql_tree = self._join_all_tables(cte_statements, all_tables, final_selections)
+        sql_tree = self._join_all_tables(cte_statements, all_tables).select(*final_selections)
 
         return sql_tree, ["dtype"] + list(required_stats_expressions.keys()), output_columns
 
@@ -764,10 +764,9 @@ class PreviewMixin(BaseGraphInterpreter):
     def _join_all_tables(
         cte_statements: List[CteStatement],
         tables: List[str],
-        final_selections: List[expressions.Expression],
     ) -> expressions.Select:
         if not tables:
-            return expressions.select(*final_selections)
+            return expressions.select()
 
         # Join stats and counts tables in batches of NUM_TABLES_PER_JOIN tables, as joined_tables_0,
         # joined_tables_1, etc.
@@ -781,14 +780,10 @@ class PreviewMixin(BaseGraphInterpreter):
             joined_tables.append(table_alias)
             cte_statements.append((table_alias, sql_tree))
 
-        if cte_statements:
-            sql_tree = construct_cte_sql(cte_statements)
-        else:
-            sql_tree = expressions.select()
-
-        # Join all joined_tables_0, joined_tables_1, etc. together.
+        # Join all joined_tables_0, joined_tables_1, etc. together to form the final result
+        sql_tree = construct_cte_sql(cte_statements)
         assert len(joined_tables) > 0
-        sql_tree = sql_tree.select(*final_selections).from_(joined_tables[0])
+        sql_tree = sql_tree.from_(joined_tables[0])
         for table_name in joined_tables[1:]:
             sql_tree = sql_tree.join(expression=table_name, join_type="LEFT")
 
