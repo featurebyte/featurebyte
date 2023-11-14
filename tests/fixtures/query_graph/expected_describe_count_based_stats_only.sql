@@ -37,16 +37,20 @@ WITH data AS (
       LIMIT 500
     ) AS cat_counts
   ) AS count_dict
+), joined_tables_0 AS (
+  SELECT
+    *
+  FROM counts__1
 )
 SELECT
   'TIMESTAMP' AS "dtype__0",
   NULL AS "entropy__0",
   'VARCHAR' AS "dtype__1",
-  counts__1."entropy__1",
+  "entropy__1",
   'FLOAT' AS "dtype__2",
   NULL AS "entropy__2",
   'INT' AS "dtype__3",
   NULL AS "entropy__3",
   'FLOAT' AS "dtype__4",
   NULL AS "entropy__4"
-FROM counts__1
+FROM joined_tables_0

@@ -1,11 +1,22 @@
 """
 Unit tests for describe query
 """
+from unittest.mock import patch
+
 import pytest
 
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from tests.util.helper import assert_equal_with_expected_fixture
+
+
+@pytest.fixture(autouse=True)
+def patch_num_tables_per_join():
+    """
+    Patch NUM_TABLES_PER_JOIN to 2 for all tests
+    """
+    with patch("featurebyte.query_graph.sql.interpreter.preview.NUM_TABLES_PER_JOIN", 2):
+        yield
 
 
 @pytest.mark.parametrize("source_type", [SourceType.SNOWFLAKE, SourceType.SPARK])
