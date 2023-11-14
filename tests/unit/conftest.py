@@ -583,9 +583,12 @@ def transaction_entity_id_fixture():
 
 
 @pytest.fixture(name="snowflake_event_table")
-def snowflake_event_table_fixture(snowflake_database_table, snowflake_event_table_id, catalog):
+def snowflake_event_table_fixture(
+    snowflake_database_table, snowflake_event_table_id, catalog, mock_add_columns_attributes
+):
     """EventTable object fixture"""
     _ = catalog
+    _ = mock_add_columns_attributes
     event_table = snowflake_database_table.create_event_table(
         name="sf_event_table",
         event_id_column="col_int",
@@ -604,9 +607,11 @@ def snowflake_event_table_with_tz_offset_column_fixture(
     transaction_entity,
     cust_id_entity,
     catalog,
+    mock_add_columns_attributes,
 ):
     """EventTable object fixture"""
     _ = catalog
+    _ = mock_add_columns_attributes
     event_table = snowflake_database_table_no_tz.create_event_table(
         name="sf_event_table",
         event_id_column="col_int",
@@ -627,9 +632,11 @@ def snowflake_event_table_with_tz_offset_constant_fixture(
     transaction_entity,
     cust_id_entity,
     catalog,
+    mock_add_columns_attributes,
 ):
     """EventTable object fixture"""
     _ = catalog
+    _ = mock_add_columns_attributes
     event_table = snowflake_database_table_no_tz.create_event_table(
         name="sf_event_table",
         event_id_column="col_int",
@@ -645,10 +652,14 @@ def snowflake_event_table_with_tz_offset_constant_fixture(
 
 @pytest.fixture(name="snowflake_dimension_table")
 def snowflake_dimension_table_fixture(
-    snowflake_database_table_dimension_table, snowflake_dimension_table_id, catalog
+    snowflake_database_table_dimension_table,
+    snowflake_dimension_table_id,
+    catalog,
+    mock_add_columns_attributes,
 ):
     """DimensionTable object fixture"""
     _ = catalog
+    _ = mock_add_columns_attributes
     dimension_table = snowflake_database_table_dimension_table.create_dimension_table(
         name="sf_dimension_table",
         dimension_id_column="col_int",
@@ -795,12 +806,17 @@ def transaction_entity_fixture(transaction_entity_id, catalog):
 
 @pytest.fixture(name="snowflake_event_table_with_entity")
 def snowflake_event_table_with_entity_fixture(
-    snowflake_event_table, cust_id_entity, transaction_entity, mock_api_object_cache
+    snowflake_event_table,
+    cust_id_entity,
+    transaction_entity,
+    mock_api_object_cache,
+    mock_add_columns_attributes,
 ):
     """
     Entity fixture that sets cust_id in snowflake_event_table as an Entity
     """
     _ = mock_api_object_cache
+    _ = mock_add_columns_attributes
     snowflake_event_table.cust_id.as_entity(cust_id_entity.name)
     snowflake_event_table.col_int.as_entity(transaction_entity.name)
     yield snowflake_event_table
@@ -1741,3 +1757,12 @@ def mock_log_handler_fixture():
     mock_handler.setFormatter(CONSOLE_LOG_FORMATTER)
     mock_handler.records.clear()
     return mock_handler
+
+
+@pytest.fixture(name="mock_add_columns_attributes")
+def mock_add_columns_attributes_fixture():
+    """Mock columns attributes service excecution"""
+    with patch(
+        "featurebyte.service.column_attributes.ColumnAttributesDetectionService.add_columns_attributes"
+    ):
+        yield

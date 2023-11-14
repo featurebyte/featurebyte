@@ -52,6 +52,14 @@ class TestHistoricalFeatureTableApi(BaseMaterializedTableTestSuite):
         ),
     ]
 
+    @pytest.fixture(autouse=True)
+    def mock_add_columns_attributes(self):
+        """Mock columns attributes service excecution"""
+        with patch(
+            "featurebyte.service.column_attributes.ColumnAttributesDetectionService.add_columns_attributes"
+        ):
+            yield
+
     def setup_creation_route(self, api_client):
         """
         Setup for post route

@@ -119,6 +119,10 @@ def event_view_fixture(event_table):
         "ÀMOUNT",
         "TZ_OFFSET",
         "TRANSACTION_ID",
+        "EMBEDDING_ARRAY",
+        "ARRAY",
+        "FLAT_DICT",
+        "NESTED_DICT",
     ]
     return event_view
 
@@ -206,6 +210,9 @@ def test_event_view_ops(event_view, transaction_data_upper_case, source_type):
         expected["ËVENT_TIMESTAMP"] = pd.to_datetime(
             expected["ËVENT_TIMESTAMP"], utc=True
         ).dt.tz_localize(None)
+    if source_type in ["spark", "snowflake"]:
+        output["FLAT_DICT"] = output["FLAT_DICT"].apply(json.loads)
+        output["NESTED_DICT"] = output["NESTED_DICT"].apply(json.loads)
     pd.testing.assert_frame_equal(output[columns], expected[columns], check_dtype=False)
 
 

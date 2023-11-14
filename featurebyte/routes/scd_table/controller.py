@@ -10,6 +10,7 @@ from featurebyte.models.scd_table import SCDTableModel
 from featurebyte.routes.common.base_table import BaseTableDocumentController
 from featurebyte.schema.info import SCDTableInfo
 from featurebyte.schema.scd_table import SCDTableList, SCDTableServiceUpdate
+from featurebyte.service.column_attributes import ColumnAttributesDetectionService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
@@ -47,6 +48,7 @@ class SCDTableController(BaseTableDocumentController[SCDTableModel, SCDTableServ
         feature_service: FeatureService,
         target_service: TargetService,
         feature_list_service: FeatureListService,
+        column_attributes_detection_service: ColumnAttributesDetectionService,
     ):
         super().__init__(
             service=scd_table_service,
@@ -56,6 +58,7 @@ class SCDTableController(BaseTableDocumentController[SCDTableModel, SCDTableServ
             feature_service=feature_service,
             target_service=target_service,
             feature_list_service=feature_list_service,
+            column_attributes_detection_service=column_attributes_detection_service,
         )
         self.table_info_service = table_info_service
 

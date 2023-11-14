@@ -63,6 +63,7 @@ def test__getitem__list_of_str_key(dataframe):
             "semantic_id": None,
             "critical_data_info": None,
             "description": None,
+            "attributes": [],
         },
         {
             "name": "VALUE",
@@ -71,6 +72,7 @@ def test__getitem__list_of_str_key(dataframe):
             "semantic_id": None,
             "critical_data_info": None,
             "description": None,
+            "attributes": [],
         },
     ]
     assert sub_dataframe_dict["node_name"] == "project_1"
@@ -316,6 +318,7 @@ def test_multiple_statements(dataframe):
             "semantic_id": None,
             "critical_data_info": None,
             "description": None,
+            "attributes": [],
         },
         {
             "name": "PRODUCT_ACTION",
@@ -324,6 +327,7 @@ def test_multiple_statements(dataframe):
             "semantic_id": None,
             "critical_data_info": None,
             "description": None,
+            "attributes": [],
         },
         {
             "name": "VALUE",
@@ -332,6 +336,7 @@ def test_multiple_statements(dataframe):
             "semantic_id": None,
             "critical_data_info": None,
             "description": None,
+            "attributes": [],
         },
         {
             "name": "MASK",
@@ -340,6 +345,7 @@ def test_multiple_statements(dataframe):
             "semantic_id": None,
             "critical_data_info": None,
             "description": None,
+            "attributes": [],
         },
         {
             "name": "TIMESTAMP",
@@ -348,6 +354,7 @@ def test_multiple_statements(dataframe):
             "semantic_id": None,
             "critical_data_info": None,
             "description": None,
+            "attributes": [],
         },
         {
             "name": "PROMOTION_START_DATE",
@@ -356,6 +363,7 @@ def test_multiple_statements(dataframe):
             "semantic_id": None,
             "critical_data_info": None,
             "description": None,
+            "attributes": [],
         },
         {
             "name": "amount",
@@ -364,6 +372,7 @@ def test_multiple_statements(dataframe):
             "semantic_id": None,
             "critical_data_info": None,
             "description": None,
+            "attributes": [],
         },
         {
             "name": "vip_customer",
@@ -372,6 +381,7 @@ def test_multiple_statements(dataframe):
             "semantic_id": None,
             "critical_data_info": None,
             "description": None,
+            "attributes": [],
         },
     ]
     assert dataframe.columns == [
