@@ -18,6 +18,7 @@ from featurebyte.exception import (
     ColumnNotFoundError,
     DocumentNotFoundError,
     QueryNotSupportedError,
+    TimeOutError,
 )
 from featurebyte.logging import get_logger
 
@@ -187,6 +188,13 @@ ExecutionContext.register(
 ExecutionContext.register(
     BaseFailedDependencyError,
     handle_status_code=HTTPStatus.FAILED_DEPENDENCY,
+)
+
+
+# TimeoutError errors
+ExecutionContext.register(
+    TimeOutError,
+    handle_status_code=HTTPStatus.REQUEST_TIMEOUT,
 )
 
 

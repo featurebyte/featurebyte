@@ -1,7 +1,7 @@
 """
 Common test fixtures used across files in integration directory
 """
-from typing import Dict, List
+from typing import Dict, List, cast
 
 import asyncio
 import json
@@ -29,6 +29,7 @@ import pytest_asyncio
 import yaml
 from botocore.exceptions import ClientError
 from bson.objectid import ObjectId
+from databricks import sql as databricks_sql
 from fastapi.testclient import TestClient
 from motor.motor_asyncio import AsyncIOMotorClient
 
@@ -407,18 +408,41 @@ def feature_store_credential_fixture(feature_store_name, credentials_mapping):
     return credentials_mapping.get(feature_store_name)
 
 
+@pytest.fixture(name="data_warehouse_initialization", scope="session")
+def data_warehouse_initialization_fixture(
+    source_type,
+    feature_store_details,
+    feature_store_credential,
+):
+    """
+    Data warehouse initialization fixture
+    """
+    if source_type == "databricks":
+        # wait for databricks compute cluster to be ready
+        databricks_details = cast(DatabricksDetails, feature_store_details)
+        databricks_sql.connect(
+            server_hostname=databricks_details.host,
+            http_path=databricks_details.http_path,
+            access_token=feature_store_credential.database_credential.access_token,
+            catalog=databricks_details.featurebyte_catalog,
+            schema=databricks_details.featurebyte_schema,
+        )
+
+
 @pytest.fixture(name="feature_store", scope="session")
 def feature_store_fixture(
     source_type,
     feature_store_name,
     feature_store_details,
     feature_store_credential,
+    data_warehouse_initialization,
     mock_get_persistent,
 ):
     """
     Feature store fixture
     """
     _ = mock_get_persistent
+    _ = data_warehouse_initialization
     feature_store = FeatureStore.create(
         name=feature_store_name,
         source_type=source_type,

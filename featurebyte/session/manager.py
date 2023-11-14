@@ -7,17 +7,19 @@ from typing import Any, Dict
 
 import json
 import time
+from asyncio.exceptions import TimeoutError as AsyncioTimeoutError
 
 from asyncache import cached
 from cachetools import TTLCache
 from pydantic import BaseModel
 
 from featurebyte.enum import SourceType
+from featurebyte.exception import SessionInitializationTimeOut
 from featurebyte.logging import get_logger
 from featurebyte.models.credential import CredentialModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.node.schema import DatabaseDetails
-from featurebyte.session.base import BaseSession
+from featurebyte.session.base import BaseSession, to_thread
 from featurebyte.session.databricks import DatabricksSession
 from featurebyte.session.snowflake import SnowflakeSession
 from featurebyte.session.spark import SparkSession
@@ -29,6 +31,8 @@ SOURCE_TYPE_SESSION_MAP = {
     SourceType.DATABRICKS: DatabricksSession,
     SourceType.SPARK: SparkSession,
 }
+
+SESSION_TIMEOUT = 10
 
 session_cache: TTLCache[Any, Any] = TTLCache(maxsize=1024, ttl=600)
 
@@ -51,16 +55,37 @@ async def get_new_session(item: str, credential_params: str) -> BaseSession:
     -------
     BaseSession
         Newly created session
+
+    Raises
+    ------
+    SessionInitializationTimeOut
+        If session creation timed out
     """
     tic = time.time()
     item_dict = json.loads(item)
     logger.debug(f'Create a new session for {item_dict["type"]}')
     credential_params_dict = json.loads(credential_params)
-    session = SOURCE_TYPE_SESSION_MAP[item_dict["type"]](  # type: ignore
-        **item_dict["details"], **credential_params_dict
-    )
-    await session.initialize()
-    logger.debug(f"Session creation time: {time.time() - tic:.3f}s")
+
+    def _create_session() -> BaseSession:
+        """
+        Create a new session for the given database source key
+
+        Returns
+        -------
+        BaseSession
+        """
+        return SOURCE_TYPE_SESSION_MAP[item_dict["type"]](  # type: ignore
+            **item_dict["details"], **credential_params_dict
+        )
+
+    try:
+        session: BaseSession = await to_thread(_create_session, SESSION_TIMEOUT)
+        await session.initialize()
+        logger.debug(f"Session creation time: {time.time() - tic:.3f}s")
+    except AsyncioTimeoutError as exc:
+        raise SessionInitializationTimeOut(
+            f"Session creation timed out after {time.time() - tic:.3f}s"
+        ) from exc
     return session
 
 
