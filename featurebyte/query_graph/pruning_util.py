@@ -12,8 +12,10 @@ if TYPE_CHECKING:
     from featurebyte.query_graph.node import Node
 
 
-def get_prune_graph_and_nodes(feature_objects: list[FeatureModel]) -> tuple[QueryGraph, list[Node]]:
-    """Construct the pruned graph which contains list of pruned feature graph
+def get_combined_graph_and_nodes(
+    feature_objects: list[FeatureModel],
+) -> tuple[QueryGraph, list[Node]]:
+    """Construct the graph which contains list of pruned feature graph
 
     Parameters
     ----------
@@ -27,7 +29,6 @@ def get_prune_graph_and_nodes(feature_objects: list[FeatureModel]) -> tuple[Quer
     local_query_graph = QueryGraph()
     feature_nodes = []
     for feature in feature_objects:
-        pruned_graph, mapped_node = feature.extract_pruned_graph_and_node()
-        local_query_graph, local_name_map = local_query_graph.load(pruned_graph)
-        feature_nodes.append(local_query_graph.get_node_by_name(local_name_map[mapped_node.name]))
+        local_query_graph, local_name_map = local_query_graph.load(feature.graph)
+        feature_nodes.append(local_query_graph.get_node_by_name(local_name_map[feature.node_name]))
     return local_query_graph, feature_nodes
