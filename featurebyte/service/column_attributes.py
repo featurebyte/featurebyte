@@ -9,11 +9,11 @@ from abc import ABC, abstractmethod
 import numpy as np
 import pandas as pd
 
-from featurebyte.api.source_table import SourceTable
 from featurebyte.common.utils import dataframe_from_json
 from featurebyte.enum import ColumnAttribute, DBVarType
 from featurebyte.logging import get_logger
 from featurebyte.models.feature_store import TableModel
+from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.schema.feature_store import FeatureStoreSample
 from featurebyte.service.feature_store import FeatureStoreService
@@ -57,12 +57,25 @@ class ColumnAttributesDetectionService:
         feature_store = await self.feature_store_service.get_document(
             document_id=table.tabular_source.feature_store_id,
         )
-        source_table = SourceTable(
-            feature_store=feature_store,
-            tabular_source=table.tabular_source,
-            columns_info=table.columns_info,
+        graph, node = table.construct_graph_and_node(
+            feature_store_details=feature_store.get_feature_store_details(),
+            table_data_dict=table.dict(by_alias=True),
         )
-        graph, node = source_table.frame.extract_pruned_graph_and_node()
+        columns = [
+            col.name
+            for col in table.columns_info
+            if str(col.dtype)
+            in [DBVarType.ARRAY.value, DBVarType.OBJECT.value, DBVarType.STRUCT.value]
+        ]
+        if not columns:
+            return
+
+        node = graph.add_operation(
+            node_type=NodeType.PROJECT,
+            node_params={"columns": columns},
+            node_output_type=NodeOutputType.FRAME,
+            input_nodes=[node],
+        )
         sample = dataframe_from_json(
             await self.preview_service.sample(
                 FeatureStoreSample(
@@ -111,14 +124,16 @@ class ArrayEmbeddingColumnAttributesDetector(BaseColumnAttributesDetector):
                 series = series[pd.notnull(series)]
                 shapes = series.apply(len)
 
+                # skip if arrays have different shape (number of dimensions)
                 if shapes.unique().ravel().shape != (1,):
                     continue
 
+                # skip if arrays are not 1 dimensional
                 is_1d = series.apply(lambda x: len(np.array(x).shape) == 1)
-
                 if not is_1d.all():
                     continue
 
+                # skip if arrays
                 all_num = series.apply(
                     lambda x: np.all(np.isfinite(pd.to_numeric(x, errors="coerce")))
                 )

@@ -73,14 +73,11 @@ def test_get_scd_table(saved_scd_table, snowflake_scd_table):
     assert expected_msg in str(exc.value)
 
 
-def test_get_dimension_table(
-    saved_dimension_table, snowflake_dimension_table, mock_add_columns_attributes
-):
+def test_get_dimension_table(saved_dimension_table, snowflake_dimension_table):
     """
     Test Table.get function to retrieve DimensionTable
     """
     # load the dimension table from the persistent
-    _ = mock_add_columns_attributes
     loaded_scd_table = Table.get(snowflake_dimension_table.name)
     assert loaded_scd_table.saved is True
     assert loaded_scd_table == snowflake_dimension_table
