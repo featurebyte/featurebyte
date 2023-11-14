@@ -769,6 +769,8 @@ class PreviewMixin(BaseGraphInterpreter):
         if not tables:
             return expressions.select(*final_selections)
 
+        # Join stats and counts tables in batches of NUM_TABLES_PER_JOIN tables, as joined_tables_0,
+        # joined_tables_1, etc.
         joined_tables = []
         for join_index, i in enumerate(range(0, len(tables), NUM_TABLES_PER_JOIN)):
             cur_tables = tables[i : i + NUM_TABLES_PER_JOIN]
@@ -784,6 +786,7 @@ class PreviewMixin(BaseGraphInterpreter):
         else:
             sql_tree = expressions.select()
 
+        # Join all joined_tables_0, joined_tables_1, etc. together.
         assert len(joined_tables) > 0
         sql_tree = sql_tree.select(*final_selections).from_(joined_tables[0])
         for table_name in joined_tables[1:]:
