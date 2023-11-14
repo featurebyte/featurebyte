@@ -30,21 +30,25 @@ WITH data AS (
     MIN("a_copy") AS "min__4",
     MAX("a_copy") AS "max__4"
   FROM data
+), joined_tables_0 AS (
+  SELECT
+    *
+  FROM stats
 )
 SELECT
   'TIMESTAMP' AS "dtype__0",
-  stats."min__0",
-  stats."max__0",
+  "min__0",
+  "max__0",
   'VARCHAR' AS "dtype__1",
-  stats."min__1",
-  stats."max__1",
+  "min__1",
+  "max__1",
   'FLOAT' AS "dtype__2",
-  stats."min__2",
-  stats."max__2",
+  "min__2",
+  "max__2",
   'INT' AS "dtype__3",
-  stats."min__3",
-  stats."max__3",
+  "min__3",
+  "max__3",
   'FLOAT' AS "dtype__4",
-  stats."min__4",
-  stats."max__4"
-FROM stats
+  "min__4",
+  "max__4"
+FROM joined_tables_0

@@ -29,6 +29,7 @@ from featurebyte.query_graph.sql.interpreter.base import BaseGraphInterpreter
 
 CATEGORY_COUNT_COLUMN_NAME = "__FB_COUNTS"
 CASTED_DATA_TABLE_NAME = "casted_data"
+NUM_TABLES_PER_JOIN = 10
 
 
 class PreviewMixin(BaseGraphInterpreter):
@@ -721,13 +722,8 @@ class PreviewMixin(BaseGraphInterpreter):
 
                 if stats_name == "entropy":
                     stats_name = f"entropy__{column_idx}"
-                    count_table_name = f"counts__{column_idx}"
                     final_selections.append(
-                        (
-                            expressions.Column(
-                                this=quoted_identifier(stats_name), table=count_table_name
-                            )
-                        )
+                        (expressions.Column(this=quoted_identifier(stats_name)))
                         if self._is_dtype_supported(
                             column.dtype, self.stats_expressions["entropy"][1]
                         )
@@ -735,44 +731,63 @@ class PreviewMixin(BaseGraphInterpreter):
                     )
                 elif stats_name == "top":
                     stats_name = f"top__{column_idx}"
-                    count_table_name = f"counts__{column_idx}"
                     final_selections.append(
-                        (
-                            expressions.Column(
-                                this=quoted_identifier(stats_name), table=count_table_name
-                            )
-                        )
+                        (expressions.Column(this=quoted_identifier(stats_name)))
                         if self._is_dtype_supported(column.dtype, self.stats_expressions["top"][1])
                         else self._empty_value_expr(stats_name)
                     )
                 elif stats_name == "freq":
                     stats_name = f"freq__{column_idx}"
-                    count_table_name = f"counts__{column_idx}"
                     final_selections.append(
-                        (
-                            expressions.Column(
-                                this=quoted_identifier(stats_name), table=count_table_name
-                            )
-                        )
+                        (expressions.Column(this=quoted_identifier(stats_name)))
                         if self._is_dtype_supported(column.dtype, self.stats_expressions["freq"][1])
                         else self._empty_value_expr(stats_name)
                     )
                 else:
                     final_selections.append(
-                        expressions.Column(
-                            this=quoted_identifier(f"{stats_name}__{column_idx}"), table="stats"
-                        )
+                        expressions.Column(this=quoted_identifier(f"{stats_name}__{column_idx}"))
                     )
 
         # get statistics
-        sql_tree = expressions.select(*stats_selections).from_("data")
-        cte_statements.append(("stats", sql_tree))
+        all_tables = []
+        if stats_selections:
+            sql_tree = expressions.select(*stats_selections).from_("data")
+            cte_statements.append(("stats", sql_tree))
+            all_tables.append("stats")
+        all_tables.extend(count_tables)
 
-        sql_tree = construct_cte_sql(cte_statements).select(*final_selections).from_("stats")
-        for table_name in count_tables:
-            sql_tree = sql_tree.join(expression=table_name, join_type="LEFT")
+        sql_tree = self._join_all_tables(cte_statements, all_tables).select(*final_selections)
 
         return sql_tree, ["dtype"] + list(required_stats_expressions.keys()), output_columns
+
+    @staticmethod
+    def _join_all_tables(
+        cte_statements: List[CteStatement],
+        tables: List[str],
+    ) -> expressions.Select:
+        if not tables:
+            return expressions.select()
+
+        # Join stats and counts tables in batches of NUM_TABLES_PER_JOIN tables, as joined_tables_0,
+        # joined_tables_1, etc.
+        joined_tables = []
+        for join_index, i in enumerate(range(0, len(tables), NUM_TABLES_PER_JOIN)):
+            cur_tables = tables[i : i + NUM_TABLES_PER_JOIN]
+            sql_tree = expressions.select(expressions.Star()).from_(cur_tables[0])
+            for table_name in cur_tables[1:]:
+                sql_tree = sql_tree.join(expression=table_name, join_type="LEFT")
+            table_alias = f"joined_tables_{join_index}"
+            joined_tables.append(table_alias)
+            cte_statements.append((table_alias, sql_tree))
+
+        # Join all joined_tables_0, joined_tables_1, etc. together to form the final result
+        sql_tree = construct_cte_sql(cte_statements)
+        assert len(joined_tables) > 0
+        sql_tree = sql_tree.from_(joined_tables[0])
+        for table_name in joined_tables[1:]:
+            sql_tree = sql_tree.join(expression=table_name, join_type="LEFT")
+
+        return sql_tree
 
     def construct_describe_sql(
         self,

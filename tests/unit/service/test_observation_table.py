@@ -189,17 +189,21 @@ async def test_validate__most_recent_point_in_time(
                 NULL AS "min__1",
                 NULL AS "max__1"
               FROM data
+            ), joined_tables_0 AS (
+              SELECT
+                *
+              FROM stats
             )
             SELECT
               'TIMESTAMP' AS "dtype__0",
-              stats."unique__0",
-              stats."min__0",
-              stats."max__0",
+              "unique__0",
+              "min__0",
+              "max__0",
               'VARCHAR' AS "dtype__1",
-              stats."unique__1",
-              stats."min__1",
-              stats."max__1"
-            FROM stats
+              "unique__1",
+              "min__1",
+              "max__1"
+            FROM joined_tables_0
             """
         ).strip()
         query = db_session.execute_query.call_args[0][0]
