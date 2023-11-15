@@ -286,7 +286,7 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
 
         Examples
         --------
-        >>> use_case = catalog.get_context("use_case")  # doctest: +SKIP
+        >>> use_case = catalog.get_use_case("use_case")  # doctest: +SKIP
         >>> use_case.default_eda_table  # doctest: +SKIP
         """
         return super().default_eda_table
@@ -303,7 +303,7 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
 
         Examples
         --------
-        >>> use_case = catalog.get_context("use_case")  # doctest: +SKIP
+        >>> use_case = catalog.get_use_case("use_case")  # doctest: +SKIP
         >>> use_case.default_preview_table  # doctest: +SKIP
         """
         return super().default_preview_table
@@ -320,7 +320,7 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
 
         Examples
         --------
-        >>> use_case = catalog.get_context("use_case")  # doctest: +SKIP
+        >>> use_case = catalog.get_use_case("use_case")  # doctest: +SKIP
         >>> use_case.update_default_preview_table(observation_table_name)  # doctest: +SKIP
         """
         super().update_default_preview_table(observation_table_name)
@@ -337,10 +337,27 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
 
         Examples
         --------
-        >>> use_case = catalog.get_context("use_case")  # doctest: +SKIP
+        >>> use_case = catalog.get_use_case("use_case")  # doctest: +SKIP
         >>> use_case.update_default_eda_table(observation_table_name)  # doctest: +SKIP
         """
         super().update_default_eda_table(observation_table_name)
+
+    @typechecked
+    def update_description(self, description: Optional[str]) -> None:
+        """
+        Update description for the use case.
+
+        Parameters
+        ----------
+        description: Optional[str]
+            Description of the object
+
+        Examples
+        --------
+        >>> use_case = catalog.get_use_case("use_case")  # doctest: +SKIP
+        >>> use_case.update_description(description)  # doctest: +SKIP
+        """
+        super().update_description(description)
 
     @typechecked
     def remove_observation_table(self, observation_table_name: str) -> None:
@@ -391,7 +408,7 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
 
         Examples
         --------
-        >>> use_case = catalog.get_context("use_case")  # doctest: +SKIP
+        >>> use_case = catalog.get_use_case("use_case")  # doctest: +SKIP
         >>> use_case.list_observation_tables()  # doctest: +SKIP
         """
         return super().list_observation_tables()

@@ -35,19 +35,23 @@ def test_create_context(catalog, cust_id_entity):
 
     entity_ids = [cust_id_entity.id]
     entity_names = [cust_id_entity.name]
-    context = Context.create(name="test_context", primary_entity=entity_names)
+    context = Context.create(
+        name="test_context", primary_entity=entity_names, description="test_description"
+    )
 
     # Test get context by id and verify attributes
     retrieved_context = Context.get_by_id(context.id)
     assert retrieved_context.name == "test_context"
     assert retrieved_context.primary_entity_ids == entity_ids
     assert retrieved_context.primary_entities == [cust_id_entity]
+    assert retrieved_context.description == "test_description"
 
     # Test get context by name and verify attributes
     retrieved_context2 = Context.get(context.name)
     assert retrieved_context2.name == "test_context"
     assert retrieved_context2.primary_entity_ids == entity_ids
     assert retrieved_context2.primary_entities == [cust_id_entity]
+    assert retrieved_context2.description == "test_description"
 
 
 def test_list_contexts(catalog, context_1, cust_id_entity):

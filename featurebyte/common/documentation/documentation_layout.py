@@ -886,10 +886,6 @@ def _get_deployment_layout() -> List[DocLayoutItem]:
         DocLayoutItem([DEPLOYMENT, CLASS_METHODS, "Deployment.list"]),
         DocLayoutItem([DEPLOYMENT, INFO, "Deployment.enabled"]),
         DocLayoutItem([DEPLOYMENT, INFO, "Deployment.name"]),
-        # DocLayoutItem([DEPLOYMENT, INFO, "Deployment.catalog"]),
-        # DocLayoutItem([DEPLOYMENT, INFO, "Deployment.feature_list_name"]),
-        # DocLayoutItem([DEPLOYMENT, INFO, "Deployment.feature_list_version"]),
-        # DocLayoutItem([DEPLOYMENT, INFO, "Deployment.num_features"]),
         DocLayoutItem([DEPLOYMENT, LINEAGE, "Deployment.feature_list_id"]),
         DocLayoutItem([DEPLOYMENT, MANAGE, "Deployment.enable"]),
         DocLayoutItem([DEPLOYMENT, MANAGE, "Deployment.disable"]),
@@ -954,6 +950,8 @@ def _get_observation_table_layout() -> List[DocLayoutItem]:
         *_get_materialized_table_layout(OBSERVATION_TABLE),
         DocLayoutItem([OBSERVATION_TABLE, INFO, "ObservationTable.context_id"]),
         DocLayoutItem([OBSERVATION_TABLE, MANAGE, "ObservationTable.to_pandas"]),
+        DocLayoutItem([OBSERVATION_TABLE, MANAGE, "ObservationTable.update_description"]),
+        DocLayoutItem([OBSERVATION_TABLE, CREATE, "ObservationTable.upload"]),
     ]
 
 
@@ -989,6 +987,9 @@ def _get_historical_feature_table_layout() -> List[DocLayoutItem]:
         ),
         DocLayoutItem(
             [HISTORICAL_FEATURE_TABLE, LINEAGE, "HistoricalFeatureTable.observation_table_id"]
+        ),
+        DocLayoutItem(
+            [HISTORICAL_FEATURE_TABLE, MANAGE, "HistoricalFeatureTable.update_description"]
         ),
     ]
 
@@ -1068,6 +1069,7 @@ def _get_use_case_layout() -> List[DocLayoutItem]:
         DocLayoutItem([USE_CASE, LINEAGE, "UseCase.default_preview_table"]),
         DocLayoutItem([USE_CASE, LINEAGE, "UseCase.update_default_preview_table"]),
         DocLayoutItem([USE_CASE, LINEAGE, "UseCase.update_default_eda_table"]),
+        DocLayoutItem([USE_CASE, MANAGE, "UseCase.update_description"]),
         DocLayoutItem([USE_CASE, LIST, "UseCase.list_feature_tables"]),
         DocLayoutItem([USE_CASE, LIST, "UseCase.list_deployments"]),
         DocLayoutItem([USE_CASE, LIST, "UseCase.list_observation_tables"]),
@@ -1100,6 +1102,7 @@ def _get_context_layout() -> List[DocLayoutItem]:
         DocLayoutItem([CONTEXT, LINEAGE, "Context.default_preview_table"]),
         DocLayoutItem([CONTEXT, LINEAGE, "Context.update_default_preview_table"]),
         DocLayoutItem([CONTEXT, LINEAGE, "Context.update_default_eda_table"]),
+        DocLayoutItem([CONTEXT, MANAGE, "Context.update_description"]),
         DocLayoutItem([CONTEXT, LIST, "Context.list_observation_tables"]),
         DocLayoutItem([CONTEXT, SAVE, "Context.save"]),
     ]

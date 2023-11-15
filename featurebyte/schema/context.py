@@ -20,6 +20,7 @@ class ContextCreate(FeatureByteBaseModel):
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
     primary_entity_ids: List[PydanticObjectId]
+    description: Optional[StrictStr]
 
     @validator("primary_entity_ids")
     @classmethod
