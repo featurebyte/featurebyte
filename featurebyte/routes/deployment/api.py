@@ -51,15 +51,12 @@ class DeploymentRouter(BaseRouter):
 
 
 @router.post("", response_model=Task, status_code=HTTPStatus.CREATED)
-async def create_deployment(request: Request, data: DeploymentCreate, response: Response) -> Task:
+async def create_deployment(request: Request, data: DeploymentCreate) -> Task:
     """
     Create Deployment
     """
     controller = request.state.app_container.deployment_controller
     task: Task = await controller.create_deployment(data=data)
-    if isinstance(task, Task):
-        # if task is returned, it means the deployment is being updated asynchronously
-        response.status_code = HTTPStatus.ACCEPTED
     return task
 
 
@@ -75,13 +72,16 @@ async def get_deployment(request: Request, deployment_id: PydanticObjectId) -> D
 
 @router.patch("/{deployment_id}")
 async def update_deployment(
-    request: Request, deployment_id: PydanticObjectId, data: DeploymentUpdate
+    request: Request, deployment_id: PydanticObjectId, data: DeploymentUpdate, response: Response
 ) -> Optional[Task]:
     """
     Update Deployment
     """
     controller = request.state.app_container.deployment_controller
     task: Task = await controller.update_deployment(document_id=deployment_id, data=data)
+    if isinstance(task, Task):
+        # if task is returned, it means the deployment is being updated asynchronously
+        response.status_code = HTTPStatus.ACCEPTED
     return task
 
 
