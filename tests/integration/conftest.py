@@ -183,9 +183,7 @@ def credentials_mapping_fixture():
             name="databricks_unity_featurestore",
             feature_store_id=ObjectId(),
             database_credential=AccessTokenCredential(
-                access_token=os.getenv(
-                    "DATABRICKS_ACCESS_TOKEN", ""
-                ),  # TODO: change to databricks unity token
+                access_token=os.getenv("DATABRICKS_ACCESS_TOKEN", ""),
             ),
             storage_credential=S3StorageCredential(
                 s3_access_key_id=os.getenv("DATABRICKS_STORAGE_ACCESS_KEY_ID", ""),
@@ -913,14 +911,6 @@ async def session_fixture(source_type, session_manager, dataset_registration_hel
 
     if source_type == "databricks_unity":
         await session.execute_query(f"DROP SCHEMA IF EXISTS {session.schema_name} CASCADE")
-        databricks_initializer = BaseSparkSchemaInitializer(
-            session
-        )  # TODO: change to unity initializer
-        udf_jar_file_name = os.path.basename(databricks_initializer.udf_jar_local_path)
-        try:
-            session._storage.delete_object(udf_jar_file_name)
-        except ClientError as exc:
-            logger.warning("Failed to delete UDF jar file", extra={"exc": exc})
 
     if source_type == "spark":
         await session.execute_query(f"DROP SCHEMA IF EXISTS {session.schema_name} CASCADE")
