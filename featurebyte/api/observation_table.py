@@ -212,6 +212,28 @@ class ObservationTable(ObservationTableModel, ApiObject, MaterializedTableMixin)
         """
         super().update_description(description)
 
+    @typechecked
+    def update_purpose(self, purpose: Purpose) -> None:
+        """
+        Update purpose for the observation table.
+
+        Parameters
+        ----------
+        purpose: Purpose
+            Purpose for the observation table.
+
+        Examples
+        --------
+        >>> observation_table = catalog.get_observation_table("observation_table")  # doctest: +SKIP
+        >>> observation_table.update_purpose(Purpose.EDA)  # doctest: +SKIP
+        """
+        self.update(
+            update_payload={"purpose": purpose},
+            allow_update_local=False,
+            url=f"{self._route}/{self.id}",
+            skip_update_schema_check=True,
+        )
+
     @classmethod
     def upload(
         cls,

@@ -951,6 +951,7 @@ def _get_observation_table_layout() -> List[DocLayoutItem]:
         DocLayoutItem([OBSERVATION_TABLE, INFO, "ObservationTable.context_id"]),
         DocLayoutItem([OBSERVATION_TABLE, MANAGE, "ObservationTable.to_pandas"]),
         DocLayoutItem([OBSERVATION_TABLE, MANAGE, "ObservationTable.update_description"]),
+        DocLayoutItem([OBSERVATION_TABLE, MANAGE, "ObservationTable.update_purpose"]),
         DocLayoutItem([OBSERVATION_TABLE, CREATE, "ObservationTable.upload"]),
     ]
 
