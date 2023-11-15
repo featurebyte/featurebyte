@@ -241,10 +241,10 @@ class ObservationTable(ObservationTableModel, ApiObject, MaterializedTableMixin)
         Examples
         --------
         >>> observation_table = ObservationTable.upload(  # doctest: +SKIP
-        >>>   path="path/to/csv/file.csv",
-        >>>   name="observation_table_name",
-        >>>   purpose="preview",
-        >>>   primary_entities=["entity_name_1"],
+        ...     path="path/to/csv/file.csv",
+        ...     name="observation_table_name",
+        ...     purpose="preview",
+        ...     primary_entities=["entity_name_1"],
         >>> )
         """
         primary_entity_ids = []
