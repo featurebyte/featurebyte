@@ -389,7 +389,7 @@ def feature_store_details_fixture(source_type, sqlite_filename):
         return DatabricksDetails(
             host=os.getenv("DATABRICKS_SERVER_HOSTNAME"),
             http_path=os.getenv("DATABRICKS_UNITY_HTTP_PATH"),
-            featurebyte_catalog=os.getenv("DATABRICKS_CATALOG"),
+            featurebyte_catalog=os.getenv("DATABRICKS_UNITY_CATALOG"),
             featurebyte_schema=temp_schema_name,
             storage_type=StorageType.S3,
             storage_url=f"{storage_url}/{temp_schema_name}",
