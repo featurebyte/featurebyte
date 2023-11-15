@@ -245,7 +245,7 @@ class ObservationTable(ObservationTableModel, ApiObject, MaterializedTableMixin)
         ...     name="observation_table_name",
         ...     purpose="preview",
         ...     primary_entities=["entity_name_1"],
-        >>> )
+        ... )
         """
         primary_entity_ids = []
         if primary_entities is not None:
