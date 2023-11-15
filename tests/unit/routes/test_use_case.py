@@ -706,3 +706,17 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         response = test_api_client.get(f"{self.base_route}/{use_case_id}")
         assert response.status_code == HTTPStatus.OK
         assert response.json()["default_eda_table_id"] is None
+
+    def test_delete_target(self, test_api_client_persistent, create_success_response):
+        """Test delete target (fail) that is already associated with a use case"""
+        use_case_dict = create_success_response.json()
+        target_id = use_case_dict["target_id"]
+        assert target_id is not None
+
+        # attempt to delete target
+        test_api_client, _ = test_api_client_persistent
+        response = test_api_client.delete(f"/target/{target_id}")
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert (
+            response.json()["detail"] == f"Target is referenced by UseCase: {use_case_dict['name']}"
+        )
