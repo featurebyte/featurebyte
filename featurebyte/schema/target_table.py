@@ -68,7 +68,7 @@ class TargetTableCreate(FeatureOrTargetTableCreate):
         """
         if self.graph is None or self.node_names is None:
             return []
-        return [self.graph.get_node_by_name(self.node_names[0])]
+        return [self.graph.get_node_by_name(name) for name in self.node_names]
 
 
 class TargetTableList(PaginationMixin):
