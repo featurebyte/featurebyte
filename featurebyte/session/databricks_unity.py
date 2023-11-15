@@ -19,6 +19,12 @@ class DatabricksUnitySchemaInitializer(BaseSparkSchemaInitializer):
     def sql_directory_name(self) -> str:
         return "databricks_unity"
 
+    def register_jar(self) -> None:
+        """
+        Override since we don't need to register any jar.
+        """
+        pass
+
     async def register_functions_from_jar(self) -> None:
         """
         Override to not do anything, and just do the default registration.

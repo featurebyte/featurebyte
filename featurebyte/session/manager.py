@@ -3,10 +3,11 @@ SessionManager class
 """
 from __future__ import annotations
 
+from typing import Any, Dict
+
 import json
 import time
 from asyncio.exceptions import TimeoutError as AsyncioTimeoutError
-from typing import Any, Dict
 
 from asyncache import cached
 from cachetools import TTLCache
@@ -18,8 +19,7 @@ from featurebyte.logging import get_logger
 from featurebyte.models.credential import CredentialModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.node.schema import DatabaseDetails
-from featurebyte.session.base import BaseSession
-from featurebyte.session.base import to_thread
+from featurebyte.session.base import BaseSession, to_thread
 from featurebyte.session.databricks import DatabricksSession
 from featurebyte.session.databricks_unity import DatabricksUnitySession
 from featurebyte.session.snowflake import SnowflakeSession

@@ -395,7 +395,10 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
             )
         return out
 
-    async def register_missing_objects(self) -> None:
+    def register_jar(self) -> None:
+        """
+        Register jar
+        """
         # check storage connection is working
         session = cast(BaseSparkSession, self.session)
         session.test_storage_connection()
@@ -405,6 +408,9 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
         session.upload_file_to_storage(
             local_path=self.udf_jar_local_path, remote_path=udf_jar_file_name
         )
+
+    async def register_missing_objects(self) -> None:
+        self.register_jar()
         await super().register_missing_objects()
 
     async def register_functions_from_jar(self) -> None:
