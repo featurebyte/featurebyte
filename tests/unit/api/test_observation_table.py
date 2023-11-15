@@ -9,6 +9,7 @@ import pytest
 
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.source_table import SourceTable
+from featurebyte.models.observation_table import Purpose
 from tests.unit.api.base_materialize_table_test import BaseMaterializedTableApiTest
 
 
@@ -127,3 +128,12 @@ def test_describe(observation_table_from_source, mock_source_table):
     result = observation_table_from_source.describe(size=123, seed=456)
     assert mock_source_table.describe.call_args == call(size=123, seed=456)
     assert result is mock_source_table.describe.return_value
+
+
+def test_update_purpose(observation_table_from_source):
+    """
+    Test update purpose
+    """
+    assert observation_table_from_source.purpose is None
+    observation_table_from_source.update_purpose(purpose=Purpose.EDA)
+    assert observation_table_from_source.purpose == Purpose.EDA

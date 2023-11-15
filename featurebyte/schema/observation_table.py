@@ -53,13 +53,14 @@ class ObservationTableListRecord(BaseRequestTableListRecord):
 
 class ObservationTableUpdate(BaseDocumentServiceUpdateSchema):
     """
-    ObservationTable Update Context schema
+    ObservationTable Update schema
     """
 
     context_id: Optional[PydanticObjectId]
     context_id_to_remove: Optional[PydanticObjectId]
     use_case_id_to_add: Optional[PydanticObjectId]
     use_case_id_to_remove: Optional[PydanticObjectId]
+    purpose: Optional[Purpose]
 
     # for update model only and not from input
     use_case_ids: Optional[List[PydanticObjectId]]
