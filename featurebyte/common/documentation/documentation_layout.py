@@ -992,7 +992,6 @@ def _get_historical_feature_table_layout() -> List[DocLayoutItem]:
         DocLayoutItem(
             [HISTORICAL_FEATURE_TABLE, MANAGE, "HistoricalFeatureTable.update_description"]
         ),
-        DocLayoutItem([HISTORICAL_FEATURE_TABLE, MANAGE, "HistoricalFeatureTable.update_purpose"]),
     ]
 
 
