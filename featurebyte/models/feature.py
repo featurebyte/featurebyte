@@ -58,6 +58,16 @@ class EntityRelationshipInfo(FeatureByteBaseModel):
     relation_table_id: PydanticObjectId
 
 
+class TableIdColumnNames(FeatureByteBaseModel):
+    """
+    TableIdColumnNames object stores the table id and the column names of the table that are used by
+    the feature or target.
+    """
+
+    table_id: PydanticObjectId
+    column_names: List[str]
+
+
 class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
     """
     BaseFeatureModel is the base class for FeatureModel & TargetModel.
@@ -77,6 +87,9 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
     _graph: Optional[QueryGraph] = PrivateAttr(default=None)
 
     # query graph derived attributes
+    table_id_column_names: List[TableIdColumnNames] = Field(
+        allow_mutation=False, default_factory=list
+    )
     table_id_feature_job_settings: List[TableIdFeatureJobSetting] = Field(
         allow_mutation=False, default_factory=list
     )
@@ -121,8 +134,7 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
             values.get("primary_table_ids"),
             values.get("table_ids"),
             values.get("dtype"),
-            values.get("table_id_feature_job_settings") is not None,
-            values.get("table_id_cleaning_operations") is not None,
+            values.get("table_id_column_names"),
         ]
         if any(not x for x in derived_attributes):
             # only derive attributes if any of them is missing
@@ -139,8 +151,16 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
                 node_name=node_name
             )
 
-            # extract table feature job settings & table cleaning operations
+            # extract table feature job settings, table cleaning operations, table column names
             node = graph.get_node_by_name(node_name)
+            table_id_to_column_names = graph.extract_table_id_to_table_column_names(node=node)
+            values["table_id_column_names"] = [
+                TableIdColumnNames(
+                    table_id=table_id,
+                    column_names=sorted(table_id_to_column_names[table_id]),
+                )
+                for table_id in sorted(table_id_to_column_names)
+            ]
             values["table_id_feature_job_settings"] = graph.extract_table_id_feature_job_settings(
                 target_node=node
             )

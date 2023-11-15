@@ -148,7 +148,10 @@ class FeatureMigrationServiceV8(BaseMongoCollectionMigration):
 
     @migrate(
         version=8,
-        description="Add table_id_feature_job_settings & table_id_cleaning_operations to feature record",
+        description=(
+            "Add table_id_column_names, table_id_feature_job_settings & table_id_cleaning_operations "
+            "to feature record"
+        ),
     )
     async def add_table_id_feature_job_settings_and_table_id_cleaning_operations(self) -> None:
         """Add table_id_feature_job_settings & table_id_cleaning_operations to feature record"""
@@ -169,7 +172,7 @@ class FeatureMigrationServiceV8(BaseMongoCollectionMigration):
         )
         assert total_before == total_after, (total_before, total_after)
         for doc in sample_docs_after:
-            # after migration, relationships_info should not be None
+            assert "table_id_column_names" in doc, doc
             assert "table_id_feature_job_settings" in doc, doc
             assert "table_id_cleaning_operations" in doc, doc
 
