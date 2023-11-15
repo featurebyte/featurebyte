@@ -96,9 +96,10 @@ def test_get_or_create_item_table__get_from_persistent(
 
 
 def test_get_or_create_dimension_table__get_from_persistent(
-    snowflake_database_table_dimension_table, snowflake_dimension_table
+    snowflake_database_table_dimension_table, snowflake_dimension_table, mock_add_columns_attributes
 ):
     """Test get or create dimension table"""
+    _ = mock_add_columns_attributes
     assert (
         snowflake_database_table_dimension_table.get_or_create_dimension_table(
             name=snowflake_dimension_table.name,
@@ -126,8 +127,13 @@ def test_get_or_create_scd_table__get_from_persistent(
     )
 
 
-def test_get_or_create_event_table__create(snowflake_database_table):
+def test_get_or_create_event_table__create(
+    snowflake_database_table, catalog, mock_add_columns_attributes
+):
     """Test get or create event table"""
+    _ = catalog
+    _ = mock_add_columns_attributes
+
     event_table = snowflake_database_table.get_or_create_event_table(
         name="some_event_table",
         event_id_column="col_int",
@@ -156,8 +162,13 @@ def test_get_or_create_item_table__create(
     assert item_table.event_table_id == snowflake_event_table.id
 
 
-def test_get_or_create_dimension_table__create(snowflake_database_table_dimension_table):
+def test_get_or_create_dimension_table__create(
+    snowflake_database_table_dimension_table, catalog, mock_add_columns_attributes
+):
     """Test get or create dimension table"""
+    _ = catalog
+    _ = mock_add_columns_attributes
+
     dimension_table = snowflake_database_table_dimension_table.get_or_create_dimension_table(
         name="some_dimension_table",
         dimension_id_column="col_int",
@@ -168,8 +179,13 @@ def test_get_or_create_dimension_table__create(snowflake_database_table_dimensio
     assert dimension_table.record_creation_timestamp_column == "created_at"
 
 
-def test_get_or_create_scd_table__create(snowflake_database_table_scd_table):
+def test_get_or_create_scd_table__create(
+    snowflake_database_table_scd_table, catalog, mock_add_columns_attributes
+):
     """Test get or create scd table"""
+    _ = catalog
+    _ = mock_add_columns_attributes
+
     scd_table = snowflake_database_table_scd_table.get_or_create_scd_table(
         name="some_scd_table",
         natural_key_column="col_text",

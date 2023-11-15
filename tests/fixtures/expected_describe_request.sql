@@ -84,40 +84,44 @@ WITH data AS (
     NULL AS "min TZ offset__1",
     NULL AS "max TZ offset__1"
   FROM data
+), joined_tables_0 AS (
+  SELECT
+    *
+  FROM stats
+  LEFT JOIN counts__0
+  LEFT JOIN counts__1
 )
 SELECT
   'FLOAT' AS "dtype__0",
-  stats."unique__0",
-  stats."%missing__0",
-  stats."%empty__0",
+  "unique__0",
+  "%missing__0",
+  "%empty__0",
   NULL AS "entropy__0",
-  counts__0."top__0",
-  counts__0."freq__0",
-  stats."mean__0",
-  stats."std__0",
-  stats."min__0",
-  stats."25%__0",
-  stats."50%__0",
-  stats."75%__0",
-  stats."max__0",
-  stats."min TZ offset__0",
-  stats."max TZ offset__0",
+  "top__0",
+  "freq__0",
+  "mean__0",
+  "std__0",
+  "min__0",
+  "25%__0",
+  "50%__0",
+  "75%__0",
+  "max__0",
+  "min TZ offset__0",
+  "max TZ offset__0",
   'VARCHAR' AS "dtype__1",
-  stats."unique__1",
-  stats."%missing__1",
-  stats."%empty__1",
-  counts__1."entropy__1",
-  counts__1."top__1",
-  counts__1."freq__1",
-  stats."mean__1",
-  stats."std__1",
-  stats."min__1",
-  stats."25%__1",
-  stats."50%__1",
-  stats."75%__1",
-  stats."max__1",
-  stats."min TZ offset__1",
-  stats."max TZ offset__1"
-FROM stats
-LEFT JOIN counts__0
-LEFT JOIN counts__1
+  "unique__1",
+  "%missing__1",
+  "%empty__1",
+  "entropy__1",
+  "top__1",
+  "freq__1",
+  "mean__1",
+  "std__1",
+  "min__1",
+  "25%__1",
+  "50%__1",
+  "75%__1",
+  "max__1",
+  "min TZ offset__1",
+  "max TZ offset__1"
+FROM joined_tables_0

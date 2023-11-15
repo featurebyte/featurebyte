@@ -419,5 +419,14 @@ class UploadFileFormat(StrEnum):
     PARQUET = "parquet"
 
 
+class ColumnAttribute(StrEnum):
+    """
+    Attributes of data type
+    """
+
+    EMBEDDING = "embedding"
+    FLAT_DICT = "flat_dict"
+
+
 # enum used for handle conflict when saving object to persistent storage
 ConflictResolution = Literal["raise", "retrieve"]

@@ -3,6 +3,7 @@ Tests for Context route
 """
 from http import HTTPStatus
 from unittest import mock
+from unittest.mock import patch
 
 import pytest
 from bson.objectid import ObjectId
@@ -81,6 +82,14 @@ class TestContextApi(BaseCatalogApiTestSuite):
                 "update_unprocessable_payload_expected_detail",
                 self.update_unprocessable_payload_expected_detail_pairs,
             )
+
+    @pytest.fixture(autouse=True)
+    def mock_add_columns_attributes(self):
+        """Mock columns attributes service excecution"""
+        with patch(
+            "featurebyte.service.column_attributes.ColumnAttributesDetectionService.add_columns_attributes"
+        ):
+            yield
 
     def setup_creation_route(self, api_client):
         """Setup for post route"""

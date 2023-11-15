@@ -10,7 +10,10 @@ from featurebyte.migration.service.data_warehouse import (
     DataWarehouseMigrationServiceV3,
     TileColumnTypeExtractor,
 )
-from featurebyte.migration.service.feature import FeatureMigrationServiceV4
+from featurebyte.migration.service.feature import (
+    FeatureMigrationServiceV4,
+    FeatureMigrationServiceV8,
+)
 from featurebyte.migration.service.feature_list import (
     FeatureListMigrationServiceV5,
     FeatureListMigrationServiceV6,
@@ -61,6 +64,7 @@ from featurebyte.routes.user_defined_function.controller import UserDefinedFunct
 from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.service.catalog import AllCatalogService, CatalogService
+from featurebyte.service.column_attributes import ColumnAttributesDetectionService
 from featurebyte.service.context import ContextService
 from featurebyte.service.credential import CredentialService
 from featurebyte.service.deploy import DeployService
@@ -189,6 +193,7 @@ app_container_config.register_class(
 )
 app_container_config.register_class(CredentialController)
 app_container_config.register_class(CredentialService)
+app_container_config.register_class(ColumnAttributesDetectionService)
 app_container_config.register_class(ContextService)
 app_container_config.register_class(DataWarehouseMigrationMixin)
 app_container_config.register_class(DeployService)
@@ -345,6 +350,7 @@ app_container_config.register_class(FeatureMigrationServiceV4)
 app_container_config.register_class(FeatureListMigrationServiceV5)
 app_container_config.register_class(FeatureListMigrationServiceV6)
 app_container_config.register_class(FeatureListMigrationServiceV7)
+app_container_config.register_class(FeatureMigrationServiceV8)
 
 app_container_config.register_factory_method(get_storage)
 app_container_config.register_factory_method(get_redis, name_override="redis")

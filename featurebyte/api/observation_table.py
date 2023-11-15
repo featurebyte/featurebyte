@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 
 import pandas as pd
+from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.api_object_util import ForeignKeyMapping
@@ -194,6 +195,45 @@ class ObservationTable(ObservationTableModel, ApiObject, MaterializedTableMixin)
         """
         super().delete()
 
+    @typechecked
+    def update_description(self, description: Optional[str]) -> None:
+        """
+        Update description for the observation table.
+
+        Parameters
+        ----------
+        description: Optional[str]
+            Description of the object
+
+        Examples
+        --------
+        >>> observation_table = catalog.get_observation_table("observation_table")  # doctest: +SKIP
+        >>> observation_table.update_description(description)  # doctest: +SKIP
+        """
+        super().update_description(description)
+
+    @typechecked
+    def update_purpose(self, purpose: Purpose) -> None:
+        """
+        Update purpose for the observation table.
+
+        Parameters
+        ----------
+        purpose: Purpose
+            Purpose for the observation table.
+
+        Examples
+        --------
+        >>> observation_table = catalog.get_observation_table("observation_table")  # doctest: +SKIP
+        >>> observation_table.update_purpose(Purpose.EDA)  # doctest: +SKIP
+        """
+        self.update(
+            update_payload={"purpose": purpose},
+            allow_update_local=False,
+            url=f"{self._route}/{self.id}",
+            skip_update_schema_check=True,
+        )
+
     @classmethod
     def upload(
         cls,
@@ -203,12 +243,12 @@ class ObservationTable(ObservationTableModel, ApiObject, MaterializedTableMixin)
         primary_entities: Optional[List[str]] = None,
     ) -> ObservationTable:
         """
-        Uploads a file to create an observation table.
+        Upload a file to create an observation table. This file can either be a CSV or Parquet file.
 
         Parameters
         ----------
         file_path: Union[str, Path]
-            Path to file to upload.
+            Path to file to upload. The file path should end in the appropriate .csv or .parquet file extension.
         name: str
             Name of the observation table to create.
         purpose: Optional[Purpose]
@@ -219,6 +259,15 @@ class ObservationTable(ObservationTableModel, ApiObject, MaterializedTableMixin)
         Returns
         -------
         ObservationTable
+
+        Examples
+        --------
+        >>> observation_table = ObservationTable.upload(  # doctest: +SKIP
+        ...     path="path/to/csv/file.csv",
+        ...     name="observation_table_name",
+        ...     purpose="preview",
+        ...     primary_entities=["entity_name_1"],
+        ... )
         """
         primary_entity_ids = []
         if primary_entities is not None:

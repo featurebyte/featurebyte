@@ -8,6 +8,7 @@ from typing import Optional, Union
 from pathlib import Path
 
 import pandas as pd
+from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.api_object_util import ForeignKeyMapping
@@ -155,3 +156,20 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
         # noqa: DAR402
         """
         super().delete()
+
+    @typechecked
+    def update_description(self, description: Optional[str]) -> None:
+        """
+        Update description for the historical feature table.
+
+        Parameters
+        ----------
+        description: Optional[str]
+            Description of the object
+
+        Examples
+        --------
+        >>> historical_feature_table = catalog.get_historical_feature_table("historical_feature_table_name")  # doctest: +SKIP
+        >>> historical_feature_table.update_description(description)  # doctest: +SKIP
+        """
+        super().update_description(description)

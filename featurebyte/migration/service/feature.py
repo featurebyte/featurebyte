@@ -120,3 +120,60 @@ class FeatureMigrationServiceV4(BaseMongoCollectionMigration):
                 assert len(doc["primary_entity_ids"]) > 0, doc["primary_entity_ids"]
 
         logger.info("Migrated all records successfully (total: %d)", total_after)
+
+
+class FeatureMigrationServiceV8(BaseMongoCollectionMigration):
+    """
+    FeatureMigrationService class
+
+    This class is used to migrate the feature records to add following fields:
+    - table_id_feature_job_settings
+    - table_id_cleaning_operations
+    """
+
+    # skip audit migration for this migration
+    skip_audit_migration = True
+
+    def __init__(
+        self,
+        persistent: Persistent,
+        feature_service: FeatureService,
+    ):
+        super().__init__(persistent)
+        self.feature_service = feature_service
+
+    @property
+    def delegate_service(self) -> BaseDocumentServiceT:
+        return self.feature_service  # type: ignore[return-value]
+
+    @migrate(
+        version=8,
+        description=(
+            "Add table_id_column_names, table_id_feature_job_settings & table_id_cleaning_operations "
+            "to feature record"
+        ),
+    )
+    async def add_table_id_feature_job_settings_and_table_id_cleaning_operations(self) -> None:
+        """Add table_id_feature_job_settings & table_id_cleaning_operations to feature record"""
+        sanity_check_sample_size = 10
+
+        # use the normal query filter (contains catalog ID filter)
+        query_filter = self.delegate_service.construct_list_query_filter()
+        total_before = await self.get_total_record(query_filter=query_filter)  # type: ignore
+
+        # migrate all records and audit records
+        await self.migrate_all_records(query_filter=query_filter)
+
+        # check the sample records after migration
+        sample_docs_after, total_after = await self.persistent.find(
+            collection_name=self.collection_name,
+            query_filter=query_filter,
+            page_size=sanity_check_sample_size,
+        )
+        assert total_before == total_after, (total_before, total_after)
+        for doc in sample_docs_after:
+            assert "table_id_column_names" in doc, doc
+            assert "table_id_feature_job_settings" in doc, doc
+            assert "table_id_cleaning_operations" in doc, doc
+
+        logger.info("Migrated all records successfully (total: %d)", total_after)

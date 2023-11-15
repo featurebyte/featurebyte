@@ -170,6 +170,8 @@ class BaseSparkSession(BaseSession, ABC):
         if spark_type.startswith("ARRAY"):
             # ARRAY<BIGINT>
             return DBVarType.ARRAY
+        if spark_type.startswith("STRUCT"):
+            return DBVarType.STRUCT
 
         mapping = {
             "BINARY": DBVarType.BINARY,

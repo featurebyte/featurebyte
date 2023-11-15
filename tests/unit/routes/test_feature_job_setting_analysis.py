@@ -55,6 +55,14 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
         )
     ]
 
+    @pytest.fixture(autouse=True)
+    def mock_add_columns_attributes(self):
+        """Mock columns attributes service excecution"""
+        with patch(
+            "featurebyte.service.column_attributes.ColumnAttributesDetectionService.add_columns_attributes"
+        ):
+            yield
+
     @pytest.fixture(name="analysis_result")
     def analysis_result_fixture(self):
         """

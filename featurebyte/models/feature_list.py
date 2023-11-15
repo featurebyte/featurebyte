@@ -28,7 +28,7 @@ from featurebyte.models.feature import EntityRelationshipInfo, FeatureModel
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.pruning_util import get_prune_graph_and_nodes
+from featurebyte.query_graph.pruning_util import get_combined_graph_and_nodes
 
 
 class FeatureListStatus(OrderedStrEnum):
@@ -511,7 +511,9 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         # create a FeatureCluster for each group
         feature_clusters = []
         for feature_store_id, group_features in groups.items():
-            pruned_graph, mapped_nodes = get_prune_graph_and_nodes(feature_objects=group_features)
+            pruned_graph, mapped_nodes = get_combined_graph_and_nodes(
+                feature_objects=group_features
+            )
             feature_clusters.append(
                 FeatureCluster(
                     feature_store_id=feature_store_id,

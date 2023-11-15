@@ -160,9 +160,16 @@ async def test_update_columns_info__critical_data_info(
     ],
 )
 async def test_update_entity_table_references(
-    request, table_columns_info_service, fixture_name, update_class, primary_key_column
+    request,
+    table_columns_info_service,
+    fixture_name,
+    update_class,
+    primary_key_column,
+    mock_add_columns_attributes,
 ):
     """Test update_entity_table_references"""
+    _ = mock_add_columns_attributes
+
     table = request.getfixturevalue(fixture_name)
     table_model = table._get_schema(**table._get_create_payload())
     columns_info = table_model.json_dict()["columns_info"]

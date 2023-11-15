@@ -3,7 +3,7 @@ Test for target routes
 """
 from http import HTTPStatus
 from unittest import mock
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pandas as pd
 import pytest
@@ -62,6 +62,14 @@ class TestTargetApi(BaseCatalogApiTestSuite):
             f'Target (id: "{unknown_id}") not found. Please save the Target object first.',
         )
     ]
+
+    @pytest.fixture(autouse=True)
+    def mock_add_columns_attributes(self):
+        """Mock columns attributes service excecution"""
+        with patch(
+            "featurebyte.service.column_attributes.ColumnAttributesDetectionService.add_columns_attributes"
+        ):
+            yield
 
     def setup_creation_route(self, api_client):
         """
