@@ -109,7 +109,13 @@ class TargetTableRouter(BaseMaterializedTableRouter[TargetTableModel]):
         """
         Create TargetTable by submitting a materialization task
         """
-        data = TargetTableCreate(**json.loads(payload))
+        payload_dict = json.loads(payload)
+        # Note that only target_id, or graph should be passed in.
+        # This cleanup is done here on the API layer due to backwards compatibility, where older clients may be passing
+        # in payloads that have both. This is ok to change as the target_id was not being used for anything.
+        if payload_dict["target_id"] is not None and payload_dict["graph"] is not None:
+            payload_dict["target_id"] = None
+        data = TargetTableCreate(**payload_dict)
         controller = request.state.app_container.target_table_controller
         task_submit: Task = await controller.create_table(
             data=data,
