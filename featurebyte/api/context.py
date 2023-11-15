@@ -70,6 +70,7 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         cls,
         name: str,
         primary_entity: List[str],
+        description: Optional[str] = None,
     ) -> "Context":
         """
         Create a new Context.
@@ -80,6 +81,8 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
             Name of the UseCase.
         primary_entity: List[str]
             List of entity names.
+        description: Optional[str]
+            Description of the Context.
 
         Returns
         -------
@@ -98,7 +101,7 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         for entity_name in primary_entity:
             entity_ids.append(Entity.get(entity_name).id)
 
-        context = Context(name=name, primary_entity_ids=entity_ids)
+        context = Context(name=name, primary_entity_ids=entity_ids, description=description)
         context.save()
         return context
 
@@ -256,6 +259,23 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         >>> context.update_default_eda_table(observation_table_name)  # doctest: +SKIP
         """
         super().update_default_eda_table(observation_table_name)
+
+    @typechecked
+    def update_description(self, description: Optional[str]) -> None:
+        """
+        Update description for the Context.
+
+        Parameters
+        ----------
+        description: Optional[str]
+            Description of the object
+
+        Examples
+        --------
+        >>> context = catalog.get_context("context")
+        >>> context.update_description(description)  # doctest: +SKIP
+        """
+        super().update_description(description)
 
     @typechecked
     def remove_observation_table(self, observation_table_name: str) -> None:
