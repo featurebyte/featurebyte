@@ -74,6 +74,12 @@ def test_feature_model(feature_model_dict, api_object_to_id):
         "online_enabled": False,
         "readiness": "DRAFT",
         "relationships_info": None,
+        "table_id_column_names": [
+            {
+                "table_id": ObjectId(api_object_to_id["event_table"]),
+                "column_names": ["col_float", "cust_id", "event_timestamp"],
+            }
+        ],
         "table_id_cleaning_operations": [
             {
                 "table_id": ObjectId(api_object_to_id["event_table"]),

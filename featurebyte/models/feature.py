@@ -87,6 +87,9 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
     _graph: Optional[QueryGraph] = PrivateAttr(default=None)
 
     # query graph derived attributes
+    # - table columns used by the feature or target
+    # - table feature job settings used by the feature or target
+    # - table cleaning operations used by the feature or target
     table_id_column_names: List[TableIdColumnNames] = Field(
         allow_mutation=False, default_factory=list
     )
@@ -175,6 +178,13 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
 
             values["dtype"] = op_struct.aggregations[0].dtype
         return values
+
+    @validator(
+        "table_id_column_names", "table_id_feature_job_settings", "table_id_cleaning_operations"
+    )
+    @classmethod
+    def _sort_list_by_table_id_(cls, value: List[Any]) -> List[Any]:
+        return sorted(value, key=lambda item: item.table_id)
 
     @property
     def node(self) -> Node:

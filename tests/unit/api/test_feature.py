@@ -514,6 +514,7 @@ def test_get_feature(saved_feature):
         "name",
         "readiness",
         "relationships_info",
+        "table_id_column_names",
         "table_id_cleaning_operations",
         "table_id_feature_job_settings",
         "graph.edges",
