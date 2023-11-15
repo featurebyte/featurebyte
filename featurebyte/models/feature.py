@@ -121,6 +121,8 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
             values.get("primary_table_ids"),
             values.get("table_ids"),
             values.get("dtype"),
+            values.get("table_id_feature_job_settings") is not None,
+            values.get("table_id_cleaning_operations") is not None,
         ]
         if any(not x for x in derived_attributes):
             # only derive attributes if any of them is missing
