@@ -242,6 +242,13 @@ class DisguisedValueImputation(BaseCleaningOperation):
 
     supported_dtypes: ClassVar[Optional[Set[DBVarType]]] = DBVarType.primitive_types()
 
+    @validator("disguised_values")
+    @classmethod
+    def _validate_disguised_values(cls, values: Sequence[Any]) -> Sequence[Any]:
+        if len(values) == 0:
+            raise ValueError("disguised_values cannot be empty")
+        return values
+
     def cast(self, dtype: DBVarType) -> None:
         super().cast(dtype)
         self.disguised_values = self._cast_list_parameter_to_dtype(self.disguised_values, dtype)
@@ -288,6 +295,13 @@ class UnexpectedValueImputation(BaseCleaningOperation):
     )
 
     supported_dtypes: ClassVar[Optional[Set[DBVarType]]] = DBVarType.primitive_types()
+
+    @validator("expected_values")
+    @classmethod
+    def _validate_expected_values(cls, values: Sequence[Any]) -> Sequence[Any]:
+        if len(values) == 0:
+            raise ValueError("expected_values cannot be empty")
+        return values
 
     def cast(self, dtype: DBVarType) -> None:
         super().cast(dtype)

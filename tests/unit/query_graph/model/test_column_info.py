@@ -177,3 +177,15 @@ def test_column_info__not_supported_casting(data_types, clean_op):
                 dtype=data_type,
                 critical_data_info=CriticalDataInfo(cleaning_operations=[clean_op]),
             )
+
+
+def test_imputation_validation():
+    """Test imputation validation"""
+    with pytest.raises(ValueError, match="none is not an allowed value"):
+        MissingValueImputation(imputed_value=None)
+
+    with pytest.raises(ValueError, match="disguised_values cannot be empty"):
+        DisguisedValueImputation(imputed_value=None, disguised_values=[])
+
+    with pytest.raises(ValueError, match="expected_values cannot be empty"):
+        UnexpectedValueImputation(imputed_value=None, expected_values=[])
