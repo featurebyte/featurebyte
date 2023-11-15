@@ -16,6 +16,8 @@ name: dependencies
     branches:
     - main
     - release/*
+    paths:
+    - pyproject.toml
 permissions:
   contents: write
   pull-requests: write
@@ -26,13 +28,12 @@ concurrency:
 jobs:
   diff-deps:
     runs-on: ubuntu-latest
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependencies') }}
     strategy:
       matrix:
         python-version:
         - 3.8.12
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
     - name: Checkout branch
@@ -64,6 +65,7 @@ jobs:
         tar xvf dist/featurebyte-1.tar.gz --strip-components 1 featurebyte-1/PKG-INFO
         awk -F: '/^Provides-Extra|Requires-Dist/ {print $0}' PKG-INFO | sort > main.PKG-INFO
     - name: Diff dependencies
+      continue-on-error: true
       run: |-
         # Write diff to env
         echo "DIFF<<EOF" >> $GITHUB_ENV
@@ -74,11 +76,13 @@ jobs:
 
         # Test if it actually fails
         diff -u main.PKG-INFO branch.PKG-INFO
-    - if: failure()
-      uses: mshick/add-pr-comment@v2
+    - uses: mshick/add-pr-comment@v2
       with:
         message: |-
           **Diff**
           ```diff
           ${{ env.DIFF }}
           ```
+    - name: Check failure if not labelled as dependencies
+      if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependencies') }}
+      run: diff -u main.PKG-INFO branch.PKG-INFO

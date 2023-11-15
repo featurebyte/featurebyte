@@ -23,7 +23,7 @@ jobs:
   test-deep-dive-notebooks:
     runs-on: ubuntu-latest-4-cores
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
     - uses: arduino/setup-task@v1
@@ -49,9 +49,9 @@ jobs:
         poetry config virtualenvs.in-project true
         poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
     - name: Install packages needed for build
-      run: sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
-    - name: Install packages needed for Kerberos
-      run: sudo apt-get install libkrb5-dev
+      run: |-
+        sudo apt-get update
+        sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
     - name: Set Github Committer Settings
       run: |-
         git config --global user.name "featurebyte[bot]"
@@ -59,7 +59,7 @@ jobs:
     - name: Run task install
       run: task install
     - name: Docker Login to Non-Prod Artifact Registry
-      uses: docker/login-action@v2
+      uses: docker/login-action@v3
       with:
         password: ${{ secrets.GCR_DOCKER_CREDENTIALS_R_B64 }}
         registry: ${{ env.GCR_DOCKER_LOCATION }}-docker.pkg.dev
@@ -70,7 +70,7 @@ jobs:
   test-quick-start-notebooks:
     runs-on: ubuntu-latest-4-cores
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
     - uses: arduino/setup-task@v1
@@ -96,9 +96,9 @@ jobs:
         poetry config virtualenvs.in-project true
         poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
     - name: Install packages needed for build
-      run: sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
-    - name: Install packages needed for Kerberos
-      run: sudo apt-get install libkrb5-dev
+      run: |-
+        sudo apt-get update
+        sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
     - name: Set Github Committer Settings
       run: |-
         git config --global user.name "featurebyte[bot]"
@@ -106,7 +106,7 @@ jobs:
     - name: Run task install
       run: task install
     - name: Docker Login to Non-Prod Artifact Registry
-      uses: docker/login-action@v2
+      uses: docker/login-action@v3
       with:
         password: ${{ secrets.GCR_DOCKER_CREDENTIALS_R_B64 }}
         registry: ${{ env.GCR_DOCKER_LOCATION }}-docker.pkg.dev
@@ -117,7 +117,7 @@ jobs:
   test-playground-notebooks:
     runs-on: ubuntu-latest-4-cores
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
     - uses: arduino/setup-task@v1
@@ -143,9 +143,9 @@ jobs:
         poetry config virtualenvs.in-project true
         poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
     - name: Install packages needed for build
-      run: sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
-    - name: Install packages needed for Kerberos
-      run: sudo apt-get install libkrb5-dev
+      run: |-
+        sudo apt-get update
+        sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
     - name: Set Github Committer Settings
       run: |-
         git config --global user.name "featurebyte[bot]"
@@ -153,7 +153,7 @@ jobs:
     - name: Run task install
       run: task install
     - name: Docker Login to Non-Prod Artifact Registry
-      uses: docker/login-action@v2
+      uses: docker/login-action@v3
       with:
         password: ${{ secrets.GCR_DOCKER_CREDENTIALS_R_B64 }}
         registry: ${{ env.GCR_DOCKER_LOCATION }}-docker.pkg.dev
@@ -169,7 +169,7 @@ jobs:
     - test-deep-dive-notebooks
     - test-playground-notebooks
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
     - if: ${{ github.event_name == 'pull_request' }}

@@ -44,7 +44,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: arduino/setup-task@v1
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -76,7 +76,7 @@ jobs:
         python-version:
         - 3.8.12
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: arduino/setup-task@v1
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -98,9 +98,9 @@ jobs:
     - name: Configure Poetry
       run: poetry config virtualenvs.in-project true
     - name: Install packages needed for build
-      run: sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
-    - name: Install packages needed for Kerberos
-      run: sudo apt-get install libkrb5-dev
+      run: |-
+        sudo apt-get update
+        sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
     - name: Install wkhtmltopdf
       run: |-
         sudo apt-get update
@@ -136,7 +136,7 @@ jobs:
         python-version:
         - 3.8.12
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: arduino/setup-task@v1
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -158,9 +158,9 @@ jobs:
     - name: Configure Poetry
       run: poetry config virtualenvs.in-project true
     - name: Install packages needed for build
-      run: sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
-    - name: Install packages needed for Kerberos
-      run: sudo apt-get install libkrb5-dev
+      run: |-
+        sudo apt-get update
+        sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
     - name: Install wkhtmltopdf
       run: |-
         sudo apt-get update
@@ -194,8 +194,11 @@ jobs:
       matrix:
         python-version:
         - 3.8.12
+        spark-version:
+        - 3.3.1
+        - 3.5.0
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: arduino/setup-task@v1
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -217,9 +220,9 @@ jobs:
     - name: Configure Poetry
       run: poetry config virtualenvs.in-project true
     - name: Install packages needed for build
-      run: sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
-    - name: Install packages needed for Kerberos
-      run: sudo apt-get install libkrb5-dev
+      run: |-
+        sudo apt-get update
+        sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
     - name: Install wkhtmltopdf
       run: |-
         sudo apt-get update
@@ -233,7 +236,7 @@ jobs:
       continue-on-error: true
       run: |-
         set +e
-        task test-integration-spark
+        SPARK_VERSION=${{ matrix.spark-version }} task test-integration-spark
         # capture the exit code from the test run before stashing logs
         EXIT_CODE=$?
         echo $EXIT_CODE > status.txt
@@ -276,7 +279,7 @@ jobs:
         python-version:
         - 3.8.12
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: arduino/setup-task@v1
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -298,9 +301,9 @@ jobs:
     - name: Configure Poetry
       run: poetry config virtualenvs.in-project true
     - name: Install packages needed for build
-      run: sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
-    - name: Install packages needed for Kerberos
-      run: sudo apt-get install libkrb5-dev
+      run: |-
+        sudo apt-get update
+        sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
     - name: Install wkhtmltopdf
       run: |-
         sudo apt-get update
@@ -334,7 +337,7 @@ jobs:
         python-version:
         - 3.8.12
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: arduino/setup-task@v1
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -356,9 +359,9 @@ jobs:
     - name: Configure Poetry
       run: poetry config virtualenvs.in-project true
     - name: Install packages needed for build
-      run: sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
-    - name: Install packages needed for Kerberos
-      run: sudo apt-get install libkrb5-dev
+      run: |-
+        sudo apt-get update
+        sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
     - name: Install wkhtmltopdf
       run: |-
         sudo apt-get update
@@ -384,7 +387,7 @@ jobs:
         python-version:
         - 3.8.12
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
     - uses: arduino/setup-task@v1
@@ -457,7 +460,7 @@ jobs:
         fi
     - name: Update Coverage Badge
       if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-      uses: schneegans/dynamic-badges-action@v1.6.0
+      uses: schneegans/dynamic-badges-action@v1.7.0
       with:
         auth: ${{ secrets.GIST_SECRET }}
         gistID: 773e2960183c0a6fe24c644d95d71fdb
@@ -477,7 +480,7 @@ jobs:
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
     - if: ${{ github.event_name == 'pull_request' }}
