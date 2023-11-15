@@ -277,7 +277,10 @@ class QueryGraph(QueryGraphModel):
         return table_feature_job_settings
 
     def extract_table_id_cleaning_operations(
-        self, target_node: Node, keep_all_columns: bool = True
+        self,
+        target_node: Node,
+        keep_all_columns: bool = True,
+        table_id_to_col_names: Optional[Dict[ObjectId, Set[str]]] = None,
     ) -> List[TableIdCleaningOperation]:
         """
         Extract table ID cleaning operations from the query graph given the target node name
@@ -288,6 +291,8 @@ class QueryGraph(QueryGraphModel):
             Node from which to start the backward search
         keep_all_columns: bool
             Whether to keep all columns in the table
+        table_id_to_col_names: Optional[Dict[ObjectId, Set[str]]]
+            Table ID to column names mapping. If not provided, it will be computed from the graph
 
         Returns
         -------
@@ -296,7 +301,8 @@ class QueryGraph(QueryGraphModel):
         """
         table_column_operations = []
         found_table_ids = set()
-        table_id_to_col_names = self.extract_table_id_to_table_column_names(node=target_node)
+        if table_id_to_col_names is None:
+            table_id_to_col_names = self.extract_table_id_to_table_column_names(node=target_node)
         for node in self.iterate_nodes(target_node=target_node, node_type=NodeType.GRAPH):
             assert isinstance(node, BaseGraphNode)
             if node.parameters.type in GraphNodeType.view_graph_node_types():

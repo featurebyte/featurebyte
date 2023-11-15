@@ -156,19 +156,21 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
 
             # extract table feature job settings, table cleaning operations, table column names
             node = graph.get_node_by_name(node_name)
-            table_id_to_column_names = graph.extract_table_id_to_table_column_names(node=node)
+            table_id_to_col_names = graph.extract_table_id_to_table_column_names(node=node)
             values["table_id_column_names"] = [
                 TableIdColumnNames(
                     table_id=table_id,
-                    column_names=sorted(table_id_to_column_names[table_id]),
+                    column_names=sorted(table_id_to_col_names[table_id]),
                 )
-                for table_id in sorted(table_id_to_column_names)
+                for table_id in sorted(table_id_to_col_names)
             ]
             values["table_id_feature_job_settings"] = graph.extract_table_id_feature_job_settings(
                 target_node=node
             )
             values["table_id_cleaning_operations"] = graph.extract_table_id_cleaning_operations(
-                target_node=node
+                target_node=node,
+                keep_all_columns=True,
+                table_id_to_col_names=table_id_to_col_names,
             )
 
             # extract dtype from the graph
@@ -184,7 +186,7 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
     )
     @classmethod
     def _sort_list_by_table_id_(cls, value: List[Any]) -> List[Any]:
-        return sorted(value, key=lambda item: item.table_id)
+        return sorted(value, key=lambda item: item.table_id)  # type: ignore
 
     @property
     def node(self) -> Node:
