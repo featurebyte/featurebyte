@@ -83,7 +83,6 @@ jobs:
           ```diff
           ${{ env.DIFF }}
           ```
-    - name: Check failure if not labelled as dependency
+    - name: Check failure if not labelled as dependencies
       if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependencies') }}
-      run: |-
-        diff -u main.PKG-INFO branch.PKG-INFO
+      run: diff -u main.PKG-INFO branch.PKG-INFO
