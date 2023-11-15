@@ -155,7 +155,7 @@ class BaseApiTestSuite:
             headers={"active-catalog-id": str(catalog_id)},
             json={"enabled": enabled},
         )
-        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.status_code == HTTPStatus.ACCEPTED, response.json()
         self.wait_for_results(api_client, response)
         deployment_response = api_client.get(
             f"/deployment/{deployment_id}",
