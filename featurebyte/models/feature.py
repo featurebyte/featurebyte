@@ -58,6 +58,16 @@ class EntityRelationshipInfo(FeatureByteBaseModel):
     relation_table_id: PydanticObjectId
 
 
+class TableIdColumnNames(FeatureByteBaseModel):
+    """
+    TableIdColumnNames object stores the table id and the column names of the table that are used by
+    the feature or target.
+    """
+
+    table_id: PydanticObjectId
+    column_names: List[str]
+
+
 class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
     """
     BaseFeatureModel is the base class for FeatureModel & TargetModel.
@@ -75,6 +85,20 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
     # internal_* is used to store the raw data from persistence, _* is used as a cache
     internal_graph: Any = Field(allow_mutation=False, alias="graph")
     _graph: Optional[QueryGraph] = PrivateAttr(default=None)
+
+    # query graph derived attributes
+    # - table columns used by the feature or target
+    # - table feature job settings used by the feature or target
+    # - table cleaning operations used by the feature or target
+    table_id_column_names: List[TableIdColumnNames] = Field(
+        allow_mutation=False, default_factory=list
+    )
+    table_id_feature_job_settings: List[TableIdFeatureJobSetting] = Field(
+        allow_mutation=False, default_factory=list
+    )
+    table_id_cleaning_operations: List[TableIdCleaningOperation] = Field(
+        allow_mutation=False, default_factory=list
+    )
 
     # list of IDs attached to this feature or target
     entity_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
@@ -113,6 +137,7 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
             values.get("primary_table_ids"),
             values.get("table_ids"),
             values.get("dtype"),
+            values.get("table_id_column_names"),
         ]
         if any(not x for x in derived_attributes):
             # only derive attributes if any of them is missing
@@ -129,14 +154,39 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
                 node_name=node_name
             )
 
-            # extract dtype from the graph
+            # extract table feature job settings, table cleaning operations, table column names
             node = graph.get_node_by_name(node_name)
+            table_id_to_col_names = graph.extract_table_id_to_table_column_names(node=node)
+            values["table_id_column_names"] = [
+                TableIdColumnNames(
+                    table_id=table_id,
+                    column_names=sorted(table_id_to_col_names[table_id]),
+                )
+                for table_id in sorted(table_id_to_col_names)
+            ]
+            values["table_id_feature_job_settings"] = graph.extract_table_id_feature_job_settings(
+                target_node=node
+            )
+            values["table_id_cleaning_operations"] = graph.extract_table_id_cleaning_operations(
+                target_node=node,
+                keep_all_columns=True,
+                table_id_to_col_names=table_id_to_col_names,
+            )
+
+            # extract dtype from the graph
             op_struct = graph.extract_operation_structure(node=node, keep_all_source_columns=True)
             if len(op_struct.aggregations) != 1:
                 raise ValueError("Feature or target graph must have exactly one aggregation output")
 
             values["dtype"] = op_struct.aggregations[0].dtype
         return values
+
+    @validator(
+        "table_id_column_names", "table_id_feature_job_settings", "table_id_cleaning_operations"
+    )
+    @classmethod
+    def _sort_list_by_table_id_(cls, value: List[Any]) -> List[Any]:
+        return sorted(value, key=lambda item: item.table_id)  # type: ignore
 
     @property
     def node(self) -> Node:
