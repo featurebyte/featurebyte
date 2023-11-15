@@ -18,6 +18,7 @@ from featurebyte.exception import (
     RecordCreationException,
     RecordRetrievalException,
     RecordUpdateException,
+    ResponseException,
 )
 from featurebyte.logging import get_logger
 from featurebyte.models.base import FeatureByteBaseModel
@@ -40,6 +41,7 @@ class AsyncMixin(FeatureByteBaseModel):
         delay: float = POLLING_INTERVAL,
         retrieve_result: bool = True,
         has_output_url: bool = True,
+        task_failure_exception_class: type[ResponseException] = RecordCreationException,
     ) -> dict[str, Any]:
         response_dict = task_response.json()
         status = response_dict["status"]
@@ -80,7 +82,7 @@ class AsyncMixin(FeatureByteBaseModel):
 
         # check the task status
         if status != TaskStatus.SUCCESS:
-            raise RecordCreationException(response=task_get_response or task_response)
+            raise task_failure_exception_class(response=task_get_response or task_response)
 
         # retrieve task result
         output_url = response_dict.get("output_path")
@@ -180,7 +182,14 @@ class AsyncMixin(FeatureByteBaseModel):
         """
         client = Configurations().get_client()
         update_response = client.patch(url=route, json=payload)
-        if update_response.status_code != HTTPStatus.OK:
-            raise RecordUpdateException(response=update_response)
-        if update_response.json():
-            cls._poll_async_task(task_response=update_response, delay=delay, retrieve_result=False)
+        if update_response.status_code == HTTPStatus.OK:
+            return
+        if update_response.status_code == HTTPStatus.ACCEPTED:
+            cls._poll_async_task(
+                task_response=update_response,
+                delay=delay,
+                retrieve_result=False,
+                task_failure_exception_class=RecordUpdateException,
+            )
+            return
+        raise RecordUpdateException(response=update_response)

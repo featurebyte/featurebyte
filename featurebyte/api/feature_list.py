@@ -1437,12 +1437,12 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         --------
         - [Deployment.get_online_serving_code](/reference/featurebyte.api.deployment.Deployment.get_online_serving_code/)
         """
-        self.update(
-            update_payload={
+        self.patch_async_task(
+            route=f"/feature_list/{self.id}",
+            payload={
                 "make_production_ready": make_production_ready,
                 "ignore_guardrails": ignore_guardrails,
             },
-            allow_update_local=False,
         )
         use_case_id = UseCase.get(use_case_name).id if use_case_name else None
         deployment_payload = DeploymentCreate(

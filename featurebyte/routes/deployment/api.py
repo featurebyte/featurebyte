@@ -5,7 +5,7 @@ from typing import Literal, Optional, cast
 
 from http import HTTPStatus
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Query, Request, Response
 from fastapi.responses import ORJSONResponse
 
 from featurebyte.models.base import PydanticObjectId
@@ -51,12 +51,15 @@ class DeploymentRouter(BaseRouter):
 
 
 @router.post("", response_model=Task, status_code=HTTPStatus.CREATED)
-async def create_deployment(request: Request, data: DeploymentCreate) -> Task:
+async def create_deployment(request: Request, data: DeploymentCreate, response: Response) -> Task:
     """
     Create Deployment
     """
     controller = request.state.app_container.deployment_controller
     task: Task = await controller.create_deployment(data=data)
+    if isinstance(task, Task):
+        # if task is returned, it means the deployment is being updated asynchronously
+        response.status_code = HTTPStatus.ACCEPTED
     return task
 
 
