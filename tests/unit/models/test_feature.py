@@ -74,6 +74,25 @@ def test_feature_model(feature_model_dict, api_object_to_id):
         "online_enabled": False,
         "readiness": "DRAFT",
         "relationships_info": None,
+        "table_id_cleaning_operations": [
+            {
+                "table_id": ObjectId(api_object_to_id["event_table"]),
+                "column_cleaning_operations": [
+                    {"column_name": column_name, "cleaning_operations": []}
+                    for column_name in ["col_float", "cust_id", "event_timestamp"]
+                ],
+            }
+        ],
+        "table_id_feature_job_settings": [
+            {
+                "table_id": ObjectId(api_object_to_id["event_table"]),
+                "feature_job_setting": {
+                    "blind_spot": "600s",
+                    "frequency": "1800s",
+                    "time_modulo_frequency": "300s",
+                },
+            }
+        ],
         "tabular_source": {
             "feature_store_id": ObjectId(api_object_to_id["feature_store"]),
             "table_details": {

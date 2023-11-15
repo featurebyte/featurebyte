@@ -76,6 +76,14 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
     internal_graph: Any = Field(allow_mutation=False, alias="graph")
     _graph: Optional[QueryGraph] = PrivateAttr(default=None)
 
+    # query graph derived attributes
+    table_id_feature_job_settings: List[TableIdFeatureJobSetting] = Field(
+        allow_mutation=False, default_factory=list
+    )
+    table_id_cleaning_operations: List[TableIdCleaningOperation] = Field(
+        allow_mutation=False, default_factory=list
+    )
+
     # list of IDs attached to this feature or target
     entity_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
     primary_entity_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
@@ -129,8 +137,16 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
                 node_name=node_name
             )
 
-            # extract dtype from the graph
+            # extract table feature job settings & table cleaning operations
             node = graph.get_node_by_name(node_name)
+            values["table_id_feature_job_settings"] = graph.extract_table_id_feature_job_settings(
+                target_node=node
+            )
+            values["table_id_cleaning_operations"] = graph.extract_table_id_cleaning_operations(
+                target_node=node
+            )
+
+            # extract dtype from the graph
             op_struct = graph.extract_operation_structure(node=node, keep_all_source_columns=True)
             if len(op_struct.aggregations) != 1:
                 raise ValueError("Feature or target graph must have exactly one aggregation output")
