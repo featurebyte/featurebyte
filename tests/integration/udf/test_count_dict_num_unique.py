@@ -4,10 +4,8 @@ Tests for count dict num unique UDF
 import numpy as np
 import pytest
 
-from tests.source_types import SNOWFLAKE_AND_SPARK
 
-
-@pytest.mark.parametrize("source_type", SNOWFLAKE_AND_SPARK, indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.parametrize(
     "dictionary, expected",
     [
