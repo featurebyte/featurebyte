@@ -270,9 +270,21 @@ class GraphInconsistencyError(DocumentError):
     """
 
 
-class QueryExecutionTimeOut(DocumentError):
+class TimeOutError(FeatureByteException):
+    """
+    Time Out related exception
+    """
+
+
+class QueryExecutionTimeOut(TimeOutError):
     """
     Raise when the SQL query execution times out
+    """
+
+
+class SessionInitializationTimeOut(TimeOutError):
+    """
+    Raise when the session initialization times out
     """
 
 

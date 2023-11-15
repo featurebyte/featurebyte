@@ -2,12 +2,14 @@
 Tests for SessionManager class
 """
 import logging
+import time
 from unittest.mock import Mock, patch
 
 import pytest
 from pytest import LogCaptureFixture
 
 from featurebyte.api.feature_store import FeatureStore
+from featurebyte.exception import SessionInitializationTimeOut
 from featurebyte.query_graph.node.schema import SQLiteDetails
 from featurebyte.session.manager import SessionManager
 from featurebyte.session.manager import logger as session_logger
@@ -117,3 +119,27 @@ async def test_session_manager__no_credentials(snowflake_feature_store):
     assert 'Credentials do not contain info for the feature store "sf_featurestore"' in str(
         exc.value
     )
+
+
+@pytest.mark.asyncio
+async def test_session_manager_get_new_session_timeout(
+    snowflake_feature_store_params,
+    snowflake_execute_query,
+    session_manager,
+):
+    """
+    Test timeout exception raise during get new session
+    """
+    snowflake_feature_store = FeatureStore(**snowflake_feature_store_params, type="snowflake")
+
+    with patch("featurebyte.session.manager.SESSION_TIMEOUT", 1), patch(
+        "featurebyte.session.manager.SnowflakeSession.__init__"
+    ) as mock_init:
+
+        def slow_init(*args, **kwargs):
+            time.sleep(2)
+
+        mock_init.side_effect = slow_init
+        with pytest.raises(SessionInitializationTimeOut) as exc:
+            await session_manager.get_session(snowflake_feature_store)
+        assert "Session creation timed out after" in str(exc.value)
