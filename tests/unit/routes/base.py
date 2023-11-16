@@ -145,7 +145,7 @@ class BaseApiTestSuite:
             )
 
     @pytest.fixture(autouse=True)
-    def mock_add_columns_attributes(self):
+    def mock_detect_and_update_column_dtypes(self):
         """Mock columns attributes service execution"""
         with patch(
             "featurebyte.service.specialized_dtype.SpecializedDtypeDetectionService.detect_and_update_column_dtypes"

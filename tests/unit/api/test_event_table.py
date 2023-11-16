@@ -135,13 +135,12 @@ def event_table_dict_fixture(snowflake_database_table):
 
 
 def test_create_event_table(
-    snowflake_database_table, event_table_dict, catalog, mock_add_columns_attributes
+    snowflake_database_table, event_table_dict, catalog, mock_detect_and_update_column_dtypes
 ):
     """
     Test EventTable creation using tabular source
     """
-    _ = catalog
-    _ = mock_add_columns_attributes
+    _ = catalog, mock_detect_and_update_column_dtypes
 
     event_table = snowflake_database_table.create_event_table(
         name="sf_event_table",
@@ -319,11 +318,10 @@ class TestEventTableTestSuite(BaseTableTestSuite):
 
 
 def test_info__event_table_without_record_creation_date(
-    snowflake_database_table_dimension_table, catalog, mock_add_columns_attributes
+    snowflake_database_table_dimension_table, catalog, mock_detect_and_update_column_dtypes
 ):
     """Test info on event table with record creation timestamp is None"""
-    _ = catalog
-    _ = mock_add_columns_attributes
+    _ = catalog, mock_detect_and_update_column_dtypes
 
     event_table = snowflake_database_table_dimension_table.create_event_table(
         name="sf_event_table",
@@ -663,11 +661,10 @@ async def test_update_default_job_setting__feature_job_setting_analysis_failure(
 
 
 def test_update_record_creation_timestamp_column__unsaved_object(
-    snowflake_database_table, catalog, mock_add_columns_attributes
+    snowflake_database_table, catalog, mock_detect_and_update_column_dtypes
 ):
     """Test update record creation timestamp column (unsaved event table)"""
-    _ = catalog
-    _ = mock_add_columns_attributes
+    _ = catalog, mock_detect_and_update_column_dtypes
 
     event_table = snowflake_database_table.create_event_table(
         name="event_table",
@@ -1005,11 +1002,10 @@ def test_accessing_saved_event_table_attributes(saved_event_table):
 
 
 def test_timezone_offset__valid_constant(
-    snowflake_database_table, catalog, mock_add_columns_attributes
+    snowflake_database_table, catalog, mock_detect_and_update_column_dtypes
 ):
     """Test specifying a constant timezone offset"""
-    _ = catalog
-    _ = mock_add_columns_attributes
+    _ = catalog, mock_detect_and_update_column_dtypes
 
     event_table = snowflake_database_table.create_event_table(
         name="sf_event_table",
@@ -1036,11 +1032,10 @@ def test_timezone_offset__invalid_constant(snowflake_database_table_dimension_ta
 
 
 def test_timezone_offset__valid_column(
-    snowflake_database_table_dimension_table, catalog, mock_add_columns_attributes
+    snowflake_database_table_dimension_table, catalog, mock_detect_and_update_column_dtypes
 ):
     """Test specifying a constant timezone offset using a column"""
-    _ = catalog
-    _ = mock_add_columns_attributes
+    _ = catalog, mock_detect_and_update_column_dtypes
 
     event_table = snowflake_database_table_dimension_table.create_event_table(
         name="sf_event_table",
