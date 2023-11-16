@@ -286,6 +286,21 @@ class TestTargetApi(BaseCatalogApiTestSuite):
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
         assert response.json()["detail"] == "TargetNamespace is referenced by Target: float_target"
 
+    def test_delete_target(self, test_api_client_persistent, create_success_response):
+        """Test delete target"""
+        test_api_client, _ = test_api_client_persistent
+        response_dict = create_success_response.json()
+        target_id, namespace_id = response_dict["_id"], response_dict["target_namespace_id"]
+        response = test_api_client.delete(f"/target/{target_id}")
+        assert response.status_code == HTTPStatus.OK, response.json()
+
+        # check that target is deleted but namespace is not
+        response = test_api_client.get(f"/target/{target_id}")
+        assert response.status_code == HTTPStatus.NOT_FOUND, response.json()
+        response = test_api_client.get(f"/target_namespace/{namespace_id}")
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json()["target_ids"] == [], response.json()
+
     @pytest.mark.asyncio
     async def test_creating_target_table_with_just_target_id(
         self, test_api_client_persistent, create_success_response, create_observation_table

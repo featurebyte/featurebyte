@@ -15,7 +15,7 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.feature_or_target_mixin import FeatureOrTargetMixin
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.observation_table import ObservationTable
-from featurebyte.api.savable_api_object import SavableApiObject
+from featurebyte.api.savable_api_object import DeletableApiObject, SavableApiObject
 from featurebyte.api.target_namespace import TargetNamespace
 from featurebyte.api.templates.doc_util import substitute_docstring
 from featurebyte.api.templates.feature_or_target_doc import (
@@ -45,7 +45,12 @@ DOCSTRING_FORMAT_PARAMS = {"class_name": "Target"}
 
 
 class Target(
-    Series, SavableApiObject, FeatureOrTargetMixin, TargetDtAccessorMixin, TargetStrAccessorMixin
+    Series,
+    DeletableApiObject,
+    SavableApiObject,
+    FeatureOrTargetMixin,
+    TargetDtAccessorMixin,
+    TargetStrAccessorMixin,
 ):
     """
     Target class used to represent a Target in FeatureByte.
@@ -428,3 +433,19 @@ class Target(
             Description of target version
         """
         super().update_description(description=description)
+
+    def delete(self) -> None:
+        """
+        Delete a target from the persistent data store. A target can only be deleted from the persistent
+        data store if
+
+        - the target is not used in any use case
+        - the target is not used in any observation table
+
+
+        Examples
+        --------
+        >>> target = catalog.get_target("target_latest_invoice_timestamp")
+        >>> target.delete()  # doctest: +SKIP
+        """
+        super()._delete()

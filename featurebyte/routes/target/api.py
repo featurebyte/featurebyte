@@ -186,3 +186,12 @@ async def get_feature_sample_entity_serving_names(
         await controller.get_sample_entity_serving_names(target_id=target_id, count=count)
     )
     return sample_entity_serving_names
+
+
+@router.delete("/{target_id}")
+async def delete_target(request: Request, target_id: PydanticObjectId) -> None:
+    """
+    Delete Target
+    """
+    controller = request.state.app_container.target_controller
+    await controller.delete(document_id=target_id)
