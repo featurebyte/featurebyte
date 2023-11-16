@@ -23,13 +23,11 @@ class DatabricksUnitySchemaInitializer(BaseSparkSchemaInitializer):
         """
         Override since we don't need to register any jar.
         """
-        pass
 
     async def register_functions_from_jar(self) -> None:
         """
         Override to not do anything, and just do the default registration.
         """
-        pass
 
 
 class DatabricksUnitySession(DatabricksSession):
