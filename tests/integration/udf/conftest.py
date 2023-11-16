@@ -5,7 +5,7 @@ import pytest
 
 import tests.integration.udf.snowflake.util as snowflake_util
 import tests.integration.udf.spark.util as spark_util
-from tests.source_types import DATABRICKS, SNOWFLAKE, SPARK, DATABRICKS_UNITY
+from tests.source_types import DATABRICKS, DATABRICKS_UNITY, SNOWFLAKE, SPARK
 
 
 @pytest.fixture(name="to_object", scope="session")
