@@ -38,7 +38,7 @@ jobs:
             })
           }
           console.log("Clear completed")
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: arduino/setup-task@v1
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -59,13 +59,15 @@ jobs:
     - name: Configure Poetry
       run: poetry config virtualenvs.in-project true
     - name: Install packages needed for build
-      run: sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
+      run: |-
+        sudo apt-get update
+        sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
     - name: Run task install
       run: task install
   tags:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
     - name: Set Github Committer Settings
