@@ -397,7 +397,7 @@ def get_aggregator(
     -------
     type[TilingAggregator]
     """
-    if parent_dtype is not None and parent_dtype == DBVarType.ARRAY:
+    if parent_dtype is not None and parent_dtype in DBVarType.array_types():
         vector_aggregator_mapping: dict[AggFunc, type[TilingAggregator]] = {
             AggFunc.MAX: VectorMaxAggregator,
             AggFunc.AVG: VectorAvgAggregator,

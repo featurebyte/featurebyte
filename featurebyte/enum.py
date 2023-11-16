@@ -193,6 +193,17 @@ class DBVarType(StrEnum):
         # Snowflake uses OBJECT for dictionary type & Spark uses STRUCT for dictionary type
         return {cls.OBJECT, cls.STRUCT}
 
+    @classmethod
+    def array_types(cls) -> set[DBVarType]:
+        """
+        Types for array
+
+        Returns
+        -------
+        set[DBVarType]
+        """
+        return {cls.ARRAY, cls.EMBEDDING}
+
     def to_type_str(self) -> str | None:
         """
         Convert DBVarType to internal type string
