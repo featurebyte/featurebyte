@@ -466,3 +466,21 @@ class UnsupportedObservationTableUploadFileFormat(BaseUnprocessableEntityError):
     """
     Raise when the file format for observation table upload is not supported
     """
+
+
+class InvalidFeatureStoreClusterNameError(BaseUnprocessableEntityError):
+    """
+    Raised when cluster name is invalid for the feature store
+    """
+
+
+class InvalidFeatureStoreArgumentError(BaseUnprocessableEntityError):
+    """
+    Raised when an invalid argument is passed to the feature store
+    """
+
+
+class InvalidFeatureStoreJobError(BaseUnprocessableEntityError):
+    """
+    Raised when the job is already running
+    """

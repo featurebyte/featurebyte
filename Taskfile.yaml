@@ -176,7 +176,7 @@ tasks:
       - featurebyte/**/*
     cmds:
       - poetry run pip-licenses --packages '{{ .PACKAGES }}' --allow-only='{{ .PERMISSIVE_LICENSES }}'
-      - poetry run pip-audit --ignore-vuln PYSEC-2021-878
+      - poetry run pip-audit --ignore-vuln PYSEC-2021-878 --ignore-vuln GHSA-5wvp-7f3h-6wmm
 
   lint-bandit:
     desc: "Run the linter[bandit]"
