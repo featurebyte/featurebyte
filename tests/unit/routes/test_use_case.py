@@ -720,3 +720,16 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         assert (
             response.json()["detail"] == f"Target is referenced by UseCase: {use_case_dict['name']}"
         )
+
+    @pytest.mark.asyncio
+    async def test_update_name(self, test_api_client_persistent, create_success_response):
+        """Test update name"""
+        test_api_client, _ = test_api_client_persistent
+        doc_id = create_success_response.json()["_id"]
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}", json={"name": "some other name"}
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        response = test_api_client.get(f"{self.base_route}/{doc_id}")
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["name"] == "some other name"

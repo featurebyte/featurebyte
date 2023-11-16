@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Any, Optional
 
 import pandas as pd
+from bson import ObjectId
 
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
 from featurebyte.routes.common.feature_or_target_table import (
@@ -16,6 +17,7 @@ from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.historical_feature_table import (
     HistoricalFeatureTableCreate,
     HistoricalFeatureTableList,
+    HistoricalFeatureTableUpdate,
 )
 from featurebyte.schema.info import HistoricalFeatureTableInfo
 from featurebyte.schema.worker.task.historical_feature_table import (
@@ -110,3 +112,22 @@ class HistoricalFeatureTableController(
             "feature_list_name": feature_list.name,
             "feature_list_version": feature_list.version.to_str(),
         }
+
+    async def update_historical_feature_table(
+        self, historical_feature_table_id: ObjectId, data: HistoricalFeatureTableUpdate
+    ) -> Optional[HistoricalFeatureTableModel]:
+        """
+        Update HistoricalFeatureTable
+
+        Parameters
+        ----------
+        historical_feature_table_id: ObjectId
+            HistoricalFeatureTable document_id
+        data: HistoricalFeatureTableUpdate
+            HistoricalFeatureTable update payload
+
+        Returns
+        -------
+        Optional[HistoricalFeatureTableModel]
+        """
+        return await self.service.update_document(historical_feature_table_id, data)

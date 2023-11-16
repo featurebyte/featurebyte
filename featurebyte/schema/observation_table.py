@@ -51,7 +51,7 @@ class ObservationTableListRecord(BaseRequestTableListRecord):
     """
 
 
-class ObservationTableUpdate(BaseDocumentServiceUpdateSchema):
+class ObservationTableUpdate(FeatureByteBaseModel):
     """
     ObservationTable Update schema
     """
@@ -61,6 +61,12 @@ class ObservationTableUpdate(BaseDocumentServiceUpdateSchema):
     use_case_id_to_add: Optional[PydanticObjectId]
     use_case_id_to_remove: Optional[PydanticObjectId]
     purpose: Optional[Purpose]
+    name: Optional[StrictStr]
 
-    # for update model only and not from input
+
+class ObservationTableServiceUpdate(BaseDocumentServiceUpdateSchema, ObservationTableUpdate):
+    """
+    ObservationTable Update schema for service
+    """
+
     use_case_ids: Optional[List[PydanticObjectId]]

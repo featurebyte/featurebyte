@@ -44,6 +44,8 @@ class UseCaseUpdate(BaseDocumentServiceUpdateSchema):
     remove_default_eda_table: Optional[bool]
     remove_default_preview_table: Optional[bool]
 
+    name: Optional[StrictStr]
+
     @root_validator(pre=True)
     @classmethod
     def _validate_input(cls, values: Dict[str, Any]) -> Dict[str, Any]:

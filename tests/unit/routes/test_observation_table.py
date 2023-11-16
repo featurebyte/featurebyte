@@ -118,7 +118,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         assert response_dict["purpose"] == "other"
 
     def test_update_context(self, test_api_client_persistent, create_success_response):
-        """Test update context route"""
+        """Test update context"""
         test_api_client, _ = test_api_client_persistent
         doc_id = create_success_response.json()["_id"]
 
@@ -144,7 +144,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
     async def test_update_use_case(
         self, test_api_client_persistent, create_success_response, create_observation_table
     ):
-        """Test update context route"""
+        """Test update use case"""
         test_api_client, _ = test_api_client_persistent
         _ = create_success_response
 
@@ -197,6 +197,32 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         assert response.status_code == HTTPStatus.OK
         assert response.json()["use_case_ids"] == []
 
+    @pytest.mark.asyncio
+    async def test_update_purpose(self, test_api_client_persistent, create_success_response):
+        """Test update purpose"""
+        test_api_client, _ = test_api_client_persistent
+        doc_id = create_success_response.json()["_id"]
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}", json={"purpose": "validation_test"}
+        )
+        assert response.status_code == HTTPStatus.OK
+        response = test_api_client.get(f"{self.base_route}/{doc_id}")
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["purpose"] == "validation_test"
+
+    @pytest.mark.asyncio
+    async def test_update_name(self, test_api_client_persistent, create_success_response):
+        """Test update name"""
+        test_api_client, _ = test_api_client_persistent
+        doc_id = create_success_response.json()["_id"]
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}", json={"name": "some other name"}
+        )
+        assert response.status_code == HTTPStatus.OK
+        response = test_api_client.get(f"{self.base_route}/{doc_id}")
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["name"] == "some other name"
+
     def test_update_use_case_with_error(self, test_api_client_persistent, create_success_response):
         """Test update context route"""
         test_api_client, _ = test_api_client_persistent
@@ -220,13 +246,6 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         use_case_payload["context_id"] = context_id
         response = test_api_client.post("/use_case", json=use_case_payload)
         assert response.status_code == HTTPStatus.CREATED, response.json()
-
-        # test update use_case_ids which is not allowed
-        response = test_api_client.patch(
-            f"{self.base_route}/{doc_id}", json={"use_case_ids": [use_case_id]}
-        )
-        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-        assert response.json()["detail"] == "use_case_ids is not a valid field to update"
 
         # test add use_case that has different context
         response = test_api_client.patch(

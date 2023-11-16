@@ -19,6 +19,7 @@ from featurebyte.schema.info import ObservationTableInfo
 from featurebyte.schema.observation_table import (
     ObservationTableCreate,
     ObservationTableList,
+    ObservationTableServiceUpdate,
     ObservationTableUpdate,
     ObservationTableUpload,
 )
@@ -193,5 +194,5 @@ class ObservationTableController(
         """
 
         return await self.observation_table_service.update_observation_table(
-            observation_table_id, data
+            observation_table_id, ObservationTableServiceUpdate(**data.dict(by_alias=True))
         )

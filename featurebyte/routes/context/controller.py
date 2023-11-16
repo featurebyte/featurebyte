@@ -14,7 +14,7 @@ from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.routes.common.primary_entity_validator import PrimaryEntityValidator
 from featurebyte.schema.context import ContextCreate, ContextList, ContextUpdate
 from featurebyte.schema.info import ContextInfo, EntityBriefInfo, EntityBriefInfoList
-from featurebyte.schema.observation_table import ObservationTableUpdate
+from featurebyte.schema.observation_table import ObservationTableServiceUpdate
 from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.context import ContextService
@@ -115,7 +115,7 @@ class ContextController(
             if obs_id:
                 await self.observation_table_service.update_observation_table(
                     observation_table_id=obs_id,
-                    data=ObservationTableUpdate(context_id=context_id),
+                    data=ObservationTableServiceUpdate(context_id=context_id),
                 )
 
         obs_table_id_remove = data.observation_table_id_to_remove
@@ -133,7 +133,7 @@ class ContextController(
 
             await self.observation_table_service.update_observation_table(
                 observation_table_id=obs_table_id_remove,
-                data=ObservationTableUpdate(context_id_to_remove=context_id),
+                data=ObservationTableServiceUpdate(context_id_to_remove=context_id),
             )
 
         if data.remove_default_preview_table:
