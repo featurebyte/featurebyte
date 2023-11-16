@@ -1,28 +1,29 @@
 """Integration test for column attributes"""
+from featurebyte.enum import DBVarType
 from featurebyte.query_graph.model.column_info import ColumnInfo
 
 
-def test_column_attributes_added(event_table, source_type):
-    """Test embedding and flat dict attributes"""
-    columns_with_attribues = [col for col in event_table.columns_info if col.attributes]
-    assert len(columns_with_attribues) == 2
-    assert columns_with_attribues == [
+def test_detect_and_update_column_dtypes(event_table, source_type):
+    """Test embedding and flat dict dtypes"""
+    specialized_dtype_columns = [
+        col for col in event_table.columns_info if col.dtype in {DBVarType.ARRAY, DBVarType.OBJECT}
+    ]
+    assert len(specialized_dtype_columns) == 2
+    assert specialized_dtype_columns == [
         ColumnInfo(
             name="EMBEDDING_ARRAY",
-            dtype="ARRAY",
+            dtype="EMBEDDING",
             entity_id=None,
             critical_data_info=None,
             semantic_id=None,
             description=None,
-            attributes=["embedding"],
         ),
         ColumnInfo(
             name="FLAT_DICT",
-            dtype="OBJECT" if source_type == "snowflake" else "STRUCT",
+            dtype="FLAT_DICT",
             entity_id=None,
             critical_data_info=None,
             semantic_id=None,
             description=None,
-            attributes=["flat_dict"],
         ),
     ]

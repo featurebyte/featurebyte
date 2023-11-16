@@ -11,7 +11,7 @@ from http import HTTPStatus
 from io import BytesIO
 from pathlib import Path
 from time import sleep
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pandas as pd
 import pyarrow as pa
@@ -143,6 +143,14 @@ class BaseApiTestSuite:
                 "list_unprocessable_params_expected_detail",
                 self.list_unprocessable_params_expected_detail_pairs,
             )
+
+    @pytest.fixture(autouse=True)
+    def mock_add_columns_attributes(self):
+        """Mock columns attributes service execution"""
+        with patch(
+            "featurebyte.service.specialized_dtype.SpecializedDtypeDetectionService.detect_and_update_column_dtypes"
+        ):
+            yield
 
     @staticmethod
     def make_feature_production_ready(api_client, feature_id, catalog_id):

@@ -1760,9 +1760,9 @@ def mock_log_handler_fixture():
 
 
 @pytest.fixture(name="mock_add_columns_attributes")
-def mock_add_columns_attributes_fixture():
-    """Mock columns attributes service excecution"""
+def mock_detect_and_update_column_dtypes():
+    """Mock columns attributes service execution"""
     with patch(
-        "featurebyte.service.column_attributes.ColumnAttributesDetectionService.add_columns_attributes"
+        "featurebyte.service.specialized_dtype.SpecializedDtypeDetectionService.detect_and_update_column_dtypes"
     ):
         yield

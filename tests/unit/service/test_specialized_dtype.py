@@ -15,7 +15,7 @@ from featurebyte.models.scd_table import SCDTableModel
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.service.column_attributes import ColumnAttributesDetectionService
+from featurebyte.service.specialized_dtype import SpecializedDtypeDetectionService
 
 
 @pytest.fixture(name="event_table")
@@ -167,8 +167,8 @@ async def test_add_columns_attributes(
         }
     )
 
-    svc = ColumnAttributesDetectionService(preview_service, feature_store_service)
-    await svc.add_columns_attributes(table)
+    svc = SpecializedDtypeDetectionService(preview_service, feature_store_service)
+    await svc.detect_and_update_column_dtypes(table)
 
     embedding_col = [col for col in table.columns_info if col.name == "embedding_col"][0]
     assert embedding_col.dtype == DBVarType.EMBEDDING
@@ -248,8 +248,8 @@ async def test_not_embeddding_column(
 
     mock_snowflake_session.execute_query.return_value = sample
 
-    svc = ColumnAttributesDetectionService(preview_service, feature_store_service)
-    await svc.add_columns_attributes(table)
+    svc = SpecializedDtypeDetectionService(preview_service, feature_store_service)
+    await svc.detect_and_update_column_dtypes(table)
 
     embedding_col = [col for col in table.columns_info if col.name == "embedding_col"][0]
     assert embedding_col.dtype == DBVarType.ARRAY
@@ -286,8 +286,8 @@ async def test_nested_dict_column(
         }
     )
 
-    svc = ColumnAttributesDetectionService(preview_service, feature_store_service)
-    await svc.add_columns_attributes(table)
+    svc = SpecializedDtypeDetectionService(preview_service, feature_store_service)
+    await svc.detect_and_update_column_dtypes(table)
 
     embedding_col = [col for col in table.columns_info if col.name == "embedding_col"][0]
     assert embedding_col.dtype == DBVarType.EMBEDDING

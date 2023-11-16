@@ -25,8 +25,8 @@ SAMPLE_SIZE = 1000
 RANDOM_SEED = 42
 
 
-class ColumnAttributesDetectionService:
-    """Service that detects attributes of the column with specific datatypes.
+class SpecializedDtypeDetectionService:
+    """Service that detects specialized data types based on the sample of data.
     For example:
         - Checking if ARRAY column has same number of dimensions in all observations (square),
           and might represent embedding of the text.
@@ -41,13 +41,13 @@ class ColumnAttributesDetectionService:
         self.preview_service = preview_service
         self.feature_store_service = feature_store_service
 
-        self.detectors: list[BaseColumnAttributesDetector] = [
-            ArrayEmbeddingColumnAttributesDetector(),
-            FlatDictColumnAttributesDetector(),
+        self.detectors: list[BaseSpecializedDtypeDetector] = [
+            ArrayEmbeddingDtypeDetector(),
+            FlatDictDtypeDetector(),
         ]
 
-    async def add_columns_attributes(self, table: TableModel) -> None:
-        """Detect and adds columns attributes like embedding, flat dict, etc.
+    async def detect_and_update_column_dtypes(self, table: TableModel) -> None:
+        """Detect and update column dtypes for the given table with the specialized dtypes.
 
         Parameters
         ----------
@@ -90,13 +90,13 @@ class ColumnAttributesDetectionService:
                 await detector.detect(table.columns_info, sample)
 
 
-class BaseColumnAttributesDetector(ABC):
-    """Base column attributes detector interface."""
+class BaseSpecializedDtypeDetector(ABC):
+    """Base specialized dtype detector interface."""
 
     @abstractmethod
     async def detect(self, columns_info: list[ColumnInfo], sample: pd.DataFrame) -> None:
-        """Given the sample of data, check if column of a concrete type has some specific attributes.
-        Updates ColumnInfo.attributes list with new attribute.
+        """Given the sample of data, check if column of a concrete type has fulfilled certain properties.
+        Updates ColumnInfo.dtype with the detected type.
 
         Examples of checks: array if the same dimension, flat dictionary, etc.
 
@@ -109,7 +109,7 @@ class BaseColumnAttributesDetector(ABC):
         """
 
 
-class ArrayEmbeddingColumnAttributesDetector(BaseColumnAttributesDetector):
+class ArrayEmbeddingDtypeDetector(BaseSpecializedDtypeDetector):
     """Detect and add attributes to columns which can be considered embeddings:
     - 1 dimensional
     - Same number of dimensions
@@ -140,7 +140,7 @@ class ArrayEmbeddingColumnAttributesDetector(BaseColumnAttributesDetector):
                     column.dtype = DBVarType.EMBEDDING
 
 
-class FlatDictColumnAttributesDetector(BaseColumnAttributesDetector):
+class FlatDictDtypeDetector(BaseSpecializedDtypeDetector):
     """Detect and add attributes to columns which are flat (not nested) dicts."""
 
     def is_flat_dict(self, data: Any) -> bool:

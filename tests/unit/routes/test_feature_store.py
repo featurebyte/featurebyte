@@ -59,14 +59,6 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
         )
     ]
 
-    @pytest.fixture(autouse=True)
-    def mock_add_columns_attributes(self):
-        """Mock columns attributes service excecution"""
-        with patch(
-            "featurebyte.service.column_attributes.ColumnAttributesDetectionService.add_columns_attributes"
-        ):
-            yield
-
     def multiple_success_payload_generator(self, api_client):
         """Create multiple payload for setting up create_multiple_success_responses fixture"""
         _ = api_client

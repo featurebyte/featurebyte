@@ -18,7 +18,6 @@ from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
 from featurebyte.routes.common.base import BaseDocumentController, PaginatedDocument
 from featurebyte.schema.table import TableServiceUpdate, TableUpdate
-from featurebyte.service.column_attributes import ColumnAttributesDetectionService
 from featurebyte.service.dimension_table import DimensionTableService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_table import EventTableService
@@ -27,6 +26,7 @@ from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.item_table import ItemTableService
 from featurebyte.service.scd_table import SCDTableService
 from featurebyte.service.semantic import SemanticService
+from featurebyte.service.specialized_dtype import SpecializedDtypeDetectionService
 from featurebyte.service.table_columns_info import TableDocumentService
 from featurebyte.service.table_facade import TableFacadeService
 from featurebyte.service.target import TargetService
@@ -64,7 +64,7 @@ class BaseTableDocumentController(
         feature_service: FeatureService,
         target_service: TargetService,
         feature_list_service: FeatureListService,
-        column_attributes_detection_service: ColumnAttributesDetectionService,
+        specialized_dtype_detection_service: SpecializedDtypeDetectionService,
     ):
         super().__init__(service)  # type: ignore[arg-type]
         self.table_facade_service = table_facade_service
@@ -73,7 +73,7 @@ class BaseTableDocumentController(
         self.feature_service = feature_service
         self.target_service = target_service
         self.feature_list_service = feature_list_service
-        self.column_attributes_detection_service = column_attributes_detection_service
+        self.specialized_dtype_detection_service = specialized_dtype_detection_service
 
     async def _get_column_semantic_map(self, document: TableDocumentT) -> dict[str, Any]:
         """
@@ -140,7 +140,7 @@ class BaseTableDocumentController(
             Newly created table object
         """
         document = await self.service.create_document(data)  # type: ignore[arg-type]
-        await self.column_attributes_detection_service.add_columns_attributes(document)
+        await self.specialized_dtype_detection_service.detect_and_update_column_dtypes(document)
         return await self._add_semantic_tags(document=document)  # type: ignore
 
     async def update_table(self, document_id: ObjectId, data: TableUpdate) -> TableDocumentT:

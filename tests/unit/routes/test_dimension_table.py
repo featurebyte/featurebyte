@@ -79,14 +79,6 @@ class TestDimensionTableApi(BaseTableApiTestSuite):
         )
         return dimension_id_semantic.id
 
-    @pytest.fixture(autouse=True)
-    def mock_add_columns_attributes(self):
-        """Mock columns attributes service excecution"""
-        with patch(
-            "featurebyte.service.column_attributes.ColumnAttributesDetectionService.add_columns_attributes"
-        ):
-            yield
-
     @pytest.fixture(name="data_model_dict")
     def data_model_dict_fixture(
         self,
