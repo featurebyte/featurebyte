@@ -327,6 +327,59 @@ jobs:
       with:
         name: python-${{ matrix.python-version }}-.coverage.3
         path: .coverage.3
+  test-integration-databricks-unity:
+    needs:
+    - build-jar
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      matrix:
+        python-version:
+        - 3.8.12
+    steps:
+    - uses: actions/checkout@v4
+    - uses: arduino/setup-task@v1
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        version: 3.x
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Setup cache
+      uses: actions/cache@v3
+      with:
+        key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
+        path: .venv
+        restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
+    - name: Install Poetry
+      uses: abatilo/actions-poetry@v2
+      with:
+        poetry-version: 1.5.1
+    - name: Configure Poetry
+      run: poetry config virtualenvs.in-project true
+    - name: Install packages needed for build
+      run: |-
+        sudo apt-get update
+        sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
+    - name: Install wkhtmltopdf
+      run: |-
+        sudo apt-get update
+        sudo apt-get install wkhtmltopdf
+    - name: Run tests
+      run: task test-integration-databricks-unity
+    - name: Moving coverage file by appending 4
+      run: mv .coverage .coverage.4
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      with:
+        name: python-${{ matrix.python-version }}-pytest.xml.4
+        path: pytest.xml.4
+    - name: Upload coverage results
+      uses: actions/upload-artifact@v3
+      with:
+        name: python-${{ matrix.python-version }}-.coverage.4
+        path: .coverage.4
   test-docs:
     needs:
     - build-jar
@@ -378,6 +431,7 @@ jobs:
     - test-unit
     - test-integration-spark
     - test-integration-databricks
+    - test-integration-databricks-unity
     - test-docs
     - test-integration-snowflake
     runs-on: ubuntu-latest
@@ -428,6 +482,10 @@ jobs:
       uses: actions/download-artifact@v3
       with:
         name: python-${{ matrix.python-version }}-pytest.xml.3
+    - name: Download integration test results (databricks-unity)
+      uses: actions/download-artifact@v3
+      with:
+        name: python-${{ matrix.python-version }}-pytest.xml.4
     - name: Download unit coverage results
       uses: actions/download-artifact@v3
       with:
@@ -444,6 +502,10 @@ jobs:
       uses: actions/download-artifact@v3
       with:
         name: python-${{ matrix.python-version }}-.coverage.3
+    - name: Download integration coverage results (databricks-unity)
+      uses: actions/download-artifact@v3
+      with:
+        name: python-${{ matrix.python-version }}-.coverage.4
     - name: Merge test results
       run: task test-merge
     - name: Test Coverage Report
@@ -475,6 +537,7 @@ jobs:
     - test-integration-snowflake
     - test-integration-spark
     - test-integration-databricks
+    - test-integration-databricks-unity
     - test-docs
     - validate
     if: ${{ always() }}
@@ -497,7 +560,7 @@ jobs:
       run: |
         echo "BUILD_JAR_RESULT=${{ needs.build-jar.result }}" >> $GITHUB_ENV
         echo "TEST_UNIT_RESULT=${{ needs.test-unit.result }}" >> $GITHUB_ENV
-        echo "TEST_INTEG_RESULT=${{ needs.test-integration-snowflake.result }},${{ needs.test-integration-spark.result }},${{ needs.test-integration-databricks.result }}" >> $GITHUB_ENV
+        echo "TEST_INTEG_RESULT=${{ needs.test-integration-snowflake.result }},${{ needs.test-integration-spark.result }},${{ needs.test-integration-databricks.result }},${{ needs.test-integration-databricks-unity.result }}" >> $GITHUB_ENV
         echo "TEST_DOCS_RESULT=${{ needs.test-docs.result }}" >> $GITHUB_ENV
         echo "VALIDATE_RESULT=${{ needs.validate.result }}" >> $GITHUB_ENV
         echo "REPOSITORY=$(echo '${{ github.repository }}' | cut -d / -f2)" >> $GITHUB_ENV
