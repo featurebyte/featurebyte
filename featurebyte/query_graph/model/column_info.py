@@ -1,11 +1,10 @@
 """
 This module contains column info related models.
 """
-from typing import List, Optional
+from typing import Optional
 
 from pydantic import Field
 
-from featurebyte.enum import ColumnAttribute
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
 from featurebyte.query_graph.node.schema import ColumnSpec
@@ -49,4 +48,3 @@ class ColumnInfo(ColumnInfoWithoutSemanticId):
     semantic_id: Optional[PydanticObjectId] = Field(default=None)
     critical_data_info: Optional[CriticalDataInfo] = Field(default=None)
     description: Optional[str] = Field(default=None)
-    attributes: List[ColumnAttribute] = Field(default_factory=list)

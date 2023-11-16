@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 
 from featurebyte.common.utils import dataframe_from_json
-from featurebyte.enum import ColumnAttribute, DBVarType
+from featurebyte.enum import DBVarType
 from featurebyte.logging import get_logger
 from featurebyte.models.feature_store import TableModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -64,8 +64,7 @@ class ColumnAttributesDetectionService:
         columns = [
             col.name
             for col in table.columns_info
-            if str(col.dtype)
-            in [DBVarType.ARRAY.value, DBVarType.OBJECT.value, DBVarType.STRUCT.value]
+            if col.dtype in DBVarType.supported_detection_types()
         ]
         if not columns:
             return
@@ -138,7 +137,7 @@ class ArrayEmbeddingColumnAttributesDetector(BaseColumnAttributesDetector):
                     lambda x: np.all(np.isfinite(pd.to_numeric(x, errors="coerce")))
                 )
                 if all_num.all():
-                    column.attributes.append(ColumnAttribute.EMBEDDING)
+                    column.dtype = DBVarType.EMBEDDING
 
 
 class FlatDictColumnAttributesDetector(BaseColumnAttributesDetector):
@@ -165,8 +164,8 @@ class FlatDictColumnAttributesDetector(BaseColumnAttributesDetector):
 
     async def detect(self, columns_info: list[ColumnInfo], sample: pd.DataFrame) -> None:
         for column in columns_info:
-            if str(column.dtype) in [DBVarType.OBJECT.value, DBVarType.STRUCT.value]:
+            if column.dtype in DBVarType.dictionary_types():
                 series = sample[column.name]
                 is_flat = series.apply(self.is_flat_dict)
                 if is_flat.all():
-                    column.attributes.append(ColumnAttribute.FLAT_DICT)
+                    column.dtype = DBVarType.FLAT_DICT

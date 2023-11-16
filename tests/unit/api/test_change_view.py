@@ -340,7 +340,6 @@ def test_get_change_view__check_entity_id(snowflake_scd_table):
             "name": "col_text",
             "semantic_id": columns_info_dict[0]["semantic_id"],
             "description": None,
-            "attributes": [],
         },
         {
             "critical_data_info": None,
@@ -349,7 +348,6 @@ def test_get_change_view__check_entity_id(snowflake_scd_table):
             "name": "new_effective_timestamp",
             "semantic_id": columns_info_dict[1]["semantic_id"],
             "description": None,
-            "attributes": [],
         },
         {
             "critical_data_info": None,
@@ -358,7 +356,6 @@ def test_get_change_view__check_entity_id(snowflake_scd_table):
             "name": "past_effective_timestamp",
             "semantic_id": None,
             "description": None,
-            "attributes": [],
         },
         {
             "critical_data_info": None,
@@ -367,7 +364,6 @@ def test_get_change_view__check_entity_id(snowflake_scd_table):
             "name": "new_col_int",
             "semantic_id": columns_info_dict[3]["semantic_id"],
             "description": None,
-            "attributes": [],
         },
         {
             "critical_data_info": None,
@@ -376,7 +372,6 @@ def test_get_change_view__check_entity_id(snowflake_scd_table):
             "name": "past_col_int",
             "semantic_id": None,
             "description": None,
-            "attributes": [],
         },
     ]
 

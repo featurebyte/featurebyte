@@ -169,8 +169,6 @@ def test_create_event_table(
         event_table_dict["columns_info"][column_idx]["semantic_id"] = event_table.columns_info[
             column_idx
         ].semantic_id
-    for column_info in event_table_dict["columns_info"]:
-        column_info["attributes"] = []
     assert output == event_table_dict
 
     # user input validation

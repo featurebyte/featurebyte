@@ -208,8 +208,6 @@ def test_create_dimension_table(
     dimension_table_dict["columns_info"][7]["semantic_id"] = dimension_table.columns_info[
         7
     ].semantic_id
-    for column_info in dimension_table_dict["columns_info"]:
-        column_info["attributes"] = []
     assert output == dimension_table_dict
 
     # user input validation

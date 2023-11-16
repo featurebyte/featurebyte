@@ -238,8 +238,6 @@ def test_create_scd_table(
         scd_table_dict["columns_info"][column_idx]["semantic_id"] = scd_table.columns_info[
             column_idx
         ].semantic_id
-    for column_info in scd_table_dict["columns_info"]:
-        column_info["attributes"] = []
     assert output == scd_table_dict
 
     # user input validation
