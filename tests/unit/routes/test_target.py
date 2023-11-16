@@ -3,7 +3,7 @@ Test for target routes
 """
 from http import HTTPStatus
 from unittest import mock
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pandas as pd
 import pytest

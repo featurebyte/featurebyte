@@ -2,9 +2,7 @@
 Test for target namespace routes
 """
 from http import HTTPStatus
-from unittest.mock import patch
 
-import pytest
 from bson import ObjectId
 
 from tests.unit.routes.base import BaseCatalogApiTestSuite

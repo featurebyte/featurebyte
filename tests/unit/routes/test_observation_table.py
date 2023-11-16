@@ -5,7 +5,6 @@ import copy
 import os
 import tempfile
 from http import HTTPStatus
-from unittest.mock import patch
 
 import pandas as pd
 import pytest

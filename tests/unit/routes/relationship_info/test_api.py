@@ -2,7 +2,6 @@
 Test relationship info routes
 """
 from http import HTTPStatus
-from unittest.mock import patch
 
 import pytest
 import pytest_asyncio

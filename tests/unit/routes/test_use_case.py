@@ -2,7 +2,6 @@
 Tests for Use Case route
 """
 from http import HTTPStatus
-from unittest.mock import patch
 
 import pytest
 from bson import ObjectId
