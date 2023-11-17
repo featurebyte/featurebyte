@@ -199,16 +199,11 @@ def scd_table_dict_fixture(snowflake_database_table_scd_table):
     }
 
 
-def test_create_scd_table(
-    snowflake_database_table_scd_table,
-    scd_table_dict,
-    catalog,
-    mock_detect_and_update_column_dtypes,
-):
+def test_create_scd_table(snowflake_database_table_scd_table, scd_table_dict, catalog):
     """
     Test SCDTable creation using tabular source
     """
-    _ = catalog, mock_detect_and_update_column_dtypes
+    _ = catalog
 
     scd_table = snowflake_database_table_scd_table.create_scd_table(
         name="sf_scd_table",
@@ -401,14 +396,9 @@ def test_accessing_saved_scd_table_attributes(saved_scd_table):
     assert cloned.record_creation_timestamp_column == "created_at"
 
 
-def test_sdk_code_generation(
-    snowflake_database_table_scd_table,
-    update_fixtures,
-    catalog,
-    mock_detect_and_update_column_dtypes,
-):
+def test_sdk_code_generation(snowflake_database_table_scd_table, update_fixtures, catalog):
     """Check SDK code generation for unsaved table"""
-    _ = catalog, mock_detect_and_update_column_dtypes
+    _ = catalog
 
     scd_table = snowflake_database_table_scd_table.create_scd_table(
         name="sf_scd_table",

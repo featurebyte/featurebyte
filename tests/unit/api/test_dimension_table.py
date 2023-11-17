@@ -172,13 +172,11 @@ def dimension_table_dict_fixture(snowflake_database_table):
     }
 
 
-def test_create_dimension_table(
-    snowflake_database_table, dimension_table_dict, catalog, mock_detect_and_update_column_dtypes
-):
+def test_create_dimension_table(snowflake_database_table, dimension_table_dict, catalog):
     """
     Test DimensionTable creation using tabular source
     """
-    _ = catalog, mock_detect_and_update_column_dtypes
+    _ = catalog
 
     dimension_table = snowflake_database_table.create_dimension_table(
         name="sf_dimension_table",
@@ -296,11 +294,9 @@ def test_accessing_saved_dimension_table_attributes(saved_dimension_table):
     assert cloned.record_creation_timestamp_column == "event_timestamp"
 
 
-def test_sdk_code_generation(
-    snowflake_database_table, update_fixtures, catalog, mock_detect_and_update_column_dtypes
-):
+def test_sdk_code_generation(snowflake_database_table, update_fixtures, catalog):
     """Check SDK code generation for unsaved table"""
-    _ = catalog, mock_detect_and_update_column_dtypes
+    _ = catalog
 
     dimension_table = snowflake_database_table.create_dimension_table(
         name="sf_dimension_table",
