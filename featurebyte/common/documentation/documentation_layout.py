@@ -250,6 +250,7 @@ def _get_table_column_layout() -> List[DocLayoutItem]:
         DocLayoutItem([TABLE_COLUMN, INFO, "TableColumn.name"]),
         DocLayoutItem([TABLE_COLUMN, INFO, "TableColumn.cleaning_operations"]),
         DocLayoutItem([TABLE_COLUMN, LINEAGE, "TableColumn.preview_sql"]),
+        DocLayoutItem([TABLE_COLUMN, MANAGE, "TableColumn.update_description"]),
     ]
 
 
