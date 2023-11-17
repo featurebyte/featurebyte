@@ -1320,7 +1320,7 @@ def test_feature_definition(feature_with_clean_column_names):
         column_cleaning_operations=[
             ColumnCleaningOperation(
                 column_name="col_float",
-                cleaning_operations=[MissingValueImputation(imputed_value=-1)],
+                cleaning_operations=[MissingValueImputation(imputed_value=-1.0)],
             ),
             ColumnCleaningOperation(
                 column_name="cust_id",

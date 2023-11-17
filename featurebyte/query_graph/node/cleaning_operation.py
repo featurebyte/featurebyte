@@ -2,7 +2,7 @@
 This module contains cleaning operation related classes.
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import TYPE_CHECKING, List, Literal, Sequence, Union
+from typing import TYPE_CHECKING, Any, ClassVar, List, Literal, Optional, Sequence, Set, Union
 from typing_extensions import Annotated
 
 from abc import abstractmethod  # pylint: disable=wrong-import-order
@@ -11,7 +11,7 @@ import pandas as pd
 from pydantic import Field, validator
 
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.typing import Numeric, OptionalScalar
+from featurebyte.common.typing import OptionalScalar, Scalar
 from featurebyte.enum import DBVarType, StrEnum
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -40,6 +40,9 @@ class BaseCleaningOperation(FeatureByteBaseModel):
     """BaseCleaningOperation class"""
 
     imputed_value: OptionalScalar = Field(description="Value to replace existing value")
+
+    # support all data types by default (if None)
+    supported_dtypes: ClassVar[Optional[Set[DBVarType]]] = None
 
     def __str__(self) -> str:
         class_name = self.__class__.__name__
@@ -81,6 +84,58 @@ class BaseCleaningOperation(FeatureByteBaseModel):
                 input_nodes=[cond_assign_node],
             )
         return graph_node.output_node
+
+    @staticmethod
+    def _cast_scalar_parameter_to_dtype(  # pylint: disable=too-many-return-statements
+        value: Any, dtype: DBVarType
+    ) -> Any:
+        if value is not None:
+            if dtype in {DBVarType.CHAR, DBVarType.VARCHAR}:
+                return str(value)
+            if dtype == DBVarType.INT:
+                return int(value)
+            if dtype == DBVarType.FLOAT:
+                return float(value)
+            if dtype == DBVarType.BOOL:
+                return bool(value)
+            if dtype == DBVarType.TIMESTAMP:
+                val = pd.Timestamp(str(value))
+                if val.tz:
+                    # convert to UTC if timestamp has timezone
+                    return val.tz_convert("UTC").strftime("%Y-%m-%dT%H:%M:%S")
+                return val.strftime("%Y-%m-%dT%H:%M:%S")
+            if dtype == DBVarType.TIMESTAMP_TZ:
+                return pd.Timestamp(str(value)).strftime("%Y-%m-%dT%H:%M:%S%z")
+            if dtype == DBVarType.DATE:
+                return pd.Timestamp(str(value)).strftime("%Y-%m-%d")
+            if dtype == DBVarType.TIME:
+                return pd.Timestamp(str(value)).strftime("%H:%M:%S")
+        return value
+
+    @classmethod
+    def _cast_list_parameter_to_dtype(
+        cls, values: Sequence[Any], dtype: DBVarType
+    ) -> Sequence[Any]:
+        output = []
+        found_values = set()
+        for item in values:
+            cast_item = cls._cast_scalar_parameter_to_dtype(item, dtype)
+            # deduplicate on casted value
+            if str(cast_item) not in found_values:
+                output.append(cast_item)
+                found_values.add(str(cast_item))
+        return output
+
+    def cast(self, dtype: DBVarType) -> None:
+        """
+        Cast the operation parameter value to the given dtype
+
+        Parameters
+        ----------
+        dtype: DBVarType
+            Data type that imputed value will be casted to
+        """
+        self.imputed_value = self._cast_scalar_parameter_to_dtype(self.imputed_value, dtype)
 
     @abstractmethod
     def derive_sdk_code(self) -> ObjectClass:
@@ -141,6 +196,7 @@ class MissingValueImputation(BaseCleaningOperation):
     type: Literal[ConditionOperationField.MISSING] = Field(
         ConditionOperationField.MISSING, const=True, repr=False
     )
+    imputed_value: Scalar
 
     def derive_sdk_code(self) -> ObjectClass:
         return ClassEnum.MISSING_VALUE_IMPUTATION(imputed_value=self.imputed_value)
@@ -184,6 +240,19 @@ class DisguisedValueImputation(BaseCleaningOperation):
         description="List of values that need to be replaced."
     )
 
+    supported_dtypes: ClassVar[Optional[Set[DBVarType]]] = DBVarType.primitive_types()
+
+    @validator("disguised_values")
+    @classmethod
+    def _validate_disguised_values(cls, values: Sequence[Any]) -> Sequence[Any]:
+        if len(values) == 0:
+            raise ValueError("disguised_values cannot be empty")
+        return values
+
+    def cast(self, dtype: DBVarType) -> None:
+        super().cast(dtype)
+        self.disguised_values = self._cast_list_parameter_to_dtype(self.disguised_values, dtype)
+
     def derive_sdk_code(self) -> ObjectClass:
         return ClassEnum.DISGUISED_VALUE_IMPUTATION(
             imputed_value=self.imputed_value, disguised_values=self.disguised_values
@@ -224,6 +293,19 @@ class UnexpectedValueImputation(BaseCleaningOperation):
     expected_values: Sequence[OptionalScalar] = Field(
         description="List of values that are expected to be present."
     )
+
+    supported_dtypes: ClassVar[Optional[Set[DBVarType]]] = DBVarType.primitive_types()
+
+    @validator("expected_values")
+    @classmethod
+    def _validate_expected_values(cls, values: Sequence[Any]) -> Sequence[Any]:
+        if len(values) == 0:
+            raise ValueError("expected_values cannot be empty")
+        return values
+
+    def cast(self, dtype: DBVarType) -> None:
+        super().cast(dtype)
+        self.expected_values = self._cast_list_parameter_to_dtype(self.expected_values, dtype)
 
     def derive_sdk_code(self) -> ObjectClass:
         return ClassEnum.UNEXPECTED_VALUE_IMPUTATION(
@@ -291,7 +373,20 @@ class ValueBeyondEndpointImputation(BaseCleaningOperation):
         "than or equal to the end_point value will be replaced with "
         "imputed_value.",
     )
-    end_point: Numeric = Field(description="The value that marks the boundary.")
+    end_point: Scalar = Field(description="The value that marks the boundary.")
+
+    supported_dtypes: ClassVar[Optional[Set[DBVarType]]] = {
+        DBVarType.INT,
+        DBVarType.FLOAT,
+        DBVarType.DATE,
+        DBVarType.TIME,
+        DBVarType.TIMESTAMP,
+        DBVarType.TIMESTAMP_TZ,
+    }
+
+    def cast(self, dtype: DBVarType) -> None:
+        super().cast(dtype)
+        self.end_point = self._cast_scalar_parameter_to_dtype(self.end_point, dtype)
 
     def derive_sdk_code(self) -> ObjectClass:
         return ClassEnum.VALUE_BEYOND_ENDPOINT_IMPUTATION(
@@ -338,7 +433,7 @@ class StringValueImputation(BaseCleaningOperation):
     --------
     Create an imputation rule to replace string value with 0
 
-    >>> fb,StringValueImputation(imputed_value=0) # doctest: +SKIP
+    >>> fb.StringValueImputation(imputed_value=0) # doctest: +SKIP
     """
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.StringValueImputation")

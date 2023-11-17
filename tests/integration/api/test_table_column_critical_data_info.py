@@ -14,6 +14,25 @@ from featurebyte import (
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+def test_event_table_timestamp_imputation(event_table):
+    """Test EventTable with timestamp imputation"""
+    assert event_table.dtypes.loc["ËVENT_TIMESTAMP"] == "TIMESTAMP_TZ"
+    event_table["ËVENT_TIMESTAMP"].update_critical_data_info(
+        cleaning_operations=[
+            ValueBeyondEndpointImputation(
+                type="less_than", end_point="2020-01-01", imputed_value="2020-01-01"
+            ),
+        ]
+    )
+    event_view = event_table.get_view()
+    preview_df = event_view.preview()
+    assert preview_df["ËVENT_TIMESTAMP"].min() == pd.to_datetime("2020-01-01 00:00:00+00:00")
+
+    # clean up event table cleaning operations
+    event_table["ËVENT_TIMESTAMP"].update_critical_data_info(cleaning_operations=[])
+
+
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_event_table_update_critical_data_info(event_table):
     """Test EventTable with critical data info preview & feature preview"""
     # add critical data info to amount column & check table preview
@@ -85,7 +104,7 @@ def test_event_table_update_critical_data_info(event_table):
     }
     # check that values in string type column (TRANSACTION_ID) are imputed to 0 and
     # values in integer type column (CUST_ID) are not imputed.
-    assert (view_df["TRANSACTION_ID"] == "0.00000").all()
+    assert (view_df["TRANSACTION_ID"] == "0").all()
     assert (view_df["CUST_ID"] == original_df["CUST_ID"]).all()
 
     assert event_view.node.type == "graph"

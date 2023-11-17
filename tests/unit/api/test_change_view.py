@@ -568,9 +568,13 @@ def test_get_change_view__keep_record_creation_timestamp_column(
                 "effective_timestamp" AS "effective_timestamp",
                 "end_timestamp" AS "end_timestamp",
                 "date_of_birth" AS "date_of_birth",
-                CASE WHEN (
-                  "created_at" IS NULL
-                ) THEN '2020-01-01' ELSE "created_at" END AS "created_at",
+                CASE
+                  WHEN (
+                    "created_at" IS NULL
+                  )
+                  THEN '2020-01-01T00:00:00'
+                  ELSE "created_at"
+                END AS "created_at",
                 "cust_id" AS "cust_id"
               FROM "sf_database"."sf_schema"."scd_table"
             )

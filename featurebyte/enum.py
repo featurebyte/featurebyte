@@ -170,6 +170,27 @@ class DBVarType(StrEnum):
         return {cls.VARCHAR, cls.INT}
 
     @classmethod
+    def primitive_types(cls) -> set[DBVarType]:
+        """
+        List of non-primitive types (not supported by all databases)
+
+        Returns
+        -------
+        set[DBVarType]
+        """
+        return {
+            cls.INT,
+            cls.FLOAT,
+            cls.DATE,
+            cls.TIME,
+            cls.TIMESTAMP,
+            cls.TIMESTAMP_TZ,
+            cls.BOOL,
+            cls.CHAR,
+            cls.VARCHAR,
+        }
+
+    @classmethod
     def supported_detection_types(cls) -> set[DBVarType]:
         """
         Types for specialized type detection
