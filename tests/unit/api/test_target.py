@@ -126,3 +126,19 @@ class TestTargetTestSuite(FeatureOrTargetBaseTestSuite):
         )
         actual_df = lists[["name", "dtype", "entities"]]
         fb_assert_frame_equal(actual_df, expected_df, sort_by_columns=["name"])
+
+    def test_target_delete(self, float_target):
+        """
+        Test target delete
+        """
+        float_target.save()
+        assert float_target.saved
+
+        namespace = float_target.target_namespace
+        assert namespace.saved
+
+        float_target.delete()
+        assert not float_target.saved
+
+        # check namespace is not deleted
+        assert namespace.saved

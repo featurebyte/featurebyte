@@ -4,15 +4,12 @@ This module contains integration tests for F_TIMESTAMP_TO_INDEX UDF
 import pytest
 
 from featurebyte.session.base import BaseSession
+from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS
 
 
 @pytest.mark.parametrize(
     "source_type",
-    [
-        "snowflake",
-        # "databricks",
-        "spark",
-    ],
+    SNOWFLAKE_SPARK_DATABRICKS,
     indirect=True,
 )
 @pytest.mark.asyncio
@@ -47,10 +44,7 @@ async def test_timestamp_to_index(
 
 @pytest.mark.parametrize(
     "source_type",
-    [
-        "snowflake",
-        "spark",
-    ],
+    SNOWFLAKE_SPARK_DATABRICKS,
     indirect=True,
 )
 @pytest.mark.asyncio

@@ -172,14 +172,11 @@ def dimension_table_dict_fixture(snowflake_database_table):
     }
 
 
-def test_create_dimension_table(
-    snowflake_database_table, dimension_table_dict, catalog, mock_add_columns_attributes
-):
+def test_create_dimension_table(snowflake_database_table, dimension_table_dict, catalog):
     """
     Test DimensionTable creation using tabular source
     """
     _ = catalog
-    _ = mock_add_columns_attributes
 
     dimension_table = snowflake_database_table.create_dimension_table(
         name="sf_dimension_table",
@@ -208,8 +205,6 @@ def test_create_dimension_table(
     dimension_table_dict["columns_info"][7]["semantic_id"] = dimension_table.columns_info[
         7
     ].semantic_id
-    for column_info in dimension_table_dict["columns_info"]:
-        column_info["attributes"] = []
     assert output == dimension_table_dict
 
     # user input validation
@@ -299,12 +294,9 @@ def test_accessing_saved_dimension_table_attributes(saved_dimension_table):
     assert cloned.record_creation_timestamp_column == "event_timestamp"
 
 
-def test_sdk_code_generation(
-    snowflake_database_table, update_fixtures, catalog, mock_add_columns_attributes
-):
+def test_sdk_code_generation(snowflake_database_table, update_fixtures, catalog):
     """Check SDK code generation for unsaved table"""
     _ = catalog
-    _ = mock_add_columns_attributes
 
     dimension_table = snowflake_database_table.create_dimension_table(
         name="sf_dimension_table",

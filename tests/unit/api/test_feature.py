@@ -1781,3 +1781,41 @@ def test_feature_relationships_info(saved_feature, cust_id_entity, transaction_e
     # hence, it is not included in the relationships info as relationships info only
     # contains the ancestor relationships of the primary entity
     assert len(relationships_info) == 0
+
+
+def test_complex_feature_with_duplicated_feature_job_setting(
+    snowflake_event_table_with_entity, feature_group_feature_job_setting
+):
+    """Test complex feature with duplicated feature job setting"""
+    snowflake_event_table_with_entity.update_default_feature_job_setting(
+        feature_job_setting=feature_group_feature_job_setting,
+    )
+    event_view = snowflake_event_table_with_entity.get_view()
+    grouped = event_view.groupby("cust_id")
+    feat_sum_col_float = grouped.aggregate_over(
+        value_column="col_float",
+        method="sum",
+        windows=["30m"],
+        feature_job_setting=feature_group_feature_job_setting,
+        feature_names=["sum_30m"],
+    )["sum_30m"]
+    feat_sum_col_int = grouped.aggregate_over(
+        value_column="col_int",
+        method="sum",
+        windows=["30m"],
+        feature_job_setting=feature_group_feature_job_setting,
+        feature_names=["sum_30m"],
+    )["sum_30m"]
+    complex_feat = feat_sum_col_int + feat_sum_col_float
+    complex_feat.name = "complex_feat"
+    complex_feat.save()
+    table_id_feature_job_settings = complex_feat.cached_model.table_id_feature_job_settings
+    assert len(table_id_feature_job_settings) == 1
+    assert table_id_feature_job_settings[0].dict() == {
+        "table_id": snowflake_event_table_with_entity.id,
+        "feature_job_setting": {
+            "blind_spot": "600s",
+            "frequency": "1800s",
+            "time_modulo_frequency": "300s",
+        },
+    }

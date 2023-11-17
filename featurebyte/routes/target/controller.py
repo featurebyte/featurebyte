@@ -3,50 +3,70 @@ Target controller
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional, Tuple
 
 from http import HTTPStatus
 
 from bson import ObjectId
 from fastapi import HTTPException
 
-from featurebyte.exception import MissingPointInTimeColumnError, RequiredEntityNotProvidedError
+from featurebyte.exception import (
+    DocumentDeletionError,
+    MissingPointInTimeColumnError,
+    RequiredEntityNotProvidedError,
+)
+from featurebyte.models.persistent import QueryFilter
 from featurebyte.models.target import TargetModel
+from featurebyte.persistent import Persistent
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.routes.common.feature_metadata_extractor import FeatureOrTargetMetadataExtractor
 from featurebyte.routes.common.feature_or_target_helper import FeatureOrTargetHelper
 from featurebyte.schema.feature_list import SampleEntityServingNames
 from featurebyte.schema.preview import TargetPreview
 from featurebyte.schema.target import TargetCreate, TargetInfo, TargetList
+from featurebyte.schema.target_namespace import TargetNamespaceServiceUpdate
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature_preview import FeaturePreviewService
 from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
+from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.target import TargetService
 from featurebyte.service.target_namespace import TargetNamespaceService
+from featurebyte.service.target_table import TargetTableService
+from featurebyte.service.use_case import UseCaseService
 
 
-class TargetController(BaseDocumentController[TargetModel, TargetService, TargetList]):
+class TargetController(  # pylint: disable=too-many-instance-attributes
+    BaseDocumentController[TargetModel, TargetService, TargetList]
+):
     """
     Target controller
     """
 
     paginated_document_class = TargetList
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         target_service: TargetService,
         target_namespace_service: TargetNamespaceService,
         entity_service: EntityService,
+        use_case_service: UseCaseService,
+        observation_table_service: ObservationTableService,
+        target_table_service: TargetTableService,
         feature_preview_service: FeaturePreviewService,
         feature_or_target_metadata_extractor: FeatureOrTargetMetadataExtractor,
         feature_or_target_helper: FeatureOrTargetHelper,
+        persistent: Persistent,
     ):
         super().__init__(target_service)
         self.target_namespace_service = target_namespace_service
         self.entity_service = entity_service
+        self.use_case_service = use_case_service
+        self.observation_table_service = observation_table_service
+        self.target_table_service = target_table_service
         self.feature_preview_service = feature_preview_service
         self.feature_or_target_metadata_extractor = feature_or_target_metadata_extractor
         self.feature_or_target_helper = feature_or_target_helper
+        self.persistent = persistent
 
     async def create_target(
         self,
@@ -103,6 +123,34 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
         return await self.list(
             page=page, page_size=page_size, sort_by=sort_by, sort_dir=sort_dir, **params
         )
+
+    async def service_and_query_pairs_for_checking_reference(
+        self, document_id: ObjectId
+    ) -> List[Tuple[Any, QueryFilter]]:
+        return [
+            (self.use_case_service, {"target_id": document_id}),
+            (self.observation_table_service, {"request_input.target_id": document_id}),
+            (self.target_table_service, {"target_id": document_id}),
+        ]
+
+    async def delete(self, document_id: ObjectId) -> None:
+        await self.verify_operation_by_checking_reference(
+            document_id=document_id, exception_class=DocumentDeletionError
+        )
+        document = await self.service.get_document(document_id=document_id)
+        namespace = await self.target_namespace_service.get_document(
+            document_id=document.target_namespace_id
+        )
+        async with self.persistent.start_transaction():
+            await self.service.delete_document(document_id=document_id)
+            await self.target_namespace_service.update_document(
+                document_id=namespace.id,
+                data=TargetNamespaceServiceUpdate(
+                    target_ids=[
+                        target_id for target_id in namespace.target_ids if target_id != document_id
+                    ]
+                ),
+            )
 
     async def get_info(
         self,

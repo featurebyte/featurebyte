@@ -134,14 +134,11 @@ def event_table_dict_fixture(snowflake_database_table):
     }
 
 
-def test_create_event_table(
-    snowflake_database_table, event_table_dict, catalog, mock_add_columns_attributes
-):
+def test_create_event_table(snowflake_database_table, event_table_dict, catalog):
     """
     Test EventTable creation using tabular source
     """
     _ = catalog
-    _ = mock_add_columns_attributes
 
     event_table = snowflake_database_table.create_event_table(
         name="sf_event_table",
@@ -169,8 +166,6 @@ def test_create_event_table(
         event_table_dict["columns_info"][column_idx]["semantic_id"] = event_table.columns_info[
             column_idx
         ].semantic_id
-    for column_info in event_table_dict["columns_info"]:
-        column_info["attributes"] = []
     assert output == event_table_dict
 
     # user input validation
@@ -321,11 +316,10 @@ class TestEventTableTestSuite(BaseTableTestSuite):
 
 
 def test_info__event_table_without_record_creation_date(
-    snowflake_database_table_dimension_table, catalog, mock_add_columns_attributes
+    snowflake_database_table_dimension_table, catalog
 ):
     """Test info on event table with record creation timestamp is None"""
     _ = catalog
-    _ = mock_add_columns_attributes
 
     event_table = snowflake_database_table_dimension_table.create_event_table(
         name="sf_event_table",
@@ -664,12 +658,9 @@ async def test_update_default_job_setting__feature_job_setting_analysis_failure(
     assert "ValueError: Event Data not found" in str(exc.value)
 
 
-def test_update_record_creation_timestamp_column__unsaved_object(
-    snowflake_database_table, catalog, mock_add_columns_attributes
-):
+def test_update_record_creation_timestamp_column__unsaved_object(snowflake_database_table, catalog):
     """Test update record creation timestamp column (unsaved event table)"""
     _ = catalog
-    _ = mock_add_columns_attributes
 
     event_table = snowflake_database_table.create_event_table(
         name="event_table",
@@ -1006,12 +997,9 @@ def test_accessing_saved_event_table_attributes(saved_event_table):
     assert cloned.default_feature_job_setting == feature_job_setting
 
 
-def test_timezone_offset__valid_constant(
-    snowflake_database_table, catalog, mock_add_columns_attributes
-):
+def test_timezone_offset__valid_constant(snowflake_database_table, catalog):
     """Test specifying a constant timezone offset"""
     _ = catalog
-    _ = mock_add_columns_attributes
 
     event_table = snowflake_database_table.create_event_table(
         name="sf_event_table",
@@ -1037,12 +1025,9 @@ def test_timezone_offset__invalid_constant(snowflake_database_table_dimension_ta
     assert "Invalid timezone_offset: 8 hours ahead" in str(exc.value)
 
 
-def test_timezone_offset__valid_column(
-    snowflake_database_table_dimension_table, catalog, mock_add_columns_attributes
-):
+def test_timezone_offset__valid_column(snowflake_database_table_dimension_table, catalog):
     """Test specifying a constant timezone offset using a column"""
     _ = catalog
-    _ = mock_add_columns_attributes
 
     event_table = snowflake_database_table_dimension_table.create_event_table(
         name="sf_event_table",

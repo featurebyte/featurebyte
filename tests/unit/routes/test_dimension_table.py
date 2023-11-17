@@ -2,7 +2,6 @@
 Tests for DimensionTable routes
 """
 from http import HTTPStatus
-from unittest.mock import patch
 
 import pytest
 import pytest_asyncio
@@ -78,14 +77,6 @@ class TestDimensionTableApi(BaseTableApiTestSuite):
             "dimension_id"
         )
         return dimension_id_semantic.id
-
-    @pytest.fixture(autouse=True)
-    def mock_add_columns_attributes(self):
-        """Mock columns attributes service excecution"""
-        with patch(
-            "featurebyte.service.column_attributes.ColumnAttributesDetectionService.add_columns_attributes"
-        ):
-            yield
 
     @pytest.fixture(name="data_model_dict")
     def data_model_dict_fixture(

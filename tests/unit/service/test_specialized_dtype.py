@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 from bson import ObjectId
 
-from featurebyte.enum import ColumnAttribute, DBVarType
+from featurebyte.enum import DBVarType
 from featurebyte.models.dimension_table import DimensionTableModel
 from featurebyte.models.event_table import EventTableModel
 from featurebyte.models.feature_store import TableStatus
@@ -15,7 +15,7 @@ from featurebyte.models.scd_table import SCDTableModel
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.service.column_attributes import ColumnAttributesDetectionService
+from featurebyte.service.specialized_dtype import SpecializedDtypeDetectionService
 
 
 @pytest.fixture(name="event_table")
@@ -167,16 +167,14 @@ async def test_add_columns_attributes(
         }
     )
 
-    svc = ColumnAttributesDetectionService(preview_service, feature_store_service)
-    await svc.add_columns_attributes(table)
+    svc = SpecializedDtypeDetectionService(preview_service, feature_store_service)
+    await svc.detect_and_update_column_dtypes(table)
 
     embedding_col = [col for col in table.columns_info if col.name == "embedding_col"][0]
-    assert len(embedding_col.attributes) == 1
-    assert ColumnAttribute.EMBEDDING in embedding_col.attributes
+    assert embedding_col.dtype == DBVarType.EMBEDDING
 
     flat_dict_col = [col for col in table.columns_info if col.name == "dict_col"][0]
-    assert len(flat_dict_col.attributes) == 1
-    assert ColumnAttribute.FLAT_DICT in flat_dict_col.attributes
+    assert flat_dict_col.dtype == DBVarType.FLAT_DICT
 
 
 @pytest.mark.parametrize(
@@ -250,15 +248,14 @@ async def test_not_embeddding_column(
 
     mock_snowflake_session.execute_query.return_value = sample
 
-    svc = ColumnAttributesDetectionService(preview_service, feature_store_service)
-    await svc.add_columns_attributes(table)
+    svc = SpecializedDtypeDetectionService(preview_service, feature_store_service)
+    await svc.detect_and_update_column_dtypes(table)
 
     embedding_col = [col for col in table.columns_info if col.name == "embedding_col"][0]
-    assert len(embedding_col.attributes) == 0
+    assert embedding_col.dtype == DBVarType.ARRAY
 
     flat_dict_col = [col for col in table.columns_info if col.name == "dict_col"][0]
-    assert len(flat_dict_col.attributes) == 1
-    assert ColumnAttribute.FLAT_DICT in flat_dict_col.attributes
+    assert flat_dict_col.dtype == DBVarType.FLAT_DICT
 
 
 @pytest.mark.asyncio
@@ -289,12 +286,11 @@ async def test_nested_dict_column(
         }
     )
 
-    svc = ColumnAttributesDetectionService(preview_service, feature_store_service)
-    await svc.add_columns_attributes(table)
+    svc = SpecializedDtypeDetectionService(preview_service, feature_store_service)
+    await svc.detect_and_update_column_dtypes(table)
 
     embedding_col = [col for col in table.columns_info if col.name == "embedding_col"][0]
-    assert len(embedding_col.attributes) == 1
-    assert ColumnAttribute.EMBEDDING in embedding_col.attributes
+    assert embedding_col.dtype == DBVarType.EMBEDDING
 
     flat_dict_col = [col for col in table.columns_info if col.name == "dict_col"][0]
-    assert len(flat_dict_col.attributes) == 0
+    assert flat_dict_col.dtype in DBVarType.dictionary_types()

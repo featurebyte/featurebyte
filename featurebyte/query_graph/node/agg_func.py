@@ -77,6 +77,7 @@ class SumAggFunc(BaseAggFunc):
         DBVarType.INT: DBVarType.INT,
         DBVarType.FLOAT: DBVarType.FLOAT,
         DBVarType.ARRAY: DBVarType.ARRAY,
+        DBVarType.EMBEDDING: DBVarType.EMBEDDING,
     }
 
     def _derive_output_var_type(
@@ -96,6 +97,7 @@ class BaseNumAggFunc(BaseAggFunc):
         DBVarType.FLOAT: DBVarType.FLOAT,
         DBVarType.TIMEDELTA: DBVarType.FLOAT,
         DBVarType.ARRAY: DBVarType.ARRAY,
+        DBVarType.EMBEDDING: DBVarType.EMBEDDING,
     }
 
     def _derive_output_var_type(

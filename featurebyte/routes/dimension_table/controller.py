@@ -10,12 +10,12 @@ from featurebyte.models.dimension_table import DimensionTableModel
 from featurebyte.routes.common.base_table import BaseTableDocumentController
 from featurebyte.schema.dimension_table import DimensionTableList, DimensionTableServiceUpdate
 from featurebyte.schema.info import DimensionTableInfo
-from featurebyte.service.column_attributes import ColumnAttributesDetectionService
 from featurebyte.service.dimension_table import DimensionTableService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.semantic import SemanticService
+from featurebyte.service.specialized_dtype import SpecializedDtypeDetectionService
 from featurebyte.service.table_columns_info import TableDocumentService
 from featurebyte.service.table_facade import TableFacadeService
 from featurebyte.service.table_info import TableInfoService
@@ -46,7 +46,7 @@ class DimensionTableController(
         target_service: TargetService,
         feature_list_service: FeatureListService,
         table_info_service: TableInfoService,
-        column_attributes_detection_service: ColumnAttributesDetectionService,
+        specialized_dtype_detection_service: SpecializedDtypeDetectionService,
     ):
         super().__init__(
             service=dimension_table_service,
@@ -56,7 +56,7 @@ class DimensionTableController(
             feature_service=feature_service,
             target_service=target_service,
             feature_list_service=feature_list_service,
-            column_attributes_detection_service=column_attributes_detection_service,
+            specialized_dtype_detection_service=specialized_dtype_detection_service,
         )
         self.table_info_service = table_info_service
 

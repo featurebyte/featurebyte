@@ -92,14 +92,6 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         ),
     ]
 
-    @pytest.fixture(autouse=True)
-    def mock_add_columns_attributes(self):
-        """Mock columns attributes service excecution"""
-        with patch(
-            "featurebyte.service.column_attributes.ColumnAttributesDetectionService.add_columns_attributes"
-        ):
-            yield
-
     @pytest.fixture(name="mock_snowflake_session")
     def mock_get_session_return_snowflake_session(self, mock_get_session):
         """Mock get_session to return a SnowflakeSession object"""

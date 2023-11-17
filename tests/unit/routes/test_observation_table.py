@@ -5,7 +5,6 @@ import copy
 import os
 import tempfile
 from http import HTTPStatus
-from unittest.mock import patch
 
 import pandas as pd
 import pytest
@@ -47,14 +46,6 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
             f'Context (id: "{unknown_context_id}") not found. Please save the Context object first.',
         )
     ]
-
-    @pytest.fixture(autouse=True)
-    def mock_add_columns_attributes(self):
-        """Mock columns attributes service excecution"""
-        with patch(
-            "featurebyte.service.column_attributes.ColumnAttributesDetectionService.add_columns_attributes"
-        ):
-            yield
 
     def setup_creation_route(self, api_client):
         """
@@ -338,3 +329,25 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         response = self.wait_for_results(test_api_client, response)
         response_dict = response.json()
         assert response_dict["status"] == "SUCCESS", response_dict["traceback"]
+
+    @pytest.mark.asyncio
+    async def test_delete_target(self, test_api_client_persistent, create_observation_table):
+        """Test delete target associated with observation table"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        use_case_payload = self.load_payload("tests/fixtures/request_payloads/use_case.json")
+        observation_table_id = ObjectId()
+        await create_observation_table(
+            observation_table_id,
+            context_id=use_case_payload["context_id"],
+            target_input=True,
+            target_id=use_case_payload["target_id"],
+        )
+
+        response = test_api_client.delete(f"target/{use_case_payload['target_id']}")
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert (
+            response.json()["detail"]
+            == "Target is referenced by ObservationTable: observation_table_from_target_input"
+        )

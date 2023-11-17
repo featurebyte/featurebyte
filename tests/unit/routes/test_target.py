@@ -3,7 +3,7 @@ Test for target routes
 """
 from http import HTTPStatus
 from unittest import mock
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pandas as pd
 import pytest
@@ -62,14 +62,6 @@ class TestTargetApi(BaseCatalogApiTestSuite):
             f'Target (id: "{unknown_id}") not found. Please save the Target object first.',
         )
     ]
-
-    @pytest.fixture(autouse=True)
-    def mock_add_columns_attributes(self):
-        """Mock columns attributes service excecution"""
-        with patch(
-            "featurebyte.service.column_attributes.ColumnAttributesDetectionService.add_columns_attributes"
-        ):
-            yield
 
     def setup_creation_route(self, api_client):
         """
@@ -285,6 +277,21 @@ class TestTargetApi(BaseCatalogApiTestSuite):
         response = test_api_client.delete(f"/target_namespace/{namespace_id}")
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
         assert response.json()["detail"] == "TargetNamespace is referenced by Target: float_target"
+
+    def test_delete_target(self, test_api_client_persistent, create_success_response):
+        """Test delete target"""
+        test_api_client, _ = test_api_client_persistent
+        response_dict = create_success_response.json()
+        target_id, namespace_id = response_dict["_id"], response_dict["target_namespace_id"]
+        response = test_api_client.delete(f"/target/{target_id}")
+        assert response.status_code == HTTPStatus.OK, response.json()
+
+        # check that target is deleted but namespace is not
+        response = test_api_client.get(f"/target/{target_id}")
+        assert response.status_code == HTTPStatus.NOT_FOUND, response.json()
+        response = test_api_client.get(f"/target_namespace/{namespace_id}")
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json()["target_ids"] == [], response.json()
 
     @pytest.mark.asyncio
     async def test_creating_target_table_with_just_target_id(
