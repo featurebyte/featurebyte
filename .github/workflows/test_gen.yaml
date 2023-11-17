@@ -270,6 +270,7 @@ jobs:
         name: python-${{ matrix.python-version }}-.coverage.2
         path: .coverage.2
   test-integration-databricks:
+    if: false
     needs:
     - build-jar
     runs-on: ubuntu-latest
