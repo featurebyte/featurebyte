@@ -269,64 +269,64 @@ jobs:
       with:
         name: python-${{ matrix.python-version }}-.coverage.2
         path: .coverage.2
-  test-integration-databricks:
-    needs:
-    - build-jar
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    strategy:
-      matrix:
-        python-version:
-        - 3.8.12
-    steps:
-    - uses: actions/checkout@v4
-    - uses: arduino/setup-task@v1
-      with:
-        repo-token: ${{ secrets.GITHUB_TOKEN }}
-        version: 3.x
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Setup cache
-      uses: actions/cache@v3
-      with:
-        key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
-        path: .venv
-        restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
-    - name: Install Poetry
-      uses: abatilo/actions-poetry@v2
-      with:
-        poetry-version: 1.5.1
-    - name: Configure Poetry
-      run: poetry config virtualenvs.in-project true
-    - name: Install packages needed for build
-      run: |-
-        sudo apt-get update
-        sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
-    - name: Install wkhtmltopdf
-      run: |-
-        sudo apt-get update
-        sudo apt-get install wkhtmltopdf
-    - name: Download hive-udf
-      uses: actions/download-artifact@v3
-      with:
-        name: hive-udf
-        path: featurebyte/sql/databricks/
-    - name: Run tests
-      run: task test-integration-databricks
-    - name: Moving coverage file by appending 3
-      run: mv .coverage .coverage.3
-    - name: Upload test results
-      uses: actions/upload-artifact@v3
-      with:
-        name: python-${{ matrix.python-version }}-pytest.xml.3
-        path: pytest.xml.3
-    - name: Upload coverage results
-      uses: actions/upload-artifact@v3
-      with:
-        name: python-${{ matrix.python-version }}-.coverage.3
-        path: .coverage.3
+#  test-integration-databricks:
+#    needs:
+#    - build-jar
+#    runs-on: ubuntu-latest
+#    timeout-minutes: 45
+#    strategy:
+#      matrix:
+#        python-version:
+#        - 3.8.12
+#    steps:
+#    - uses: actions/checkout@v4
+#    - uses: arduino/setup-task@v1
+#      with:
+#        repo-token: ${{ secrets.GITHUB_TOKEN }}
+#        version: 3.x
+#    - name: Set up Python ${{ matrix.python-version }}
+#      uses: actions/setup-python@v4
+#      with:
+#        python-version: ${{ matrix.python-version }}
+#    - name: Setup cache
+#      uses: actions/cache@v3
+#      with:
+#        key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
+#        path: .venv
+#        restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
+#    - name: Install Poetry
+#      uses: abatilo/actions-poetry@v2
+#      with:
+#        poetry-version: 1.5.1
+#    - name: Configure Poetry
+#      run: poetry config virtualenvs.in-project true
+#    - name: Install packages needed for build
+#      run: |-
+#        sudo apt-get update
+#        sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
+#    - name: Install wkhtmltopdf
+#      run: |-
+#        sudo apt-get update
+#        sudo apt-get install wkhtmltopdf
+#    - name: Download hive-udf
+#      uses: actions/download-artifact@v3
+#      with:
+#        name: hive-udf
+#        path: featurebyte/sql/databricks/
+#    - name: Run tests
+#      run: task test-integration-databricks
+#    - name: Moving coverage file by appending 3
+#      run: mv .coverage .coverage.3
+#    - name: Upload test results
+#      uses: actions/upload-artifact@v3
+#      with:
+#        name: python-${{ matrix.python-version }}-pytest.xml.3
+#        path: pytest.xml.3
+#    - name: Upload coverage results
+#      uses: actions/upload-artifact@v3
+#      with:
+#        name: python-${{ matrix.python-version }}-.coverage.3
+#        path: .coverage.3
   test-docs:
     needs:
     - build-jar

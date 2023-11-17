@@ -228,7 +228,7 @@ tasks:
     cmds:
       - task: test-integration-snowflake
       - task: test-integration-spark
-      # - task: test-integration-databricks
+      - task: test-integration-databricks
 
   test-integration-snowflake:
     desc: Runs integration tests against Snowflake
