@@ -359,7 +359,6 @@ def test_event_view_graph_node(event_table_data, event_input_node):
             "entity_id": None,
             "critical_data_info": None,
             "description": None,
-            "attributes": [],
         },
         {
             "name": "amount",
@@ -373,7 +372,6 @@ def test_event_view_graph_node(event_table_data, event_input_node):
                 ]
             },
             "description": None,
-            "attributes": [],
         },
     ]
 

@@ -174,7 +174,7 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
 
     @staticmethod
     def _get_db_var_type_from_col_type(col_type: str) -> DBVarType:
-        mapping: dict[str, DBVarType] = {"ARRAY": DBVarType.ARRAY}
+        mapping: dict[str, DBVarType] = {"ARRAY": DBVarType.ARRAY, "EMBEDDING": DBVarType.EMBEDDING}
         return mapping.get(col_type, DBVarType.UNKNOWN)
 
     def _get_tile_sql_order_independent(

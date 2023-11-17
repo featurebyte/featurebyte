@@ -2,7 +2,6 @@
 Test for FeatureListNamespace route
 """
 from http import HTTPStatus
-from unittest.mock import patch
 
 import pytest
 import pytest_asyncio
@@ -28,14 +27,6 @@ class TestFeatureListNamespaceApi(BaseCatalogApiTestSuite):
     def class_name_to_save(self):
         """Class name used to save the object"""
         return "FeatureList"
-
-    @pytest.fixture(autouse=True)
-    def mock_add_columns_attributes(self):
-        """Mock columns attributes service excecution"""
-        with patch(
-            "featurebyte.service.column_attributes.ColumnAttributesDetectionService.add_columns_attributes"
-        ):
-            yield
 
     def setup_creation_route(self, api_client):
         """

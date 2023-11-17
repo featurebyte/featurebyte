@@ -90,14 +90,11 @@ def snowflake_event_table_fixture(
     mock_get_persistent,
     snowflake_event_table_id,
     catalog,
-    mock_add_columns_attributes,
 ):
     """
     Snowflake EventTable object fixture (using config object)
     """
-    _ = catalog
-    _ = mock_get_persistent
-    _ = mock_add_columns_attributes
+    _ = catalog, mock_get_persistent
 
     yield snowflake_database_table.create_event_table(
         name="sf_event_table",
@@ -138,12 +135,11 @@ def saved_event_table_fixture(snowflake_event_table):
 
 
 @pytest.fixture(name="saved_dimension_table")
-def saved_dimension_table_fixture(snowflake_dimension_table, catalog, mock_add_columns_attributes):
+def saved_dimension_table_fixture(snowflake_dimension_table, catalog):
     """
     Saved dimension table fixture
     """
     _ = catalog
-    _ = mock_add_columns_attributes
     previous_id = snowflake_dimension_table.id
     assert snowflake_dimension_table.saved is True
     assert snowflake_dimension_table.id == previous_id
@@ -159,11 +155,9 @@ def snowflake_scd_table_fixture(
     snowflake_database_table_scd_table,
     snowflake_scd_table_id,
     catalog,
-    mock_add_columns_attributes,
 ):
     """SCDTable object fixture"""
     _ = catalog
-    _ = mock_add_columns_attributes
 
     scd_table = snowflake_database_table_scd_table.create_scd_table(
         name="sf_scd_table",
@@ -378,6 +372,12 @@ def mock_post_async_task():
     with patch("featurebyte.api.feature_list.FeatureList.post_async_task") as mock_post_async_task:
         mock_post_async_task.side_effect = post_async_task
         yield mock_post_async_task
+
+
+@pytest.fixture(scope="function", autouse=True)
+def mock_detect_and_update_column_dtypes_fixture(mock_detect_and_update_column_dtypes):
+    """Mock detect_and_update_column_dtypes"""
+    yield mock_detect_and_update_column_dtypes
 
 
 @pytest.fixture(name="batch_request_table_from_source")

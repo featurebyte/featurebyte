@@ -144,6 +144,7 @@ class DatabricksAdapter(BaseAdapter):
             DBVarType.OBJECT: cls.DataType.MAP,
             DBVarType.TIMESTAMP: cls.DataType.TIMESTAMP,
             DBVarType.ARRAY: cls.DataType.ARRAY,
+            DBVarType.EMBEDDING: cls.DataType.ARRAY,
         }
         if dtype in mapping:
             return mapping[dtype]

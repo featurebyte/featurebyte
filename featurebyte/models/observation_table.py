@@ -40,7 +40,7 @@ class SourceTableObservationInput(SourceTableRequestInput):
 
 class TargetInput(FeatureByteBaseModel):
     """
-    TargetInput is an input from a target that can eb used to create an ObservationTableModel
+    TargetInput is an input from a target that can be used to create an ObservationTableModel
     """
 
     target_id: PydanticObjectId

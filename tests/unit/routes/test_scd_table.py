@@ -2,7 +2,6 @@
 Tests for SCDTable routes
 """
 from http import HTTPStatus
-from unittest.mock import patch
 
 import pytest
 import pytest_asyncio
@@ -68,14 +67,6 @@ class TestSCDTableApi(BaseTableApiTestSuite):
         ),
     ]
     update_unprocessable_payload_expected_detail_pairs = []
-
-    @pytest.fixture(autouse=True)
-    def mock_add_columns_attributes(self):
-        """Mock columns attributes service excecution"""
-        with patch(
-            "featurebyte.service.column_attributes.ColumnAttributesDetectionService.add_columns_attributes"
-        ):
-            yield
 
     @pytest_asyncio.fixture(name="scd_table_semantic_ids")
     async def scd_table_semantic_ids_fixture(self, app_container):

@@ -2,7 +2,6 @@
 Tests for Use Case route
 """
 from http import HTTPStatus
-from unittest.mock import patch
 
 import pytest
 from bson import ObjectId
@@ -38,14 +37,6 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
             ],
         )
     ]
-
-    @pytest.fixture(autouse=True)
-    def mock_add_columns_attributes(self):
-        """Mock columns attributes service excecution"""
-        with patch(
-            "featurebyte.service.column_attributes.ColumnAttributesDetectionService.add_columns_attributes"
-        ):
-            yield
 
     def setup_creation_route(self, api_client):
         """

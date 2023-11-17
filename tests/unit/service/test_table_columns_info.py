@@ -165,10 +165,10 @@ async def test_update_entity_table_references(
     fixture_name,
     update_class,
     primary_key_column,
-    mock_add_columns_attributes,
+    mock_detect_and_update_column_dtypes,
 ):
     """Test update_entity_table_references"""
-    _ = mock_add_columns_attributes
+    _ = mock_detect_and_update_column_dtypes
 
     table = request.getfixturevalue(fixture_name)
     table_model = table._get_schema(**table._get_create_payload())

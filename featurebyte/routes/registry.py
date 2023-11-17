@@ -64,7 +64,6 @@ from featurebyte.routes.user_defined_function.controller import UserDefinedFunct
 from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.service.catalog import AllCatalogService, CatalogService
-from featurebyte.service.column_attributes import ColumnAttributesDetectionService
 from featurebyte.service.context import ContextService
 from featurebyte.service.credential import CredentialService
 from featurebyte.service.deploy import DeployService
@@ -111,6 +110,7 @@ from featurebyte.service.scd_table import SCDTableService
 from featurebyte.service.semantic import SemanticService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.session_validator import SessionValidatorService
+from featurebyte.service.specialized_dtype import SpecializedDtypeDetectionService
 from featurebyte.service.static_source_table import StaticSourceTableService
 from featurebyte.service.table import TableService
 from featurebyte.service.table_columns_info import TableColumnsInfoService
@@ -193,7 +193,7 @@ app_container_config.register_class(
 )
 app_container_config.register_class(CredentialController)
 app_container_config.register_class(CredentialService)
-app_container_config.register_class(ColumnAttributesDetectionService)
+app_container_config.register_class(SpecializedDtypeDetectionService)
 app_container_config.register_class(ContextService)
 app_container_config.register_class(DataWarehouseMigrationMixin)
 app_container_config.register_class(DeployService)
