@@ -126,6 +126,10 @@ class ObservationTableModel(MaterializedTableModel):
         The id of the context that the observation table is associated with
     use_case_ids: Optional[List[PydanticObjectId]]
         The ids of the use cases that the observation table is associated with
+    purpose: Optional[Purpose]
+        The purpose of the observation table, which accepts one of: preview, eda, training, validation_test, other.
+    primary_entity_ids: Optional[List[PydanticObjectId]]
+        The ids of the primary entities the observation table is associated with
     """
 
     request_input: ObservationInput
