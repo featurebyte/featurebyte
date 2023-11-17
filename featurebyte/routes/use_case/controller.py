@@ -14,7 +14,7 @@ from featurebyte.models.persistent import QueryFilter
 from featurebyte.models.use_case import UseCaseModel
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.info import EntityBriefInfo, EntityBriefInfoList, UseCaseInfo
-from featurebyte.schema.observation_table import ObservationTableUpdate
+from featurebyte.schema.observation_table import ObservationTableServiceUpdate
 from featurebyte.schema.use_case import UseCaseCreate, UseCaseList, UseCaseUpdate
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.context import ContextService
@@ -135,7 +135,7 @@ class UseCaseController(
                 if use_case_id not in observation_table.use_case_ids:
                     await self.observation_table_service.update_observation_table(
                         observation_table_id=obs_id,
-                        data=ObservationTableUpdate(use_case_id_to_add=use_case_id),
+                        data=ObservationTableServiceUpdate(use_case_id_to_add=use_case_id),
                     )
 
         obs_table_id_remove = data.observation_table_id_to_remove
@@ -161,7 +161,7 @@ class UseCaseController(
 
             await self.observation_table_service.update_observation_table(
                 observation_table_id=obs_table_id_remove,
-                data=ObservationTableUpdate(use_case_id_to_remove=use_case_id),
+                data=ObservationTableServiceUpdate(use_case_id_to_remove=use_case_id),
             )
 
         if data.remove_default_preview_table:

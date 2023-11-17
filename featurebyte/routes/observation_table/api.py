@@ -214,7 +214,7 @@ async def update_observation_table_description(
 
 
 @router.patch("/{observation_table_id}", response_model=ObservationTableModel)
-async def update_observation_table_context(
+async def update_observation_table(
     request: Request,
     observation_table_id: PydanticObjectId,
     data: ObservationTableUpdate,

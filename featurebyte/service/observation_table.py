@@ -47,7 +47,7 @@ from featurebyte.routes.common.primary_entity_validator import PrimaryEntityVali
 from featurebyte.schema.feature_store import FeatureStoreSample
 from featurebyte.schema.observation_table import (
     ObservationTableCreate,
-    ObservationTableUpdate,
+    ObservationTableServiceUpdate,
     ObservationTableUpload,
 )
 from featurebyte.schema.worker.task.observation_table import ObservationTableTaskPayload
@@ -505,7 +505,7 @@ class ObservationTableService(
         }
 
     async def update_observation_table(  # pylint: disable=too-many-branches
-        self, observation_table_id: ObjectId, data: ObservationTableUpdate
+        self, observation_table_id: ObjectId, data: ObservationTableServiceUpdate
     ) -> Optional[ObservationTableModel]:
         """
         Update ObservationTable
@@ -514,7 +514,7 @@ class ObservationTableService(
         ----------
         observation_table_id: ObjectId
             ObservationTable document_id
-        data: ObservationTableUpdate
+        data: ObservationTableServiceUpdate
             ObservationTable update payload
 
         Returns
@@ -528,10 +528,6 @@ class ObservationTableService(
         ObservationTableInvalidUseCaseError
             If the use case is invalid
         """
-
-        if data.use_case_ids:
-            raise ObservationTableInvalidUseCaseError("use_case_ids is not a valid field to update")
-
         observation_table = await self.get_document(document_id=observation_table_id)
         if data.use_case_id_to_add or data.use_case_id_to_remove:
             if not observation_table.context_id:
