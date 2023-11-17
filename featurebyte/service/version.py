@@ -173,7 +173,9 @@ class VersionService:
         if reference_hash_before != reference_hash_after:
             return FeatureModel(
                 **{
-                    **feature.dict(),
+                    **feature.dict(
+                        include={"name", "dtype", "tabular_source", "feature_namespace_id"}
+                    ),
                     "graph": pruned_graph,
                     "node_name": pruned_node_name,
                     "_id": ObjectId(),

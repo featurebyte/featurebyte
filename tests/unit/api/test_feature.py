@@ -40,6 +40,7 @@ from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.feature_job_setting import (
     FeatureJobSetting,
     TableFeatureJobSetting,
+    TableIdFeatureJobSetting,
 )
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node.cleaning_operation import (
@@ -555,6 +556,7 @@ def test_feature__default_version_info_retrieval(
     """
     _ = mock_api_object_cache
     feature = Feature.get(name=saved_feature.name)
+    feature_model = feature.cached_model
     assert feature.is_default is True
     assert feature.default_version_mode == DefaultVersionMode.AUTO
     assert feature.default_readiness == FeatureReadiness.DRAFT
@@ -573,6 +575,18 @@ def test_feature__default_version_info_retrieval(
     assert new_feature.is_default is True
     assert new_feature.default_version_mode == DefaultVersionMode.AUTO
     assert new_feature.default_readiness == FeatureReadiness.DRAFT
+
+    # check the derived attribute is regenerated
+    new_feature_model = new_feature.cached_model
+    assert new_feature_model.table_id_feature_job_settings == [
+        TableIdFeatureJobSetting(
+            table_id=snowflake_event_table.id,
+            feature_job_setting=FeatureJobSetting(
+                blind_spot="2700s", frequency="1800s", time_modulo_frequency="900s"
+            ),
+        )
+    ]
+    assert new_feature_model.definition_hash != feature_model.definition_hash
 
     # check that feature becomes non-default
     assert feature.is_default is False
