@@ -173,7 +173,7 @@ class VersionService:
         if reference_hash_before != reference_hash_after:
             # only include fields that are required for creating a new feature version,
             # other attributes will be re-generated when the new feature version is constructed
-            include_fields = {"name", "dtype", "tabular_source", "feature_namespace_id"}
+            include_fields = {"name", "tabular_source", "feature_namespace_id"}
             return FeatureModel(
                 **{
                     **feature.dict(include=include_fields),
