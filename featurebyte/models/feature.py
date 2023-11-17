@@ -165,7 +165,7 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
                 for table_id in sorted(table_id_to_col_names)
             ]
             values["table_id_feature_job_settings"] = graph.extract_table_id_feature_job_settings(
-                target_node=node
+                target_node=node, keep_first_only=True
             )
             values["table_id_cleaning_operations"] = graph.extract_table_id_cleaning_operations(
                 target_node=node,
