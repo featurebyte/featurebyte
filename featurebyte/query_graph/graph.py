@@ -254,7 +254,9 @@ class QueryGraph(QueryGraphModel):
         target_node: Node
             Node from which to start the backward search
         keep_first_only: bool
-            Whether to keep the first table ID feature job setting only
+            Whether to keep the first table ID feature job setting only. When validating whether the
+            feature graph have the consistent feature job settings (per table), we need to disable this
+            to get all the table ID feature job settings in the query graph.
 
         Returns
         -------

@@ -74,7 +74,7 @@ async def update_deployment(
     Update Deployment
     """
     controller = request.state.app_container.deployment_controller
-    task: Task = await controller.update_deployment(document_id=deployment_id, data=data)
+    task: Optional[Task] = await controller.update_deployment(document_id=deployment_id, data=data)
     if isinstance(task, Task):
         # if task is returned, it means the deployment is being updated asynchronously
         response.status_code = HTTPStatus.ACCEPTED
