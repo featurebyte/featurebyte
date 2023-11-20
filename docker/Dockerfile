@@ -1,4 +1,4 @@
-FROM python:3.8-slim AS builder
+FROM python:3.10-slim AS builder
 
 # install build tools
 RUN apt-get update && \
@@ -25,7 +25,7 @@ RUN . /opt/venv/bin/activate && \
     pip install dist/*.whl
 
 
-FROM python:3.8-slim AS runner
+FROM python:3.10-slim AS runner
 
 ARG USER_HOME=/app
 
