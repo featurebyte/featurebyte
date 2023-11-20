@@ -244,6 +244,12 @@ class TestCatalogApi(BaseApiTestSuite):
             },
         )
         assert response.status_code == HTTPStatus.CREATED
+        new_response_dict = response.json()
+
+        # check retrieved catalog by name
+        response = test_api_client.get(f"{self.base_route}", params={"name": response_dict["name"]})
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json()["data"][0]["_id"] == new_response_dict["_id"]
 
     @pytest.mark.asyncio
     async def test_soft_delete__with_active_deployment(
