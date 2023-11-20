@@ -3,7 +3,7 @@ Deployment module
 """
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Any, Dict, Literal, Optional
 
 from http import HTTPStatus
 
@@ -83,6 +83,28 @@ class Deployment(DeletableApiObject):
         PydanticObjectId
         """
         return self.cached_model.feature_list_id
+
+    def info(self, verbose: bool = False) -> Dict[str, Any]:
+        """
+        Returns a dictionary that summarizes the essential information of the deployment represented by the
+        Deployment object.
+
+        Parameters
+        ----------
+        verbose: bool
+            The parameter "verbose" in the current state of the code does not have any impact on the output.
+
+        Returns
+        -------
+        Dict[str, Any]
+            Key-value mapping of properties of the object.
+
+        Examples
+        --------
+        >>> deployment = fb.Deployment.get(<deployment_name>)  # doctest: +SKIP
+        >>> deployment.info()  # doctest: +SKIP
+        """
+        return super().info(verbose)
 
     def enable(self) -> None:
         """

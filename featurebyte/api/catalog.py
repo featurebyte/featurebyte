@@ -481,12 +481,15 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         include_id: Optional[bool]
             Whether to include id in the list.
         primary_entity: Optional[Union[str, List[str]]] = None,
-            Name of entity used to filter results. If multiple entities are provided, the filtered results will
-            contain feature lists that are associated with all the entities.
+            Specifies the primary entity or entities for filtering results. Retrieve feature lists with the
+            specified primary entity name(s). If multiple entities are provided in a list, the filtered
+            results will include feature lists that have primary entities matching any entity in this list.
         entity: Optional[str]
-            Name of entity used to filter results.
+            Specifies the entity name for filtering results. Retrieve feature lists containing features
+            with the specified entity name as their primary entity.
         table: Optional[str]
-            Name of table used to filter results.
+            Specifies the table name for filtering results. Retrieve feature lists associated with
+            the specified table name.
 
         Returns
         -------
