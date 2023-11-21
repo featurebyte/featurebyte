@@ -50,6 +50,7 @@ jobs:
         poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
     - name: Install packages needed for build
       run: |-
+        sudo apt-get clean
         sudo apt-get update
         sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
     - name: Set Github Committer Settings
@@ -97,6 +98,7 @@ jobs:
         poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
     - name: Install packages needed for build
       run: |-
+        sudo apt-get clean
         sudo apt-get update
         sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
     - name: Set Github Committer Settings
@@ -144,6 +146,7 @@ jobs:
         poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
     - name: Install packages needed for build
       run: |-
+        sudo apt-get clean
         sudo apt-get update
         sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
     - name: Set Github Committer Settings

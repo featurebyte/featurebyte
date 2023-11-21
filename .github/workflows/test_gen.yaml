@@ -99,11 +99,13 @@ jobs:
       run: poetry config virtualenvs.in-project true
     - name: Install packages needed for build
       run: |-
+        sudo apt-get clean
         sudo apt-get update
         sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
     - name: Install wkhtmltopdf
       run: |-
         sudo apt-get update
+        sudo apt-get clean
         sudo apt-get install wkhtmltopdf
     - name: Download hive-udf
       uses: actions/download-artifact@v3
@@ -159,11 +161,13 @@ jobs:
       run: poetry config virtualenvs.in-project true
     - name: Install packages needed for build
       run: |-
+        sudo apt-get clean
         sudo apt-get update
         sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
     - name: Install wkhtmltopdf
       run: |-
         sudo apt-get update
+        sudo apt-get clean
         sudo apt-get install wkhtmltopdf
     - name: Download hive-udf
       uses: actions/download-artifact@v3
@@ -221,11 +225,13 @@ jobs:
       run: poetry config virtualenvs.in-project true
     - name: Install packages needed for build
       run: |-
+        sudo apt-get clean
         sudo apt-get update
         sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
     - name: Install wkhtmltopdf
       run: |-
         sudo apt-get update
+        sudo apt-get clean
         sudo apt-get install wkhtmltopdf
     - name: Download hive-udf
       uses: actions/download-artifact@v3
@@ -302,11 +308,13 @@ jobs:
       run: poetry config virtualenvs.in-project true
     - name: Install packages needed for build
       run: |-
+        sudo apt-get clean
         sudo apt-get update
         sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
     - name: Install wkhtmltopdf
       run: |-
         sudo apt-get update
+        sudo apt-get clean
         sudo apt-get install wkhtmltopdf
     - name: Download hive-udf
       uses: actions/download-artifact@v3
@@ -360,11 +368,13 @@ jobs:
       run: poetry config virtualenvs.in-project true
     - name: Install packages needed for build
       run: |-
+        sudo apt-get clean
         sudo apt-get update
         sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
     - name: Install wkhtmltopdf
       run: |-
         sudo apt-get update
+        sudo apt-get clean
         sudo apt-get install wkhtmltopdf
     - name: Download hive-udf
       uses: actions/download-artifact@v3
