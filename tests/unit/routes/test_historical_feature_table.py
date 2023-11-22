@@ -52,14 +52,6 @@ class TestHistoricalFeatureTableApi(BaseMaterializedTableTestSuite):
         ),
     ]
 
-    @pytest.fixture(autouse=True)
-    def mock_add_columns_attributes(self):
-        """Mock columns attributes service excecution"""
-        with patch(
-            "featurebyte.service.column_attributes.ColumnAttributesDetectionService.add_columns_attributes"
-        ):
-            yield
-
     def setup_creation_route(self, api_client):
         """
         Setup for post route
@@ -240,3 +232,16 @@ class TestHistoricalFeatureTableApi(BaseMaterializedTableTestSuite):
         response = self.post(test_api_client, payload)
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
         assert "Either feature_clusters or feature_list_id must be set" in response.json()["detail"]
+
+    @pytest.mark.asyncio
+    async def test_update_name(self, test_api_client_persistent, create_success_response):
+        """Test update name"""
+        test_api_client, _ = test_api_client_persistent
+        doc_id = create_success_response.json()["_id"]
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}", json={"name": "some other name"}
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        response = test_api_client.get(f"{self.base_route}/{doc_id}")
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["name"] == "some other name"

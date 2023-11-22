@@ -3,7 +3,7 @@ Test for UserDefinedFunction route
 """
 from http import HTTPStatus
 from unittest import mock
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pytest
 from bson import ObjectId
@@ -46,14 +46,6 @@ class TestUserDefinedFunctionApi(BaseCatalogApiTestSuite):
             payload["_id"] = str(ObjectId())
             payload["name"] = f'{payload["name"]}_{i}'
             yield payload
-
-    @pytest.fixture(autouse=True)
-    def mock_add_columns_attributes(self):
-        """Mock columns attributes service excecution"""
-        with patch(
-            "featurebyte.service.column_attributes.ColumnAttributesDetectionService.add_columns_attributes"
-        ):
-            yield
 
     @pytest.fixture(name="mock_get_session_to_throw_exception")
     def mock_snowflake_execute_to_throw_exception_fixture(

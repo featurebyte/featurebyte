@@ -29,6 +29,7 @@ from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.historical_feature_table import (
     HistoricalFeatureTableCreate,
     HistoricalFeatureTableList,
+    HistoricalFeatureTableUpdate,
 )
 from featurebyte.schema.info import HistoricalFeatureTableInfo
 from featurebyte.schema.task import Task
@@ -196,5 +197,24 @@ async def update_historical_feature_table_description(
     historical_feature_table: HistoricalFeatureTableModel = await controller.update_description(
         document_id=historical_feature_table_id,
         description=data.description,
+    )
+    return historical_feature_table
+
+
+@router.patch("/{historical_feature_table_id}", response_model=HistoricalFeatureTableModel)
+async def update_historical_feature_table(
+    request: Request,
+    historical_feature_table_id: PydanticObjectId,
+    data: HistoricalFeatureTableUpdate,
+) -> HistoricalFeatureTableModel:
+    """
+    Update historical_feature_table
+    """
+    controller = request.state.app_container.historical_feature_table_controller
+    historical_feature_table: HistoricalFeatureTableModel = (
+        await controller.update_historical_feature_table(
+            historical_feature_table_id=historical_feature_table_id,
+            data=data,
+        )
     )
     return historical_feature_table

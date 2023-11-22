@@ -868,7 +868,7 @@ class Feature(
         ...       column_cleaning_operations=[
         ...         fb.ColumnCleaningOperation(
         ...           column_name="GroceryProductGuid",
-        ...           cleaning_operations=[fb.MissingValueImputation(imputed_value=None)],
+        ...           cleaning_operations=[fb.MissingValueImputation(imputed_value=0)],
         ...         )
         ...       ],
         ...     )

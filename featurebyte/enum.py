@@ -114,10 +114,12 @@ class StrEnum(str, Enum):
 
 class DBVarType(StrEnum):
     """
-    Database variable type
+    The DBVarType enum class provides a way to represetn various Dababase variable types supported by FeatureByte.
     """
 
-    BINARY = "BINARY", "Binary column"
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.enum.DBVarType")
+
+    # primitive_types
     BOOL = "BOOL", "Boolean column"
     CHAR = "CHAR", "Fixed-length string column"
     DATE = "DATE", "Date column"
@@ -127,13 +129,25 @@ class DBVarType(StrEnum):
     TIMESTAMP = "TIMESTAMP", "Timestamp column"
     TIMESTAMP_TZ = "TIMESTAMP_TZ", "Timestamp column with timezone offset"
     VARCHAR = "VARCHAR", "Variable-length string column"
-    OBJECT = "OBJECT", "Mixed-type column"
-    TIMEDELTA = "TIMEDELTA", "Time delta column"
-    VOID = "VOID", "Void column"
+
+    # container types
     ARRAY = "ARRAY", "Array column"
-    MAP = "MAP", "Map column"
-    STRUCT = "STRUCT", "Struct column"
+    DICT = "DICT", "Dictionary column"
+
+    # specialized types (extends from either primitive_types or container_types)
+    TIMEDELTA = "TIMEDELTA", "Time delta column"
+    EMBEDDING = "EMBEDDING", "Embedding column"
+    FLAT_DICT = "FLAT_DICT", "Flat dictionary column"
+
+    # unknown type
     UNKNOWN = "UNKNOWN", "Unknown column type"
+
+    # Types to be deprecated (specific for different databases)
+    BINARY = "BINARY", "Binary column"
+    VOID = "VOID", "Void column"
+    MAP = "MAP", "Map column"
+    OBJECT = "OBJECT", "Mixed-type column"
+    STRUCT = "STRUCT", "Struct column"
 
     @classmethod
     def supported_timestamp_types(cls) -> set[DBVarType]:
@@ -156,6 +170,62 @@ class DBVarType(StrEnum):
         set[DBVarType]
         """
         return {cls.VARCHAR, cls.INT}
+
+    @classmethod
+    def primitive_types(cls) -> set[DBVarType]:
+        """
+        List of non-primitive types (not supported by all databases)
+
+        Returns
+        -------
+        set[DBVarType]
+        """
+        return {
+            cls.INT,
+            cls.FLOAT,
+            cls.DATE,
+            cls.TIME,
+            cls.TIMESTAMP,
+            cls.TIMESTAMP_TZ,
+            cls.BOOL,
+            cls.CHAR,
+            cls.VARCHAR,
+        }
+
+    @classmethod
+    def supported_detection_types(cls) -> set[DBVarType]:
+        """
+        Types for specialized type detection
+
+        Returns
+        -------
+        set[DBVarType]
+        """
+        return {cls.ARRAY, cls.OBJECT, cls.STRUCT}
+
+    @classmethod
+    def dictionary_types(cls) -> set[DBVarType]:
+        """
+        Types for dictionary
+
+        Returns
+        -------
+        set[DBVarType]
+        """
+        # FIXME: remove this after we update to the dictionary type
+        # Snowflake uses OBJECT for dictionary type & Spark uses STRUCT for dictionary type
+        return {cls.OBJECT, cls.STRUCT}
+
+    @classmethod
+    def array_types(cls) -> set[DBVarType]:
+        """
+        Types for array
+
+        Returns
+        -------
+        set[DBVarType]
+        """
+        return {cls.ARRAY, cls.EMBEDDING}
 
     def to_type_str(self) -> str | None:
         """
@@ -397,15 +467,6 @@ class UploadFileFormat(StrEnum):
 
     CSV = "csv"
     PARQUET = "parquet"
-
-
-class ColumnAttribute(StrEnum):
-    """
-    Attributes of data type
-    """
-
-    EMBEDDING = "embedding"
-    FLAT_DICT = "flat_dict"
 
 
 # enum used for handle conflict when saving object to persistent storage

@@ -36,7 +36,7 @@ def validate_vector_aggregate_parameters(
     for info in columns_info:
         # If the type of the value_column is not an array, can return. If it is, break out of the loop and
         # check the method.
-        if info.name == value_column and info.dtype != DBVarType.ARRAY:
+        if info.name == value_column and info.dtype not in DBVarType.array_types():
             return
 
     # If it's an array, check whether the method is supported. We currently only support MAX and AVG operations.

@@ -356,7 +356,7 @@ class Target(
             feature_store_id=self.feature_store.id,
             serving_names_mapping=serving_names_mapping,
             graph=self.graph,
-            node_name=self.node.name,
+            node_names=[self.node.name],
             request_input=TargetInput(
                 target_id=self.id,
                 observation_table_id=observation_table_id,

@@ -44,8 +44,8 @@ class VectorAccessor:
     )
 
     def __init__(self, obj: FrozenSeries):
-        if obj.dtype != DBVarType.ARRAY:
-            raise AttributeError("Can only use .vec accessor with ARRAY values!")
+        if obj.dtype not in DBVarType.array_types():
+            raise AttributeError("Can only use .vec accessor with ARRAY or EMBEDDING values!")
         self._obj = obj
 
     def cosine_similarity(self, other: FrozenSeries) -> FrozenSeries:
@@ -66,8 +66,8 @@ class VectorAccessor:
         AttributeError
             If the other series is not a vector series
         """
-        if other.dtype != DBVarType.ARRAY:
-            raise AttributeError("Other series should be of ARRAY dtype.")
+        if other.dtype not in DBVarType.array_types():
+            raise AttributeError("Other series should be of ARRAY or EMBEDDING dtype.")
         return series_binary_operation(
             input_series=self._obj,
             other=other,

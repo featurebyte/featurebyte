@@ -40,6 +40,7 @@ from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.feature_job_setting import (
     FeatureJobSetting,
     TableFeatureJobSetting,
+    TableIdFeatureJobSetting,
 )
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node.cleaning_operation import (
@@ -555,6 +556,7 @@ def test_feature__default_version_info_retrieval(
     """
     _ = mock_api_object_cache
     feature = Feature.get(name=saved_feature.name)
+    feature_model = feature.cached_model
     assert feature.is_default is True
     assert feature.default_version_mode == DefaultVersionMode.AUTO
     assert feature.default_readiness == FeatureReadiness.DRAFT
@@ -573,6 +575,18 @@ def test_feature__default_version_info_retrieval(
     assert new_feature.is_default is True
     assert new_feature.default_version_mode == DefaultVersionMode.AUTO
     assert new_feature.default_readiness == FeatureReadiness.DRAFT
+
+    # check the derived attribute is regenerated
+    new_feature_model = new_feature.cached_model
+    assert new_feature_model.table_id_feature_job_settings == [
+        TableIdFeatureJobSetting(
+            table_id=snowflake_event_table.id,
+            feature_job_setting=FeatureJobSetting(
+                blind_spot="2700s", frequency="1800s", time_modulo_frequency="900s"
+            ),
+        )
+    ]
+    assert new_feature_model.definition_hash != feature_model.definition_hash
 
     # check that feature becomes non-default
     assert feature.is_default is False
@@ -1320,7 +1334,7 @@ def test_feature_definition(feature_with_clean_column_names):
         column_cleaning_operations=[
             ColumnCleaningOperation(
                 column_name="col_float",
-                cleaning_operations=[MissingValueImputation(imputed_value=-1)],
+                cleaning_operations=[MissingValueImputation(imputed_value=-1.0)],
             ),
             ColumnCleaningOperation(
                 column_name="cust_id",
@@ -1781,3 +1795,41 @@ def test_feature_relationships_info(saved_feature, cust_id_entity, transaction_e
     # hence, it is not included in the relationships info as relationships info only
     # contains the ancestor relationships of the primary entity
     assert len(relationships_info) == 0
+
+
+def test_complex_feature_with_duplicated_feature_job_setting(
+    snowflake_event_table_with_entity, feature_group_feature_job_setting
+):
+    """Test complex feature with duplicated feature job setting"""
+    snowflake_event_table_with_entity.update_default_feature_job_setting(
+        feature_job_setting=feature_group_feature_job_setting,
+    )
+    event_view = snowflake_event_table_with_entity.get_view()
+    grouped = event_view.groupby("cust_id")
+    feat_sum_col_float = grouped.aggregate_over(
+        value_column="col_float",
+        method="sum",
+        windows=["30m"],
+        feature_job_setting=feature_group_feature_job_setting,
+        feature_names=["sum_30m"],
+    )["sum_30m"]
+    feat_sum_col_int = grouped.aggregate_over(
+        value_column="col_int",
+        method="sum",
+        windows=["30m"],
+        feature_job_setting=feature_group_feature_job_setting,
+        feature_names=["sum_30m"],
+    )["sum_30m"]
+    complex_feat = feat_sum_col_int + feat_sum_col_float
+    complex_feat.name = "complex_feat"
+    complex_feat.save()
+    table_id_feature_job_settings = complex_feat.cached_model.table_id_feature_job_settings
+    assert len(table_id_feature_job_settings) == 1
+    assert table_id_feature_job_settings[0].dict() == {
+        "table_id": snowflake_event_table_with_entity.id,
+        "feature_job_setting": {
+            "blind_spot": "600s",
+            "frequency": "1800s",
+            "time_modulo_frequency": "300s",
+        },
+    }

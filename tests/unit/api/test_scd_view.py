@@ -58,14 +58,11 @@ def test_validate_join(snowflake_scd_view, snowflake_dimension_view):
     snowflake_scd_view.validate_join(snowflake_dimension_view)
 
 
-def test_scd_view__create_with_minimal_params(
-    snowflake_database_table_scd_table, catalog, mock_add_columns_attributes
-):
+def test_scd_view__create_with_minimal_params(snowflake_database_table_scd_table, catalog):
     """
     Test SCD view creation with minimal params
     """
     _ = catalog
-    _ = mock_add_columns_attributes
 
     scd_table_with_minimal_params = snowflake_database_table_scd_table.create_scd_table(
         name="sf_scd_table",

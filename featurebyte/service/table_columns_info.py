@@ -8,6 +8,8 @@ from typing import List, Tuple, Union
 from collections import defaultdict
 
 from bson.objectid import ObjectId
+from pymongo.errors import OperationFailure
+from tenacity import retry, retry_if_exception_type, wait_chain, wait_random
 
 from featurebyte.enum import TableDataType
 from featurebyte.exception import DocumentUpdateError
@@ -88,6 +90,10 @@ class TableColumnsInfoService(OpsServiceMixin):
                 f"{field_class_name} IDs {list(id_vals)} not found for columns {list(col_names)}."
             )
 
+    @retry(
+        retry=retry_if_exception_type(OperationFailure),
+        wait=wait_chain(*[wait_random(max=2) for _ in range(3)]),
+    )
     async def update_columns_info(
         self,
         service: TableDocumentService,

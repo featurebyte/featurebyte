@@ -124,7 +124,7 @@ def get_aggregation_expression(
     }
     if agg_func in agg_func_sql_mapping:
         sql_func = agg_func_sql_mapping[agg_func]
-        if parent_dtype is not None and parent_dtype == DBVarType.ARRAY:
+        if parent_dtype is not None and parent_dtype in DBVarType.array_types():
             sql_func = _get_vector_sql_func(agg_func, False)
         return expressions.Anonymous(this=sql_func, expressions=[input_column_expr])
 
@@ -254,7 +254,7 @@ def _split_agg_and_snowflake_vector_aggregation_columns(
     non_vector_agg_exprs = []
     vector_agg_cols = []
     for index, column in enumerate(groupby_columns):
-        if column.parent_dtype == DBVarType.ARRAY and source_type == SourceType.SNOWFLAKE:
+        if column.parent_dtype in DBVarType.array_types() and source_type == SourceType.SNOWFLAKE:
             vector_agg_cols.append(
                 get_vector_agg_column_snowflake(
                     input_expr=input_expr,
@@ -296,7 +296,9 @@ def update_aggregation_expression_for_columns(
     """
     output: list[GroupbyColumn] = []
     for column in groupby_columns:
-        if not (column.parent_dtype is DBVarType.ARRAY and adapter_type == SourceType.SNOWFLAKE):
+        if not (
+            column.parent_dtype in DBVarType.array_types() and adapter_type == SourceType.SNOWFLAKE
+        ):
             aggregation_expression = get_aggregation_expression(
                 agg_func=column.agg_func,
                 input_column=column.parent_cols[0] if column.parent_cols else None,

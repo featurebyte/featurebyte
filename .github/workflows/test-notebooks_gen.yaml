@@ -64,6 +64,12 @@ jobs:
         password: ${{ secrets.GCR_DOCKER_CREDENTIALS_R_B64 }}
         registry: ${{ env.GCR_DOCKER_LOCATION }}-docker.pkg.dev
         username: _json_key_base64
+    - name: Build docker image
+      run: task docker-build
+    - name: Install published featurebyte version
+      run: task install-published-featurebyte
+    - name: Retag docker image
+      run: task docker-tag-featurebyte-version
     - name: Run notebook tests
       run: task test-deep-dive-notebooks
     timeout-minutes: 30
@@ -111,6 +117,12 @@ jobs:
         password: ${{ secrets.GCR_DOCKER_CREDENTIALS_R_B64 }}
         registry: ${{ env.GCR_DOCKER_LOCATION }}-docker.pkg.dev
         username: _json_key_base64
+    - name: Build docker image
+      run: task docker-build
+    - name: Install published featurebyte version
+      run: task install-published-featurebyte
+    - name: Retag docker image
+      run: task docker-tag-featurebyte-version
     - name: Run notebook tests
       run: task test-quick-start-notebooks
     timeout-minutes: 45
@@ -158,6 +170,12 @@ jobs:
         password: ${{ secrets.GCR_DOCKER_CREDENTIALS_R_B64 }}
         registry: ${{ env.GCR_DOCKER_LOCATION }}-docker.pkg.dev
         username: _json_key_base64
+    - name: Build docker image
+      run: task docker-build
+    - name: Install published featurebyte version
+      run: task install-published-featurebyte
+    - name: Retag docker image
+      run: task docker-tag-featurebyte-version
     - name: Run notebook tests
       run: task test-playground-notebooks
     timeout-minutes: 30

@@ -161,14 +161,16 @@ def _update_batches_for_types(
     batches: List[pa.RecordBatch], col_name_to_db_var_type: dict[str, DBVarType]
 ) -> List[pa.RecordBatch]:
     # Currently, we only need to perform updates if we have an ARRAY type.
-    if DBVarType.ARRAY not in col_name_to_db_var_type.values():
+    if all(
+        array_type not in col_name_to_db_var_type.values() for array_type in DBVarType.array_types()
+    ):
         return batches
 
     output_list = []
     for batch in batches:
         curr_df = batch.to_pandas()
         for col_name, db_var_type in col_name_to_db_var_type.items():
-            if DBVarType.ARRAY == db_var_type:
+            if db_var_type in DBVarType.array_types():
                 # Check if column is of string dtype
                 if is_string_dtype(curr_df[col_name]):
                     # Apply a transformation to the column if the type is an array of strings, to convert them to list

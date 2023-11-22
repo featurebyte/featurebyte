@@ -116,10 +116,10 @@ async def test_validate(
             },
             'cleaning_operations': {
                 'data_source': [ColumnCleaningOperation(column_name='col_int',
-                    cleaning_operations=[MissingValueImputation(imputed_value=0.0)]
+                    cleaning_operations=[MissingValueImputation(imputed_value=0)]
                 )],
                 'promoted_feature': [ColumnCleaningOperation(column_name='col_int',
-                    cleaning_operations=[MissingValueImputation(imputed_value=2.5)]
+                    cleaning_operations=[MissingValueImputation(imputed_value=2)]
                 )]
             }
         }

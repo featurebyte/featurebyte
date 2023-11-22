@@ -110,6 +110,7 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
             DBVarType.TIMESTAMP: cls.SnowflakeDataType.TIMESTAMP_NTZ,
             DBVarType.TIMESTAMP_TZ: cls.SnowflakeDataType.TIMESTAMP_TZ,
             DBVarType.ARRAY: cls.SnowflakeDataType.ARRAY,
+            DBVarType.EMBEDDING: cls.SnowflakeDataType.ARRAY,
         }
         if dtype in mapping:
             return mapping[dtype]

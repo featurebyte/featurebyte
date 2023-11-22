@@ -340,7 +340,6 @@ def test_get_change_view__check_entity_id(snowflake_scd_table):
             "name": "col_text",
             "semantic_id": columns_info_dict[0]["semantic_id"],
             "description": None,
-            "attributes": [],
         },
         {
             "critical_data_info": None,
@@ -349,7 +348,6 @@ def test_get_change_view__check_entity_id(snowflake_scd_table):
             "name": "new_effective_timestamp",
             "semantic_id": columns_info_dict[1]["semantic_id"],
             "description": None,
-            "attributes": [],
         },
         {
             "critical_data_info": None,
@@ -358,7 +356,6 @@ def test_get_change_view__check_entity_id(snowflake_scd_table):
             "name": "past_effective_timestamp",
             "semantic_id": None,
             "description": None,
-            "attributes": [],
         },
         {
             "critical_data_info": None,
@@ -367,7 +364,6 @@ def test_get_change_view__check_entity_id(snowflake_scd_table):
             "name": "new_col_int",
             "semantic_id": columns_info_dict[3]["semantic_id"],
             "description": None,
-            "attributes": [],
         },
         {
             "critical_data_info": None,
@@ -376,7 +372,6 @@ def test_get_change_view__check_entity_id(snowflake_scd_table):
             "name": "past_col_int",
             "semantic_id": None,
             "description": None,
-            "attributes": [],
         },
     ]
 
@@ -573,9 +568,13 @@ def test_get_change_view__keep_record_creation_timestamp_column(
                 "effective_timestamp" AS "effective_timestamp",
                 "end_timestamp" AS "end_timestamp",
                 "date_of_birth" AS "date_of_birth",
-                CASE WHEN (
-                  "created_at" IS NULL
-                ) THEN '2020-01-01' ELSE "created_at" END AS "created_at",
+                CASE
+                  WHEN (
+                    "created_at" IS NULL
+                  )
+                  THEN '2020-01-01T00:00:00'
+                  ELSE "created_at"
+                END AS "created_at",
                 "cust_id" AS "cust_id"
               FROM "sf_database"."sf_schema"."scd_table"
             )

@@ -244,7 +244,7 @@ class QueryGraph(QueryGraphModel):
             yield group_by_node, table_id
 
     def extract_table_id_feature_job_settings(
-        self, target_node: Node
+        self, target_node: Node, keep_first_only: bool = False
     ) -> List[TableIdFeatureJobSetting]:
         """
         Extract table ID feature job settings of the query graph given the target node name
@@ -253,6 +253,10 @@ class QueryGraph(QueryGraphModel):
         ----------
         target_node: Node
             Node from which to start the backward search
+        keep_first_only: bool
+            Whether to keep the first table ID feature job setting only. When validating whether the
+            feature graph have the consistent feature job settings (per table), we need to disable this
+            to get all the table ID feature job settings in the query graph.
 
         Returns
         -------
@@ -263,7 +267,13 @@ class QueryGraph(QueryGraphModel):
         node_table_id_iterator = self.iterate_group_by_node_and_table_id_pairs(
             target_node=target_node
         )
+        table_ids = set()
         for group_by_node, table_id in node_table_id_iterator:
+            if keep_first_only and table_id in table_ids:
+                # skip duplicate table
+                continue
+
+            table_ids.add(table_id)
             table_feature_job_settings.append(
                 TableIdFeatureJobSetting(
                     table_id=table_id,

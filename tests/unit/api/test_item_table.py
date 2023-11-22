@@ -131,8 +131,6 @@ def test_create_item_table(snowflake_database_table_item_table, item_table_dict,
         item_table_dict["columns_info"][column_idx]["semantic_id"] = item_table.columns_info[
             column_idx
         ].semantic_id
-    for column_info in item_table_dict["columns_info"]:
-        column_info["attributes"] = []
     assert output == item_table_dict
 
     # user input validation

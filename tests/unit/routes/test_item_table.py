@@ -2,7 +2,6 @@
 Tests for ItemTable routes
 """
 from http import HTTPStatus
-from unittest.mock import patch
 
 import pytest
 from bson.objectid import ObjectId
@@ -73,14 +72,6 @@ class TestItemTableApi(BaseTableApiTestSuite):
         ),
     ]
     update_unprocessable_payload_expected_detail_pairs = []
-
-    @pytest.fixture(autouse=True)
-    def mock_add_columns_attributes(self):
-        """Mock columns attributes service excecution"""
-        with patch(
-            "featurebyte.service.column_attributes.ColumnAttributesDetectionService.add_columns_attributes"
-        ):
-            yield
 
     @pytest.fixture(name="data_model_dict")
     def data_model_dict_fixture(

@@ -3,7 +3,6 @@ Tests for Context route
 """
 from http import HTTPStatus
 from unittest import mock
-from unittest.mock import patch
 
 import pytest
 from bson.objectid import ObjectId
@@ -82,14 +81,6 @@ class TestContextApi(BaseCatalogApiTestSuite):
                 "update_unprocessable_payload_expected_detail",
                 self.update_unprocessable_payload_expected_detail_pairs,
             )
-
-    @pytest.fixture(autouse=True)
-    def mock_add_columns_attributes(self):
-        """Mock columns attributes service excecution"""
-        with patch(
-            "featurebyte.service.column_attributes.ColumnAttributesDetectionService.add_columns_attributes"
-        ):
-            yield
 
     def setup_creation_route(self, api_client):
         """Setup for post route"""
@@ -537,3 +528,16 @@ class TestContextApi(BaseCatalogApiTestSuite):
         response = test_api_client.get(f"{self.base_route}/{context_id}")
         assert response.status_code == HTTPStatus.OK
         assert response.json()["default_eda_table_id"] is None
+
+    @pytest.mark.asyncio
+    async def test_update_name(self, test_api_client_persistent, create_success_response):
+        """Test update name"""
+        test_api_client, _ = test_api_client_persistent
+        doc_id = create_success_response.json()["_id"]
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}", json={"name": "some other name"}
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        response = test_api_client.get(f"{self.base_route}/{doc_id}")
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["name"] == "some other name"
