@@ -179,6 +179,17 @@ def credentials_mapping_fixture():
                 s3_secret_access_key=os.getenv("DATABRICKS_STORAGE_ACCESS_KEY_SECRET", ""),
             ),
         ),
+        "databricks_unity_featurestore": CredentialModel(
+            name="databricks_unity_featurestore",
+            feature_store_id=ObjectId(),
+            database_credential=AccessTokenCredential(
+                access_token=os.getenv("DATABRICKS_ACCESS_TOKEN", ""),
+            ),
+            storage_credential=S3StorageCredential(
+                s3_access_key_id=os.getenv("DATABRICKS_STORAGE_ACCESS_KEY_ID", ""),
+                s3_secret_access_key=os.getenv("DATABRICKS_STORAGE_ACCESS_KEY_SECRET", ""),
+            ),
+        ),
         "spark_featurestore": CredentialModel(
             name="spark_featurestore",
             feature_store_id=ObjectId(),
@@ -365,6 +376,20 @@ def feature_store_details_fixture(source_type, sqlite_filename):
             host=os.getenv("DATABRICKS_SERVER_HOSTNAME"),
             http_path=os.getenv("DATABRICKS_HTTP_PATH"),
             featurebyte_catalog=os.getenv("DATABRICKS_CATALOG"),
+            featurebyte_schema=temp_schema_name,
+            storage_type=StorageType.S3,
+            storage_url=f"{storage_url}/{temp_schema_name}",
+            storage_spark_url=f"dbfs:/FileStore/{temp_schema_name}",
+        )
+
+    if source_type == "databricks_unity":
+        schema_name = os.getenv("DATABRICKS_SCHEMA_FEATUREBYTE")
+        temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
+        storage_url = os.getenv("DATABRICKS_STORAGE_URL")
+        return DatabricksDetails(
+            host=os.getenv("DATABRICKS_SERVER_HOSTNAME"),
+            http_path=os.getenv("DATABRICKS_UNITY_HTTP_PATH"),
+            featurebyte_catalog=os.getenv("DATABRICKS_UNITY_CATALOG"),
             featurebyte_schema=temp_schema_name,
             storage_type=StorageType.S3,
             storage_url=f"{storage_url}/{temp_schema_name}",
@@ -884,6 +909,9 @@ async def session_fixture(source_type, session_manager, dataset_registration_hel
         except ClientError as exc:
             logger.warning("Failed to delete UDF jar file", extra={"exc": exc})
 
+    if source_type == "databricks_unity":
+        await session.execute_query(f"DROP SCHEMA IF EXISTS {session.schema_name} CASCADE")
+
     if source_type == "spark":
         await session.execute_query(f"DROP SCHEMA IF EXISTS {session.schema_name} CASCADE")
         # clean up storage
@@ -957,9 +985,7 @@ async def tile_spec_fixture(session, tile_registry_service):
     creator = None
     if session.source_type == "snowflake":
         creator = create_snowflake_tile_spec
-    if session.source_type == "spark":
-        creator = create_spark_tile_specs
-    elif session.source_type == "databricks":
+    if session.source_type in {"spark", "databricks", "databricks_unity"}:
         creator = create_spark_tile_specs
 
     assert creator is not None, f"tile_spec fixture does not support {session.source_type}"

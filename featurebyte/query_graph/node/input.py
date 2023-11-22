@@ -46,6 +46,7 @@ class BaseInputNodeParameters(BaseModel):
     _source_type_to_import: ClassVar[Dict[SourceType, ClassEnum]] = {
         SourceType.SNOWFLAKE: ClassEnum.SNOWFLAKE_DETAILS,
         SourceType.DATABRICKS: ClassEnum.DATABRICK_DETAILS,
+        SourceType.DATABRICKS_UNITY: ClassEnum.DATABRICK_DETAILS,
         SourceType.SPARK: ClassEnum.SPARK_DETAILS,
         SourceType.SQLITE: ClassEnum.SQLITE_DETAILS,
         SourceType.TEST: ClassEnum.TESTDB_DETAILS,

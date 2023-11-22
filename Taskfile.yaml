@@ -235,6 +235,7 @@ tasks:
       - task: test-integration-snowflake
       - task: test-integration-spark
       - task: test-integration-databricks
+      - task: test-integration-databricks-unity
 
   test-integration-snowflake:
     desc: Runs integration tests against Snowflake
@@ -271,6 +272,15 @@ tasks:
     cmds:
       - task: test-setup
       - poetry run pytest --timeout=900 --junitxml=pytest.xml.3 --cov=featurebyte tests/integration --source-types databricks --maxfail=1
+      - task: test-teardown
+
+  test-integration-databricks-unity:
+    desc: Runs integration tests against Databricks
+    deps:
+      - task: install
+    cmds:
+      - task: test-setup
+      - poetry run pytest --timeout=900 --junitxml=pytest.xml.4 --cov=featurebyte tests/integration --source-types databricks_unity --maxfail=1
       - task: test-teardown
 
   test-docs:

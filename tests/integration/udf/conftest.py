@@ -5,7 +5,7 @@ import pytest
 
 import tests.integration.udf.snowflake.util as snowflake_util
 import tests.integration.udf.spark.util as spark_util
-from tests.source_types import DATABRICKS, SNOWFLAKE, SPARK
+from tests.source_types import DATABRICKS, DATABRICKS_UNITY, SNOWFLAKE, SPARK
 
 
 @pytest.fixture(name="to_object", scope="session")
@@ -15,7 +15,7 @@ def to_object_fixture(source_type):
     """
     if source_type == SNOWFLAKE:
         return snowflake_util.to_object
-    if source_type in {SPARK, DATABRICKS}:
+    if source_type in {SPARK, DATABRICKS, DATABRICKS_UNITY}:
         return spark_util.to_object
     raise NotImplementedError()
 

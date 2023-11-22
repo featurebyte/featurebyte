@@ -96,7 +96,7 @@ class FeatureJobSettingAnalysisTask(BaseTask[FeatureJobSettingAnalysisTaskPayloa
         db_session = await self.session_manager_service.get_feature_store_session(feature_store)
 
         database_type = feature_store.type
-        if database_type == SourceType.DATABRICKS:
+        if database_type in {SourceType.DATABRICKS, SourceType.DATABRICKS_UNITY}:
             database_type = SourceType.SPARK
         event_dataset = EventDataset(
             database_type=database_type,
