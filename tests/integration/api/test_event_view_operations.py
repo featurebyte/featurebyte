@@ -1307,6 +1307,7 @@ def test_create_observation_table(event_view):
             "ÜSER ID": "üser id",
             "TRANSACTION_ID": "order_id",
         },
+        primary_entities=["Customer"],
     )
     expected_entity_ids = {col.entity_id for col in new_event_view.columns_info if col.entity_id}
     assert set(observation_table.entity_ids) == expected_entity_ids
