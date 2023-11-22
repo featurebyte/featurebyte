@@ -137,3 +137,19 @@ def test_update_purpose(observation_table_from_source):
     assert observation_table_from_source.purpose is None
     observation_table_from_source.update_purpose(purpose=Purpose.EDA)
     assert observation_table_from_source.purpose == Purpose.EDA
+
+
+def test_create_observation_table_without_primary_entity(snowflake_event_table):
+    """Test create observation table without primary entity"""
+    view = snowflake_event_table.get_view()
+    expected_error = (
+        "No primary entities found. Please specify the primary entities when "
+        "creating the observation table."
+    )
+    with pytest.raises(ValueError, match=expected_error):
+        view.create_observation_table(
+            "my_observation_table_from_event_view",
+            sample_rows=100,
+            columns=["event_timestamp", "cust_id"],
+            columns_rename_mapping={"event_timestamp": "POINT_IN_TIME"},
+        )

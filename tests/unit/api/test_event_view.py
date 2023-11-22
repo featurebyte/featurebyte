@@ -840,12 +840,12 @@ def test_create_observation_table_from_event_view__no_sample(
 
 @pytest.mark.usefixtures("patched_observation_table_service")
 def test_create_observation_table_from_event_view__with_sample(
-    snowflake_event_table, snowflake_execute_query
+    snowflake_event_table_with_entity, snowflake_execute_query, cust_id_entity
 ):
     """
     Test creating ObservationTable from an EventView
     """
-    view = snowflake_event_table.get_view()
+    view = snowflake_event_table_with_entity.get_view()
 
     with patch(
         "featurebyte.models.request_input.BaseRequestInput.get_row_count",
@@ -860,6 +860,7 @@ def test_create_observation_table_from_event_view__with_sample(
 
     assert isinstance(observation_table, ObservationTable)
     assert observation_table.name == "my_observation_table_from_event_view"
+    assert observation_table.primary_entity_ids == [cust_id_entity.id]
 
     # Check that the correct query was executed
     query = snowflake_execute_query.call_args[0][0]
