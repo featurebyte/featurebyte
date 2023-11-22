@@ -1,52 +1,59 @@
 # Changelog
 
+## v0.6.1 (2023-11-22)
+
+### 🐛 Bug Fixes
+
++ `api` fixed async task return code
+
+
 ## v0.6.0 (2023-10-10)
 
 ### 🛑 Breaking Changes
 
-+ `observation_table` Validate that entities are present when creating an observation table. 
++ `observation_table` Validate that entities are present when creating an observation table.
 
 ### 💡 Enhancements
 
-+ `target` Use window from target namespace instead of the target version. 
-+ `service` UseCase creation to accept TargetNameSpace id as a parameter 
-+ `historical_feature_table` Make FeatureClusters optional when creating historical feature table from UI. 
-+ `service` Move online serving code template generation to the online serving service 
-+ `model` Handle old Context records with entity_ids attribute in the database 
-+ `service` Add key_with_highest_value() and key_with_lowest_value() for cross aggregates 
-+ `api` Add consistent table feature job settings validation during feature creation. 
-+ `api` Change Context Entity attribute's name to Primary Entity 
-+ `api` Use primary entity parameter in Target and Context creation 
-+ `service` Add last_updated_at in FeatureModel to indicate when feature value is last updated 
-+ `api` Revise feature list create new version to avoid throwing error when the feature list is the same as the previous version 
-+ `service` Support rprefix parameter in View's join method 
-+ `observation_table` Add an optional purpose to observation table when creating a new observation table. 
-+ `docs` Documentation for Context and UseCase 
-+ `observation_table` Track earliest point in time, and unique entity col counts as part of metadata. 
-+ `service` Support extracting value counts and customised statistics in PreviewService 
-+ `api` Remove direct observation table reference from UseCase 
-+ `warehouse` improve data warehouse asset validation 
-+ `api` Use EntityBriefInfoList for entity info for both UseCase and Context 
-+ `api` Add trigo functions to series. 
-+ `api` Include observation table operation into Context API Object 
-+ `observation_table` Add route to allow users to upload CSV files to create observation tables. 
-+ `target` Tag entity_ids when creating an observation table from a target. 
-+ `api-client` improve api-client retry 
-+ `service` Entity Validation for Context, Target and UseCase 
-+ `service` Add Context Info method into both Context API Object and Route 
-+ `api` Add functionality to calculate haversine distance. 
-+ `service` Fix PreviewService describe() method when stats_names are provided 
++ `target` Use window from target namespace instead of the target version.
++ `service` UseCase creation to accept TargetNameSpace id as a parameter
++ `historical_feature_table` Make FeatureClusters optional when creating historical feature table from UI.
++ `service` Move online serving code template generation to the online serving service
++ `model` Handle old Context records with entity_ids attribute in the database
++ `service` Add key_with_highest_value() and key_with_lowest_value() for cross aggregates
++ `api` Add consistent table feature job settings validation during feature creation.
++ `api` Change Context Entity attribute's name to Primary Entity
++ `api` Use primary entity parameter in Target and Context creation
++ `service` Add last_updated_at in FeatureModel to indicate when feature value is last updated
++ `api` Revise feature list create new version to avoid throwing error when the feature list is the same as the previous version
++ `service` Support rprefix parameter in View's join method
++ `observation_table` Add an optional purpose to observation table when creating a new observation table.
++ `docs` Documentation for Context and UseCase
++ `observation_table` Track earliest point in time, and unique entity col counts as part of metadata.
++ `service` Support extracting value counts and customised statistics in PreviewService
++ `api` Remove direct observation table reference from UseCase
++ `warehouse` improve data warehouse asset validation
++ `api` Use EntityBriefInfoList for entity info for both UseCase and Context
++ `api` Add trigo functions to series.
++ `api` Include observation table operation into Context API Object
++ `observation_table` Add route to allow users to upload CSV files to create observation tables.
++ `target` Tag entity_ids when creating an observation table from a target.
++ `api-client` improve api-client retry
++ `service` Entity Validation for Context, Target and UseCase
++ `service` Add Context Info method into both Context API Object and Route
++ `api` Add functionality to calculate haversine distance.
++ `service` Fix PreviewService describe() method when stats_names are provided
 
 ### 🐛 Bug Fixes
 
-+ `service` Validate non-existent Target and Context when creating Use Case 
-+ `session` Fix execute query failing when variant columns contain null values 
-+ `service` Validate null target_id when adding obs table to use case 
-+ `service` Fix maximum recursion depth exceeded error in complex queries 
-+ `service` Fix race condition when accessing cached values in ApiObject's get_by_id() 
-+ `hive` fix hive connection error when spark_catalog is not the default 
-+ `api` Target#list should include items in target namespace. 
-+ `target` Fix target definition SDK code generation by skipping project. 
++ `service` Validate non-existent Target and Context when creating Use Case
++ `session` Fix execute query failing when variant columns contain null values
++ `service` Validate null target_id when adding obs table to use case
++ `service` Fix maximum recursion depth exceeded error in complex queries
++ `service` Fix race condition when accessing cached values in ApiObject's get_by_id()
++ `hive` fix hive connection error when spark_catalog is not the default
++ `api` Target#list should include items in target namespace.
++ `target` Fix target definition SDK code generation by skipping project.
 + `service` Fix join validation logic to account for rprefix
 
 
