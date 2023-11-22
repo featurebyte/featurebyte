@@ -254,7 +254,11 @@ def _split_agg_and_snowflake_vector_aggregation_columns(
     non_vector_agg_exprs = []
     vector_agg_cols = []
     for index, column in enumerate(groupby_columns):
-        if column.parent_dtype in DBVarType.array_types() and source_type == SourceType.SNOWFLAKE:
+        if (
+            column.agg_func != AggFunc.LATEST
+            and column.parent_dtype in DBVarType.array_types()
+            and source_type == SourceType.SNOWFLAKE
+        ):
             vector_agg_cols.append(
                 get_vector_agg_column_snowflake(
                     input_expr=input_expr,

@@ -404,3 +404,30 @@ def test_vector_cosine_similarity(item_table_with_array_column):
         cosine_similarity_feature_name: 1.0,  # we expect cosine_similarity of 1 since the array is compared w/ itself
         **convert_preview_param_dict_to_feature_preview_resp(preview_params),
     }
+
+
+@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
+def test_vector_value_column_latest_aggregation(event_table_with_array_column):
+    """
+    Test latest aggregation on vector column
+    """
+    event_view = event_table_with_array_column.get_view()
+    feature_name = "vector_agg"
+    feature = event_view.groupby("USER_ID").aggregate_over(
+        value_column=VECTOR_VALUE_FLOAT_COL,
+        method=AggFunc.LATEST,
+        windows=["1d"],
+        feature_names=[feature_name],
+        skip_fill_na=True,
+    )[feature_name]
+
+    preview_params = pd.DataFrame(
+        {"POINT_IN_TIME": ["2022-06-06 00:58:00"] * 2, "vector_user_id": ["2", "4"]}
+    )
+    feature_preview = feature.preview(preview_params)
+    expected_results = [[1.0, 3.0, 1.0], [7.0, 2.0, 3.0]]
+    assert feature_preview[feature_name].tolist() == expected_results
+
+    feature_list = FeatureList([feature], name="vector_agg_list")
+    historical_features = feature_list.compute_historical_features(preview_params)
+    assert [list(x) for x in historical_features[feature_name]] == expected_results
