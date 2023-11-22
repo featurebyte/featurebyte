@@ -28,6 +28,12 @@ tasks:
     cmds:
       - poetry install -n --sync --extras=server
 
+  install-published-featurebyte:
+    desc: "Install the published version of the featurebyte SDK"
+    cmds:
+      - poetry run pip uninstall --yes featurebyte
+      - poetry run pip install featurebyte
+
   lint-java:
     desc: "Run linter for java"
     sources:
@@ -300,29 +306,21 @@ tasks:
 
   test-notebooks:
     desc: "Runs the notebook tests"
-    deps:
-      - task: docker-build
     cmds:
       - poetry run pytest --junitxml=pytest.xml tests/notebooks
 
   test-quick-start-notebooks:
     desc: "Runs the notebook tests"
-    deps:
-      - task: docker-build
     cmds:
       - poetry run pytest --junitxml=pytest-quick.xml -k quick tests/notebooks
 
   test-deep-dive-notebooks:
     desc: "Runs the notebook tests"
-    deps:
-      - task: docker-build
     cmds:
       - poetry run pytest --junitxml=pytest.xml -k deep tests/notebooks
 
   test-playground-notebooks:
     desc: "Runs the notebook tests"
-    deps:
-      - task: docker-build
     cmds:
       - poetry run pytest --junitxml=pytest.xml -k playground tests/notebooks
 
@@ -424,6 +422,14 @@ tasks:
       - docker volume rm $(docker volume ls -q)
       - rm -rf ~/.spark
       - rm -rf ~/.featurebyte/data
+
+  docker-tag-featurebyte-version:
+    desc: "Tag the featurebyte-server docker image with the version extracted from running 'featurebyte version'."
+    vars:
+      FB_VERSION:
+        sh: poetry run featurebyte version | cut -d' ' -f2
+    cmds:
+      - poetry run docker tag featurebyte-server:latest featurebyte/featurebyte-server:{{.FB_VERSION}}
 
   publish-mongodb:
     desc: "Publish mongodb package to public featurebyte registry"

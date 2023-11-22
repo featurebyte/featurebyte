@@ -11,19 +11,19 @@ from featurebyte.schema.target_table import TargetTableCreate
 
 
 @pytest.mark.parametrize(
-    "target_id, graph, node_name, expected_error",
+    "target_id, graph, node_names, expected_error",
     [
         (ObjectId(), None, None, None),
-        (ObjectId(), None, "node_name", ValueError),
+        (ObjectId(), None, ["node1"], ValueError),
         (ObjectId(), QueryGraphModel(), None, ValueError),
-        (ObjectId(), QueryGraphModel(), "node_name", ValueError),
+        (ObjectId(), QueryGraphModel(), ["node1"], ValueError),
         (None, None, None, ValueError),
-        (None, None, "node_name", ValueError),
+        (None, None, ["node1"], ValueError),
         (None, QueryGraphModel(), None, ValueError),
-        (None, QueryGraphModel(), "node_name", None),
+        (None, QueryGraphModel(), ["node1"], None),
     ],
 )
-def test_target_table_create(target_id, graph, node_name, expected_error):
+def test_target_table_create(target_id, graph, node_names, expected_error):
     """
     Test target table create schema
     """
@@ -40,9 +40,9 @@ def test_target_table_create(target_id, graph, node_name, expected_error):
     }
     if expected_error:
         with pytest.raises(expected_error):
-            TargetTableCreate(graph=graph, node_name=node_name, **common_params)
+            TargetTableCreate(graph=graph, node_names=node_names, **common_params)
         return
     else:
-        target_table_create = TargetTableCreate(graph=graph, node_name=node_name, **common_params)
+        target_table_create = TargetTableCreate(graph=graph, node_names=node_names, **common_params)
         assert target_table_create.name == "target_name"
         assert target_table_create.target_id == target_id

@@ -25,7 +25,9 @@ class TargetTableCreate(FeatureOrTargetTableCreate):
     serving_names_mapping: Optional[Dict[str, str]]
     target_id: Optional[PydanticObjectId]
     graph: Optional[QueryGraph] = Field(default=None)
-    node_name: Optional[StrictStr] = Field(default=None)
+    # Note that even though node_names is a list, we typically only expect one node. We can't change this to a non-list
+    # for backwards compatibility reasons.
+    node_names: Optional[List[StrictStr]] = Field(default=None)
     request_input: ObservationInput
     context_id: Optional[PydanticObjectId]
     skip_entity_validation_checks: bool = Field(default=False)
@@ -34,7 +36,7 @@ class TargetTableCreate(FeatureOrTargetTableCreate):
     @classmethod
     def _check_graph_and_node_names(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         graph = values.get("graph", None)
-        node_names = values.get("node_name", None)
+        node_names = values.get("node_names", None)
         target_id = values.get("target_id", None)
         both_are_none = graph is None and node_names is None
 
@@ -64,9 +66,9 @@ class TargetTableCreate(FeatureOrTargetTableCreate):
         -------
         List[Node]
         """
-        if self.graph is None or self.node_name is None:
+        if self.graph is None or self.node_names is None:
             return []
-        return [self.graph.get_node_by_name(self.node_name)]
+        return [self.graph.get_node_by_name(name) for name in self.node_names]
 
 
 class TargetTableList(PaginationMixin):

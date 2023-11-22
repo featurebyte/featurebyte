@@ -328,5 +328,5 @@ class TestTargetApi(BaseCatalogApiTestSuite):
             assert mock_create_table.call_count == 1
             call_args = mock_create_table.call_args_list[0][1]
             # Check that node names is in the call args of mock_create_table
-            assert call_args["data"].node_name == "project_1"
+            assert call_args["data"].node_names == ["project_1"]
             assert call_args["data"].graph is not None
