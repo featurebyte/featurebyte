@@ -29,6 +29,7 @@ def test_validate_vector_aggregate_parameters():
             if (
                 column_info.dtype == DBVarType.ARRAY
                 and agg_func not in VECTOR_AGGREGATE_SUPPORTED_FUNCTIONS
+                and agg_func != AggFunc.LATEST
             ):
                 with pytest.raises(ValueError) as exc_info:
                     validate_vector_aggregate_parameters([column_info], column_info.name, agg_func)
