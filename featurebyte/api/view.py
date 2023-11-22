@@ -1701,6 +1701,11 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         ObservationTable
             ObservationTable object.
 
+        Raises
+        ------
+        ValueError
+            If no primary entities are found.
+
         Examples
         --------
         >>> observation_table = view.create_observation_table(  # doctest: +SKIP
