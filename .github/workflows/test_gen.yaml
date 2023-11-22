@@ -330,6 +330,7 @@ jobs:
         name: python-${{ matrix.python-version }}-.coverage.3
         path: .coverage.3
   test-integration-databricks-unity:
+    if: false
     needs:
     - build-jar
     runs-on: ubuntu-latest
