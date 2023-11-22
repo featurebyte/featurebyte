@@ -1694,7 +1694,8 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         skip_entity_validation_checks: Optional[bool]
             Skip entity validation checks when creating the observation table.
         primary_entities: Optional[List[str]]
-            List of primary entities for the observation table.
+            List of primary entities for the observation table. If None, the primary entities are
+            inferred from the view.
 
         Returns
         -------
