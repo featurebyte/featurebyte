@@ -1674,7 +1674,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         When you specify the columns and the columns_rename_mapping parameters, make sure that the table has:
 
         - a column containing entity values with an accepted serving name.
-        - a column containing historical points-in-time in UTC. The column name must be "POINT-IN-TIME".
+        - a column containing historical points-in-time in UTC. The column name must be "POINT_IN_TIME".
 
         Parameters
         ----------
@@ -1694,12 +1694,18 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         skip_entity_validation_checks: Optional[bool]
             Skip entity validation checks when creating the observation table.
         primary_entities: Optional[List[str]]
-            List of primary entities for the observation table.
+            List of primary entities for the observation table. If None, the primary entities are
+            inferred from the view.
 
         Returns
         -------
         ObservationTable
             ObservationTable object.
+
+        Raises
+        ------
+        ValueError
+            If no primary entities are found.
 
         Examples
         --------
@@ -1719,6 +1725,20 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         if primary_entities is not None:
             for entity_name in primary_entities:
                 primary_entity_ids.append(Entity.get(entity_name).id)
+        else:
+            # infer the primary entity from the view
+            for column_info in self.columns_info:
+                if columns and column_info.name not in columns:
+                    # for special columns that are inherited in the view (like event_id_column),
+                    # exclude them from the primary entity check
+                    continue
+                if column_info.entity_id:
+                    primary_entity_ids.append(column_info.entity_id)
+
+        if not primary_entity_ids:
+            raise ValueError(
+                "No primary entities found. Please specify the primary entities when creating the observation table."
+            )
 
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
         definition = get_definition_for_obs_table_creation_from_view(

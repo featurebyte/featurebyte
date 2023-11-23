@@ -1064,12 +1064,16 @@ def observation_table_from_source_fixture(
 
 
 @pytest.fixture(name="observation_table_from_view")
-def observation_table_from_view_fixture(snowflake_event_view, patched_observation_table_service):
+def observation_table_from_view_fixture(
+    snowflake_event_view_with_entity, patched_observation_table_service
+):
     """
     Observation table created from EventView
     """
     _ = patched_observation_table_service
-    return snowflake_event_view.create_observation_table("observation_table_from_event_view")
+    return snowflake_event_view_with_entity.create_observation_table(
+        "observation_table_from_event_view"
+    )
 
 
 @pytest.fixture(name="static_source_table_from_source")

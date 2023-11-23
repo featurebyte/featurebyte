@@ -155,7 +155,10 @@ async def test_observation_table_cleanup(scd_table, session, source_type):
     num_observation_tables_before = await _get_num_observation_tables()
 
     with pytest.raises(RecordCreationException) as exc:
-        view.create_observation_table(f"BAD_OBSERVATION_TABLE_FROM_VIEW_{source_type}")
+        view.create_observation_table(
+            f"BAD_OBSERVATION_TABLE_FROM_VIEW_{source_type}",
+            primary_entities=["User"],
+        )
 
     expected_msg = "Point in time column should have timestamp type; got INT"
     assert expected_msg in str(exc.value)
