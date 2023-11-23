@@ -32,6 +32,10 @@ def validate_vector_aggregate_parameters(
     if value_column is None:
         return
 
+    if method == AggFunc.LATEST:
+        # Latest aggregation does not require element-wise aggregation
+        return
+
     # Check whether the value_column's type is an array
     for info in columns_info:
         # If the type of the value_column is not an array, can return. If it is, break out of the loop and
@@ -39,6 +43,7 @@ def validate_vector_aggregate_parameters(
         if info.name == value_column and info.dtype not in DBVarType.array_types():
             return
 
-    # If it's an array, check whether the method is supported. We currently only support MAX and AVG operations.
+    # If it's an array and requires element-wise aggregation, check whether the method is supported.
+    # We currently only support MAX, AVG and SUM operations.
     if method not in VECTOR_AGGREGATE_SUPPORTED_FUNCTIONS:
         raise ValueError(f"Method {method} is not supported for vector aggregate operations.")

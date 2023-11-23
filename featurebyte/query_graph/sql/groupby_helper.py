@@ -14,6 +14,7 @@ from featurebyte.enum import AggFunc, DBVarType, SourceType
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.adapter.base import VectorAggColumn
 from featurebyte.query_graph.sql.common import get_qualified_column_identifier, quoted_identifier
+from featurebyte.query_graph.sql.vector_helper import should_use_element_wise_vector_aggregation
 
 
 @dataclass
@@ -254,7 +255,10 @@ def _split_agg_and_snowflake_vector_aggregation_columns(
     non_vector_agg_exprs = []
     vector_agg_cols = []
     for index, column in enumerate(groupby_columns):
-        if column.parent_dtype in DBVarType.array_types() and source_type == SourceType.SNOWFLAKE:
+        if (
+            should_use_element_wise_vector_aggregation(column.agg_func, column.parent_dtype)
+            and source_type == SourceType.SNOWFLAKE
+        ):
             vector_agg_cols.append(
                 get_vector_agg_column_snowflake(
                     input_expr=input_expr,

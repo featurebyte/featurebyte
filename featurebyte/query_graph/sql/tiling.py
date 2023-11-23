@@ -14,6 +14,7 @@ from sqlglot.expressions import Anonymous, Expression
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.common import quoted_identifier
+from featurebyte.query_graph.sql.vector_helper import should_use_element_wise_vector_aggregation
 
 
 @dataclass
@@ -397,7 +398,7 @@ def get_aggregator(
     -------
     type[TilingAggregator]
     """
-    if parent_dtype is not None and parent_dtype in DBVarType.array_types():
+    if should_use_element_wise_vector_aggregation(agg_name, parent_dtype):
         vector_aggregator_mapping: dict[AggFunc, type[TilingAggregator]] = {
             AggFunc.MAX: VectorMaxAggregator,
             AggFunc.AVG: VectorAvgAggregator,
