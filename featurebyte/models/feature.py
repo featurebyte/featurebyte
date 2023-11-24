@@ -22,9 +22,9 @@ from featurebyte.models.base import (
     VersionIdentifier,
 )
 from featurebyte.models.feature_namespace import FeatureReadiness
-from featurebyte.models.relationship import RelationshipType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
+from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.query_graph.model.feature_job_setting import (
     TableFeatureJobSetting,
     TableIdFeatureJobSetting,
@@ -44,18 +44,6 @@ from featurebyte.query_graph.transform.definition import (
     DefinitionHashExtractor,
     DefinitionHashOutput,
 )
-
-
-class EntityRelationshipInfo(FeatureByteBaseModel):
-    """
-    Schema for entity relationship information (subset of existing RelationshipInfo)
-    """
-
-    id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id", allow_mutation=False)
-    relationship_type: RelationshipType
-    entity_id: PydanticObjectId
-    related_entity_id: PydanticObjectId
-    relation_table_id: PydanticObjectId
 
 
 class TableIdColumnNames(FeatureByteBaseModel):

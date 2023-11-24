@@ -9,8 +9,9 @@ from dataclasses import dataclass
 from bson import ObjectId
 
 from featurebyte.exception import EntityRelationshipConflictError
-from featurebyte.models.feature import EntityRelationshipInfo, FeatureModel
+from featurebyte.models.feature import FeatureModel
 from featurebyte.models.relationship import RelationshipType
+from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.service.entity import EntityService
 
 
