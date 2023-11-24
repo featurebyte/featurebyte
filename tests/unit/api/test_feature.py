@@ -52,6 +52,9 @@ from featurebyte.query_graph.node.cleaning_operation import (
     TableCleaningOperation,
 )
 from featurebyte.query_graph.node.generic import GroupByNode, ProjectNode
+from featurebyte.query_graph.transform.offline_ingest_extractor import (
+    OfflineStoreIngestQueryExtractor,
+)
 from tests.unit.api.base_feature_or_target_test import FeatureOrTargetBaseTestSuite, TestItemType
 from tests.util.helper import check_aggressively_pruned_graph, check_sdk_code_generation, get_node
 
@@ -836,6 +839,17 @@ def check_offline_store_ingest_graph_on_composite_feature(feature_model):
     groupby_node2 = ingest_query_graph2.graph.get_node_by_name("groupby_2")
     assert isinstance(groupby_node2, GroupByNode)
     assert groupby_node2.parameters.names == ["sum_30m_by_cust_id_30m"]
+
+    # check decomposed graph
+    extractor = OfflineStoreIngestQueryExtractor(graph=feature_model.graph)
+    output = extractor.extract(
+        node=feature_model.node, relationships_info=feature_model.relationships_info
+    )
+    assert output.graph.edges_map == {
+        "graph_1": ["add_1"],
+        "graph_2": ["add_1"],
+        "add_1": ["alias_1"],
+    }
 
     # case 2: with entity relationship between the two entities (expect no query graph decomposition)
     entity_ids = feature_model.entity_ids
