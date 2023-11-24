@@ -23,7 +23,7 @@ from featurebyte.query_graph.transform.quick_pruning import QuickGraphStructureP
 
 
 @dataclass
-class OfflineStoreIngestQueryGlobalState:
+class OfflineStoreIngestQueryGraphGlobalState:
     """OfflineStoreIngestQueryGlobalState class"""
 
     # decomposed graph
@@ -40,7 +40,7 @@ class OfflineStoreIngestQueryGlobalState:
     @classmethod
     def create(
         cls, relationships_info: Optional[List[EntityRelationshipInfo]]
-    ) -> "OfflineStoreIngestQueryGlobalState":
+    ) -> "OfflineStoreIngestQueryGraphGlobalState":
         """
         Create a new OfflineStoreIngestQueryGlobalState object from the given relationships info
 
@@ -51,9 +51,9 @@ class OfflineStoreIngestQueryGlobalState:
 
         Returns
         -------
-        OfflineStoreIngestQueryGlobalState
+        OfflineStoreIngestQueryGraphGlobalState
         """
-        return OfflineStoreIngestQueryGlobalState(
+        return OfflineStoreIngestQueryGraphGlobalState(
             graph=QueryGraphModel(),
             entity_ancestor_descendant_mapper=EntityAncestorDescendantMapper.create(
                 relationships_info=relationships_info or []
@@ -174,15 +174,15 @@ class OfflineStoreIngestQueryGlobalState:
 
 
 @dataclass
-class OfflineStoreIngestQueryBranchState:
+class OfflineStoreIngestQueryGraphBranchState:
     """OfflineStoreIngestQueryBranchState class"""
 
 
-class OfflineStoreIngestQueryExtractor(
+class OfflineStoreIngestQueryGraphExtractor(
     BaseGraphExtractor[
-        OfflineStoreIngestQueryGlobalState,
-        OfflineStoreIngestQueryBranchState,
-        OfflineStoreIngestQueryGlobalState,
+        OfflineStoreIngestQueryGraphGlobalState,
+        OfflineStoreIngestQueryGraphBranchState,
+        OfflineStoreIngestQueryGraphGlobalState,
     ]
 ):
     """
@@ -195,8 +195,8 @@ class OfflineStoreIngestQueryExtractor(
 
     def _pre_compute(
         self,
-        branch_state: OfflineStoreIngestQueryBranchState,
-        global_state: OfflineStoreIngestQueryGlobalState,
+        branch_state: OfflineStoreIngestQueryGraphBranchState,
+        global_state: OfflineStoreIngestQueryGraphGlobalState,
         node: Node,
         input_node_names: List[str],
     ) -> Tuple[List[str], bool]:
@@ -204,22 +204,22 @@ class OfflineStoreIngestQueryExtractor(
 
     def _in_compute(
         self,
-        branch_state: OfflineStoreIngestQueryBranchState,
-        global_state: OfflineStoreIngestQueryGlobalState,
+        branch_state: OfflineStoreIngestQueryGraphBranchState,
+        global_state: OfflineStoreIngestQueryGraphGlobalState,
         node: Node,
         input_node: Node,
-    ) -> OfflineStoreIngestQueryBranchState:
+    ) -> OfflineStoreIngestQueryGraphBranchState:
         return branch_state
 
     def _insert_offline_store_ingest_query_node(
-        self, global_state: OfflineStoreIngestQueryGlobalState, node_name: str
+        self, global_state: OfflineStoreIngestQueryGraphGlobalState, node_name: str
     ) -> Node:
         """
         Insert offline store ingest query node to the decomposed graph
 
         Parameters
         ----------
-        global_state: OfflineStoreIngestQueryGlobalState
+        global_state: OfflineStoreIngestQueryGraphGlobalState
             OfflineStoreIngestQueryGlobalState object
         node_name: str
             Node name of the original graph that is used to create the offline store ingest query node
@@ -246,8 +246,8 @@ class OfflineStoreIngestQueryExtractor(
 
     def _post_compute(
         self,
-        branch_state: OfflineStoreIngestQueryBranchState,
-        global_state: OfflineStoreIngestQueryGlobalState,
+        branch_state: OfflineStoreIngestQueryGraphBranchState,
+        global_state: OfflineStoreIngestQueryGraphGlobalState,
         node: Node,
         inputs: List[Any],
         skip_post: bool,
@@ -305,11 +305,11 @@ class OfflineStoreIngestQueryExtractor(
         node: Node,
         relationships_info: Optional[List[EntityRelationshipInfo]] = None,
         **kwargs: Any,
-    ) -> OfflineStoreIngestQueryGlobalState:
-        global_state = OfflineStoreIngestQueryGlobalState.create(
+    ) -> OfflineStoreIngestQueryGraphGlobalState:
+        global_state = OfflineStoreIngestQueryGraphGlobalState.create(
             relationships_info=relationships_info
         )
-        branch_state = OfflineStoreIngestQueryBranchState()
+        branch_state = OfflineStoreIngestQueryGraphBranchState()
         self._extract(
             node=node,
             branch_state=branch_state,

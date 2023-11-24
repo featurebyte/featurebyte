@@ -53,7 +53,7 @@ from featurebyte.query_graph.node.cleaning_operation import (
 )
 from featurebyte.query_graph.node.generic import GroupByNode, ProjectNode
 from featurebyte.query_graph.transform.offline_ingest_extractor import (
-    OfflineStoreIngestQueryExtractor,
+    OfflineStoreIngestQueryGraphExtractor,
 )
 from tests.unit.api.base_feature_or_target_test import FeatureOrTargetBaseTestSuite, TestItemType
 from tests.util.helper import check_aggressively_pruned_graph, check_sdk_code_generation, get_node
@@ -841,7 +841,7 @@ def check_offline_store_ingest_graph_on_composite_feature(feature_model):
     assert groupby_node2.parameters.names == ["sum_30m_by_cust_id_30m"]
 
     # check decomposed graph
-    extractor = OfflineStoreIngestQueryExtractor(graph=feature_model.graph)
+    extractor = OfflineStoreIngestQueryGraphExtractor(graph=feature_model.graph)
     output = extractor.extract(
         node=feature_model.node, relationships_info=feature_model.relationships_info
     )

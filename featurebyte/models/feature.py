@@ -46,7 +46,7 @@ from featurebyte.query_graph.transform.definition import (
     DefinitionHashOutput,
 )
 from featurebyte.query_graph.transform.offline_ingest_extractor import (
-    OfflineStoreIngestQueryExtractor,
+    OfflineStoreIngestQueryGraphExtractor,
 )
 
 
@@ -400,7 +400,7 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
         List[OfflineStoreIngestQueryGraph]
             List of offline store ingest query graphs
         """
-        extractor = OfflineStoreIngestQueryExtractor(graph=self.graph)
+        extractor = OfflineStoreIngestQueryGraphExtractor(graph=self.graph)
         result = extractor.extract(node=self.node, relationships_info=self.relationships_info)
         output = []
         if result.is_decomposed:
