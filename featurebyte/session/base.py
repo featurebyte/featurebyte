@@ -42,7 +42,7 @@ from featurebyte.query_graph.sql.common import (
     sql_to_string,
 )
 
-INTERACTIVE_SESSION_TIMEOUT = 30
+INTERACTIVE_SESSION_TIMEOUT_SECONDS = 30
 MINUTES_IN_SECONDS = 60
 HOUR_IN_SECONDS = 60 * MINUTES_IN_SECONDS
 DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS = 10 * MINUTES_IN_SECONDS
@@ -371,6 +371,26 @@ class BaseSession(BaseModel):
         if not data:
             return None
         return dataframe_from_arrow_stream(data)
+
+    async def execute_query_interactive(
+        self, query: str, timeout: float = INTERACTIVE_SESSION_TIMEOUT_SECONDS
+    ) -> pd.DataFrame | None:
+        """
+        Execute SQL query that is expected to run for a short time
+
+        Parameters
+        ----------
+        query: str
+            sql query to execute
+        timeout: float
+            timeout in seconds
+
+        Returns
+        -------
+        pd.DataFrame | None
+            Query result as a pandas DataFrame if the query expects result
+        """
+        return await self.execute_query(query=query, timeout=timeout)
 
     async def execute_query_long_running(
         self, query: str, timeout: float = LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS

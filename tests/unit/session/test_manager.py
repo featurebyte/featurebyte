@@ -132,7 +132,7 @@ async def test_session_manager_get_new_session_timeout(
     """
     snowflake_feature_store = FeatureStore(**snowflake_feature_store_params, type="snowflake")
 
-    with patch("featurebyte.session.manager.SESSION_TIMEOUT", 1), patch(
+    with patch("featurebyte.session.manager.INTERACTIVE_SESSION_TIMEOUT_SECONDS", 1), patch(
         "featurebyte.session.manager.SnowflakeSession.__init__"
     ) as mock_init:
 

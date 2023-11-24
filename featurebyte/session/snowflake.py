@@ -29,7 +29,7 @@ from featurebyte.exception import CredentialsError
 from featurebyte.logging import get_logger
 from featurebyte.models.credential import UsernamePasswordCredential
 from featurebyte.query_graph.sql.common import quoted_identifier
-from featurebyte.session.base import INTERACTIVE_SESSION_TIMEOUT, BaseSchemaInitializer, BaseSession
+from featurebyte.session.base import BaseSchemaInitializer, BaseSession
 from featurebyte.session.enum import SnowflakeDataType
 
 logger = get_logger(__name__)
@@ -104,7 +104,7 @@ class SnowflakeSession(BaseSession):
         -------
         list[str]
         """
-        databases = await self.execute_query("SHOW DATABASES", timeout=INTERACTIVE_SESSION_TIMEOUT)
+        databases = await self.execute_query_interactive("SHOW DATABASES")
         output = []
         if databases is not None:
             output.extend(databases["name"])
@@ -123,8 +123,8 @@ class SnowflakeSession(BaseSession):
         -------
         list[str]
         """
-        schemas = await self.execute_query(
-            f'SHOW SCHEMAS IN DATABASE "{database_name}"', timeout=INTERACTIVE_SESSION_TIMEOUT
+        schemas = await self.execute_query_interactive(
+            f'SHOW SCHEMAS IN DATABASE "{database_name}"',
         )
         output = []
         if schemas is not None:
@@ -134,12 +134,11 @@ class SnowflakeSession(BaseSession):
     async def list_tables(
         self, database_name: str | None = None, schema_name: str | None = None
     ) -> list[str]:
-        tables = await self.execute_query(
+        tables = await self.execute_query_interactive(
             f'SHOW TABLES IN SCHEMA "{database_name}"."{schema_name}"'
         )
-        views = await self.execute_query(
+        views = await self.execute_query_interactive(
             f'SHOW VIEWS IN SCHEMA "{database_name}"."{schema_name}"',
-            timeout=INTERACTIVE_SESSION_TIMEOUT,
         )
         output = []
         if tables is not None:
@@ -275,9 +274,8 @@ class SnowflakeSession(BaseSession):
         database_name: str | None = None,
         schema_name: str | None = None,
     ) -> OrderedDict[str, DBVarType]:
-        schema = await self.execute_query(
+        schema = await self.execute_query_interactive(
             f'SHOW COLUMNS IN "{database_name}"."{schema_name}"."{table_name}"',
-            timeout=INTERACTIVE_SESSION_TIMEOUT,
         )
         column_name_type_map = collections.OrderedDict()
         if schema is not None:

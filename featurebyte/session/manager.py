@@ -19,7 +19,7 @@ from featurebyte.logging import get_logger
 from featurebyte.models.credential import CredentialModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.node.schema import DatabaseDetails
-from featurebyte.session.base import INTERACTIVE_SESSION_TIMEOUT, BaseSession, to_thread
+from featurebyte.session.base import INTERACTIVE_SESSION_TIMEOUT_SECONDS, BaseSession, to_thread
 from featurebyte.session.databricks import DatabricksSession
 from featurebyte.session.databricks_unity import DatabricksUnitySession
 from featurebyte.session.snowflake import SnowflakeSession
@@ -79,7 +79,7 @@ async def get_new_session(item: str, credential_params: str) -> BaseSession:
         )
 
     try:
-        session: BaseSession = await to_thread(_create_session, INTERACTIVE_SESSION_TIMEOUT)
+        session: BaseSession = await to_thread(_create_session, INTERACTIVE_SESSION_TIMEOUT_SECONDS)
         await session.initialize()
         logger.debug(f"Session creation time: {time.time() - tic:.3f}s")
     except AsyncioTimeoutError as exc:
