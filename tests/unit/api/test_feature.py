@@ -9,6 +9,7 @@ from unittest.mock import patch
 import numpy as np
 import pandas as pd
 import pytest
+from bson import ObjectId
 from freezegun import freeze_time
 from pandas.testing import assert_frame_equal
 
@@ -34,9 +35,12 @@ from featurebyte.exception import (
     RecordRetrievalException,
     RecordUpdateException,
 )
+from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.models.feature_store import TableStatus
+from featurebyte.models.relationship import RelationshipType
 from featurebyte.query_graph.graph import GlobalQueryGraph
+from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.query_graph.model.feature_job_setting import (
     FeatureJobSetting,
     TableFeatureJobSetting,
@@ -47,6 +51,7 @@ from featurebyte.query_graph.node.cleaning_operation import (
     ColumnCleaningOperation,
     TableCleaningOperation,
 )
+from featurebyte.query_graph.node.generic import GroupByNode, ProjectNode
 from tests.unit.api.base_feature_or_target_test import FeatureOrTargetBaseTestSuite, TestItemType
 from tests.util.helper import check_aggressively_pruned_graph, check_sdk_code_generation, get_node
 
@@ -799,6 +804,65 @@ def test_feature__as_default_version(saved_feature):
     assert saved_feature.is_default is False
 
 
+def check_offline_store_ingest_graph_on_composite_feature(feature_model):
+    """Check offline store ingest graph on composite feature"""
+    # case 1: no entity relationship
+    assert feature_model.relationships_info == []
+    ingest_query_graphs = feature_model.extract_offline_store_ingest_query_graphs()
+
+    # check the first offline store ingest query graph
+    assert len(ingest_query_graphs) == 2
+    if ingest_query_graphs[0].node_name == "project_1":
+        ingest_query_graph1 = ingest_query_graphs[0]
+        ingest_query_graph2 = ingest_query_graphs[1]
+    else:
+        ingest_query_graph1 = ingest_query_graphs[1]
+        ingest_query_graph2 = ingest_query_graphs[0]
+
+    assert ingest_query_graph1.graph.edges_map == {
+        "input_1": ["graph_1"],
+        "graph_1": ["groupby_1"],
+        "groupby_1": ["project_1"],
+    }
+    out_node = ingest_query_graph1.graph.get_node_by_name(ingest_query_graph1.node_name)
+    assert isinstance(out_node, ProjectNode)
+    assert out_node.parameters.columns == ["sum_30m_by_binary"]
+
+    # check the second offline store ingest query graph
+    assert ingest_query_graph2.node_name == "add_1"
+    groupby_node1 = ingest_query_graph2.graph.get_node_by_name("groupby_1")
+    assert isinstance(groupby_node1, GroupByNode)
+    assert groupby_node1.parameters.names == ["sum_30m_by_cust_id_1h"]
+    groupby_node2 = ingest_query_graph2.graph.get_node_by_name("groupby_2")
+    assert isinstance(groupby_node2, GroupByNode)
+    assert groupby_node2.parameters.names == ["sum_30m_by_cust_id_30m"]
+
+    # case 2: with entity relationship between the two entities (expect no query graph decomposition)
+    entity_ids = feature_model.entity_ids
+    relative_entity_id = ObjectId()
+    relationships_info = [
+        EntityRelationshipInfo(
+            relationship_type=RelationshipType.CHILD_PARENT,
+            entity_id=entity_ids[0],
+            related_entity_id=relative_entity_id,
+            relation_table_id=ObjectId(),
+        ),
+        EntityRelationshipInfo(
+            relationship_type=RelationshipType.CHILD_PARENT,
+            entity_id=relative_entity_id,
+            related_entity_id=entity_ids[1],
+            relation_table_id=ObjectId(),
+        ),
+    ]
+    new_feature_model = feature_model.copy(update={"relationships_info": relationships_info})
+    ingest_query_graphs = new_feature_model.extract_offline_store_ingest_query_graphs()
+    assert len(ingest_query_graphs) == 1
+    ingest_query_graph = ingest_query_graphs[0]
+    assert ingest_query_graph.node_name == new_feature_model.node_name
+    assert ingest_query_graph.graph == new_feature_model.graph
+    assert ingest_query_graph.ref_node_name is None
+
+
 def test_composite_features(snowflake_event_table_with_entity, cust_id_entity):
     """Test composite features' property"""
     entity = Entity(name="binary", serving_names=["col_binary"])
@@ -849,6 +913,27 @@ def test_composite_features(snowflake_event_table_with_entity, cust_id_entity):
         "col_binary",
         "cust_id",
     ]
+
+    # save the feature first
+    composite_feature.name = "composite_feature"
+    composite_feature.save()
+
+    # get the offline store ingest query graphs
+    feature_model = composite_feature.cached_model
+    assert isinstance(feature_model, FeatureModel)
+    check_offline_store_ingest_graph_on_composite_feature(feature_model)
+
+
+def test_offline_store_ingest_query_graphs__without_graph_decomposition(saved_feature):
+    """Test offline store ingest query graphs"""
+    feature_model = saved_feature.cached_model
+    assert isinstance(feature_model, FeatureModel)
+
+    ingest_query_graphs = feature_model.extract_offline_store_ingest_query_graphs()
+    assert len(ingest_query_graphs) == 1
+    assert ingest_query_graphs[0].graph == feature_model.graph
+    assert ingest_query_graphs[0].node_name == feature_model.node_name
+    assert ingest_query_graphs[0].ref_node_name is None
 
 
 def test_update_readiness_and_default_version_mode(saved_feature):
