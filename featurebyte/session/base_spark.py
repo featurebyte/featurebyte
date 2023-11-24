@@ -3,13 +3,15 @@ BaseSparkSession class
 """
 from __future__ import annotations
 
-from typing import Any, Optional, cast
+from typing import Any, Optional, OrderedDict, cast
 
+import collections
 import os
 from abc import ABC, abstractmethod
 
 import pandas as pd
 from bson import ObjectId
+from pyhive.exc import OperationalError
 
 from featurebyte.common.path_util import get_package_root
 from featurebyte.enum import DBVarType, InternalName
@@ -192,6 +194,64 @@ class BaseSparkSession(BaseSession, ABC):
                 self.delete_path_from_storage(remote_path=temp_filename)
             except Exception as exc:  # pylint: disable=broad-exception-caught
                 logger.error(f"Exception while deleting temp file {temp_filename}: {exc}")
+
+    async def list_databases(self) -> list[str]:
+        try:
+            databases = await self.execute_query("SHOW CATALOGS")
+        except OperationalError as exc:
+            if "ParseException" in str(exc):
+                # Spark 3.2 and prior don't support SHOW CATALOGS
+                return ["spark_catalog"]
+            raise
+        output = []
+        if databases is not None:
+            output.extend(databases["catalog"])
+        return output
+
+    async def list_schemas(self, database_name: str | None = None) -> list[str]:
+        try:
+            schemas = await self.execute_query(f"SHOW SCHEMAS IN `{database_name}`")
+        except OperationalError as exc:
+            if "ParseException" in str(exc):
+                # Spark 3.2 and prior don't support SHOW SCHEMAS with the IN clause
+                schemas = await self.execute_query("SHOW SCHEMAS")
+            else:
+                raise
+        output = []
+        if schemas is not None:
+            output.extend(schemas.get("namespace", schemas.get("databaseName")))
+            # in DataBricks the header is databaseName instead of namespace
+        return output
+
+    async def list_tables(
+        self, database_name: str | None = None, schema_name: str | None = None
+    ) -> list[str]:
+        tables = await self.execute_query(f"SHOW TABLES IN `{database_name}`.`{schema_name}`")
+        output = []
+        if tables is not None:
+            output.extend(tables["tableName"])
+        return output
+
+    async def list_table_schema(
+        self,
+        table_name: str | None,
+        database_name: str | None = None,
+        schema_name: str | None = None,
+    ) -> OrderedDict[str, DBVarType]:
+        schema = await self.execute_query(
+            f"DESCRIBE `{database_name}`.`{schema_name}`.`{table_name}`"
+        )
+        column_name_type_map = collections.OrderedDict()
+        if schema is not None:
+            for _, (column_name, var_info) in schema[["col_name", "data_type"]].iterrows():
+                # Sometimes describe include metadata after column details with and empty row as a separator.
+                # Skip the remaining entries once we run into an empty column name
+                if column_name == "":
+                    break
+                column_name_type_map[column_name] = self._convert_to_internal_variable_type(
+                    var_info.upper()
+                )
+        return column_name_type_map
 
 
 class BaseSparkMetadataSchemaInitializer(MetadataSchemaInitializer):

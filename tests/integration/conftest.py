@@ -27,7 +27,6 @@ import pymongo
 import pytest
 import pytest_asyncio
 import yaml
-from botocore.exceptions import ClientError
 from bson.objectid import ObjectId
 from databricks import sql as databricks_sql
 from fastapi.testclient import TestClient
@@ -62,7 +61,6 @@ from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.task_manager import TaskManager
-from featurebyte.session.base_spark import BaseSparkSchemaInitializer
 from featurebyte.session.manager import SessionManager
 from featurebyte.storage import LocalStorage, LocalTempStorage
 from featurebyte.worker import get_celery
@@ -887,15 +885,7 @@ async def session_fixture(source_type, session_manager, dataset_registration_hel
 
     if source_type == "databricks":
         await session.execute_query(f"DROP SCHEMA IF EXISTS {session.schema_name} CASCADE")
-        databricks_initializer = BaseSparkSchemaInitializer(session)
-        udf_jar_file_name = os.path.basename(databricks_initializer.udf_jar_local_path)
-        try:
-            session._dbfs_client.delete(
-                path=f"{session._storage_base_path}/{udf_jar_file_name}", recursive=True
-            )
-        except ClientError as exc:
-            logger.warning("Failed to delete UDF jar file", extra={"exc": exc})
-
+        session._dbfs_client.delete(path=session._storage_base_path, recursive=True)
     if source_type == "databricks_unity":
         await session.execute_query(f"DROP SCHEMA IF EXISTS {session.schema_name} CASCADE")
 

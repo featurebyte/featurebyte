@@ -1,6 +1,7 @@
 """
 This module contains session to Spark integration tests.
 """
+import json
 from collections import OrderedDict
 
 import numpy as np
@@ -8,24 +9,22 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal
 
-from featurebyte.session.base_spark import BaseSparkSchemaInitializer
+from featurebyte.session.base_spark import BaseSparkSession
 from featurebyte.session.manager import SessionManager
-from featurebyte.session.spark import SparkSession
 
 
-@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "databricks"], indirect=True)
 @pytest.mark.asyncio
-async def test_schema_initializer(config, feature_store, credentials_mapping):
+async def test_schema_initializer(config, feature_store, credentials_mapping, session):
     """
     Test the session initialization in spark works properly.
     """
     session_manager = SessionManager(credentials=credentials_mapping)
-    session = await session_manager.get_session(feature_store)
-    assert isinstance(session, SparkSession)
-    initializer = BaseSparkSchemaInitializer(session)
+    assert isinstance(session, BaseSparkSession)
+    initializer = session.initializer()
 
     assert await session.list_databases() == ["spark_catalog"]
-    assert session.schema_name in await session.list_schemas(database_name="spark_catalog")
+    assert session.schema_name.lower() in await session.list_schemas(database_name="spark_catalog")
     assert "metadata_schema" in await session.list_tables(
         database_name="spark_catalog", schema_name=session.schema_name
     )
@@ -65,17 +64,17 @@ async def test_schema_initializer(config, feature_store, credentials_mapping):
     )
 
 
-@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "databricks"], indirect=True)
 @pytest.mark.asyncio
 async def test_session_timezone(session):
     """
     Test session configurations
     """
     result = await session.execute_query("SELECT current_timezone() AS timezone")
-    assert result["timezone"].iloc[0] == "UTC"
+    assert result["timezone"].iloc[0] in ["UTC", "Etc/UTC"]
 
 
-@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "databricks"], indirect=True)
 @pytest.mark.asyncio
 async def test_register_table(session):
     """
@@ -94,7 +93,7 @@ async def test_register_table(session):
     assert_frame_equal(df_retrieve, df_training_events, check_dtype=False)
 
 
-@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "databricks"], indirect=True)
 @pytest.mark.asyncio
 async def test_register_udfs(session):
     """
@@ -113,15 +112,9 @@ async def test_register_udfs(session):
     result = await spark_session.execute_query(
         "select `group`, OBJECT_AGG(`item`, `value`) AS counts FROM test_table GROUP BY `group` ORDER BY `group`;"
     )
-    assert_frame_equal(
-        result,
-        pd.DataFrame(
-            {
-                "group": ["A", "B"],
-                "counts": ['{"apple":1,"orange":2}', '{"apple":3,"orange":4}'],
-            }
-        ),
-    )
+    assert result["group"].tolist() == ["A", "B"]
+    assert json.loads(result["counts"].tolist()[0]) == {"apple": 1, "orange": 2}
+    assert json.loads(result["counts"].tolist()[1]) == {"apple": 3, "orange": 4}
 
     result = await spark_session.execute_query(
         "select `group`, F_COUNT_DICT_ENTROPY(OBJECT_AGG(`item`, `value`)) AS counts FROM test_table GROUP BY `group` ORDER BY `group`;"

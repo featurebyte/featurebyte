@@ -4,9 +4,8 @@ DatabricksSession class
 # pylint: disable=duplicate-code
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator, Dict, OrderedDict
+from typing import Any, AsyncGenerator, Dict
 
-import collections
 import json
 import os
 from base64 import b64encode
@@ -18,7 +17,7 @@ from bson import ObjectId
 from pydantic import Field, PrivateAttr
 
 from featurebyte import AccessTokenCredential, logging
-from featurebyte.enum import DBVarType, SourceType
+from featurebyte.enum import SourceType
 from featurebyte.session.base_spark import BaseSparkSession
 
 try:
@@ -139,56 +138,6 @@ class DatabricksSession(BaseSparkSession):
     @classmethod
     def is_threadsafe(cls) -> bool:
         return True
-
-    async def list_databases(self) -> list[str]:
-        cursor = self._connection.cursor().catalogs()
-        df_result = super().fetch_query_result_impl(cursor)
-        out = []
-        if df_result is not None:
-            out.extend(df_result["TABLE_CAT"])
-        return out
-
-    async def list_schemas(self, database_name: str | None = None) -> list[str]:
-        cursor = self._connection.cursor().schemas(catalog_name=database_name)
-        df_result = self.fetch_query_result_impl(cursor)
-        out = []
-        if df_result is not None:
-            out.extend(df_result["TABLE_SCHEM"])
-        return out
-
-    async def list_tables(
-        self, database_name: str | None = None, schema_name: str | None = None
-    ) -> list[str]:
-        cursor = self._connection.cursor().tables(
-            catalog_name=database_name, schema_name=schema_name
-        )
-        df_result = super().fetch_query_result_impl(cursor)
-        out = []
-        if df_result is not None:
-            out.extend(df_result["TABLE_NAME"])
-        return out
-
-    async def list_table_schema(
-        self,
-        table_name: str | None,
-        database_name: str | None = None,
-        schema_name: str | None = None,
-    ) -> OrderedDict[str, DBVarType]:
-        cursor = self._connection.cursor().columns(
-            table_name=table_name,
-            catalog_name=database_name,
-            schema_name=schema_name,
-        )
-        df_result = super().fetch_query_result_impl(cursor)
-        column_name_type_map = collections.OrderedDict()
-        if df_result is not None:
-            for _, (column_name, databricks_type_name) in df_result[
-                ["COLUMN_NAME", "TYPE_NAME"]
-            ].iterrows():
-                column_name_type_map[column_name] = self._convert_to_internal_variable_type(
-                    databricks_type_name
-                )
-        return column_name_type_map
 
     def fetch_query_result_impl(self, cursor: Any) -> pd.DataFrame | None:
         schema = None

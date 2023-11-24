@@ -5,10 +5,9 @@ SparkSession class
 # pylint: disable=wrong-import-order
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator, Optional, OrderedDict, Union, cast
+from typing import Any, AsyncGenerator, Optional, Union, cast
 from typing_extensions import Annotated
 
-import collections
 import os
 import subprocess
 import tempfile
@@ -23,7 +22,7 @@ from pyhive.hive import Cursor
 from thrift.transport.TTransport import TTransportException
 
 from featurebyte.common.utils import literal_eval
-from featurebyte.enum import DBVarType, SourceType, StorageType
+from featurebyte.enum import SourceType, StorageType
 from featurebyte.logging import get_logger
 from featurebyte.models.credential import (
     AccessTokenCredential,
@@ -243,64 +242,6 @@ class SparkSession(BaseSparkSession):
     @classmethod
     def is_threadsafe(cls) -> bool:
         return False
-
-    async def list_databases(self) -> list[str]:
-        try:
-            databases = await self.execute_query("SHOW CATALOGS")
-        except OperationalError as exc:
-            if "ParseException" in str(exc):
-                # Spark 3.2 and prior don't support SHOW CATALOGS
-                return ["spark_catalog"]
-            raise
-        output = []
-        if databases is not None:
-            output.extend(databases["catalog"])
-        return output
-
-    async def list_schemas(self, database_name: str | None = None) -> list[str]:
-        try:
-            schemas = await self.execute_query(f"SHOW SCHEMAS IN `{database_name}`")
-        except OperationalError as exc:
-            if "ParseException" in str(exc):
-                # Spark 3.2 and prior don't support SHOW SCHEMAS with the IN clause
-                schemas = await self.execute_query("SHOW SCHEMAS")
-            else:
-                raise
-        output = []
-        if schemas is not None:
-            output.extend(schemas.get("namespace", schemas.get("databaseName")))
-            # in DataBricks the header is databaseName instead of namespace
-        return output
-
-    async def list_tables(
-        self, database_name: str | None = None, schema_name: str | None = None
-    ) -> list[str]:
-        tables = await self.execute_query(f"SHOW TABLES IN `{database_name}`.`{schema_name}`")
-        output = []
-        if tables is not None:
-            output.extend(tables["tableName"])
-        return output
-
-    async def list_table_schema(
-        self,
-        table_name: str | None,
-        database_name: str | None = None,
-        schema_name: str | None = None,
-    ) -> OrderedDict[str, DBVarType]:
-        schema = await self.execute_query(
-            f"DESCRIBE `{database_name}`.`{schema_name}`.`{table_name}`"
-        )
-        column_name_type_map = collections.OrderedDict()
-        if schema is not None:
-            for _, (column_name, var_info) in schema[["col_name", "data_type"]].iterrows():
-                # Sometimes describe include metadata after column details with and empty row as a separator.
-                # Skip the remaining entries once we run into an empty column name
-                if column_name == "":
-                    break
-                column_name_type_map[column_name] = self._convert_to_internal_variable_type(
-                    var_info.upper()
-                )
-        return column_name_type_map
 
     def _get_pyarrow_type(self, datatype: str) -> pa.types:
         """
