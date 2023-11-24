@@ -104,7 +104,7 @@ class SnowflakeSession(BaseSession):
         -------
         list[str]
         """
-        databases = await self.execute_query("SHOW DATABASES")
+        databases = await self.execute_query_interactive("SHOW DATABASES")
         output = []
         if databases is not None:
             output.extend(databases["name"])
@@ -123,7 +123,9 @@ class SnowflakeSession(BaseSession):
         -------
         list[str]
         """
-        schemas = await self.execute_query(f'SHOW SCHEMAS IN DATABASE "{database_name}"')
+        schemas = await self.execute_query_interactive(
+            f'SHOW SCHEMAS IN DATABASE "{database_name}"',
+        )
         output = []
         if schemas is not None:
             output.extend(schemas["name"])
@@ -132,10 +134,12 @@ class SnowflakeSession(BaseSession):
     async def list_tables(
         self, database_name: str | None = None, schema_name: str | None = None
     ) -> list[str]:
-        tables = await self.execute_query(
+        tables = await self.execute_query_interactive(
             f'SHOW TABLES IN SCHEMA "{database_name}"."{schema_name}"'
         )
-        views = await self.execute_query(f'SHOW VIEWS IN SCHEMA "{database_name}"."{schema_name}"')
+        views = await self.execute_query_interactive(
+            f'SHOW VIEWS IN SCHEMA "{database_name}"."{schema_name}"',
+        )
         output = []
         if tables is not None:
             output.extend(tables["name"])
@@ -270,8 +274,8 @@ class SnowflakeSession(BaseSession):
         database_name: str | None = None,
         schema_name: str | None = None,
     ) -> OrderedDict[str, DBVarType]:
-        schema = await self.execute_query(
-            f'SHOW COLUMNS IN "{database_name}"."{schema_name}"."{table_name}"'
+        schema = await self.execute_query_interactive(
+            f'SHOW COLUMNS IN "{database_name}"."{schema_name}"."{table_name}"',
         )
         column_name_type_map = collections.OrderedDict()
         if schema is not None:

@@ -44,48 +44,6 @@ class MockDatabricksConnection:
     def cursor(self):
         return self
 
-    def catalogs(self):
-        self.description = [["TABLE_CAT"]]
-        self.result_rows = [["hive_metastore"], ["samples"]]
-        return self
-
-    def schemas(self, *args, **kwargs):
-        self.description = [["TABLE_SCHEM", "STRING"], ["TABLE_CATALOG", "STRING"]]
-        self.result_rows = [
-            ["default", "hive_metastore"],
-            ["demo", "hive_metastore"],
-        ]
-        return self
-
-    def tables(self, *args, **kwargs):
-        self.description = [["TABLE_CAT"], ["TABLE_SCHEM"], ["TABLE_NAME"]]
-        self.result_rows = [
-            ["hive_metastore", "default", "transactions"],
-            ["hive_metastore", "default", "calls"],
-        ]
-        return self
-
-    def columns(self, *args, **kwargs):
-        self.description = [["COLUMN_NAME"], ["TYPE_NAME"]]
-        self.result_rows = [
-            ["col_binary", "BINARY"],
-            ["col_bool", "BOOLEAN"],
-            ["col_date", "DATE"],
-            ["col_decimal", "DECIMAL"],
-            ["col_double", "DOUBLE"],
-            ["col_float", "FLOAT"],
-            ["col_int", "INT"],
-            ["col_interval", "INTERVAL"],
-            ["col_void", "VOID"],
-            ["col_timestamp", "TIMESTAMP"],
-            ["col_array", "ARRAY"],
-            ["col_map", "MAP"],
-            ["col_struct", "STRUCT"],
-            ["col_string", "STRING"],
-            ["col_unknown", "UNKNOWN"],
-        ]
-        return self
-
     def fetchall(self):
         return self.result_rows[:]
 
@@ -107,11 +65,45 @@ class MockDatabricksConnection:
         return pa.Table.from_pandas(mock_dataframe)
 
     def execute(self, *args, **kwargs):
-        self.description = [["a", "INT"], ["b", "INT"], ["c", "INT"]]
-        self.result_rows = [
-            [1, 2, 3],
-            [100, 200, 300],
-        ]
+        query = args[0]
+        if query == "SHOW CATALOGS":
+            self.description = [["catalog", "STRING"]]
+            self.result_rows = [["hive_metastore"], ["samples"]]
+        elif query.startswith("SHOW SCHEMAS"):
+            self.description = [["databaseName", "STRING"]]
+            self.result_rows = [["default"], ["demo"]]
+        elif query.startswith("SHOW TABLES"):
+            self.description = [["database", "STRING"], ["tableName", "STRING"]]
+            self.result_rows = [
+                ["default", "transactions"],
+                ["default", "calls"],
+            ]
+        elif query.startswith("DESCRIBE"):
+            self.description = [["col_name", "STRING"], ["data_type", "STRING"]]
+            self.result_rows = [
+                ["col_binary", "BINARY"],
+                ["col_bool", "BOOLEAN"],
+                ["col_date", "DATE"],
+                ["col_decimal", "DECIMAL"],
+                ["col_double", "DOUBLE"],
+                ["col_float", "FLOAT"],
+                ["col_int", "INT"],
+                ["col_interval", "INTERVAL"],
+                ["col_void", "VOID"],
+                ["col_timestamp", "TIMESTAMP"],
+                ["col_array", "ARRAY"],
+                ["col_map", "MAP"],
+                ["col_struct", "STRUCT"],
+                ["col_string", "STRING"],
+                ["col_unknown", "UNKNOWN"],
+            ]
+        else:
+            self.description = [["a", "INT"], ["b", "INT"], ["c", "INT"]]
+            self.result_rows = [
+                [1, 2, 3],
+                [100, 200, 300],
+            ]
+        self.returned_count = 0
         return self
 
     def close(self):
