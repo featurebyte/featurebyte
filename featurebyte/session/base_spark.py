@@ -16,7 +16,12 @@ from pyhive.exc import OperationalError
 from featurebyte.common.path_util import get_package_root
 from featurebyte.enum import DBVarType, InternalName
 from featurebyte.logging import get_logger
-from featurebyte.session.base import BaseSchemaInitializer, BaseSession, MetadataSchemaInitializer
+from featurebyte.session.base import (
+    INTERACTIVE_SESSION_TIMEOUT,
+    BaseSchemaInitializer,
+    BaseSession,
+    MetadataSchemaInitializer,
+)
 
 logger = get_logger(__name__)
 
@@ -197,7 +202,9 @@ class BaseSparkSession(BaseSession, ABC):
 
     async def list_databases(self) -> list[str]:
         try:
-            databases = await self.execute_query("SHOW CATALOGS")
+            databases = await self.execute_query(
+                "SHOW CATALOGS", timeout=INTERACTIVE_SESSION_TIMEOUT
+            )
         except OperationalError as exc:
             if "ParseException" in str(exc):
                 # Spark 3.2 and prior don't support SHOW CATALOGS
@@ -210,11 +217,15 @@ class BaseSparkSession(BaseSession, ABC):
 
     async def list_schemas(self, database_name: str | None = None) -> list[str]:
         try:
-            schemas = await self.execute_query(f"SHOW SCHEMAS IN `{database_name}`")
+            schemas = await self.execute_query(
+                f"SHOW SCHEMAS IN `{database_name}`", timeout=INTERACTIVE_SESSION_TIMEOUT
+            )
         except OperationalError as exc:
             if "ParseException" in str(exc):
                 # Spark 3.2 and prior don't support SHOW SCHEMAS with the IN clause
-                schemas = await self.execute_query("SHOW SCHEMAS")
+                schemas = await self.execute_query(
+                    "SHOW SCHEMAS", timeout=INTERACTIVE_SESSION_TIMEOUT
+                )
             else:
                 raise
         output = []
@@ -226,7 +237,9 @@ class BaseSparkSession(BaseSession, ABC):
     async def list_tables(
         self, database_name: str | None = None, schema_name: str | None = None
     ) -> list[str]:
-        tables = await self.execute_query(f"SHOW TABLES IN `{database_name}`.`{schema_name}`")
+        tables = await self.execute_query(
+            f"SHOW TABLES IN `{database_name}`.`{schema_name}`", timeout=INTERACTIVE_SESSION_TIMEOUT
+        )
         output = []
         if tables is not None:
             output.extend(tables["tableName"])
@@ -239,7 +252,8 @@ class BaseSparkSession(BaseSession, ABC):
         schema_name: str | None = None,
     ) -> OrderedDict[str, DBVarType]:
         schema = await self.execute_query(
-            f"DESCRIBE `{database_name}`.`{schema_name}`.`{table_name}`"
+            f"DESCRIBE `{database_name}`.`{schema_name}`.`{table_name}`",
+            timeout=INTERACTIVE_SESSION_TIMEOUT,
         )
         column_name_type_map = collections.OrderedDict()
         if schema is not None:
