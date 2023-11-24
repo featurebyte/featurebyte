@@ -70,8 +70,6 @@ class DatabricksDetails(BaseDatabaseDetails):
     ...   http_path="<http_path>",
     ...   featurebyte_catalog="hive_metastore",
     ...   featurebyte_schema="<schema_name>",
-    ...   storage_type=fb.StorageType.S3,
-    ...   storage_url="<url>",
     ...   storage_spark_url="dbfs:/FileStore/<schema_name>",
     ... )
     """
@@ -89,14 +87,8 @@ class DatabricksDetails(BaseDatabaseDetails):
     featurebyte_schema: StrictStr = Field(
         description="The name of the schema containing the tables and columns."
     )
-    storage_type: StorageType = Field(
-        description="Storage type of where we will be persisting the feature store to."
-    )
-    storage_url: str = Field(description="URL of where we will be uploading our custom UDFs to.")
     storage_spark_url: StrictStr = Field(
-        description="URL of where we will be reading our data from. Note that this technically points to the same "
-        "location as the storage_url. However, the format that the warehouse accepts differs between the read and "
-        "write path, and as such, we require two fields."
+        description="DBFS path where we will be reading our data from."
     )
 
 

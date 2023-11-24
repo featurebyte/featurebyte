@@ -2,8 +2,7 @@
 Unit test for DatabricksSession
 """
 import os
-from unittest import mock
-from unittest.mock import call
+from unittest.mock import patch
 
 import pandas as pd
 import pyarrow as pa
@@ -24,16 +23,10 @@ def databricks_session_dict():
         "http_path": "some-databricks-http-endpoint",
         "featurebyte_catalog": "hive_metastore",
         "featurebyte_schema": "featurebyte",
-        "storage_type": "s3",
-        "storage_url": "http://some-url/bucket",
         "storage_spark_url": "http://some-url/bucket",
         "database_credential": {
             "type": "ACCESS_TOKEN",
             "access_token": "some-databricks-access-token",
-        },
-        "storage_credential": {
-            "s3_access_key_id": "some-key-id",
-            "s3_secret_access_key": "some-key-secret",
         },
     }
 
@@ -130,7 +123,7 @@ def databricks_connection():
     """
     Mock databricks connector in featurebyte.session.databricks module
     """
-    with mock.patch("featurebyte.session.databricks.databricks_sql") as mock_connector:
+    with patch("featurebyte.session.databricks.databricks_sql") as mock_connector:
         mock_connector.connect.return_value = MockDatabricksConnection()
         yield mock_connector
 
@@ -140,9 +133,7 @@ def patched_databricks_session_cls_fixture(
     databricks_session_dict,
 ):
     """Fixture for a patched session class"""
-    with mock.patch(
-        "featurebyte.session.databricks.DatabricksSession", autospec=True
-    ) as patched_class:
+    with patch("featurebyte.session.databricks.DatabricksSession", autospec=True) as patched_class:
         mock_session_obj = patched_class.return_value
         mock_session_obj.database_name = databricks_session_dict["featurebyte_catalog"]
         mock_session_obj.schema_name = databricks_session_dict["featurebyte_schema"]
@@ -155,8 +146,7 @@ async def test_databricks_session(databricks_session_dict):
     """
     Test DatabricksSession
     """
-    with mock.patch("featurebyte.session.base_spark.S3SimpleStorage", autospec=True) as _:
-        session = DatabricksSession(**databricks_session_dict)
+    session = DatabricksSession(**databricks_session_dict)
 
     assert session.host == "some-databricks-hostname"
     assert session.http_path == "some-databricks-http-endpoint"
@@ -197,41 +187,39 @@ async def test_databricks_register_table(databricks_session_dict, databricks_con
     """
     Test Databricks session register_table
     """
-    with mock.patch(
+    with patch(
         "featurebyte.session.databricks.DatabricksSession.execute_query"
     ) as mock_execute_query:
-        with mock.patch("featurebyte.session.base_spark.S3SimpleStorage", autospec=True) as _:
-            with mock.patch(
-                "featurebyte.session.databricks.pd.DataFrame.to_parquet", autospec=True
-            ) as _:
-                session = DatabricksSession(**databricks_session_dict)
-                df = pd.DataFrame(
-                    {
-                        "point_in_time": pd.to_datetime(["2022-01-01", "2022-01-02", "2022-01-03"]),
-                        "cust_id": [1, 2, 3],
-                    },
-                )
-                if temporary:
-                    expected = "CREATE OR REPLACE TEMPORARY VIEW"
-                else:
-                    expected = "CREATE TABLE"
-                await session.register_table("my_view", df, temporary)
+        with patch("featurebyte.session.databricks.WorkspaceClient"), patch(
+            "featurebyte.session.databricks.DbfsExt"
+        ), patch("featurebyte.session.databricks.pd.DataFrame.to_parquet", autospec=True):
+            session = DatabricksSession(**databricks_session_dict)
+            df = pd.DataFrame(
+                {
+                    "point_in_time": pd.to_datetime(["2022-01-01", "2022-01-02", "2022-01-03"]),
+                    "cust_id": [1, 2, 3],
+                },
+            )
+            if temporary:
+                expected = "CREATE OR REPLACE TEMPORARY VIEW"
+            else:
+                expected = "CREATE TABLE"
+            await session.register_table("my_view", df, temporary)
 
-                if temporary:
-                    assert mock_execute_query.call_args_list[0][0][0].startswith(expected)
-                else:
-                    assert mock_execute_query.call_args_list[-1][0][0].startswith(expected)
+            if temporary:
+                assert mock_execute_query.call_args_list[0][0][0].startswith(expected)
+            else:
+                assert mock_execute_query.call_args_list[-1][0][0].startswith(expected)
 
 
 def test_databricks_sql_connector_not_available(databricks_session_dict):
     """
     Simulate missing databricks-sql-connector dependency
     """
-    with mock.patch("featurebyte.session.base_spark.S3SimpleStorage", autospec=True) as _:
-        with mock.patch("featurebyte.session.databricks.HAS_DATABRICKS_SQL_CONNECTOR", False):
-            with pytest.raises(RuntimeError) as exc:
-                _ = DatabricksSession(**databricks_session_dict)
-            assert str(exc.value) == "databricks-sql-connector is not available"
+    with patch("featurebyte.session.databricks.HAS_DATABRICKS_SQL_CONNECTOR", False):
+        with pytest.raises(RuntimeError) as exc:
+            _ = DatabricksSession(**databricks_session_dict)
+        assert str(exc.value) == "databricks-sql-connector is not available"
 
 
 def test_databricks_schema_initializer__sql_objects(patched_databricks_session_cls):

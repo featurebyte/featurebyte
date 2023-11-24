@@ -6,31 +6,15 @@ from __future__ import annotations
 from typing import Any, Optional, cast
 
 import os
-from abc import ABC
+from abc import ABC, abstractmethod
 
 import pandas as pd
 from bson import ObjectId
-from pydantic import PrivateAttr
 
-from featurebyte import StorageType
 from featurebyte.common.path_util import get_package_root
 from featurebyte.enum import DBVarType, InternalName
 from featurebyte.logging import get_logger
-from featurebyte.models.credential import (
-    AzureBlobStorageCredential,
-    GCSStorageCredential,
-    S3StorageCredential,
-    StorageCredential,
-)
 from featurebyte.session.base import BaseSchemaInitializer, BaseSession, MetadataSchemaInitializer
-from featurebyte.session.simple_storage import (
-    AzureBlobStorage,
-    FileMode,
-    FileSimpleStorage,
-    GCSStorage,
-    S3SimpleStorage,
-    SimpleStorage,
-)
 
 logger = get_logger(__name__)
 
@@ -40,18 +24,13 @@ class BaseSparkSession(BaseSession, ABC):
     BaseSpark session class
     """
 
-    _storage: SimpleStorage = PrivateAttr()
-
     host: str
     http_path: str
-    storage_type: StorageType
-    storage_url: str
     featurebyte_catalog: str
     featurebyte_schema: str
     storage_spark_url: str
 
     region_name: Optional[str]
-    storage_credential: Optional[StorageCredential]
 
     def __init__(self, **data: Any) -> None:
         super().__init__(**data)
@@ -68,6 +47,7 @@ class BaseSparkSession(BaseSession, ABC):
     def database_name(self) -> str:
         return self.featurebyte_catalog
 
+    @abstractmethod
     def _initialize_storage(self) -> None:
         """
         Initialize storage object
@@ -77,60 +57,14 @@ class BaseSparkSession(BaseSession, ABC):
         NotImplementedError
             Storage type not supported
         """
-        # add prefix to compartmentalize assets
-        self.storage_url = self.storage_url.rstrip("/")
-        self.storage_spark_url = self.storage_spark_url.rstrip("/")
 
-        if self.storage_type == StorageType.FILE:
-            self._storage = FileSimpleStorage(storage_url=self.storage_url)
-        elif self.storage_type == StorageType.S3:
-            if self.storage_credential is None:
-                raise NotImplementedError("Storage credential is required for S3")
-            if not isinstance(self.storage_credential, S3StorageCredential):
-                raise NotImplementedError(
-                    f"Unsupported storage credential for S3: {self.storage_credential.__class__.__name__}"
-                )
-            self._storage = S3SimpleStorage(
-                storage_url=self.storage_url,
-                storage_credential=self.storage_credential,
-                region_name=self.region_name,
-            )
-        elif self.storage_type == StorageType.GCS:
-            if self.storage_credential is None:
-                raise NotImplementedError("Storage credential is required for GCS")
-            if self.storage_credential is None or not isinstance(
-                self.storage_credential, GCSStorageCredential
-            ):
-                raise NotImplementedError(
-                    f"Unsupported storage credential for GCS: {self.storage_credential.__class__.__name__}"
-                )
-            self._storage = GCSStorage(
-                storage_url=self.storage_url,
-                storage_credential=self.storage_credential,
-            )
-        elif self.storage_type == StorageType.AZURE:
-            if self.storage_credential is None:
-                raise NotImplementedError("Storage credential is required for Azure Blob Storage")
-            if self.storage_credential is None or not isinstance(
-                self.storage_credential, AzureBlobStorageCredential
-            ):
-                raise NotImplementedError(
-                    f"Unsupported storage credential for Azure Blob Storage: {self.storage_credential.__class__.__name__}"
-                )
-            self._storage = AzureBlobStorage(
-                storage_url=self.storage_url,
-                storage_credential=self.storage_credential,
-            )
-        else:
-            raise NotImplementedError("Unsupported remote storage type")
-
+    @abstractmethod
     def test_storage_connection(self) -> None:
         """
         Test storage connection
         """
-        # test connectivity
-        self._storage.test_connection()
 
+    @abstractmethod
     def upload_file_to_storage(
         self, local_path: str, remote_path: str, is_binary: bool = True
     ) -> None:
@@ -146,18 +80,30 @@ class BaseSparkSession(BaseSession, ABC):
         is_binary: bool
             Upload as binary
         """
-        read_mode = cast(FileMode, "rb" if is_binary else "r")
-        write_mode = cast(FileMode, "wb" if is_binary else "w")
-        logger.debug(
-            "Upload file to storage",
-            extra={"remote_path": remote_path, "is_binary": is_binary},
-        )
-        with open(local_path, mode=read_mode) as in_file_obj:
-            with self._storage.open(
-                path=remote_path,
-                mode=write_mode,
-            ) as out_file_obj:
-                out_file_obj.write(in_file_obj.read())
+
+    @abstractmethod
+    def upload_dataframe_to_storage(self, dataframe: pd.DataFrame, remote_path: str) -> None:
+        """
+        Upload file to storage
+
+        Parameters
+        ----------
+        dataframe: pd.DataFrame
+            Dataframe
+        remote_path: str
+            Remote file path
+        """
+
+    @abstractmethod
+    def delete_path_from_storage(self, remote_path: str) -> None:
+        """
+        Delete path from storage
+
+        Parameters
+        ----------
+        remote_path: str
+            Remote file path
+        """
 
     @staticmethod
     def _convert_to_internal_variable_type(spark_type: str) -> DBVarType:
@@ -215,9 +161,7 @@ class BaseSparkSession(BaseSession, ABC):
 
         # write to parquet file
         temp_filename = f"temp_{ObjectId()}.parquet"
-        with self._storage.open(path=temp_filename, mode="wb") as out_file_obj:
-            dataframe.to_parquet(out_file_obj)
-            out_file_obj.flush()
+        self.upload_dataframe_to_storage(dataframe=dataframe, remote_path=temp_filename)
 
         try:
             if temporary:
@@ -245,7 +189,7 @@ class BaseSparkSession(BaseSession, ABC):
         finally:
             # clean up staging file
             try:
-                self._storage.delete_object(path=temp_filename)
+                self.delete_path_from_storage(remote_path=temp_filename)
             except Exception as exc:  # pylint: disable=broad-exception-caught
                 logger.error(f"Exception while deleting temp file {temp_filename}: {exc}")
 

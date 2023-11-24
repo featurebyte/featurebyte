@@ -5,7 +5,7 @@ SparkSession class
 # pylint: disable=wrong-import-order
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator, Optional, OrderedDict, Union
+from typing import Any, AsyncGenerator, Optional, OrderedDict, Union, cast
 from typing_extensions import Annotated
 
 import collections
@@ -25,10 +25,25 @@ from thrift.transport.TTransport import TTransportException
 from featurebyte.common.utils import literal_eval
 from featurebyte.enum import DBVarType, SourceType, StorageType
 from featurebyte.logging import get_logger
-from featurebyte.models.credential import AccessTokenCredential, KerberosKeytabCredential
+from featurebyte.models.credential import (
+    AccessTokenCredential,
+    AzureBlobStorageCredential,
+    GCSStorageCredential,
+    KerberosKeytabCredential,
+    S3StorageCredential,
+    StorageCredential,
+)
 from featurebyte.session.base_spark import BaseSparkSession
 from featurebyte.session.hive import AuthType, HiveConnection
-from featurebyte.session.simple_storage import WebHDFSStorage
+from featurebyte.session.simple_storage import (
+    AzureBlobStorage,
+    FileMode,
+    FileSimpleStorage,
+    GCSStorage,
+    S3SimpleStorage,
+    SimpleStorage,
+    WebHDFSStorage,
+)
 
 logger = get_logger(__name__)
 
@@ -49,12 +64,16 @@ class SparkSession(BaseSparkSession):
 
     _no_schema_error = OperationalError
     _connection: Optional[HiveConnection] = PrivateAttr(None)
+    _storage: SimpleStorage = PrivateAttr()
 
+    storage_type: StorageType
+    storage_url: str
     port: int
     use_http_transport: bool
     use_ssl: bool
     source_type: SourceType = Field(SourceType.SPARK, const=True)
     database_credential: Optional[SparkDatabaseCredential]
+    storage_credential: Optional[StorageCredential]
 
     def __init__(self, **data: Any) -> None:
         auth = None
@@ -138,8 +157,51 @@ class SparkSession(BaseSparkSession):
                 raise RuntimeError(f"Failed to kinit: {process.stderr.decode('utf-8')}")
 
     def _initialize_storage(self) -> None:
-        # support for webhdfs
-        if self.storage_type == StorageType.WEBHDFS:
+        # add prefix to compartmentalize assets
+        self.storage_url = self.storage_url.rstrip("/")
+        self.storage_spark_url = self.storage_spark_url.rstrip("/")
+
+        if self.storage_type == StorageType.FILE:
+            self._storage = FileSimpleStorage(storage_url=self.storage_url)
+        elif self.storage_type == StorageType.S3:
+            if self.storage_credential is None:
+                raise NotImplementedError("Storage credential is required for S3")
+            if not isinstance(self.storage_credential, S3StorageCredential):
+                raise NotImplementedError(
+                    f"Unsupported storage credential for S3: {self.storage_credential.__class__.__name__}"
+                )
+            self._storage = S3SimpleStorage(
+                storage_url=self.storage_url,
+                storage_credential=self.storage_credential,
+                region_name=self.region_name,
+            )
+        elif self.storage_type == StorageType.GCS:
+            if self.storage_credential is None:
+                raise NotImplementedError("Storage credential is required for GCS")
+            if self.storage_credential is None or not isinstance(
+                self.storage_credential, GCSStorageCredential
+            ):
+                raise NotImplementedError(
+                    f"Unsupported storage credential for GCS: {self.storage_credential.__class__.__name__}"
+                )
+            self._storage = GCSStorage(
+                storage_url=self.storage_url,
+                storage_credential=self.storage_credential,
+            )
+        elif self.storage_type == StorageType.AZURE:
+            if self.storage_credential is None:
+                raise NotImplementedError("Storage credential is required for Azure Blob Storage")
+            if self.storage_credential is None or not isinstance(
+                self.storage_credential, AzureBlobStorageCredential
+            ):
+                raise NotImplementedError(
+                    f"Unsupported storage credential for Azure Blob Storage: {self.storage_credential.__class__.__name__}"
+                )
+            self._storage = AzureBlobStorage(
+                storage_url=self.storage_url,
+                storage_credential=self.storage_credential,
+            )
+        elif self.storage_type == StorageType.WEBHDFS:
             self._storage = WebHDFSStorage(
                 storage_url=self.storage_url,
                 kerberos=(
@@ -148,7 +210,35 @@ class SparkSession(BaseSparkSession):
                 ),
             )
         else:
-            super()._initialize_storage()
+            raise NotImplementedError("Unsupported remote storage type")
+
+    def test_storage_connection(self) -> None:
+        # test connectivity
+        self._storage.test_connection()
+
+    def upload_file_to_storage(
+        self, local_path: str, remote_path: str, is_binary: bool = True
+    ) -> None:
+        read_mode = cast(FileMode, "rb" if is_binary else "r")
+        write_mode = cast(FileMode, "wb" if is_binary else "w")
+        logger.debug(
+            "Upload file to storage",
+            extra={"remote_path": remote_path, "is_binary": is_binary},
+        )
+        with open(local_path, mode=read_mode) as in_file_obj:
+            with self._storage.open(
+                path=remote_path,
+                mode=write_mode,
+            ) as out_file_obj:
+                out_file_obj.write(in_file_obj.read())
+
+    def upload_dataframe_to_storage(self, dataframe: pd.DataFrame, remote_path: str) -> None:
+        with self._storage.open(path=remote_path, mode="wb") as out_file_obj:
+            dataframe.to_parquet(out_file_obj)
+            out_file_obj.flush()
+
+    def delete_path_from_storage(self, remote_path: str) -> None:
+        self._storage.delete_object(path=remote_path)
 
     @classmethod
     def is_threadsafe(cls) -> bool:
