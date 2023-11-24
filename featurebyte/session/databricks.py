@@ -8,22 +8,30 @@ from typing import Any, AsyncGenerator, Dict, OrderedDict
 
 import collections
 import json
+import os
+from base64 import b64encode
+from io import BytesIO
 
 import pandas as pd
 import pyarrow as pa
-from pydantic import Field
+from bson import ObjectId
+from pydantic import Field, PrivateAttr
 
-from featurebyte import AccessTokenCredential
+from featurebyte import AccessTokenCredential, logging
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.session.base_spark import BaseSparkSession
 
 try:
     from databricks import sql as databricks_sql
+    from databricks.sdk import DbfsExt, WorkspaceClient
     from databricks.sql.exc import ServerOperationError
 
     HAS_DATABRICKS_SQL_CONNECTOR = True
 except ImportError:
     HAS_DATABRICKS_SQL_CONNECTOR = False
+
+
+logger = logging.get_logger(__name__)
 
 
 class ArrowTablePostProcessor:
@@ -68,6 +76,8 @@ class DatabricksSession(BaseSparkSession):
     """
 
     _no_schema_error = ServerOperationError
+    _storage_base_path: str = PrivateAttr()
+    _dbfs_client: DbfsExt = PrivateAttr()
 
     source_type: SourceType = Field(SourceType.DATABRICKS, const=True)
     database_credential: AccessTokenCredential
@@ -85,6 +95,46 @@ class DatabricksSession(BaseSparkSession):
             catalog=self.featurebyte_catalog,
             schema=self.featurebyte_schema,
         )
+
+    def _initialize_storage(self) -> None:
+        self.storage_spark_url = self.storage_spark_url.rstrip("/")
+        self._storage_base_path = self.storage_spark_url.lstrip("dbfs:")
+        # ensure google credentials not in environment variables to avoid conflict
+        os.environ.pop("GOOGLE_CREDENTIALS", None)
+        workspace_client = WorkspaceClient(
+            host=self.host,
+            token=self.database_credential.access_token,
+        )
+        self._dbfs_client = DbfsExt(workspace_client.api_client)
+
+    def test_storage_connection(self) -> None:
+        # test connectivity
+        conn_test_filename = f"_conn_test_{ObjectId()}"
+        path = f"{self._storage_base_path}/{conn_test_filename}"
+        self._dbfs_client.put(path, contents=b64encode("OK".encode("utf8")).decode("utf-8"))
+        self._dbfs_client.delete(path=path)
+
+    def upload_file_to_storage(
+        self, local_path: str, remote_path: str, is_binary: bool = True
+    ) -> None:
+        logger.debug(
+            "Upload file to storage",
+            extra={"remote_path": remote_path, "is_binary": is_binary},
+        )
+        path = f"{self._storage_base_path}/{remote_path}"
+        with open(local_path, mode="rb") as in_file_obj:
+            self._dbfs_client.upload(path=path, src=in_file_obj, overwrite=True)
+
+    def upload_dataframe_to_storage(self, dataframe: pd.DataFrame, remote_path: str) -> None:
+        buffer = BytesIO()
+        dataframe.to_parquet(buffer)
+        buffer.seek(0)
+        path = f"{self._storage_base_path}/{remote_path}"
+        self._dbfs_client.upload(path=path, src=buffer, overwrite=True)
+
+    def delete_path_from_storage(self, remote_path: str) -> None:
+        path = f"{self._storage_base_path}/{remote_path}"
+        self._dbfs_client.delete(path=path)
 
     @classmethod
     def is_threadsafe(cls) -> bool:

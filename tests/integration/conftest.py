@@ -49,7 +49,6 @@ from featurebyte.models.base import User
 from featurebyte.models.credential import (
     AccessTokenCredential,
     CredentialModel,
-    S3StorageCredential,
     UsernamePasswordCredential,
 )
 from featurebyte.models.task import Task as TaskModel
@@ -174,20 +173,12 @@ def credentials_mapping_fixture():
             database_credential=AccessTokenCredential(
                 access_token=os.getenv("DATABRICKS_ACCESS_TOKEN", ""),
             ),
-            storage_credential=S3StorageCredential(
-                s3_access_key_id=os.getenv("DATABRICKS_STORAGE_ACCESS_KEY_ID", ""),
-                s3_secret_access_key=os.getenv("DATABRICKS_STORAGE_ACCESS_KEY_SECRET", ""),
-            ),
         ),
         "databricks_unity_featurestore": CredentialModel(
             name="databricks_unity_featurestore",
             feature_store_id=ObjectId(),
             database_credential=AccessTokenCredential(
                 access_token=os.getenv("DATABRICKS_ACCESS_TOKEN", ""),
-            ),
-            storage_credential=S3StorageCredential(
-                s3_access_key_id=os.getenv("DATABRICKS_STORAGE_ACCESS_KEY_ID", ""),
-                s3_secret_access_key=os.getenv("DATABRICKS_STORAGE_ACCESS_KEY_SECRET", ""),
             ),
         ),
         "spark_featurestore": CredentialModel(
@@ -371,28 +362,22 @@ def feature_store_details_fixture(source_type, sqlite_filename):
     if source_type == "databricks":
         schema_name = os.getenv("DATABRICKS_SCHEMA_FEATUREBYTE")
         temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
-        storage_url = os.getenv("DATABRICKS_STORAGE_URL")
         return DatabricksDetails(
             host=os.getenv("DATABRICKS_SERVER_HOSTNAME"),
             http_path=os.getenv("DATABRICKS_HTTP_PATH"),
             featurebyte_catalog=os.getenv("DATABRICKS_CATALOG"),
             featurebyte_schema=temp_schema_name,
-            storage_type=StorageType.S3,
-            storage_url=f"{storage_url}/{temp_schema_name}",
             storage_spark_url=f"dbfs:/FileStore/{temp_schema_name}",
         )
 
     if source_type == "databricks_unity":
         schema_name = os.getenv("DATABRICKS_SCHEMA_FEATUREBYTE")
         temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
-        storage_url = os.getenv("DATABRICKS_STORAGE_URL")
         return DatabricksDetails(
             host=os.getenv("DATABRICKS_SERVER_HOSTNAME"),
             http_path=os.getenv("DATABRICKS_UNITY_HTTP_PATH"),
             featurebyte_catalog=os.getenv("DATABRICKS_UNITY_CATALOG"),
             featurebyte_schema=temp_schema_name,
-            storage_type=StorageType.S3,
-            storage_url=f"{storage_url}/{temp_schema_name}",
             storage_spark_url=f"dbfs:/FileStore/{temp_schema_name}",
         )
 
@@ -905,7 +890,9 @@ async def session_fixture(source_type, session_manager, dataset_registration_hel
         databricks_initializer = BaseSparkSchemaInitializer(session)
         udf_jar_file_name = os.path.basename(databricks_initializer.udf_jar_local_path)
         try:
-            session._storage.delete_object(udf_jar_file_name)
+            session._dbfs_client.delete(
+                path=f"{session._storage_base_path}/{udf_jar_file_name}", recursive=True
+            )
         except ClientError as exc:
             logger.warning("Failed to delete UDF jar file", extra={"exc": exc})
 

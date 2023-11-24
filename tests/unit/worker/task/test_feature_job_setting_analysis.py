@@ -8,7 +8,7 @@ from unittest.mock import call, patch
 import pytest
 from bson import ObjectId
 
-from featurebyte import DatabricksDetails, SourceType, StorageType
+from featurebyte import DatabricksDetails, SourceType
 from featurebyte.exception import DocumentNotFoundError
 from featurebyte.models.event_table import EventTableModel
 from featurebyte.models.feature_job_setting_analysis import FeatureJobSettingAnalysisModel
@@ -282,8 +282,6 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
                 http_path="http_path",
                 featurebyte_catalog="spark_catalog",
                 featurebyte_schema="featurebyte",
-                storage_type=StorageType.S3,
-                storage_url="s3://featurebyte/featurebyte",
                 storage_spark_url="dbfs:/FileStore/featurebyte",
             )
             feature_store.type = SourceType.DATABRICKS
