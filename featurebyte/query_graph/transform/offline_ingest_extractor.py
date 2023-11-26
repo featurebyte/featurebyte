@@ -40,6 +40,9 @@ class OfflineStoreIngestQueryGraphGlobalState:
     node_name_to_primary_entity_ids: Dict[str, List[ObjectId]]
     # (original graph) node name to request columns mapping
     node_name_to_request_columns: Dict[str, List[str]]
+    # (decomposed graph) graph node name to the exit node name of the original graph mapping
+    # this information is used to construct primary entity ids for the nested graph node
+    graph_node_name_to_exit_node_name: Dict[str, str]
     # whether the graph is decomposed or not
     is_decomposed: bool = False
 
@@ -66,6 +69,7 @@ class OfflineStoreIngestQueryGraphGlobalState:
             ),
             node_name_to_primary_entity_ids=defaultdict(list),
             node_name_to_request_columns=defaultdict(list),
+            graph_node_name_to_exit_node_name={},
             node_name_map={},
         )
 
@@ -280,7 +284,12 @@ class OfflineStoreIngestQueryGraphExtractor(
                 output_node_name=transformed_node.name,
             ),
         )
-        return global_state.add_operation_to_graph(node=graph_node, input_nodes=[])
+        inserted_node = global_state.add_operation_to_graph(node=graph_node, input_nodes=[])
+
+        # store the graph node name to the exit node name of the original graph mapping
+        # this information is used to construct primary entity ids for the nested graph node
+        global_state.graph_node_name_to_exit_node_name[inserted_node.name] = node_name
+        return inserted_node
 
     def _post_compute(
         self,

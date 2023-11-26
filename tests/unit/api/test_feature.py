@@ -812,7 +812,9 @@ def test_feature__as_default_version(saved_feature):
     assert saved_feature.is_default is False
 
 
-def check_offline_store_ingest_graph_on_composite_feature(feature_model):
+def check_offline_store_ingest_graph_on_composite_feature(
+    feature_model, cust_entity_id, transaction_entity_id
+):
     """Check offline store ingest graph on composite feature"""
     # case 1: no entity relationship
     assert feature_model.relationships_info == []
@@ -827,6 +829,7 @@ def check_offline_store_ingest_graph_on_composite_feature(feature_model):
         ingest_query_graph1 = ingest_query_graphs[1]
         ingest_query_graph2 = ingest_query_graphs[0]
 
+    assert ingest_query_graph1.primary_entity_ids == [transaction_entity_id]
     assert ingest_query_graph1.graph.edges_map == {
         "input_1": ["graph_1"],
         "graph_1": ["groupby_1"],
@@ -838,6 +841,7 @@ def check_offline_store_ingest_graph_on_composite_feature(feature_model):
 
     # check the second offline store ingest query graph
     assert ingest_query_graph2.node_name == "add_1"
+    assert ingest_query_graph2.primary_entity_ids == [cust_entity_id]
     groupby_node1 = ingest_query_graph2.graph.get_node_by_name("groupby_1")
     assert isinstance(groupby_node1, GroupByNode)
     assert groupby_node1.parameters.names == ["sum_30m_by_cust_id_1h"]
@@ -885,6 +889,7 @@ def check_offline_store_ingest_graph_on_composite_feature(feature_model):
     assert ingest_query_graph.node_name == new_feature_model.node_name
     assert ingest_query_graph.graph == new_feature_model.graph
     assert ingest_query_graph.ref_node_name is None
+    assert ingest_query_graph.primary_entity_ids == new_feature_model.primary_entity_ids
 
 
 def test_composite_features(snowflake_event_table_with_entity, cust_id_entity):
@@ -945,7 +950,9 @@ def test_composite_features(snowflake_event_table_with_entity, cust_id_entity):
     # get the offline store ingest query graphs
     feature_model = composite_feature.cached_model
     assert isinstance(feature_model, FeatureModel)
-    check_offline_store_ingest_graph_on_composite_feature(feature_model)
+    check_offline_store_ingest_graph_on_composite_feature(
+        feature_model, cust_id_entity.id, entity.id
+    )
 
 
 def test_offline_store_ingest_query_graphs__without_graph_decomposition(saved_feature):

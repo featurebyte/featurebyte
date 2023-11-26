@@ -68,7 +68,8 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
     # offline store ingest query graph & output node name (from the graph)
     graph: QueryGraphModel
     node_name: str
-
+    # primary entity ids of the offline store ingest query graph
+    primary_entity_ids: List[PydanticObjectId]
     # reference node name that is used in decomposed query graph
     # if None, the query graph is not decomposed
     ref_node_name: Optional[str]
@@ -407,10 +408,13 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
             for graph_node in result.graph.iterate_sorted_graph_nodes(
                 graph_node_types={GraphNodeType.OFFLINE_STORE_INGEST_QUERY}
             ):
+                exit_node_name = result.graph_node_name_to_exit_node_name[graph_node.name]
+                primary_entity_ids = result.node_name_to_primary_entity_ids[exit_node_name]
                 output.append(
                     OfflineStoreIngestQueryGraph(
                         graph=graph_node.parameters.graph,
                         node_name=graph_node.parameters.output_node_name,
+                        primary_entity_ids=primary_entity_ids,
                         ref_node_name=graph_node.name,
                     )
                 )
@@ -419,6 +423,7 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
                 OfflineStoreIngestQueryGraph(
                     graph=self.graph,
                     node_name=self.node_name,
+                    primary_entity_ids=self.primary_entity_ids,
                     ref_node_name=None,
                 )
             )
