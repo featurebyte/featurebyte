@@ -455,3 +455,23 @@ def get_preview_sql_for_series(series_obj, *args, **kwargs):
     Helper function to get the preview SQL for a series
     """
     return SampleMixin.preview_sql(series_obj, *args, **kwargs)
+
+
+def check_decomposed_graph_output_node_hash(
+    feature_model, offline_store_ingest_query_graph_extractor_output
+):
+    """Check the output node hash of the decomposed graph is the same as the original graph"""
+    # flatten the original graph
+    flattened_graph, node_name_map = feature_model.graph.flatten()
+    flattened_node_name = node_name_map[feature_model.node_name]
+
+    # flatten the decomposed graph
+    output = offline_store_ingest_query_graph_extractor_output
+    decom_node_name = output.node_name_map[feature_model.node_name]
+    flattened_decom_graph, node_name_map = QueryGraph(**output.graph.dict(by_alias=True)).flatten()
+    flattened_decom_node_name = node_name_map[decom_node_name]
+
+    # check the output node hash is the same
+    original_out_hash = flattened_graph.node_name_to_ref[flattened_node_name]
+    decom_out_hash = flattened_decom_graph.node_name_to_ref[flattened_decom_node_name]
+    assert original_out_hash == decom_out_hash

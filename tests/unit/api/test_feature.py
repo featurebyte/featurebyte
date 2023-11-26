@@ -39,7 +39,7 @@ from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.models.feature_store import TableStatus
 from featurebyte.models.relationship import RelationshipType
-from featurebyte.query_graph.graph import GlobalQueryGraph
+from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.query_graph.model.feature_job_setting import (
     FeatureJobSetting,
@@ -56,7 +56,12 @@ from featurebyte.query_graph.transform.offline_ingest_extractor import (
     OfflineStoreIngestQueryGraphExtractor,
 )
 from tests.unit.api.base_feature_or_target_test import FeatureOrTargetBaseTestSuite, TestItemType
-from tests.util.helper import check_aggressively_pruned_graph, check_sdk_code_generation, get_node
+from tests.util.helper import (
+    check_aggressively_pruned_graph,
+    check_decomposed_graph_output_node_hash,
+    check_sdk_code_generation,
+    get_node,
+)
 
 
 @pytest.fixture(name="float_feature_dict")
@@ -850,6 +855,11 @@ def check_offline_store_ingest_graph_on_composite_feature(feature_model):
         "graph_2": ["add_1"],
         "add_1": ["alias_1"],
     }
+
+    # check the output node hash before and after decomposition
+    check_decomposed_graph_output_node_hash(
+        feature_model=feature_model, offline_store_ingest_query_graph_extractor_output=output
+    )
 
     # case 2: with entity relationship between the two entities (expect no query graph decomposition)
     entity_ids = feature_model.entity_ids

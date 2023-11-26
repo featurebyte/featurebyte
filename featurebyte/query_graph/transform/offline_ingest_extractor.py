@@ -17,7 +17,11 @@ from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import LookupNode, LookupTargetNode
 from featurebyte.query_graph.node.mixin import BaseGroupbyParameters
-from featurebyte.query_graph.node.nested import OfflineStoreIngestQueryGraphNodeParameters
+from featurebyte.query_graph.node.nested import (
+    OfflineStoreIngestQueryGraphNodeParameters,
+    OfflineStoreRequestColumnQueryGraphNodeParameters,
+)
+from featurebyte.query_graph.node.request import RequestColumnNode
 from featurebyte.query_graph.transform.base import BaseGraphExtractor
 from featurebyte.query_graph.transform.quick_pruning import QuickGraphStructurePruningTransformer
 
@@ -34,6 +38,8 @@ class OfflineStoreIngestQueryGraphGlobalState:
     entity_ancestor_descendant_mapper: EntityAncestorDescendantMapper
     # (original graph) node name to primary entity ids mapping
     node_name_to_primary_entity_ids: Dict[str, List[ObjectId]]
+    # (original graph) node name to request columns mapping
+    node_name_to_request_columns: Dict[str, List[str]]
     # whether the graph is decomposed or not
     is_decomposed: bool = False
 
@@ -59,12 +65,15 @@ class OfflineStoreIngestQueryGraphGlobalState:
                 relationships_info=relationships_info or []
             ),
             node_name_to_primary_entity_ids=defaultdict(list),
+            node_name_to_request_columns=defaultdict(list),
             node_name_map={},
         )
 
-    def update_primary_entity_ids(self, node: Node, input_node_names: List[str]) -> None:
+    def update_primary_entity_ids_and_request_columns(
+        self, node: Node, input_node_names: List[str]
+    ) -> None:
         """
-        Update primary entity IDs for the given node name
+        Update primary entity IDs & request columns for the given node name
 
         Parameters
         ----------
@@ -87,11 +96,24 @@ class OfflineStoreIngestQueryGraphGlobalState:
                 primary_entity_ids.extend(self.node_name_to_primary_entity_ids[input_node_name])
             primary_entity_ids = list(set(primary_entity_ids))
 
+        if isinstance(node, RequestColumnNode):
+            # request columns introduced by request column node
+            request_columns = [node.parameters.column_name]
+        else:
+            # request columns inherited from input nodes
+            request_columns = []
+            for input_node_name in input_node_names:
+                request_columns.extend(self.node_name_to_request_columns[input_node_name])
+            request_columns = sorted(set(request_columns))
+
         # reduce the primary entity ids based on entity relationship
         primary_entity_ids = self.entity_ancestor_descendant_mapper.reduce_entity_ids(
             entity_ids=list(primary_entity_ids)
         )
+
+        # update the mapping
         self.node_name_to_primary_entity_ids[node.name] = sorted(primary_entity_ids)
+        self.node_name_to_request_columns[node.name] = request_columns
 
     def should_decompose_query_graph(self, node_name: str, input_node_names: List[str]) -> bool:
         """
@@ -113,19 +135,28 @@ class OfflineStoreIngestQueryGraphGlobalState:
             return False
 
         output_entity_ids = self.node_name_to_primary_entity_ids[node_name]
+        output_request_columns = self.node_name_to_request_columns[node_name]
         all_input_entity_are_empty = True
         for input_node_name in input_node_names:
             input_entity_ids = self.node_name_to_primary_entity_ids[input_node_name]
-            if input_entity_ids == output_entity_ids:
+            input_request_columns = self.node_name_to_request_columns[input_node_name]
+            if (
+                input_entity_ids == output_entity_ids
+                and input_request_columns == output_request_columns
+            ):
                 # if any of the input is the same as the output, that means no new entity ids are added
-                # to the universe. So we should not split the query graph.
+                # to the universe. if the request columns are the same, that means we should not split
+                # the query graph.
                 return False
             if input_entity_ids:
                 all_input_entity_are_empty = False
 
-        if all_input_entity_are_empty:
+        if all_input_entity_are_empty and not output_request_columns:
             # if all the input nodes are empty, that means the output node is the starting node
-            # that introduces new entity ids to the universe. So we should not split the query graph.
+            # that introduces new entity ids to the universe. If the output node does not have any
+            # request columns, that means we should not split the query graph. If the output node
+            # has request columns, we should split the query graph so that input with request columns
+            # can be handled separately.
             return False
 
         # if none of the above conditions are met, that means we should split the query graph
@@ -211,7 +242,7 @@ class OfflineStoreIngestQueryGraphExtractor(
     ) -> OfflineStoreIngestQueryGraphBranchState:
         return branch_state
 
-    def _insert_offline_store_ingest_query_node(
+    def _insert_offline_store_query_graph_node(
         self, global_state: OfflineStoreIngestQueryGraphGlobalState, node_name: str
     ) -> Node:
         """
@@ -234,10 +265,17 @@ class OfflineStoreIngestQueryGraphExtractor(
             target_node_names=[node_name]
         )
         transformed_node = subgraph.get_node_by_name(node_name_to_transformed_node_name[node_name])
+        request_columns = global_state.node_name_to_request_columns[node_name]
+        parameter_class: Any
+        if request_columns:
+            parameter_class = OfflineStoreRequestColumnQueryGraphNodeParameters
+        else:
+            parameter_class = OfflineStoreIngestQueryGraphNodeParameters
+
         graph_node = GraphNode(
             name="graph",
             output_type=transformed_node.output_type,
-            parameters=OfflineStoreIngestQueryGraphNodeParameters(
+            parameters=parameter_class(
                 graph=subgraph,
                 output_node_name=transformed_node.name,
             ),
@@ -253,18 +291,20 @@ class OfflineStoreIngestQueryGraphExtractor(
         skip_post: bool,
     ) -> None:
         input_node_names = self.graph.get_input_node_names(node)
-        global_state.update_primary_entity_ids(node=node, input_node_names=input_node_names)
+        global_state.update_primary_entity_ids_and_request_columns(
+            node=node, input_node_names=input_node_names
+        )
 
         if not global_state.is_decomposed:
             # check whether to decompose the query graph
-            is_decomposed = global_state.should_decompose_query_graph(
+            to_decompose = global_state.should_decompose_query_graph(
                 node_name=node.name, input_node_names=input_node_names
             )
-            if is_decomposed:
+            if to_decompose:
                 # insert offline store ingest query node
                 decom_input_nodes = []
                 for input_node_name in input_node_names:
-                    added_node = self._insert_offline_store_ingest_query_node(
+                    added_node = self._insert_offline_store_query_graph_node(
                         global_state=global_state, node_name=input_node_name
                     )
                     decom_input_nodes.append(added_node)
@@ -273,7 +313,7 @@ class OfflineStoreIngestQueryGraphExtractor(
                 global_state.add_operation_to_graph(node=node, input_nodes=decom_input_nodes)
 
             # update global state
-            global_state.is_decomposed = is_decomposed
+            global_state.is_decomposed = to_decompose
         else:
             # if the graph is already decided to be decomposed
             # first, check if any of the input node has its corresponding mapping in the decomposed graph
@@ -292,7 +332,7 @@ class OfflineStoreIngestQueryGraphExtractor(
                         )
                     else:
                         decom_input_nodes.append(
-                            self._insert_offline_store_ingest_query_node(
+                            self._insert_offline_store_query_graph_node(
                                 global_state=global_state, node_name=input_node_name
                             )
                         )
