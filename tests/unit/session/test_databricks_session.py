@@ -79,23 +79,28 @@ class MockDatabricksConnection:
                 ["default", "calls"],
             ]
         elif query.startswith("DESCRIBE"):
-            self.description = [["col_name", "STRING"], ["data_type", "STRING"]]
+            self.description = [
+                ["col_name", "STRING"],
+                ["data_type", "STRING"],
+                ["comment", "STRING"],
+            ]
             self.result_rows = [
-                ["col_binary", "BINARY"],
-                ["col_bool", "BOOLEAN"],
-                ["col_date", "DATE"],
-                ["col_decimal", "DECIMAL"],
-                ["col_double", "DOUBLE"],
-                ["col_float", "FLOAT"],
-                ["col_int", "INT"],
-                ["col_interval", "INTERVAL"],
-                ["col_void", "VOID"],
-                ["col_timestamp", "TIMESTAMP"],
-                ["col_array", "ARRAY"],
-                ["col_map", "MAP"],
-                ["col_struct", "STRUCT"],
-                ["col_string", "STRING"],
-                ["col_unknown", "UNKNOWN"],
+                ["col_binary", "BINARY", "Binary Column"],
+                ["col_bool", "BOOLEAN", "Boolean Column"],
+                ["col_date", "DATE", "Date Column"],
+                ["col_decimal", "DECIMAL", "Decimal Column"],
+                ["col_double", "DOUBLE", "Double Column"],
+                ["col_float", "FLOAT", "Float Column"],
+                ["col_int", "INT", "Int Column"],
+                ["col_interval", "INTERVAL", "Interval Column"],
+                ["col_void", "VOID", "Void Column"],
+                ["col_timestamp", "TIMESTAMP", "Timestamp Column"],
+                ["col_array", "ARRAY", "Array Column"],
+                ["col_map", "MAP", "Map Column"],
+                ["col_struct", "STRUCT", "Struct Column"],
+                ["col_string", "STRING", "String Column"],
+                ["col_unknown", "UNKNOWN", "Unknown Column"],
+                ["# Partition Information", ""],
             ]
         else:
             self.description = [["a", "INT"], ["b", "INT"], ["c", "INT"]]
