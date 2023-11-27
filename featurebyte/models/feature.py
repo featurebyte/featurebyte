@@ -188,6 +188,15 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
             values["dtype"] = op_struct.aggregations[0].dtype
         return values
 
+    @validator("name")
+    @classmethod
+    def _validate_asset_name(cls, value: Optional[str]) -> Optional[str]:
+        if value and value.startswith("__"):
+            raise ValueError(
+                f"{cls.__name__} name cannot start with '__' as it is reserved for internal use."
+            )
+        return value
+
     @validator(
         "table_id_column_names", "table_id_feature_job_settings", "table_id_cleaning_operations"
     )

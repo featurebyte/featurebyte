@@ -129,6 +129,14 @@ def test_feature_model(feature_model_dict, api_object_to_id):
     }
 
 
+def test_feature_name_validation(feature_model_dict):
+    """Test feature name validation"""
+    feature_model_dict["name"] = f"__{feature_model_dict['name']}"
+    expected_error = "FeatureModel name cannot start with '__' as it is reserved for internal use."
+    with pytest.raises(ValueError, match=expected_error):
+        FeatureModel(**feature_model_dict)
+
+
 def test_feature_name_space(feature_namespace_dict):
     """Test feature namespace model"""
     feature_name_space = FeatureNamespaceModel.parse_obj(feature_namespace_dict)
