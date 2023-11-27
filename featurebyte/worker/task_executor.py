@@ -9,11 +9,11 @@ import asyncio
 import os
 from abc import abstractmethod
 from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as ConcurrentTimeoutError
 from datetime import datetime
 from threading import Thread
 from uuid import UUID
 
-import gevent
 from bson import ObjectId
 from celery import Task
 from celery.exceptions import SoftTimeLimitExceeded
@@ -43,8 +43,15 @@ def start_background_loop(loop: asyncio.AbstractEventLoop) -> None:
     loop: AbstractEventLoop
         Event loop to run
     """
-    asyncio.set_event_loop(loop)
-    loop.run_forever()
+    try:
+        asyncio.set_event_loop(loop)
+        loop.run_forever()
+    finally:
+        try:
+            loop.run_until_complete(loop.shutdown_asyncgens())
+        finally:
+            asyncio.set_event_loop(None)
+            loop.close()
 
 
 def run_async(coro: Awaitable[Any], timeout: Optional[int] = None) -> Any:
@@ -77,17 +84,13 @@ def run_async(coro: Awaitable[Any], timeout: Optional[int] = None) -> Any:
         thread = Thread(target=start_background_loop, args=(loop,), daemon=True)
         thread.start()
 
-    logger.debug("Asyncio tasks", extra={"num_tasks": len(asyncio.all_tasks(loop=loop))})
+    logger.info("Asyncio tasks", extra={"num_tasks": len(asyncio.all_tasks(loop=loop))})
 
     logger.info("Start task", extra={"timeout": timeout})
     future = asyncio.run_coroutine_threadsafe(coro, loop)
     try:
-        with gevent.Timeout(seconds=timeout, exception=TimeoutError):
-            event = gevent.event.Event()
-            future.add_done_callback(lambda _: event.set())
-            event.wait()
-            return future.result()
-    except TimeoutError as exc:
+        return future.result(timeout=timeout)
+    except ConcurrentTimeoutError as exc:
         # try to cancel the job if it has not started
         future.cancel()
         raise SoftTimeLimitExceeded(f"Task timed out after {timeout}s") from exc
