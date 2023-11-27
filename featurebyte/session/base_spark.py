@@ -248,7 +248,7 @@ class BaseSparkSession(BaseSession, ABC):
             for _, (column_name, var_info) in schema[["col_name", "data_type"]].iterrows():
                 # Sometimes describe include metadata after column details with and empty row as a separator.
                 # Skip the remaining entries once we run into an empty column name
-                if column_name == "":
+                if column_name == "" or column_name.startswith("# "):
                     break
                 column_name_type_map[column_name] = self._convert_to_internal_variable_type(
                     var_info.upper()
