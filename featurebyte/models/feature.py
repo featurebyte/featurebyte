@@ -3,7 +3,7 @@ This module contains Feature related models
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from datetime import datetime
 
@@ -22,7 +22,7 @@ from featurebyte.models.base import (
     VersionIdentifier,
 )
 from featurebyte.models.feature_namespace import FeatureReadiness
-from featurebyte.query_graph.enum import GraphNodeType
+from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
@@ -48,6 +48,7 @@ from featurebyte.query_graph.transform.definition import (
 from featurebyte.query_graph.transform.offline_ingest_extractor import (
     OfflineStoreIngestQueryGraphExtractor,
 )
+from featurebyte.query_graph.transform.quick_pruning import QuickGraphStructurePruningTransformer
 
 
 class TableIdColumnNames(FeatureByteBaseModel):
@@ -75,6 +76,40 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
     ref_node_name: Optional[str]
     # output column name of the offline store ingest query graph
     output_column_name: str
+
+    def ingest_graph_and_node(self) -> Tuple[QueryGraphModel, Node]:
+        """
+        Construct graph and node for generating offline store ingest SQL query
+
+        Returns
+        -------
+        Tuple[QueryGraphModel, Node]
+            Ingest graph and node
+        """
+        output_node = self.graph.get_node_by_name(self.node_name)
+        if self.ref_node_name is None:
+            # if the query graph is not decomposed, return the original graph & node
+            return self.graph, output_node
+
+        # if the query graph is decomposed, update the graph output column name to match output_column_name
+        if output_node.type != NodeType.ALIAS:
+            graph = QueryGraphModel(**self.graph.dict(by_alias=True))
+        else:
+            output_parent_node_name = self.graph.backward_edges_map[self.node_name][0]
+            transformer = QuickGraphStructurePruningTransformer(graph=self.graph)
+            graph, node_name_map = transformer.transform(
+                target_node_names=[output_parent_node_name]
+            )
+            output_node = graph.get_node_by_name(node_name_map[output_parent_node_name])
+
+        # add alias node to rename the output column name
+        output_node = graph.add_operation(
+            node_type=NodeType.ALIAS,
+            node_params={"name": self.output_column_name},
+            node_output_type=NodeOutputType.SERIES,
+            input_nodes=[output_node],
+        )
+        return graph, output_node
 
 
 class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
