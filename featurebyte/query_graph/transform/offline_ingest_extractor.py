@@ -8,6 +8,7 @@ from dataclasses import dataclass
 
 from bson import ObjectId
 
+from featurebyte.query_graph.enum import GraphNodeType
 from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.model.entity_relationship_info import (
     EntityAncestorDescendantMapper,
@@ -27,9 +28,11 @@ from featurebyte.query_graph.transform.quick_pruning import QuickGraphStructureP
 
 
 @dataclass
-class OfflineStoreIngestQueryGraphGlobalState:
+class OfflineStoreIngestQueryGraphGlobalState:  # pylint: disable=too-many-instance-attributes
     """OfflineStoreIngestQueryGlobalState class"""
 
+    # feature name
+    feature_name: str
     # decomposed graph
     graph: QueryGraphModel
     # original graph node name to decomposed graph node name mapping
@@ -43,12 +46,14 @@ class OfflineStoreIngestQueryGraphGlobalState:
     # (decomposed graph) graph node name to the exit node name of the original graph mapping
     # this information is used to construct primary entity ids for the nested graph node
     graph_node_name_to_exit_node_name: Dict[str, str]
+    # graph node type counter used to generate non-conflicting feature component suffix
+    graph_node_counter: Dict[GraphNodeType, int]
     # whether the graph is decomposed or not
     is_decomposed: bool = False
 
     @classmethod
     def create(
-        cls, relationships_info: Optional[List[EntityRelationshipInfo]]
+        cls, relationships_info: Optional[List[EntityRelationshipInfo]], feature_name: str
     ) -> "OfflineStoreIngestQueryGraphGlobalState":
         """
         Create a new OfflineStoreIngestQueryGlobalState object from the given relationships info
@@ -57,12 +62,15 @@ class OfflineStoreIngestQueryGraphGlobalState:
         ----------
         relationships_info: Optional[List[EntityRelationshipInfo]]
             Entity relationship info
+        feature_name: str
+            Feature name
 
         Returns
         -------
         OfflineStoreIngestQueryGraphGlobalState
         """
         return OfflineStoreIngestQueryGraphGlobalState(
+            feature_name=feature_name,
             graph=QueryGraphModel(),
             entity_ancestor_descendant_mapper=EntityAncestorDescendantMapper.create(
                 relationships_info=relationships_info or []
@@ -70,6 +78,7 @@ class OfflineStoreIngestQueryGraphGlobalState:
             node_name_to_primary_entity_ids=defaultdict(list),
             node_name_to_request_columns=defaultdict(list),
             graph_node_name_to_exit_node_name={},
+            graph_node_counter=defaultdict(int),
             node_name_map={},
         )
 
@@ -272,19 +281,29 @@ class OfflineStoreIngestQueryGraphExtractor(
         request_columns = global_state.node_name_to_request_columns[node_name]
         parameter_class: Any
         if request_columns:
+            graph_node_type = GraphNodeType.OFFLINE_STORE_REQUEST_COLUMN_QUERY
             parameter_class = OfflineStoreRequestColumnQueryGraphNodeParameters
+            suffix = "__req_comp"
         else:
+            graph_node_type = GraphNodeType.OFFLINE_STORE_INGEST_QUERY
             parameter_class = OfflineStoreIngestQueryGraphNodeParameters
+            suffix = "__comp"
 
+        comp_count = global_state.graph_node_counter[graph_node_type]
+        column_name = f"__{global_state.feature_name}{suffix}{comp_count}"
         graph_node = GraphNode(
             name="graph",
             output_type=transformed_node.output_type,
             parameters=parameter_class(
                 graph=subgraph,
                 output_node_name=transformed_node.name,
+                output_column_name=column_name,
             ),
         )
         inserted_node = global_state.add_operation_to_graph(node=graph_node, input_nodes=[])
+
+        # update graph node type counter
+        global_state.graph_node_counter[graph_node_type] += 1
 
         # store the graph node name to the exit node name of the original graph mapping
         # this information is used to construct primary entity ids for the nested graph node
@@ -353,10 +372,12 @@ class OfflineStoreIngestQueryGraphExtractor(
         self,
         node: Node,
         relationships_info: Optional[List[EntityRelationshipInfo]] = None,
+        feature_name: str = "feature",
         **kwargs: Any,
     ) -> OfflineStoreIngestQueryGraphGlobalState:
         global_state = OfflineStoreIngestQueryGraphGlobalState.create(
-            relationships_info=relationships_info
+            relationships_info=relationships_info,
+            feature_name=feature_name,
         )
         branch_state = OfflineStoreIngestQueryGraphBranchState()
         self._extract(

@@ -73,6 +73,8 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
     # reference node name that is used in decomposed query graph
     # if None, the query graph is not decomposed
     ref_node_name: Optional[str]
+    # output column name of the offline store ingest query graph
+    output_column_name: str
 
 
 class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
@@ -411,7 +413,10 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
             List of offline store ingest query graphs
         """
         extractor = OfflineStoreIngestQueryGraphExtractor(graph=self.graph)
-        result = extractor.extract(node=self.node, relationships_info=self.relationships_info)
+        assert self.name is not None
+        result = extractor.extract(
+            node=self.node, relationships_info=self.relationships_info, feature_name=self.name
+        )
         output = []
         if result.is_decomposed:
             for graph_node in result.graph.iterate_sorted_graph_nodes(
@@ -425,6 +430,7 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
                         node_name=graph_node.parameters.output_node_name,
                         primary_entity_ids=primary_entity_ids,
                         ref_node_name=graph_node.name,
+                        output_column_name=graph_node.parameters.output_column_name,  # type: ignore
                     )
                 )
         else:
@@ -434,6 +440,7 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
                     node_name=self.node_name,
                     primary_entity_ids=self.primary_entity_ids,
                     ref_node_name=None,
+                    output_column_name=self.name,
                 )
             )
 
