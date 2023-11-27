@@ -42,6 +42,7 @@ from featurebyte.api.historical_feature_table import HistoricalFeatureTable
 from featurebyte.api.item_table import ItemTable
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.periodic_task import PeriodicTask
+from featurebyte.api.primary_entity_mixin import PrimaryEntityMixin
 from featurebyte.api.relationship import Relationship
 from featurebyte.api.savable_api_object import DeletableApiObject, SavableApiObject
 from featurebyte.api.scd_table import SCDTable
@@ -284,6 +285,7 @@ def test_all_methods_are_exposed_in_catalog(method_list):
         FeatureOrTargetMixin,
         FeatureOrTargetNamespaceMixin,
         UseCaseOrContextMixin,
+        PrimaryEntityMixin,
     }
     assert len(api_object_children) == len(method_list) + len(excluded_children)
 

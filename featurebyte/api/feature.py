@@ -26,12 +26,16 @@ from featurebyte.api.feature_validation_util import assert_is_lookup_feature
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.savable_api_object import DeletableApiObject, SavableApiObject
 from featurebyte.api.templates.doc_util import substitute_docstring
+from featurebyte.api.templates.entity_doc import (
+    ENTITY_DOC,
+    ENTITY_IDS_DOC,
+    PRIMARY_ENTITY_DOC,
+    PRIMARY_ENTITY_IDS_DOC,
+)
 from featurebyte.api.templates.feature_or_target_doc import (
     CATALOG_ID_DOC,
     DEFINITION_DOC,
-    ENTITY_IDS_DOC,
     PREVIEW_DOC,
-    PRIMARY_ENTITY_DOC,
     TABLE_IDS_DOC,
     VERSION_DOC,
 )
@@ -68,6 +72,8 @@ from featurebyte.schema.feature import (
 )
 
 logger = get_logger(__name__)
+
+DOCSTRING_FORMAT_PARAMS = {"class_name": "Feature"}
 
 
 # pylint: disable=too-many-ancestors
@@ -156,30 +162,44 @@ class Feature(
             'V230323'
             """
         ),
-        format_kwargs={"class_name": "Feature"},
+        format_kwargs=DOCSTRING_FORMAT_PARAMS,
     )
     def version(self) -> str:  # pylint: disable=missing-function-docstring
         return self._get_version()
 
     @property
-    @substitute_docstring(doc_template=CATALOG_ID_DOC, format_kwargs={"class_name": "Feature"})
+    @substitute_docstring(doc_template=CATALOG_ID_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
     def catalog_id(self) -> ObjectId:  # pylint: disable=missing-function-docstring
         return self._get_catalog_id()
 
     @property
-    @substitute_docstring(doc_template=ENTITY_IDS_DOC, format_kwargs={"class_name": "Feature"})
+    @substitute_docstring(doc_template=ENTITY_IDS_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
     def entity_ids(self) -> Sequence[ObjectId]:  # pylint: disable=missing-function-docstring
         return self._get_entity_ids()
 
     @property
-    @substitute_docstring(doc_template=TABLE_IDS_DOC, format_kwargs={"class_name": "Feature"})
-    def table_ids(self) -> Sequence[ObjectId]:  # pylint: disable=missing-function-docstring
-        return self._get_table_ids()
+    @substitute_docstring(
+        doc_template=PRIMARY_ENTITY_IDS_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS
+    )
+    def primary_entity_ids(
+        self,
+    ) -> Sequence[ObjectId]:  # pylint: disable=missing-function-docstring
+        return self._get_primary_entity_ids()
 
     @property
-    @substitute_docstring(doc_template=PRIMARY_ENTITY_DOC, format_kwargs={"class_name": "Feature"})
+    @substitute_docstring(doc_template=ENTITY_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
+    def entities(self) -> List[Entity]:  # pylint: disable=missing-function-docstring
+        return self._get_entities()
+
+    @property
+    @substitute_docstring(doc_template=PRIMARY_ENTITY_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
     def primary_entity(self) -> List[Entity]:  # pylint: disable=missing-function-docstring
-        return self._get_primary_entity()
+        return self._get_primary_entity
+
+    @property
+    @substitute_docstring(doc_template=TABLE_IDS_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
+    def table_ids(self) -> Sequence[ObjectId]:  # pylint: disable=missing-function-docstring
+        return self._get_table_ids()
 
     @property
     def feature_list_ids(self) -> Sequence[ObjectId]:
@@ -1061,7 +1081,7 @@ class Feature(
 
     @substitute_docstring(
         doc_template=ISNULL_DOC,
-        format_kwargs={"class_name": "Feature"},
+        format_kwargs=DOCSTRING_FORMAT_PARAMS,
         examples=(
             """
             >>> feature = catalog.get_feature("InvoiceCount_60days")
@@ -1074,7 +1094,7 @@ class Feature(
 
     @substitute_docstring(
         doc_template=NOTNULL_DOC,
-        format_kwargs={"class_name": "Feature"},
+        format_kwargs=DOCSTRING_FORMAT_PARAMS,
         examples=(
             """
             >>> feature = catalog.get_feature("InvoiceCount_60days")

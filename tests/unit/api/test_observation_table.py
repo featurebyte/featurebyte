@@ -138,6 +138,11 @@ def test_update_purpose(observation_table_from_source):
     observation_table_from_source.update_purpose(purpose=Purpose.EDA)
     assert observation_table_from_source.purpose == Purpose.EDA
 
+    purpose_in_str = Purpose.TRAINING.value
+    assert isinstance(purpose_in_str, str)
+    observation_table_from_source.update_purpose(purpose=purpose_in_str)
+    assert observation_table_from_source.purpose == Purpose.TRAINING
+
 
 def test_create_observation_table_without_primary_entity(snowflake_event_table):
     """Test create observation table without primary entity"""

@@ -39,7 +39,7 @@ from featurebyte.api.historical_feature_table import HistoricalFeatureTable
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.savable_api_object import DeletableApiObject, SavableApiObject
 from featurebyte.api.templates.doc_util import substitute_docstring
-from featurebyte.api.templates.feature_or_target_doc import PRIMARY_ENTITY_DOC
+from featurebyte.api.templates.entity_doc import PRIMARY_ENTITY_DOC
 from featurebyte.api.use_case import UseCase
 from featurebyte.common.descriptor import ClassInstanceMethodDescriptor
 from featurebyte.common.doc_util import FBAutoDoc

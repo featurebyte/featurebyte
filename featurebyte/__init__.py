@@ -73,6 +73,7 @@ from featurebyte.models.credential import (
 from featurebyte.models.feature_list import FeatureListStatus
 from featurebyte.models.feature_namespace import DefaultVersionMode
 from featurebyte.models.feature_store import TableStatus
+from featurebyte.models.observation_table import Purpose
 from featurebyte.models.user_defined_function import FunctionParameter
 from featurebyte.query_graph.model.feature_job_setting import (
     FeatureJobSetting,
@@ -479,6 +480,7 @@ __all__ = [
     # enums
     "AggFunc",
     "FeatureListStatus",
+    "Purpose",
     "SourceType",
     "StorageType",
     "TableStatus",
