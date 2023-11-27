@@ -24,9 +24,10 @@ from featurebyte.models.base import (
     UniqueValuesConstraint,
     VersionIdentifier,
 )
-from featurebyte.models.feature import EntityRelationshipInfo, FeatureModel
+from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.pruning_util import get_combined_graph_and_nodes
 

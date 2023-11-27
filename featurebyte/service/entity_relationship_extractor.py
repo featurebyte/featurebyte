@@ -1,7 +1,7 @@
 """
 Entity Relationship Extractor Service
 """
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional
 
 import itertools
 from collections import defaultdict
@@ -9,7 +9,10 @@ from dataclasses import dataclass
 
 from bson import ObjectId
 
-from featurebyte.models.feature import EntityRelationshipInfo
+from featurebyte.query_graph.model.entity_relationship_info import (
+    EntityAncestorDescendantMapper,
+    EntityRelationshipInfo,
+)
 from featurebyte.routes.common.derive_primary_entity_helper import DerivePrimaryEntityHelper
 from featurebyte.service.entity import EntityService
 from featurebyte.service.relationship_info import RelationshipInfoService
@@ -32,37 +35,10 @@ class ServingEntityEnumeration:
     all serving entity IDs from the given entity IDs
     """
 
-    entity_id_to_ancestor_ids: Dict[ObjectId, Set[ObjectId]]
-    entity_id_to_descendant_ids: Dict[ObjectId, Set[ObjectId]]
+    entity_ancestor_descendant_mapper: EntityAncestorDescendantMapper
 
     @classmethod
-    def _depth_first_search(
-        cls,
-        ancestors_or_descendants_map: Dict[ObjectId, Set[ObjectId]],
-        relation_map: Dict[ObjectId, Set[ObjectId]],
-        entity_id: ObjectId,
-        ancestor_or_descendant_ids: Set[ObjectId],
-        depth: int,
-        max_depth: int,
-    ) -> None:
-        if depth > max_depth:
-            return
-
-        ancestors_or_descendants_map[entity_id].update(ancestor_or_descendant_ids)
-        for next_entity_id in relation_map[entity_id]:
-            cls._depth_first_search(
-                ancestors_or_descendants_map=ancestors_or_descendants_map,
-                relation_map=relation_map,
-                entity_id=next_entity_id,
-                ancestor_or_descendant_ids=ancestor_or_descendant_ids | {entity_id},
-                depth=depth + 1,
-                max_depth=max_depth,
-            )
-
-    @classmethod
-    def create(
-        cls, relationships_info: List[EntityRelationshipInfo], max_depth: int = 5
-    ) -> "ServingEntityEnumeration":
+    def create(cls, relationships_info: List[EntityRelationshipInfo]) -> "ServingEntityEnumeration":
         """
         Create serving entity enumeration from entity relationships info
 
@@ -70,46 +46,15 @@ class ServingEntityEnumeration:
         ----------
         relationships_info: List[EntityRelationshipInfo]
             List of entity relationships info
-        max_depth: int
-            Maximum depth to explore
 
         Returns
         -------
         ServingEntityEnumeration
         """
-        parent_to_child_entity_ids: Dict[ObjectId, Set[ObjectId]] = defaultdict(set)
-        child_to_parent_entity_ids: Dict[ObjectId, Set[ObjectId]] = defaultdict(set)
-        for relationship_info in relationships_info:
-            child_entity_id = relationship_info.entity_id
-            parent_entity_id = relationship_info.related_entity_id
-            parent_to_child_entity_ids[parent_entity_id].add(child_entity_id)
-            child_to_parent_entity_ids[child_entity_id].add(parent_entity_id)
-
-        entity_id_to_ancestor_ids: Dict[ObjectId, Set[ObjectId]] = defaultdict(set)
-        entity_id_to_descendant_ids: Dict[ObjectId, Set[ObjectId]] = defaultdict(set)
-        for entity_id in list(parent_to_child_entity_ids):
-            cls._depth_first_search(
-                ancestors_or_descendants_map=entity_id_to_ancestor_ids,
-                relation_map=parent_to_child_entity_ids,
-                entity_id=entity_id,
-                ancestor_or_descendant_ids=set(),
-                depth=0,
-                max_depth=max_depth,
-            )
-
-        for entity_id in list(child_to_parent_entity_ids):
-            cls._depth_first_search(
-                ancestors_or_descendants_map=entity_id_to_descendant_ids,
-                relation_map=child_to_parent_entity_ids,
-                entity_id=entity_id,
-                ancestor_or_descendant_ids=set(),
-                depth=0,
-                max_depth=max_depth,
-            )
-
         return cls(
-            entity_id_to_ancestor_ids=entity_id_to_ancestor_ids,
-            entity_id_to_descendant_ids=entity_id_to_descendant_ids,
+            entity_ancestor_descendant_mapper=EntityAncestorDescendantMapper.create(
+                relationships_info=relationships_info
+            )
         )
 
     def reduce_entity_ids(self, entity_ids: List[ObjectId]) -> List[ObjectId]:
@@ -125,15 +70,7 @@ class ServingEntityEnumeration:
         -------
         List[ObjectId]
         """
-        all_ancestors_ids = set()
-        for entity_id in entity_ids:
-            all_ancestors_ids.update(self.entity_id_to_ancestor_ids[entity_id])
-
-        reduced_entity_ids = set()
-        for entity_id in entity_ids:
-            if entity_id not in all_ancestors_ids:
-                reduced_entity_ids.add(entity_id)
-        return sorted(reduced_entity_ids)
+        return self.entity_ancestor_descendant_mapper.reduce_entity_ids(entity_ids=entity_ids)
 
     def generate(self, entity_ids: List[ObjectId]) -> List[List[ObjectId]]:
         """
@@ -150,7 +87,8 @@ class ServingEntityEnumeration:
         """
         reduced_entity_ids = self.reduce_entity_ids(entity_ids=entity_ids)
         entity_with_descendants_iterable = [
-            self.entity_id_to_descendant_ids[entity_id] | {entity_id}
+            self.entity_ancestor_descendant_mapper.entity_id_to_descendant_ids[entity_id]
+            | {entity_id}
             for entity_id in reduced_entity_ids
         ]
         all_serving_entity_ids = set()

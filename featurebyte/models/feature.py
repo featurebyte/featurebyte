@@ -22,9 +22,10 @@ from featurebyte.models.base import (
     VersionIdentifier,
 )
 from featurebyte.models.feature_namespace import FeatureReadiness
-from featurebyte.models.relationship import RelationshipType
+from featurebyte.query_graph.enum import GraphNodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
+from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.query_graph.model.feature_job_setting import (
     TableFeatureJobSetting,
     TableIdFeatureJobSetting,
@@ -44,18 +45,9 @@ from featurebyte.query_graph.transform.definition import (
     DefinitionHashExtractor,
     DefinitionHashOutput,
 )
-
-
-class EntityRelationshipInfo(FeatureByteBaseModel):
-    """
-    Schema for entity relationship information (subset of existing RelationshipInfo)
-    """
-
-    id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id", allow_mutation=False)
-    relationship_type: RelationshipType
-    entity_id: PydanticObjectId
-    related_entity_id: PydanticObjectId
-    relation_table_id: PydanticObjectId
+from featurebyte.query_graph.transform.offline_ingest_extractor import (
+    OfflineStoreIngestQueryGraphExtractor,
+)
 
 
 class TableIdColumnNames(FeatureByteBaseModel):
@@ -66,6 +58,21 @@ class TableIdColumnNames(FeatureByteBaseModel):
 
     table_id: PydanticObjectId
     column_names: List[str]
+
+
+class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
+    """
+    OfflineStoreIngestQuery object stores the offline store ingest query for a feature or target.
+    """
+
+    # offline store ingest query graph & output node name (from the graph)
+    graph: QueryGraphModel
+    node_name: str
+    # primary entity ids of the offline store ingest query graph
+    primary_entity_ids: List[PydanticObjectId]
+    # reference node name that is used in decomposed query graph
+    # if None, the query graph is not decomposed
+    ref_node_name: Optional[str]
 
 
 class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
@@ -384,6 +391,44 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
         """
         extractor = DefinitionHashExtractor(graph=self.graph)
         return extractor.extract(self.node)
+
+    def extract_offline_store_ingest_query_graphs(self) -> List[OfflineStoreIngestQueryGraph]:
+        """
+        Extract offline store ingest query graphs
+
+        Returns
+        -------
+        List[OfflineStoreIngestQueryGraph]
+            List of offline store ingest query graphs
+        """
+        extractor = OfflineStoreIngestQueryGraphExtractor(graph=self.graph)
+        result = extractor.extract(node=self.node, relationships_info=self.relationships_info)
+        output = []
+        if result.is_decomposed:
+            for graph_node in result.graph.iterate_sorted_graph_nodes(
+                graph_node_types={GraphNodeType.OFFLINE_STORE_INGEST_QUERY}
+            ):
+                exit_node_name = result.graph_node_name_to_exit_node_name[graph_node.name]
+                primary_entity_ids = result.node_name_to_primary_entity_ids[exit_node_name]
+                output.append(
+                    OfflineStoreIngestQueryGraph(
+                        graph=graph_node.parameters.graph,
+                        node_name=graph_node.parameters.output_node_name,
+                        primary_entity_ids=primary_entity_ids,
+                        ref_node_name=graph_node.name,
+                    )
+                )
+        else:
+            output.append(
+                OfflineStoreIngestQueryGraph(
+                    graph=self.graph,
+                    node_name=self.node_name,
+                    primary_entity_ids=self.primary_entity_ids,
+                    ref_node_name=None,
+                )
+            )
+
+        return output
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """

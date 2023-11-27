@@ -12,7 +12,7 @@ from bson.objectid import ObjectId
 from featurebyte.common.model_util import get_version
 from featurebyte.exception import DocumentError, DocumentInconsistencyError, DocumentNotFoundError
 from featurebyte.models.base import VersionIdentifier
-from featurebyte.models.feature import EntityRelationshipInfo, FeatureModel
+from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import (
     FeatureCluster,
     FeatureListModel,
@@ -21,6 +21,7 @@ from featurebyte.models.feature_list import (
 )
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.persistent import Persistent
+from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.schema.feature_list import FeatureListServiceCreate, FeatureListServiceUpdate
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate

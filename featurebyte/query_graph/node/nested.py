@@ -143,6 +143,40 @@ class CleaningGraphNodeParameters(BaseGraphNodeParameters):
         raise RuntimeError("Not implemented")
 
 
+class BaseOfflineStoreIngestQueryGraphNodeParameters(BaseGraphNodeParameters, ABC):
+    """
+    Base class used for offline store ingest query graph node parameters
+    """
+
+    def derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+        node_name: str,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        raise RuntimeError("Not implemented")
+
+
+class OfflineStoreIngestQueryGraphNodeParameters(BaseOfflineStoreIngestQueryGraphNodeParameters):
+    """GraphNode (type:offline_store_ingest_query) parameters"""
+
+    type: Literal[GraphNodeType.OFFLINE_STORE_INGEST_QUERY] = Field(
+        GraphNodeType.OFFLINE_STORE_INGEST_QUERY, const=True
+    )
+
+
+class OfflineStoreRequestColumnQueryGraphNodeParameters(
+    BaseOfflineStoreIngestQueryGraphNodeParameters
+):
+    """GraphNode (type:offline_store_request_column_query) parameters"""
+
+    type: Literal[GraphNodeType.OFFLINE_STORE_REQUEST_COLUMN_QUERY] = Field(
+        GraphNodeType.OFFLINE_STORE_REQUEST_COLUMN_QUERY, const=True
+    )
+
+
 ViewMetadataT = TypeVar("ViewMetadataT", bound="ViewMetadata")
 
 
@@ -451,6 +485,8 @@ class ChangeViewGraphNodeParameters(BaseViewGraphNodeParameters):
 
 GRAPH_NODE_PARAMETERS_TYPES = [
     CleaningGraphNodeParameters,
+    OfflineStoreIngestQueryGraphNodeParameters,
+    OfflineStoreRequestColumnQueryGraphNodeParameters,
     EventViewGraphNodeParameters,
     ItemViewGraphNodeParameters,
     DimensionViewGraphNodeParameters,

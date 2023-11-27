@@ -13,7 +13,7 @@ from featurebyte.query_graph.node.base import (
     BaseSeriesOutputNode,
     BaseSeriesOutputWithSingleOperandNode,
 )
-from featurebyte.query_graph.node.metadata.operation import OperationStructure
+from featurebyte.query_graph.node.metadata.operation import NodeOutputCategory, OperationStructure
 from featurebyte.query_graph.node.metadata.sdk_code import (
     ClassEnum,
     CodeGenerationConfig,
@@ -197,6 +197,10 @@ class DateAdd(BaseSeriesOutputNode):
         return self._assert_empty_required_input_columns()
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+        if inputs[0].output_category == NodeOutputCategory.FEATURE:
+            # when the inputs[0] is requested column, inputs[0].columns is empty.
+            # in this case, we should derive the var type from inputs[0].aggregations
+            return inputs[0].aggregations[0].dtype
         return inputs[0].columns[0].dtype
 
     def _derive_sdk_code(

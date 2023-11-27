@@ -6,8 +6,8 @@ import pytest
 from bson import ObjectId
 
 from featurebyte.exception import EntityRelationshipConflictError
-from featurebyte.models.feature import EntityRelationshipInfo
 from featurebyte.models.relationship import RelationshipType
+from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.service.validator.entity_relationship_validator import (
     FeatureListEntityRelationshipValidator,
 )

@@ -9,9 +9,9 @@ from bson import ObjectId
 
 from featurebyte.common.model_util import get_version
 from featurebyte.models.base import VersionIdentifier
-from featurebyte.models.feature import EntityRelationshipInfo
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.routes.common.derive_primary_entity_helper import DerivePrimaryEntityHelper
