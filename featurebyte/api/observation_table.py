@@ -36,7 +36,9 @@ from featurebyte.schema.observation_table import (
 DOCSTRING_FORMAT_PARAMS = {"class_name": "ObservationTable"}
 
 
-class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
+class ObservationTable(
+    PrimaryEntityMixin, MaterializedTableMixin
+):  # pylint: disable=too-many-public-methods
     """
     ObservationTable class
     """
@@ -140,6 +142,54 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
             Purpose of the observation table.
         """
         return self.cached_model.purpose
+
+    @property
+    def most_recent_point_in_time(self) -> str:
+        """
+        Returns the most recent point in time of the observation table.
+
+        Returns
+        -------
+        str
+            Most recent point in time of the observation table.
+        """
+        return self.cached_model.most_recent_point_in_time
+
+    @property
+    def least_recent_point_in_time(self) -> Optional[str]:
+        """
+        Returns the least recent point in time of the observation table.
+
+        Returns
+        -------
+        Optional[str]
+            Least recent point in time of the observation table.
+        """
+        return self.cached_model.least_recent_point_in_time
+
+    @property
+    def min_interval_secs_between_entities(self) -> Optional[float]:
+        """
+        Returns the minimum interval in seconds between events within entities of the observation table.
+
+        Returns
+        -------
+        Optional[float]
+            Minimum interval in seconds between events within entities of the observation table.
+        """
+        return self.cached_model.min_interval_secs_between_entities
+
+    @property
+    def entity_column_name_to_count(self) -> Optional[dict[str, int]]:
+        """
+        Returns the entity column name to unique entity count mapping of the observation table.
+
+        Returns
+        -------
+        Optional[dict]
+            Entity column name to unique entity count mapping of the observation table.
+        """
+        return self.cached_model.entity_column_name_to_count
 
     def to_pandas(self) -> pd.DataFrame:
         """
