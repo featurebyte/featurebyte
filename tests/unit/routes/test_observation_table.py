@@ -284,8 +284,15 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
             == f"Cannot add/remove UseCase as the ObservationTable {observation_table_id} is not associated with any Context."
         )
 
-    @pytest.mark.parametrize("file_type", ["csv", "parquet"])
-    def test_upload_observation(self, test_api_client_persistent, file_type):
+    @pytest.mark.parametrize(
+        "file_type, bad_file",
+        [
+            ("csv", False),
+            ("parquet", False),
+            ("parquet", True),
+        ],
+    )
+    def test_upload_observation(self, test_api_client_persistent, file_type, bad_file):
         """
         Test upload route
         """
@@ -311,6 +318,8 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
                 df.to_parquet(write_file_obj, index=False)
             else:
                 raise ValueError(f"Unsupported file type: {file_type}")
+            if bad_file:
+                write_file_obj.write(b",,,,this_is_bad````")
             write_file_obj.flush()
             with open(write_file_obj.name, "rb") as file_obj:
                 files = {"observation_set": file_obj}
@@ -318,9 +327,16 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
 
                 # Call upload route
                 response = test_api_client.post(f"{self.base_route}/upload", data=data, files=files)
-                assert response.status_code == HTTPStatus.CREATED, response.json()
-                response_dict = response.json()
-                observation_table_id = response_dict["payload"]["output_document_id"]
+
+        if bad_file:
+            assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+            response_dict = response.json()
+            assert response_dict["detail"] == "Content of uploaded file is not valid"
+            return
+
+        assert response.status_code == HTTPStatus.CREATED, response.json()
+        response_dict = response.json()
+        observation_table_id = response_dict["payload"]["output_document_id"]
 
         # Get observation table
         response = test_api_client.get(f"{self.base_route}/{observation_table_id}")
