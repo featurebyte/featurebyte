@@ -1,6 +1,7 @@
 """
 This module contains the docstring template used by the Feature or Target API.
 """
+
 VERSION_DOC = """
 Returns the version identifier of a {class_name} object.
 
@@ -26,29 +27,12 @@ See Also
 - [Catalog](/reference/featurebyte.api.catalog.Catalog)
 """
 
-ENTITY_IDS_DOC = """
-Returns the entity IDs associated with the {class_name} object.
-
-Returns
--------
-Sequence[ObjectId]
-"""
-
 TABLE_IDS_DOC = """
 Returns the table IDs used by the {class_name} object.
 
 Returns
 -------
 Sequence[ObjectId]
-"""
-
-PRIMARY_ENTITY_DOC = """
-Returns the primary entity of the {class_name} object.
-
-Returns
--------
-List[Entity]
-    Primary entity
 """
 
 DEFINITION_DOC = """

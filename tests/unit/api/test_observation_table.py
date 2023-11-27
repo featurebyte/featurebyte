@@ -138,6 +138,11 @@ def test_update_purpose(observation_table_from_source):
     observation_table_from_source.update_purpose(purpose=Purpose.EDA)
     assert observation_table_from_source.purpose == Purpose.EDA
 
+    purpose_in_str = Purpose.TRAINING.value
+    assert isinstance(purpose_in_str, str)
+    observation_table_from_source.update_purpose(purpose=purpose_in_str)
+    assert observation_table_from_source.purpose == Purpose.TRAINING
+
 
 def test_create_observation_table_without_primary_entity(snowflake_event_table):
     """Test create observation table without primary entity"""
@@ -153,3 +158,17 @@ def test_create_observation_table_without_primary_entity(snowflake_event_table):
             columns=["event_timestamp", "cust_id"],
             columns_rename_mapping={"event_timestamp": "POINT_IN_TIME"},
         )
+
+
+def test_entity_related_properties(observation_table_from_view, cust_id_entity, transaction_entity):
+    """Test entity related properties"""
+    # FIXME: column_info's entity_id should be set, and entity_ids should not be empty
+    assert observation_table_from_view.entity_ids == []
+    assert set(observation_table_from_view.primary_entity_ids) == {
+        cust_id_entity.id,
+        transaction_entity.id,
+    }
+    primary_entity = observation_table_from_view.primary_entity
+    assert len(primary_entity) == 2
+    assert {entity.name for entity in primary_entity} == {"customer", "transaction"}
+    assert observation_table_from_view.entities == []

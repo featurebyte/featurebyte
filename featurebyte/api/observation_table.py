@@ -4,30 +4,41 @@ ObservationTable class
 # pylint: disable=duplicate-code
 from __future__ import annotations
 
-from typing import List, Optional, Union
+from typing import List, Literal, Optional, Sequence, Union
 
 import os
 from pathlib import Path
 
 import pandas as pd
+from bson import ObjectId
 from typeguard import typechecked
 
-from featurebyte.api.api_object import ApiObject
 from featurebyte.api.api_object_util import ForeignKeyMapping
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.materialized_table import MaterializedTableMixin
+from featurebyte.api.primary_entity_mixin import PrimaryEntityMixin
+from featurebyte.api.templates.doc_util import substitute_docstring
+from featurebyte.api.templates.entity_doc import (
+    ENTITY_DOC,
+    PRIMARY_ENTITY_DOC,
+    PRIMARY_ENTITY_IDS_DOC,
+)
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.observation_table import ObservationTableModel, Purpose
+from featurebyte.models.observation_table import ObservationInput, ObservationTableModel, Purpose
 from featurebyte.schema.observation_table import (
     ObservationTableListRecord,
     ObservationTableUpdate,
     ObservationTableUpload,
 )
 
+DOCSTRING_FORMAT_PARAMS = {"class_name": "ObservationTable"}
 
-class ObservationTable(ObservationTableModel, ApiObject, MaterializedTableMixin):
+
+class ObservationTable(
+    PrimaryEntityMixin, MaterializedTableMixin
+):  # pylint: disable=too-many-public-methods
     """
     ObservationTable class
     """
@@ -64,6 +75,121 @@ class ObservationTable(ObservationTableModel, ApiObject, MaterializedTableMixin)
             if col.entity_id is not None:
                 entity_ids.append(col.entity_id)
         return entity_ids
+
+    @property
+    @substitute_docstring(
+        doc_template=PRIMARY_ENTITY_IDS_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS
+    )
+    def primary_entity_ids(
+        self,
+    ) -> Sequence[ObjectId]:  # pylint: disable=missing-function-docstring
+        return self.cached_model.primary_entity_ids
+
+    @property
+    @substitute_docstring(doc_template=ENTITY_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
+    def entities(self) -> List[Entity]:  # pylint: disable=missing-function-docstring
+        return self._get_entities()
+
+    @property
+    @substitute_docstring(doc_template=PRIMARY_ENTITY_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
+    def primary_entity(self) -> List[Entity]:  # pylint: disable=missing-function-docstring
+        return [Entity.get_by_id(entity_id) for entity_id in self.primary_entity_ids]
+
+    @property
+    def context_id(self) -> ObjectId:
+        """
+        Returns the context id of the observation table.
+
+        Returns
+        -------
+        ObjectId
+            Context id of the observation table.
+        """
+        return self.cached_model.context_id
+
+    @property
+    def use_case_ids(self) -> Sequence[ObjectId]:
+        """
+        Returns the use case ids of the observation table.
+
+        Returns
+        -------
+        Sequence[ObjectId]
+            List of use case ids.
+        """
+        return self.cached_model.use_case_ids
+
+    @property
+    def request_input(self) -> ObservationInput:
+        """
+        Returns the request input of the observation table.
+
+        Returns
+        -------
+        ObservationInput
+            Request input of the observation table.
+        """
+        return self.cached_model.request_input
+
+    @property
+    def purpose(self) -> Purpose:
+        """
+        Returns the purpose of the observation table.
+
+        Returns
+        -------
+        Purpose
+            Purpose of the observation table.
+        """
+        return self.cached_model.purpose
+
+    @property
+    def most_recent_point_in_time(self) -> str:
+        """
+        Returns the most recent point in time of the observation table.
+
+        Returns
+        -------
+        str
+            Most recent point in time of the observation table.
+        """
+        return self.cached_model.most_recent_point_in_time
+
+    @property
+    def least_recent_point_in_time(self) -> Optional[str]:
+        """
+        Returns the least recent point in time of the observation table.
+
+        Returns
+        -------
+        Optional[str]
+            Least recent point in time of the observation table.
+        """
+        return self.cached_model.least_recent_point_in_time
+
+    @property
+    def min_interval_secs_between_entities(self) -> Optional[float]:
+        """
+        Returns the minimum interval in seconds between events within entities of the observation table.
+
+        Returns
+        -------
+        Optional[float]
+            Minimum interval in seconds between events within entities of the observation table.
+        """
+        return self.cached_model.min_interval_secs_between_entities
+
+    @property
+    def entity_column_name_to_count(self) -> Optional[dict[str, int]]:
+        """
+        Returns the entity column name to unique entity count mapping of the observation table.
+
+        Returns
+        -------
+        Optional[dict]
+            Entity column name to unique entity count mapping of the observation table.
+        """
+        return self.cached_model.entity_column_name_to_count
 
     def to_pandas(self) -> pd.DataFrame:
         """
@@ -213,19 +339,19 @@ class ObservationTable(ObservationTableModel, ApiObject, MaterializedTableMixin)
         super().update_description(description)
 
     @typechecked
-    def update_purpose(self, purpose: Purpose) -> None:
+    def update_purpose(self, purpose: Literal[tuple(Purpose)]) -> None:  # type: ignore[misc]
         """
         Update purpose for the observation table.
 
         Parameters
         ----------
-        purpose: Purpose
-            Purpose for the observation table.
+        purpose: Literal[tuple(Purpose)]
+            Purpose for the observation table. Expect value to be a string or a Purpose enum.
 
         Examples
         --------
         >>> observation_table = catalog.get_observation_table("observation_table")  # doctest: +SKIP
-        >>> observation_table.update_purpose(Purpose.EDA)  # doctest: +SKIP
+        >>> observation_table.update_purpose(fb.Purpose.EDA)  # doctest: +SKIP
         """
         self.update(
             update_payload={"purpose": purpose},
@@ -263,9 +389,9 @@ class ObservationTable(ObservationTableModel, ApiObject, MaterializedTableMixin)
         Examples
         --------
         >>> observation_table = ObservationTable.upload(  # doctest: +SKIP
-        ...     path="path/to/csv/file.csv",
+        ...     file_path="path/to/csv/file.csv",
         ...     name="observation_table_name",
-        ...     purpose="preview",
+        ...     purpose=fb.Purpose.PREVIEW,
         ...     primary_entities=["entity_name_1"],
         ... )
         """

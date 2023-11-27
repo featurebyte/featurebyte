@@ -1,9 +1,10 @@
 """
 Mixin class containing common methods for feature or target classes
 """
-from typing import Any, List, Sequence, Union, cast
+from typing import Any, Sequence, Union, cast
 
 import time
+from abc import ABC
 from http import HTTPStatus
 
 import pandas as pd
@@ -11,9 +12,8 @@ from bson import ObjectId
 from pydantic import Field
 from typeguard import typechecked
 
-from featurebyte.api.api_object import ApiObject
-from featurebyte.api.entity import Entity
 from featurebyte.api.observation_table import ObservationTable
+from featurebyte.api.primary_entity_mixin import PrimaryEntityMixin
 from featurebyte.common.formatting_util import CodeStr
 from featurebyte.common.utils import dataframe_from_json
 from featurebyte.config import Configurations
@@ -22,7 +22,6 @@ from featurebyte.exception import RecordRetrievalException
 from featurebyte.logging import get_logger
 from featurebyte.models.base import PydanticObjectId, get_active_catalog_id
 from featurebyte.models.feature import BaseFeatureModel
-from featurebyte.models.relationship_analysis import derive_primary_entity
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.generic import AliasNode, ProjectNode
 from featurebyte.schema.preview import FeatureOrTargetPreview
@@ -30,7 +29,7 @@ from featurebyte.schema.preview import FeatureOrTargetPreview
 logger = get_logger(__name__)
 
 
-class FeatureOrTargetMixin(QueryObject, ApiObject):
+class FeatureOrTargetMixin(QueryObject, PrimaryEntityMixin, ABC):
     """
     Mixin class containing common methods for feature or target classes
     """
@@ -61,18 +60,6 @@ class FeatureOrTargetMixin(QueryObject, ApiObject):
             return self._cast_cached_model.entity_ids  # pylint: disable=no-member
         except RecordRetrievalException:
             return self.graph.get_entity_ids(node_name=self.node_name)
-
-    def _get_primary_entity(self) -> List[Entity]:
-        try:
-            primary_entity_ids = (
-                self._cast_cached_model.primary_entity_ids  # pylint: disable=no-member
-            )
-            return [Entity.get_by_id(entity_id) for entity_id in primary_entity_ids]
-        except RecordRetrievalException:
-            entities = []
-            for entity_id in self._get_entity_ids():
-                entities.append(Entity.get_by_id(entity_id))
-            return derive_primary_entity(entities)  # type: ignore
 
     def _get_table_ids(self) -> Sequence[ObjectId]:
         try:

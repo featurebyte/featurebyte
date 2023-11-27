@@ -18,12 +18,16 @@ from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.savable_api_object import DeletableApiObject, SavableApiObject
 from featurebyte.api.target_namespace import TargetNamespace
 from featurebyte.api.templates.doc_util import substitute_docstring
+from featurebyte.api.templates.entity_doc import (
+    ENTITY_DOC,
+    ENTITY_IDS_DOC,
+    PRIMARY_ENTITY_DOC,
+    PRIMARY_ENTITY_IDS_DOC,
+)
 from featurebyte.api.templates.feature_or_target_doc import (
     CATALOG_ID_DOC,
     DEFINITION_DOC,
-    ENTITY_IDS_DOC,
     PREVIEW_DOC,
-    PRIMARY_ENTITY_DOC,
     TABLE_IDS_DOC,
     VERSION_DOC,
 )
@@ -44,6 +48,7 @@ from featurebyte.schema.target_table import TargetTableCreate
 DOCSTRING_FORMAT_PARAMS = {"class_name": "Target"}
 
 
+# pylint: disable=too-many-ancestors
 class Target(
     Series,
     DeletableApiObject,
@@ -51,7 +56,7 @@ class Target(
     FeatureOrTargetMixin,
     TargetDtAccessorMixin,
     TargetStrAccessorMixin,
-):
+):  # pylint: disable=too-many-public-methods
     """
     Target class used to represent a Target in FeatureByte.
     """
@@ -133,6 +138,20 @@ class Target(
         return self._get_entity_ids()
 
     @property
+    @substitute_docstring(
+        doc_template=PRIMARY_ENTITY_IDS_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS
+    )
+    def primary_entity_ids(
+        self,
+    ) -> Sequence[ObjectId]:  # pylint: disable=missing-function-docstring
+        return self._get_primary_entity_ids()
+
+    @property
+    @substitute_docstring(doc_template=ENTITY_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
+    def entities(self) -> List[Entity]:  # pylint: disable=missing-function-docstring
+        return self._get_entities()
+
+    @property
     @substitute_docstring(doc_template=PRIMARY_ENTITY_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
     def primary_entity(self) -> List[Entity]:  # pylint: disable=missing-function-docstring
         return self._get_primary_entity()
@@ -167,17 +186,6 @@ class Target(
     )
     def notnull(self) -> Target:  # pylint: disable=missing-function-docstring
         return super().notnull()
-
-    @property
-    def entities(self) -> List[Entity]:
-        """
-        Returns a list of entities associated with this target.
-
-        Returns
-        -------
-        List[Entity]
-        """
-        return [Entity.get_by_id(entity_id) for entity_id in self.entity_ids]
 
     @property
     def window(self) -> Optional[str]:
