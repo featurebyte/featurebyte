@@ -191,6 +191,20 @@ class BaseTableTestSuite:
         assert table_under_test.description is None
         assert table_under_test.info()["description"] is None
 
+    def test_update_column_description(self, table_under_test):
+        """Test table update column description"""
+        table_col = table_under_test[self.col]
+        assert table_col.description is None
+
+        table_under_test.update_column_description(self.col, "new description")
+        assert table_col.description == "new description"
+
+        expected_error = (
+            'type of argument "description" must be one of (str, NoneType); got float instead'
+        )
+        with pytest.raises(TypeError, match=expected_error):
+            table_under_test.update_column_description(self.col, 1.0)
+
     def test_delete(self, table_under_test):
         """Test delete table"""
         assert table_under_test.saved

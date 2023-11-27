@@ -1045,6 +1045,7 @@ class TableApiObject(
             ]
         return table_data, column_cleaning_operations
 
+    @typechecked
     def update_column_entity(self, column_name: str, entity_name: Optional[str]) -> None:
         """
         Update column entity
@@ -1072,6 +1073,7 @@ class TableApiObject(
             skip_update_schema_check=True,
         )
 
+    @typechecked
     def update_column_critical_data_info(
         self, column_name: str, critical_data_info: CriticalDataInfo
     ) -> None:
@@ -1095,6 +1097,7 @@ class TableApiObject(
             skip_update_schema_check=True,
         )
 
+    @typechecked
     def update_column_description(self, column_name: str, description: Optional[str]) -> None:
         """
         Update column description
