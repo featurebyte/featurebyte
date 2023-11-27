@@ -3,7 +3,7 @@ ObservationTable API route controller
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional, Tuple
+from typing import Any, Callable, List, Optional, Tuple
 
 import pandas as pd
 from bson import ObjectId
@@ -11,6 +11,7 @@ from fastapi import UploadFile
 
 from featurebyte.enum import SpecialColumnName, UploadFileFormat
 from featurebyte.exception import UnsupportedObservationTableUploadFileFormat
+from featurebyte.logging import get_logger
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.routes.common.base_materialized_table import BaseMaterializedTableController
@@ -32,6 +33,8 @@ from featurebyte.service.preview import PreviewService
 from featurebyte.service.target_table import TargetTableService
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.service.use_case import UseCaseService
+
+logger = get_logger(__name__)
 
 
 class ObservationTableController(
@@ -110,22 +113,38 @@ class ObservationTableController(
             if the observation set file format is not supported
         """
         assert observation_set_file.filename is not None
-        file_format = UploadFileFormat.CSV
-        if observation_set_file.filename.lower().endswith(".csv"):
-            assert observation_set_file.content_type == "text/csv"
-            observation_set_dataframe = pd.read_csv(observation_set_file.file)
+
+        def try_read_as_dataframe(
+            read_func: Callable[[str], pd.DataFrame], *args: Any
+        ) -> pd.DataFrame:
+            try:
+                return read_func(*args)
+            except Exception as exc:
+                raise UnsupportedObservationTableUploadFileFormat(
+                    "Content of uploaded file is not valid"
+                ) from exc
+
+        filename = observation_set_file.filename.lower()
+        if not filename.endswith(".csv") and not filename.endswith(".parquet"):
+            raise UnsupportedObservationTableUploadFileFormat(
+                "Only csv and parquet file formats are supported for observation set upload"
+            )
+
+        if filename.endswith(".csv"):
+            file_format = UploadFileFormat.CSV
+            observation_set_dataframe = try_read_as_dataframe(
+                pd.read_csv, observation_set_file.file
+            )
             # Convert point_in_time column to datetime
             observation_set_dataframe[SpecialColumnName.POINT_IN_TIME] = pd.to_datetime(
                 observation_set_dataframe[SpecialColumnName.POINT_IN_TIME]
             )
-        elif observation_set_file.filename.lower().endswith(".parquet"):
-            file_format = UploadFileFormat.PARQUET
-            assert observation_set_file.content_type == "application/octet-stream"
-            observation_set_dataframe = pd.read_parquet(observation_set_file.file)
         else:
-            raise UnsupportedObservationTableUploadFileFormat(
-                "Only csv and parquet file formats are supported for observation set upload"
+            file_format = UploadFileFormat.PARQUET
+            observation_set_dataframe = try_read_as_dataframe(
+                pd.read_parquet, observation_set_file.file
             )
+
         payload = await self.service.get_observation_table_upload_task_payload(
             data=data,
             observation_set_dataframe=observation_set_dataframe,
