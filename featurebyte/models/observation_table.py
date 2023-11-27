@@ -11,6 +11,7 @@ from datetime import datetime  # pylint: disable=wrong-import-order
 import pymongo
 from pydantic import Field, StrictStr, validator
 
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import construct_sort_validator
 from featurebyte.enum import StrEnum
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
@@ -108,6 +109,8 @@ class Purpose(StrEnum):
     """
     Purpose of the observation table
     """
+
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.Purpose")
 
     PREVIEW = "preview"
     EDA = "eda"

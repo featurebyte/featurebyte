@@ -109,6 +109,10 @@ class FeatureOrTargetBaseTestSuite:
         saved_item_under_test.update_description(None)
         assert saved_item_under_test.info()["namespace_description"] is None
 
-    def test_primary_entity_ids(self, saved_item_under_test, cust_id_entity_id):
+    def test_primary_entity_ids__saved_asset(self, saved_item_under_test, cust_id_entity_id):
         """Test primary entity ids"""
         assert saved_item_under_test.primary_entity_ids == [cust_id_entity_id]
+
+    def test_primary_entity_ids__unsaved_asset(self, item_under_test, cust_id_entity_id):
+        """Test primary entity ids"""
+        assert item_under_test.primary_entity_ids == [cust_id_entity_id]

@@ -339,9 +339,9 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
         Examples
         --------
         >>> observation_table = ObservationTable.upload(  # doctest: +SKIP
-        ...     path="path/to/csv/file.csv",
+        ...     file_path="path/to/csv/file.csv",
         ...     name="observation_table_name",
-        ...     purpose="preview",
+        ...     purpose=fb.Purpose.PREVIEW,
         ...     primary_entities=["entity_name_1"],
         ... )
         """
