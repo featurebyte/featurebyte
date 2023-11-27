@@ -284,6 +284,8 @@ def test_create_observation_table_with_sample_rows(
             *
           FROM "sf_database"."sf_schema"."sf_table"
         ) TABLESAMPLE(14)
+        ORDER BY
+          RANDOM()
         LIMIT 100
         """,
     )

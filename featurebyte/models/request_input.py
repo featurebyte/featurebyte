@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Literal, Optional, cast
 from abc import abstractmethod
 
 from pydantic import Field, PrivateAttr, StrictStr
+from sqlglot import expressions
 from sqlglot.expressions import Select
 
 from featurebyte.enum import SourceType, StrEnum
@@ -152,7 +153,11 @@ class BaseRequestInput(FeatureByteBaseModel):
             if num_rows > sample_rows:
                 num_percent = self.get_sample_percentage_from_row_count(num_rows, sample_rows)
                 adapter = get_sql_adapter(source_type=session.source_type)
-                query_expr = adapter.tablesample(query_expr, num_percent).limit(sample_rows)
+                query_expr = (
+                    adapter.tablesample(query_expr, num_percent)
+                    .order_by(expressions.Anonymous(this="RANDOM"))
+                    .limit(sample_rows)
+                )
 
         expression = get_sql_adapter(session.source_type).create_table_as(
             table_details=destination, select_expr=query_expr
