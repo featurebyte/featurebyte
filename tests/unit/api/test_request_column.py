@@ -93,11 +93,11 @@ def test_point_in_time_minus_timestamp_feature(latest_event_timestamp_feature, u
         GraphNodeType.OFFLINE_STORE_REQUEST_COLUMN_QUERY,
     }
     if graph_node_param1.type == GraphNodeType.OFFLINE_STORE_REQUEST_COLUMN_QUERY:
-        assert graph_node_param1.output_column_name == "__feature__req_comp0"
-        assert graph_node_param2.output_column_name == "__feature__comp0"
+        assert graph_node_param1.output_column_name == "__feature__req_part0"
+        assert graph_node_param2.output_column_name == "__feature__part0"
     else:
-        assert graph_node_param1.output_column_name == "__feature__comp0"
-        assert graph_node_param2.output_column_name == "__feature__req_comp0"
+        assert graph_node_param1.output_column_name == "__feature__part0"
+        assert graph_node_param2.output_column_name == "__feature__req_part0"
 
     # check output node hash
     check_decomposed_graph_output_node_hash(

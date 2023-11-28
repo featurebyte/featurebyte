@@ -283,11 +283,11 @@ class OfflineStoreIngestQueryGraphExtractor(
         if request_columns:
             graph_node_type = GraphNodeType.OFFLINE_STORE_REQUEST_COLUMN_QUERY
             parameter_class = OfflineStoreRequestColumnQueryGraphNodeParameters
-            suffix = "__req_comp"
+            suffix = "__req_part"
         else:
             graph_node_type = GraphNodeType.OFFLINE_STORE_INGEST_QUERY
             parameter_class = OfflineStoreIngestQueryGraphNodeParameters
-            suffix = "__comp"
+            suffix = "__part"
 
         comp_count = global_state.graph_node_counter[graph_node_type]
         column_name = f"__{global_state.feature_name}{suffix}{comp_count}"
