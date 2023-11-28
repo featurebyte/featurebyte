@@ -73,10 +73,12 @@ class FeatureJobStatusResult(FeatureByteBaseModel):
     def __repr__(self) -> str:
         return str(self)
 
-    def _repr_html_(self) -> str:
+    def _repr_html_(self) -> str:  # pylint: disable=too-many-statements
         try:
             # pylint: disable=import-outside-toplevel
             from matplotlib import pyplot as plt
+
+            matplotlib_available = True
 
             def _strip_nulls(values: pd.Series) -> pd.Series:
                 """
@@ -150,6 +152,18 @@ class FeatureJobStatusResult(FeatureByteBaseModel):
             plt.close()
         except ModuleNotFoundError:
             logger.warning("matplotlib not installed, skipping job status plots.")
+            matplotlib_available = False
+            image_1, image_2 = None, None
+
+        if matplotlib_available:
+            image_section = textwrap.dedent(
+                f"""
+                <img src="data:image/png;base64,{image_1}">
+                <img src="data:image/png;base64,{image_2}">
+                """
+            ).strip()
+        else:
+            image_section = None
 
         return textwrap.dedent(
             f"""
@@ -158,8 +172,7 @@ class FeatureJobStatusResult(FeatureByteBaseModel):
             {pd.DataFrame.from_dict([self.request_parameters]).to_html()}
             {self.feature_tile_table.to_html()}
             {self.feature_job_summary.to_html()}
-            <img src="data:image/png;base64,{image_1}">
-            <img src="data:image/png;base64,{image_2}">
+            {image_section or ""}
         </div>
         """
         ).strip()

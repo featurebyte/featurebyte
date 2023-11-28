@@ -27,6 +27,7 @@ from featurebyte.models.feature_list import FeatureListStatus
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from tests.util.helper import assert_equal_with_expected_fixture
 
 
 @pytest.fixture(name="draft_feature")
@@ -1077,16 +1078,16 @@ def test_get_feature_jobs_status(saved_feature_list, feature_job_logs, update_fi
         ]
     )
 
-    # check repr html without matplotlib
+    # check repr html with matplotlib
     fixture_path = "tests/fixtures/feature_job_status/expected_repr.html"
     repr_html = job_status_result._repr_html_()
-    if update_fixtures:
-        with open(fixture_path, "w") as file_handle:
-            file_handle.write(repr_html)
-    else:
-        with open(fixture_path, "r") as file_handle:
-            expected_repr_html = file_handle.read()
-            assert repr_html == expected_repr_html.strip()
+    assert_equal_with_expected_fixture(repr_html, fixture_path, update_fixtures)
+
+    # check repr html without matplotlib
+    with patch.dict("sys.modules", {"matplotlib": None}):
+        repr_html = job_status_result._repr_html_()
+    fixture_path = "tests/fixtures/feature_job_status/expected_repr_without_matplotlib.html"
+    assert_equal_with_expected_fixture(repr_html, fixture_path, update_fixtures)
 
     # check session logs
     fixture_path = "tests/fixtures/feature_job_status/expected_session_logs.parquet"
