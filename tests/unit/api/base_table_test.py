@@ -202,8 +202,9 @@ class BaseTableTestSuite:
         expected_error = (
             'type of argument "description" must be one of (str, NoneType); got float instead'
         )
-        with pytest.raises(TypeError, match=expected_error):
+        with pytest.raises(TypeError) as exc:
             table_under_test.update_column_description(self.col, 1.0)
+        assert expected_error in str(exc.value)
 
     def test_delete(self, table_under_test):
         """Test delete table"""
