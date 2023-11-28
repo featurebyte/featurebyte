@@ -11,6 +11,7 @@ from bson.objectid import ObjectId
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_namespace import FeatureNamespaceModel, FeatureReadiness
+from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.metadata.operation import AggregationColumn, SourceDataColumn
 
 
@@ -129,6 +130,14 @@ def test_feature_model(feature_model_dict, api_object_to_id):
     }
 
 
+def test_feature_name_validation(feature_model_dict):
+    """Test feature name validation"""
+    feature_model_dict["name"] = f"__{feature_model_dict['name']}"
+    expected_error = "FeatureModel name cannot start with '__' as it is reserved for internal use."
+    with pytest.raises(ValueError, match=expected_error):
+        FeatureModel(**feature_model_dict)
+
+
 def test_feature_name_space(feature_namespace_dict):
     """Test feature namespace model"""
     feature_name_space = FeatureNamespaceModel.parse_obj(feature_namespace_dict)
@@ -188,3 +197,38 @@ def test_extract_operation_structure(feature_model_dict):
             dtype="FLOAT",
         )
     ]
+
+
+def test_ingest_graph_and_node(feature_model_dict):
+    """Test ingest_graph_and_node method"""
+    feature = FeatureModel(**feature_model_dict)
+    ingest_query_graph = feature.extract_offline_store_ingest_query_graphs()[0]
+    # case 1: query graph is original feature graph
+    assert ingest_query_graph.ref_node_name is None
+    _, ingest_node = ingest_query_graph.ingest_graph_and_node()
+    assert ingest_node.type == "project"
+    assert ingest_node.parameters.columns == [feature.name]
+
+    # case 2: set ref_node_name to make it likes a decomposed graph (output is non-alias node)
+    assert feature.node.type != "alias"
+    ingest_query_graph.ref_node_name = "graph_1"
+    _, ingest_node = ingest_query_graph.ingest_graph_and_node()
+    assert ingest_node.name == "alias_1"  # check there is only one alias node
+    assert ingest_node.type == "alias"
+    assert ingest_node.parameters.name == feature.name
+
+    # case 3: set ref_node_name to make it likes a decomposed graph (output is alias node)
+    input_node = ingest_query_graph.graph.get_node_by_name(ingest_query_graph.node_name)
+    inserted_alias_node = ingest_query_graph.graph.add_operation(
+        node_type=NodeType.ALIAS,
+        node_params={"name": "some_column_name"},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[input_node],
+    )
+    ingest_query_graph.node_name = inserted_alias_node.name
+    assert ingest_query_graph.node_name == "alias_1"
+    _, ingest_node = ingest_query_graph.ingest_graph_and_node()
+    assert ingest_node.name == "alias_1"  # check there is only one alias node
+    assert ingest_node.type == "alias"
+    # check the alias node name is the feature name
+    assert ingest_node.parameters.name == feature.name

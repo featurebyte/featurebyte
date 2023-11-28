@@ -3,7 +3,7 @@ This module contains Feature related models
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from datetime import datetime
 
@@ -22,7 +22,7 @@ from featurebyte.models.base import (
     VersionIdentifier,
 )
 from featurebyte.models.feature_namespace import FeatureReadiness
-from featurebyte.query_graph.enum import GraphNodeType
+from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
@@ -48,6 +48,7 @@ from featurebyte.query_graph.transform.definition import (
 from featurebyte.query_graph.transform.offline_ingest_extractor import (
     OfflineStoreIngestQueryGraphExtractor,
 )
+from featurebyte.query_graph.transform.quick_pruning import QuickGraphStructurePruningTransformer
 
 
 class TableIdColumnNames(FeatureByteBaseModel):
@@ -73,6 +74,42 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
     # reference node name that is used in decomposed query graph
     # if None, the query graph is not decomposed
     ref_node_name: Optional[str]
+    # output column name of the offline store ingest query graph
+    output_column_name: str
+
+    def ingest_graph_and_node(self) -> Tuple[QueryGraphModel, Node]:
+        """
+        Construct graph and node for generating offline store ingest SQL query
+
+        Returns
+        -------
+        Tuple[QueryGraphModel, Node]
+            Ingest graph and node
+        """
+        output_node = self.graph.get_node_by_name(self.node_name)
+        if self.ref_node_name is None:
+            # if the query graph is not decomposed, return the original graph & node
+            return self.graph, output_node
+
+        # if the query graph is decomposed, update the graph output column name to match output_column_name
+        if output_node.type != NodeType.ALIAS:
+            graph = QueryGraphModel(**self.graph.dict(by_alias=True))
+        else:
+            output_parent_node_name = self.graph.backward_edges_map[self.node_name][0]
+            transformer = QuickGraphStructurePruningTransformer(graph=self.graph)
+            graph, node_name_map = transformer.transform(
+                target_node_names=[output_parent_node_name]
+            )
+            output_node = graph.get_node_by_name(node_name_map[output_parent_node_name])
+
+        # add alias node to rename the output column name
+        output_node = graph.add_operation(
+            node_type=NodeType.ALIAS,
+            node_params={"name": self.output_column_name},
+            node_output_type=NodeOutputType.SERIES,
+            input_nodes=[output_node],
+        )
+        return graph, output_node
 
 
 class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
@@ -187,6 +224,15 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
 
             values["dtype"] = op_struct.aggregations[0].dtype
         return values
+
+    @validator("name")
+    @classmethod
+    def _validate_asset_name(cls, value: Optional[str]) -> Optional[str]:
+        if value and value.startswith("__"):
+            raise ValueError(
+                f"{cls.__name__} name cannot start with '__' as it is reserved for internal use."
+            )
+        return value
 
     @validator(
         "table_id_column_names", "table_id_feature_job_settings", "table_id_cleaning_operations"
@@ -402,7 +448,10 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
             List of offline store ingest query graphs
         """
         extractor = OfflineStoreIngestQueryGraphExtractor(graph=self.graph)
-        result = extractor.extract(node=self.node, relationships_info=self.relationships_info)
+        assert self.name is not None
+        result = extractor.extract(
+            node=self.node, relationships_info=self.relationships_info, feature_name=self.name
+        )
         output = []
         if result.is_decomposed:
             for graph_node in result.graph.iterate_sorted_graph_nodes(
@@ -416,6 +465,7 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
                         node_name=graph_node.parameters.output_node_name,
                         primary_entity_ids=primary_entity_ids,
                         ref_node_name=graph_node.name,
+                        output_column_name=graph_node.parameters.output_column_name,  # type: ignore
                     )
                 )
         else:
@@ -425,6 +475,7 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
                     node_name=self.node_name,
                     primary_entity_ids=self.primary_entity_ids,
                     ref_node_name=None,
+                    output_column_name=self.name,
                 )
             )
 

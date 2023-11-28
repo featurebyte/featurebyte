@@ -148,6 +148,8 @@ class BaseOfflineStoreIngestQueryGraphNodeParameters(BaseGraphNodeParameters, AB
     Base class used for offline store ingest query graph node parameters
     """
 
+    output_column_name: str
+
     def derive_sdk_code(
         self,
         input_var_name_expressions: List[VarNameExpressionInfo],
