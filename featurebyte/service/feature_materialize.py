@@ -113,6 +113,10 @@ class OnlineEnabledFeaturesMetadata:
     def _get_combined_ingest_graph(self) -> OfflineIngestGraphMetadata:
         """
         Returns a combined ingest graph and related information for all features
+
+        Returns
+        -------
+        OfflineIngestGraphMetadata
         """
         local_query_graph = QueryGraph()
         output_nodes = []
