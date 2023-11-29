@@ -995,3 +995,11 @@ def mock_update_data_warehouse():
         "featurebyte.service.deploy.OnlineEnableService.update_data_warehouse"
     ) as mock_update_data_warehouse:
         yield mock_update_data_warehouse
+
+
+@pytest.fixture(name="feature_materialize_service")
+def feature_materialize_service_fixture(app_container):
+    """
+    Fixture for FeatureMaterializeService
+    """
+    return app_container.feature_materialize_service

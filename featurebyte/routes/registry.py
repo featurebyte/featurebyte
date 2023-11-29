@@ -82,6 +82,7 @@ from featurebyte.service.feature_list_facade import FeatureListFacadeService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_list_status import FeatureListStatusService
 from featurebyte.service.feature_manager import FeatureManagerService
+from featurebyte.service.feature_materialize import FeatureMaterializeService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_preview import FeaturePreviewService
 from featurebyte.service.feature_readiness import FeatureReadinessService
@@ -223,6 +224,7 @@ app_container_config.register_class(FeatureListNamespaceController)
 app_container_config.register_class(FeatureListNamespaceService)
 app_container_config.register_class(FeatureListStatusService)
 app_container_config.register_class(FeatureManagerService)
+app_container_config.register_class(FeatureMaterializeService)
 app_container_config.register_class(FeatureOrTargetHelper)
 app_container_config.register_class(FeatureOrTargetMetadataExtractor)
 app_container_config.register_class(FeatureNamespaceController)
