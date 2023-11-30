@@ -2,6 +2,8 @@
 This module contains tests for the offline ingest query graph.
 """
 from featurebyte import FeatureJobSetting, RequestColumn
+from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.transform.offline_ingest_extractor import AggregationNodeInfo
 from tests.util.helper import check_decomposed_graph_output_node_hash
 
 
@@ -29,10 +31,20 @@ def test_feature_contains_ttl_and_non_ttl_components(float_feature, non_time_bas
     assert ttl_component_graph.feature_job_setting == expected_feature_job_setting
     assert ttl_component_graph.node_name == "mul_1"
     assert ttl_component_graph.has_ttl is True
+    assert ttl_component_graph.aggregation_nodes_info == [
+        AggregationNodeInfo(
+            node_type=NodeType.GROUPBY, node_name="groupby_1", input_node_name="graph_1"
+        ),
+    ]
 
     assert non_ttl_component_graph.feature_job_setting is None
     assert non_ttl_component_graph.node_name == "sub_1"
     assert non_ttl_component_graph.has_ttl is False
+    assert non_ttl_component_graph.aggregation_nodes_info == [
+        AggregationNodeInfo(
+            node_type=NodeType.ITEM_GROUPBY, node_name="item_groupby_1", input_node_name="graph_2"
+        ),
+    ]
 
     # check consistency of decomposed graph
     check_decomposed_graph_output_node_hash(feature_model=feature.cached_model)
@@ -70,10 +82,52 @@ def test_feature_request_column_and_non_ttl_components(
     assert ttl_component_graph.feature_job_setting == expected_feature_job_setting
     assert ttl_component_graph.node_name == "project_1"
     assert ttl_component_graph.has_ttl is True
+    assert ttl_component_graph.aggregation_nodes_info == [
+        AggregationNodeInfo(
+            node_type=NodeType.GROUPBY, node_name="groupby_1", input_node_name="graph_1"
+        ),
+    ]
 
     assert non_ttl_component_graph.feature_job_setting is None
     assert non_ttl_component_graph.node_name == "project_1"
     assert non_ttl_component_graph.has_ttl is False
+    assert non_ttl_component_graph.aggregation_nodes_info == [
+        AggregationNodeInfo(
+            node_type=NodeType.ITEM_GROUPBY, node_name="item_groupby_1", input_node_name="graph_2"
+        ),
+    ]
 
     # check consistency of decomposed graph
     check_decomposed_graph_output_node_hash(feature_model=feature.cached_model)
+
+
+def test_feature_multiple_non_ttl_components(
+    snowflake_scd_table, snowflake_dimension_table, cust_id_entity
+):
+    """Test that a feature contains multiple non-ttl components."""
+    snowflake_scd_table["col_text"].as_entity(cust_id_entity.name)
+    scd_view = snowflake_scd_table.get_view()
+    lookup_feature = scd_view["col_float"].as_feature("FloatFeature", offset="7d")
+
+    snowflake_dimension_table["col_int"].as_entity(cust_id_entity.name)
+    dimension_view = snowflake_dimension_table.get_view()
+    feature_a = dimension_view["col_float"].as_feature("FloatFeatureDimensionView")
+    feature = lookup_feature + feature_a
+    feature.name = "feature"
+    feature.save()
+
+    # check offline ingest query graph (note that the request column part should be removed)
+    ingest_query_graphs = feature.cached_model.extract_offline_store_ingest_query_graphs()
+    assert len(ingest_query_graphs) == 1
+    non_ttl_component_graph = ingest_query_graphs[0]
+    assert non_ttl_component_graph.feature_job_setting is None
+    assert non_ttl_component_graph.node_name == "alias_1"
+    assert non_ttl_component_graph.has_ttl is False
+    assert non_ttl_component_graph.aggregation_nodes_info == [
+        AggregationNodeInfo(
+            node_type=NodeType.LOOKUP, node_name="lookup_2", input_node_name="graph_2"
+        ),
+        AggregationNodeInfo(
+            node_type=NodeType.LOOKUP, node_name="lookup_1", input_node_name="graph_1"
+        ),
+    ]

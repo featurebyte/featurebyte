@@ -47,6 +47,7 @@ from featurebyte.query_graph.transform.definition import (
     DefinitionHashOutput,
 )
 from featurebyte.query_graph.transform.offline_ingest_extractor import (
+    AggregationNodeInfo,
     OfflineStoreIngestQueryGraphExtractor,
 )
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
@@ -83,6 +84,8 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
     feature_job_setting: Optional[FeatureJobSetting]
     # whether the offline store ingest query graph has time-to-live (TTL) component
     has_ttl: bool
+    # aggregation nodes info of the offline store ingest query graph
+    aggregation_nodes_info: List[AggregationNodeInfo]
 
     def ingest_graph_and_node(self) -> Tuple[QueryGraphModel, Node]:
         """
@@ -454,6 +457,22 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
         extractor = DefinitionHashExtractor(graph=self.graph)
         return extractor.extract(self.node)
 
+    def _extract_aggregation_nodes_info(self) -> List[AggregationNodeInfo]:
+        operation_structure = self.graph.extract_operation_structure(self.node)
+        output = []
+        for agg in operation_structure.iterate_aggregations():
+            node = self.graph.get_node_by_name(agg.node_name)
+            input_node_names = self.graph.backward_edges_map[node.name]
+            assert len(input_node_names) <= 1
+            output.append(
+                AggregationNodeInfo(
+                    node_type=node.type,
+                    input_node_name=input_node_names[0] if input_node_names else None,
+                    node_name=node.name,
+                )
+            )
+        return output
+
     def extract_offline_store_ingest_query_graphs(self) -> List[OfflineStoreIngestQueryGraph]:
         """
         Extract offline store ingest query graphs
@@ -491,6 +510,7 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
                         ),
                         feature_job_setting=feature_job_setting,
                         has_ttl=aggregation_info.has_ttl_agg_type,
+                        aggregation_nodes_info=aggregation_info.agg_nodes,
                     )
                 )
         else:
@@ -518,6 +538,7 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
                             None,
                         )
                     ),
+                    aggregation_nodes_info=self._extract_aggregation_nodes_info(),
                 )
             )
 

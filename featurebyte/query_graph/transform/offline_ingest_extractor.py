@@ -30,6 +30,17 @@ from featurebyte.query_graph.transform.quick_pruning import QuickGraphStructureP
 
 
 @dataclass
+class AggregationNodeInfo:
+    """
+    AggregationNodeInfo class stores information about the aggregation-type node.
+    """
+
+    node_type: NodeType
+    input_node_name: Optional[str]
+    node_name: str
+
+
+@dataclass
 class AggregationInfo:
     """
     AggregationInfo class stores information about the aggregation-type node. Aggregation-type node
@@ -41,13 +52,13 @@ class AggregationInfo:
     - RequestColumnNode
     """
 
-    agg_node_types: List[NodeType]
+    agg_nodes: List[AggregationNodeInfo]
     primary_entity_ids: List[ObjectId]
     feature_job_settings: List[FeatureJobSetting]
     request_columns: List[str]
 
     def __init__(self) -> None:
-        self.agg_node_types = []
+        self.agg_nodes = []
         self.primary_entity_ids = []
         self.feature_job_settings = []
         self.request_columns = []
@@ -67,7 +78,7 @@ class AggregationInfo:
             Added AggregationInfo object
         """
         output = AggregationInfo()
-        output.agg_node_types = sorted(set(self.agg_node_types + other.agg_node_types))
+        output.agg_nodes = sorted(self.agg_nodes + other.agg_nodes, key=lambda node: node.node_name)
         output.primary_entity_ids = sorted(set(self.primary_entity_ids + other.primary_entity_ids))
         output.feature_job_settings = list(
             set(self.feature_job_settings + other.feature_job_settings)
@@ -84,7 +95,10 @@ class AggregationInfo:
         -------
         bool
         """
-        return NodeType.GROUPBY in self.agg_node_types
+        for agg_node in self.agg_nodes:
+            if agg_node.node_type == NodeType.GROUPBY:
+                return True
+        return False
 
 
 @dataclass
@@ -164,7 +178,13 @@ class OfflineStoreIngestQueryGraphGlobalState:  # pylint: disable=too-many-insta
             aggregation_info += input_aggregation_info
 
         if node.name in self.aggregation_node_names:
-            aggregation_info.agg_node_types = [node.type]
+            assert len(input_node_names) <= 1
+            agg_node_info = AggregationNodeInfo(
+                node_type=node.type,
+                input_node_name=next(iter(input_node_names), None),
+                node_name=node.name,
+            )
+            aggregation_info.agg_nodes = [agg_node_info]
 
         if isinstance(node.parameters, BaseGroupbyParameters):
             # primary entity ids introduced by groupby node family
@@ -209,7 +229,7 @@ class OfflineStoreIngestQueryGraphGlobalState:  # pylint: disable=too-many-insta
         bool
         """
         aggregation_info = self.node_name_to_aggregation_info[node_name]
-        if not aggregation_info.agg_node_types:
+        if not aggregation_info.agg_nodes:
             # do not decompose if aggregation operation has not been introduced
             return False
 
@@ -230,7 +250,7 @@ class OfflineStoreIngestQueryGraphGlobalState:  # pylint: disable=too-many-insta
                 # to the universe.
                 return False
 
-            if input_agg_info.agg_node_types:
+            if input_agg_info.agg_nodes:
                 all_inputs_have_empty_agg_node_types = False
 
         if all_inputs_have_empty_agg_node_types:
