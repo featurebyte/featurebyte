@@ -48,6 +48,7 @@ from featurebyte.query_graph.transform.definition import (
 from featurebyte.query_graph.transform.offline_ingest_extractor import (
     OfflineStoreIngestQueryGraphExtractor,
 )
+from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 from featurebyte.query_graph.transform.quick_pruning import QuickGraphStructurePruningTransformer
 
 
@@ -76,6 +77,7 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
     ref_node_name: Optional[str]
     # output column name of the offline store ingest query graph
     output_column_name: str
+    output_dtype: DBVarType
 
     def ingest_graph_and_node(self) -> Tuple[QueryGraphModel, Node]:
         """
@@ -173,6 +175,18 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
         allow_reuse=True,
     )(construct_sort_validator())
 
+    @staticmethod
+    def _extract_dtype_from_graph(graph: QueryGraphModel, node_name: str) -> DBVarType:
+        node = graph.get_node_by_name(node_name)
+        op_struct_info = OperationStructureExtractor(graph=graph).extract(
+            node=node,
+            keep_all_source_columns=True,
+        )
+        op_struct = op_struct_info.operation_structure_map[node.name]
+        if len(op_struct.aggregations) != 1:
+            raise ValueError("Feature or target graph must have exactly one aggregation output")
+        return op_struct.aggregations[0].dtype
+
     @root_validator
     @classmethod
     def _add_derived_attributes(cls, values: dict[str, Any]) -> dict[str, Any]:
@@ -218,11 +232,8 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
             )
 
             # extract dtype from the graph
-            op_struct = graph.extract_operation_structure(node=node, keep_all_source_columns=True)
-            if len(op_struct.aggregations) != 1:
-                raise ValueError("Feature or target graph must have exactly one aggregation output")
+            values["dtype"] = cls._extract_dtype_from_graph(graph, node_name)
 
-            values["dtype"] = op_struct.aggregations[0].dtype
         return values
 
     @validator("name")
@@ -466,6 +477,10 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
                         primary_entity_ids=primary_entity_ids,
                         ref_node_name=graph_node.name,
                         output_column_name=graph_node.parameters.output_column_name,  # type: ignore
+                        output_dtype=self._extract_dtype_from_graph(
+                            graph=graph_node.parameters.graph,
+                            node_name=graph_node.parameters.output_node_name,
+                        ),
                     )
                 )
         else:
@@ -476,6 +491,9 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
                     primary_entity_ids=self.primary_entity_ids,
                     ref_node_name=None,
                     output_column_name=self.name,
+                    output_dtype=self._extract_dtype_from_graph(
+                        graph=self.graph, node_name=self.node_name
+                    ),
                 )
             )
 

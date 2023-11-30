@@ -11,6 +11,7 @@ from bson import ObjectId
 from sqlglot import expressions
 from sqlglot.expressions import Select, select
 
+from featurebyte.enum import DBVarType
 from featurebyte.models.entity import EntityModel
 from featurebyte.models.feature import FeatureModel
 from featurebyte.query_graph.graph import QueryGraph
@@ -38,6 +39,7 @@ class OfflineIngestGraphMetadata:
     graph: QueryGraph
     node_names: List[str]
     output_column_names: List[str]
+    output_dtypes: List[DBVarType]
 
 
 @dataclass
@@ -52,6 +54,7 @@ class OnlineEnabledFeaturesMetadata:
     primary_entities: List[EntityModel]
     ingest_graph_and_node_names: Tuple[QueryGraph, List[str]] = field(init=False)
     output_column_names: List[str] = field(init=False)
+    output_dtypes: List[DBVarType] = field(init=False)
 
     def __post_init__(self) -> None:
         ingest_graph_metadata = self._get_combined_ingest_graph()
@@ -60,6 +63,7 @@ class OnlineEnabledFeaturesMetadata:
             ingest_graph_metadata.node_names,
         )
         self.output_column_names = ingest_graph_metadata.output_column_names
+        self.output_dtypes = ingest_graph_metadata.output_dtypes
 
     @property
     def serving_names(self) -> List[str]:
@@ -121,6 +125,7 @@ class OnlineEnabledFeaturesMetadata:
         local_query_graph = QueryGraph()
         output_nodes = []
         output_column_names = []
+        output_dtypes = []
 
         for feature in self.features:
             offline_ingest_graphs = feature.extract_offline_store_ingest_query_graphs()
@@ -134,11 +139,13 @@ class OnlineEnabledFeaturesMetadata:
                 local_query_graph, local_name_map = local_query_graph.load(graph)
                 output_nodes.append(local_query_graph.get_node_by_name(local_name_map[node.name]))
                 output_column_names.append(offline_ingest_graph.output_column_name)
+                output_dtypes.append(offline_ingest_graph.output_dtype)
 
         return OfflineIngestGraphMetadata(
             graph=local_query_graph,
             node_names=[node.name for node in output_nodes],
             output_column_names=output_column_names,
+            output_dtypes=output_dtypes,
         )
 
 
@@ -150,6 +157,7 @@ class MaterializedFeatures:
 
     materialized_table_name: str
     names: List[str]
+    data_types: List[str]
     serving_names: List[str]
 
 
@@ -253,6 +261,10 @@ class FeatureMaterializeService:
         return MaterializedFeatures(
             materialized_table_name=output_table_details.table_name,
             names=online_enabled_features_metadata.output_column_names,
+            data_types=[
+                adapter.get_physical_type_from_dtype(dtype)
+                for dtype in online_enabled_features_metadata.output_dtypes
+            ],
             serving_names=online_enabled_features_metadata.serving_names,
         )
 

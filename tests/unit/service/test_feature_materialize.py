@@ -83,6 +83,7 @@ async def test_materialize_features(
     assert materialized_features_dict == {
         "materialized_table_name": "TEMP_FEATURE_TABLE",
         "names": ["sum_30m"],
+        "data_types": ["FLOAT"],
         "serving_names": ["cust_id"],
     }
 
