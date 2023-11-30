@@ -157,7 +157,7 @@ class MaterializedFeatures:
 
     materialized_table_name: str
     names: List[str]
-    physical_types: List[str]
+    data_types: List[str]
     serving_names: List[str]
 
 
@@ -261,7 +261,7 @@ class FeatureMaterializeService:
         return MaterializedFeatures(
             materialized_table_name=output_table_details.table_name,
             names=online_enabled_features_metadata.output_column_names,
-            physical_types=[
+            data_types=[
                 adapter.get_physical_type_from_dtype(dtype)
                 for dtype in online_enabled_features_metadata.output_dtypes
             ],
