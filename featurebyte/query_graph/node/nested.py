@@ -24,6 +24,7 @@ from pydantic import BaseModel, Field
 from featurebyte.enum import ViewMode
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node.base import BaseNode, BasePrunableNode, NodeT
 from featurebyte.query_graph.node.cleaning_operation import ColumnCleaningOperation
 from featurebyte.query_graph.node.metadata.operation import (
@@ -167,6 +168,7 @@ class OfflineStoreIngestQueryGraphNodeParameters(BaseOfflineStoreIngestQueryGrap
     type: Literal[GraphNodeType.OFFLINE_STORE_INGEST_QUERY] = Field(
         GraphNodeType.OFFLINE_STORE_INGEST_QUERY, const=True
     )
+    feature_job_setting: Optional[FeatureJobSetting] = Field(default=None)
 
 
 class OfflineStoreRequestColumnQueryGraphNodeParameters(

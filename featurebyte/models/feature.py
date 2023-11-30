@@ -469,12 +469,12 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
                 graph_node_types={GraphNodeType.OFFLINE_STORE_INGEST_QUERY}
             ):
                 exit_node_name = result.graph_node_name_to_exit_node_name[graph_node.name]
-                primary_entity_ids = result.node_name_to_primary_entity_ids[exit_node_name]
+                aggregation_info = result.node_name_to_aggregation_info[exit_node_name]
                 output.append(
                     OfflineStoreIngestQueryGraph(
                         graph=graph_node.parameters.graph,
                         node_name=graph_node.parameters.output_node_name,
-                        primary_entity_ids=primary_entity_ids,
+                        primary_entity_ids=aggregation_info.primary_entity_ids,
                         ref_node_name=graph_node.name,
                         output_column_name=graph_node.parameters.output_column_name,  # type: ignore
                         output_dtype=self._extract_dtype_from_graph(
