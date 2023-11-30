@@ -18,7 +18,7 @@ from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import LookupNode, LookupTargetNode
-from featurebyte.query_graph.node.mixin import BaseGroupbyParameters
+from featurebyte.query_graph.node.mixin import AggregationOpStructMixin, BaseGroupbyParameters
 from featurebyte.query_graph.node.nested import (
     OfflineStoreIngestQueryGraphNodeParameters,
     OfflineStoreRequestColumnQueryGraphNodeParameters,
@@ -177,6 +177,12 @@ class OfflineStoreIngestQueryGraphGlobalState:  # pylint: disable=too-many-insta
             # request columns introduced by request column node
             aggregation_info.request_columns = [node.parameters.column_name]
 
+        if isinstance(node, AggregationOpStructMixin):
+            feature_job_setting = node.extract_feature_job_setting()
+            if feature_job_setting:
+                # feature job settings introduced by aggregation-type node
+                aggregation_info.feature_job_settings = [feature_job_setting]
+
         # reduce the primary entity ids based on entity relationship
         aggregation_info.primary_entity_ids = (
             self.entity_ancestor_descendant_mapper.reduce_entity_ids(
@@ -229,7 +235,8 @@ class OfflineStoreIngestQueryGraphGlobalState:  # pylint: disable=too-many-insta
 
         if all_inputs_have_empty_agg_node_types:
             # if all the input nodes do not have any aggregation operation introduced, that means
-            # the current node is the first aggregation operation introduced in the graph.
+            # the current node is the first aggregation operation introduced in the graph (between
+            # the input nodes and the current node).
             return False
 
         # if none of the above conditions are met, that means we should split the query graph

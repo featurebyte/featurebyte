@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node.agg_func import construct_agg_func
 from featurebyte.query_graph.node.metadata.column import InColumnStr
 from featurebyte.query_graph.node.metadata.operation import (
@@ -225,3 +226,16 @@ class AggregationOpStructMixin:
             row_index_lineage=(self.name,),
             is_time_based=is_time_based,
         )
+
+    def extract_feature_job_setting(  # pylint: disable=useless-return
+        self,
+    ) -> Optional[FeatureJobSetting]:
+        """
+        Extract feature job setting from the node
+
+        Returns
+        -------
+        Optional[FeatureJobSetting]
+        """
+        _ = self
+        return None

@@ -27,6 +27,7 @@ from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.query_graph.model.feature_job_setting import (
+    FeatureJobSetting,
     TableFeatureJobSetting,
     TableIdFeatureJobSetting,
 )
@@ -78,6 +79,10 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
     # output column name of the offline store ingest query graph
     output_column_name: str
     output_dtype: DBVarType
+    # feature job setting of the offline store ingest query graph
+    feature_job_setting: Optional[FeatureJobSetting]
+    # whether the offline store ingest query graph has time-to-live (TTL) component
+    has_ttl: bool
 
     def ingest_graph_and_node(self) -> Tuple[QueryGraphModel, Node]:
         """
@@ -470,6 +475,9 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
             ):
                 exit_node_name = result.graph_node_name_to_exit_node_name[graph_node.name]
                 aggregation_info = result.node_name_to_aggregation_info[exit_node_name]
+                feature_job_setting = None
+                if aggregation_info.feature_job_settings:
+                    feature_job_setting = aggregation_info.feature_job_settings[0]
                 output.append(
                     OfflineStoreIngestQueryGraph(
                         graph=graph_node.parameters.graph,
@@ -481,9 +489,15 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
                             graph=graph_node.parameters.graph,
                             node_name=graph_node.parameters.output_node_name,
                         ),
+                        feature_job_setting=feature_job_setting,
+                        has_ttl=aggregation_info.has_ttl_agg_type,
                     )
                 )
         else:
+            feature_job_setting = None
+            if self.table_id_feature_job_settings:
+                feature_job_setting = self.table_id_feature_job_settings[0].feature_job_setting
+
             output.append(
                 OfflineStoreIngestQueryGraph(
                     graph=self.graph,
@@ -493,6 +507,16 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
                     output_column_name=self.name,
                     output_dtype=self._extract_dtype_from_graph(
                         graph=self.graph, node_name=self.node_name
+                    ),
+                    feature_job_setting=feature_job_setting,
+                    has_ttl=bool(
+                        # check if there is a GroupByNode in the graph
+                        next(
+                            self.graph.iterate_nodes(
+                                target_node=self.node, node_type=NodeType.GROUPBY
+                            ),
+                            None,
+                        )
                     ),
                 )
             )
