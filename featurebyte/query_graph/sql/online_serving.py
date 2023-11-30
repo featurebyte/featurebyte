@@ -15,6 +15,7 @@ from sqlglot.expressions import select
 from featurebyte.common.utils import prepare_dataframe_for_json
 from featurebyte.enum import InternalName, SourceType, SpecialColumnName
 from featurebyte.logging import get_logger
+from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.batch_request_table import BatchRequestTableModel
 from featurebyte.models.parent_serving import ParentServingPreparation
 from featurebyte.query_graph.enum import NodeType
@@ -173,11 +174,22 @@ def get_online_store_retrieval_template(
     )
 
 
-async def get_online_features(
+class TemporaryBatchRequestTable(FeatureByteBaseModel):
+    """
+    Temporary batch request table created manually without going through the standard table
+    materialization task. Contains the essential information needed for batch features
+    materialization.
+    """
+
+    column_names: List[str]
+    table_details: TableDetails
+
+
+async def get_online_features(  # pylint: disable=too-many-locals
     session: BaseSession,
     graph: QueryGraph,
     nodes: list[Node],
-    request_data: Union[pd.DataFrame, BatchRequestTableModel],
+    request_data: Union[pd.DataFrame, BatchRequestTableModel, TemporaryBatchRequestTable],
     source_type: SourceType,
     online_store_table_version_service: OnlineStoreTableVersionService,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
@@ -217,10 +229,15 @@ async def get_online_features(
         request_table_expr = construct_dataframe_sql_expr(request_data, date_cols=[])
         request_table_columns = request_data.columns.tolist()
     else:
+        if isinstance(request_data, BatchRequestTableModel):
+            table_details = request_data.location.table_details
+            request_table_columns = [col.name for col in request_data.columns_info]
+        else:
+            table_details = request_data.table_details
+            request_table_columns = request_data.column_names[:]
         request_table_expr = expressions.select("*").from_(
-            get_fully_qualified_table_name(request_data.location.table_details.dict())
+            get_fully_qualified_table_name(table_details.dict())
         )
-        request_table_columns = [col.name for col in request_data.columns_info]
 
     retrieval_template = get_online_store_retrieval_template(
         graph,
