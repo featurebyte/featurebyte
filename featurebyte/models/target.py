@@ -89,6 +89,6 @@ class TargetModel(BaseFeatureModel):
         """
 
         collection_name: str = "target"
-        indexes = BaseFeatureModel.Settings.indexes + [  # type: ignore
+        indexes = BaseFeatureModel.Settings.indexes + [
             pymongo.operations.IndexModel("target_namespace_id"),
         ]

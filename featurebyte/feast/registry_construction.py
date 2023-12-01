@@ -2,7 +2,7 @@
 This module contains the model for feast registry
 """
 # pylint: disable=no-name-in-module
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from collections import defaultdict
 from datetime import timedelta
@@ -15,6 +15,7 @@ from feast.data_source import DataSource as FeastDataSource
 from feast.protos.feast.core.Registry_pb2 import Registry as RegistryProto
 from pydantic import Field
 
+from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.entity import EntityModel
 from featurebyte.models.feature import FeatureModel
@@ -38,19 +39,13 @@ class OfflineStoreTable(FeatureByteBaseModel):
     feature_job_setting: Optional[FeatureJobSetting]
     has_ttl: bool
     ingest_query_graphs: List[OfflineStoreIngestQueryGraph]
+    primary_entity_serving_names: List[str]
 
-    def set_table_name(self, entity_id_to_serving_name: Dict[PydanticObjectId, str]) -> None:
-        """
-        Offline store table name
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
 
-        Parameters
-        ----------
-        entity_id_to_serving_name: Dict[PydanticObjectId, str]
-            Entity id to serving name mapping
-        """
-        entity_part = "_".join(
-            entity_id_to_serving_name[entity_id] for entity_id in self.primary_entity_ids
-        )
+        # construct table name
+        entity_part = "_".join(self.primary_entity_serving_names)
         table_name = f"fb_entity_{entity_part}"
         if self.feature_job_setting:
             fjs = self.feature_job_setting.to_seconds()
@@ -62,28 +57,18 @@ class OfflineStoreTable(FeatureByteBaseModel):
             table_name = f"{table_name}_ttl"
         self.table_name = table_name
 
-    def create_feast_entity(
-        self, entity_id_to_serving_name: Dict[PydanticObjectId, str]
-    ) -> FeastEntity:
+    def create_feast_entity(self) -> FeastEntity:
         """
         Create feast entity based on the offline store ingest query graph
-
-        Parameters
-        ----------
-        entity_id_to_serving_name: Dict[PydanticObjectId, str]
-            Entity id to serving name mapping
 
         Returns
         -------
         FeastEntity
             Feast entity
         """
-        entity_id_part = "_".join(str(entity_id)[-8:] for entity_id in self.primary_entity_ids)
         entity = FeastEntity(
-            name=f"entity_{entity_id_part}",
-            join_keys=[
-                entity_id_to_serving_name[entity_id] for entity_id in self.primary_entity_ids
-            ],
+            name=" x ".join(self.primary_entity_serving_names),
+            join_keys=self.primary_entity_serving_names,
         )
         return entity  # type: ignore[no-any-return]
 
@@ -141,7 +126,7 @@ class OfflineStoreTable(FeatureByteBaseModel):
             schema.append(
                 FeastField(
                     name=ingest_query_graph.output_column_name,
-                    dtype=ingest_query_graph.output_dtype.to_feast_primitive_type(),
+                    dtype=DBVarType(ingest_query_graph.output_dtype).to_feast_primitive_type(),
                 )
             )
 
@@ -248,8 +233,10 @@ class FeastRegistryConstructor:
                 feature_job_setting=feature_job_setting,
                 ingest_query_graphs=ingest_query_graphs,
                 has_ttl=has_ttl,
+                primary_entity_serving_names=[
+                    entity_id_to_serving_name[entity_id] for entity_id in primary_entity_ids
+                ],
             )
-            offline_store_table.set_table_name(entity_id_to_serving_name=entity_id_to_serving_name)
             offline_store_tables.append(offline_store_table)
         return offline_store_tables
 
@@ -356,9 +343,7 @@ class FeastRegistryConstructor:
             entity_key = tuple(offline_store_table.primary_entity_ids)
             feast_entity = primary_entity_ids_to_feast_entity.get(
                 entity_key,
-                offline_store_table.create_feast_entity(
-                    entity_id_to_serving_name=entity_id_to_serving_name
-                ),
+                offline_store_table.create_feast_entity(),
             )
             if entity_key not in primary_entity_ids_to_feast_entity:
                 primary_entity_ids_to_feast_entity[entity_key] = feast_entity

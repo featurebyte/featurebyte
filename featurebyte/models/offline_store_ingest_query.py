@@ -7,11 +7,11 @@ from typing import List, Optional, Tuple
 
 from pydantic import validator
 
-from featurebyte import FeatureJobSetting
 from featurebyte.common.validator import construct_sort_validator
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.nested import AggregationNodeInfo
@@ -42,7 +42,7 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
     aggregation_nodes_info: List[AggregationNodeInfo]
 
     # pydantic validators
-    _sort_ids_validator = validator("primary_table_ids", allow_reuse=True)(
+    _sort_ids_validator = validator("primary_entity_ids", allow_reuse=True)(
         construct_sort_validator()
     )
 
