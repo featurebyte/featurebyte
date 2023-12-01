@@ -22,8 +22,9 @@ from abc import ABC, abstractmethod  # pylint: disable=wrong-import-order
 from pydantic import BaseModel, Field
 
 from featurebyte.enum import ViewMode
-from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node.base import BaseNode, BasePrunableNode, NodeT
 from featurebyte.query_graph.node.cleaning_operation import ColumnCleaningOperation
 from featurebyte.query_graph.node.metadata.operation import (
@@ -161,12 +162,24 @@ class BaseOfflineStoreIngestQueryGraphNodeParameters(BaseGraphNodeParameters, AB
         raise RuntimeError("Not implemented")
 
 
+class AggregationNodeInfo(FeatureByteBaseModel):
+    """
+    AggregationNodeInfo class stores information about the aggregation-type node.
+    """
+
+    node_type: NodeType
+    input_node_name: Optional[str]
+    node_name: str
+
+
 class OfflineStoreIngestQueryGraphNodeParameters(BaseOfflineStoreIngestQueryGraphNodeParameters):
     """GraphNode (type:offline_store_ingest_query) parameters"""
 
     type: Literal[GraphNodeType.OFFLINE_STORE_INGEST_QUERY] = Field(
         GraphNodeType.OFFLINE_STORE_INGEST_QUERY, const=True
     )
+    aggregation_nodes_info: List[AggregationNodeInfo]
+    feature_job_setting: Optional[FeatureJobSetting]
 
 
 class OfflineStoreRequestColumnQueryGraphNodeParameters(

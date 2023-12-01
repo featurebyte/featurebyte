@@ -3,7 +3,6 @@ RequestColumn unit tests
 """
 import pytest
 
-from featurebyte import FeatureJobSetting
 from featurebyte.api.feature import Feature
 from featurebyte.api.request_column import RequestColumn
 from featurebyte.enum import DBVarType
@@ -13,23 +12,6 @@ from featurebyte.query_graph.transform.offline_ingest_extractor import (
     OfflineStoreIngestQueryGraphExtractor,
 )
 from tests.util.helper import check_decomposed_graph_output_node_hash, check_sdk_code_generation
-
-
-@pytest.fixture(name="latest_event_timestamp_feature")
-def latest_event_timestamp_feature_fixture(snowflake_event_view_with_entity):
-    """
-    Fixture for a timestamp feature
-    """
-    feature = snowflake_event_view_with_entity.groupby("cust_id").aggregate_over(
-        value_column="event_timestamp",
-        method="latest",
-        windows=["90d"],
-        feature_names=["latest_event_timestamp_90d"],
-        feature_job_setting=FeatureJobSetting(
-            blind_spot="1h", frequency="1h", time_modulo_frequency="30m"
-        ),
-    )["latest_event_timestamp_90d"]
-    return feature
 
 
 def test_point_in_time_request_column():

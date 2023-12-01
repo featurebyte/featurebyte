@@ -10,7 +10,7 @@ import pytest
 from bson.objectid import ObjectId
 from pandas.testing import assert_frame_equal
 
-from featurebyte import Catalog, TargetNamespace, UseCase
+from featurebyte import Catalog, FeatureJobSetting, TargetNamespace, UseCase
 from featurebyte.api.base_table import TableColumn
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_table import EventTable
@@ -432,3 +432,20 @@ def deployment_fixture(float_feature, use_case):
 
     deployment = feature_list.deploy(make_production_ready=True, use_case_name=use_case.name)
     return deployment
+
+
+@pytest.fixture(name="latest_event_timestamp_feature")
+def latest_event_timestamp_feature_fixture(snowflake_event_view_with_entity):
+    """
+    Fixture for a timestamp feature
+    """
+    feature = snowflake_event_view_with_entity.groupby("cust_id").aggregate_over(
+        value_column="event_timestamp",
+        method="latest",
+        windows=["90d"],
+        feature_names=["latest_event_timestamp_90d"],
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="1h", frequency="1h", time_modulo_frequency="30m"
+        ),
+    )["latest_event_timestamp_90d"]
+    return feature

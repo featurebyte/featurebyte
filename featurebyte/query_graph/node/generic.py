@@ -11,6 +11,7 @@ from featurebyte.common.model_util import parse_duration_string
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node.base import (
     BaseNode,
     BasePrunableNode,
@@ -781,6 +782,13 @@ class GroupByNode(AggregationOpStructMixin, BaseNode):
         remapped_node.parameters.tile_id = None
         remapped_node.parameters.aggregation_id = None
         return remapped_node, column_name_remap
+
+    def extract_feature_job_setting(self) -> Optional[FeatureJobSetting]:
+        return FeatureJobSetting(
+            blind_spot=f"{self.parameters.blind_spot}s",
+            frequency=f"{self.parameters.frequency}s",
+            time_modulo_frequency=f"{self.parameters.time_modulo_frequency}s",
+        )
 
 
 class ItemGroupbyParameters(BaseGroupbyParameters):

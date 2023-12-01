@@ -130,6 +130,11 @@ class FeatureJobSetting(FeatureByteBaseModel):
             "blind_spot": self.blind_spot_seconds,
         }
 
+    def __hash__(self) -> int:
+        return hash(
+            f"{self.frequency_seconds}_{self.time_modulo_frequency_seconds}_{self.blind_spot_seconds}"
+        )
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, FeatureJobSetting):
             return NotImplemented

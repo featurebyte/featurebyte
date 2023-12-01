@@ -27,6 +27,7 @@ from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.query_graph.model.feature_job_setting import (
+    FeatureJobSetting,
     TableFeatureJobSetting,
     TableIdFeatureJobSetting,
 )
@@ -37,6 +38,7 @@ from featurebyte.query_graph.node.cleaning_operation import (
     TableIdCleaningOperation,
 )
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
+from featurebyte.query_graph.node.nested import AggregationNodeInfo
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.sql.online_store_compute_query import (
     get_online_store_precompute_queries,
@@ -78,6 +80,12 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
     # output column name of the offline store ingest query graph
     output_column_name: str
     output_dtype: DBVarType
+    # feature job setting of the offline store ingest query graph
+    feature_job_setting: Optional[FeatureJobSetting]
+    # whether the offline store ingest query graph has time-to-live (TTL) component
+    has_ttl: bool
+    # aggregation nodes info of the offline store ingest query graph
+    aggregation_nodes_info: List[AggregationNodeInfo]
 
     def ingest_graph_and_node(self) -> Tuple[QueryGraphModel, Node]:
         """
@@ -449,6 +457,22 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
         extractor = DefinitionHashExtractor(graph=self.graph)
         return extractor.extract(self.node)
 
+    def _extract_aggregation_nodes_info(self) -> List[AggregationNodeInfo]:
+        operation_structure = self.graph.extract_operation_structure(self.node)
+        output = []
+        for agg in operation_structure.iterate_aggregations():
+            node = self.graph.get_node_by_name(agg.node_name)
+            input_node_names = self.graph.backward_edges_map[node.name]
+            assert len(input_node_names) <= 1
+            output.append(
+                AggregationNodeInfo(
+                    node_type=node.type,
+                    input_node_name=input_node_names[0] if input_node_names else None,
+                    node_name=node.name,
+                )
+            )
+        return output
+
     def extract_offline_store_ingest_query_graphs(self) -> List[OfflineStoreIngestQueryGraph]:
         """
         Extract offline store ingest query graphs
@@ -469,21 +493,29 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
                 graph_node_types={GraphNodeType.OFFLINE_STORE_INGEST_QUERY}
             ):
                 exit_node_name = result.graph_node_name_to_exit_node_name[graph_node.name]
-                primary_entity_ids = result.node_name_to_primary_entity_ids[exit_node_name]
+                graph_node_params = graph_node.parameters
+                aggregation_info = result.node_name_to_aggregation_info[exit_node_name]
                 output.append(
                     OfflineStoreIngestQueryGraph(
                         graph=graph_node.parameters.graph,
                         node_name=graph_node.parameters.output_node_name,
-                        primary_entity_ids=primary_entity_ids,
+                        primary_entity_ids=aggregation_info.primary_entity_ids,
                         ref_node_name=graph_node.name,
-                        output_column_name=graph_node.parameters.output_column_name,  # type: ignore
+                        output_column_name=graph_node_params.output_column_name,  # type: ignore
                         output_dtype=self._extract_dtype_from_graph(
                             graph=graph_node.parameters.graph,
                             node_name=graph_node.parameters.output_node_name,
                         ),
+                        feature_job_setting=graph_node_params.feature_job_setting,  # type: ignore
+                        has_ttl=aggregation_info.has_ttl_agg_type,
+                        aggregation_nodes_info=graph_node_params.aggregation_nodes_info,  # type: ignore
                     )
                 )
         else:
+            feature_job_setting = None
+            if self.table_id_feature_job_settings:
+                feature_job_setting = self.table_id_feature_job_settings[0].feature_job_setting
+
             output.append(
                 OfflineStoreIngestQueryGraph(
                     graph=self.graph,
@@ -494,6 +526,17 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
                     output_dtype=self._extract_dtype_from_graph(
                         graph=self.graph, node_name=self.node_name
                     ),
+                    feature_job_setting=feature_job_setting,
+                    has_ttl=bool(
+                        # check if there is a GroupByNode in the graph
+                        next(
+                            self.graph.iterate_nodes(
+                                target_node=self.node, node_type=NodeType.GROUPBY
+                            ),
+                            None,
+                        )
+                    ),
+                    aggregation_nodes_info=self._extract_aggregation_nodes_info(),
                 )
             )
 

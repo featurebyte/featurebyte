@@ -24,6 +24,9 @@ from featurebyte.enum import AggFunc
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalGraphState, GlobalQueryGraph, QueryGraph
 from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
+from featurebyte.query_graph.transform.offline_ingest_extractor import (
+    OfflineStoreIngestQueryGraphExtractor,
+)
 from featurebyte.query_graph.util import get_aggregation_identifier, get_tile_table_identifier
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 
@@ -458,9 +461,15 @@ def get_preview_sql_for_series(series_obj, *args, **kwargs):
 
 
 def check_decomposed_graph_output_node_hash(
-    feature_model, offline_store_ingest_query_graph_extractor_output
+    feature_model, offline_store_ingest_query_graph_extractor_output=None
 ):
     """Check the output node hash of the decomposed graph is the same as the original graph"""
+    if offline_store_ingest_query_graph_extractor_output is None:
+        extractor = OfflineStoreIngestQueryGraphExtractor(graph=feature_model.graph)
+        offline_store_ingest_query_graph_extractor_output = extractor.extract(
+            node=feature_model.node, relationships_info=feature_model.relationships_info
+        )
+
     # flatten the original graph
     flattened_graph, node_name_map = feature_model.graph.flatten()
     flattened_node_name = node_name_map[feature_model.node_name]
