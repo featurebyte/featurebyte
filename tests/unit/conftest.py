@@ -1290,6 +1290,24 @@ def float_feature_fixture(feature_group):
     yield feature
 
 
+@pytest.fixture(name="float_feature_different_job_setting")
+def float_feature_different_job_setting_fixture(snowflake_event_view_with_entity):
+    """
+    Feature with different feature job setting
+    """
+    return snowflake_event_view_with_entity.groupby("cust_id").aggregate_over(
+        value_column="col_float",
+        method="sum",
+        windows=["24h"],
+        feature_job_setting=FeatureJobSetting(
+            frequency="3h",
+            blind_spot="15m",
+            time_modulo_frequency="5s",
+        ),
+        feature_names=["sum_24h_every_3h"],
+    )["sum_24h_every_3h"]
+
+
 @pytest.fixture(name="bool_feature")
 def bool_feature_fixture(float_feature):
     """

@@ -73,6 +73,16 @@ def deployed_features_list_fixture(features):
     deployment.disable()
 
 
+async def register_offline_store_feature_tables(app_container, features):
+    """
+    Register offline store feature tables
+    """
+    for feature in features:
+        await app_container.offline_store_feature_table_manager_service.handle_online_enabled_feature(
+            await app_container.feature_service.get_document(feature.id)
+        )
+
+
 @pytest.fixture(name="default_feature_job_setting")
 def default_feature_job_setting_fixture(event_table):
     """
@@ -88,7 +98,7 @@ async def test_feature_materialize_service(
     session,
     user_entity,
     product_action_entity,
-    default_feature_job_setting,
+    features,
     deployed_feature_list,
 ):
     """
@@ -96,14 +106,24 @@ async def test_feature_materialize_service(
     """
     _ = deployed_feature_list
 
+    await register_offline_store_feature_tables(app_container, features)
+
+    primary_entity_to_feature_table = {}
+    async for feature_table in app_container.offline_store_feature_table_service.list_documents_iterator(
+        query_filter={},
+    ):
+        primary_entity_to_feature_table[
+            tuple(sorted(feature_table.primary_entity_ids))
+        ] = feature_table
+
     service = app_container.feature_materialize_service
-    materialized_features = await service.materialize_features(
-        session=session,
-        primary_entity_ids=[user_entity.id],
-        feature_job_setting=default_feature_job_setting,
-    )
 
     # Check offline store table for user entity
+    feature_table_model = primary_entity_to_feature_table[(user_entity.id,)]
+    materialized_features = await service.materialize_features(
+        session=session,
+        feature_table_model=feature_table_model,
+    )
     df = await session.execute_query(
         f"SELECT * FROM {materialized_features.materialized_table_name}"
     )
@@ -118,10 +138,10 @@ async def test_feature_materialize_service(
     assert df.shape[0] == 9
 
     # Check offline store table for product_action entity
+    feature_table_model = primary_entity_to_feature_table[(product_action_entity.id,)]
     materialized_features = await service.materialize_features(
         session=session,
-        primary_entity_ids=[product_action_entity.id],
-        feature_job_setting=default_feature_job_setting,
+        feature_table_model=feature_table_model,
     )
     df = await session.execute_query(
         f"SELECT * FROM {materialized_features.materialized_table_name}"
@@ -135,9 +155,7 @@ async def test_feature_materialize_service(
     assert df.shape[0] == 5
 
     # Check offline store table for combined entity (nothing to materialise here)
-    materialized_features = await service.materialize_features(
-        session=session,
-        primary_entity_ids=[user_entity.id, product_action_entity.id],
-        feature_job_setting=default_feature_job_setting,
+    assert (
+        tuple(sorted([product_action_entity.id, user_entity.id]))
+        not in primary_entity_to_feature_table
     )
-    assert materialized_features is None
