@@ -1656,7 +1656,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             )
             features.append(feature)
 
-        return FeatureGroup(features)
+        return FeatureGroup(features)  # type: ignore[no-any-return]
 
     def create_observation_table(
         self,

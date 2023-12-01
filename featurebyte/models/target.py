@@ -1,8 +1,6 @@
 """
 This module contains Target related models
 """
-from __future__ import annotations
-
 from typing import Optional
 
 import pymongo
@@ -91,6 +89,6 @@ class TargetModel(BaseFeatureModel):
         """
 
         collection_name: str = "target"
-        indexes = BaseFeatureModel.Settings.indexes + [
+        indexes = BaseFeatureModel.Settings.indexes + [  # type: ignore
             pymongo.operations.IndexModel("target_namespace_id"),
         ]

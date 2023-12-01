@@ -8,6 +8,8 @@ from typing import Literal
 import functools
 from enum import Enum
 
+from feast.types import PrimitiveFeastType
+
 from featurebyte.common.doc_util import FBAutoDoc
 
 
@@ -242,6 +244,29 @@ class DBVarType(StrEnum):
             self.INT: "int",
         }
         return mapping.get(self)  # type: ignore
+
+    def to_feast_primitive_type(self) -> PrimitiveFeastType:
+        """
+        Convert DBVarType to Feast primitive type
+
+        Returns
+        -------
+        PrimitiveFeastType
+
+        Raises
+        ------
+        ValueError
+            If the DBVarType is not supported by Feast
+        """
+        mapping = {
+            self.BOOL: PrimitiveFeastType.BOOL,
+            self.VARCHAR: PrimitiveFeastType.STRING,
+            self.FLOAT: PrimitiveFeastType.FLOAT32,
+            self.INT: PrimitiveFeastType.INT32,
+        }
+        if self in mapping:  # type: ignore
+            return mapping[self]  # type: ignore
+        raise ValueError(f"DBVarType {self} is not supported by Feast")
 
 
 class AggFunc(StrEnum):
