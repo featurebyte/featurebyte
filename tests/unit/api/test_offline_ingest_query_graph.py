@@ -7,6 +7,17 @@ from featurebyte.query_graph.transform.offline_ingest_extractor import Aggregati
 from tests.util.helper import check_decomposed_graph_output_node_hash
 
 
+def check_ingest_query_graph(ingest_query_graph):
+    """Check the ingest query graph."""
+    graph = ingest_query_graph.graph
+    for aggregation_node_info in ingest_query_graph.aggregation_nodes_info:
+        agg_node = graph.get_node_by_name(aggregation_node_info.node_name)
+        assert agg_node.type == aggregation_node_info.node_type
+        input_node_names = graph.get_input_node_names(agg_node)
+        assert len(input_node_names) == 1
+        assert input_node_names[0] == aggregation_node_info.input_node_name
+
+
 def test_feature_contains_ttl_and_non_ttl_components(float_feature, non_time_based_feature):
     """Test that a feature contains both ttl and non-ttl components."""
     ttl_component = 2 * (float_feature + 100)
@@ -36,6 +47,7 @@ def test_feature_contains_ttl_and_non_ttl_components(float_feature, non_time_bas
             node_type=NodeType.GROUPBY, node_name="groupby_1", input_node_name="graph_1"
         ),
     ]
+    check_ingest_query_graph(ttl_component_graph)
 
     assert non_ttl_component_graph.feature_job_setting is None
     assert non_ttl_component_graph.node_name == "sub_1"
@@ -45,6 +57,7 @@ def test_feature_contains_ttl_and_non_ttl_components(float_feature, non_time_bas
             node_type=NodeType.ITEM_GROUPBY, node_name="item_groupby_1", input_node_name="graph_2"
         ),
     ]
+    check_ingest_query_graph(non_ttl_component_graph)
 
     # check consistency of decomposed graph
     check_decomposed_graph_output_node_hash(feature_model=feature.cached_model)
@@ -87,6 +100,7 @@ def test_feature_request_column_and_non_ttl_components(
             node_type=NodeType.GROUPBY, node_name="groupby_1", input_node_name="graph_1"
         ),
     ]
+    check_ingest_query_graph(ttl_component_graph)
 
     assert non_ttl_component_graph.feature_job_setting is None
     assert non_ttl_component_graph.node_name == "project_1"
@@ -96,6 +110,7 @@ def test_feature_request_column_and_non_ttl_components(
             node_type=NodeType.ITEM_GROUPBY, node_name="item_groupby_1", input_node_name="graph_2"
         ),
     ]
+    check_ingest_query_graph(non_ttl_component_graph)
 
     # check consistency of decomposed graph
     check_decomposed_graph_output_node_hash(feature_model=feature.cached_model)
@@ -131,3 +146,4 @@ def test_feature_multiple_non_ttl_components(
             node_type=NodeType.LOOKUP, node_name="lookup_1", input_node_name="graph_1"
         ),
     ]
+    check_ingest_query_graph(non_ttl_component_graph)

@@ -20,6 +20,7 @@ from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import LookupNode, LookupTargetNode
 from featurebyte.query_graph.node.mixin import AggregationOpStructMixin, BaseGroupbyParameters
 from featurebyte.query_graph.node.nested import (
+    AggregationNodeInfo,
     OfflineStoreIngestQueryGraphNodeParameters,
     OfflineStoreRequestColumnQueryGraphNodeParameters,
 )
@@ -27,17 +28,6 @@ from featurebyte.query_graph.node.request import RequestColumnNode
 from featurebyte.query_graph.transform.base import BaseGraphExtractor
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 from featurebyte.query_graph.transform.quick_pruning import QuickGraphStructurePruningTransformer
-
-
-@dataclass
-class AggregationNodeInfo:
-    """
-    AggregationNodeInfo class stores information about the aggregation-type node.
-    """
-
-    node_type: NodeType
-    input_node_name: Optional[str]
-    node_name: str
 
 
 @dataclass
@@ -52,13 +42,13 @@ class AggregationInfo:
     - RequestColumnNode
     """
 
-    agg_nodes: List[AggregationNodeInfo]
+    agg_node_types: List[NodeType]
     primary_entity_ids: List[ObjectId]
     feature_job_settings: List[FeatureJobSetting]
     request_columns: List[str]
 
     def __init__(self) -> None:
-        self.agg_nodes = []
+        self.agg_node_types = []
         self.primary_entity_ids = []
         self.feature_job_settings = []
         self.request_columns = []
@@ -78,7 +68,7 @@ class AggregationInfo:
             Added AggregationInfo object
         """
         output = AggregationInfo()
-        output.agg_nodes = sorted(self.agg_nodes + other.agg_nodes, key=lambda node: node.node_name)
+        output.agg_node_types = sorted(self.agg_node_types + other.agg_node_types)
         output.primary_entity_ids = sorted(set(self.primary_entity_ids + other.primary_entity_ids))
         output.feature_job_settings = list(
             set(self.feature_job_settings + other.feature_job_settings)
@@ -95,10 +85,7 @@ class AggregationInfo:
         -------
         bool
         """
-        for agg_node in self.agg_nodes:
-            if agg_node.node_type == NodeType.GROUPBY:
-                return True
-        return False
+        return NodeType.GROUPBY in self.agg_node_types
 
 
 @dataclass
@@ -113,7 +100,7 @@ class OfflineStoreIngestQueryGraphGlobalState:  # pylint: disable=too-many-insta
     node_name_map: Dict[str, str]
     # entity id to ancestor/descendant mapping
     entity_ancestor_descendant_mapper: EntityAncestorDescendantMapper
-    # (original graph) node name to aggregation node info mapping
+    # (original graph) node name to aggregation node info mapping (from the original graph)
     node_name_to_aggregation_info: Dict[str, AggregationInfo]
     # (decomposed graph) graph node name to the exit node name of the original graph mapping
     # this information is used to construct primary entity ids for the nested graph node
@@ -178,13 +165,7 @@ class OfflineStoreIngestQueryGraphGlobalState:  # pylint: disable=too-many-insta
             aggregation_info += input_aggregation_info
 
         if node.name in self.aggregation_node_names:
-            assert len(input_node_names) <= 1
-            agg_node_info = AggregationNodeInfo(
-                node_type=node.type,
-                input_node_name=next(iter(input_node_names), None),
-                node_name=node.name,
-            )
-            aggregation_info.agg_nodes = [agg_node_info]
+            aggregation_info.agg_node_types = [node.type]
 
         if isinstance(node.parameters, BaseGroupbyParameters):
             # primary entity ids introduced by groupby node family
@@ -229,7 +210,7 @@ class OfflineStoreIngestQueryGraphGlobalState:  # pylint: disable=too-many-insta
         bool
         """
         aggregation_info = self.node_name_to_aggregation_info[node_name]
-        if not aggregation_info.agg_nodes:
+        if not aggregation_info.agg_node_types:
             # do not decompose if aggregation operation has not been introduced
             return False
 
@@ -250,7 +231,7 @@ class OfflineStoreIngestQueryGraphGlobalState:  # pylint: disable=too-many-insta
                 # to the universe.
                 return False
 
-            if input_agg_info.agg_nodes:
+            if input_agg_info.agg_node_types:
                 all_inputs_have_empty_agg_node_types = False
 
         if all_inputs_have_empty_agg_node_types:
@@ -342,6 +323,56 @@ class OfflineStoreIngestQueryGraphExtractor(
     ) -> OfflineStoreIngestQueryGraphBranchState:
         return branch_state
 
+    @staticmethod
+    def _prepare_aggregation_node_info_and_feature_job_setting(
+        subgraph: QueryGraphModel,
+        node_name_to_subgraph_node_name: Dict[str, str],
+        aggregation_node_names: Set[str],
+    ) -> Tuple[List[AggregationNodeInfo], Optional[FeatureJobSetting]]:
+        """
+        Prepare aggregation node info for the offline store ingest query graph node
+
+        Parameters
+        ----------
+        subgraph: QueryGraphModel
+            Subgraph of the original graph (used to create the offline store ingest query)
+        node_name_to_subgraph_node_name: Dict[str, str]
+            Original graph node name to subgraph node name mapping
+        aggregation_node_names: Set[str]
+            Aggregation node names from the original graph
+
+        Returns
+        -------
+        List[AggregationNodeInfo], Optional[FeatureJobSetting]
+        """
+        agg_nodes_info = []
+        feature_job_settings = []
+        for node_name in aggregation_node_names:
+            if node_name in node_name_to_subgraph_node_name:
+                # if the aggregation node is in the subgraph, that means the aggregation node
+                # is used to create the offline store ingest query
+                subgraph_agg_node_name = node_name_to_subgraph_node_name[node_name]
+                subgraph_agg_node = subgraph.get_node_by_name(subgraph_agg_node_name)
+                input_node_names = subgraph.get_input_node_names(subgraph_agg_node)
+                assert (
+                    len(input_node_names) == 1
+                ), "All non-request column agg. nodes expect only 1 input node"
+                agg_nodes_info.append(
+                    AggregationNodeInfo(
+                        node_type=subgraph_agg_node.type,
+                        node_name=subgraph_agg_node_name,
+                        input_node_name=input_node_names[0],
+                    )
+                )
+
+                if isinstance(subgraph_agg_node, AggregationOpStructMixin):
+                    feature_job_setting = subgraph_agg_node.extract_feature_job_setting()
+                    if feature_job_setting:
+                        feature_job_settings.append(feature_job_setting)
+
+        assert len(set(feature_job_settings)) <= 1, "Only 1 feature job setting is allowed"
+        return agg_nodes_info, feature_job_settings[0] if feature_job_settings else None
+
     def _insert_offline_store_query_graph_node(
         self, global_state: OfflineStoreIngestQueryGraphGlobalState, node_name: str
     ) -> Node:
@@ -367,6 +398,7 @@ class OfflineStoreIngestQueryGraphExtractor(
         transformed_node = subgraph.get_node_by_name(node_name_to_transformed_node_name[node_name])
         aggregation_info = global_state.node_name_to_aggregation_info[node_name]
         parameter_class: Any
+        other_params: Dict[str, Any] = {}
         if aggregation_info.request_columns:
             graph_node_type = GraphNodeType.OFFLINE_STORE_REQUEST_COLUMN_QUERY
             parameter_class = OfflineStoreRequestColumnQueryGraphNodeParameters
@@ -374,6 +406,13 @@ class OfflineStoreIngestQueryGraphExtractor(
         else:
             graph_node_type = GraphNodeType.OFFLINE_STORE_INGEST_QUERY
             parameter_class = OfflineStoreIngestQueryGraphNodeParameters
+            agg_nodes_info, fjs = self._prepare_aggregation_node_info_and_feature_job_setting(
+                subgraph=subgraph,
+                node_name_to_subgraph_node_name=node_name_to_transformed_node_name,
+                aggregation_node_names=global_state.aggregation_node_names,
+            )
+            other_params["aggregation_nodes_info"] = agg_nodes_info
+            other_params["feature_job_setting"] = fjs
             suffix = "__part"
 
         comp_count = global_state.graph_node_counter[graph_node_type]
@@ -385,6 +424,7 @@ class OfflineStoreIngestQueryGraphExtractor(
                 graph=subgraph,
                 output_node_name=transformed_node.name,
                 output_column_name=column_name,
+                **other_params,
             ),
         )
         inserted_node = global_state.add_operation_to_graph(node=graph_node, input_nodes=[])

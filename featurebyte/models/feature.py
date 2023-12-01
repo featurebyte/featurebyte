@@ -38,6 +38,7 @@ from featurebyte.query_graph.node.cleaning_operation import (
     TableIdCleaningOperation,
 )
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
+from featurebyte.query_graph.node.nested import AggregationNodeInfo
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.sql.online_store_compute_query import (
     get_online_store_precompute_queries,
@@ -47,7 +48,6 @@ from featurebyte.query_graph.transform.definition import (
     DefinitionHashOutput,
 )
 from featurebyte.query_graph.transform.offline_ingest_extractor import (
-    AggregationNodeInfo,
     OfflineStoreIngestQueryGraphExtractor,
 )
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
@@ -493,24 +493,22 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
                 graph_node_types={GraphNodeType.OFFLINE_STORE_INGEST_QUERY}
             ):
                 exit_node_name = result.graph_node_name_to_exit_node_name[graph_node.name]
+                graph_node_params = graph_node.parameters
                 aggregation_info = result.node_name_to_aggregation_info[exit_node_name]
-                feature_job_setting = None
-                if aggregation_info.feature_job_settings:
-                    feature_job_setting = aggregation_info.feature_job_settings[0]
                 output.append(
                     OfflineStoreIngestQueryGraph(
                         graph=graph_node.parameters.graph,
                         node_name=graph_node.parameters.output_node_name,
                         primary_entity_ids=aggregation_info.primary_entity_ids,
                         ref_node_name=graph_node.name,
-                        output_column_name=graph_node.parameters.output_column_name,  # type: ignore
+                        output_column_name=graph_node_params.output_column_name,  # type: ignore
                         output_dtype=self._extract_dtype_from_graph(
                             graph=graph_node.parameters.graph,
                             node_name=graph_node.parameters.output_node_name,
                         ),
-                        feature_job_setting=feature_job_setting,
+                        feature_job_setting=graph_node_params.feature_job_setting,  # type: ignore
                         has_ttl=aggregation_info.has_ttl_agg_type,
-                        aggregation_nodes_info=aggregation_info.agg_nodes,
+                        aggregation_nodes_info=graph_node_params.aggregation_nodes_info,  # type: ignore
                     )
                 )
         else:
