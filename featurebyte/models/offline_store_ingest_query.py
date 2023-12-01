@@ -14,7 +14,10 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.nested import AggregationNodeInfo
+from featurebyte.query_graph.node.nested import (
+    AggregationNodeInfo,
+    OfflineStoreIngestQueryGraphNodeParameters,
+)
 from featurebyte.query_graph.transform.quick_pruning import QuickGraphStructurePruningTransformer
 
 
@@ -45,6 +48,37 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
     _sort_ids_validator = validator("primary_entity_ids", allow_reuse=True)(
         construct_sort_validator()
     )
+
+    @classmethod
+    def create_from(
+        cls, graph_node_param: OfflineStoreIngestQueryGraphNodeParameters, ref_node_name: str
+    ) -> OfflineStoreIngestQueryGraph:
+        """
+        Create OfflineStoreIngestQueryGraph from OfflineStoreIngestQueryGraphNodeParameters
+
+        Parameters
+        ----------
+        graph_node_param: OfflineStoreIngestQueryGraphNodeParameters
+            OfflineStoreIngestQueryGraphNodeParameters
+        ref_node_name: str
+            Node name that refers to the graph node from the decomposed query graph
+
+        Returns
+        -------
+        OfflineStoreIngestQueryGraph
+            OfflineStoreIngestQueryGraph
+        """
+        return cls(
+            graph=graph_node_param.graph,
+            node_name=graph_node_param.output_node_name,
+            primary_entity_ids=graph_node_param.primary_entity_ids,
+            ref_node_name=ref_node_name,
+            output_column_name=graph_node_param.output_column_name,
+            output_dtype=graph_node_param.output_dtype,
+            feature_job_setting=graph_node_param.feature_job_setting,
+            has_ttl=graph_node_param.has_ttl,
+            aggregation_nodes_info=graph_node_param.aggregation_nodes_info,
+        )
 
     @property
     def feast_feature_view_grouping_key(

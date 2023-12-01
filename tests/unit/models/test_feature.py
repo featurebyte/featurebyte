@@ -202,7 +202,10 @@ def test_extract_operation_structure(feature_model_dict):
 def test_ingest_graph_and_node(feature_model_dict):
     """Test ingest_graph_and_node method"""
     feature = FeatureModel(**feature_model_dict)
-    ingest_query_graph = feature.extract_offline_store_ingest_query_graphs()[0]
+    ingest_query_graph = feature.extract_offline_store_ingest_query_graphs(
+        entity_id_to_serving_name={}
+    )[0]
+
     # case 1: query graph is original feature graph
     assert ingest_query_graph.ref_node_name is None
     _, ingest_node = ingest_query_graph.ingest_graph_and_node()

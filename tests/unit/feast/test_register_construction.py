@@ -113,12 +113,12 @@ def test_feast_registry_construction(
                 "spec": {
                     "features": [
                         {
-                            "featureColumns": [{"name": "sum_1d", "valueType": "FLOAT"}],
+                            "featureColumns": [{"name": "sum_1d", "valueType": "DOUBLE"}],
                             "featureViewName": "fb_entity_cust_id_fjs_1800_300_600_ttl",
                         },
                         {
                             "featureColumns": [
-                                {"name": "non_time_time_sum_amount_feature", "valueType": "FLOAT"}
+                                {"name": "non_time_time_sum_amount_feature", "valueType": "DOUBLE"}
                             ],
                             "featureViewName": "fb_entity_transaction_id",
                         },
@@ -142,7 +142,7 @@ def test_feast_registry_construction(
                         "type": "BATCH_SNOWFLAKE",
                     },
                     "entities": ["cust_id"],
-                    "features": [{"name": "sum_1d", "valueType": "FLOAT"}],
+                    "features": [{"name": "sum_1d", "valueType": "DOUBLE"}],
                     "name": "fb_entity_cust_id_fjs_1800_300_600_ttl",
                     "online": True,
                     "ttl": "3600s",
@@ -163,7 +163,7 @@ def test_feast_registry_construction(
                     },
                     "entities": ["transaction_id"],
                     "features": [
-                        {"name": "non_time_time_sum_amount_feature", "valueType": "FLOAT"}
+                        {"name": "non_time_time_sum_amount_feature", "valueType": "DOUBLE"}
                     ],
                     "name": "fb_entity_transaction_id",
                     "online": True,

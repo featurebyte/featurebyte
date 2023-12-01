@@ -38,7 +38,10 @@ from featurebyte.query_graph.node.cleaning_operation import (
     TableIdCleaningOperation,
 )
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
-from featurebyte.query_graph.node.nested import AggregationNodeInfo
+from featurebyte.query_graph.node.nested import (
+    AggregationNodeInfo,
+    OfflineStoreIngestQueryGraphNodeParameters,
+)
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.sql.online_store_compute_query import (
     get_online_store_precompute_queries,
@@ -49,6 +52,7 @@ from featurebyte.query_graph.transform.definition import (
 )
 from featurebyte.query_graph.transform.offline_ingest_extractor import (
     OfflineStoreIngestQueryGraphExtractor,
+    extract_dtype_from_graph,
 )
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 
@@ -181,7 +185,10 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
             )
 
             # extract dtype from the graph
-            values["dtype"] = cls._extract_dtype_from_graph(graph, node_name)
+            exception_message = "Feature or target graph must have exactly one aggregation output"
+            values["dtype"] = extract_dtype_from_graph(
+                graph=graph, output_node=node, exception_message=exception_message
+            )
 
         return values
 
@@ -414,42 +421,44 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
             )
         return output
 
-    def extract_offline_store_ingest_query_graphs(self) -> List[OfflineStoreIngestQueryGraph]:
+    def extract_offline_store_ingest_query_graphs(
+        self, entity_id_to_serving_name: Dict[PydanticObjectId, str]
+    ) -> List[OfflineStoreIngestQueryGraph]:
         """
         Extract offline store ingest query graphs
+
+        Parameters
+        ----------
+        entity_id_to_serving_name: Dict[PydanticObjectId, str]
+            Entity id to serving name mapping
 
         Returns
         -------
         List[OfflineStoreIngestQueryGraph]
             List of offline store ingest query graphs
         """
+        # TODO: store the decomposed graph to the model once the query graph structure is finalized.
         extractor = OfflineStoreIngestQueryGraphExtractor(graph=self.graph)
         assert self.name is not None
         result = extractor.extract(
-            node=self.node, relationships_info=self.relationships_info, feature_name=self.name
+            node=self.node,
+            entity_id_to_serving_name=entity_id_to_serving_name,
+            relationships_info=self.relationships_info,
+            feature_name=self.name,
         )
         output = []
+
+        # TODO: store is_decomposed & ttl to the model once the query graph structure is finalized.
         if result.is_decomposed:
             for graph_node in result.graph.iterate_sorted_graph_nodes(
                 graph_node_types={GraphNodeType.OFFLINE_STORE_INGEST_QUERY}
             ):
-                exit_node_name = result.graph_node_name_to_exit_node_name[graph_node.name]
                 graph_node_params = graph_node.parameters
-                aggregation_info = result.node_name_to_aggregation_info[exit_node_name]
+                assert isinstance(graph_node_params, OfflineStoreIngestQueryGraphNodeParameters)
                 output.append(
-                    OfflineStoreIngestQueryGraph(
-                        graph=graph_node.parameters.graph,
-                        node_name=graph_node.parameters.output_node_name,
-                        primary_entity_ids=aggregation_info.primary_entity_ids,
+                    OfflineStoreIngestQueryGraph.create_from(
+                        graph_node_param=graph_node_params,
                         ref_node_name=graph_node.name,
-                        output_column_name=graph_node_params.output_column_name,  # type: ignore
-                        output_dtype=self._extract_dtype_from_graph(
-                            graph=graph_node.parameters.graph,
-                            node_name=graph_node.parameters.output_node_name,
-                        ),
-                        feature_job_setting=graph_node_params.feature_job_setting,  # type: ignore
-                        has_ttl=aggregation_info.has_ttl_agg_type,
-                        aggregation_nodes_info=graph_node_params.aggregation_nodes_info,  # type: ignore
                     )
                 )
         else:
@@ -464,9 +473,7 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
                     primary_entity_ids=self.primary_entity_ids,
                     ref_node_name=None,
                     output_column_name=self.name,
-                    output_dtype=self._extract_dtype_from_graph(
-                        graph=self.graph, node_name=self.node_name
-                    ),
+                    output_dtype=self.dtype,
                     feature_job_setting=feature_job_setting,
                     has_ttl=bool(
                         # check if there is a GroupByNode in the graph

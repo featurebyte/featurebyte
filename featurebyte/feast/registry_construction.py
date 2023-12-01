@@ -217,7 +217,9 @@ class FeastRegistryConstructor:
         """
         offline_table_key_to_ingest_query_graphs = defaultdict(list)
         for feature in features:
-            offline_ingest_query_graphs = feature.extract_offline_store_ingest_query_graphs()
+            offline_ingest_query_graphs = feature.extract_offline_store_ingest_query_graphs(
+                entity_id_to_serving_name=entity_id_to_serving_name
+            )
             for ingest_query_graph in offline_ingest_query_graphs:
                 group_key = ingest_query_graph.feast_feature_view_grouping_key
                 offline_table_key_to_ingest_query_graphs[group_key].append(ingest_query_graph)

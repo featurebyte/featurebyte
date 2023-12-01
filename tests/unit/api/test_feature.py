@@ -818,7 +818,9 @@ def check_offline_store_ingest_graph_on_composite_feature(
     """Check offline store ingest graph on composite feature"""
     # case 1: no entity relationship
     assert feature_model.relationships_info == []
-    ingest_query_graphs = feature_model.extract_offline_store_ingest_query_graphs()
+    ingest_query_graphs = feature_model.extract_offline_store_ingest_query_graphs(
+        entity_id_to_serving_name={}
+    )
 
     # check the first offline store ingest query graph
     assert len(ingest_query_graphs) == 2
@@ -885,7 +887,9 @@ def check_offline_store_ingest_graph_on_composite_feature(
         ),
     ]
     new_feature_model = feature_model.copy(update={"relationships_info": relationships_info})
-    ingest_query_graphs = new_feature_model.extract_offline_store_ingest_query_graphs()
+    ingest_query_graphs = new_feature_model.extract_offline_store_ingest_query_graphs(
+        entity_id_to_serving_name={}
+    )
     assert len(ingest_query_graphs) == 1
     ingest_query_graph = ingest_query_graphs[0]
     assert ingest_query_graph.node_name == new_feature_model.node_name
@@ -963,7 +967,9 @@ def test_offline_store_ingest_query_graphs__without_graph_decomposition(saved_fe
     feature_model = saved_feature.cached_model
     assert isinstance(feature_model, FeatureModel)
 
-    ingest_query_graphs = feature_model.extract_offline_store_ingest_query_graphs()
+    ingest_query_graphs = feature_model.extract_offline_store_ingest_query_graphs(
+        entity_id_to_serving_name={}
+    )
     assert len(ingest_query_graphs) == 1
     assert ingest_query_graphs[0].graph == feature_model.graph
     assert ingest_query_graphs[0].node_name == feature_model.node_name

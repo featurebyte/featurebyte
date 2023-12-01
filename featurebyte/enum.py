@@ -261,8 +261,8 @@ class DBVarType(StrEnum):
         mapping = {
             self.BOOL: PrimitiveFeastType.BOOL,
             self.VARCHAR: PrimitiveFeastType.STRING,
-            self.FLOAT: PrimitiveFeastType.FLOAT32,
-            self.INT: PrimitiveFeastType.INT32,
+            self.FLOAT: PrimitiveFeastType.FLOAT64,
+            self.INT: PrimitiveFeastType.INT64,
         }
         if self in mapping:  # type: ignore
             return mapping[self]  # type: ignore
