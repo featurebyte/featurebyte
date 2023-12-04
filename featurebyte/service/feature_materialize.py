@@ -126,9 +126,14 @@ class OnlineEnabledFeaturesMetadata:
         output_nodes = []
         output_column_names = []
         output_dtypes = []
+        entity_id_to_serving_name = {
+            entity.id: entity.serving_names[0] for entity in self.primary_entities
+        }
 
         for feature in self.features:
-            offline_ingest_graphs = feature.extract_offline_store_ingest_query_graphs()
+            offline_ingest_graphs = feature.extract_offline_store_ingest_query_graphs(
+                entity_id_to_serving_name=entity_id_to_serving_name
+            )
             for offline_ingest_graph in offline_ingest_graphs:
                 if offline_ingest_graph.primary_entity_ids != self.primary_entity_ids:
                     # Feature of a primary entity can be decomposed into ingest graphs with

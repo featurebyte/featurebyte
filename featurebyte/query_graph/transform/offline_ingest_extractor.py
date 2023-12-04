@@ -6,8 +6,8 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 from collections import defaultdict
 from dataclasses import dataclass
 
-from bson import ObjectId
-
+from featurebyte.enum import DBVarType
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import GraphNodeType, NodeType
 from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.model.entity_relationship_info import (
@@ -30,6 +30,78 @@ from featurebyte.query_graph.transform.operation_structure import OperationStruc
 from featurebyte.query_graph.transform.quick_pruning import QuickGraphStructurePruningTransformer
 
 
+def get_offline_store_table_name(
+    primary_entity_serving_names: List[str],
+    feature_job_setting: Optional[FeatureJobSetting],
+    has_ttl: bool,
+) -> str:
+    """
+    Get offline store table name
+
+    Parameters
+    ----------
+    primary_entity_serving_names: List[str]
+        Primary entity serving names
+    feature_job_setting: Optional[FeatureJobSetting]
+        Feature job setting
+    has_ttl: bool
+        Whether the offline store table has time-to-live property or not
+
+    Returns
+    -------
+    str
+        Offline store table name
+    """
+    entity_part = "_".join(primary_entity_serving_names)
+    table_name = f"fb_entity_{entity_part}"
+    if feature_job_setting:
+        fjs = feature_job_setting.to_seconds()
+        frequency = fjs["frequency"]
+        time_modulo_frequency = fjs["time_modulo_frequency"]
+        blind_spot = fjs["blind_spot"]
+        table_name = f"{table_name}_fjs_{frequency}_{time_modulo_frequency}_{blind_spot}"
+    if has_ttl:
+        table_name = f"{table_name}_ttl"
+    return table_name
+
+
+def extract_dtype_from_graph(
+    graph: QueryGraphModel, output_node: Node, exception_message: Optional[str] = None
+) -> DBVarType:
+    """
+    Extract dtype from the given graph and node name
+
+    Parameters
+    ----------
+    graph: QueryGraphModel
+        Query graph
+    output_node: Node
+        Output node
+    exception_message: Optional[str]
+        Optional exception message to use if the graph has more than one aggregation output
+
+    Returns
+    -------
+    DBVarType
+        DType
+
+    Raises
+    ------
+    ValueError
+        If the graph has more than one aggregation output
+    """
+    op_struct_info = OperationStructureExtractor(graph=graph).extract(
+        node=output_node,
+        keep_all_source_columns=True,
+    )
+    op_struct = op_struct_info.operation_structure_map[output_node.name]
+    if len(op_struct.aggregations) != 1:
+        if exception_message is None:
+            exception_message = "Graph must have exactly one aggregation output"
+        raise ValueError(exception_message)
+    return op_struct.aggregations[0].dtype
+
+
 @dataclass
 class AggregationInfo:
     """
@@ -43,7 +115,7 @@ class AggregationInfo:
     """
 
     agg_node_types: List[NodeType]
-    primary_entity_ids: List[ObjectId]
+    primary_entity_ids: List[PydanticObjectId]
     feature_job_settings: List[FeatureJobSetting]
     request_columns: List[str]
 
@@ -102,13 +174,12 @@ class OfflineStoreIngestQueryGraphGlobalState:  # pylint: disable=too-many-insta
     entity_ancestor_descendant_mapper: EntityAncestorDescendantMapper
     # (original graph) node name to aggregation node info mapping (from the original graph)
     node_name_to_aggregation_info: Dict[str, AggregationInfo]
-    # (decomposed graph) graph node name to the exit node name of the original graph mapping
-    # this information is used to construct primary entity ids for the nested graph node
-    graph_node_name_to_exit_node_name: Dict[str, str]
     # graph node type counter used to generate non-conflicting feature component suffix
     graph_node_counter: Dict[GraphNodeType, int]
     # aggregation node names used to determine whether to start decomposing the graph
     aggregation_node_names: Set[str]
+    # entity id to serving name mapping
+    entity_id_to_serving_name: Dict[PydanticObjectId, str]
     # whether the graph is decomposed or not
     is_decomposed: bool = False
 
@@ -118,6 +189,7 @@ class OfflineStoreIngestQueryGraphGlobalState:  # pylint: disable=too-many-insta
         relationships_info: Optional[List[EntityRelationshipInfo]],
         feature_name: str,
         aggregation_node_names: Set[str],
+        entity_id_to_serving_name: Dict[PydanticObjectId, str],
     ) -> "OfflineStoreIngestQueryGraphGlobalState":
         """
         Create a new OfflineStoreIngestQueryGlobalState object from the given relationships info
@@ -130,6 +202,8 @@ class OfflineStoreIngestQueryGraphGlobalState:  # pylint: disable=too-many-insta
             Feature name
         aggregation_node_names: Set[str]
             Aggregation node names
+        entity_id_to_serving_name: Dict[PydanticObjectId, str]
+            Entity id to serving name mapping
 
         Returns
         -------
@@ -142,10 +216,10 @@ class OfflineStoreIngestQueryGraphGlobalState:  # pylint: disable=too-many-insta
                 relationships_info=relationships_info or []
             ),
             node_name_to_aggregation_info={},
-            graph_node_name_to_exit_node_name={},
             graph_node_counter=defaultdict(int),
             node_name_map={},
             aggregation_node_names=aggregation_node_names,
+            entity_id_to_serving_name=entity_id_to_serving_name,
         )
 
     def update_aggregation_info(self, node: Node, input_node_names: List[str]) -> None:
@@ -169,7 +243,7 @@ class OfflineStoreIngestQueryGraphGlobalState:  # pylint: disable=too-many-insta
 
         if isinstance(node.parameters, BaseGroupbyParameters):
             # primary entity ids introduced by groupby node family
-            aggregation_info.primary_entity_ids = node.parameters.entity_ids or []  # type: ignore
+            aggregation_info.primary_entity_ids = node.parameters.entity_ids or []
         elif isinstance(node, (LookupNode, LookupTargetNode)):
             # primary entity ids introduced by lookup node family
             aggregation_info.primary_entity_ids = [node.parameters.entity_id]
@@ -185,10 +259,8 @@ class OfflineStoreIngestQueryGraphGlobalState:  # pylint: disable=too-many-insta
                 aggregation_info.feature_job_settings = [feature_job_setting]
 
         # reduce the primary entity ids based on entity relationship
-        aggregation_info.primary_entity_ids = (
-            self.entity_ancestor_descendant_mapper.reduce_entity_ids(
-                entity_ids=aggregation_info.primary_entity_ids
-            )
+        aggregation_info.primary_entity_ids = self.entity_ancestor_descendant_mapper.reduce_entity_ids(
+            entity_ids=aggregation_info.primary_entity_ids  # type: ignore
         )
 
         # update the mapping
@@ -324,26 +396,36 @@ class OfflineStoreIngestQueryGraphExtractor(
         return branch_state
 
     @staticmethod
-    def _prepare_aggregation_node_info_and_feature_job_setting(
+    def _prepare_offline_store_ingest_query_specific_node_parameters(
         subgraph: QueryGraphModel,
+        subgraph_output_node: Node,
         node_name_to_subgraph_node_name: Dict[str, str],
         aggregation_node_names: Set[str],
-    ) -> Tuple[List[AggregationNodeInfo], Optional[FeatureJobSetting]]:
+        aggregation_info: AggregationInfo,
+        entity_id_to_serving_name: Dict[PydanticObjectId, str],
+    ) -> Dict[str, Any]:
         """
-        Prepare aggregation node info for the offline store ingest query graph node
+        Prepare offline store ingest query graph specific node parameters
 
         Parameters
         ----------
         subgraph: QueryGraphModel
             Subgraph of the original graph (used to create the offline store ingest query)
+        subgraph_output_node: Node
+            Subgraph output node
         node_name_to_subgraph_node_name: Dict[str, str]
             Original graph node name to subgraph node name mapping
         aggregation_node_names: Set[str]
             Aggregation node names from the original graph
+        aggregation_info: AggregationInfo
+            Aggregation info of the current node
+        entity_id_to_serving_name: Dict[PydanticObjectId, str]
+            Primary entity id to serving name mapping
 
         Returns
         -------
-        List[AggregationNodeInfo], Optional[FeatureJobSetting]
+        Dict[str, Any]
+            Offline store ingest query graph node parameters
         """
         agg_nodes_info = []
         feature_job_settings = []
@@ -371,7 +453,25 @@ class OfflineStoreIngestQueryGraphExtractor(
                         feature_job_settings.append(feature_job_setting)
 
         assert len(set(feature_job_settings)) <= 1, "Only 1 feature job setting is allowed"
-        return agg_nodes_info, feature_job_settings[0] if feature_job_settings else None
+        primary_entity_serving_names = [
+            entity_id_to_serving_name.get(entity_id, str(entity_id))
+            for entity_id in aggregation_info.primary_entity_ids
+        ]
+        feature_job_setting = feature_job_settings[0] if feature_job_settings else None
+        offline_store_table_name = get_offline_store_table_name(
+            primary_entity_serving_names=primary_entity_serving_names,
+            feature_job_setting=feature_job_setting,
+            has_ttl=aggregation_info.has_ttl_agg_type,
+        )
+        output_dtype = extract_dtype_from_graph(graph=subgraph, output_node=subgraph_output_node)
+        parameters = {
+            "aggregation_nodes_info": agg_nodes_info,
+            "feature_job_setting": feature_job_setting,
+            "has_ttl": aggregation_info.has_ttl_agg_type,
+            "offline_store_table_name": offline_store_table_name,
+            "output_dtype": output_dtype,
+        }
+        return parameters
 
     def _insert_offline_store_query_graph_node(
         self, global_state: OfflineStoreIngestQueryGraphGlobalState, node_name: str
@@ -406,13 +506,14 @@ class OfflineStoreIngestQueryGraphExtractor(
         else:
             graph_node_type = GraphNodeType.OFFLINE_STORE_INGEST_QUERY
             parameter_class = OfflineStoreIngestQueryGraphNodeParameters
-            agg_nodes_info, fjs = self._prepare_aggregation_node_info_and_feature_job_setting(
+            other_params = self._prepare_offline_store_ingest_query_specific_node_parameters(
                 subgraph=subgraph,
+                subgraph_output_node=transformed_node,
                 node_name_to_subgraph_node_name=node_name_to_transformed_node_name,
                 aggregation_node_names=global_state.aggregation_node_names,
+                aggregation_info=aggregation_info,
+                entity_id_to_serving_name=global_state.entity_id_to_serving_name,
             )
-            other_params["aggregation_nodes_info"] = agg_nodes_info
-            other_params["feature_job_setting"] = fjs
             suffix = "__part"
 
         comp_count = global_state.graph_node_counter[graph_node_type]
@@ -424,6 +525,7 @@ class OfflineStoreIngestQueryGraphExtractor(
                 graph=subgraph,
                 output_node_name=transformed_node.name,
                 output_column_name=column_name,
+                primary_entity_ids=aggregation_info.primary_entity_ids,
                 **other_params,
             ),
         )
@@ -431,10 +533,6 @@ class OfflineStoreIngestQueryGraphExtractor(
 
         # update graph node type counter
         global_state.graph_node_counter[graph_node_type] += 1
-
-        # store the graph node name to the exit node name of the original graph mapping
-        # this information is used to construct primary entity ids for the nested graph node
-        global_state.graph_node_name_to_exit_node_name[inserted_node.name] = node_name
         return inserted_node
 
     def _post_compute(
@@ -496,6 +594,7 @@ class OfflineStoreIngestQueryGraphExtractor(
     def extract(
         self,
         node: Node,
+        entity_id_to_serving_name: Optional[Dict[PydanticObjectId, str]] = None,
         relationships_info: Optional[List[EntityRelationshipInfo]] = None,
         feature_name: str = "feature",
         **kwargs: Any,
@@ -511,6 +610,7 @@ class OfflineStoreIngestQueryGraphExtractor(
             relationships_info=relationships_info,
             feature_name=feature_name,
             aggregation_node_names=aggregation_node_names,
+            entity_id_to_serving_name=entity_id_to_serving_name or {},
         )
         self._extract(
             node=node,

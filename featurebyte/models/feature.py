@@ -3,7 +3,7 @@ This module contains Feature related models
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 from datetime import datetime
 
@@ -22,12 +22,12 @@ from featurebyte.models.base import (
     VersionIdentifier,
 )
 from featurebyte.models.feature_namespace import FeatureReadiness
-from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
+from featurebyte.models.offline_store_ingest_query import OfflineStoreIngestQueryGraph
+from featurebyte.query_graph.enum import GraphNodeType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.query_graph.model.feature_job_setting import (
-    FeatureJobSetting,
     TableFeatureJobSetting,
     TableIdFeatureJobSetting,
 )
@@ -38,7 +38,10 @@ from featurebyte.query_graph.node.cleaning_operation import (
     TableIdCleaningOperation,
 )
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
-from featurebyte.query_graph.node.nested import AggregationNodeInfo
+from featurebyte.query_graph.node.nested import (
+    AggregationNodeInfo,
+    OfflineStoreIngestQueryGraphNodeParameters,
+)
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.sql.online_store_compute_query import (
     get_online_store_precompute_queries,
@@ -49,9 +52,10 @@ from featurebyte.query_graph.transform.definition import (
 )
 from featurebyte.query_graph.transform.offline_ingest_extractor import (
     OfflineStoreIngestQueryGraphExtractor,
+    extract_dtype_from_graph,
+    get_offline_store_table_name,
 )
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
-from featurebyte.query_graph.transform.quick_pruning import QuickGraphStructurePruningTransformer
 
 
 class TableIdColumnNames(FeatureByteBaseModel):
@@ -62,64 +66,6 @@ class TableIdColumnNames(FeatureByteBaseModel):
 
     table_id: PydanticObjectId
     column_names: List[str]
-
-
-class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
-    """
-    OfflineStoreIngestQuery object stores the offline store ingest query for a feature or target.
-    """
-
-    # offline store ingest query graph & output node name (from the graph)
-    graph: QueryGraphModel
-    node_name: str
-    # primary entity ids of the offline store ingest query graph
-    primary_entity_ids: List[PydanticObjectId]
-    # reference node name that is used in decomposed query graph
-    # if None, the query graph is not decomposed
-    ref_node_name: Optional[str]
-    # output column name of the offline store ingest query graph
-    output_column_name: str
-    output_dtype: DBVarType
-    # feature job setting of the offline store ingest query graph
-    feature_job_setting: Optional[FeatureJobSetting]
-    # whether the offline store ingest query graph has time-to-live (TTL) component
-    has_ttl: bool
-    # aggregation nodes info of the offline store ingest query graph
-    aggregation_nodes_info: List[AggregationNodeInfo]
-
-    def ingest_graph_and_node(self) -> Tuple[QueryGraphModel, Node]:
-        """
-        Construct graph and node for generating offline store ingest SQL query
-
-        Returns
-        -------
-        Tuple[QueryGraphModel, Node]
-            Ingest graph and node
-        """
-        output_node = self.graph.get_node_by_name(self.node_name)
-        if self.ref_node_name is None:
-            # if the query graph is not decomposed, return the original graph & node
-            return self.graph, output_node
-
-        # if the query graph is decomposed, update the graph output column name to match output_column_name
-        if output_node.type != NodeType.ALIAS:
-            graph = QueryGraphModel(**self.graph.dict(by_alias=True))
-        else:
-            output_parent_node_name = self.graph.backward_edges_map[self.node_name][0]
-            transformer = QuickGraphStructurePruningTransformer(graph=self.graph)
-            graph, node_name_map = transformer.transform(
-                target_node_names=[output_parent_node_name]
-            )
-            output_node = graph.get_node_by_name(node_name_map[output_parent_node_name])
-
-        # add alias node to rename the output column name
-        output_node = graph.add_operation(
-            node_type=NodeType.ALIAS,
-            node_params={"name": self.output_column_name},
-            node_output_type=NodeOutputType.SERIES,
-            input_nodes=[output_node],
-        )
-        return graph, output_node
 
 
 class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
@@ -240,7 +186,10 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
             )
 
             # extract dtype from the graph
-            values["dtype"] = cls._extract_dtype_from_graph(graph, node_name)
+            exception_message = "Feature or target graph must have exactly one aggregation output"
+            values["dtype"] = extract_dtype_from_graph(
+                graph=graph, output_node=node, exception_message=exception_message
+            )
 
         return values
 
@@ -473,42 +422,44 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
             )
         return output
 
-    def extract_offline_store_ingest_query_graphs(self) -> List[OfflineStoreIngestQueryGraph]:
+    def extract_offline_store_ingest_query_graphs(
+        self, entity_id_to_serving_name: Dict[PydanticObjectId, str]
+    ) -> List[OfflineStoreIngestQueryGraph]:
         """
         Extract offline store ingest query graphs
+
+        Parameters
+        ----------
+        entity_id_to_serving_name: Dict[PydanticObjectId, str]
+            Entity id to serving name mapping
 
         Returns
         -------
         List[OfflineStoreIngestQueryGraph]
             List of offline store ingest query graphs
         """
+        # TODO: store the decomposed graph to the model once the query graph structure is finalized.
         extractor = OfflineStoreIngestQueryGraphExtractor(graph=self.graph)
         assert self.name is not None
         result = extractor.extract(
-            node=self.node, relationships_info=self.relationships_info, feature_name=self.name
+            node=self.node,
+            entity_id_to_serving_name=entity_id_to_serving_name,
+            relationships_info=self.relationships_info,
+            feature_name=self.name,
         )
         output = []
+
+        # TODO: add offline store metadata to the model
         if result.is_decomposed:
             for graph_node in result.graph.iterate_sorted_graph_nodes(
                 graph_node_types={GraphNodeType.OFFLINE_STORE_INGEST_QUERY}
             ):
-                exit_node_name = result.graph_node_name_to_exit_node_name[graph_node.name]
                 graph_node_params = graph_node.parameters
-                aggregation_info = result.node_name_to_aggregation_info[exit_node_name]
+                assert isinstance(graph_node_params, OfflineStoreIngestQueryGraphNodeParameters)
                 output.append(
-                    OfflineStoreIngestQueryGraph(
-                        graph=graph_node.parameters.graph,
-                        node_name=graph_node.parameters.output_node_name,
-                        primary_entity_ids=aggregation_info.primary_entity_ids,
+                    OfflineStoreIngestQueryGraph.create_from(
+                        graph_node_param=graph_node_params,
                         ref_node_name=graph_node.name,
-                        output_column_name=graph_node_params.output_column_name,  # type: ignore
-                        output_dtype=self._extract_dtype_from_graph(
-                            graph=graph_node.parameters.graph,
-                            node_name=graph_node.parameters.output_node_name,
-                        ),
-                        feature_job_setting=graph_node_params.feature_job_setting,  # type: ignore
-                        has_ttl=aggregation_info.has_ttl_agg_type,
-                        aggregation_nodes_info=graph_node_params.aggregation_nodes_info,  # type: ignore
                     )
                 )
         else:
@@ -516,27 +467,32 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
             if self.table_id_feature_job_settings:
                 feature_job_setting = self.table_id_feature_job_settings[0].feature_job_setting
 
+            has_ttl = bool(
+                next(
+                    self.graph.iterate_nodes(target_node=self.node, node_type=NodeType.GROUPBY),
+                    None,
+                )
+            )
+            table_name = get_offline_store_table_name(
+                primary_entity_serving_names=[
+                    entity_id_to_serving_name[entity_id] for entity_id in self.primary_entity_ids
+                ],
+                feature_job_setting=feature_job_setting,
+                has_ttl=has_ttl,
+            )
+
             output.append(
                 OfflineStoreIngestQueryGraph(
                     graph=self.graph,
                     node_name=self.node_name,
-                    primary_entity_ids=self.primary_entity_ids,
                     ref_node_name=None,
-                    output_column_name=self.name,
-                    output_dtype=self._extract_dtype_from_graph(
-                        graph=self.graph, node_name=self.node_name
-                    ),
-                    feature_job_setting=feature_job_setting,
-                    has_ttl=bool(
-                        # check if there is a GroupByNode in the graph
-                        next(
-                            self.graph.iterate_nodes(
-                                target_node=self.node, node_type=NodeType.GROUPBY
-                            ),
-                            None,
-                        )
-                    ),
                     aggregation_nodes_info=self._extract_aggregation_nodes_info(),
+                    offline_store_table_name=table_name,
+                    output_column_name=self.name,
+                    output_dtype=self.dtype,
+                    primary_entity_ids=self.primary_entity_ids,
+                    feature_job_setting=feature_job_setting,
+                    has_ttl=has_ttl,
                 )
             )
 
