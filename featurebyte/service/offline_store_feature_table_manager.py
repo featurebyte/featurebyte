@@ -161,13 +161,40 @@ class OfflineStoreFeatureTableManagerService:
         has_ttl: bool,
         feature_job_setting: Optional[FeatureJobSetting],
     ) -> OfflineStoreFeatureTableModel:
-        aggregate_result_table_names = set()
-
         feature_ids_to_model: Dict[ObjectId, FeatureModel] = {}
         async for feature_model in self.feature_service.list_documents_iterator(
             query_filter={"_id": {"$in": feature_ids}}
         ):
             feature_ids_to_model[feature_model.id] = feature_model
+
+        primary_entities = []
+        async for entity_model in self.entity_service.list_documents_iterator(
+            query_filter={"_id": {"$in": primary_entity_ids}}
+        ):
+            primary_entities.append(entity_model)
+
+        required_aggregate_result_tables = await self._get_required_aggregate_result_tables(
+            feature_id_to_models=feature_ids_to_model,
+            primary_entity_serving_names=[entity.serving_names[0] for entity in primary_entities],
+        )
+
+        return get_offline_store_feature_table_model(
+            feature_table_name=feature_table_name,
+            features=[feature_ids_to_model[feature_id] for feature_id in feature_ids],
+            aggregate_result_table_names=required_aggregate_result_tables,
+            primary_entities=primary_entities,
+            has_ttl=has_ttl,
+            feature_job_setting=feature_job_setting,
+        )
+
+    async def _get_required_aggregate_result_tables(
+        self,
+        feature_id_to_models: Dict[ObjectId, FeatureModel],
+        primary_entity_serving_names: List[str],
+    ) -> List[str]:
+        aggregate_result_table_names = set()
+
+        for feature_model in feature_id_to_models.values():
             aggregate_result_table_names.update(feature_model.online_store_table_names)
 
         aggregate_result_table_names = sorted(aggregate_result_table_names)  # type: ignore[assignment]
@@ -181,28 +208,12 @@ class OfflineStoreFeatureTableManagerService:
                 online_store_compute_query_model.table_name
             ] = online_store_compute_query_model.serving_names
 
-        primary_entities = []
-        async for entity_model in self.entity_service.list_documents_iterator(
-            query_filter={"_id": {"$in": primary_entity_ids}}
-        ):
-            primary_entities.append(entity_model)
-
-        primary_entity_serving_names = sorted(
-            [entity.serving_names[0] for entity in primary_entities]
-        )
         required_aggregate_result_tables = []
         for (
             aggregate_result_table_name,
             aggregate_result_table_serving_names,
         ) in aggregate_result_table_name_to_serving_names.items():
-            if sorted(aggregate_result_table_serving_names) == primary_entity_serving_names:
+            if sorted(aggregate_result_table_serving_names) == sorted(primary_entity_serving_names):
                 required_aggregate_result_tables.append(aggregate_result_table_name)
 
-        return get_offline_store_feature_table_model(
-            feature_table_name=feature_table_name,
-            features=[feature_ids_to_model[feature_id] for feature_id in feature_ids],
-            aggregate_result_table_names=required_aggregate_result_tables,
-            primary_entities=primary_entities,
-            has_ttl=has_ttl,
-            feature_job_setting=feature_job_setting,
-        )
+        return required_aggregate_result_tables
