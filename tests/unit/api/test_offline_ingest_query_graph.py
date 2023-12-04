@@ -137,7 +137,9 @@ def test_feature_multiple_non_ttl_components(
 
     # check offline ingest query graph (note that the request column part should be removed)
     ingest_query_graphs = feature.cached_model.extract_offline_store_ingest_query_graphs(
-        entity_id_to_serving_name={}
+        entity_id_to_serving_name={
+            cust_id_entity.id: cust_id_entity.serving_names[0],
+        }
     )
     assert len(ingest_query_graphs) == 1
     non_ttl_component_graph = ingest_query_graphs[0]

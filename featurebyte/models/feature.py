@@ -53,6 +53,7 @@ from featurebyte.query_graph.transform.definition import (
 from featurebyte.query_graph.transform.offline_ingest_extractor import (
     OfflineStoreIngestQueryGraphExtractor,
     extract_dtype_from_graph,
+    get_offline_store_table_name,
 )
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 
@@ -448,7 +449,7 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
         )
         output = []
 
-        # TODO: store is_decomposed & ttl to the model once the query graph structure is finalized.
+        # TODO: add offline store metadata to the model
         if result.is_decomposed:
             for graph_node in result.graph.iterate_sorted_graph_nodes(
                 graph_node_types={GraphNodeType.OFFLINE_STORE_INGEST_QUERY}
@@ -466,25 +467,32 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
             if self.table_id_feature_job_settings:
                 feature_job_setting = self.table_id_feature_job_settings[0].feature_job_setting
 
+            has_ttl = bool(
+                next(
+                    self.graph.iterate_nodes(target_node=self.node, node_type=NodeType.GROUPBY),
+                    None,
+                )
+            )
+            table_name = get_offline_store_table_name(
+                primary_entity_serving_names=[
+                    entity_id_to_serving_name[entity_id] for entity_id in self.primary_entity_ids
+                ],
+                feature_job_setting=feature_job_setting,
+                has_ttl=has_ttl,
+            )
+
             output.append(
                 OfflineStoreIngestQueryGraph(
                     graph=self.graph,
                     node_name=self.node_name,
-                    primary_entity_ids=self.primary_entity_ids,
                     ref_node_name=None,
+                    aggregation_nodes_info=self._extract_aggregation_nodes_info(),
+                    offline_store_table_name=table_name,
                     output_column_name=self.name,
                     output_dtype=self.dtype,
+                    primary_entity_ids=self.primary_entity_ids,
                     feature_job_setting=feature_job_setting,
-                    has_ttl=bool(
-                        # check if there is a GroupByNode in the graph
-                        next(
-                            self.graph.iterate_nodes(
-                                target_node=self.node, node_type=NodeType.GROUPBY
-                            ),
-                            None,
-                        )
-                    ),
-                    aggregation_nodes_info=self._extract_aggregation_nodes_info(),
+                    has_ttl=has_ttl,
                 )
             )
 

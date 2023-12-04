@@ -2,7 +2,7 @@
 This module contains the model for feast registry
 """
 # pylint: disable=no-name-in-module
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from collections import defaultdict
 from datetime import timedelta
@@ -13,7 +13,6 @@ from feast import FeatureView as FeastFeatureView
 from feast import Field as FeastField
 from feast.data_source import DataSource as FeastDataSource
 from feast.protos.feast.core.Registry_pb2 import Registry as RegistryProto
-from pydantic import Field
 
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
@@ -34,28 +33,12 @@ class OfflineStoreTable(FeatureByteBaseModel):
     - time-to-live (TTL) component (derived from feature job setting)
     """
 
-    table_name: str = Field(default="")
+    table_name: str
     primary_entity_ids: List[PydanticObjectId]
     feature_job_setting: Optional[FeatureJobSetting]
     has_ttl: bool
     ingest_query_graphs: List[OfflineStoreIngestQueryGraph]
     primary_entity_serving_names: List[str]
-
-    def __init__(self, **kwargs: Any) -> None:
-        super().__init__(**kwargs)
-
-        # construct table name
-        entity_part = "_".join(self.primary_entity_serving_names)
-        table_name = f"fb_entity_{entity_part}"
-        if self.feature_job_setting:
-            fjs = self.feature_job_setting.to_seconds()
-            frequency = fjs["frequency"]
-            time_modulo_frequency = fjs["time_modulo_frequency"]
-            blind_spot = fjs["blind_spot"]
-            table_name = f"{table_name}_fjs_{frequency}_{time_modulo_frequency}_{blind_spot}"
-        if self.has_ttl:
-            table_name = f"{table_name}_ttl"
-        self.table_name = table_name
 
     def create_feast_entity(self) -> FeastEntity:
         """
@@ -221,16 +204,17 @@ class FeastRegistryConstructor:
                 entity_id_to_serving_name=entity_id_to_serving_name
             )
             for ingest_query_graph in offline_ingest_query_graphs:
-                group_key = ingest_query_graph.feast_feature_view_grouping_key
-                offline_table_key_to_ingest_query_graphs[group_key].append(ingest_query_graph)
+                table_name = ingest_query_graph.offline_store_table_name
+                offline_table_key_to_ingest_query_graphs[table_name].append(ingest_query_graph)
 
         offline_store_tables = []
-        for ingest_query_graphs in offline_table_key_to_ingest_query_graphs.values():
+        for table_name, ingest_query_graphs in offline_table_key_to_ingest_query_graphs.items():
             assert len(ingest_query_graphs) > 0
             primary_entity_ids = ingest_query_graphs[0].primary_entity_ids
             feature_job_setting = ingest_query_graphs[0].feature_job_setting
             has_ttl = ingest_query_graphs[0].has_ttl
             offline_store_table = OfflineStoreTable(
+                table_name=table_name,
                 primary_entity_ids=primary_entity_ids,
                 feature_job_setting=feature_job_setting,
                 ingest_query_graphs=ingest_query_graphs,

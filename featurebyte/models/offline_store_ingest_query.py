@@ -26,23 +26,27 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
     OfflineStoreIngestQuery object stores the offline store ingest query for a feature or target.
     """
 
+    # offline ingest graph related info
     # offline store ingest query graph & output node name (from the graph)
+    # reference node name that is used in decomposed query graph (if None, the graph is not decomposed)
+    # aggregation nodes info of the offline store ingest query graph
     graph: QueryGraphModel
     node_name: str
-    # primary entity ids of the offline store ingest query graph
-    primary_entity_ids: List[PydanticObjectId]
-    # reference node name that is used in decomposed query graph
-    # if None, the query graph is not decomposed
     ref_node_name: Optional[str]
-    # output column name of the offline store ingest query graph
+    aggregation_nodes_info: List[AggregationNodeInfo]
+
+    # table related info
+    offline_store_table_name: str
     output_column_name: str
     output_dtype: DBVarType
+
+    # offline store table related metadata
+    # primary entity ids of the offline store ingest query graph
     # feature job setting of the offline store ingest query graph
-    feature_job_setting: Optional[FeatureJobSetting]
     # whether the offline store ingest query graph has time-to-live (TTL) component
+    primary_entity_ids: List[PydanticObjectId]
+    feature_job_setting: Optional[FeatureJobSetting]
     has_ttl: bool
-    # aggregation nodes info of the offline store ingest query graph
-    aggregation_nodes_info: List[AggregationNodeInfo]
 
     # pydantic validators
     _sort_ids_validator = validator("primary_entity_ids", allow_reuse=True)(
@@ -71,31 +75,14 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
         return cls(
             graph=graph_node_param.graph,
             node_name=graph_node_param.output_node_name,
-            primary_entity_ids=graph_node_param.primary_entity_ids,
             ref_node_name=ref_node_name,
+            offline_store_table_name=graph_node_param.offline_store_table_name,
+            aggregation_nodes_info=graph_node_param.aggregation_nodes_info,
             output_column_name=graph_node_param.output_column_name,
             output_dtype=graph_node_param.output_dtype,
+            primary_entity_ids=graph_node_param.primary_entity_ids,
             feature_job_setting=graph_node_param.feature_job_setting,
             has_ttl=graph_node_param.has_ttl,
-            aggregation_nodes_info=graph_node_param.aggregation_nodes_info,
-        )
-
-    @property
-    def feast_feature_view_grouping_key(
-        self,
-    ) -> Tuple[Tuple[PydanticObjectId, ...], Optional[FeatureJobSetting], bool]:
-        """
-        Get feast feature view grouping key which is used to group offline store feature into the same feature view
-
-        Returns
-        -------
-        Tuple[Tuple[PydanticObjectId, ...], Optional[FeatureJobSetting], bool]
-            Feast feature view grouping key
-        """
-        return (
-            tuple(self.primary_entity_ids),
-            self.feature_job_setting,
-            self.has_ttl,
         )
 
     def ingest_graph_and_node(self) -> Tuple[QueryGraphModel, Node]:

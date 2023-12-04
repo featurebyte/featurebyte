@@ -888,7 +888,10 @@ def check_offline_store_ingest_graph_on_composite_feature(
     ]
     new_feature_model = feature_model.copy(update={"relationships_info": relationships_info})
     ingest_query_graphs = new_feature_model.extract_offline_store_ingest_query_graphs(
-        entity_id_to_serving_name={}
+        entity_id_to_serving_name={
+            cust_entity_id: "cust_id",
+            transaction_entity_id: "transaction_id",
+        }
     )
     assert len(ingest_query_graphs) == 1
     ingest_query_graph = ingest_query_graphs[0]
@@ -962,13 +965,15 @@ def test_composite_features(snowflake_event_table_with_entity, cust_id_entity):
     )
 
 
-def test_offline_store_ingest_query_graphs__without_graph_decomposition(saved_feature):
+def test_offline_store_ingest_query_graphs__without_graph_decomposition(
+    saved_feature, cust_id_entity
+):
     """Test offline store ingest query graphs"""
     feature_model = saved_feature.cached_model
     assert isinstance(feature_model, FeatureModel)
 
     ingest_query_graphs = feature_model.extract_offline_store_ingest_query_graphs(
-        entity_id_to_serving_name={}
+        entity_id_to_serving_name={cust_id_entity.id: cust_id_entity.serving_names[0]}
     )
     assert len(ingest_query_graphs) == 1
     assert ingest_query_graphs[0].graph == feature_model.graph
