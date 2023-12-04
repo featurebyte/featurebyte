@@ -8,7 +8,7 @@ scd_view = scd_table.get_view(
     drop_column_names=["is_active"],
     column_cleaning_operations=[],
 )
-feat = scd_view.groupby(by_keys=["col_int"], category=None).aggregate_asat(
+feat = scd_view.groupby(by_keys=["cust_id"], category=None).aggregate_asat(
     value_column="col_float",
     method="max",
     feature_name="col_float_max",

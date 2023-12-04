@@ -22,7 +22,7 @@ def scd_view_with_entity(snowflake_scd_table, entity_col_int):
     """
     Entity(name="col_text_entity", serving_names=["col_text"]).save()
     snowflake_scd_table["col_text"].as_entity("col_text_entity")
-    snowflake_scd_table["col_int"].as_entity("col_int_entity")
+    snowflake_scd_table["cust_id"].as_entity("col_int_entity")
     return snowflake_scd_table.get_view()
 
 
@@ -30,7 +30,7 @@ def test_aggregate_asat__valid(scd_view_with_entity, snowflake_scd_table, entity
     """
     Test valid usage of aggregate_asat
     """
-    feature = scd_view_with_entity.groupby("col_int").aggregate_asat(
+    feature = scd_view_with_entity.groupby("cust_id").aggregate_asat(
         value_column="col_float", method="sum", feature_name="asat_feature"
     )
     assert isinstance(feature, Feature)
@@ -48,23 +48,23 @@ def test_aggregate_asat__valid(scd_view_with_entity, snowflake_scd_table, entity
     asat_node_dict = get_node(graph_dict, "aggregate_as_at_1")
     assert asat_node_dict == {
         "name": "aggregate_as_at_1",
-        "type": "aggregate_as_at",
         "output_type": "frame",
         "parameters": {
-            "effective_timestamp_column": "effective_timestamp",
-            "natural_key_column": "col_text",
-            "current_flag_column": "is_active",
-            "end_timestamp_column": "end_timestamp",
-            "keys": ["col_int"],
-            "parent": "col_float",
             "agg_func": "sum",
-            "value_by": None,
-            "serving_names": ["col_int"],
-            "entity_ids": [entity_col_int.id],
-            "name": "asat_feature",
-            "offset": None,
             "backward": True,
+            "current_flag_column": "is_active",
+            "effective_timestamp_column": "effective_timestamp",
+            "end_timestamp_column": "end_timestamp",
+            "entity_ids": [entity_col_int.id],
+            "keys": ["cust_id"],
+            "name": "asat_feature",
+            "natural_key_column": "col_text",
+            "offset": None,
+            "parent": "col_float",
+            "serving_names": ["col_int"],
+            "value_by": None,
         },
+        "type": "aggregate_as_at",
     }
     assert graph_dict["edges"] == [
         {"source": "input_1", "target": "graph_1"},
@@ -94,7 +94,7 @@ def test_aggregate_asat__method_required(scd_view_with_entity):
     Test method parameter is required
     """
     with pytest.raises(ValueError) as exc:
-        scd_view_with_entity.groupby("col_int").aggregate_asat(
+        scd_view_with_entity.groupby("cust_id").aggregate_asat(
             value_column="col_float", feature_name="asat_feature"
         )
     assert str(exc.value) == "method is required"
@@ -105,7 +105,7 @@ def test_aggregate_asat__feature_name_required(scd_view_with_entity):
     Test feature_name parameter is required
     """
     with pytest.raises(ValueError) as exc:
-        scd_view_with_entity.groupby("col_int").aggregate_asat(
+        scd_view_with_entity.groupby("cust_id").aggregate_asat(
             value_column="col_float", feature_name="asat_feature"
         )
     assert str(exc.value) == "method is required"
@@ -116,7 +116,7 @@ def test_aggregate_asat__latest_not_supported(scd_view_with_entity):
     Test using "latest" method is not supported
     """
     with pytest.raises(ValueError) as exc:
-        scd_view_with_entity.groupby("col_int").aggregate_asat(
+        scd_view_with_entity.groupby("cust_id").aggregate_asat(
             value_column="col_float", method="latest", feature_name="asat_feature"
         )
     assert str(exc.value) == "latest aggregation method is not supported for aggregated_asat"
@@ -138,7 +138,7 @@ def test_aggregate_asat__invalid_offset_string(scd_view_with_entity):
     Test offset string is validated
     """
     with pytest.raises(ValueError) as exc:
-        scd_view_with_entity.groupby("col_int").aggregate_asat(
+        scd_view_with_entity.groupby("cust_id").aggregate_asat(
             value_column="col_float", method="sum", feature_name="asat_feature", offset="yesterday"
         )
     assert "Failed to parse the offset parameter" in str(exc.value)
@@ -149,7 +149,7 @@ def test_aggregate_asat__offset_not_implemented(scd_view_with_entity):
     Test offset support not yet implemented
     """
     with pytest.raises(NotImplementedError) as exc:
-        scd_view_with_entity.groupby("col_int").aggregate_asat(
+        scd_view_with_entity.groupby("cust_id").aggregate_asat(
             value_column="col_float", method="sum", feature_name="asat_feature", offset="7d"
         )
     assert str(exc.value) == "offset support is not yet implemented"

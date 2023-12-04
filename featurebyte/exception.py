@@ -466,3 +466,10 @@ class UnsupportedObservationTableUploadFileFormat(BaseUnprocessableEntityError):
     """
     Raise when the file format for observation table upload is not supported
     """
+
+
+class EntityTaggingIsNotAllowedError(BaseUnprocessableEntityError):
+    """ "
+    Raise when entity tagging is not allowed for a specific columns,
+    for example scd surrogate key
+    """

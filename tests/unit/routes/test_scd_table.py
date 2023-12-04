@@ -131,6 +131,27 @@ class TestSCDTableApi(BaseTableApiTestSuite):
         }
 
     @pytest.mark.asyncio
+    async def test_surrogate_key_cannot_be_tagged_as_entity(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """test tag surrogate key as entity"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        assert create_response_dict["surrogate_key_column"] == "col_int"
+
+        entity_payload = self.load_payload("tests/fixtures/request_payloads/entity.json")
+        table_id = create_response_dict["_id"]
+
+        response = test_api_client.patch(
+            f"{self.base_route}/{table_id}/column_entity",
+            json={
+                "column_name": "col_int",
+                "entity_id": entity_payload["_id"],
+            },
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.text
+
+    @pytest.mark.asyncio
     async def test_get_info_200(self, test_api_client_persistent, create_success_response):
         """Test retrieve info"""
         test_api_client, _ = test_api_client_persistent
