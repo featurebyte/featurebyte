@@ -347,7 +347,7 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
     @classmethod
     def get(cls, name: str) -> UserDefinedFunction:
         """
-        Gets a UserDefinedFunction object by its name.
+        Get a UserDefinedFunction object by its name.
 
         Parameters
         ----------
