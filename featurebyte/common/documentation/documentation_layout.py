@@ -1023,6 +1023,7 @@ def _get_user_defined_function_layout() -> List[DocLayoutItem]:
     return [
         DocLayoutItem([USER_DEFINED_FUNCTION]),
         DocLayoutItem([USER_DEFINED_FUNCTION, CLASS_METHODS, "UserDefinedFunction.create"]),
+        DocLayoutItem([USER_DEFINED_FUNCTION, CLASS_METHODS, "UserDefinedFunction.get"]),
         DocLayoutItem([USER_DEFINED_FUNCTION, INFO, "UserDefinedFunction.created_at"]),
         DocLayoutItem([USER_DEFINED_FUNCTION, INFO, "UserDefinedFunction.info"]),
         DocLayoutItem([USER_DEFINED_FUNCTION, INFO, "UserDefinedFunction.name"]),

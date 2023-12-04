@@ -344,6 +344,29 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
         user_defined_function.save()
         return user_defined_function
 
+    @classmethod
+    def get(cls, name: str) -> UserDefinedFunction:
+        """
+        Get a UserDefinedFunction object by its name.
+
+        Parameters
+        ----------
+        name: str
+            Name of the UserDefinedFunction to retrieve.
+
+        Returns
+        -------
+        UserDefinedFunction
+            UserDefinedFunction object.
+
+        Examples
+        --------
+        Get a UserDefinedFunction object that is already created.
+
+        >>> udf = fb.UserDefinedFunction.get("cos")  # doctest: +SKIP
+        """
+        return super().get(name)
+
     @typechecked
     def update_sql_function_name(self, sql_function_name: str) -> None:
         """
