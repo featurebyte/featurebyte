@@ -161,23 +161,23 @@ class OfflineStoreFeatureTableManagerService:
         has_ttl: bool,
         feature_job_setting: Optional[FeatureJobSetting],
     ) -> OfflineStoreFeatureTableModel:
-        online_store_table_names = set()
+        aggregate_result_table_names = set()
 
         feature_ids_to_model: Dict[ObjectId, FeatureModel] = {}
         async for feature_model in self.feature_service.list_documents_iterator(
             query_filter={"_id": {"$in": feature_ids}}
         ):
             feature_ids_to_model[feature_model.id] = feature_model
-            online_store_table_names.update(feature_model.online_store_table_names)
+            aggregate_result_table_names.update(feature_model.online_store_table_names)
 
-        online_store_table_names = sorted(online_store_table_names)  # type: ignore[assignment]
+        aggregate_result_table_names = sorted(aggregate_result_table_names)  # type: ignore[assignment]
 
-        # Get online tables
-        online_store_table_name_to_serving_names = {}
+        # Get aggregate result tables
+        aggregate_result_table_name_to_serving_names = {}
         async for online_store_compute_query_model in self.online_store_compute_query_service.list_documents_iterator(
-            query_filter={"table_name": {"$in": online_store_table_names}}
+            query_filter={"table_name": {"$in": aggregate_result_table_names}}
         ):
-            online_store_table_name_to_serving_names[
+            aggregate_result_table_name_to_serving_names[
                 online_store_compute_query_model.table_name
             ] = online_store_compute_query_model.serving_names
 
@@ -190,18 +190,18 @@ class OfflineStoreFeatureTableManagerService:
         primary_entity_serving_names = sorted(
             [entity.serving_names[0] for entity in primary_entities]
         )
-        required_online_store_tables = []
+        required_aggregate_result_tables = []
         for (
-            online_store_table_name,
-            online_store_serving_names,
-        ) in online_store_table_name_to_serving_names.items():
-            if sorted(online_store_serving_names) == primary_entity_serving_names:
-                required_online_store_tables.append(online_store_table_name)
+            aggregate_result_table_name,
+            aggregate_result_table_serving_names,
+        ) in aggregate_result_table_name_to_serving_names.items():
+            if sorted(aggregate_result_table_serving_names) == primary_entity_serving_names:
+                required_aggregate_result_tables.append(aggregate_result_table_name)
 
         return get_offline_store_feature_table_model(
             feature_table_name=feature_table_name,
             features=[feature_ids_to_model[feature_id] for feature_id in feature_ids],
-            aggregate_result_table_names=required_online_store_tables,
+            aggregate_result_table_names=required_aggregate_result_tables,
             primary_entities=primary_entities,
             has_ttl=has_ttl,
             feature_job_setting=feature_job_setting,
