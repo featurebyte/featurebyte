@@ -21,8 +21,6 @@ from featurebyte.service.feature import FeatureService
 from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
 from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
 
-FEATURE_TABLE_NAME_PREFIX = "FEATURE_TABLE_"
-
 
 class OfflineStoreFeatureTableManagerService:
     """
@@ -177,27 +175,22 @@ class OfflineStoreFeatureTableManagerService:
         primary_entity_serving_names: List[str],
     ) -> List[str]:
         aggregate_result_table_names = set()
-
         for feature_model in feature_id_to_models.values():
             aggregate_result_table_names.update(feature_model.online_store_table_names)
-
-        aggregate_result_table_names = sorted(aggregate_result_table_names)  # type: ignore[assignment]
+        aggregate_result_table_names = list(aggregate_result_table_names)  # type: ignore[assignment]
 
         # Get aggregate result tables
-        aggregate_result_table_name_to_serving_names = {}
+        filtered_table_names = []
+        query_filter = {
+            "table_name": {"$in": aggregate_result_table_names},
+            "serving_names": {
+                "$all": primary_entity_serving_names,
+                "$size": len(primary_entity_serving_names),
+            },
+        }
         async for online_store_compute_query_model in self.online_store_compute_query_service.list_documents_iterator(
-            query_filter={"table_name": {"$in": aggregate_result_table_names}}
+            query_filter=query_filter
         ):
-            aggregate_result_table_name_to_serving_names[
-                online_store_compute_query_model.table_name
-            ] = online_store_compute_query_model.serving_names
+            filtered_table_names.append(online_store_compute_query_model.table_name)
 
-        required_aggregate_result_tables = []
-        for (
-            aggregate_result_table_name,
-            aggregate_result_table_serving_names,
-        ) in aggregate_result_table_name_to_serving_names.items():
-            if sorted(aggregate_result_table_serving_names) == sorted(primary_entity_serving_names):
-                required_aggregate_result_tables.append(aggregate_result_table_name)
-
-        return required_aggregate_result_tables
+        return sorted(set(filtered_table_names))
