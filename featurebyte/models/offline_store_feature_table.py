@@ -103,6 +103,10 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
 
         indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
             pymongo.operations.IndexModel("feature_ids"),
+            pymongo.operations.IndexModel("primary_entity_ids"),
+            pymongo.operations.IndexModel("serving_names"),
+            pymongo.operations.IndexModel("feature_job_setting"),
+            pymongo.operations.IndexModel("has_ttl"),
         ]
 
 
