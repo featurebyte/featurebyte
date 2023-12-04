@@ -21,7 +21,7 @@ from abc import ABC, abstractmethod  # pylint: disable=wrong-import-order
 
 from pydantic import BaseModel, Field
 
-from featurebyte.enum import ViewMode
+from featurebyte.enum import DBVarType, ViewMode
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
@@ -150,6 +150,7 @@ class BaseOfflineStoreIngestQueryGraphNodeParameters(BaseGraphNodeParameters, AB
     """
 
     output_column_name: str
+    primary_entity_ids: List[PydanticObjectId]
 
     def derive_sdk_code(
         self,
@@ -180,6 +181,9 @@ class OfflineStoreIngestQueryGraphNodeParameters(BaseOfflineStoreIngestQueryGrap
     )
     aggregation_nodes_info: List[AggregationNodeInfo]
     feature_job_setting: Optional[FeatureJobSetting]
+    has_ttl: bool
+    offline_store_table_name: str
+    output_dtype: DBVarType
 
 
 class OfflineStoreRequestColumnQueryGraphNodeParameters(

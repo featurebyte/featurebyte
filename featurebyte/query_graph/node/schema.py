@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import ClassVar, Optional, Union
 
+from feast import SnowflakeSource
+from feast.data_source import DataSource
 from pydantic import Field, StrictStr
 
 from featurebyte.common.doc_util import FBAutoDoc
@@ -16,6 +18,40 @@ class BaseDatabaseDetails(FeatureByteBaseModel):
     """Model for data source information"""
 
     is_local_source: ClassVar[bool] = False
+
+    def create_feast_data_source(
+        self,
+        name: str,
+        table_name: str,
+        timestamp_field: Optional[str] = None,
+        created_timestamp_column: Optional[str] = None,
+    ) -> DataSource:
+        """
+        Create a Feast DataSource from the details in this class
+
+        Parameters
+        ----------
+        name: str
+            Name of the DataSource
+        table_name: str
+            Name of the table to create a DataSource for
+        timestamp_field: Optional[str]
+            Event timestamp field used for point in time joins of feature values
+        created_timestamp_column: Optional[str]
+            Timestamp column indicating when the row was created, used for de-duplicating rows.
+
+        Returns
+        -------
+        DataSource
+            Feast DataSource object
+        # noqa: DAR202
+
+        Raises
+        ------
+        NotImplementedError
+            If the method is not implemented by the subclass
+        """
+        raise NotImplementedError()
 
 
 class SnowflakeDetails(BaseDatabaseDetails):
@@ -51,15 +87,51 @@ class SnowflakeDetails(BaseDatabaseDetails):
         description="The name of the schema containing the database, tables and columns."
     )
 
+    def create_feast_data_source(
+        self,
+        name: str,
+        table_name: str,
+        timestamp_field: Optional[str] = None,
+        created_timestamp_column: Optional[str] = None,
+    ) -> DataSource:
+        """
+        Create a Feast DataSource from the details in this class
 
-class SQLiteDetails(BaseDatabaseDetails):
+        Parameters
+        ----------
+        name: str
+            Name of the DataSource
+        table_name: str
+            Name of the table to create a DataSource for
+        timestamp_field: Optional[str]
+            Event timestamp field used for point in time joins of feature values
+        created_timestamp_column: Optional[str]
+            Timestamp column indicating when the row was created, used for de-duplicating rows.
+
+        Returns
+        -------
+        DataSource
+            Feast DataSource object
+        """
+        return SnowflakeSource(
+            name=name,
+            timestamp_field=timestamp_field,
+            database=self.database,
+            warehouse=self.warehouse,
+            schema=self.sf_schema,
+            table=table_name,
+            created_timestamp_column=created_timestamp_column,
+        )
+
+
+class SQLiteDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method
     """Model for SQLite data source information"""
 
     filename: StrictStr
     is_local_source: ClassVar[bool] = True
 
 
-class DatabricksDetails(BaseDatabaseDetails):
+class DatabricksDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method
     """
     Model for details used to connect to a Databricks data source.
 
@@ -92,7 +164,7 @@ class DatabricksDetails(BaseDatabaseDetails):
     )
 
 
-class SparkDetails(BaseDatabaseDetails):
+class SparkDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method
     """
     Model for details used to connect to a Spark data source.
 
@@ -142,7 +214,7 @@ class SparkDetails(BaseDatabaseDetails):
     )
 
 
-class TestDatabaseDetails(BaseDatabaseDetails):
+class TestDatabaseDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method
     """Model for a no-op mock database details for use in tests"""
 
 
@@ -159,7 +231,7 @@ class FeatureStoreDetails(FeatureByteBaseModel):
         "represented by the FeatureStore object."
     )
     details: DatabaseDetails = Field(
-        description="Returns the details of the database used for the FeatureStore " "object."
+        description="Returns the details of the database used for the FeatureStore object."
     )
 
 

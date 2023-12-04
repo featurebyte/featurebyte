@@ -9,12 +9,13 @@ from bson import ObjectId
 
 from featurebyte import FeatureJobSetting
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.feature import FeatureModel, OfflineStoreIngestQueryGraph
+from featurebyte.models.feature import FeatureModel
 from featurebyte.models.offline_store_feature_table import (
     OfflineStoreFeatureTableModel,
     OfflineStoreFeatureTableUpdate,
     get_offline_store_feature_table_model,
 )
+from featurebyte.models.offline_store_ingest_query import OfflineStoreIngestQueryGraph
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
@@ -50,7 +51,15 @@ class OfflineStoreFeatureTableManagerService:
         feature: FeatureModel
             Model of the feature to be enabled for online serving
         """
-        offline_ingest_graphs = feature.extract_offline_store_ingest_query_graphs()
+        primary_entities = []
+        async for entity_model in self.entity_service.list_documents_iterator(
+            query_filter={"_id": {"$in": feature.primary_entity_ids}}
+        ):
+            primary_entities.append(entity_model)
+
+        offline_ingest_graphs = feature.extract_offline_store_ingest_query_graphs(
+            {entity_model.id: entity_model.serving_names[0] for entity_model in primary_entities}
+        )
         for offline_ingest_graph in offline_ingest_graphs:
             feature_table_dict = await self._get_compatible_existing_feature_table(
                 offline_ingest_graph=offline_ingest_graph

@@ -1,5 +1,58 @@
 # Changelog
 
+## v0.6.2 (2023-12-01)
+
+### 🛑 Breaking Changes
+
++ `api` Support using observation tables in feature, target and featurelist preview
+  + Parameter `observation_set` in `Feature.preview`, `Target.preview` and `FeatureList.preview` now accepts `ObservationTable` object or pandas dataframe
+  + Breaking change: Parameter `observation_table` in `FeatureList.compute_historical_feature_table` is renamed to `observation_set`
++ `feature_list` Change feature list catalog output dataframe column name from `primary_entities` to `primary_entity`
+
+### 💡 Enhancements
+
++ `databricks-unity` Add session for databricks unity cluster, and migrate one UDF to python for databricks unity cluster.
++ `target` Allow users to create observation table with just a target id, but no graph.
++ `service` Support latest aggregation for vector columns
++ `service` Update repeated columns validation logic to handle excluded columns.
++ `endpoints` Enable observation table to associate with multiple use cases from endpoints
++ `target` Derive window for lookup targets as well
++ `service` Add critical data info validation logic
++ `api` Implement remove observation table from context
++ `service` Support rename of context, use case, observation table and historical feature table
++ `target_table` Persist primary entity IDs for the target observation table
++ `observation_table` Update observation table creation check to make sure primary entity is set
++ `service` Implement service to materialize features to be published to external feature store
++ `service` Add feature definition hash to new feature model to allow duplicated features to be detected
++ `observation_table` Track uploaded file name when creating an observation table from an uploaded file.
++ `observation_table` Add way to update purpose for observation table.
++ `tests` Use published featurebyte library in notebook tests.
++ `service` Reduce complexity of describe query to avoid memory issue during query compilation
++ `session` Use DBFS for Databricks session storage to simplify setup
++ `target_namespace` Add support for target namespace deletion
++ `observation_table` add minimum interval between entities to observation table
++ `api` Implement delete observation table from use case
++ `api` Implement removal of default preview and eda table for context
++ `api` Enable observation table to associate with multiple use cases from api
++ `api` Implement removal of default preview and eda table for use case
+
+### 🐛 Bug Fixes
+
++ `observation_table` fix validation around primary entity IDs when creating observation tables
++ `worker` Use cpu worker for feature job setting analysis to avoid blocking io worker async loop
++ `session` Make data warehouse session creation asynchronous with a timeout to avoid blocking the asyncio main thread. This prevents the API service from being unresponsive when certain compute clusters takes a long time to start up.
++ `service` Fix observation table sampling so that it is always uniform over the input
++ `worker` Fix feature job setting analysis fails for databricks feature store
++ `session` Fix spark session failing with spark version >= 3.4.1
++ `service` Fix observation table file upload error
++ `target` Support value_column=None for count in forward_aggregate/target operations.
++ `service` Fix division by zero error when calling describe on empty views
++ `worker` Fix bug where feature job setting analysis backtest fails when the analysis is missing an optional histogram
++ `service` Fixes a view join issue that causes the generated feature not savable due to graph inconsistency.
++ `use_case` Allow use cases to be created with descriptive only targets
++ `service` Fixes an error when rendering FeatureJobStatusResult in notebooks when matplotlib package is not available.
++ `feature` Fix feature saving bug when the feature contains timestamp filtering
+
 ## v0.6.1 (2023-11-22)
 
 ### 🐛 Bug Fixes

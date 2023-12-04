@@ -6,7 +6,6 @@ from typing import List, Literal, Optional, Tuple
 from dataclasses import dataclass
 
 import pymongo
-from bson import ObjectId
 from pydantic import Field
 from sqlglot import expressions
 from sqlglot.expressions import Select, select
@@ -136,7 +135,7 @@ class OfflineIngestGraphMetadata:
 
 def get_combined_ingest_graph(
     features: List[FeatureModel],
-    primary_entity_ids: List[ObjectId],
+    primary_entities: List[EntityModel],
     has_ttl: bool,
     feature_job_setting: Optional[FeatureJobSetting],
 ) -> OfflineIngestGraphMetadata:
@@ -148,8 +147,8 @@ def get_combined_ingest_graph(
     ----------
     features : List[FeatureModel]
         List of features
-    primary_entity_ids : List[ObjectId]
-        List of primary entity IDs
+    primary_entities : List[EntityModel]
+        List of primary entity models
     has_ttl : bool
         Whether the feature table has TTL
     feature_job_setting : Optional[FeatureJobSetting]
@@ -164,8 +163,14 @@ def get_combined_ingest_graph(
     output_column_names = []
     output_dtypes = []
 
+    primary_entity_ids = sorted([entity.id for entity in primary_entities])
     for feature in features:
-        offline_ingest_graphs = feature.extract_offline_store_ingest_query_graphs()
+        # Set entity_id_to_serving_name to empty as the table name will not be used here
+        offline_ingest_graphs = feature.extract_offline_store_ingest_query_graphs(
+            entity_id_to_serving_name={
+                entity.id: entity.serving_names[0] for entity in primary_entities
+            }
+        )
         for offline_ingest_graph in offline_ingest_graphs:
             if (
                 offline_ingest_graph.primary_entity_ids != primary_entity_ids
@@ -221,7 +226,10 @@ def get_offline_store_feature_table_model(
     OfflineStoreFeatureTableModel
     """
     ingest_graph_metadata = get_combined_ingest_graph(
-        features, sorted([entity.id for entity in primary_entities]), has_ttl, feature_job_setting
+        features=features,
+        primary_entities=primary_entities,
+        has_ttl=has_ttl,
+        feature_job_setting=feature_job_setting,
     )
 
     # TODO: handle feature types that are currently not being precomputed, e.g. lookup
