@@ -1,5 +1,8 @@
-[
-    {
+{
+    "feature_store_id": {
+        "$oid": "646f6c190ed28a5271fb02a1"
+    },
+    "graph": {
         "edges": [
             {
                 "source": "input_1",
@@ -12,6 +15,14 @@
             {
                 "source": "groupby_1",
                 "target": "project_1"
+            },
+            {
+                "source": "project_1",
+                "target": "add_1"
+            },
+            {
+                "source": "add_1",
+                "target": "alias_1"
             }
         ],
         "nodes": [
@@ -178,10 +189,27 @@
                     ]
                 },
                 "type": "project"
+            },
+            {
+                "name": "add_1",
+                "output_type": "series",
+                "parameters": {
+                    "right_op": false,
+                    "value": 123
+                },
+                "type": "add"
+            },
+            {
+                "name": "alias_1",
+                "output_type": "series",
+                "parameters": {
+                    "name": "sum_1d_plus_123"
+                },
+                "type": "alias"
             }
         ]
     },
-    [
-        "project_1"
+    "node_names": [
+        "alias_1"
     ]
-]
+}

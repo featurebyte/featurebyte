@@ -1,7 +1,7 @@
 """
 OfflineStoreFeatureTableModel class
 """
-from typing import List, Literal, Optional, Tuple
+from typing import List, Literal, Optional
 
 from dataclasses import dataclass
 
@@ -20,8 +20,8 @@ from featurebyte.models.base import (
 )
 from featurebyte.models.entity import EntityModel
 from featurebyte.models.feature import FeatureModel
+from featurebyte.models.feature_list import FeatureCluster
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.sql.common import quoted_identifier
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 
@@ -81,7 +81,7 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
     feature_job_setting: Optional[FeatureJobSetting]
     has_ttl: bool
 
-    ingest_graph_and_node_names: Tuple[QueryGraphModel, List[str]]
+    feature_cluster: FeatureCluster
     output_column_names: List[str]
     output_dtypes: List[DBVarType]
     entity_universe: WindowAggregateEntityUniverse
@@ -115,7 +115,7 @@ class OfflineStoreFeatureTableUpdate(BaseDocumentServiceUpdateSchema):
     """
 
     feature_ids: List[PydanticObjectId]
-    ingest_graph_and_node_names: Tuple[QueryGraphModel, List[str]]
+    feature_cluster: FeatureCluster
     output_column_names: List[str]
     output_dtypes: List[DBVarType]
     entity_universe: WindowAggregateEntityUniverse
@@ -127,8 +127,7 @@ class OfflineIngestGraphMetadata:
     Information about offline ingest graph combined for all features
     """
 
-    graph: QueryGraph
-    node_names: List[str]
+    feature_cluster: FeatureCluster
     output_column_names: List[str]
     output_dtypes: List[DBVarType]
 
@@ -187,9 +186,14 @@ def get_combined_ingest_graph(
             output_column_names.append(offline_ingest_graph.output_column_name)
             output_dtypes.append(offline_ingest_graph.output_dtype)
 
-    return OfflineIngestGraphMetadata(
+    feature_cluster = FeatureCluster(
+        feature_store_id=features[0].tabular_source.feature_store_id,
         graph=local_query_graph,
         node_names=[node.name for node in output_nodes],
+    )
+
+    return OfflineIngestGraphMetadata(
+        feature_cluster=feature_cluster,
         output_column_names=output_column_names,
         output_dtypes=output_dtypes,
     )
@@ -245,7 +249,7 @@ def get_offline_store_feature_table_model(
         feature_ids=[feature.id for feature in features],
         primary_entity_ids=[entity.id for entity in primary_entities],
         serving_names=[entity.serving_names[0] for entity in primary_entities],
-        ingest_graph_and_node_names=(ingest_graph_metadata.graph, ingest_graph_metadata.node_names),
+        feature_cluster=ingest_graph_metadata.feature_cluster,
         output_column_names=ingest_graph_metadata.output_column_names,
         output_dtypes=ingest_graph_metadata.output_dtypes,
         entity_universe=entity_universe,

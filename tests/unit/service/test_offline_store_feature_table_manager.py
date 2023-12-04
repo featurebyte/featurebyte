@@ -97,7 +97,7 @@ async def test_feature_table_one_feature_deployed(
     feature_table_dict = feature_table.dict(
         by_alias=True, exclude={"created_at", "updated_at", "id"}
     )
-    ingest_graph_and_node_names = feature_table_dict.pop("ingest_graph_and_node_names")
+    feature_cluster = feature_table_dict.pop("feature_cluster")
     assert feature_table_dict == {
         "block_modification_by": [],
         "catalog_id": ObjectId("646f6c1c0ed28a5271fb02db"),
@@ -124,8 +124,8 @@ async def test_feature_table_one_feature_deployed(
         "user_id": ObjectId("63f9506dd478b94127123456"),
     }
     assert_equal_json_fixture(
-        list(ingest_graph_and_node_names),
-        "tests/fixtures/offline_store_feature_table/combined_graph_one_feature.json",
+        feature_cluster,
+        "tests/fixtures/offline_store_feature_table/feature_cluster_one_feature.json",
         update_fixtures,
     )
 
@@ -151,7 +151,7 @@ async def test_feature_table_two_features_deployed(
     feature_table_dict = feature_table.dict(
         by_alias=True, exclude={"created_at", "updated_at", "id"}
     )
-    ingest_graph_and_node_names = feature_table_dict.pop("ingest_graph_and_node_names")
+    feature_cluster = feature_table_dict.pop("feature_cluster")
     assert feature_table_dict == {
         "block_modification_by": [],
         "catalog_id": ObjectId("646f6c1c0ed28a5271fb02db"),
@@ -178,8 +178,8 @@ async def test_feature_table_two_features_deployed(
         "user_id": ObjectId("63f9506dd478b94127123456"),
     }
     assert_equal_json_fixture(
-        list(ingest_graph_and_node_names),
-        "tests/fixtures/offline_store_feature_table/combined_graph_two_features.json",
+        feature_cluster,
+        "tests/fixtures/offline_store_feature_table/feature_cluster_two_features.json",
         update_fixtures,
     )
 
@@ -207,7 +207,7 @@ async def test_feature_table_undeploy(
     feature_table_dict = feature_table.dict(
         by_alias=True, exclude={"created_at", "updated_at", "id"}
     )
-    ingest_graph_and_node_names = feature_table_dict.pop("ingest_graph_and_node_names")
+    feature_cluster = feature_table_dict.pop("feature_cluster")
     assert feature_table_dict == {
         "block_modification_by": [],
         "catalog_id": ObjectId("646f6c1c0ed28a5271fb02db"),
@@ -234,8 +234,8 @@ async def test_feature_table_undeploy(
         "user_id": ObjectId("63f9506dd478b94127123456"),
     }
     assert_equal_json_fixture(
-        list(ingest_graph_and_node_names),
-        "tests/fixtures/offline_store_feature_table/combined_graph_disabled_one_feature.json",
+        feature_cluster,
+        "tests/fixtures/offline_store_feature_table/feature_cluster_disabled_one_feature.json",
         update_fixtures,
     )
 
@@ -268,7 +268,7 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
     feature_table_dict = feature_table.dict(
         by_alias=True, exclude={"created_at", "updated_at", "id"}
     )
-    _ = feature_table_dict.pop("ingest_graph_and_node_names")
+    _ = feature_table_dict.pop("feature_cluster")
     assert feature_table_dict == {
         "block_modification_by": [],
         "catalog_id": ObjectId("646f6c1c0ed28a5271fb02db"),
@@ -300,7 +300,7 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
     feature_table_dict = feature_table.dict(
         by_alias=True, exclude={"created_at", "updated_at", "id"}
     )
-    _ = feature_table_dict.pop("ingest_graph_and_node_names")
+    _ = feature_table_dict.pop("feature_cluster")
     assert feature_table_dict == {
         "block_modification_by": [],
         "catalog_id": ObjectId("646f6c1c0ed28a5271fb02db"),

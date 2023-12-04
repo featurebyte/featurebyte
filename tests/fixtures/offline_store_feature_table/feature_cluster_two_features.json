@@ -1,5 +1,8 @@
-[
-    {
+{
+    "feature_store_id": {
+        "$oid": "646f6c190ed28a5271fb02a1"
+    },
+    "graph": {
         "edges": [
             {
                 "source": "input_1",
@@ -206,8 +209,8 @@
             }
         ]
     },
-    [
+    "node_names": [
         "project_1",
         "alias_1"
     ]
-]
+}
