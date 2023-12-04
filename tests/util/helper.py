@@ -12,7 +12,7 @@ from unittest.mock import Mock
 
 import numpy as np
 import pandas as pd
-from bson import ObjectId
+from bson import ObjectId, json_util
 from pandas.core.dtypes.common import is_numeric_dtype
 from sqlglot import expressions
 
@@ -56,6 +56,28 @@ def assert_equal_with_expected_fixture(actual, fixture_filename, update_fixture=
         expected = f_handle.read()
 
     assert actual.strip() == expected.strip()
+
+
+def write_json_fixture(fixture_filename, fixture_obj):
+    """
+    Write fixture to json file
+    """
+    Path(os.path.dirname(fixture_filename)).mkdir(parents=True, exist_ok=True)
+    with open(fixture_filename, "w", encoding="utf-8") as f_handle:
+        content = json_util.dumps(fixture_obj, indent=4, sort_keys=True)
+        f_handle.write(content)
+        f_handle.write("\n")
+
+
+def assert_equal_json_fixture(obj, fixture_filename, update_fixtures):
+    """
+    Get or update fixture
+    """
+    if update_fixtures:
+        write_json_fixture(fixture_filename, obj)
+    with open(fixture_filename, encoding="utf-8") as f_handle:
+        expected = json_util.loads(f_handle.read())
+    assert obj == expected
 
 
 @contextmanager
