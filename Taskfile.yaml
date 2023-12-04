@@ -437,7 +437,7 @@ tasks:
     desc: "Tag the featurebyte-server docker image with the version extracted from running 'featurebyte version'."
     vars:
       FB_VERSION:
-        sh: poetry run featurebyte version | cut -d' ' -f2
+        sh: awk -F' = ' '/^version/ {gsub(/"/, "", $2); print $2}' pyproject.toml
     cmds:
       - poetry run docker tag featurebyte-server:latest featurebyte/featurebyte-server:{{.FB_VERSION}}
 
