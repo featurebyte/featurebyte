@@ -101,12 +101,11 @@ class FeatureMaterializeService:
             schema_name=session.schema_name,
             table_name=f"TEMP_FEATURE_TABLE_{unique_id}".upper(),
         )
-        graph, node_names = feature_table_model.ingest_graph_and_node_names
         try:
             await get_online_features(
                 session=session,
-                graph=graph,  # type: ignore
-                nodes=[graph.get_node_by_name(node_name) for node_name in node_names],
+                graph=feature_table_model.feature_cluster.graph,
+                nodes=feature_table_model.feature_cluster.nodes,
                 request_data=batch_request_table,
                 source_type=session.source_type,
                 online_store_table_version_service=self.online_store_table_version_service,

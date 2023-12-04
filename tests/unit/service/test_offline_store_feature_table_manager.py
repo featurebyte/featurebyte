@@ -92,7 +92,7 @@ async def test_feature_table_one_feature_deployed(
 
     feature_tables = await get_all_feature_tables(document_service)
     assert len(feature_tables) == 1
-    feature_table = feature_tables["FEATURE_TABLE_customer_1800_600_300"]
+    feature_table = feature_tables["fb_entity_cust_id_fjs_1800_300_600_ttl"]
 
     feature_table_dict = feature_table.dict(
         by_alias=True, exclude={"created_at", "updated_at", "id"}
@@ -116,7 +116,7 @@ async def test_feature_table_one_feature_deployed(
             "time_modulo_frequency": "300s",
         },
         "has_ttl": True,
-        "name": "FEATURE_TABLE_customer_1800_600_300",
+        "name": "fb_entity_cust_id_fjs_1800_300_600_ttl",
         "output_column_names": ["sum_1d"],
         "output_dtypes": ["FLOAT"],
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
@@ -146,7 +146,7 @@ async def test_feature_table_two_features_deployed(
 
     feature_tables = await get_all_feature_tables(document_service)
     assert len(feature_tables) == 1
-    feature_table = feature_tables["FEATURE_TABLE_customer_1800_600_300"]
+    feature_table = feature_tables["fb_entity_cust_id_fjs_1800_300_600_ttl"]
 
     feature_table_dict = feature_table.dict(
         by_alias=True, exclude={"created_at", "updated_at", "id"}
@@ -170,7 +170,7 @@ async def test_feature_table_two_features_deployed(
             "time_modulo_frequency": "300s",
         },
         "has_ttl": True,
-        "name": "FEATURE_TABLE_customer_1800_600_300",
+        "name": "fb_entity_cust_id_fjs_1800_300_600_ttl",
         "output_column_names": ["sum_1d", "sum_1d_plus_123"],
         "output_dtypes": ["FLOAT", "FLOAT"],
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
@@ -202,7 +202,7 @@ async def test_feature_table_undeploy(
 
     feature_tables = await get_all_feature_tables(document_service)
     assert len(feature_tables) == 1
-    feature_table = feature_tables["FEATURE_TABLE_customer_1800_600_300"]
+    feature_table = feature_tables["fb_entity_cust_id_fjs_1800_300_600_ttl"]
 
     feature_table_dict = feature_table.dict(
         by_alias=True, exclude={"created_at", "updated_at", "id"}
@@ -226,7 +226,7 @@ async def test_feature_table_undeploy(
             "time_modulo_frequency": "300s",
         },
         "has_ttl": True,
-        "name": "FEATURE_TABLE_customer_1800_600_300",
+        "name": "fb_entity_cust_id_fjs_1800_300_600_ttl",
         "output_column_names": ["sum_1d_plus_123"],
         "output_dtypes": ["FLOAT"],
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
@@ -264,7 +264,7 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
     assert len(feature_tables) == 2
 
     # Check customer entity feature table
-    feature_table = feature_tables["FEATURE_TABLE_customer_1800_600_300"]
+    feature_table = feature_tables["fb_entity_cust_id_fjs_1800_300_600_ttl"]
     feature_table_dict = feature_table.dict(
         by_alias=True, exclude={"created_at", "updated_at", "id"}
     )
@@ -287,7 +287,7 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
             "time_modulo_frequency": "300s",
         },
         "has_ttl": True,
-        "name": "FEATURE_TABLE_customer_1800_600_300",
+        "name": "fb_entity_cust_id_fjs_1800_300_600_ttl",
         "output_column_names": ["sum_1d"],
         "output_dtypes": ["FLOAT"],
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
@@ -296,7 +296,7 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
     }
 
     # Check item entity feature table
-    feature_table = feature_tables["FEATURE_TABLE_customer_10800_900_5"]
+    feature_table = feature_tables["fb_entity_cust_id_fjs_10800_5_900_ttl"]
     feature_table_dict = feature_table.dict(
         by_alias=True, exclude={"created_at", "updated_at", "id"}
     )
@@ -319,7 +319,7 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
             "time_modulo_frequency": "5s",
         },
         "has_ttl": True,
-        "name": "FEATURE_TABLE_customer_10800_900_5",
+        "name": "fb_entity_cust_id_fjs_10800_5_900_ttl",
         "output_column_names": ["sum_24h_every_3h"],
         "output_dtypes": ["FLOAT"],
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],

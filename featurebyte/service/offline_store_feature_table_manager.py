@@ -51,14 +51,14 @@ class OfflineStoreFeatureTableManagerService:
         feature: FeatureModel
             Model of the feature to be enabled for online serving
         """
-        primary_entities = []
+        feature_entities = []
         async for entity_model in self.entity_service.list_documents_iterator(
-            query_filter={"_id": {"$in": feature.primary_entity_ids}}
+            query_filter={"_id": {"$in": feature.entity_ids}}
         ):
-            primary_entities.append(entity_model)
+            feature_entities.append(entity_model)
 
         offline_ingest_graphs = feature.extract_offline_store_ingest_query_graphs(
-            {entity_model.id: entity_model.serving_names[0] for entity_model in primary_entities}
+            {entity_model.id: entity_model.serving_names[0] for entity_model in feature_entities}
         )
         for offline_ingest_graph in offline_ingest_graphs:
             feature_table_dict = await self._get_compatible_existing_feature_table(
@@ -72,9 +72,8 @@ class OfflineStoreFeatureTableManagerService:
                     await self._update_offline_store_feature_table(feature_table_dict, feature_ids)
             else:
                 # create new table
-                feature_table_name = await self._get_offline_store_table_name(offline_ingest_graph)
                 feature_table_model = await self._construct_offline_store_feature_table_model(
-                    feature_table_name=feature_table_name,
+                    feature_table_name=offline_ingest_graph.offline_store_table_name,
                     feature_ids=[feature.id],
                     primary_entity_ids=offline_ingest_graph.primary_entity_ids,
                     has_ttl=offline_ingest_graph.has_ttl,
@@ -106,30 +105,6 @@ class OfflineStoreFeatureTableManagerService:
                 await self.offline_store_feature_table_service.delete_document(
                     document_id=feature_table_dict["_id"],
                 )
-
-    async def _get_offline_store_table_name(
-        self, offline_ingest_graph: OfflineStoreIngestQueryGraph
-    ) -> str:
-        # Note: Temporary naming scheme, to be delegated to offline_ingest_graph entirely.
-        primary_entity_names = []
-        async for entity_model in self.entity_service.list_documents_iterator(
-            query_filter={"_id": {"$in": offline_ingest_graph.primary_entity_ids}}
-        ):
-            assert entity_model.name is not None
-            primary_entity_names.append(entity_model.name)
-
-        table_name = FEATURE_TABLE_NAME_PREFIX + "_X_".join(sorted(primary_entity_names))
-
-        if offline_ingest_graph.feature_job_setting is not None:
-            parts = [
-                offline_ingest_graph.feature_job_setting.frequency_seconds,
-                offline_ingest_graph.feature_job_setting.blind_spot_seconds,
-                offline_ingest_graph.feature_job_setting.time_modulo_frequency_seconds,
-            ]
-            feature_job_setting_identifier = "_".join([str(p) for p in parts])
-            table_name += "_" + feature_job_setting_identifier
-
-        return table_name
 
     async def _get_compatible_existing_feature_table(
         self, offline_ingest_graph: OfflineStoreIngestQueryGraph
