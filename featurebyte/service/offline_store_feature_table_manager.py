@@ -19,6 +19,7 @@ from featurebyte.models.offline_store_ingest_query import OfflineStoreIngestQuer
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_materialize import FeatureMaterializeService
+from featurebyte.service.feature_materialize_scheduler import FeatureMaterializeSchedulerService
 from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
 from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
 
@@ -35,12 +36,14 @@ class OfflineStoreFeatureTableManagerService:
         online_store_compute_query_service: OnlineStoreComputeQueryService,
         entity_service: EntityService,
         feature_materialize_service: FeatureMaterializeService,
+        feature_materialize_scheduler_service: FeatureMaterializeSchedulerService,
     ):
         self.offline_store_feature_table_service = offline_store_feature_table_service
         self.feature_service = feature_service
         self.online_store_compute_query_service = online_store_compute_query_service
         self.entity_service = entity_service
         self.feature_materialize_service = feature_materialize_service
+        self.feature_materialize_scheduler_service = feature_materialize_scheduler_service
 
     async def handle_online_enabled_feature(self, feature: FeatureModel) -> None:
         """
@@ -98,6 +101,9 @@ class OfflineStoreFeatureTableManagerService:
 
             if feature_table_model is not None:
                 await self.feature_materialize_service.initialize_new_columns(feature_table_model)
+                await self.feature_materialize_scheduler_service.start_job_if_not_exist(
+                    feature_table_model.id
+                )
 
     async def handle_online_disabled_feature(self, feature: FeatureModel) -> None:
         """
@@ -120,6 +126,9 @@ class OfflineStoreFeatureTableManagerService:
                     feature_table_dict, updated_feature_ids
                 )
             else:
+                await self.feature_materialize_scheduler_service.stop_job(
+                    feature_table_dict["_id"],
+                )
                 await self.offline_store_feature_table_service.delete_document(
                     document_id=feature_table_dict["_id"],
                 )

@@ -7,6 +7,9 @@ import pandas as pd
 import pytest
 
 import featurebyte as fb
+from featurebyte.schema.worker.task.scheduled_feature_materialize import (
+    ScheduledFeatureMaterializeTaskPayload,
+)
 
 
 @pytest.fixture(name="features", scope="module")
@@ -163,4 +166,16 @@ async def test_feature_materialize_service(
     df = await session.execute_query(f'SELECT * FROM "{feature_table_model.name}"')
     assert df.shape[0] == 27
     assert df["__feature_timestamp"].nunique() == 3
+    assert df["üser id"].isnull().sum() == 0
+
+    # Simulate a scheduled task
+    task_payload = ScheduledFeatureMaterializeTaskPayload(
+        catalog_id=feature_table_model.catalog_id,
+        offline_store_feature_table_name=feature_table_model.name,
+        offline_store_feature_table_id=feature_table_model.id,
+    )
+    await app_container.task_manager.submit(task_payload)
+    df = await session.execute_query(f'SELECT * FROM "{feature_table_model.name}"')
+    assert df.shape[0] == 36
+    assert df["__feature_timestamp"].nunique() == 4
     assert df["üser id"].isnull().sum() == 0
