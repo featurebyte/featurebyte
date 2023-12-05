@@ -327,51 +327,51 @@ def test_get_change_view__check_entity_id(snowflake_scd_table):
 
     snowflake_scd_table[snowflake_scd_table.natural_key_column].as_entity("key_column")
     snowflake_scd_table[snowflake_scd_table.effective_timestamp_column].as_entity("eff_timestamp")
-    snowflake_scd_table.col_int.as_entity("change")
+    snowflake_scd_table.col_float.as_entity("change")
 
     # create change view
-    change_view = snowflake_scd_table.get_change_view("col_int")
+    change_view = snowflake_scd_table.get_change_view("col_float")
     columns_info_dict = change_view.dict()["columns_info"]
     assert columns_info_dict == [
         {
             "critical_data_info": None,
+            "description": None,
             "dtype": "VARCHAR",
             "entity_id": entity_key.id,
             "name": "col_text",
             "semantic_id": columns_info_dict[0]["semantic_id"],
-            "description": None,
         },
         {
             "critical_data_info": None,
+            "description": None,
             "dtype": "TIMESTAMP_TZ",
             "entity_id": entity_eff_ts.id,
             "name": "new_effective_timestamp",
             "semantic_id": columns_info_dict[1]["semantic_id"],
-            "description": None,
         },
         {
             "critical_data_info": None,
+            "description": None,
             "dtype": "TIMESTAMP_TZ",
             "entity_id": None,
             "name": "past_effective_timestamp",
             "semantic_id": None,
-            "description": None,
         },
         {
             "critical_data_info": None,
-            "dtype": "INT",
+            "description": None,
+            "dtype": "FLOAT",
             "entity_id": entity_change.id,
-            "name": "new_col_int",
+            "name": "new_col_float",
             "semantic_id": columns_info_dict[3]["semantic_id"],
-            "description": None,
         },
         {
             "critical_data_info": None,
-            "dtype": "INT",
-            "entity_id": None,
-            "name": "past_col_int",
-            "semantic_id": None,
             "description": None,
+            "dtype": "FLOAT",
+            "entity_id": None,
+            "name": "past_col_float",
+            "semantic_id": None,
         },
     ]
 

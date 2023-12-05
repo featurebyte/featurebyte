@@ -1399,13 +1399,11 @@ def multiple_scd_joined_feature_fixture(
     snowflake_event_table_with_entity,
     snowflake_scd_table,
     snowflake_scd_table_state_map,
-    cust_id_entity,
 ):
     """
     Feature that is built from multiple SCD tables joined with event table
     """
     col_boolean_entity = Entity.create("col_boolean", serving_names=["col_boolean"])
-    snowflake_scd_table.col_int.as_entity(cust_id_entity.name)
     snowflake_scd_table.col_boolean.as_entity(col_boolean_entity.name)
 
     state_code_entity = Entity.create("state_code", serving_names=["state_code"])

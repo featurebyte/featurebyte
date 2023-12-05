@@ -8,7 +8,7 @@ from typing import Any, List, Optional, Tuple, Type, TypeVar, cast
 from bson.objectid import ObjectId
 
 from featurebyte.enum import SemanticType
-from featurebyte.exception import ColumnNotFoundError
+from featurebyte.exception import ColumnNotFoundError, EntityTaggingIsNotAllowedError
 from featurebyte.models.dimension_table import DimensionTableModel
 from featurebyte.models.event_table import EventTableModel
 from featurebyte.models.item_table import ItemTableModel
@@ -258,6 +258,16 @@ class BaseTableDocumentController(
         TableDocumentT
             Table object with updated entity
         """
+        document = await self.service.get_document(document_id=document_id)
+
+        col_info = [col for col in document.columns_info if col.name == column_name]
+        if col_info and col_info[0].semantic_id:
+            semantic = await self.semantic_service.get_document(document_id=col_info[0].semantic_id)
+            if semantic and semantic.name == SemanticType.SCD_SURROGATE_KEY_ID.value:
+                raise EntityTaggingIsNotAllowedError(
+                    f"Surrogate key column {column_name} cannot be tagged as entity"
+                )
+
         return await self.update_table_columns_info(
             document_id=document_id,
             column_name=column_name,

@@ -280,9 +280,9 @@ def test_sdk_code_generation(saved_scd_table, update_fixtures):
 
 def test_aggregate_asat_sdk_code_generation(saved_scd_table, transaction_entity, update_fixtures):
     """Test SDK code generation for aggregate asat"""
-    saved_scd_table.col_int.as_entity(transaction_entity.name)
+    saved_scd_table.cust_id.as_entity(transaction_entity.name)
     snowflake_scd_view = saved_scd_table.get_view()
-    feature = snowflake_scd_view.groupby(by_keys=["col_int"]).aggregate_asat(
+    feature = snowflake_scd_view.groupby(by_keys=["cust_id"]).aggregate_asat(
         value_column="col_float", method="max", feature_name="col_float_max"
     )
     check_sdk_code_generation(
