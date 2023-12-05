@@ -265,7 +265,7 @@ class BaseTableDocumentController(
             semantic = await self.semantic_service.get_document(document_id=col_info[0].semantic_id)
             if semantic and semantic.name == SemanticType.SCD_SURROGATE_KEY_ID.value:
                 raise EntityTaggingIsNotAllowedError(
-                    f"Column {column_name} cannot be tagged with entity {entity_id}"
+                    f"Surrogate key column {column_name} cannot be tagged as entity"
                 )
 
         return await self.update_table_columns_info(
