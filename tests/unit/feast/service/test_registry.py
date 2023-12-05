@@ -4,7 +4,7 @@ Test feast registry service
 import pytest
 import pytest_asyncio
 
-from featurebyte.feast.schema.registry import FeastRegistryCreate
+from featurebyte.feast.schema.registry import FeastRegistryCreate, FeastRegistryUpdate
 
 
 @pytest.fixture(name="feast_registry_service")
@@ -48,6 +48,30 @@ async def test_create_and_retrieve_feast_registry(
 
     retrieved_registry = await feast_registry_service.get_document(document_id=registry.id)
     assert retrieved_registry == registry
+
+
+@pytest.mark.asyncio
+async def test_update_feast_registry(feast_registry_service, feast_registry, feature_list):
+    """Test update feast registry"""
+    updated_doc = await feast_registry_service.update_document(
+        document_id=feast_registry.id, data=FeastRegistryUpdate(feature_lists=[])
+    )
+    registry_proto = updated_doc.registry_proto()
+    assert registry_proto.feature_services == []
+    assert registry_proto.feature_views == []
+    assert registry_proto.data_sources == []
+    assert registry_proto.entities == []
+
+    feature_list_model = feature_list.cached_model
+    updated_doc = await feast_registry_service.update_document(
+        document_id=feast_registry.id, data=FeastRegistryUpdate(feature_lists=[feature_list_model])
+    )
+    registry_proto = updated_doc.registry_proto()
+    assert len(registry_proto.feature_services) == 1
+    assert registry_proto.feature_services[0].spec.name == "test_feature_list"
+    assert len(registry_proto.feature_views) == 2
+    assert len(registry_proto.data_sources) == 2
+    assert len(registry_proto.entities) == 2
 
 
 @pytest.mark.asyncio

@@ -1,6 +1,8 @@
 """
 Featurebyte registry store
 """
+from typing import cast
+
 from pathlib import Path
 
 # pylint: disable=no-name-in-module
@@ -18,9 +20,16 @@ class FeatureByteRegistryStore(FileRegistryStore):
         # read registry from file & store in memory
         self._registry_proto = super().get_registry_proto()
 
-    def get_registry_proto(self):
-        """Get registry proto"""
-        return self._registry_proto
+    def get_registry_proto(self) -> RegistryProto:
+        """
+        Override get_registry_proto to return the registry proto stored in memory
 
-    def _write_registry(self, registry_proto: RegistryProto):
+        Returns
+        -------
+        RegistryProto
+            Registry proto
+        """
+        return cast(RegistryProto, self._registry_proto)
+
+    def _write_registry(self, registry_proto: RegistryProto) -> None:
         pass

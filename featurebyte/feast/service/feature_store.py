@@ -1,7 +1,7 @@
 """
 This module contains classes for constructing feast repository config
 """
-from typing import Any
+from typing import Any, cast
 
 import tempfile
 
@@ -84,4 +84,4 @@ class FeastFeatureStoreService:
                     password=password,
                 ),
             )
-            return FeatureStore(config=repo_config)
+            return cast(FeatureStore, FeatureStore(config=repo_config))
