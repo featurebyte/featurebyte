@@ -13,6 +13,8 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 from bson.objectid import ObjectId
+from pymongo.errors import OperationFailure
+from tenacity import retry, retry_if_exception_type, wait_chain, wait_random
 
 from featurebyte.common.dict_util import get_field_path_value
 from featurebyte.exception import (
@@ -53,6 +55,8 @@ RAW_QUERY_FILTER_WARNING = (
     "Using raw query filter breaks application logic. "
     "It should only be used when absolutely necessary."
 )
+RETRY_MAX_WAIT_IN_SEC = 2
+RETRY_MAX_ATTEMPT_NUM = 3
 
 
 logger = get_logger(__name__)
@@ -1024,6 +1028,12 @@ class BaseDocumentService(
             return await self.get_document(document_id=document_id)
         return None
 
+    @retry(
+        retry=retry_if_exception_type(OperationFailure),
+        wait=wait_chain(
+            *[wait_random(max=RETRY_MAX_WAIT_IN_SEC) for _ in range(RETRY_MAX_ATTEMPT_NUM)]
+        ),
+    )
     async def update_documents(
         self,
         query_filter: QueryFilter,
