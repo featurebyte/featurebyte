@@ -5,7 +5,7 @@ import pytest
 from google.protobuf.json_format import MessageToDict
 
 from featurebyte import FeatureList
-from featurebyte.feast.registry_construction import FeastRegistryConstructor
+from featurebyte.feast.utils.registry_construction import FeastRegistryConstructor
 
 
 def test_feast_registry_construction__missing_asset(
