@@ -57,10 +57,14 @@ class FeastFeatureStoreService:
             user_id=self.user.id, feature_store_name=feature_store.name
         )
         with tempfile.NamedTemporaryFile() as temp_file:
+            # Use temp file to pass the registry proto to the feature store. Once the
+            # feature store is created, the temp file is no longer needed.
             feast_registry_path = temp_file.name
             with open(feast_registry_path, mode="wb", buffering=0) as file_handle:
                 file_handle.write(feast_registry.registry_proto().SerializeToString())
 
+            # note that registry_store_type is pointing to FeatureByteRegistryStore, which
+            # loads the registry proto from the file & stores it in memory without writing it.
             registry_config = RegistryConfig(
                 registry_type="file",
                 registry_store_type="featurebyte.feast.registry_store.FeatureByteRegistryStore",
