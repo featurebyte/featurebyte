@@ -1,8 +1,6 @@
 """
 This module contains common fixtures for unit tests
 """
-import tempfile
-
 import pytest
 
 from featurebyte import FeatureList
@@ -35,12 +33,3 @@ def feast_registry_proto_fixture(
         feature_lists=[feature_list],
     )
     return feast_registry_proto
-
-
-@pytest.fixture(name="feast_registry_proto_path")
-def feast_registry_proto_path_fixture(feast_registry_proto):
-    """Fixture for the feast registry proto path"""
-    with tempfile.NamedTemporaryFile() as temp_file:
-        with open(temp_file.name, mode="wb", buffering=0) as file_handle:
-            file_handle.write(feast_registry_proto.SerializeToString())
-        yield temp_file.name
