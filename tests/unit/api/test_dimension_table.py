@@ -105,7 +105,7 @@ def dimension_table_dict_fixture(snowflake_database_table):
                 "dtype": "FLOAT",
                 "semantic_id": None,
                 "critical_data_info": None,
-                "description": None,
+                "description": "Float column",
             },
             {
                 "entity_id": None,
@@ -113,7 +113,7 @@ def dimension_table_dict_fixture(snowflake_database_table):
                 "dtype": "CHAR",
                 "semantic_id": None,
                 "critical_data_info": None,
-                "description": None,
+                "description": "Char column",
             },
             {
                 "entity_id": None,
@@ -121,7 +121,7 @@ def dimension_table_dict_fixture(snowflake_database_table):
                 "dtype": "VARCHAR",
                 "semantic_id": None,
                 "critical_data_info": None,
-                "description": None,
+                "description": "Text column",
             },
             {
                 "entity_id": None,
@@ -145,7 +145,7 @@ def dimension_table_dict_fixture(snowflake_database_table):
                 "dtype": "TIMESTAMP_TZ",
                 "semantic_id": None,
                 "critical_data_info": None,
-                "description": None,
+                "description": "Timestamp column",
             },
             {
                 "entity_id": None,

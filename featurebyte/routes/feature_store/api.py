@@ -10,7 +10,7 @@ from fastapi import Query, Request
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.persistent import AuditDocumentList
-from featurebyte.query_graph.node.schema import ColumnSpec
+from featurebyte.query_graph.model.column_info import ColumnInfo, ColumnSpecWithDescription
 from featurebyte.routes.base_router import BaseApiRouter
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
@@ -76,7 +76,7 @@ class FeatureStoreRouter(
             "/column",
             self.list_columns_in_database_table,
             methods=["POST"],
-            response_model=List[ColumnSpec],
+            response_model=List[ColumnInfo],
         )
         self.router.add_api_route(
             "/shape",
@@ -210,12 +210,12 @@ class FeatureStoreRouter(
         schema_name: str,
         table_name: str,
         feature_store: FeatureStoreModel,
-    ) -> List[ColumnSpec]:
+    ) -> List[ColumnSpecWithDescription]:
         """
         List columns
         """
         controller = request.state.app_container.feature_store_controller
-        result: List[ColumnSpec] = await controller.list_columns(
+        result: List[ColumnSpecWithDescription] = await controller.list_columns(
             feature_store=feature_store,
             database_name=database_name,
             schema_name=schema_name,

@@ -187,144 +187,264 @@ def snowflake_query_map_fixture():
         ],
         'SHOW VIEWS IN SCHEMA "sf_database"."sf_schema"': [{"name": "sf_view"}],
         'SHOW COLUMNS IN "sf_database"."sf_schema"."sf_table"': [
-            {"column_name": "col_int", "data_type": json.dumps({"type": "FIXED", "scale": 0})},
-            {"column_name": "col_float", "data_type": json.dumps({"type": "REAL"})},
+            {
+                "column_name": "col_int",
+                "data_type": json.dumps({"type": "FIXED", "scale": 0}),
+                "comment": None,
+            },
+            {
+                "column_name": "col_float",
+                "data_type": json.dumps({"type": "REAL"}),
+                "comment": "Float column",
+            },
             {
                 "column_name": "col_char",
                 "data_type": json.dumps({"type": "TEXT", "length": 1}),
+                "comment": "Char column",
             },
             {
                 "column_name": "col_text",
                 "data_type": json.dumps({"type": "TEXT", "length": 2**24}),
+                "comment": "Text column",
             },
-            {"column_name": "col_binary", "data_type": json.dumps({"type": "BINARY"})},
-            {"column_name": "col_boolean", "data_type": json.dumps({"type": "BOOLEAN"})},
+            {
+                "column_name": "col_binary",
+                "data_type": json.dumps({"type": "BINARY"}),
+                "comment": None,
+            },
+            {
+                "column_name": "col_boolean",
+                "data_type": json.dumps({"type": "BOOLEAN"}),
+                "comment": None,
+            },
             {
                 "column_name": "event_timestamp",
                 "data_type": json.dumps({"type": "TIMESTAMP_TZ"}),
+                "comment": "Timestamp column",
             },
-            {"column_name": "created_at", "data_type": json.dumps({"type": "TIMESTAMP_TZ"})},
-            {"column_name": "cust_id", "data_type": json.dumps({"type": "FIXED", "scale": 0})},
+            {
+                "column_name": "created_at",
+                "data_type": json.dumps({"type": "TIMESTAMP_TZ"}),
+                "comment": None,
+            },
+            {
+                "column_name": "cust_id",
+                "data_type": json.dumps({"type": "FIXED", "scale": 0}),
+                "comment": None,
+            },
         ],
         'SHOW COLUMNS IN "sf_database"."sf_schema"."sf_table_no_tz"': [
             {
                 "column_name": "event_timestamp",
                 "data_type": json.dumps({"type": "TIMESTAMP_NTZ"}),
+                "comment": None,
             },
-            {"column_name": "created_at", "data_type": json.dumps({"type": "TIMESTAMP_NTZ"})},
-            {"column_name": "col_int", "data_type": json.dumps({"type": "FIXED", "scale": 0})},
-            {"column_name": "cust_id", "data_type": json.dumps({"type": "FIXED", "scale": 0})},
+            {
+                "column_name": "created_at",
+                "data_type": json.dumps({"type": "TIMESTAMP_NTZ"}),
+                "comment": None,
+            },
+            {
+                "column_name": "col_int",
+                "data_type": json.dumps({"type": "FIXED", "scale": 0}),
+                "comment": None,
+            },
+            {
+                "column_name": "cust_id",
+                "data_type": json.dumps({"type": "FIXED", "scale": 0}),
+                "comment": None,
+            },
             {
                 "column_name": "tz_offset",
                 "data_type": json.dumps({"type": "TEXT", "length": 2**24}),
+                "comment": None,
             },
         ],
         'SHOW COLUMNS IN "sf_database"."sf_schema"."sf_view"': [
-            {"column_name": "col_date", "data_type": json.dumps({"type": "DATE"})},
-            {"column_name": "col_time", "data_type": json.dumps({"type": "TIME"})},
+            {"column_name": "col_date", "data_type": json.dumps({"type": "DATE"}), "comment": None},
+            {"column_name": "col_time", "data_type": json.dumps({"type": "TIME"}), "comment": None},
             {
                 "column_name": "col_timestamp_ltz",
                 "data_type": json.dumps({"type": "TIMESTAMP_LTZ"}),
+                "comment": "Timestamp ltz column",
             },
             {
                 "column_name": "col_timestamp_ntz",
                 "data_type": json.dumps({"type": "TIMESTAMP_NTZ"}),
+                "comment": None,
             },
             {
                 "column_name": "col_timestamp_tz",
                 "data_type": json.dumps({"type": "TIMESTAMP_TZ"}),
+                "comment": "Timestamp tz column",
             },
         ],
         'SHOW COLUMNS IN "sf_database"."sf_schema"."items_table"': [
             {
                 "column_name": "event_id_col",
                 "data_type": json.dumps({"type": "FIXED", "scale": 0}),
+                "comment": None,
             },
             {
                 "column_name": "item_id_col",
                 "data_type": json.dumps({"type": "TEXT", "length": 2**24}),
+                "comment": None,
             },
             {
                 "column_name": "item_type",
                 "data_type": json.dumps({"type": "TEXT", "length": 2**24}),
+                "comment": None,
             },
-            {"column_name": "item_amount", "data_type": json.dumps({"type": "REAL"})},
-            {"column_name": "created_at", "data_type": json.dumps({"type": "TIMESTAMP_TZ"})},
+            {
+                "column_name": "item_amount",
+                "data_type": json.dumps({"type": "REAL"}),
+                "comment": None,
+            },
+            {
+                "column_name": "created_at",
+                "data_type": json.dumps({"type": "TIMESTAMP_TZ"}),
+                "comment": None,
+            },
             {
                 "column_name": "event_timestamp",
                 "data_type": json.dumps({"type": "TIMESTAMP_TZ"}),
+                "comment": None,
             },
         ],
         'SHOW COLUMNS IN "sf_database"."sf_schema"."items_table_same_event_id"': [
             {
                 "column_name": "col_int",
                 "data_type": json.dumps({"type": "FIXED", "scale": 0}),
+                "comment": None,
             },
             {
                 "column_name": "item_id_col",
                 "data_type": json.dumps({"type": "TEXT", "length": 2**24}),
+                "comment": None,
             },
-            {"column_name": "created_at", "data_type": json.dumps({"type": "TIMESTAMP_TZ"})},
+            {
+                "column_name": "created_at",
+                "data_type": json.dumps({"type": "TIMESTAMP_TZ"}),
+                "comment": None,
+            },
         ],
         'SHOW COLUMNS IN "sf_database"."sf_schema"."fixed_table"': [
-            {"column_name": "num", "data_type": json.dumps({"type": "FIXED", "scale": 0})},
-            {"column_name": "num10", "data_type": json.dumps({"type": "FIXED", "scale": 1})},
-            {"column_name": "dec", "data_type": json.dumps({"type": "FIXED", "scale": 2})},
+            {
+                "column_name": "num",
+                "data_type": json.dumps({"type": "FIXED", "scale": 0}),
+                "comment": None,
+            },
+            {
+                "column_name": "num10",
+                "data_type": json.dumps({"type": "FIXED", "scale": 1}),
+                "comment": None,
+            },
+            {
+                "column_name": "dec",
+                "data_type": json.dumps({"type": "FIXED", "scale": 2}),
+                "comment": None,
+            },
         ],
         'SHOW COLUMNS IN "sf_database"."sf_schema"."non_scalar_table"': [
             {
                 "column_name": "variant",
                 "data_type": json.dumps({"type": "VARIANT", "nullable": True}),
+                "comment": None,
             },
         ],
         'SHOW COLUMNS IN "sf_database"."sf_schema"."scd_table"': [
-            {"column_name": "col_int", "data_type": json.dumps({"type": "FIXED", "scale": 0})},
-            {"column_name": "col_float", "data_type": json.dumps({"type": "REAL"})},
+            {
+                "column_name": "col_int",
+                "data_type": json.dumps({"type": "FIXED", "scale": 0}),
+                "comment": None,
+            },
+            {
+                "column_name": "col_float",
+                "data_type": json.dumps({"type": "REAL"}),
+                "comment": None,
+            },
             {
                 "column_name": "is_active",
                 "data_type": json.dumps({"type": "BOOLEAN", "length": 1}),
+                "comment": None,
             },
             {
                 "column_name": "col_text",
                 "data_type": json.dumps({"type": "TEXT", "length": 2**24}),
+                "comment": None,
             },
-            {"column_name": "col_binary", "data_type": json.dumps({"type": "BINARY"})},
-            {"column_name": "col_boolean", "data_type": json.dumps({"type": "BOOLEAN"})},
+            {
+                "column_name": "col_binary",
+                "data_type": json.dumps({"type": "BINARY"}),
+                "comment": None,
+            },
+            {
+                "column_name": "col_boolean",
+                "data_type": json.dumps({"type": "BOOLEAN"}),
+                "comment": None,
+            },
             {
                 "column_name": "effective_timestamp",
                 "data_type": json.dumps({"type": "TIMESTAMP_TZ"}),
+                "comment": None,
             },
             {
                 "column_name": "end_timestamp",
                 "data_type": json.dumps({"type": "TIMESTAMP_TZ"}),
+                "comment": None,
             },
             {
                 "column_name": "date_of_birth",
                 "data_type": json.dumps({"type": "TIMESTAMP_NTZ"}),
+                "comment": None,
             },
-            {"column_name": "created_at", "data_type": json.dumps({"type": "TIMESTAMP_TZ"})},
-            {"column_name": "cust_id", "data_type": json.dumps({"type": "FIXED", "scale": 0})},
+            {
+                "column_name": "created_at",
+                "data_type": json.dumps({"type": "TIMESTAMP_TZ"}),
+                "comment": None,
+            },
+            {
+                "column_name": "cust_id",
+                "data_type": json.dumps({"type": "FIXED", "scale": 0}),
+                "comment": None,
+            },
         ],
         'SHOW COLUMNS IN "sf_database"."sf_schema"."scd_table_state_map"': [
-            {"column_name": "col_int", "data_type": json.dumps({"type": "FIXED", "scale": 0})},
+            {
+                "column_name": "col_int",
+                "data_type": json.dumps({"type": "FIXED", "scale": 0}),
+                "comment": None,
+            },
             {
                 "column_name": "is_active",
                 "data_type": json.dumps({"type": "BOOLEAN", "length": 1}),
+                "comment": None,
             },
             {
                 "column_name": "col_text",
                 "data_type": json.dumps({"type": "TEXT", "length": 2**24}),
+                "comment": None,
             },
             {
                 "column_name": "effective_timestamp",
                 "data_type": json.dumps({"type": "TIMESTAMP_TZ"}),
+                "comment": None,
             },
             {
                 "column_name": "end_timestamp",
                 "data_type": json.dumps({"type": "TIMESTAMP_TZ"}),
+                "comment": None,
             },
-            {"column_name": "col_boolean", "data_type": json.dumps({"type": "BOOLEAN"})},
-            {"column_name": "state_code", "data_type": json.dumps({"type": "FIXED", "scale": 0})},
+            {
+                "column_name": "col_boolean",
+                "data_type": json.dumps({"type": "BOOLEAN"}),
+                "comment": None,
+            },
+            {
+                "column_name": "state_code",
+                "data_type": json.dumps({"type": "FIXED", "scale": 0}),
+                "comment": None,
+            },
         ],
         "SHOW SCHEMAS": [
             {"name": "PUBLIC"},
@@ -1028,6 +1148,7 @@ def snowflake_execute_query_for_materialized_table_fixture(
                 {
                     "column_name": "cust_id",
                     "data_type": json.dumps({"type": "FIXED", "scale": 0}),
+                    "comment": None,
                 }
             ]
         elif "COUNT(*)" in query:

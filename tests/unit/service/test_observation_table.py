@@ -17,6 +17,7 @@ from featurebyte.exception import (
 from featurebyte.models.materialized_table import ColumnSpecWithEntityId
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.request_input import SourceTableRequestInput
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.service.observation_table import validate_columns_info
@@ -75,7 +76,10 @@ def db_session_fixture():
     async def mock_list_table_schema(*args, **kwargs):
         _ = args
         _ = kwargs
-        return {"POINT_IN_TIME": "TIMESTAMP", "cust_id": "VARCHAR"}
+        return {
+            "POINT_IN_TIME": ColumnSpecWithDescription(name="POINT_IN_TIME", dtype="TIMESTAMP"),
+            "cust_id": ColumnSpecWithDescription(name="cust_id", dtype="VARCHAR"),
+        }
 
     async def execute_query(*args, **kwargs):
         query = args[0]
@@ -133,7 +137,13 @@ async def test_validate__missing_point_in_time(
     async def mock_list_table_schema(*args, **kwargs):
         _ = args
         _ = kwargs
-        return {"a": "INT", "b": "FLOAT", "not_point_in_time": "VARCHAR"}
+        return {
+            "a": ColumnSpecWithDescription(name="a", dtype="INT"),
+            "b": ColumnSpecWithDescription(name="b", dtype="FLOAT"),
+            "not_point_in_time": ColumnSpecWithDescription(
+                name="not_point_in_time", dtype="VARCHAR"
+            ),
+        }
 
     mock_db_session = Mock(
         name="mock_session",
@@ -211,12 +221,10 @@ async def test_validate__most_recent_point_in_time(
 
         assert metadata == {
             "columns_info": [
-                {"name": "POINT_IN_TIME", "dtype": "TIMESTAMP", "entity_id": None},
-                {
-                    "name": "cust_id",
-                    "dtype": "VARCHAR",
-                    "entity_id": cust_id_entity.id,
-                },
+                ColumnSpecWithEntityId(name="POINT_IN_TIME", dtype="TIMESTAMP", entity_id=None),
+                ColumnSpecWithEntityId(
+                    name="cust_id", dtype="VARCHAR", entity_id=ObjectId("63f94ed6ea1f050131379214")
+                ),
             ],
             "least_recent_point_in_time": "2023-01-01T02:00:00",
             "most_recent_point_in_time": "2023-01-15T02:00:00",
@@ -237,7 +245,10 @@ async def test_validate__supported_type_point_in_time(
     async def mock_list_table_schema(*args, **kwargs):
         _ = args
         _ = kwargs
-        return {"POINT_IN_TIME": "VARCHAR", "cust_id": "VARCHAR"}
+        return {
+            "POINT_IN_TIME": ColumnSpecWithDescription(name="POINT_IN_TIME", dtype="VARCHAR"),
+            "cust_id": ColumnSpecWithDescription(name="cust_id", dtype="VARCHAR"),
+        }
 
     mock_db_session = Mock(
         name="mock_session",

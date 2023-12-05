@@ -21,6 +21,7 @@ from featurebyte.models.credential import (
     S3StorageCredential,
     UsernamePasswordCredential,
 )
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.schema.feature_store import FeatureStorePreview, FeatureStoreSample
 from tests.unit.routes.base import BaseApiTestSuite
 from tests.util.helper import assert_equal_with_expected_fixture
@@ -323,7 +324,11 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
         mock_get_session.return_value.list_databases.return_value = ["x"]
         mock_get_session.return_value.list_schemas.return_value = ["y"]
         mock_get_session.return_value.list_tables.return_value = ["z"]
-        columns = {"a": "TIMESTAMP", "b": "INT", "c": "BOOL"}
+        columns = {
+            "a": ColumnSpecWithDescription(name="a", dtype="TIMESTAMP"),
+            "b": ColumnSpecWithDescription(name="b", dtype="INT"),
+            "c": ColumnSpecWithDescription(name="c", dtype="BOOL"),
+        }
         mock_get_session.return_value.list_table_schema.return_value = columns
         response = test_api_client.post(
             f"{self.base_route}/column?database_name=X&schema_name=Y&table_name=Z",
@@ -331,9 +336,30 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
         )
         assert response.status_code == HTTPStatus.OK
         assert response.json() == [
-            {"name": "a", "dtype": "TIMESTAMP"},
-            {"name": "b", "dtype": "INT"},
-            {"name": "c", "dtype": "BOOL"},
+            {
+                "critical_data_info": None,
+                "description": None,
+                "dtype": "TIMESTAMP",
+                "entity_id": None,
+                "name": "a",
+                "semantic_id": None,
+            },
+            {
+                "critical_data_info": None,
+                "description": None,
+                "dtype": "INT",
+                "entity_id": None,
+                "name": "b",
+                "semantic_id": None,
+            },
+            {
+                "critical_data_info": None,
+                "description": None,
+                "dtype": "BOOL",
+                "entity_id": None,
+                "name": "c",
+                "semantic_id": None,
+            },
         ]
 
     @pytest.fixture(name="data_sample_payload")
