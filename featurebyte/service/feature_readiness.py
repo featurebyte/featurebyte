@@ -24,6 +24,7 @@ from featurebyte.models.feature_namespace import (
 from featurebyte.persistent import Persistent
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
+from featurebyte.service.base_document import RETRY_MAX_ATTEMPT_NUM, RETRY_MAX_WAIT_IN_SEC
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
@@ -307,7 +308,9 @@ class FeatureReadinessService:
 
     @retry(
         retry=retry_if_exception_type(OperationFailure),
-        wait=wait_chain(*[wait_random(max=2) for _ in range(3)]),
+        wait=wait_chain(
+            *[wait_random(max=RETRY_MAX_WAIT_IN_SEC) for _ in range(RETRY_MAX_ATTEMPT_NUM)]
+        ),
     )
     async def update_feature(
         self,
