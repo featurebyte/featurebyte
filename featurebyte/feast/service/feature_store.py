@@ -10,7 +10,6 @@ from feast import FeatureStore, RepoConfig
 from feast.repo_config import RegistryConfig
 
 from featurebyte.feast.service.registry import FeastRegistryService
-from featurebyte.models.credential import UsernamePasswordCredential
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.utils.credential import MongoBackedCredentialProvider
 
@@ -72,20 +71,15 @@ class FeastFeatureStoreService:
                 cache_ttl_seconds=0,
             )
             feature_store_details = feature_store.get_feature_store_details()
-            user_name, password = None, None
+            database_credential = None
             if credentials:
-                feature_store_credentials = credentials.database_credential
-                assert isinstance(feature_store_credentials, UsernamePasswordCredential)
-                user_name = feature_store_credentials.username
-                password = feature_store_credentials.password
-
+                database_credential = credentials.database_credential
             repo_config = RepoConfig(
                 project=feast_registry.name,
                 provider="local",
                 registry=registry_config,
                 offline_store=feature_store_details.details.get_offline_store_config(
-                    user_name=user_name,
-                    password=password,
+                    credential=database_credential
                 ),
             )
             return cast(FeatureStore, FeatureStore(config=repo_config))

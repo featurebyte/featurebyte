@@ -13,6 +13,7 @@ from pydantic import Field, StrictStr
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import DBVarType, SourceType, StorageType
 from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.models.credential import BaseDatabaseCredential, UsernamePasswordCredential
 
 
 class BaseDatabaseDetails(FeatureByteBaseModel):
@@ -54,16 +55,14 @@ class BaseDatabaseDetails(FeatureByteBaseModel):
         """
         raise NotImplementedError()
 
-    def get_offline_store_config(self, user_name: Optional[str], password: Optional[str]) -> Any:
+    def get_offline_store_config(self, credential: Optional[BaseDatabaseCredential]) -> Any:
         """
         Get Feast offline store config based on the feature store details
 
         Parameters
         ----------
-        user_name: Optional[str]
-            User name to connect to the offline store
-        password: Optional[str]
-            Password to connect to the offline store
+        credential: Optional[BaseDatabaseCredential]
+            Credential to use to connect to the database
 
         Returns
         -------
@@ -148,10 +147,16 @@ class SnowflakeDetails(BaseDatabaseDetails):
             created_timestamp_column=created_timestamp_column,
         )
 
-    def get_offline_store_config(self, user_name: Optional[str], password: Optional[str]) -> Any:
+    def get_offline_store_config(self, credential: Optional[BaseDatabaseCredential]) -> Any:
+        username, password = None, None
+        if credential:
+            assert isinstance(credential, UsernamePasswordCredential)
+            username = credential.username
+            password = credential.password
+
         return SnowflakeOfflineStoreConfig(
             account=self.account,
-            user=user_name,
+            user=username,
             password=password,
             role=None,
             warehouse=self.warehouse,
