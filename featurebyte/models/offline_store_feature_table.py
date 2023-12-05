@@ -75,6 +75,7 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
     OfflineStoreFeatureTable class
     """
 
+    name: str
     feature_ids: List[PydanticObjectId]
     primary_entity_ids: List[PydanticObjectId]
     serving_names: List[str]
