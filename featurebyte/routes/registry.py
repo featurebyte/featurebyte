@@ -3,7 +3,7 @@ Registrations module.
 
 This contains all the dependencies that we want to register in order to get our fast API app up and running.
 """
-
+from featurebyte.feast.service.repo_config import FeastRepoConfigService
 from featurebyte.migration.migration_data_service import SchemaMetadataService
 from featurebyte.migration.service.data_warehouse import (
     DataWarehouseMigrationServiceV1,
@@ -364,6 +364,9 @@ app_container_config.register_factory_method(get_storage)
 app_container_config.register_factory_method(get_redis, name_override="redis")
 app_container_config.register_factory_method(get_temp_storage, name_override="temp_storage")
 app_container_config.register_factory_method(get_celery)
+
+# registry feast related services
+app_container_config.register_class(FeastRepoConfigService)
 
 # These have force_no_deps set as True, as they are manually initialized.
 app_container_config.register_class(User, force_no_deps=True)

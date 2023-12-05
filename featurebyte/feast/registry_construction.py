@@ -1,18 +1,21 @@
 """
-This module contains the model for feast registry
+This module contains classes for constructing feast registry
 """
 # pylint: disable=no-name-in-module
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, cast
 
+import tempfile
 from collections import defaultdict
 from datetime import timedelta
 
 from feast import Entity as FeastEntity
 from feast import FeatureService as FeastFeatureService
+from feast import FeatureStore as FeastFeatureStore
 from feast import FeatureView as FeastFeatureView
 from feast import Field as FeastField
 from feast.data_source import DataSource as FeastDataSource
 from feast.protos.feast.core.Registry_pb2 import Registry as RegistryProto
+from feast.repo_config import RegistryConfig, RepoConfig
 
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
@@ -289,12 +292,49 @@ class FeastRegistryConstructor:
         return feature_services
 
     @classmethod
+    def _create_feast_registry_proto(
+        cls,
+        project_name: Optional[str],
+        feast_data_sources: List[FeastDataSource],
+        primary_entity_ids_to_feast_entity: Dict[Tuple[PydanticObjectId, ...], FeastEntity],
+        feast_feature_views: List[FeastFeatureView],
+        feast_feature_services: List[FeastFeatureService],
+    ) -> RegistryProto:
+        project_name = project_name or "featurebyte_project"
+        with tempfile.NamedTemporaryFile() as temp_file:
+            repo_config = RepoConfig(
+                project=project_name,
+                provider="local",
+                registry=RegistryConfig(
+                    registry_type="file",
+                    path=temp_file.name,
+                    cache_ttl_seconds=0,
+                ),
+            )
+
+            feature_store = FeastFeatureStore(config=repo_config)
+            registry = feature_store.registry
+            for data_source in feast_data_sources:
+                registry.apply_data_source(data_source=data_source, project=project_name)
+            for entity in primary_entity_ids_to_feast_entity.values():
+                registry.apply_entity(entity=entity, project=project_name)
+            for feature_view in feast_feature_views:
+                registry.apply_feature_view(feature_view=feature_view, project=project_name)
+            for feature_service in feast_feature_services:
+                registry.apply_feature_service(
+                    feature_service=feature_service, project=project_name
+                )
+            registry_proto = registry.proto()
+            return cast(RegistryProto, registry_proto)
+
+    @classmethod
     def create(
         cls,
         feature_store: FeatureStoreModel,
         entities: List[EntityModel],
         features: List[FeatureModel],
         feature_lists: List[FeatureListModel],
+        project_name: Optional[str] = None,
     ) -> RegistryProto:
         """
         Create a feast RegistryProto from featurebyte asset models
@@ -309,6 +349,8 @@ class FeastRegistryConstructor:
             List of featurebyte feature models
         feature_lists: List[FeatureListModel]
             List of featurebyte feature list models
+        project_name: Optional[str]
+            Project name
 
         Returns
         -------
@@ -353,18 +395,11 @@ class FeastRegistryConstructor:
             feast_feature_views=feast_feature_views,
         )
 
-        # construct feast registry
-        registry_proto = RegistryProto()
-        registry_proto.data_sources.extend(
-            [data_source.to_proto() for data_source in feast_data_sources]
+        # construct feast registry by constructing a feast feature store and extracting the registry
+        return cls._create_feast_registry_proto(
+            project_name=project_name,
+            feast_data_sources=feast_data_sources,
+            primary_entity_ids_to_feast_entity=primary_entity_ids_to_feast_entity,
+            feast_feature_views=feast_feature_views,
+            feast_feature_services=feast_feature_services,
         )
-        registry_proto.entities.extend(
-            [entity.to_proto() for entity in primary_entity_ids_to_feast_entity.values()]
-        )
-        registry_proto.feature_views.extend(
-            [feature_view.to_proto() for feature_view in feast_feature_views]
-        )
-        registry_proto.feature_services.extend(
-            [feature_service.to_proto() for feature_service in feast_feature_services]
-        )
-        return registry_proto
