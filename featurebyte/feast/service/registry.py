@@ -47,7 +47,7 @@ class FeastRegistryService(
         self.catalog_service = catalog_service
 
     async def _construct_feast_registry_model(
-        self, data: FeastRegistryCreate, document_id: Optional[ObjectId] = None
+        self, data: FeastRegistryCreate
     ) -> FeastRegistryModel:
         feature_ids = set()
         for feature_list in data.feature_lists:
@@ -88,7 +88,6 @@ class FeastRegistryService(
             project_name=data.project_name,
         )
         return FeastRegistryModel(
-            _id=document_id,
             name=data.project_name,
             registry=feast_registry_proto.SerializeToString(),
             feature_store_id=feature_store_id,
@@ -121,17 +120,22 @@ class FeastRegistryService(
         skip_block_modification_check: bool = False,
     ) -> Optional[FeastRegistryModel]:
         assert data.registry is None, "Registry will be generated automatically from feature lists"
+        assert data.feature_store_id is None, "Not allowed to update feature store ID directly"
+
         original_doc = await self.get_document(document_id=document_id)
         recreated_model = await self._construct_feast_registry_model(
             data=FeastRegistryCreate(
                 project_name=original_doc.name,
                 feature_lists=data.feature_lists,
-            ),
-            document_id=document_id,
+            )
         )
         updated = await super().update_document(
             document_id=document_id,
-            data=FeastRegistryUpdate(registry=recreated_model.registry),
+            data=FeastRegistryUpdate(
+                registry=recreated_model.registry,
+                feature_store_id=recreated_model.feature_store_id,
+                feature_lists=None,
+            ),
             exclude_none=exclude_none,
             document=document,
             return_document=return_document,
