@@ -66,7 +66,7 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
     )
 
     @classmethod
-    def create_from(
+    def create_from_graph_node(
         cls, graph_node_param: OfflineStoreIngestQueryGraphNodeParameters, ref_node_name: str
     ) -> OfflineStoreIngestQueryGraph:
         """
@@ -195,7 +195,7 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
                 graph_node_params = graph_node.parameters
                 assert isinstance(graph_node_params, OfflineStoreIngestQueryGraphNodeParameters)
                 output.append(
-                    OfflineStoreIngestQueryGraph.create_from(
+                    OfflineStoreIngestQueryGraph.create_from_graph_node(
                         graph_node_param=graph_node_params,
                         ref_node_name=graph_node.name,
                     )
