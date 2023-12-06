@@ -55,9 +55,18 @@ class OfflineStoreFeatureTableManagerService:
         ):
             feature_entities.append(entity_model)
 
-        offline_ingest_graphs = feature.extract_offline_store_ingest_query_graphs(
-            {entity_model.id: entity_model.serving_names[0] for entity_model in feature_entities}
-        )
+        # FIXME: cleanup this logic once integrate this with feast feature store
+        if feature.offline_store_info is None:
+            feature.initialize_offline_store_info(
+                entity_id_to_serving_name={
+                    entity.id: entity.serving_names[0] for entity in feature_entities
+                }
+            )
+
+        offline_store_info = feature.offline_store_info
+        assert offline_store_info is not None, "Offline store info should not be None"
+
+        offline_ingest_graphs = offline_store_info.extract_offline_store_ingest_query_graphs()
         for offline_ingest_graph in offline_ingest_graphs:
             feature_table_dict = await self._get_compatible_existing_feature_table(
                 offline_ingest_graph=offline_ingest_graph

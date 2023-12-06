@@ -72,6 +72,7 @@ def test_feature_model(feature_model_dict, api_object_to_id):
         "_id": ObjectId(feature_model_dict["_id"]),
         "name": "sum_30m",
         "node_name": "project_1",
+        "offline_store_info": None,
         "online_enabled": False,
         "readiness": "DRAFT",
         "relationships_info": None,
@@ -202,9 +203,11 @@ def test_extract_operation_structure(feature_model_dict):
 def test_ingest_graph_and_node(feature_model_dict):
     """Test ingest_graph_and_node method"""
     feature = FeatureModel(**feature_model_dict)
-    ingest_query_graph = feature.extract_offline_store_ingest_query_graphs(
-        entity_id_to_serving_name={}
-    )[0]
+    feature.initialize_offline_store_info(entity_id_to_serving_name={})
+    offline_store_info = feature.offline_store_info
+    assert offline_store_info is not None, "Offline store info should not be None"
+
+    ingest_query_graph = offline_store_info.extract_offline_store_ingest_query_graphs()[0]
 
     # case 1: query graph is original feature graph
     assert ingest_query_graph.ref_node_name is None
