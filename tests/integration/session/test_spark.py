@@ -26,9 +26,11 @@ async def test_schema_initializer(config, feature_store, credentials_mapping, se
 
     assert await session.list_databases() == ["spark_catalog"]
     assert session.schema_name.lower() in await session.list_schemas(database_name="spark_catalog")
-    assert "metadata_schema" in await session.list_tables(
+    tables = await session.list_tables(
         database_name="spark_catalog", schema_name=session.schema_name
     )
+    table_names = [table.name for table in tables]
+    assert "metadata_schema" in table_names
     column_details = await session.list_table_schema(
         database_name="spark_catalog", schema_name=session.schema_name, table_name="metadata_schema"
     )

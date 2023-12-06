@@ -17,6 +17,7 @@ from featurebyte.common.path_util import get_package_root
 from featurebyte.enum import DBVarType, InternalName
 from featurebyte.logging import get_logger
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
+from featurebyte.query_graph.model.table import TableSpec
 from featurebyte.session.base import BaseSchemaInitializer, BaseSession, MetadataSchemaInitializer
 
 logger = get_logger(__name__)
@@ -226,13 +227,14 @@ class BaseSparkSession(BaseSession, ABC):
 
     async def list_tables(
         self, database_name: str | None = None, schema_name: str | None = None
-    ) -> list[str]:
+    ) -> list[TableSpec]:
         tables = await self.execute_query_interactive(
             f"SHOW TABLES IN `{database_name}`.`{schema_name}`"
         )
         output = []
         if tables is not None:
-            output.extend(tables["tableName"])
+            for _, (name,) in tables[["tableName"]].iterrows():
+                output.append(TableSpec(name=name))
         return output
 
     async def list_table_schema(

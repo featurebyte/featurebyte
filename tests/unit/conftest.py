@@ -175,17 +175,19 @@ def snowflake_query_map_fixture():
         "SHOW DATABASES": [{"name": "sf_database"}],
         'SHOW SCHEMAS IN DATABASE "sf_database"': [{"name": "sf_schema"}],
         'SHOW TABLES IN SCHEMA "sf_database"."sf_schema"': [
-            {"name": "sf_table"},
-            {"name": "sf_table_no_tz"},
-            {"name": "items_table"},
-            {"name": "items_table_same_event_id"},
-            {"name": "fixed_table"},
-            {"name": "non_scalar_table"},
-            {"name": "scd_table"},
-            {"name": "scd_table_state_map"},
-            {"name": "dimension_table"},
+            {"name": "sf_table", "comment": ""},
+            {"name": "sf_table_no_tz", "comment": None},
+            {"name": "items_table", "comment": "Item table"},
+            {"name": "items_table_same_event_id", "comment": None},
+            {"name": "fixed_table", "comment": None},
+            {"name": "non_scalar_table", "comment": None},
+            {"name": "scd_table", "comment": "SCD table"},
+            {"name": "scd_table_state_map", "comment": None},
+            {"name": "dimension_table", "comment": "Dimension table"},
         ],
-        'SHOW VIEWS IN SCHEMA "sf_database"."sf_schema"': [{"name": "sf_view"}],
+        'SHOW VIEWS IN SCHEMA "sf_database"."sf_schema"': [
+            {"name": "sf_view", "comment": "this is view"}
+        ],
         'SHOW COLUMNS IN "sf_database"."sf_schema"."sf_table"': [
             {
                 "column_name": "col_int",

@@ -14,6 +14,7 @@ from pydantic import Field
 
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
+from featurebyte.query_graph.model.table import TableSpec
 from featurebyte.session.base import BaseSchemaInitializer, BaseSession
 
 
@@ -56,11 +57,12 @@ class SQLiteSession(BaseSession):
 
     async def list_tables(
         self, database_name: str | None = None, schema_name: str | None = None
-    ) -> list[str]:
+    ) -> list[TableSpec]:
         tables = await self.execute_query("SELECT name FROM sqlite_master WHERE type = 'table'")
         output = []
         if tables is not None:
-            output.extend(tables["name"])
+            for _, (name,) in tables[["name"]].iterrows():
+                output.append(TableSpec(name=name))
         return output
 
     @staticmethod

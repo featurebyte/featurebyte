@@ -29,6 +29,7 @@ from featurebyte.exception import CredentialsError
 from featurebyte.logging import get_logger
 from featurebyte.models.credential import UsernamePasswordCredential
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
+from featurebyte.query_graph.model.table import TableSpec
 from featurebyte.query_graph.sql.common import quoted_identifier
 from featurebyte.session.base import BaseSchemaInitializer, BaseSession
 from featurebyte.session.enum import SnowflakeDataType
@@ -133,19 +134,27 @@ class SnowflakeSession(BaseSession):
         return output
 
     async def list_tables(
-        self, database_name: str | None = None, schema_name: str | None = None
-    ) -> list[str]:
+        self,
+        database_name: str | None = None,
+        schema_name: str | None = None,
+    ) -> list[TableSpec]:
         tables = await self.execute_query_interactive(
             f'SHOW TABLES IN SCHEMA "{database_name}"."{schema_name}"'
         )
         views = await self.execute_query_interactive(
             f'SHOW VIEWS IN SCHEMA "{database_name}"."{schema_name}"',
         )
+
         output = []
+
         if tables is not None:
-            output.extend(tables["name"])
+            for _, (name, comment) in tables[["name", "comment"]].iterrows():
+                output.append(TableSpec(name=name, description=comment or None))
+
         if views is not None:
-            output.extend(views["name"])
+            for _, (name, comment) in views[["name", "comment"]].iterrows():
+                output.append(TableSpec(name=name, description=comment or None))
+
         return output
 
     def fetch_query_result_impl(self, cursor: Any) -> pd.DataFrame | None:

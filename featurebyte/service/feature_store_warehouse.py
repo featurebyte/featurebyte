@@ -11,6 +11,7 @@ from featurebyte.exception import DatabaseNotFoundError, SchemaNotFoundError, Ta
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.user_defined_function import UserDefinedFunctionModel
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
+from featurebyte.query_graph.model.table import TableSpec
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
 
@@ -109,7 +110,7 @@ class FeatureStoreWarehouseService:
         feature_store: FeatureStoreModel,
         database_name: str,
         schema_name: str,
-    ) -> List[str]:
+    ) -> List[TableSpec]:
         """
         List tables in feature store
 
@@ -129,8 +130,8 @@ class FeatureStoreWarehouseService:
 
         Returns
         -------
-        List[str]
-            List of table names
+        List[TableSpec]
+            List of tables
         """
 
         db_session = await self.session_manager_service.get_feature_store_session(
@@ -151,7 +152,7 @@ class FeatureStoreWarehouseService:
             raise SchemaNotFoundError(f"Schema {schema_name} not found.") from exc
 
         # exclude tables with names that has a "__" prefix
-        return [table_name for table_name in tables if not table_name.startswith("__")]
+        return [table for table in tables if not table.name.startswith("__")]
 
     async def list_columns(
         self,

@@ -16,6 +16,7 @@ from featurebyte.common.utils import dataframe_from_arrow_stream
 from featurebyte.enum import DBVarType
 from featurebyte.exception import CredentialsError, QueryExecutionTimeOut
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
+from featurebyte.query_graph.model.table import TableSpec
 from featurebyte.session.base import MetadataSchemaInitializer
 from featurebyte.session.snowflake import SnowflakeSchemaInitializer, SnowflakeSession
 
@@ -57,7 +58,8 @@ async def test_snowflake_session__credential_from_config(snowflake_session_dict)
     assert session.database_credential.password == "password"
     assert await session.list_databases() == ["sf_database"]
     assert await session.list_schemas(database_name="sf_database") == ["sf_schema"]
-    assert await session.list_tables(database_name="sf_database", schema_name="sf_schema") == [
+    tables = await session.list_tables(database_name="sf_database", schema_name="sf_schema")
+    assert [table.name for table in tables] == [
         "sf_table",
         "sf_table_no_tz",
         "items_table",
@@ -263,7 +265,7 @@ def patched_snowflake_session_cls_fixture(
     def mock_list_tables(*args, **kwargs):
         _ = args
         _ = kwargs
-        return tables_output["name"].tolist()
+        return [TableSpec(name=name) for name in tables_output.name.tolist()]
 
     def mock_get_working_schema_metadata():
         return {

@@ -232,11 +232,12 @@ class FeatureStoreController(
         List[str]
             List of table names
         """
-        return await self.feature_store_warehouse_service.list_tables(
+        tables = await self.feature_store_warehouse_service.list_tables(
             feature_store=feature_store,
             database_name=database_name,
             schema_name=schema_name,
         )
+        return [table.name for table in tables]
 
     async def list_columns(
         self,

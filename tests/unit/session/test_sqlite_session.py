@@ -69,7 +69,8 @@ async def test_sqlite_session(sqlite_db_filename):
     session = SQLiteSession(filename=sqlite_db_filename)
     assert not await session.list_databases()
     assert not await session.list_schemas()
-    assert await session.list_tables() == ["type_table"]
+    tables = await session.list_tables()
+    assert [table.name for table in tables] == ["type_table"]
     assert await session.list_table_schema(table_name="type_table") == {
         "int": ColumnSpecWithDescription(name="int", dtype=DBVarType.INT),
         "integer": ColumnSpecWithDescription(name="integer", dtype=DBVarType.INT),

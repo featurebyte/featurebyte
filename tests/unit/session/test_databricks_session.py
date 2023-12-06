@@ -151,7 +151,8 @@ async def test_databricks_session(databricks_session_dict):
     assert session.database_credential.access_token == "some-databricks-access-token"
     assert await session.list_databases() == ["hive_metastore", "samples"]
     assert await session.list_schemas(database_name="hive_metastore") == ["default", "demo"]
-    assert await session.list_tables(database_name="hive_metastore", schema_name="default") == [
+    tables = await session.list_tables(database_name="hive_metastore", schema_name="default")
+    assert [table.name for table in tables] == [
         "transactions",
         "calls",
     ]

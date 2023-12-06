@@ -23,6 +23,8 @@ from featurebyte.service.entity import EntityService
 from featurebyte.service.event_table import EventTableService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
+from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.service.item_table import ItemTableService
 from featurebyte.service.scd_table import SCDTableService
 from featurebyte.service.semantic import SemanticService
@@ -43,7 +45,7 @@ TableDocumentServiceT = TypeVar(
 )
 
 
-class BaseTableDocumentController(
+class BaseTableDocumentController(  # pylint: disable=too-many-instance-attributes
     BaseDocumentController[TableDocumentT, TableDocumentServiceT, PaginatedDocument]
 ):
     """
@@ -55,7 +57,7 @@ class BaseTableDocumentController(
         "record_creation_timestamp_column": SemanticType.RECORD_CREATION_TIMESTAMP,
     }
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         service: TableDocumentService,
         table_facade_service: TableFacadeService,
@@ -65,6 +67,8 @@ class BaseTableDocumentController(
         target_service: TargetService,
         feature_list_service: FeatureListService,
         specialized_dtype_detection_service: SpecializedDtypeDetectionService,
+        feature_store_service: FeatureStoreService,
+        feature_store_warehouse_service: FeatureStoreWarehouseService,
     ):
         super().__init__(service)  # type: ignore[arg-type]
         self.table_facade_service = table_facade_service
@@ -74,6 +78,8 @@ class BaseTableDocumentController(
         self.target_service = target_service
         self.feature_list_service = feature_list_service
         self.specialized_dtype_detection_service = specialized_dtype_detection_service
+        self.feature_store_service = feature_store_service
+        self.feature_store_warehouse_service = feature_store_warehouse_service
 
     async def _get_column_semantic_map(self, document: TableDocumentT) -> dict[str, Any]:
         """
@@ -125,6 +131,39 @@ class BaseTableDocumentController(
         )
         return cast(TableDocumentT, output)
 
+    async def _add_table_description_from_warehouse(
+        self, document: TableDocumentT
+    ) -> TableDocumentT:
+        """Check if description of the table exists in data warehouse and use it.
+
+        Parameters
+        ----------
+        document: TableDocumentT
+            Newly created document
+
+        Returns
+        -------
+        TableDocumentT
+        """
+        feature_store = await self.feature_store_service.get_document(
+            document_id=document.tabular_source.feature_store_id,
+        )
+        tables = await self.feature_store_warehouse_service.list_tables(
+            feature_store,
+            cast(str, document.tabular_source.table_details.database_name),
+            cast(str, document.tabular_source.table_details.schema_name),
+        )
+        tables = [
+            table
+            for table in tables
+            if table.name == document.tabular_source.table_details.table_name
+        ]
+        if tables and tables[0].description:
+            document = await self.update_description(
+                document_id=document.id, description=tables[0].description
+            )
+        return document
+
     async def create_table(self, data: TableDocumentT) -> TableDocumentT:
         """
         Create Table record at persistent
@@ -140,6 +179,7 @@ class BaseTableDocumentController(
             Newly created table object
         """
         document = await self.service.create_document(data)  # type: ignore[arg-type]
+        document = await self._add_table_description_from_warehouse(document)  # type: ignore
         await self.specialized_dtype_detection_service.detect_and_update_column_dtypes(document)
         return await self._add_semantic_tags(document=document)  # type: ignore
 

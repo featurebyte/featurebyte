@@ -22,6 +22,7 @@ from featurebyte.models.credential import (
     UsernamePasswordCredential,
 )
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
+from featurebyte.query_graph.model.table import TableSpec
 from featurebyte.schema.feature_store import FeatureStorePreview, FeatureStoreSample
 from tests.unit.routes.base import BaseApiTestSuite
 from tests.util.helper import assert_equal_with_expected_fixture
@@ -252,11 +253,13 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
         mock_get_session.return_value.list_databases.return_value = ["x"]
         mock_get_session.return_value.list_schemas.return_value = ["y"]
         tables = ["a", "b", "c", "__d", "__e", "__f"]
-        mock_get_session.return_value.list_tables.return_value = tables
+        mock_get_session.return_value.list_tables.return_value = [
+            TableSpec(name=tb) for tb in tables
+        ]
         response = test_api_client.post(
             f"{self.base_route}/table?database_name=X&schema_name=Y", json=feature_store
         )
-        assert response.status_code == HTTPStatus.OK
+        assert response.status_code == HTTPStatus.OK, response.text
         # tables with names that has a "__" prefix should be excluded
         assert response.json() == tables[:3]
 
@@ -323,7 +326,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
 
         mock_get_session.return_value.list_databases.return_value = ["x"]
         mock_get_session.return_value.list_schemas.return_value = ["y"]
-        mock_get_session.return_value.list_tables.return_value = ["z"]
+        mock_get_session.return_value.list_tables.return_value = [TableSpec(name="z")]
         columns = {
             "a": ColumnSpecWithDescription(name="a", dtype="TIMESTAMP"),
             "b": ColumnSpecWithDescription(name="b", dtype="INT"),
