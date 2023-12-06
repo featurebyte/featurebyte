@@ -195,16 +195,6 @@ class OfflineStoreIngestQueryGraphNodeParameters(
     )
 
 
-class OfflineStoreRequestColumnQueryGraphNodeParameters(
-    BaseOfflineStoreIngestQueryGraphNodeParameters
-):
-    """GraphNode (type:offline_store_request_column_query) parameters"""
-
-    type: Literal[GraphNodeType.OFFLINE_STORE_REQUEST_COLUMN_QUERY] = Field(
-        GraphNodeType.OFFLINE_STORE_REQUEST_COLUMN_QUERY, const=True
-    )
-
-
 ViewMetadataT = TypeVar("ViewMetadataT", bound="ViewMetadata")
 
 
@@ -514,7 +504,6 @@ class ChangeViewGraphNodeParameters(BaseViewGraphNodeParameters):
 GRAPH_NODE_PARAMETERS_TYPES = [
     CleaningGraphNodeParameters,
     OfflineStoreIngestQueryGraphNodeParameters,
-    OfflineStoreRequestColumnQueryGraphNodeParameters,
     EventViewGraphNodeParameters,
     ItemViewGraphNodeParameters,
     DimensionViewGraphNodeParameters,

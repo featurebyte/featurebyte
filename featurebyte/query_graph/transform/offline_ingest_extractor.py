@@ -8,6 +8,7 @@ from dataclasses import dataclass
 
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import PydanticObjectId
+from featurebyte.query_graph.algorithm import dfs_traversal
 from featurebyte.query_graph.enum import GraphNodeType, NodeType
 from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.model.entity_relationship_info import (
@@ -22,7 +23,6 @@ from featurebyte.query_graph.node.mixin import AggregationOpStructMixin, BaseGro
 from featurebyte.query_graph.node.nested import (
     AggregationNodeInfo,
     OfflineStoreIngestQueryGraphNodeParameters,
-    OfflineStoreRequestColumnQueryGraphNodeParameters,
 )
 from featurebyte.query_graph.node.request import RequestColumnNode
 from featurebyte.query_graph.transform.base import BaseGraphExtractor
@@ -291,7 +291,7 @@ class OfflineStoreIngestQueryGraphGlobalState:  # pylint: disable=too-many-insta
             input_agg_info = self.node_name_to_aggregation_info[input_node_name]
             if (
                 input_agg_info.primary_entity_ids == aggregation_info.primary_entity_ids
-                and input_agg_info.request_columns == aggregation_info.request_columns
+                and bool(input_agg_info.request_columns) == bool(aggregation_info.request_columns)
                 and input_agg_info.feature_job_settings == aggregation_info.feature_job_settings
                 and input_agg_info.has_ttl_agg_type == aggregation_info.has_ttl_agg_type
             ):
@@ -497,31 +497,21 @@ class OfflineStoreIngestQueryGraphExtractor(
         )
         transformed_node = subgraph.get_node_by_name(node_name_to_transformed_node_name[node_name])
         aggregation_info = global_state.node_name_to_aggregation_info[node_name]
-        parameter_class: Any
-        other_params: Dict[str, Any] = {}
-        if aggregation_info.request_columns:
-            graph_node_type = GraphNodeType.OFFLINE_STORE_REQUEST_COLUMN_QUERY
-            parameter_class = OfflineStoreRequestColumnQueryGraphNodeParameters
-            suffix = "__req_part"
-        else:
-            graph_node_type = GraphNodeType.OFFLINE_STORE_INGEST_QUERY
-            parameter_class = OfflineStoreIngestQueryGraphNodeParameters
-            other_params = self._prepare_offline_store_ingest_query_specific_node_parameters(
-                subgraph=subgraph,
-                subgraph_output_node=transformed_node,
-                node_name_to_subgraph_node_name=node_name_to_transformed_node_name,
-                aggregation_node_names=global_state.aggregation_node_names,
-                aggregation_info=aggregation_info,
-                entity_id_to_serving_name=global_state.entity_id_to_serving_name,
-            )
-            suffix = "__part"
-
-        comp_count = global_state.graph_node_counter[graph_node_type]
-        column_name = f"__{global_state.feature_name}{suffix}{comp_count}"
+        other_params = self._prepare_offline_store_ingest_query_specific_node_parameters(
+            subgraph=subgraph,
+            subgraph_output_node=transformed_node,
+            node_name_to_subgraph_node_name=node_name_to_transformed_node_name,
+            aggregation_node_names=global_state.aggregation_node_names,
+            aggregation_info=aggregation_info,
+            entity_id_to_serving_name=global_state.entity_id_to_serving_name,
+        )
+        graph_node_type = GraphNodeType.OFFLINE_STORE_INGEST_QUERY
+        part_num = global_state.graph_node_counter[graph_node_type]
+        column_name = f"__{global_state.feature_name}__part{part_num}"
         graph_node = GraphNode(
             name="graph",
             output_type=transformed_node.output_type,
-            parameters=parameter_class(
+            parameters=OfflineStoreIngestQueryGraphNodeParameters(
                 graph=subgraph,
                 output_node_name=transformed_node.name,
                 output_column_name=column_name,
@@ -534,6 +524,39 @@ class OfflineStoreIngestQueryGraphExtractor(
         # update graph node type counter
         global_state.graph_node_counter[graph_node_type] += 1
         return inserted_node
+
+    def _insert_request_column_subgraph(
+        self, global_state: OfflineStoreIngestQueryGraphGlobalState, node_name: str
+    ) -> Node:
+        node_names_to_insert = set()
+        for node in dfs_traversal(
+            query_graph=self.graph, node=self.graph.get_node_by_name(node_name)
+        ):
+            node_names_to_insert.add(node.name)
+
+        for node in self.graph.iterate_sorted_nodes():
+            if node.name in node_names_to_insert:
+                input_nodes = [
+                    global_state.graph.get_node_by_name(global_state.node_name_map[in_node_name])
+                    for in_node_name in self.graph.get_input_node_names(node=node)
+                ]
+                global_state.add_operation_to_graph(node=node, input_nodes=input_nodes)
+
+        mapped_node_name = global_state.node_name_map[node_name]
+        return global_state.graph.get_node_by_name(mapped_node_name)
+
+    def _insert_into_graph(
+        self, global_state: OfflineStoreIngestQueryGraphGlobalState, node_name: str
+    ) -> Node:
+        aggregation_info = global_state.node_name_to_aggregation_info[node_name]
+        if aggregation_info.request_columns:
+            return self._insert_request_column_subgraph(
+                global_state=global_state, node_name=node_name
+            )
+
+        return self._insert_offline_store_query_graph_node(
+            global_state=global_state, node_name=node_name
+        )
 
     def _post_compute(
         self,
@@ -555,7 +578,7 @@ class OfflineStoreIngestQueryGraphExtractor(
                 # insert offline store ingest query node
                 decom_input_nodes = []
                 for input_node_name in input_node_names:
-                    added_node = self._insert_offline_store_query_graph_node(
+                    added_node = self._insert_into_graph(
                         global_state=global_state, node_name=input_node_name
                     )
                     decom_input_nodes.append(added_node)
@@ -583,7 +606,7 @@ class OfflineStoreIngestQueryGraphExtractor(
                         )
                     else:
                         decom_input_nodes.append(
-                            self._insert_offline_store_query_graph_node(
+                            self._insert_into_graph(
                                 global_state=global_state, node_name=input_node_name
                             )
                         )

@@ -138,9 +138,8 @@ class GraphNodeType(StrEnum):
     SCD_VIEW = "scd_view"
     CHANGE_VIEW = "change_view"
 
-    # graph node types used for offline store ingest query graph
+    # graph node type used for offline store ingest query graph
     OFFLINE_STORE_INGEST_QUERY = "offline_store_ingest_query"
-    OFFLINE_STORE_REQUEST_COLUMN_QUERY = "offline_store_request_column_query"
 
     @classmethod
     def view_graph_node_types(cls) -> Set["GraphNodeType"]:
