@@ -175,7 +175,7 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
 
     is_decomposed: bool
 
-    # if the feature or target is not decomposed, the following attributes will be populated
+    # if the feature's or target's query graph is not decomposed, metadata will be populated.
     metadata: Optional[OfflineStoreInfoMetadata]
 
     def extract_offline_store_ingest_query_graphs(self) -> List[OfflineStoreIngestQueryGraph]:
@@ -201,7 +201,6 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
                     )
                 )
         else:
-            # if the feature or target is not decomposed, extract offline store ingest query graph
             assert self.metadata is not None
             output.append(
                 OfflineStoreIngestQueryGraph.create_from_metadata(
