@@ -9,7 +9,7 @@ from datetime import datetime
 
 import pymongo
 from bson import ObjectId
-from pydantic import Field, PrivateAttr, root_validator, validator
+from pydantic import Field, root_validator, validator
 
 from featurebyte.common.validator import construct_sort_validator, version_validator
 from featurebyte.enum import DBVarType
@@ -22,8 +22,9 @@ from featurebyte.models.base import (
     VersionIdentifier,
 )
 from featurebyte.models.feature_namespace import FeatureReadiness
-from featurebyte.models.offline_store_ingest_query import OfflineStoreIngestQueryGraph
-from featurebyte.query_graph.enum import GraphNodeType, NodeType
+from featurebyte.models.mixin import QueryGraphMixin
+from featurebyte.models.offline_store_ingest_query import OfflineStoreInfo, OfflineStoreInfoMetadata
+from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
@@ -38,10 +39,7 @@ from featurebyte.query_graph.node.cleaning_operation import (
     TableIdCleaningOperation,
 )
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
-from featurebyte.query_graph.node.nested import (
-    AggregationNodeInfo,
-    OfflineStoreIngestQueryGraphNodeParameters,
-)
+from featurebyte.query_graph.node.nested import AggregationNodeInfo
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.sql.online_store_compute_query import (
     get_online_store_precompute_queries,
@@ -68,7 +66,7 @@ class TableIdColumnNames(FeatureByteBaseModel):
     column_names: List[str]
 
 
-class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
+class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
     """
     BaseFeatureModel is the base class for FeatureModel & TargetModel.
     It contains all the attributes that are shared between FeatureModel & TargetModel.
@@ -80,11 +78,6 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
     version: VersionIdentifier = Field(allow_mutation=False, default=None)
     definition: Optional[str] = Field(allow_mutation=False, default=None)
     definition_hash: Optional[str] = Field(allow_mutation=False, default=None)
-
-    # special handling for those attributes that are expensive to deserialize
-    # internal_* is used to store the raw data from persistence, _* is used as a cache
-    internal_graph: Any = Field(allow_mutation=False, alias="graph")
-    _graph: Optional[QueryGraph] = PrivateAttr(default=None)
 
     # query graph derived attributes
     # - table columns used by the feature or target
@@ -117,6 +110,10 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
     relationships_info: Optional[List[EntityRelationshipInfo]] = Field(
         allow_mutation=False, default=None
     )
+
+    # offline store info contains the information used to construct the offline store table(s) required
+    # by the feature or target.
+    offline_store_info: Optional[OfflineStoreInfo] = Field(default=None)
 
     # pydantic validators
     _version_validator = validator("version", pre=True, allow_reuse=True)(version_validator)
@@ -221,29 +218,6 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
         """
 
         return self.graph.get_node_by_name(self.node_name)
-
-    @property
-    def graph(self) -> QueryGraph:
-        """
-        Get the graph. If the graph is not loaded, load it first.
-
-        Returns
-        -------
-        QueryGraph
-            QueryGraph object
-        """
-        # TODO: make this a cached_property for pydantic v2
-        if self._graph is None:
-            if isinstance(self.internal_graph, QueryGraph):
-                self._graph = self.internal_graph
-            else:
-                if isinstance(self.internal_graph, dict):
-                    graph_dict = self.internal_graph
-                else:
-                    # for example, QueryGraphModel
-                    graph_dict = self.internal_graph.dict(by_alias=True)
-                self._graph = QueryGraph(**graph_dict)
-        return self._graph
 
     def extract_pruned_graph_and_node(self, **kwargs: Any) -> tuple[QueryGraphModel, Node]:
         """
@@ -422,23 +396,17 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
             )
         return output
 
-    def extract_offline_store_ingest_query_graphs(
+    def initialize_offline_store_info(
         self, entity_id_to_serving_name: Dict[PydanticObjectId, str]
-    ) -> List[OfflineStoreIngestQueryGraph]:
+    ) -> None:
         """
-        Extract offline store ingest query graphs
+        Initialize offline store info
 
         Parameters
         ----------
         entity_id_to_serving_name: Dict[PydanticObjectId, str]
             Entity id to serving name mapping
-
-        Returns
-        -------
-        List[OfflineStoreIngestQueryGraph]
-            List of offline store ingest query graphs
         """
-        # TODO: store the decomposed graph to the model once the query graph structure is finalized.
         extractor = OfflineStoreIngestQueryGraphExtractor(graph=self.graph)
         assert self.name is not None
         result = extractor.extract(
@@ -447,22 +415,11 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
             relationships_info=self.relationships_info,
             feature_name=self.name,
         )
-        output = []
 
-        # TODO: add offline store metadata to the model
-        if result.is_decomposed:
-            for graph_node in result.graph.iterate_sorted_graph_nodes(
-                graph_node_types={GraphNodeType.OFFLINE_STORE_INGEST_QUERY}
-            ):
-                graph_node_params = graph_node.parameters
-                assert isinstance(graph_node_params, OfflineStoreIngestQueryGraphNodeParameters)
-                output.append(
-                    OfflineStoreIngestQueryGraph.create_from(
-                        graph_node_param=graph_node_params,
-                        ref_node_name=graph_node.name,
-                    )
-                )
-        else:
+        decomposed_graph = result.graph
+        metadata = None
+        if not result.is_decomposed:
+            decomposed_graph = self.graph
             feature_job_setting = None
             if self.table_id_feature_job_settings:
                 feature_job_setting = self.table_id_feature_job_settings[0].feature_job_setting
@@ -481,22 +438,23 @@ class BaseFeatureModel(FeatureByteCatalogBaseDocumentModel):
                 has_ttl=has_ttl,
             )
 
-            output.append(
-                OfflineStoreIngestQueryGraph(
-                    graph=self.graph,
-                    node_name=self.node_name,
-                    ref_node_name=None,
-                    aggregation_nodes_info=self._extract_aggregation_nodes_info(),
-                    offline_store_table_name=table_name,
-                    output_column_name=self.name,
-                    output_dtype=self.dtype,
-                    primary_entity_ids=self.primary_entity_ids,
-                    feature_job_setting=feature_job_setting,
-                    has_ttl=has_ttl,
-                )
+            metadata = OfflineStoreInfoMetadata(
+                aggregation_nodes_info=self._extract_aggregation_nodes_info(),
+                feature_job_setting=feature_job_setting,
+                has_ttl=has_ttl,
+                offline_store_table_name=table_name,
+                output_column_name=self.name,
+                output_node_name=self.node_name,
+                output_dtype=self.dtype,
+                primary_entity_ids=self.primary_entity_ids,
             )
 
-        return output
+        # populate offline store info
+        self.offline_store_info = OfflineStoreInfo(
+            graph=decomposed_graph,
+            is_decomposed=result.is_decomposed,
+            metadata=metadata,
+        )
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """

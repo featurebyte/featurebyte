@@ -165,11 +165,18 @@ def get_combined_ingest_graph(
     primary_entity_ids = sorted([entity.id for entity in primary_entities])
     for feature in features:
         # Set entity_id_to_serving_name to empty as the table name will not be used here
-        offline_ingest_graphs = feature.extract_offline_store_ingest_query_graphs(
-            entity_id_to_serving_name={
-                entity.id: entity.serving_names[0] for entity in primary_entities
-            }
-        )
+        # FIXME: cleanup this logic once integrate this with feast feature store
+        if feature.offline_store_info is None:
+            feature.initialize_offline_store_info(
+                entity_id_to_serving_name={
+                    entity.id: entity.serving_names[0] for entity in primary_entities
+                }
+            )
+
+        offline_store_info = feature.offline_store_info
+        assert offline_store_info is not None, "Offline store info should not be None"
+
+        offline_ingest_graphs = offline_store_info.extract_offline_store_ingest_query_graphs()
         for offline_ingest_graph in offline_ingest_graphs:
             if (
                 offline_ingest_graph.primary_entity_ids != primary_entity_ids

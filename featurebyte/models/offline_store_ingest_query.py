@@ -10,15 +10,27 @@ from pydantic import validator
 from featurebyte.common.validator import construct_sort_validator
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
-from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.models.mixin import QueryGraphMixin
+from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.nested import (
     AggregationNodeInfo,
     OfflineStoreIngestQueryGraphNodeParameters,
+    OfflineStoreMetadata,
 )
 from featurebyte.query_graph.transform.quick_pruning import QuickGraphStructurePruningTransformer
+
+
+class OfflineStoreInfoMetadata(OfflineStoreMetadata):
+    """
+    OfflineStoreInfoMetadata object stores the offline store table metadata of the feature or target.
+    """
+
+    output_node_name: str
+    output_column_name: str
+    primary_entity_ids: List[PydanticObjectId]
 
 
 class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
@@ -54,7 +66,7 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
     )
 
     @classmethod
-    def create_from(
+    def create_from_graph_node(
         cls, graph_node_param: OfflineStoreIngestQueryGraphNodeParameters, ref_node_name: str
     ) -> OfflineStoreIngestQueryGraph:
         """
@@ -83,6 +95,38 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
             primary_entity_ids=graph_node_param.primary_entity_ids,
             feature_job_setting=graph_node_param.feature_job_setting,
             has_ttl=graph_node_param.has_ttl,
+        )
+
+    @classmethod
+    def create_from_metadata(
+        cls, graph: QueryGraphModel, metadata: OfflineStoreInfoMetadata
+    ) -> OfflineStoreIngestQueryGraph:
+        """
+        Create OfflineStoreIngestQueryGraph from OfflineStoreInfoMetadata
+
+        Parameters
+        ----------
+        graph: QueryGraphModel
+            QueryGraphModel
+        metadata: OfflineStoreInfoMetadata
+            OfflineStoreInfoMetadata
+
+        Returns
+        -------
+        OfflineStoreIngestQueryGraph
+            OfflineStoreIngestQueryGraph
+        """
+        return cls(
+            graph=graph,
+            node_name=metadata.output_node_name,
+            ref_node_name=None,
+            offline_store_table_name=metadata.offline_store_table_name,
+            aggregation_nodes_info=metadata.aggregation_nodes_info,
+            output_column_name=metadata.output_column_name,
+            output_dtype=metadata.output_dtype,
+            primary_entity_ids=metadata.primary_entity_ids,
+            feature_job_setting=metadata.feature_job_setting,
+            has_ttl=metadata.has_ttl,
         )
 
     def ingest_graph_and_node(self) -> Tuple[QueryGraphModel, Node]:
@@ -118,3 +162,50 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
             input_nodes=[output_node],
         )
         return graph, output_node
+
+
+class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
+    """
+    OfflineStoreInfo object stores the offline store table information of the feature or target.
+    It contains the following attributes:
+    - graph: decomposed query graph used to generate the offline store table
+    - is_decomposed: whether the feature or target query graph is decomposed
+    - metadata: offline store table metadata
+    """
+
+    is_decomposed: bool
+
+    # if the feature's or target's query graph is not decomposed, metadata will be populated.
+    metadata: Optional[OfflineStoreInfoMetadata]
+
+    def extract_offline_store_ingest_query_graphs(self) -> List[OfflineStoreIngestQueryGraph]:
+        """
+        Extract offline store ingest query graphs from the feature or target query graph
+
+        Returns
+        -------
+        List[OfflineStoreIngestQueryGraph]
+            List of OfflineStoreIngestQueryGraph
+        """
+        output = []
+        if self.is_decomposed:
+            for graph_node in self.graph.iterate_sorted_graph_nodes(
+                graph_node_types={GraphNodeType.OFFLINE_STORE_INGEST_QUERY}
+            ):
+                graph_node_params = graph_node.parameters
+                assert isinstance(graph_node_params, OfflineStoreIngestQueryGraphNodeParameters)
+                output.append(
+                    OfflineStoreIngestQueryGraph.create_from_graph_node(
+                        graph_node_param=graph_node_params,
+                        ref_node_name=graph_node.name,
+                    )
+                )
+        else:
+            assert self.metadata is not None
+            output.append(
+                OfflineStoreIngestQueryGraph.create_from_metadata(
+                    graph=self.graph,
+                    metadata=self.metadata,
+                )
+            )
+        return output

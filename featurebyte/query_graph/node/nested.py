@@ -173,17 +173,26 @@ class AggregationNodeInfo(FeatureByteBaseModel):
     node_name: str
 
 
-class OfflineStoreIngestQueryGraphNodeParameters(BaseOfflineStoreIngestQueryGraphNodeParameters):
-    """GraphNode (type:offline_store_ingest_query) parameters"""
+class OfflineStoreMetadata(FeatureByteBaseModel):
+    """
+    Offline store metadata
+    """
 
-    type: Literal[GraphNodeType.OFFLINE_STORE_INGEST_QUERY] = Field(
-        GraphNodeType.OFFLINE_STORE_INGEST_QUERY, const=True
-    )
     aggregation_nodes_info: List[AggregationNodeInfo]
     feature_job_setting: Optional[FeatureJobSetting]
     has_ttl: bool
     offline_store_table_name: str
     output_dtype: DBVarType
+
+
+class OfflineStoreIngestQueryGraphNodeParameters(
+    OfflineStoreMetadata, BaseOfflineStoreIngestQueryGraphNodeParameters
+):
+    """GraphNode (type:offline_store_ingest_query) parameters"""
+
+    type: Literal[GraphNodeType.OFFLINE_STORE_INGEST_QUERY] = Field(
+        GraphNodeType.OFFLINE_STORE_INGEST_QUERY, const=True
+    )
 
 
 class OfflineStoreRequestColumnQueryGraphNodeParameters(

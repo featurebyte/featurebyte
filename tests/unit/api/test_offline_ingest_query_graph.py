@@ -27,9 +27,11 @@ def test_feature_contains_ttl_and_non_ttl_components(float_feature, non_time_bas
     feature.save()
 
     # check offline ingest query graph
-    ingest_query_graphs = feature.cached_model.extract_offline_store_ingest_query_graphs(
-        entity_id_to_serving_name={}
-    )
+    feature_model = feature.cached_model
+    feature_model.initialize_offline_store_info(entity_id_to_serving_name={})
+    offline_store_info = feature_model.offline_store_info
+    assert offline_store_info is not None, "Offline store info should not be None"
+    ingest_query_graphs = offline_store_info.extract_offline_store_ingest_query_graphs()
     assert len(ingest_query_graphs) == 2
     if ingest_query_graphs[0].feature_job_setting:
         ttl_component_graph = ingest_query_graphs[0]
@@ -82,9 +84,11 @@ def test_feature_request_column_and_non_ttl_components(
     feature.save()
 
     # check offline ingest query graph (note that the request column part should be removed)
-    ingest_query_graphs = feature.cached_model.extract_offline_store_ingest_query_graphs(
-        entity_id_to_serving_name={}
-    )
+    feature_model = feature.cached_model
+    feature_model.initialize_offline_store_info(entity_id_to_serving_name={})
+    offline_store_info = feature_model.offline_store_info
+    assert offline_store_info is not None, "Offline store info should not be None"
+    ingest_query_graphs = offline_store_info.extract_offline_store_ingest_query_graphs()
     assert len(ingest_query_graphs) == 2
     if ingest_query_graphs[0].feature_job_setting:
         ttl_component_graph = ingest_query_graphs[0]
@@ -136,11 +140,15 @@ def test_feature_multiple_non_ttl_components(
     feature.save()
 
     # check offline ingest query graph (note that the request column part should be removed)
-    ingest_query_graphs = feature.cached_model.extract_offline_store_ingest_query_graphs(
+    feature_model = feature.cached_model
+    feature_model.initialize_offline_store_info(
         entity_id_to_serving_name={
             cust_id_entity.id: cust_id_entity.serving_names[0],
         }
     )
+    offline_store_info = feature_model.offline_store_info
+    assert offline_store_info is not None, "Offline store info should not be None"
+    ingest_query_graphs = offline_store_info.extract_offline_store_ingest_query_graphs()
     assert len(ingest_query_graphs) == 1
     non_ttl_component_graph = ingest_query_graphs[0]
     assert non_ttl_component_graph.feature_job_setting is None
