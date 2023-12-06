@@ -5,7 +5,6 @@ from typing import Dict, List, Set
 
 from pydantic import BaseModel, Field
 
-from featurebyte.query_graph.algorithm import dfs_traversal
 from featurebyte.query_graph.model.graph import GraphNodeNameMap, QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.transform.base import BaseGraphTransformer
@@ -46,8 +45,8 @@ class QuickGraphStructurePruningTransformer(
     ) -> Set[str]:
         node_names_to_keep: Set[str] = set()
         for target_node_name in target_node_names:
-            for node in dfs_traversal(
-                query_graph=graph, node=graph.get_node_by_name(target_node_name)
+            for node in graph.iterate_nodes(
+                target_node=graph.get_node_by_name(target_node_name), node_type=None
             ):
                 node_names_to_keep.add(node.name)
         return node_names_to_keep

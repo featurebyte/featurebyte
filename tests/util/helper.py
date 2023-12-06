@@ -24,8 +24,8 @@ from featurebyte.enum import AggFunc
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalGraphState, GlobalQueryGraph, QueryGraph
 from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
-from featurebyte.query_graph.transform.offline_ingest_extractor import (
-    OfflineStoreIngestQueryGraphExtractor,
+from featurebyte.query_graph.transform.offline_store_ingest import (
+    OfflineStoreIngestQueryGraphTransformer,
 )
 from featurebyte.query_graph.util import get_aggregation_identifier, get_tile_table_identifier
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
@@ -482,22 +482,43 @@ def get_preview_sql_for_series(series_obj, *args, **kwargs):
     return SampleMixin.preview_sql(series_obj, *args, **kwargs)
 
 
-def check_decomposed_graph_output_node_hash(
-    feature_model, offline_store_ingest_query_graph_extractor_output=None
-):
+def check_decomposed_graph_output_node_hash(feature_model, output=None):
     """Check the output node hash of the decomposed graph is the same as the original graph"""
-    if offline_store_ingest_query_graph_extractor_output is None:
-        extractor = OfflineStoreIngestQueryGraphExtractor(graph=feature_model.graph)
-        offline_store_ingest_query_graph_extractor_output = extractor.extract(
-            node=feature_model.node, relationships_info=feature_model.relationships_info
+    if output is None:
+        transformer = OfflineStoreIngestQueryGraphTransformer(graph=feature_model.graph)
+        output = transformer.transform(
+            target_node=feature_model.node,
+            entity_id_to_serving_name={},
+            relationships_info=feature_model.relationships_info,
+            feature_name=feature_model.name,
         )
+
+    if output.is_decomposed is False:
+        assert output.node_name_map == {}
+        return
+
+    # check all the original graph's node_name can be found in node_name_map
+    assert set(feature_model.graph.nodes_map.keys()) == set(output.node_name_map.keys())
+
+    # check that no unexpected node type is present in the decomposed graph
+    unexpected_node_types = {
+        NodeType.INPUT,
+        NodeType.GROUPBY,
+        NodeType.ITEM_GROUPBY,
+        NodeType.AGGREGATE_AS_AT,
+        NodeType.LOOKUP,
+        NodeType.LOOKUP_TARGET,
+        NodeType.JOIN,
+        NodeType.JOIN_FEATURE,
+    }
+    for node in output.graph.nodes:
+        assert node.type not in unexpected_node_types, "Unexpected node type in decomposed graph"
 
     # flatten the original graph
     flattened_graph, node_name_map = feature_model.graph.flatten()
     flattened_node_name = node_name_map[feature_model.node_name]
 
     # flatten the decomposed graph
-    output = offline_store_ingest_query_graph_extractor_output
     decom_node_name = output.node_name_map[feature_model.node_name]
     flattened_decom_graph, node_name_map = QueryGraph(**output.graph.dict(by_alias=True)).flatten()
     flattened_decom_node_name = node_name_map[decom_node_name]

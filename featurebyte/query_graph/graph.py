@@ -497,15 +497,24 @@ class QueryGraph(QueryGraphModel):
             regenerate_groupby_hash=regenerate_groupby_hash,
         )
 
-    def flatten(self) -> GraphNodeNameMap:
+    def flatten(
+        self, skip_graph_node_types: Optional[Set[GraphNodeType]] = None
+    ) -> GraphNodeNameMap:
         """
         Construct a query graph which flattened all the graph nodes of this query graph
+
+        Parameters
+        ----------
+        skip_graph_node_types: Optional[Set[GraphNodeType]]
+            graph node types we want to skip flattening for
 
         Returns
         -------
         QueryGraphModel
         """
-        return GraphFlatteningTransformer(graph=self).transform()
+        return GraphFlatteningTransformer(graph=self).transform(
+            skip_flattening_graph_node_types=skip_graph_node_types
+        )
 
     def add_node(self, node: NodeT, input_nodes: List[Node]) -> NodeT:
         """

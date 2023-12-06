@@ -3,7 +3,7 @@ OfflineStoreIngestQuery object stores the offline store ingest query for a featu
 """
 from __future__ import annotations
 
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from pydantic import validator
 
@@ -173,6 +173,8 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
     - metadata: offline store table metadata
     """
 
+    # map the original node name to the decomposed node name
+    node_name_map: Dict[str, str]
     is_decomposed: bool
 
     # if the feature's or target's query graph is not decomposed, metadata will be populated.

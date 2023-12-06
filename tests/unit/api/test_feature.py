@@ -53,7 +53,7 @@ from featurebyte.query_graph.node.cleaning_operation import (
 )
 from featurebyte.query_graph.node.generic import GroupByNode, ProjectNode
 from featurebyte.query_graph.transform.offline_ingest_extractor import (
-    OfflineStoreIngestQueryGraphExtractor,
+    OfflineStoreIngestQueryGraphTransformer,
 )
 from tests.unit.api.base_feature_or_target_test import FeatureOrTargetBaseTestSuite, TestItemType
 from tests.util.helper import (
@@ -859,9 +859,12 @@ def check_offline_store_ingest_graph_on_composite_feature(
     assert groupby_node2.parameters.names == ["sum_30m_by_cust_id_30m"]
 
     # check decomposed graph
-    extractor = OfflineStoreIngestQueryGraphExtractor(graph=feature_model.graph)
-    output = extractor.extract(
-        node=feature_model.node, relationships_info=feature_model.relationships_info
+    transformer = OfflineStoreIngestQueryGraphTransformer(graph=feature_model.graph)
+    output = transformer.transform(
+        target_node=feature_model.node,
+        relationships_info=feature_model.relationships_info,
+        entity_id_to_serving_name={},
+        feature_name=feature_model.name,
     )
     assert output.graph.edges_map == {
         "graph_1": ["add_1"],
@@ -870,9 +873,7 @@ def check_offline_store_ingest_graph_on_composite_feature(
     }
 
     # check the output node hash before and after decomposition
-    check_decomposed_graph_output_node_hash(
-        feature_model=feature_model, offline_store_ingest_query_graph_extractor_output=output
-    )
+    check_decomposed_graph_output_node_hash(feature_model=feature_model, output=output)
 
     # case 2: with entity relationship between the two entities (expect no query graph decomposition)
     entity_ids = feature_model.entity_ids

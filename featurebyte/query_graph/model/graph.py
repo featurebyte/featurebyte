@@ -368,6 +368,7 @@ class QueryGraphModel(FeatureByteBaseModel):
         target_node: Node,
         node_type: Optional[NodeType],
         skip_node_type: Optional[NodeType] = None,
+        skip_node_names: Optional[Set[str]] = None,
     ) -> Iterator[Node]:
         """
         Iterate all specified nodes in this query graph
@@ -380,13 +381,17 @@ class QueryGraphModel(FeatureByteBaseModel):
             Specific node type to iterate, if None, iterate all node types
         skip_node_type : Optional[NodeType]
             If specified, skip nodes of this type during traversal
+        skip_node_names: Optional[Set[str]]
+            If specified, skip nodes of these names during traversal
 
         Yields
         ------
         Node
             Query graph nodes of the specified node type
         """
-        for node in dfs_traversal(self, target_node, skip_node_type=skip_node_type):
+        for node in dfs_traversal(
+            self, target_node, skip_node_type=skip_node_type, skip_node_names=skip_node_names
+        ):
             if node_type is None:
                 yield node
             else:

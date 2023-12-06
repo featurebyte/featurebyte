@@ -48,8 +48,8 @@ from featurebyte.query_graph.transform.definition import (
     DefinitionHashExtractor,
     DefinitionHashOutput,
 )
-from featurebyte.query_graph.transform.offline_ingest_extractor import (
-    OfflineStoreIngestQueryGraphExtractor,
+from featurebyte.query_graph.transform.offline_store_ingest import (
+    OfflineStoreIngestQueryGraphTransformer,
     extract_dtype_from_graph,
     get_offline_store_table_name,
 )
@@ -407,12 +407,12 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
         entity_id_to_serving_name: Dict[PydanticObjectId, str]
             Entity id to serving name mapping
         """
-        extractor = OfflineStoreIngestQueryGraphExtractor(graph=self.graph)
+        transformer = OfflineStoreIngestQueryGraphTransformer(graph=self.graph)
         assert self.name is not None
-        result = extractor.extract(
-            node=self.node,
+        result = transformer.transform(
+            target_node=self.node,
             entity_id_to_serving_name=entity_id_to_serving_name,
-            relationships_info=self.relationships_info,
+            relationships_info=self.relationships_info or [],
             feature_name=self.name,
         )
 
@@ -452,6 +452,7 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
         # populate offline store info
         self.offline_store_info = OfflineStoreInfo(
             graph=decomposed_graph,
+            node_name_map=result.node_name_map,
             is_decomposed=result.is_decomposed,
             metadata=metadata,
         )

@@ -9,7 +9,7 @@ from featurebyte.enum import DBVarType
 from featurebyte.models import FeatureModel
 from featurebyte.query_graph.enum import GraphNodeType
 from featurebyte.query_graph.transform.offline_ingest_extractor import (
-    OfflineStoreIngestQueryGraphExtractor,
+    OfflineStoreIngestQueryGraphTransformer,
 )
 from tests.util.helper import check_decomposed_graph_output_node_hash, check_sdk_code_generation
 
@@ -54,9 +54,12 @@ def test_point_in_time_minus_timestamp_feature(latest_event_timestamp_feature, u
     # check offline store ingest query graph
     new_feature_model = new_feature.cached_model
     assert isinstance(new_feature_model, FeatureModel)
-    extractor = OfflineStoreIngestQueryGraphExtractor(graph=new_feature_model.graph)
-    output = extractor.extract(
-        node=new_feature_model.node, relationships_info=new_feature_model.relationships_info
+    transformer = OfflineStoreIngestQueryGraphTransformer(graph=new_feature_model.graph)
+    output = transformer.transform(
+        target_node=new_feature_model.node,
+        relationships_info=new_feature_model.relationships_info,
+        entity_id_to_serving_name={},
+        feature_name=new_feature_model.name,
     )
 
     # check decomposed graph structure
@@ -66,16 +69,14 @@ def test_point_in_time_minus_timestamp_feature(latest_event_timestamp_feature, u
         "request_column_1": ["date_diff_1"],
         "timedelta_extract_1": ["alias_1"],
     }
-    # make sure the graph node types are expected (graph_1 & graph_2 order depends on the node hash,
-    # which is not deterministic)
     graph_node_param = output.graph.nodes_map["graph_1"].parameters
     assert graph_node_param.type == GraphNodeType.OFFLINE_STORE_INGEST_QUERY
-    assert graph_node_param.output_column_name == "__feature__part0"
+    assert graph_node_param.output_column_name == "__Time Since Last Event (days)__part0"
 
     # check output node hash
     check_decomposed_graph_output_node_hash(
         feature_model=new_feature_model,
-        offline_store_ingest_query_graph_extractor_output=output,
+        output=output,
     )
 
 
@@ -101,9 +102,12 @@ def test_request_column_offline_store_query_extraction(latest_event_timestamp_fe
     # check offline store ingest query graph
     new_feature_model = new_feature.cached_model
     assert isinstance(new_feature_model, FeatureModel)
-    extractor = OfflineStoreIngestQueryGraphExtractor(graph=new_feature_model.graph)
-    output = extractor.extract(
-        node=new_feature_model.node, relationships_info=new_feature_model.relationships_info
+    transformer = OfflineStoreIngestQueryGraphTransformer(graph=new_feature_model.graph)
+    output = transformer.transform(
+        target_node=new_feature_model.node,
+        relationships_info=new_feature_model.relationships_info,
+        entity_id_to_serving_name={},
+        feature_name=new_feature_model.name,
     )
 
     # check decomposed graph structure
@@ -119,5 +123,5 @@ def test_request_column_offline_store_query_extraction(latest_event_timestamp_fe
     # check output node hash
     check_decomposed_graph_output_node_hash(
         feature_model=new_feature_model,
-        offline_store_ingest_query_graph_extractor_output=output,
+        output=output,
     )
