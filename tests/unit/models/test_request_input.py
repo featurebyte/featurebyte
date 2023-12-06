@@ -10,6 +10,7 @@ from featurebyte import SourceType
 from featurebyte.enum import DBVarType
 from featurebyte.exception import ColumnNotFoundError
 from featurebyte.models.request_input import SourceTableRequestInput, ViewRequestInput
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.session.snowflake import SnowflakeSession
 
@@ -23,7 +24,12 @@ def session_fixture():
         name="mock_snowflake_session",
         spec=SnowflakeSession,
         source_type=SourceType.SNOWFLAKE,
-        list_table_schema=AsyncMock(return_value={"a": DBVarType.INT, "b": DBVarType.INT}),
+        list_table_schema=AsyncMock(
+            return_value={
+                "a": ColumnSpecWithDescription(name="a", dtype=DBVarType.INT),
+                "b": ColumnSpecWithDescription(name="a", dtype=DBVarType.INT),
+            }
+        ),
     )
 
 

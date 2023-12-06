@@ -9,6 +9,7 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal
 
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.session.base_spark import BaseSparkSession
 from featurebyte.session.manager import SessionManager
 
@@ -33,10 +34,26 @@ async def test_schema_initializer(config, feature_store, credentials_mapping, se
     )
     assert column_details == OrderedDict(
         [
-            ("WORKING_SCHEMA_VERSION", "INT"),
-            ("MIGRATION_VERSION", "INT"),
-            ("FEATURE_STORE_ID", "VARCHAR"),
-            ("CREATED_AT", "TIMESTAMP"),
+            (
+                "WORKING_SCHEMA_VERSION",
+                ColumnSpecWithDescription(
+                    name="WORKING_SCHEMA_VERSION", dtype="INT", description=None
+                ),
+            ),
+            (
+                "MIGRATION_VERSION",
+                ColumnSpecWithDescription(name="MIGRATION_VERSION", dtype="INT", description=None),
+            ),
+            (
+                "FEATURE_STORE_ID",
+                ColumnSpecWithDescription(
+                    name="FEATURE_STORE_ID", dtype="VARCHAR", description=None
+                ),
+            ),
+            (
+                "CREATED_AT",
+                ColumnSpecWithDescription(name="CREATED_AT", dtype="TIMESTAMP", description=None),
+            ),
         ]
     )
 

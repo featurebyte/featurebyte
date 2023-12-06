@@ -26,16 +26,11 @@ from featurebyte.common.utils import (
     dataframe_from_arrow_stream,
     pa_table_to_record_batches,
 )
-from featurebyte.enum import (
-    DBVarType,
-    InternalName,
-    MaterializedTableNamePrefix,
-    SourceType,
-    StrEnum,
-)
+from featurebyte.enum import InternalName, MaterializedTableNamePrefix, SourceType, StrEnum
 from featurebyte.exception import QueryExecutionTimeOut
 from featurebyte.logging import get_logger
 from featurebyte.models.user_defined_function import UserDefinedFunctionModel
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.sql.common import (
     get_fully_qualified_table_name,
     quoted_identifier,
@@ -190,7 +185,7 @@ class BaseSession(BaseModel):
         table_name: str | None,
         database_name: str | None = None,
         schema_name: str | None = None,
-    ) -> OrderedDict[str, DBVarType]:
+    ) -> OrderedDict[str, ColumnSpecWithDescription]:
         """
         Execute SQL query to retrieve table schema of a given table name and convert the
         schema type to internal variable type
@@ -206,7 +201,7 @@ class BaseSession(BaseModel):
 
         Returns
         -------
-        OrderedDict[str, DBVarType]
+        OrderedDict[str, ColumnSpecWithDescription]
         """
 
     async def check_user_defined_function(

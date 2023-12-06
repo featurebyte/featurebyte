@@ -9,6 +9,7 @@ import pyarrow as pa
 import pytest
 
 from featurebyte.enum import DBVarType
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.session.base_spark import BaseSparkSchemaInitializer
 from featurebyte.session.databricks import DatabricksSession
 
@@ -157,21 +158,51 @@ async def test_databricks_session(databricks_session_dict):
     assert await session.list_table_schema(
         database_name="hive_metastore", schema_name="default", table_name="transactions"
     ) == {
-        "col_binary": DBVarType.BINARY,
-        "col_bool": DBVarType.BOOL,
-        "col_date": DBVarType.DATE,
-        "col_decimal": DBVarType.FLOAT,
-        "col_double": DBVarType.FLOAT,
-        "col_float": DBVarType.FLOAT,
-        "col_int": DBVarType.INT,
-        "col_interval": DBVarType.TIMEDELTA,
-        "col_void": DBVarType.VOID,
-        "col_timestamp": DBVarType.TIMESTAMP,
-        "col_array": DBVarType.ARRAY,
-        "col_map": DBVarType.MAP,
-        "col_struct": DBVarType.STRUCT,
-        "col_string": DBVarType.VARCHAR,
-        "col_unknown": DBVarType.UNKNOWN,
+        "col_binary": ColumnSpecWithDescription(
+            name="col_binary", dtype=DBVarType.BINARY, description="Binary Column"
+        ),
+        "col_bool": ColumnSpecWithDescription(
+            name="col_bool", dtype=DBVarType.BOOL, description="Boolean Column"
+        ),
+        "col_date": ColumnSpecWithDescription(
+            name="col_date", dtype=DBVarType.DATE, description="Date Column"
+        ),
+        "col_decimal": ColumnSpecWithDescription(
+            name="col_decimal", dtype=DBVarType.FLOAT, description="Decimal Column"
+        ),
+        "col_double": ColumnSpecWithDescription(
+            name="col_double", dtype=DBVarType.FLOAT, description="Double Column"
+        ),
+        "col_float": ColumnSpecWithDescription(
+            name="col_float", dtype=DBVarType.FLOAT, description="Float Column"
+        ),
+        "col_int": ColumnSpecWithDescription(
+            name="col_int", dtype=DBVarType.INT, description="Int Column"
+        ),
+        "col_interval": ColumnSpecWithDescription(
+            name="col_interval", dtype=DBVarType.TIMEDELTA, description="Interval Column"
+        ),
+        "col_void": ColumnSpecWithDescription(
+            name="col_void", dtype=DBVarType.VOID, description="Void Column"
+        ),
+        "col_timestamp": ColumnSpecWithDescription(
+            name="col_timestamp", dtype=DBVarType.TIMESTAMP, description="Timestamp Column"
+        ),
+        "col_array": ColumnSpecWithDescription(
+            name="col_array", dtype=DBVarType.ARRAY, description="Array Column"
+        ),
+        "col_map": ColumnSpecWithDescription(
+            name="col_map", dtype=DBVarType.MAP, description="Map Column"
+        ),
+        "col_struct": ColumnSpecWithDescription(
+            name="col_struct", dtype=DBVarType.STRUCT, description="Struct Column"
+        ),
+        "col_string": ColumnSpecWithDescription(
+            name="col_string", dtype=DBVarType.VARCHAR, description="String Column"
+        ),
+        "col_unknown": ColumnSpecWithDescription(
+            name="col_unknown", dtype=DBVarType.UNKNOWN, description="Unknown Column"
+        ),
     }
     df_result = await session.execute_query("SELECT * FROM table")
     df_expected = pd.DataFrame({"a": [1, 100], "b": [2, 200], "c": [3, 300]})

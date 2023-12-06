@@ -7,6 +7,7 @@ import tempfile
 import pytest
 
 from featurebyte.enum import DBVarType
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.session.sqlite import SQLiteSession
 
 
@@ -70,30 +71,36 @@ async def test_sqlite_session(sqlite_db_filename):
     assert not await session.list_schemas()
     assert await session.list_tables() == ["type_table"]
     assert await session.list_table_schema(table_name="type_table") == {
-        "int": DBVarType.INT,
-        "integer": DBVarType.INT,
-        "tinyint": DBVarType.INT,
-        "smallint": DBVarType.INT,
-        "mediumint": DBVarType.INT,
-        "bigint": DBVarType.INT,
-        "unsigned_big_int": DBVarType.INT,
-        "int2": DBVarType.INT,
-        "int8": DBVarType.INT,
-        "char": DBVarType.VARCHAR,
-        "varchar": DBVarType.VARCHAR,
-        "varying_character": DBVarType.VARCHAR,
-        "nchar": DBVarType.VARCHAR,
-        "native_character": DBVarType.VARCHAR,
-        "nvarchar": DBVarType.VARCHAR,
-        "text": DBVarType.VARCHAR,
-        "real": DBVarType.FLOAT,
-        "double": DBVarType.FLOAT,
-        "double_precision": DBVarType.FLOAT,
-        "float": DBVarType.FLOAT,
-        "decimal": DBVarType.FLOAT,
-        "boolean": DBVarType.BOOL,
-        "date": DBVarType.DATE,
-        "datetime": DBVarType.TIMESTAMP,
+        "int": ColumnSpecWithDescription(name="int", dtype=DBVarType.INT),
+        "integer": ColumnSpecWithDescription(name="integer", dtype=DBVarType.INT),
+        "tinyint": ColumnSpecWithDescription(name="tinyint", dtype=DBVarType.INT),
+        "smallint": ColumnSpecWithDescription(name="smallint", dtype=DBVarType.INT),
+        "mediumint": ColumnSpecWithDescription(name="mediumint", dtype=DBVarType.INT),
+        "bigint": ColumnSpecWithDescription(name="bigint", dtype=DBVarType.INT),
+        "unsigned_big_int": ColumnSpecWithDescription(name="unsigned_big_int", dtype=DBVarType.INT),
+        "int2": ColumnSpecWithDescription(name="int2", dtype=DBVarType.INT),
+        "int8": ColumnSpecWithDescription(name="int8", dtype=DBVarType.INT),
+        "char": ColumnSpecWithDescription(name="char", dtype=DBVarType.VARCHAR),
+        "varchar": ColumnSpecWithDescription(name="varchar", dtype=DBVarType.VARCHAR),
+        "varying_character": ColumnSpecWithDescription(
+            name="varying_character", dtype=DBVarType.VARCHAR
+        ),
+        "nchar": ColumnSpecWithDescription(name="nchar", dtype=DBVarType.VARCHAR),
+        "native_character": ColumnSpecWithDescription(
+            name="native_character", dtype=DBVarType.VARCHAR
+        ),
+        "nvarchar": ColumnSpecWithDescription(name="nvarchar", dtype=DBVarType.VARCHAR),
+        "text": ColumnSpecWithDescription(name="text", dtype=DBVarType.VARCHAR),
+        "real": ColumnSpecWithDescription(name="real", dtype=DBVarType.FLOAT),
+        "double": ColumnSpecWithDescription(name="double", dtype=DBVarType.FLOAT),
+        "double_precision": ColumnSpecWithDescription(
+            name="double_precision", dtype=DBVarType.FLOAT
+        ),
+        "float": ColumnSpecWithDescription(name="float", dtype=DBVarType.FLOAT),
+        "decimal": ColumnSpecWithDescription(name="decimal", dtype=DBVarType.FLOAT),
+        "boolean": ColumnSpecWithDescription(name="boolean", dtype=DBVarType.BOOL),
+        "date": ColumnSpecWithDescription(name="date", dtype=DBVarType.DATE),
+        "datetime": ColumnSpecWithDescription(name="datetime", dtype=DBVarType.TIMESTAMP),
     }
 
 

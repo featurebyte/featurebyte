@@ -25,6 +25,7 @@ from featurebyte.common.utils import (
     parquet_from_arrow_stream,
 )
 from featurebyte.enum import DBVarType
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.node.schema import FeatureStoreDetails
 from featurebyte.schema.table import TableCreate
 
@@ -1310,7 +1311,9 @@ class BaseMaterializedTableTestSuite(BaseAsyncApiTestSuite):
         mock_session = mock_get_session.return_value
         mock_session.get_async_query_stream = Mock(side_effect=mock_get_async_query_stream)
         mock_session.execute_query.return_value = pd.DataFrame({"row_count": [300 * 10000000]})
-        mock_session.list_table_schema.return_value = {"colA": DBVarType.INT}
+        mock_session.list_table_schema.return_value = {
+            "colA": ColumnSpecWithDescription(name="colA", dtype=DBVarType.INT)
+        }
         mock_session.generate_session_unique_id = Mock(return_value="1")
 
         response = test_api_client.get(f"{self.base_route}/pyarrow_table/{doc_id}")
@@ -1334,7 +1337,9 @@ class BaseMaterializedTableTestSuite(BaseAsyncApiTestSuite):
         mock_session = mock_get_session.return_value
         mock_session.get_async_query_stream = Mock(side_effect=mock_get_async_query_stream)
         mock_session.execute_query.return_value = pd.DataFrame({"row_count": [3]})
-        mock_session.list_table_schema.return_value = {"colA": DBVarType.INT}
+        mock_session.list_table_schema.return_value = {
+            "colA": ColumnSpecWithDescription(name="colA", dtype=DBVarType.INT)
+        }
         mock_session.generate_session_unique_id = Mock(return_value="1")
 
         with test_api_client.stream("GET", f"{self.base_route}/pyarrow_table/{doc_id}") as response:
@@ -1383,7 +1388,9 @@ class BaseMaterializedTableTestSuite(BaseAsyncApiTestSuite):
         mock_session = mock_get_session.return_value
         mock_session.get_async_query_stream = Mock(side_effect=mock_get_async_query_stream)
         mock_session.execute_query.return_value = pd.DataFrame({"row_count": [3]})
-        mock_session.list_table_schema.return_value = {"colA": DBVarType.INT}
+        mock_session.list_table_schema.return_value = {
+            "colA": ColumnSpecWithDescription(name="colA", dtype=DBVarType.INT)
+        }
         mock_session.generate_session_unique_id = Mock(return_value="1")
 
         response = test_api_client.get(f"{self.base_route}/parquet/{doc_id}")

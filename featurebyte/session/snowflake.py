@@ -28,6 +28,7 @@ from featurebyte.enum import DBVarType, SourceType
 from featurebyte.exception import CredentialsError
 from featurebyte.logging import get_logger
 from featurebyte.models.credential import UsernamePasswordCredential
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.sql.common import quoted_identifier
 from featurebyte.session.base import BaseSchemaInitializer, BaseSession
 from featurebyte.session.enum import SnowflakeDataType
@@ -273,16 +274,22 @@ class SnowflakeSession(BaseSession):
         table_name: str | None,
         database_name: str | None = None,
         schema_name: str | None = None,
-    ) -> OrderedDict[str, DBVarType]:
+    ) -> OrderedDict[str, ColumnSpecWithDescription]:
         schema = await self.execute_query_interactive(
             f'SHOW COLUMNS IN "{database_name}"."{schema_name}"."{table_name}"',
         )
         column_name_type_map = collections.OrderedDict()
         if schema is not None:
-            for _, (column_name, var_info) in schema[["column_name", "data_type"]].iterrows():
-                column_name_type_map[column_name] = self._convert_to_internal_variable_type(
-                    json.loads(var_info)
+            for _, (column_name, var_info, comment) in schema[
+                ["column_name", "data_type", "comment"]
+            ].iterrows():
+                dtype = self._convert_to_internal_variable_type(json.loads(var_info))
+                column_name_type_map[column_name] = ColumnSpecWithDescription(
+                    name=column_name,
+                    dtype=dtype,
+                    description=comment or None,
                 )
+
         return column_name_type_map
 
     @staticmethod

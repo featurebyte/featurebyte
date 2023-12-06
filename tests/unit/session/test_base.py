@@ -14,6 +14,7 @@ from pydantic import Field
 from snowflake.connector.errors import ProgrammingError
 
 from featurebyte.enum import DBVarType, SourceType
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.session.base import BaseSchemaInitializer, BaseSession, MetadataSchemaInitializer
 
 CURRENT_WORKING_SCHEMA_VERSION_TEST = 1
@@ -61,7 +62,7 @@ def base_session_test_fixture():
             table_name: str | None,
             database_name: str | None = None,
             schema_name: str | None = None,
-        ) -> OrderedDict[str, DBVarType]:
+        ) -> OrderedDict[str, ColumnSpecWithDescription]:
             return collections.OrderedDict()
 
         async def register_table(

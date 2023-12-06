@@ -11,7 +11,7 @@ from featurebyte.logging import get_logger
 from featurebyte.models.credential import CredentialModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.persistent import QueryFilter
-from featurebyte.query_graph.node.schema import ColumnSpec
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.credential import CredentialCreate
 from featurebyte.schema.feature_store import (
@@ -244,7 +244,7 @@ class FeatureStoreController(
         database_name: str,
         schema_name: str,
         table_name: str,
-    ) -> List[ColumnSpec]:
+    ) -> List[ColumnSpecWithDescription]:
         """
         List columns in database table
 
@@ -261,8 +261,8 @@ class FeatureStoreController(
 
         Returns
         -------
-        List[ColumnSpec]
-            List of ColumnSpec object
+        List[ColumnInfo]
+            List of ColumnInfo object
         """
         return await self.feature_store_warehouse_service.list_columns(
             feature_store=feature_store,

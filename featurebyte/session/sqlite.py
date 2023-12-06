@@ -13,6 +13,7 @@ import pandas as pd
 from pydantic import Field
 
 from featurebyte.enum import DBVarType, SourceType
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.session.base import BaseSchemaInitializer, BaseSession
 
 
@@ -88,13 +89,16 @@ class SQLiteSession(BaseSession):
         table_name: str | None,
         database_name: str | None = None,
         schema_name: str | None = None,
-    ) -> OrderedDict[str, DBVarType]:
+    ) -> OrderedDict[str, ColumnSpecWithDescription]:
         schema = await self.execute_query(f'PRAGMA table_info("{table_name}")')
         column_name_type_map = collections.OrderedDict()
         if schema is not None:
             for _, (column_name, data_type) in schema[["name", "type"]].iterrows():
-                column_name_type_map[column_name] = self._convert_to_internal_variable_type(
-                    data_type
+                dtype = self._convert_to_internal_variable_type(data_type)
+                column_name_type_map[column_name] = ColumnSpecWithDescription(
+                    name=column_name,
+                    dtype=dtype,
+                    description=None,  # sqlite doesn't provide any meta for description
                 )
         return column_name_type_map
 

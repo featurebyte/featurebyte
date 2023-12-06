@@ -10,7 +10,7 @@ from typing import Any, List, Optional
 from featurebyte.exception import DatabaseNotFoundError, SchemaNotFoundError, TableNotFoundError
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.user_defined_function import UserDefinedFunctionModel
-from featurebyte.query_graph.node.schema import ColumnSpec
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
 
@@ -159,7 +159,7 @@ class FeatureStoreWarehouseService:
         database_name: str,
         schema_name: str,
         table_name: str,
-    ) -> List[ColumnSpec]:
+    ) -> List[ColumnSpecWithDescription]:
         """
         List columns in database table
 
@@ -181,8 +181,8 @@ class FeatureStoreWarehouseService:
 
         Returns
         -------
-        List[ColumnSpec]
-            List of ColumnSpec object
+        List[ColumnSpecWithDescription]
+            List of ColumnSpecWithDescription object
         """
         db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store
@@ -202,4 +202,4 @@ class FeatureStoreWarehouseService:
         except db_session.no_schema_error as exc:
             raise TableNotFoundError(f"Table {table_name} not found.") from exc
 
-        return [ColumnSpec(name=name, dtype=dtype) for name, dtype in table_schema.items()]
+        return list(table_schema.values())

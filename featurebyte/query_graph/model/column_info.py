@@ -11,7 +11,15 @@ from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
 from featurebyte.query_graph.node.schema import ColumnSpec
 
 
-class ColumnInfoWithoutSemanticId(ColumnSpec):
+class ColumnSpecWithDescription(ColumnSpec):
+    """
+    ColumnInfo for storing column information wth description
+    """
+
+    description: Optional[str] = Field(default=None)
+
+
+class ColumnInfoWithoutSemanticId(ColumnSpecWithDescription):
     """
     ColumnInfo for storing column information
 
@@ -23,10 +31,13 @@ class ColumnInfoWithoutSemanticId(ColumnSpec):
         Entity id associated with the column
     critical_data_info: Optional[CriticalDataInfo]
         Critical data info of the column
+    description: Optional[str]
+        Column description
     """
 
     entity_id: Optional[PydanticObjectId] = Field(default=None)
     critical_data_info: Optional[CriticalDataInfo] = Field(default=None)
+    description: Optional[str] = Field(default=None)
 
 
 class ColumnInfo(ColumnInfoWithoutSemanticId):

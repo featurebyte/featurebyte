@@ -171,8 +171,11 @@ class BaseMaterializedTableService(
 
         columns_info = [
             ColumnSpecWithEntityId(
-                name=name, dtype=var_type, entity_id=col_name_to_entity_ids.get(name, None)
+                name=name,
+                dtype=schema.dtype,
+                description=schema.description,
+                entity_id=col_name_to_entity_ids.get(name, None),
             )
-            for name, var_type in table_schema.items()
+            for name, schema in table_schema.items()
         ]
         return columns_info, num_rows

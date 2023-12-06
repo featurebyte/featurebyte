@@ -16,6 +16,7 @@ from pyhive.exc import OperationalError
 from featurebyte.common.path_util import get_package_root
 from featurebyte.enum import DBVarType, InternalName
 from featurebyte.logging import get_logger
+from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.session.base import BaseSchemaInitializer, BaseSession, MetadataSchemaInitializer
 
 logger = get_logger(__name__)
@@ -239,20 +240,27 @@ class BaseSparkSession(BaseSession, ABC):
         table_name: str | None,
         database_name: str | None = None,
         schema_name: str | None = None,
-    ) -> OrderedDict[str, DBVarType]:
+    ) -> OrderedDict[str, ColumnSpecWithDescription]:
         schema = await self.execute_query_interactive(
             f"DESCRIBE `{database_name}`.`{schema_name}`.`{table_name}`",
         )
         column_name_type_map = collections.OrderedDict()
         if schema is not None:
-            for _, (column_name, var_info) in schema[["col_name", "data_type"]].iterrows():
+            for _, (column_name, var_info, comment) in schema[
+                ["col_name", "data_type", "comment"]
+            ].iterrows():
                 # Sometimes describe include metadata after column details with and empty row as a separator.
                 # Skip the remaining entries once we run into an empty column name
                 if column_name == "" or column_name.startswith("# "):
                     break
-                column_name_type_map[column_name] = self._convert_to_internal_variable_type(
-                    var_info.upper()
+
+                dtype = self._convert_to_internal_variable_type(var_info.upper())
+                column_name_type_map[column_name] = ColumnSpecWithDescription(
+                    name=column_name,
+                    dtype=dtype,
+                    description=comment or None,
                 )
+
         return column_name_type_map
 
 
