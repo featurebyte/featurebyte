@@ -73,7 +73,7 @@ def deployed_features_list_fixture(features):
     deployment.disable()
 
 
-async def register_offline_store_feature_tables(app_container, features):
+async def register_offline_store_feature_tables(app_container, session, features):
     """
     Register offline store feature tables
     """
@@ -81,6 +81,12 @@ async def register_offline_store_feature_tables(app_container, features):
         await app_container.offline_store_feature_table_manager_service.handle_online_enabled_feature(
             await app_container.feature_service.get_document(feature.id)
         )
+        async for feature_table_model in app_container.offline_store_feature_table_service.list_documents_iterator(
+            query_filter={"feature_ids": feature.id},
+        ):
+            await app_container.feature_materialize_service.initialize_new_columns(
+                session=session, feature_table_model=feature_table_model
+            )
 
 
 @pytest.fixture(name="default_feature_job_setting")
@@ -89,6 +95,24 @@ def default_feature_job_setting_fixture(event_table):
     Fixture for default feature job setting
     """
     return event_table.default_feature_job_setting
+
+
+async def check_feature_tables_populated(session, feature_tables):
+    """
+    Check feature tables are populated correctly
+    """
+    for feature_table in feature_tables:
+        df = await session.execute_query(f'SELECT * FROM "{feature_table.name}"')
+
+        # Should not be empty
+        assert df.shape[0] > 0
+
+        # Should have all the serving names and output columns tracked in OfflineStoreFeatureTable
+        assert set(df.columns.tolist()) == set(
+            ["__feature_timestamp"]
+            + feature_table.serving_names
+            + feature_table.output_column_names
+        )
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
@@ -106,7 +130,7 @@ async def test_feature_materialize_service(
     """
     _ = deployed_feature_list
 
-    await register_offline_store_feature_tables(app_container, features)
+    await register_offline_store_feature_tables(app_container, session, features)
 
     primary_entity_to_feature_table = {}
     async for feature_table in app_container.offline_store_feature_table_service.list_documents_iterator(
@@ -116,46 +140,39 @@ async def test_feature_materialize_service(
             tuple(sorted(feature_table.primary_entity_ids))
         ] = feature_table
 
-    service = app_container.feature_materialize_service
+    assert set(primary_entity_to_feature_table.keys()) == {
+        (user_entity.id,),
+        (product_action_entity.id,),
+    }
+
+    await check_feature_tables_populated(session, primary_entity_to_feature_table.values())
 
     # Check offline store table for user entity
+    service = app_container.feature_materialize_service
     feature_table_model = primary_entity_to_feature_table[(user_entity.id,)]
-    materialized_features = await service.materialize_features(
+    await service.scheduled_materialize_features(
         session=session,
         feature_table_model=feature_table_model,
     )
-    df = await session.execute_query(
-        f"SELECT * FROM {materialized_features.materialized_table_name}"
-    )
+    df = await session.execute_query(f'SELECT * FROM "{feature_table_model.name}"')
     expected = [
+        "__feature_timestamp",
         "üser id",
         "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100",
         "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h",
         "__EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE__part0",
     ]
     assert set(df.columns.tolist()) == set(expected)
-    assert set(materialized_features.names) == set(expected[1:])
-    assert df.shape[0] == 9
+    assert df.shape[0] == 18
+    assert df["__feature_timestamp"].nunique() == 2
+    assert df["üser id"].isnull().sum() == 0
 
-    # Check offline store table for product_action entity
-    feature_table_model = primary_entity_to_feature_table[(product_action_entity.id,)]
-    materialized_features = await service.materialize_features(
+    # Materialize one more time
+    await service.scheduled_materialize_features(
         session=session,
         feature_table_model=feature_table_model,
     )
-    df = await session.execute_query(
-        f"SELECT * FROM {materialized_features.materialized_table_name}"
-    )
-    expected = [
-        "PRODUCT_ACTION",
-        "__EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE__part1",
-    ]
-    assert set(df.columns.tolist()) == set(expected)
-    assert set(materialized_features.names) == set(expected[1:])
-    assert df.shape[0] == 5
-
-    # Check offline store table for combined entity (nothing to materialise here)
-    assert (
-        tuple(sorted([product_action_entity.id, user_entity.id]))
-        not in primary_entity_to_feature_table
-    )
+    df = await session.execute_query(f'SELECT * FROM "{feature_table_model.name}"')
+    assert df.shape[0] == 27
+    assert df["__feature_timestamp"].nunique() == 3
+    assert df["üser id"].isnull().sum() == 0
