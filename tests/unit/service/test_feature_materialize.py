@@ -25,14 +25,29 @@ async def create_online_store_compute_query(online_store_compute_query_service, 
         await online_store_compute_query_service.create_document(query)
 
 
+@pytest.fixture(name="mock_get_feature_store_session")
+def mock_get_feature_store_session_fixture(mock_snowflake_session):
+    """
+    Patch get_feature_store_session to return a mock session
+    """
+    with patch(
+        "featurebyte.service.feature_materialize.SessionManagerService.get_feature_store_session",
+    ) as patched_get_feature_store_session:
+        patched_get_feature_store_session.return_value = mock_snowflake_session
+        yield patched_get_feature_store_session
+
+
 @pytest_asyncio.fixture(name="deployed_feature_list")
 async def deployed_feature_list_fixture(
-    app_container, production_ready_feature_list, mock_update_data_warehouse
+    app_container,
+    production_ready_feature_list,
+    mock_update_data_warehouse,
 ):
     """
     Fixture for FeatureMaterializeService
     """
     _ = mock_update_data_warehouse
+
     deployment_id = ObjectId()
     await app_container.deploy_service.create_deployment(
         feature_list_id=production_ready_feature_list.id,
@@ -47,9 +62,12 @@ async def deployed_feature_list_fixture(
         await create_online_store_compute_query(
             app_container.online_store_compute_query_service, feature_model
         )
-        await app_container.offline_store_feature_table_manager_service.handle_online_enabled_feature(
-            feature_model,
-        )
+        with patch(
+            "featurebyte.service.offline_store_feature_table_manager.FeatureMaterializeService.initialize_new_columns"
+        ):
+            await app_container.offline_store_feature_table_manager_service.handle_online_enabled_feature(
+                feature_model,
+            )
     deployment = await app_container.deployment_service.get_document(document_id=deployment_id)
     deployed_feature_list = await app_container.feature_list_service.get_document(
         document_id=deployment.feature_list_id
@@ -98,6 +116,7 @@ def extract_session_executed_queries(mock_snowflake_session, func="execute_query
     return "\n\n".join(queries)
 
 
+@pytest.mark.usefixtures("mock_get_feature_store_session")
 @pytest.mark.asyncio
 async def test_materialize_features(
     feature_materialize_service,
@@ -109,7 +128,6 @@ async def test_materialize_features(
     Test materialize_features
     """
     async with feature_materialize_service.materialize_features(
-        session=mock_snowflake_session,
         feature_table_model=offline_store_feature_table,
     ) as materialized_features:
         pass
@@ -152,6 +170,7 @@ async def test_materialize_features(
     ]
 
 
+@pytest.mark.usefixtures("mock_get_feature_store_session")
 @pytest.mark.asyncio
 async def test_scheduled_materialize_features(
     feature_materialize_service,
@@ -162,10 +181,7 @@ async def test_scheduled_materialize_features(
     """
     Test scheduled_materialize_features
     """
-    await feature_materialize_service.scheduled_materialize_features(
-        mock_snowflake_session,
-        offline_store_feature_table,
-    )
+    await feature_materialize_service.scheduled_materialize_features(offline_store_feature_table)
 
     executed_queries = extract_session_executed_queries(mock_snowflake_session, "execute_query")
     assert_equal_with_expected_fixture(
@@ -175,6 +191,7 @@ async def test_scheduled_materialize_features(
     )
 
 
+@pytest.mark.usefixtures("mock_get_feature_store_session")
 @pytest.mark.asyncio
 async def test_initialize_new_columns__table_does_not_exist(
     feature_materialize_service,
@@ -193,10 +210,7 @@ async def test_initialize_new_columns__table_does_not_exist(
     mock_snowflake_session.execute_query.side_effect = mock_execute_query
     mock_snowflake_session._no_schema_error = ValueError
 
-    await feature_materialize_service.initialize_new_columns(
-        mock_snowflake_session,
-        offline_store_feature_table,
-    )
+    await feature_materialize_service.initialize_new_columns(offline_store_feature_table)
     queries = extract_session_executed_queries(mock_snowflake_session, "execute_query")
     assert_equal_with_expected_fixture(
         queries,
@@ -205,6 +219,7 @@ async def test_initialize_new_columns__table_does_not_exist(
     )
 
 
+@pytest.mark.usefixtures("mock_get_feature_store_session")
 @pytest.mark.asyncio
 async def test_initialize_new_columns__table_exists(
     feature_materialize_service,
@@ -228,10 +243,7 @@ async def test_initialize_new_columns__table_exists(
     mock_snowflake_session.list_table_schema.side_effect = mock_list_table_schema
     mock_snowflake_session.execute_query.side_effect = mock_execute_query
 
-    await feature_materialize_service.initialize_new_columns(
-        mock_snowflake_session,
-        offline_store_feature_table,
-    )
+    await feature_materialize_service.initialize_new_columns(offline_store_feature_table)
     queries = extract_session_executed_queries(mock_snowflake_session, "execute_query")
     assert_equal_with_expected_fixture(
         queries,

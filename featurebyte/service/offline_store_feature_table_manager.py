@@ -18,6 +18,7 @@ from featurebyte.models.offline_store_feature_table import (
 from featurebyte.models.offline_store_ingest_query import OfflineStoreIngestQueryGraph
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature import FeatureService
+from featurebyte.service.feature_materialize import FeatureMaterializeService
 from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
 from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
 
@@ -33,11 +34,13 @@ class OfflineStoreFeatureTableManagerService:
         feature_service: FeatureService,
         online_store_compute_query_service: OnlineStoreComputeQueryService,
         entity_service: EntityService,
+        feature_materialize_service: FeatureMaterializeService,
     ):
         self.offline_store_feature_table_service = offline_store_feature_table_service
         self.feature_service = feature_service
         self.online_store_compute_query_service = online_store_compute_query_service
         self.entity_service = entity_service
+        self.feature_materialize_service = feature_materialize_service
 
     async def handle_online_enabled_feature(self, feature: FeatureModel) -> None:
         """
@@ -65,18 +68,23 @@ class OfflineStoreFeatureTableManagerService:
 
         offline_store_info = feature.offline_store_info
         assert offline_store_info is not None, "Offline store info should not be None"
-
         offline_ingest_graphs = offline_store_info.extract_offline_store_ingest_query_graphs()
+
         for offline_ingest_graph in offline_ingest_graphs:
             feature_table_dict = await self._get_compatible_existing_feature_table(
                 offline_ingest_graph=offline_ingest_graph
             )
+
             if feature_table_dict is not None:
                 # update existing table
                 feature_ids = feature_table_dict["feature_ids"][:]
                 if feature.id not in feature_ids:
                     feature_ids.append(feature.id)
-                    await self._update_offline_store_feature_table(feature_table_dict, feature_ids)
+                    feature_table_model = await self._update_offline_store_feature_table(
+                        feature_table_dict, feature_ids
+                    )
+                else:
+                    feature_table_model = None
             else:
                 # create new table
                 feature_table_model = await self._construct_offline_store_feature_table_model(
@@ -87,6 +95,9 @@ class OfflineStoreFeatureTableManagerService:
                     feature_job_setting=offline_ingest_graph.feature_job_setting,
                 )
                 await self.offline_store_feature_table_service.create_document(feature_table_model)
+
+            if feature_table_model is not None:
+                await self.feature_materialize_service.initialize_new_columns(feature_table_model)
 
     async def handle_online_disabled_feature(self, feature: FeatureModel) -> None:
         """
@@ -131,7 +142,7 @@ class OfflineStoreFeatureTableManagerService:
 
     async def _update_offline_store_feature_table(
         self, feature_table_dict: Dict[str, Any], updated_feature_ids: List[ObjectId]
-    ) -> None:
+    ) -> OfflineStoreFeatureTableModel:
         feature_table_model = await self._construct_offline_store_feature_table_model(
             feature_table_name=feature_table_dict["name"],
             feature_ids=updated_feature_ids,
@@ -140,8 +151,11 @@ class OfflineStoreFeatureTableManagerService:
             feature_job_setting=FeatureJobSetting(**feature_table_dict["feature_job_setting"]),
         )
         update_schema = OfflineStoreFeatureTableUpdate(**feature_table_model.dict())
-        await self.offline_store_feature_table_service.update_document(
-            document_id=feature_table_dict["_id"], data=update_schema
+        return cast(
+            OfflineStoreFeatureTableModel,
+            await self.offline_store_feature_table_service.update_document(
+                document_id=feature_table_dict["_id"], data=update_schema
+            ),
         )
 
     async def _construct_offline_store_feature_table_model(

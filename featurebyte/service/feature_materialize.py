@@ -26,8 +26,10 @@ from featurebyte.query_graph.sql.online_serving import (
 )
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature import FeatureService
+from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
+from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.session.base import BaseSession
 
 FEATURE_TIMESTAMP_COLUMN = "__feature_timestamp"
@@ -69,30 +71,34 @@ class FeatureMaterializeService:
         online_store_compute_query_service: OnlineStoreComputeQueryService,
         entity_service: EntityService,
         online_store_table_version_service: OnlineStoreTableVersionService,
+        feature_store_service: FeatureStoreService,
+        session_manager_service: SessionManagerService,
     ):
         self.feature_service = feature_service
         self.online_store_compute_query_service = online_store_compute_query_service
         self.entity_service = entity_service
         self.online_store_table_version_service = online_store_table_version_service
+        self.feature_store_service = feature_store_service
+        self.session_manager_service = session_manager_service
 
     @asynccontextmanager
     async def materialize_features(
         self,
-        session: BaseSession,
         feature_table_model: OfflineStoreFeatureTableModel,
         selected_columns: Optional[List[str]] = None,
+        session: Optional[BaseSession] = None,
     ) -> AsyncIterator[MaterializedFeatures]:
         """
         Materialise features for the provided offline store feature table.
 
         Parameters
         ----------
-        session: BaseSession
-            Session object
         feature_table_model: OfflineStoreFeatureTableModel
             OfflineStoreFeatureTableModel object
         selected_columns: Optional[List[str]]
             Selected columns to materialize
+        session: Optional[BaseSession]
+            Session object
 
         Yields
         ------
@@ -100,6 +106,8 @@ class FeatureMaterializeService:
             Metadata of the materialized features
         """
         # Create temporary batch request table with the universe of entities
+        if session is None:
+            session = await self._get_session(feature_table_model)
         unique_id = ObjectId()
         batch_request_table = TemporaryBatchRequestTable(
             table_details=TableDetails(
@@ -170,7 +178,6 @@ class FeatureMaterializeService:
 
     async def scheduled_materialize_features(
         self,
-        session: BaseSession,
         feature_table_model: OfflineStoreFeatureTableModel,
     ) -> None:
         """
@@ -180,12 +187,11 @@ class FeatureMaterializeService:
 
         Parameters
         ----------
-        session: BaseSession
-            Session object
         feature_table_model: OfflineStoreFeatureTableModel
             OfflineStoreFeatureTableModel object
         """
-        async with self.materialize_features(session, feature_table_model) as materialized_features:
+        session = await self._get_session(feature_table_model)
+        async with self.materialize_features(feature_table_model) as materialized_features:
             await self._insert_into_feature_table(
                 session,
                 feature_table_model,
@@ -194,7 +200,6 @@ class FeatureMaterializeService:
 
     async def initialize_new_columns(
         self,
-        session: BaseSession,
         feature_table_model: OfflineStoreFeatureTableModel,
     ) -> None:
         """
@@ -203,11 +208,10 @@ class FeatureMaterializeService:
 
         Parameters
         ----------
-        session: BaseSession
-            Session object
         feature_table_model: OfflineStoreFeatureTableModel
             OfflineStoreFeatureTableModel object
         """
+        session = await self._get_session(feature_table_model)
         has_existing_table = await self._feature_table_exists(session, feature_table_model)
 
         if has_existing_table:
@@ -240,6 +244,13 @@ class FeatureMaterializeService:
                     materialized_features=materialized_features,
                     feature_timestamp_value=last_feature_timestamp,
                 )
+
+    async def _get_session(self, feature_table_model: OfflineStoreFeatureTableModel) -> BaseSession:
+        feature_store = await self.feature_store_service.get_document(
+            document_id=feature_table_model.feature_cluster.feature_store_id
+        )
+        session = await self.session_manager_service.get_feature_store_session(feature_store)
+        return session
 
     @staticmethod
     async def _create_feature_table(
