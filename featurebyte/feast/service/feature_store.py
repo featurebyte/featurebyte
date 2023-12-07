@@ -7,6 +7,7 @@ import tempfile
 
 from bson import ObjectId
 from feast import FeatureStore, RepoConfig
+from feast.infra.online_stores.redis import RedisOnlineStoreConfig
 from feast.repo_config import RegistryConfig
 
 from featurebyte.feast.service.registry import FeastRegistryService
@@ -81,5 +82,6 @@ class FeastFeatureStoreService:
                 offline_store=feature_store_details.details.get_offline_store_config(
                     credential=database_credential
                 ),
+                online_store=RedisOnlineStoreConfig(connection_string="localhost:6379"),
             )
             return cast(FeatureStore, FeatureStore(config=repo_config))

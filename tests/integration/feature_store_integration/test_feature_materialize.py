@@ -1,12 +1,15 @@
 """
 Tests for feature materialization service
 """
+from datetime import datetime
 from unittest.mock import patch
 
 import pandas as pd
 import pytest
+import pytest_asyncio
 
 import featurebyte as fb
+from featurebyte.feast.schema.registry import FeastRegistryCreate
 
 
 @pytest.fixture(name="features", scope="module")
@@ -115,6 +118,26 @@ async def check_feature_tables_populated(session, feature_tables):
         )
 
 
+@pytest_asyncio.fixture(name="feast_registry")
+async def feast_registry_fixture(app_container, features):
+    """
+    Fixture for feast registry
+    """
+    selected_features = []
+    for feature in features:
+        if len(feature.primary_entity_ids) == 1:
+            selected_features.append(feature)
+    feature_list = fb.FeatureList(selected_features, name="simple_feature_list_for_feast")
+    feature_list.save()
+    feature_list_models = [
+        await app_container.feature_list_service.get_document(document_id=feature_list.id)
+    ]
+    feast_registry_model = await app_container.feast_registry_service.create_document(
+        FeastRegistryCreate(project_name="featurebyte", feature_lists=feature_list_models)
+    )
+    yield feast_registry_model
+
+
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_feature_materialize_service(
@@ -124,6 +147,7 @@ async def test_feature_materialize_service(
     product_action_entity,
     features,
     deployed_feature_list,
+    feast_registry,
 ):
     """
     Test FeatureMaterializeService
@@ -176,3 +200,17 @@ async def test_feature_materialize_service(
     assert df.shape[0] == 27
     assert df["__feature_timestamp"].nunique() == 3
     assert df["üser id"].isnull().sum() == 0
+
+    feast_feature_store = await app_container.feast_feature_store_service.get_feast_feature_store(
+        feast_registry.id
+    )
+    feast_feature_store.materialize(datetime(2000, 1, 1), datetime.now())
+    feature_service = feast_feature_store.get_feature_service("simple_feature_list_for_feast")
+    online_features = feast_feature_store.get_online_features(
+        features=feature_service, entity_rows=[{"üser id": 1}]
+    ).to_dict()
+    assert online_features == {
+        "üser id": ["1"],
+        "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h": [475.38],
+        "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100": [47538.0],
+    }

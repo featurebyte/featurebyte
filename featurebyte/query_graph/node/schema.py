@@ -139,7 +139,7 @@ class SnowflakeDetails(BaseDatabaseDetails):
         """
         return SnowflakeSource(
             name=name,
-            timestamp_field=timestamp_field,
+            timestamp_field="__feature_timestamp",
             database=self.database,
             warehouse=self.warehouse,
             schema=self.sf_schema,

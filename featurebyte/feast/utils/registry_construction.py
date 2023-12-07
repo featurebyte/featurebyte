@@ -124,6 +124,9 @@ class OfflineStoreTable(FeatureByteBaseModel):
             online=True,
             source=data_source,
         )
+        feature_view.entity_columns = [
+            FeastField(name=entity.join_key, dtype=DBVarType.VARCHAR.to_feast_primitive_type())
+        ]
         return feature_view  # type: ignore[no-any-return]
 
 
