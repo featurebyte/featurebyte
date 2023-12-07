@@ -39,27 +39,16 @@ class QuickGraphStructurePruningTransformer(
             )
             global_state.node_name_map[node.name] = inserted_node.name
 
-    @staticmethod
-    def _dfs_traversal(
-        graph: QueryGraphModel, node_name: str, node_names_to_keep: Set[str]
-    ) -> None:
-        if node_name in node_names_to_keep:
-            return
-        node_names_to_keep.add(node_name)
-        for input_node_name in graph.backward_edges_map[node_name]:
-            QuickGraphStructurePruningTransformer._dfs_traversal(
-                graph=graph, node_name=input_node_name, node_names_to_keep=node_names_to_keep
-            )
-
     @classmethod
     def _extract_node_names_to_keep(
         cls, graph: QueryGraphModel, target_node_names: List[str]
     ) -> Set[str]:
         node_names_to_keep: Set[str] = set()
-        for node_name in target_node_names:
-            cls._dfs_traversal(
-                graph=graph, node_name=node_name, node_names_to_keep=node_names_to_keep
-            )
+        for target_node_name in target_node_names:
+            for node in graph.iterate_nodes(
+                target_node=graph.get_node_by_name(target_node_name), node_type=None
+            ):
+                node_names_to_keep.add(node.name)
         return node_names_to_keep
 
     def transform(self, target_node_names: List[str]) -> GraphNodeNameMap:

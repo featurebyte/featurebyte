@@ -3,7 +3,7 @@ Generic graph related algorithms
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Optional, Set
 
 from featurebyte.query_graph.enum import NodeType
 
@@ -16,6 +16,7 @@ def dfs_traversal(
     query_graph: QueryGraphModel,
     node: Node,
     skip_node_type: Optional[NodeType] = None,
+    skip_node_names: Optional[Set[str]] = None,
 ) -> Iterator[Node]:
     """Perform a DFS traversal
 
@@ -27,13 +28,21 @@ def dfs_traversal(
         Current node to traverse from
     skip_node_type : Optional[NodeType]
         If specified, skip nodes of this type during traversal
+    skip_node_names : Optional[Set[str]]
+        If specified, skip nodes with these names during traversal
 
     Yields
     ------
     Node
         Query graph nodes
     """
-    yield from dfs_inner(query_graph, node, {}, skip_node_type=skip_node_type)
+    yield from dfs_inner(
+        query_graph=query_graph,
+        node=node,
+        visited={},
+        skip_node_type=skip_node_type,
+        skip_node_names=skip_node_names,
+    )
 
 
 def dfs_inner(
@@ -41,6 +50,7 @@ def dfs_inner(
     node: Node,
     visited: dict[str, bool],
     skip_node_type: Optional[NodeType] = None,
+    skip_node_names: Optional[Set[str]] = None,
 ) -> Iterator[Node]:
     """Performs the actual work of a DFS traversal
 
@@ -54,6 +64,8 @@ def dfs_inner(
         Markers for visited nodes
     skip_node_type : Optional[NodeType]
         If specified, skip nodes of this type during traversal
+    skip_node_names : Optional[Set[str]]
+        If specified, skip nodes with these names during traversal
 
     Yields
     ------
@@ -67,6 +79,8 @@ def dfs_inner(
             continue
         parent_node = query_graph.get_node_by_name(parent_name)
         if skip_node_type is not None and parent_node.type == skip_node_type:
+            continue
+        if skip_node_names and parent_node.name in skip_node_names:
             continue
         yield from dfs_inner(query_graph, parent_node, visited, skip_node_type=skip_node_type)
 
