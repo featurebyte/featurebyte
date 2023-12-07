@@ -3,7 +3,7 @@ This module contains tests for the offline ingest query graph.
 """
 from featurebyte import FeatureJobSetting, RequestColumn
 from featurebyte.query_graph.enum import NodeType
-from featurebyte.query_graph.transform.offline_ingest_extractor import AggregationNodeInfo
+from featurebyte.query_graph.transform.offline_store_ingest import AggregationNodeInfo
 from tests.util.helper import check_decomposed_graph_output_node_hash
 
 

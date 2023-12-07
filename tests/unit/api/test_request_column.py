@@ -8,7 +8,7 @@ from featurebyte.api.request_column import RequestColumn
 from featurebyte.enum import DBVarType
 from featurebyte.models import FeatureModel
 from featurebyte.query_graph.enum import GraphNodeType
-from featurebyte.query_graph.transform.offline_ingest_extractor import (
+from featurebyte.query_graph.transform.offline_store_ingest import (
     OfflineStoreIngestQueryGraphTransformer,
 )
 from tests.util.helper import check_decomposed_graph_output_node_hash, check_sdk_code_generation

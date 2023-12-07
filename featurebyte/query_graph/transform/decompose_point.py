@@ -58,7 +58,7 @@ class AggregationInfo:
             Added AggregationInfo object
         """
         output = AggregationInfo()
-        output.agg_node_types = sorted(self.agg_node_types + other.agg_node_types)
+        output.agg_node_types = sorted(set(self.agg_node_types + other.agg_node_types))
         output.primary_entity_ids = sorted(set(self.primary_entity_ids + other.primary_entity_ids))
         output.feature_job_settings = list(
             set(self.feature_job_settings + other.feature_job_settings)
@@ -86,10 +86,12 @@ class DecomposePointGlobalState:
     entity_ancestor_descendant_mapper: EntityAncestorDescendantMapper
     # (original graph) node name to aggregation node info mapping (from the original graph)
     node_name_to_aggregation_info: Dict[str, AggregationInfo]
-    # aggregation node names used to determine whether to start decomposing the graph
+    # (original graph) aggregation node names used to determine whether to start decomposing the graph
     aggregation_node_names: Set[str]
-    # node names that should be used as decompose point
+    # (original graph) node names that should be used as decompose point
     decompose_node_names: Set[str]
+    # (original graph) node names that should be used as offline store ingest query graph output node
+    ingest_graph_output_node_names: Set[str]
 
     @property
     def should_decompose(self) -> bool:
@@ -130,6 +132,7 @@ class DecomposePointGlobalState:
             node_name_to_aggregation_info={},
             aggregation_node_names=aggregation_node_names,
             decompose_node_names=set(),
+            ingest_graph_output_node_names=set(),
         )
 
     def update_aggregation_info(self, node: Node, input_node_names: List[str]) -> None:
@@ -165,7 +168,6 @@ class DecomposePointGlobalState:
         if isinstance(node, AggregationOpStructMixin):
             feature_job_setting = node.extract_feature_job_setting()
             if feature_job_setting:
-                # feature job settings introduced by aggregation-type node
                 aggregation_info.feature_job_settings = [feature_job_setting]
 
         # reduce the primary entity ids based on entity relationship
@@ -191,8 +193,8 @@ class DecomposePointGlobalState:
         -------
         bool
         """
-        aggregation_info = self.node_name_to_aggregation_info[node_name]
-        if not aggregation_info.agg_node_types:
+        agg_info = self.node_name_to_aggregation_info[node_name]
+        if not agg_info.agg_node_types:
             # do not decompose if aggregation operation has not been introduced
             return False
 
@@ -200,10 +202,10 @@ class DecomposePointGlobalState:
         for input_node_name in input_node_names:
             input_agg_info = self.node_name_to_aggregation_info[input_node_name]
             if (
-                input_agg_info.primary_entity_ids == aggregation_info.primary_entity_ids
-                and bool(input_agg_info.request_columns) == bool(aggregation_info.request_columns)
-                and input_agg_info.feature_job_settings == aggregation_info.feature_job_settings
-                and input_agg_info.has_ttl_agg_type == aggregation_info.has_ttl_agg_type
+                input_agg_info.primary_entity_ids == agg_info.primary_entity_ids
+                and bool(input_agg_info.request_columns) == bool(agg_info.request_columns)
+                and input_agg_info.feature_job_settings == agg_info.feature_job_settings
+                and input_agg_info.has_ttl_agg_type == agg_info.has_ttl_agg_type
             ):
                 # if any of the input is the same as the output, that means
                 # - no new entity ids are added
@@ -224,6 +226,40 @@ class DecomposePointGlobalState:
 
         # if none of the above conditions are met, that means we should split the query graph
         return True
+
+    def update_ingest_graph_node_output_names(self, input_node_names: List[str]) -> None:
+        """
+        Check the list of input node names to determine whether the input should be an offline store ingest
+        query graph. If so, add the input node name to the list of ingest graph output node names.
+
+        Parameters
+        ----------
+        input_node_names: List[str]
+            List of input node names
+        """
+        input_aggregations_info = [
+            self.node_name_to_aggregation_info[input_node_name]
+            for input_node_name in input_node_names
+        ]
+        common_primary_entity_ids = set.intersection(
+            *[set(info.primary_entity_ids) for info in input_aggregations_info]
+        )
+        common_feature_job_settings = set.intersection(
+            *[set(info.feature_job_settings) for info in input_aggregations_info]
+        )
+        common_agg_node_types = set.intersection(
+            *[set(info.agg_node_types) for info in input_aggregations_info]
+        )
+        for input_node_name in input_node_names:
+            input_agg_info = self.node_name_to_aggregation_info[input_node_name]
+            if input_agg_info.request_columns:
+                continue
+            if set(input_agg_info.primary_entity_ids) != common_primary_entity_ids:
+                self.ingest_graph_output_node_names.add(input_node_name)
+            if set(input_agg_info.feature_job_settings) != common_feature_job_settings:
+                self.ingest_graph_output_node_names.add(input_node_name)
+            if set(input_agg_info.agg_node_types) != common_agg_node_types:
+                self.ingest_graph_output_node_names.add(input_node_name)
 
 
 @dataclass
@@ -276,6 +312,7 @@ class DecomposePointExtractor(
         )
         if to_decompose:
             global_state.decompose_node_names.add(node.name)
+            global_state.update_ingest_graph_node_output_names(input_node_names=input_node_names)
 
     def extract(
         self,

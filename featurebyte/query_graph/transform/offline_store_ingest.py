@@ -3,12 +3,10 @@ This module contains offline store ingest query extraction related classes.
 """
 from typing import Any, Dict, List, Optional, Set
 
-from collections import defaultdict
 from dataclasses import dataclass
 
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.query_graph.enum import GraphNodeType
 from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
@@ -116,45 +114,7 @@ class OfflineStoreIngestQueryGraphGlobalState:  # pylint: disable=too-many-insta
     # variables used to construct offline store table name
     feature_name: str
     entity_id_to_serving_name: Dict[PydanticObjectId, str]
-    graph_node_counter: Dict[
-        GraphNodeType, int
-    ]  # to create non-conflicting feature component suffix
-
-    @property
-    def aggregation_node_names(self) -> Set[str]:
-        """
-        Aggregation node names
-
-        Returns
-        -------
-        Set[str]
-            Aggregation node names
-        """
-        return self.decompose_point_info.aggregation_node_names
-
-    @property
-    def node_name_to_aggregation_info(self) -> Dict[str, AggregationInfo]:
-        """
-        Node name to aggregation info mapping
-
-        Returns
-        -------
-        Dict[str, AggregationInfo]
-            Node name to aggregation info mapping
-        """
-        return self.decompose_point_info.node_name_to_aggregation_info
-
-    @property
-    def decompose_node_names(self) -> Set[str]:
-        """
-        Decompose node names
-
-        Returns
-        -------
-        Set[str]
-            Decompose node names
-        """
-        return self.decompose_point_info.decompose_node_names
+    ingest_graph_node_counter: int
 
     @classmethod
     def create(
@@ -187,7 +147,7 @@ class OfflineStoreIngestQueryGraphGlobalState:  # pylint: disable=too-many-insta
             graph=QueryGraphModel(),
             node_name_map={},
             target_node_name=target_node_name,
-            graph_node_counter=defaultdict(int),
+            ingest_graph_node_counter=0,
             entity_id_to_serving_name=entity_id_to_serving_name,
             decompose_point_info=decompose_point_info,
         )
@@ -274,29 +234,6 @@ class OfflineStoreIngestQueryGraphTransformer(
         aggregation_info: AggregationInfo,
         entity_id_to_serving_name: Dict[PydanticObjectId, str],
     ) -> Dict[str, Any]:
-        """
-        Prepare offline store ingest query graph specific node parameters
-
-        Parameters
-        ----------
-        subgraph: QueryGraphModel
-            Subgraph of the original graph (used to create the offline store ingest query)
-        subgraph_output_node: Node
-            Subgraph output node
-        node_name_to_subgraph_node_name: Dict[str, str]
-            Original graph node name to subgraph node name mapping
-        aggregation_node_names: Set[str]
-            Aggregation node names from the original graph
-        aggregation_info: AggregationInfo
-            Aggregation info of the current node
-        entity_id_to_serving_name: Dict[PydanticObjectId, str]
-            Primary entity id to serving name mapping
-
-        Returns
-        -------
-        Dict[str, Any]
-            Offline store ingest query graph node parameters
-        """
         agg_nodes_info = []
         feature_job_settings = []
         for node_name in aggregation_node_names:
@@ -346,44 +283,28 @@ class OfflineStoreIngestQueryGraphTransformer(
     def _insert_offline_store_query_graph_node(
         self, global_state: OfflineStoreIngestQueryGraphGlobalState, node_name: str
     ) -> Node:
-        """
-        Insert offline store ingest query node to the decomposed graph
-
-        Parameters
-        ----------
-        global_state: OfflineStoreIngestQueryGraphGlobalState
-            OfflineStoreIngestQueryGlobalState object
-        node_name: str
-            Node name of the original graph that is used to create the offline store ingest query node
-
-        Returns
-        -------
-        Node
-            Added node (of the decomposed graph)
-        """
         transformer = QuickGraphStructurePruningTransformer(graph=self.graph)
-        subgraph, node_name_to_transformed_node_name = transformer.transform(
-            target_node_names=[node_name]
-        )
-        transformed_node = subgraph.get_node_by_name(node_name_to_transformed_node_name[node_name])
-        aggregation_info = global_state.node_name_to_aggregation_info[node_name]
+        subgraph, node_name_map = transformer.transform(target_node_names=[node_name])
+        subgraph_output_node = subgraph.get_node_by_name(node_name_map[node_name])
+        aggregation_info = global_state.decompose_point_info.node_name_to_aggregation_info[
+            node_name
+        ]
         other_params = self._prepare_offline_store_ingest_query_specific_node_parameters(
             subgraph=subgraph,
-            subgraph_output_node=transformed_node,
-            node_name_to_subgraph_node_name=node_name_to_transformed_node_name,
-            aggregation_node_names=global_state.aggregation_node_names,
+            subgraph_output_node=subgraph_output_node,
+            node_name_to_subgraph_node_name=node_name_map,
+            aggregation_node_names=global_state.decompose_point_info.aggregation_node_names,
             aggregation_info=aggregation_info,
             entity_id_to_serving_name=global_state.entity_id_to_serving_name,
         )
-        graph_node_type = GraphNodeType.OFFLINE_STORE_INGEST_QUERY
-        part_num = global_state.graph_node_counter[graph_node_type]
+        part_num = global_state.ingest_graph_node_counter
         column_name = f"__{global_state.feature_name}__part{part_num}"
         graph_node = GraphNode(
             name="graph",
-            output_type=transformed_node.output_type,
+            output_type=subgraph_output_node.output_type,
             parameters=OfflineStoreIngestQueryGraphNodeParameters(
                 graph=subgraph,
-                output_node_name=transformed_node.name,
+                output_node_name=subgraph_output_node.name,
                 output_column_name=column_name,
                 primary_entity_ids=aggregation_info.primary_entity_ids,
                 **other_params,
@@ -392,19 +313,19 @@ class OfflineStoreIngestQueryGraphTransformer(
         inserted_node = global_state.add_operation_to_graph(
             node=graph_node,
             input_nodes=[],
-            original_node_names=list(node_name_to_transformed_node_name.keys()),
+            original_node_names=list(node_name_map.keys()),
         )
 
-        # update graph node type counter
-        global_state.graph_node_counter[graph_node_type] += 1
+        # update graph node counter
+        global_state.ingest_graph_node_counter += 1
         return inserted_node
 
     def _compute(self, global_state: OfflineStoreIngestQueryGraphGlobalState, node: Node) -> None:
+        decompose_point_info = global_state.decompose_point_info
         if (
-            node.name not in global_state.decompose_node_names
+            node.name not in decompose_point_info.decompose_node_names
             and node.name != global_state.target_node_name
         ):
-            # construct the decomposed graph only when the node is a decompose node or the target node
             return
 
         input_node_names = self.graph.get_input_node_names(node)
@@ -415,19 +336,23 @@ class OfflineStoreIngestQueryGraphTransformer(
                     global_state.get_mapped_decomposed_graph_node(node_name=input_node_name)
                 )
             else:
-                input_agg_info = global_state.node_name_to_aggregation_info[input_node_name]
-                if input_agg_info.request_columns:
-                    traversed_nodes = set()
-                    for in_node in self.graph.iterate_nodes(
+                if input_node_name in decompose_point_info.ingest_graph_output_node_names:
+                    decom_input_nodes.append(
+                        self._insert_offline_store_query_graph_node(
+                            global_state=global_state, node_name=input_node_name
+                        )
+                    )
+                else:
+                    visited_node_names = set()
+                    for visited_node in self.graph.iterate_nodes(
                         target_node=self.graph.get_node_by_name(input_node_name),
                         node_type=None,
-                        skip_node_names=set(global_state.node_name_map.keys()),
                     ):
-                        traversed_nodes.add(in_node.name)
+                        visited_node_names.add(visited_node.name)
 
                     for _node in self.graph.iterate_sorted_nodes():
                         if (
-                            _node.name in traversed_nodes
+                            _node.name in visited_node_names
                             and _node.name not in global_state.node_name_map
                         ):
                             sub_input_nodes = [
@@ -440,12 +365,6 @@ class OfflineStoreIngestQueryGraphTransformer(
 
                     decom_input_nodes.append(
                         global_state.get_mapped_decomposed_graph_node(node_name=input_node_name)
-                    )
-                else:
-                    decom_input_nodes.append(
-                        self._insert_offline_store_query_graph_node(
-                            global_state=global_state, node_name=input_node_name
-                        )
                     )
 
         # add current node to the decomposed graph

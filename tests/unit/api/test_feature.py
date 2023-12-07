@@ -52,7 +52,7 @@ from featurebyte.query_graph.node.cleaning_operation import (
     TableCleaningOperation,
 )
 from featurebyte.query_graph.node.generic import GroupByNode, ProjectNode
-from featurebyte.query_graph.transform.offline_ingest_extractor import (
+from featurebyte.query_graph.transform.offline_store_ingest import (
     OfflineStoreIngestQueryGraphTransformer,
 )
 from tests.unit.api.base_feature_or_target_test import FeatureOrTargetBaseTestSuite, TestItemType
