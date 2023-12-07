@@ -222,7 +222,7 @@ async def test_initialize_new_columns__table_exists(
         return {"some_existing_col": "some_info"}
 
     async def mock_execute_query(query):
-        if 'MAX("feature_timestamp")' in query:
+        if 'MAX("__feature_timestamp")' in query:
             return pd.DataFrame([{"RESULT": "2022-10-15 10:00:00"}])
 
     mock_snowflake_session.list_table_schema.side_effect = mock_list_table_schema

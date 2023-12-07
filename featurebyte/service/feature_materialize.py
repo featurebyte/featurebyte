@@ -33,7 +33,7 @@ from featurebyte.service.online_store_compute_query_service import OnlineStoreCo
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.session.base import BaseSession
 
-FEATURE_TIMESTAMP_COLUMN = "feature_timestamp"
+FEATURE_TIMESTAMP_COLUMN = "__feature_timestamp"
 
 
 @dataclass

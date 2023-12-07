@@ -109,7 +109,9 @@ async def check_feature_tables_populated(session, feature_tables):
 
         # Should have all the serving names and output columns tracked in OfflineStoreFeatureTable
         assert set(df.columns.tolist()) == set(
-            ["feature_timestamp"] + feature_table.serving_names + feature_table.output_column_names
+            ["__feature_timestamp"]
+            + feature_table.serving_names
+            + feature_table.output_column_names
         )
 
 
@@ -154,7 +156,7 @@ async def test_feature_materialize_service(
     )
     df = await session.execute_query(f'SELECT * FROM "{feature_table_model.name}"')
     expected = [
-        "feature_timestamp",
+        "__feature_timestamp",
         "üser id",
         "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100",
         "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h",
@@ -162,7 +164,7 @@ async def test_feature_materialize_service(
     ]
     assert set(df.columns.tolist()) == set(expected)
     assert df.shape[0] == 18
-    assert df["feature_timestamp"].nunique() == 2
+    assert df["__feature_timestamp"].nunique() == 2
     assert df["üser id"].isnull().sum() == 0
 
     # Materialize one more time
@@ -172,5 +174,5 @@ async def test_feature_materialize_service(
     )
     df = await session.execute_query(f'SELECT * FROM "{feature_table_model.name}"')
     assert df.shape[0] == 27
-    assert df["feature_timestamp"].nunique() == 3
+    assert df["__feature_timestamp"].nunique() == 3
     assert df["üser id"].isnull().sum() == 0
