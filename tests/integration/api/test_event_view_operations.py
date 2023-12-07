@@ -857,7 +857,7 @@ def test_datetime_operations(event_view, source_type):
     # The correct date properties should be extracted using events' local time. This will add
     # timezone offset to the event timestamp (UTC) to obtain the local time.
     event_timestamp_utc = pd.to_datetime(pandas_series, utc=True).dt.tz_localize(None)
-    offset_info = dt_df["TZ_OFFSET"].str.transform("(?P<sign>[+-])(?P<hour>\d\d):(?P<minute>\d\d)")
+    offset_info = dt_df["TZ_OFFSET"].str.extract("(?P<sign>[+-])(?P<hour>\d\d):(?P<minute>\d\d)")
     offset_info["sign"] = offset_info["sign"].replace({"-": -1, "+": 1}).astype(int)
     offset_info["total_minutes"] = offset_info["sign"] * offset_info["hour"].astype(
         int
