@@ -3,6 +3,8 @@ Tests for OfflineStoreFeatureTableManagerService
 """
 from typing import Dict
 
+from unittest.mock import patch
+
 import pytest
 import pytest_asyncio
 from bson import ObjectId
@@ -78,17 +80,40 @@ async def get_all_feature_tables(document_service) -> Dict[str, OfflineStoreFeat
     return feature_tables
 
 
+@pytest.fixture(name="mock_get_feature_store_session")
+def mock_get_feature_store_session_fixture(mock_snowflake_session):
+    """
+    Patch get_feature_store_session to return a mock session
+    """
+    with patch(
+        "featurebyte.service.offline_store_feature_table_manager.SessionManagerService.get_feature_store_session",
+    ) as patched_get_feature_store_session:
+        patched_get_feature_store_session.return_value = mock_snowflake_session
+        yield patched_get_feature_store_session
+
+
+@pytest.fixture(name="mock_initialize_new_columns")
+def mock_initialize_new_columns_fixture():
+    with patch(
+        "featurebyte.service.offline_store_feature_table_manager.FeatureMaterializeService.initialize_new_columns"
+    ) as patched:
+        yield patched
+
+
 @pytest.mark.asyncio
 async def test_feature_table_one_feature_deployed(
     document_service,
     manager_service,
     deployed_float_feature,
+    mock_initialize_new_columns,
+    mock_get_feature_store_session,
     update_fixtures,
 ):
     """
     Test feature table creation when one feature is deployed
     """
     await manager_service.handle_online_enabled_feature(deployed_float_feature)
+    assert mock_initialize_new_columns.call_count == 1
 
     feature_tables = await get_all_feature_tables(document_service)
     assert len(feature_tables) == 1
@@ -136,6 +161,8 @@ async def test_feature_table_two_features_deployed(
     manager_service,
     deployed_float_feature,
     deployed_float_feature_post_processed,
+    mock_initialize_new_columns,
+    mock_get_feature_store_session,
     update_fixtures,
 ):
     """
@@ -190,6 +217,8 @@ async def test_feature_table_undeploy(
     manager_service,
     deployed_float_feature,
     deployed_float_feature_post_processed,
+    mock_initialize_new_columns,
+    mock_get_feature_store_session,
     update_fixtures,
 ):
     """
@@ -251,6 +280,8 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
     manager_service,
     deployed_float_feature,
     deployed_float_feature_different_job_setting,
+    mock_initialize_new_columns,
+    mock_get_feature_store_session,
 ):
     """
     Test feature table creation and update when two features are deployed

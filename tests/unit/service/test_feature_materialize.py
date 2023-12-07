@@ -25,14 +25,31 @@ async def create_online_store_compute_query(online_store_compute_query_service, 
         await online_store_compute_query_service.create_document(query)
 
 
+@pytest.fixture(name="mock_get_feature_store_session")
+def mock_get_feature_store_session_fixture(mock_snowflake_session):
+    """
+    Patch get_feature_store_session to return a mock session
+    """
+    with patch(
+        "featurebyte.service.offline_store_feature_table_manager.SessionManagerService.get_feature_store_session",
+    ) as patched_get_feature_store_session:
+        patched_get_feature_store_session.return_value = mock_snowflake_session
+        yield patched_get_feature_store_session
+
+
 @pytest_asyncio.fixture(name="deployed_feature_list")
 async def deployed_feature_list_fixture(
-    app_container, production_ready_feature_list, mock_update_data_warehouse
+    app_container,
+    production_ready_feature_list,
+    mock_update_data_warehouse,
+    mock_get_feature_store_session,
 ):
     """
     Fixture for FeatureMaterializeService
     """
     _ = mock_update_data_warehouse
+    _ = mock_get_feature_store_session
+
     deployment_id = ObjectId()
     await app_container.deploy_service.create_deployment(
         feature_list_id=production_ready_feature_list.id,
@@ -47,9 +64,12 @@ async def deployed_feature_list_fixture(
         await create_online_store_compute_query(
             app_container.online_store_compute_query_service, feature_model
         )
-        await app_container.offline_store_feature_table_manager_service.handle_online_enabled_feature(
-            feature_model,
-        )
+        with patch(
+            "featurebyte.service.offline_store_feature_table_manager.FeatureMaterializeService.initialize_new_columns"
+        ):
+            await app_container.offline_store_feature_table_manager_service.handle_online_enabled_feature(
+                feature_model,
+            )
     deployment = await app_container.deployment_service.get_document(document_id=deployment_id)
     deployed_feature_list = await app_container.feature_list_service.get_document(
         document_id=deployment.feature_list_id

@@ -73,7 +73,7 @@ def deployed_features_list_fixture(features):
     deployment.disable()
 
 
-async def register_offline_store_feature_tables(app_container, session, features):
+async def register_offline_store_feature_tables(app_container, features):
     """
     Register offline store feature tables
     """
@@ -81,12 +81,6 @@ async def register_offline_store_feature_tables(app_container, session, features
         await app_container.offline_store_feature_table_manager_service.handle_online_enabled_feature(
             await app_container.feature_service.get_document(feature.id)
         )
-        async for feature_table_model in app_container.offline_store_feature_table_service.list_documents_iterator(
-            query_filter={"feature_ids": feature.id},
-        ):
-            await app_container.feature_materialize_service.initialize_new_columns(
-                session=session, feature_table_model=feature_table_model
-            )
 
 
 @pytest.fixture(name="default_feature_job_setting")
@@ -130,7 +124,7 @@ async def test_feature_materialize_service(
     """
     _ = deployed_feature_list
 
-    await register_offline_store_feature_tables(app_container, session, features)
+    await register_offline_store_feature_tables(app_container, features)
 
     primary_entity_to_feature_table = {}
     async for feature_table in app_container.offline_store_feature_table_service.list_documents_iterator(
