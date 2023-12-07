@@ -212,9 +212,14 @@ class DecomposePointGlobalState:
             input_has_request_column_flags.add(input_agg_info.has_request_column)
             input_has_ingest_graph_node_flags.add(input_agg_info.has_ingest_graph_node)
 
-        if len(input_has_request_column_flags) > 1 or len(input_has_ingest_graph_node_flags) > 1:
-            # if the input nodes have mixed request column flags or mixed ingest graph node flags,
-            # that means we should split the query graph.
+        if len(input_has_request_column_flags) > 1:
+            # if the input nodes have mixed request column flags that means we should split the query graph
+            # as offline store ingest query graph should not have request column
+            return True
+
+        if len(input_has_ingest_graph_node_flags) > 1:
+            # if the input nodes have mixed ingest graph node flags that means we should split the query graph
+            # as offline store ingest query graph should not have another offline store ingest graph node
             return True
 
         # check whether the input nodes can be merged into one offline store ingest query graph

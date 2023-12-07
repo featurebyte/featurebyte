@@ -1,10 +1,38 @@
 """
 This module contains tests for the offline ingest query graph.
 """
+import pytest
+
 from featurebyte import FeatureJobSetting, RequestColumn
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.transform.offline_store_ingest import AggregationNodeInfo
 from tests.util.helper import check_decomposed_graph_output_node_hash
+
+
+@pytest.fixture(name="latest_event_timestamp_feature")
+def latest_event_timestamp_feature_fixture(
+    snowflake_event_view_with_entity, feature_group_feature_job_setting
+):
+    """
+    Fixture for a timestamp feature
+    """
+    feature = snowflake_event_view_with_entity.groupby("cust_id").aggregate_over(
+        value_column="event_timestamp",
+        method="latest",
+        windows=["90d"],
+        feature_names=["latest_event_timestamp_90d"],
+        feature_job_setting=feature_group_feature_job_setting,
+    )["latest_event_timestamp_90d"]
+    return feature
+
+
+@pytest.fixture(name="entity_id_to_serving_name")
+def entity_id_to_serving_name_fixture(cust_id_entity, transaction_entity):
+    """Fixture for entity id to serving name"""
+    return {
+        cust_id_entity.id: cust_id_entity.serving_names[0],
+        transaction_entity.id: transaction_entity.serving_names[0],
+    }
 
 
 def check_ingest_query_graph(ingest_query_graph):
@@ -18,7 +46,9 @@ def check_ingest_query_graph(ingest_query_graph):
         assert input_node_names[0] == aggregation_node_info.input_node_name
 
 
-def test_feature_contains_ttl_and_non_ttl_components(float_feature, non_time_based_feature):
+def test_feature__ttl_and_non_ttl_components(
+    float_feature, non_time_based_feature, entity_id_to_serving_name
+):
     """Test that a feature contains both ttl and non-ttl components."""
     ttl_component = 2 * (float_feature + 100)
     non_ttl_component = 3 - (non_time_based_feature + 100)
@@ -28,7 +58,7 @@ def test_feature_contains_ttl_and_non_ttl_components(float_feature, non_time_bas
 
     # check offline ingest query graph
     feature_model = feature.cached_model
-    feature_model.initialize_offline_store_info(entity_id_to_serving_name={})
+    feature_model.initialize_offline_store_info(entity_id_to_serving_name=entity_id_to_serving_name)
     offline_store_info = feature_model.offline_store_info
     assert offline_store_info is not None, "Offline store info should not be None"
     ingest_query_graphs = offline_store_info.extract_offline_store_ingest_query_graphs()
@@ -67,10 +97,13 @@ def test_feature_contains_ttl_and_non_ttl_components(float_feature, non_time_bas
     check_decomposed_graph_output_node_hash(feature_model=feature.cached_model)
 
 
-def test_feature_request_column_and_non_ttl_components(
-    non_time_based_feature, latest_event_timestamp_feature
+def test_feature__request_column_ttl_and_non_ttl_components(
+    non_time_based_feature,
+    latest_event_timestamp_feature,
+    feature_group_feature_job_setting,
+    entity_id_to_serving_name,
 ):
-    """Test that a feature contains both request column and non-ttl components."""
+    """Test that a feature contains request column, ttl and non-ttl components."""
     request_and_ttl_component = (
         # request component part
         RequestColumn.point_in_time()
@@ -85,7 +118,7 @@ def test_feature_request_column_and_non_ttl_components(
 
     # check offline ingest query graph (note that the request column part should be removed)
     feature_model = feature.cached_model
-    feature_model.initialize_offline_store_info(entity_id_to_serving_name={})
+    feature_model.initialize_offline_store_info(entity_id_to_serving_name=entity_id_to_serving_name)
     offline_store_info = feature_model.offline_store_info
     assert offline_store_info is not None, "Offline store info should not be None"
     ingest_query_graphs = offline_store_info.extract_offline_store_ingest_query_graphs()
@@ -97,10 +130,7 @@ def test_feature_request_column_and_non_ttl_components(
         ttl_component_graph = ingest_query_graphs[1]
         non_ttl_component_graph = ingest_query_graphs[0]
 
-    expected_feature_job_setting = FeatureJobSetting(
-        blind_spot="3600s", frequency="3600s", time_modulo_frequency="1800s"
-    )
-    assert ttl_component_graph.feature_job_setting == expected_feature_job_setting
+    assert ttl_component_graph.feature_job_setting == feature_group_feature_job_setting
     assert ttl_component_graph.node_name == "project_1"
     assert ttl_component_graph.has_ttl is True
     assert ttl_component_graph.aggregation_nodes_info == [
@@ -124,7 +154,7 @@ def test_feature_request_column_and_non_ttl_components(
     check_decomposed_graph_output_node_hash(feature_model=feature.cached_model)
 
 
-def test_feature_multiple_non_ttl_components(
+def test_feature__multiple_non_ttl_components(
     snowflake_scd_table, snowflake_dimension_table, cust_id_entity
 ):
     """Test that a feature contains multiple non-ttl components."""
@@ -163,3 +193,57 @@ def test_feature_multiple_non_ttl_components(
         ),
     ]
     check_ingest_query_graph(non_ttl_component_graph)
+
+    # check consistency of decomposed graph
+    check_decomposed_graph_output_node_hash(feature_model=feature.cached_model)
+
+
+def test_feature__ttl_item_aggregate_request_column(
+    float_feature, non_time_based_feature, latest_event_timestamp_feature, entity_id_to_serving_name
+):
+    """Test that a feature contains ttl item aggregate and request column components."""
+    request_feature = (RequestColumn.point_in_time() - latest_event_timestamp_feature).dt.day
+    composite_feature = float_feature + non_time_based_feature + request_feature
+    composite_feature.name = "composite_feature"
+    composite_feature.save()
+
+    # check offline ingest query graph
+    feature_model = composite_feature.cached_model
+    check_decomposed_graph_output_node_hash(feature_model=feature_model)
+
+
+def test_feature__input_has_mixed_ingest_graph_node_flags(
+    cust_id_entity,
+    snowflake_event_table_with_entity,
+    feature_group_feature_job_setting,
+):
+    """Test that a feature with mixed ingest graph node flags input nodes."""
+    snowflake_event_table_with_entity.update_default_feature_job_setting(
+        feature_job_setting=feature_group_feature_job_setting,
+    )
+    event_view = snowflake_event_table_with_entity.get_view()
+    grouped_event_view = event_view.groupby("cust_id")
+    feature_raw = event_view.as_features(column_names=["col_float"], feature_names=["col_float"])[
+        "col_float"
+    ]
+    feature_avg = grouped_event_view.aggregate_over(
+        value_column="col_float",
+        method="avg",
+        windows=["90d"],
+        feature_job_setting=feature_group_feature_job_setting,
+        feature_names=["avg_col_float_90d"],
+    )["avg_col_float_90d"]
+    feature_std = grouped_event_view.aggregate_over(
+        value_column="col_float",
+        method="std",
+        windows=["90d"],
+        feature_job_setting=feature_group_feature_job_setting,
+        feature_names=["std_col_float_90d"],
+    )["std_col_float_90d"]
+    feature_zscore = (feature_raw - feature_avg) / feature_std
+    feature_zscore.name = "feature_zscore"
+    feature_zscore.save()
+
+    # check offline ingest query graph
+    feature_model = feature_zscore.cached_model
+    check_decomposed_graph_output_node_hash(feature_model=feature_model)
