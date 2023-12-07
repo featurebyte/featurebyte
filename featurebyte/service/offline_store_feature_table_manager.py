@@ -19,10 +19,8 @@ from featurebyte.models.offline_store_ingest_query import OfflineStoreIngestQuer
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_materialize import FeatureMaterializeService
-from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
 from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
-from featurebyte.service.session_manager import SessionManagerService
 
 
 class OfflineStoreFeatureTableManagerService:
@@ -37,16 +35,12 @@ class OfflineStoreFeatureTableManagerService:
         online_store_compute_query_service: OnlineStoreComputeQueryService,
         entity_service: EntityService,
         feature_materialize_service: FeatureMaterializeService,
-        feature_store_service: FeatureStoreService,
-        session_manager_service: SessionManagerService,
     ):
         self.offline_store_feature_table_service = offline_store_feature_table_service
         self.feature_service = feature_service
         self.online_store_compute_query_service = online_store_compute_query_service
         self.entity_service = entity_service
         self.feature_materialize_service = feature_materialize_service
-        self.feature_store_service = feature_store_service
-        self.session_manager_service = session_manager_service
 
     async def handle_online_enabled_feature(self, feature: FeatureModel) -> None:
         """
@@ -75,7 +69,6 @@ class OfflineStoreFeatureTableManagerService:
         offline_store_info = feature.offline_store_info
         assert offline_store_info is not None, "Offline store info should not be None"
         offline_ingest_graphs = offline_store_info.extract_offline_store_ingest_query_graphs()
-        session = None
 
         for offline_ingest_graph in offline_ingest_graphs:
             feature_table_dict = await self._get_compatible_existing_feature_table(
@@ -104,16 +97,7 @@ class OfflineStoreFeatureTableManagerService:
                 await self.offline_store_feature_table_service.create_document(feature_table_model)
 
             if feature_table_model is not None:
-                if session is None:
-                    feature_store = await self.feature_store_service.get_document(
-                        document_id=feature_table_model.feature_cluster.feature_store_id
-                    )
-                    session = await self.session_manager_service.get_feature_store_session(
-                        feature_store
-                    )
-                await self.feature_materialize_service.initialize_new_columns(
-                    session, feature_table_model
-                )
+                await self.feature_materialize_service.initialize_new_columns(feature_table_model)
 
     async def handle_online_disabled_feature(self, feature: FeatureModel) -> None:
         """
@@ -167,8 +151,11 @@ class OfflineStoreFeatureTableManagerService:
             feature_job_setting=FeatureJobSetting(**feature_table_dict["feature_job_setting"]),
         )
         update_schema = OfflineStoreFeatureTableUpdate(**feature_table_model.dict())
-        return await self.offline_store_feature_table_service.update_document(
-            document_id=feature_table_dict["_id"], data=update_schema
+        return cast(
+            OfflineStoreFeatureTableModel,
+            await self.offline_store_feature_table_service.update_document(
+                document_id=feature_table_dict["_id"], data=update_schema
+            ),
         )
 
     async def _construct_offline_store_feature_table_model(

@@ -144,10 +144,7 @@ async def test_feature_materialize_service(
     # Check offline store table for user entity
     service = app_container.feature_materialize_service
     feature_table_model = primary_entity_to_feature_table[(user_entity.id,)]
-    await service.scheduled_materialize_features(
-        session=session,
-        feature_table_model=feature_table_model,
-    )
+    await service.scheduled_materialize_features(feature_table_model=feature_table_model)
     df = await session.execute_query(f'SELECT * FROM "{feature_table_model.name}"')
     expected = [
         "__feature_timestamp",
@@ -162,10 +159,7 @@ async def test_feature_materialize_service(
     assert df["üser id"].isnull().sum() == 0
 
     # Materialize one more time
-    await service.scheduled_materialize_features(
-        session=session,
-        feature_table_model=feature_table_model,
-    )
+    await service.scheduled_materialize_features(feature_table_model=feature_table_model)
     df = await session.execute_query(f'SELECT * FROM "{feature_table_model.name}"')
     assert df.shape[0] == 27
     assert df["__feature_timestamp"].nunique() == 3
