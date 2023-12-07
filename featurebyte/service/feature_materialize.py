@@ -100,6 +100,7 @@ class FeatureMaterializeService:
         Yields
         ------
         MaterializedFeatures
+            Metadata of the materialized features
         """
         # Create temporary batch request table with the universe of entities
         unique_id = ObjectId()
