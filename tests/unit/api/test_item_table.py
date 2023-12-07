@@ -85,6 +85,7 @@ def item_table_dict_fixture(snowflake_database_table_item_table):
         "_id": ObjectId("636a240ec2c2c3f335193e7f"),
         "item_id_column": "item_id_col",
         "name": "sf_item_table",
+        "description": "Item table",
         "record_creation_timestamp_column": "created_at",
         "tabular_source": {
             "feature_store_id": snowflake_database_table_item_table.tabular_source.feature_store_id,
@@ -125,7 +126,6 @@ def test_create_item_table(snowflake_database_table_item_table, item_table_dict,
     item_table_dict["_id"] = item_table.id
     item_table_dict["created_at"] = item_table.created_at
     item_table_dict["updated_at"] = item_table.updated_at
-    item_table_dict["description"] = None
     item_table_dict["block_modification_by"] = []
     for column_idx in [0, 1, 4]:
         item_table_dict["columns_info"][column_idx]["semantic_id"] = item_table.columns_info[

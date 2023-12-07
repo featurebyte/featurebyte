@@ -17,7 +17,7 @@ from featurebyte.common.join_utils import (
 )
 from featurebyte.enum import TableDataType
 from featurebyte.exception import RepeatedColumnNamesError
-from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.graph_node.base import GraphNode
@@ -622,3 +622,12 @@ class SpecificTableData(BaseTableData):  # pylint: disable=abstract-method
 
     def __new__(cls, **kwargs: Any) -> Any:
         return parse_obj_as(SpecificTableDataT, kwargs)  # type: ignore[misc]
+
+
+class TableSpec(FeatureByteBaseModel):
+    """
+    Table specification with description
+    """
+
+    name: str
+    description: Optional[str] = Field(default=None)

@@ -13,6 +13,8 @@ from featurebyte.schema.scd_table import SCDTableList, SCDTableServiceUpdate
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
+from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.service.scd_table import SCDTableService
 from featurebyte.service.semantic import SemanticService
 from featurebyte.service.specialized_dtype import SpecializedDtypeDetectionService
@@ -38,7 +40,7 @@ class SCDTableController(BaseTableDocumentController[SCDTableModel, SCDTableServ
         "end_timestamp_column": SemanticType.SCD_END_TIMESTAMP,
     }
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         scd_table_service: TableDocumentService,
         table_facade_service: TableFacadeService,
@@ -49,6 +51,8 @@ class SCDTableController(BaseTableDocumentController[SCDTableModel, SCDTableServ
         target_service: TargetService,
         feature_list_service: FeatureListService,
         specialized_dtype_detection_service: SpecializedDtypeDetectionService,
+        feature_store_service: FeatureStoreService,
+        feature_store_warehouse_service: FeatureStoreWarehouseService,
     ):
         super().__init__(
             service=scd_table_service,
@@ -59,6 +63,8 @@ class SCDTableController(BaseTableDocumentController[SCDTableModel, SCDTableServ
             target_service=target_service,
             feature_list_service=feature_list_service,
             specialized_dtype_detection_service=specialized_dtype_detection_service,
+            feature_store_service=feature_store_service,
+            feature_store_warehouse_service=feature_store_warehouse_service,
         )
         self.table_info_service = table_info_service
 

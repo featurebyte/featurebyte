@@ -31,6 +31,7 @@ from featurebyte.exception import QueryExecutionTimeOut
 from featurebyte.logging import get_logger
 from featurebyte.models.user_defined_function import UserDefinedFunctionModel
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
+from featurebyte.query_graph.model.table import TableSpec
 from featurebyte.query_graph.sql.common import (
     get_fully_qualified_table_name,
     quoted_identifier,
@@ -163,7 +164,7 @@ class BaseSession(BaseModel):
     @abstractmethod
     async def list_tables(
         self, database_name: str | None = None, schema_name: str | None = None
-    ) -> list[str]:
+    ) -> list[TableSpec]:
         """
         Execute SQL query to retrieve table names
 
@@ -176,7 +177,7 @@ class BaseSession(BaseModel):
 
         Returns
         -------
-        list[str]
+        list[TableSpec]
         """
 
     @abstractmethod
@@ -719,11 +720,10 @@ class BaseSchemaInitializer(ABC):
         tables: list[dict[str, Any]]
             List of tables to register
         """
-        existing = self._normalize_casings(
-            await self.session.list_tables(
-                database_name=self.session.database_name, schema_name=self.session.schema_name
-            )
+        table_specs = await self.session.list_tables(
+            database_name=self.session.database_name, schema_name=self.session.schema_name
         )
+        existing = self._normalize_casings([table.name for table in table_specs])
         items = [item for item in tables if item["identifier"] not in existing]
         await self._register_sql_objects(items)
 
@@ -862,9 +862,10 @@ class BaseSchemaInitializer(ABC):
         -------
         list[str]
         """
-        table_names = await self.session.list_tables(
+        tables = await self.session.list_tables(
             self.session.database_name, self.session.schema_name
         )
+        table_names = [table.name for table in tables]
         return self.remove_materialized_tables(table_names)
 
     @property

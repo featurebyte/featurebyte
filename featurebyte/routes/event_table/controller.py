@@ -18,6 +18,8 @@ from featurebyte.service.event_table import EventTableService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_job_setting_analysis import FeatureJobSettingAnalysisService
 from featurebyte.service.feature_list import FeatureListService
+from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.service.item_table import ItemTableService
 from featurebyte.service.semantic import SemanticService
 from featurebyte.service.specialized_dtype import SpecializedDtypeDetectionService
@@ -56,6 +58,8 @@ class EventTableController(
         item_table_service: ItemTableService,
         feature_job_setting_analysis_service: FeatureJobSettingAnalysisService,
         specialized_dtype_detection_service: SpecializedDtypeDetectionService,
+        feature_store_service: FeatureStoreService,
+        feature_store_warehouse_service: FeatureStoreWarehouseService,
     ):
         super().__init__(
             service=event_table_service,
@@ -66,6 +70,8 @@ class EventTableController(
             target_service=target_service,
             feature_list_service=feature_list_service,
             specialized_dtype_detection_service=specialized_dtype_detection_service,
+            feature_store_service=feature_store_service,
+            feature_store_warehouse_service=feature_store_warehouse_service,
         )
         self.table_info_service = table_info_service
         self.item_table_service = item_table_service

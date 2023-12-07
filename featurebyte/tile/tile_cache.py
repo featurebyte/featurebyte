@@ -327,9 +327,9 @@ class TileCache:
             database_name=self.session.database_name, schema_name=self.session.schema_name
         ):
             # always convert to upper case in case some backends change the casing
-            table = table.upper()
-            if table.endswith(InternalName.TILE_ENTITY_TRACKER_SUFFIX.value):
-                all_trackers.add(table)
+            table_name = table.name.upper()
+            if table_name.endswith(InternalName.TILE_ENTITY_TRACKER_SUFFIX.value):
+                all_trackers.add(table_name)
 
         out = []
         for agg_id in agg_ids:

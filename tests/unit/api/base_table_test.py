@@ -183,7 +183,7 @@ class BaseTableTestSuite:
 
     def test_update_description(self, table_under_test):
         """Test table update description"""
-        assert table_under_test.description is None
+        assert table_under_test.description != "new description"
         table_under_test.update_description("new description")
         assert table_under_test.description == "new description"
         assert table_under_test.info()["description"] == "new description"

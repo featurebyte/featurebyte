@@ -89,6 +89,7 @@ def scd_table_dict_fixture(snowflake_database_table_scd_table):
     return {
         "type": TableDataType.SCD_TABLE,
         "name": "sf_scd_table",
+        "description": "SCD table",
         "tabular_source": {
             "feature_store_id": snowflake_database_table_scd_table.feature_store.id,
             "table_details": {
@@ -229,7 +230,6 @@ def test_create_scd_table(snowflake_database_table_scd_table, scd_table_dict, ca
     scd_table_dict["current_flag_column"] = scd_table_dict.pop("current_flag")  # DEV-556
     scd_table_dict["created_at"] = scd_table.created_at
     scd_table_dict["updated_at"] = scd_table.updated_at
-    scd_table_dict["description"] = None
     scd_table_dict["block_modification_by"] = []
     for column_idx in [0, 2, 3, 6, 7, 9]:
         scd_table_dict["columns_info"][column_idx]["semantic_id"] = scd_table.columns_info[

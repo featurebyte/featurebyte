@@ -145,7 +145,7 @@ async def test_observation_table_cleanup(scd_table, session, source_type):
             database_name=session.database_name, schema_name=session.schema_name
         )
         observation_table_names = [
-            table for table in tables if table.startswith("OBSERVATION_TABLE")
+            table.name for table in tables if table.name.startswith("OBSERVATION_TABLE")
         ]
         return len(observation_table_names)
 

@@ -15,6 +15,7 @@ from snowflake.connector.errors import ProgrammingError
 
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
+from featurebyte.query_graph.model.table import TableSpec
 from featurebyte.session.base import BaseSchemaInitializer, BaseSession, MetadataSchemaInitializer
 
 CURRENT_WORKING_SCHEMA_VERSION_TEST = 1
@@ -54,7 +55,7 @@ def base_session_test_fixture():
 
         async def list_tables(
             self, database_name: str | None = None, schema_name: str | None = None
-        ) -> list[str]:
+        ) -> list[TableSpec]:
             return []
 
         async def list_table_schema(

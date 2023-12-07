@@ -14,6 +14,8 @@ from featurebyte.service.dimension_table import DimensionTableService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
+from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.service.semantic import SemanticService
 from featurebyte.service.specialized_dtype import SpecializedDtypeDetectionService
 from featurebyte.service.table_columns_info import TableDocumentService
@@ -36,7 +38,7 @@ class DimensionTableController(
         "dimension_id_column": SemanticType.DIMENSION_ID,
     }
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         dimension_table_service: TableDocumentService,
         table_facade_service: TableFacadeService,
@@ -47,6 +49,8 @@ class DimensionTableController(
         feature_list_service: FeatureListService,
         table_info_service: TableInfoService,
         specialized_dtype_detection_service: SpecializedDtypeDetectionService,
+        feature_store_service: FeatureStoreService,
+        feature_store_warehouse_service: FeatureStoreWarehouseService,
     ):
         super().__init__(
             service=dimension_table_service,
@@ -57,6 +61,8 @@ class DimensionTableController(
             target_service=target_service,
             feature_list_service=feature_list_service,
             specialized_dtype_detection_service=specialized_dtype_detection_service,
+            feature_store_service=feature_store_service,
+            feature_store_warehouse_service=feature_store_warehouse_service,
         )
         self.table_info_service = table_info_service
 
