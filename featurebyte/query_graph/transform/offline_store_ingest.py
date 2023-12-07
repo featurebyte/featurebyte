@@ -352,7 +352,10 @@ class OfflineStoreIngestQueryGraphTransformer(
                         visited_node_names.add(visited_node.name)
 
                     for _node in self.graph.iterate_sorted_nodes():
-                        if _node.name in visited_node_names:
+                        if (
+                            _node.name in visited_node_names
+                            and _node.name not in global_state.node_name_map
+                        ):
                             sub_input_nodes = [
                                 global_state.get_mapped_decomposed_graph_node(in_node_name)
                                 for in_node_name in self.graph.get_input_node_names(node=_node)
