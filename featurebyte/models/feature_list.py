@@ -238,6 +238,26 @@ class FeatureCluster(FeatureByteBaseModel):
         """
         return [self.graph.get_node_by_name(name) for name in self.node_names]
 
+    def get_nodes_for_feature_names(self, feature_names: List[str]) -> List[Node]:
+        """
+        Get feature nodes for a list of feature names
+
+        Parameters
+        ----------
+        feature_names: List[str]
+            List of feature names
+
+        Returns
+        -------
+        List[Node]
+        """
+        selected_nodes = []
+        for node in self.nodes:
+            feature_name = self.graph.get_node_output_column_name(node.name)
+            if feature_name in feature_names:
+                selected_nodes.append(node)
+        return selected_nodes
+
 
 class FeatureListNamespaceModel(FeatureByteCatalogBaseDocumentModel):
     """

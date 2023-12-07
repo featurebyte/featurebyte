@@ -1,7 +1,7 @@
 """
 This model contains query graph internal model structures
 """
-from typing import Any, DefaultDict, Dict, Iterator, List, Optional, Set, Tuple
+from typing import Any, DefaultDict, Dict, Iterator, List, Optional, Set, Tuple, cast
 
 from collections import defaultdict
 
@@ -12,6 +12,7 @@ from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.algorithm import dfs_traversal, topological_sort
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.node import Node, construct_node
+from featurebyte.query_graph.node.generic import AliasNode, ProjectNode
 from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.nested import BaseGraphNode
 from featurebyte.query_graph.util import hash_node
@@ -362,6 +363,28 @@ class QueryGraphModel(FeatureByteBaseModel):
             )
             return list(required_columns)
         return []
+
+    def get_node_output_column_name(self, node_name: str) -> Optional[str]:
+        """
+        Get the output column name of the given node. The node should correspond to a single column
+        (i.e. project or alias node), otherwise this returns None.
+
+        Parameters
+        ----------
+        node_name: str
+            Node name
+
+        Returns
+        -------
+        Optional[str]
+        """
+        node = self.get_node_by_name(node_name)
+        output_column_name = None
+        if isinstance(node, AliasNode):
+            output_column_name = cast(str, node.parameters.name)
+        elif isinstance(node, ProjectNode):
+            output_column_name = cast(str, node.parameters.columns[0])
+        return output_column_name
 
     def iterate_nodes(
         self,

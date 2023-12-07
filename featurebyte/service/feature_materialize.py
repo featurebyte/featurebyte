@@ -3,7 +3,7 @@ FeatureMaterializeService class
 """
 from __future__ import annotations
 
-from typing import AsyncIterator, List, Optional, cast
+from typing import AsyncIterator, List, Optional
 
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
@@ -11,10 +11,7 @@ from dataclasses import dataclass
 from bson import ObjectId
 from sqlglot import expressions
 
-from featurebyte.models.feature_list import FeatureCluster
 from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
-from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.generic import AliasNode, ProjectNode
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
@@ -132,8 +129,8 @@ class FeatureMaterializeService:
             if selected_columns is None:
                 nodes = feature_table_model.feature_cluster.nodes
             else:
-                nodes = self._get_nodes_for_selected_columns(
-                    feature_table_model.feature_cluster, selected_columns
+                nodes = feature_table_model.feature_cluster.get_nodes_for_feature_names(
+                    selected_columns
                 )
             await get_online_features(
                 session=session,
@@ -471,18 +468,3 @@ class FeatureMaterializeService:
             )
             for column_name, column_data_type in columns_and_types.items()
         ]
-
-    @staticmethod
-    def _get_nodes_for_selected_columns(
-        feature_cluster: FeatureCluster, selected_columns: List[str]
-    ) -> List[Node]:
-        selected_nodes = []
-        for node in feature_cluster.nodes:
-            if isinstance(node, AliasNode):
-                feature_name = cast(str, node.parameters.name)
-            else:
-                assert isinstance(node, ProjectNode)
-                feature_name = cast(str, node.parameters.columns[0])
-            if feature_name in selected_columns:
-                selected_nodes.append(node)
-        return selected_nodes
