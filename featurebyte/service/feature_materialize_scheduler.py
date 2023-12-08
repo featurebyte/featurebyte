@@ -59,7 +59,7 @@ class FeatureMaterializeSchedulerService:
             )
             try:
                 if offline_store_feature_table.feature_job_setting is None:
-                    raise RuntimeError("Feature job setting is not set")
+                    return
                 await self.task_manager.schedule_interval_task(
                     name=self._get_job_id(offline_store_feature_table.id),
                     payload=payload,
