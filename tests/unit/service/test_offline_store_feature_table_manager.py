@@ -21,9 +21,19 @@ async def deploy_feature(app_container, feature) -> FeatureModel:
     """
     feature_list = fb.FeatureList([feature], name=f"{feature.name}_list")
     feature_list.save()
-    deployment = feature_list.deploy(make_production_ready=True, ignore_guardrails=True)
+    deployment = feature_list.deploy(
+        deployment_name=feature_list.name, make_production_ready=True, ignore_guardrails=True
+    )
     deployment.enable()
     return await app_container.feature_service.get_document(feature.id)
+
+
+async def undeploy_feature(feature):
+    """
+    Helper function to undeploy a single feature
+    """
+    deployment = fb.Deployment.get(f"{feature.name}_list")
+    deployment.disable()
 
 
 @pytest_asyncio.fixture
@@ -103,8 +113,22 @@ async def has_scheduled_task(periodic_task_service, feature_table):
     return False
 
 
+async def check_feast_registry(app_container, expected_feature_views, expected_feature_services):
+    """
+    Helper function to check feast registry
+    """
+    feast_registry = await app_container.feast_registry_service.get_feast_registry_for_catalog()
+    assert feast_registry is not None
+    feature_store = await app_container.feast_feature_store_service.get_feast_feature_store(
+        feast_registry.id
+    )
+    assert {fv.name for fv in feature_store.list_feature_views()} == expected_feature_views
+    assert {fs.name for fs in feature_store.list_feature_services()} == expected_feature_services
+
+
 @pytest.mark.asyncio
 async def test_feature_table_one_feature_deployed(
+    app_container,
     document_service,
     manager_service,
     periodic_task_service,
@@ -160,9 +184,16 @@ async def test_feature_table_one_feature_deployed(
 
     assert await has_scheduled_task(periodic_task_service, feature_table)
 
+    await check_feast_registry(
+        app_container,
+        expected_feature_views={"fb_entity_cust_id_fjs_1800_300_600_ttl"},
+        expected_feature_services={"sum_1d_list"},
+    )
+
 
 @pytest.mark.asyncio
 async def test_feature_table_two_features_deployed(
+    app_container,
     document_service,
     manager_service,
     periodic_task_service,
@@ -220,9 +251,16 @@ async def test_feature_table_two_features_deployed(
 
     assert await has_scheduled_task(periodic_task_service, feature_table)
 
+    await check_feast_registry(
+        app_container,
+        expected_feature_views={"fb_entity_cust_id_fjs_1800_300_600_ttl"},
+        expected_feature_services={"sum_1d_list", "sum_1d_plus_123_list"},
+    )
+
 
 @pytest.mark.asyncio
 async def test_feature_table_undeploy(
+    app_container,
     document_service,
     manager_service,
     periodic_task_service,
@@ -237,6 +275,8 @@ async def test_feature_table_undeploy(
     # Simulate online enabling two features then online disable one
     await manager_service.handle_online_enabled_feature(deployed_float_feature)
     await manager_service.handle_online_enabled_feature(deployed_float_feature_post_processed)
+
+    await undeploy_feature(deployed_float_feature)
     await manager_service.handle_online_disabled_feature(deployed_float_feature)
 
     assert mock_initialize_new_columns.call_count == 2
@@ -281,14 +321,22 @@ async def test_feature_table_undeploy(
     )
 
     # Check online disabling the last feature deletes the feature table
+    await undeploy_feature(deployed_float_feature_post_processed)
     await manager_service.handle_online_disabled_feature(deployed_float_feature_post_processed)
     feature_tables = await get_all_feature_tables(document_service)
     assert len(feature_tables) == 0
     assert not await has_scheduled_task(periodic_task_service, feature_table)
 
+    await check_feast_registry(
+        app_container,
+        expected_feature_views=set(),
+        expected_feature_services=set(),
+    )
+
 
 @pytest.mark.asyncio
 async def test_feature_table_two_features_different_feature_job_settings_deployed(
+    app_container,
     document_service,
     manager_service,
     periodic_task_service,
@@ -374,3 +422,12 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
         "user_id": ObjectId("63f9506dd478b94127123456"),
     }
     assert await has_scheduled_task(periodic_task_service, feature_table)
+
+    await check_feast_registry(
+        app_container,
+        expected_feature_views={
+            "fb_entity_cust_id_fjs_10800_5_900_ttl",
+            "fb_entity_cust_id_fjs_1800_300_600_ttl",
+        },
+        expected_feature_services={"sum_24h_every_3h_list", "sum_1d_list"},
+    )

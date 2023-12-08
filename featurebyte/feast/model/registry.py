@@ -5,7 +5,6 @@ Feast registry model
 from feast.protos.feast.core.Registry_pb2 import Registry as RegistryProto
 
 from featurebyte.models.base import (
-    FeatureByteBaseDocumentModel,
     FeatureByteCatalogBaseDocumentModel,
     PydanticObjectId,
     UniqueConstraintResolutionSignature,
@@ -32,7 +31,7 @@ class FeastRegistryModel(FeatureByteCatalogBaseDocumentModel):
         registry_proto.ParseFromString(self.registry)
         return registry_proto
 
-    class Settings(FeatureByteBaseDocumentModel.Settings):
+    class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
         MongoDB settings
         """
