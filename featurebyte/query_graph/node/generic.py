@@ -25,7 +25,6 @@ from featurebyte.query_graph.node.metadata.operation import (
     DerivedDataColumn,
     NodeOutputCategory,
     OperationStructure,
-    OperationStructureBranchState,
     OperationStructureInfo,
     PostAggregationColumn,
     ViewDataColumn,
@@ -94,10 +93,9 @@ class ProjectNode(BaseNode):
     def _derive_node_operation_info(
         self,
         inputs: List[OperationStructure],
-        branch_state: OperationStructureBranchState,
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
-        _ = branch_state, global_state
+        _ = global_state
         input_operation_info = inputs[0]
         output_category = input_operation_info.output_category
         names = set(self.parameters.columns)
@@ -204,10 +202,9 @@ class FilterNode(BaseNode):
     def _derive_node_operation_info(
         self,
         inputs: List[OperationStructure],
-        branch_state: OperationStructureBranchState,
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
-        _ = branch_state, global_state
+        _ = global_state
         input_operation_info, mask_operation_info = inputs
         output_category = input_operation_info.output_category
         node_kwargs: Dict[str, Any] = {}
@@ -374,7 +371,6 @@ class AssignNode(AssignColumnMixin, BasePrunableNode):
     def _derive_node_operation_info(
         self,
         inputs: List[OperationStructure],
-        branch_state: OperationStructureBranchState,
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
         # First input is a View
@@ -1255,7 +1251,6 @@ class JoinNode(BasePrunableNode):
     def _derive_node_operation_info(
         self,
         inputs: List[OperationStructure],
-        branch_state: OperationStructureBranchState,
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
         params = self.parameters
@@ -1498,7 +1493,6 @@ class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
     def _derive_node_operation_info(
         self,
         inputs: List[OperationStructure],
-        branch_state: OperationStructureBranchState,
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
         # First input is a View
@@ -1593,10 +1587,9 @@ class TrackChangesNode(BaseNode):
     def _derive_node_operation_info(
         self,
         inputs: List[OperationStructure],
-        branch_state: OperationStructureBranchState,
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
-        _ = branch_state, global_state
+        _ = global_state
         input_operation_info = inputs[0]
         effective_timestamp_source_column = next(
             column
@@ -1806,10 +1799,9 @@ class AliasNode(BaseNode):
     def _derive_node_operation_info(
         self,
         inputs: List[OperationStructure],
-        branch_state: OperationStructureBranchState,
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
-        _ = branch_state, global_state
+        _ = global_state
         input_operation_info = inputs[0]
         output_category = input_operation_info.output_category
 

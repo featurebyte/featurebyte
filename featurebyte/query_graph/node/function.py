@@ -18,7 +18,6 @@ from featurebyte.query_graph.node.metadata.operation import (
     DerivedDataColumn,
     NodeOutputCategory,
     OperationStructure,
-    OperationStructureBranchState,
     OperationStructureInfo,
     PostAggregationColumn,
 )
@@ -165,7 +164,6 @@ class GenericFunctionNode(BaseSeriesOutputNode):
     def _derive_node_operation_info(
         self,
         inputs: List[OperationStructure],
-        branch_state: OperationStructureBranchState,
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
         input_category = inputs[0].output_category
