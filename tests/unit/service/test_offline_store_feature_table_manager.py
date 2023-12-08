@@ -91,10 +91,23 @@ def mock_initialize_new_columns_fixture():
         yield patched
 
 
+async def has_scheduled_task(periodic_task_service, feature_table):
+    """
+    Helper function to check if there is a scheduled task
+    """
+    async for periodic_task in periodic_task_service.list_documents_iterator(
+        query_filter={"kwargs.command": "SCHEDULED_FEATURE_MATERIALIZE"}
+    ):
+        if periodic_task.kwargs["offline_store_feature_table_id"] == str(feature_table.id):
+            return True
+    return False
+
+
 @pytest.mark.asyncio
 async def test_feature_table_one_feature_deployed(
     document_service,
     manager_service,
+    periodic_task_service,
     deployed_float_feature,
     mock_initialize_new_columns,
     update_fixtures,
@@ -145,11 +158,14 @@ async def test_feature_table_one_feature_deployed(
         update_fixtures,
     )
 
+    assert await has_scheduled_task(periodic_task_service, feature_table)
+
 
 @pytest.mark.asyncio
 async def test_feature_table_two_features_deployed(
     document_service,
     manager_service,
+    periodic_task_service,
     deployed_float_feature,
     deployed_float_feature_post_processed,
     mock_initialize_new_columns,
@@ -202,11 +218,14 @@ async def test_feature_table_two_features_deployed(
         update_fixtures,
     )
 
+    assert await has_scheduled_task(periodic_task_service, feature_table)
+
 
 @pytest.mark.asyncio
 async def test_feature_table_undeploy(
     document_service,
     manager_service,
+    periodic_task_service,
     deployed_float_feature,
     deployed_float_feature_post_processed,
     mock_initialize_new_columns,
@@ -265,12 +284,14 @@ async def test_feature_table_undeploy(
     await manager_service.handle_online_disabled_feature(deployed_float_feature_post_processed)
     feature_tables = await get_all_feature_tables(document_service)
     assert len(feature_tables) == 0
+    assert not await has_scheduled_task(periodic_task_service, feature_table)
 
 
 @pytest.mark.asyncio
 async def test_feature_table_two_features_different_feature_job_settings_deployed(
     document_service,
     manager_service,
+    periodic_task_service,
     deployed_float_feature,
     deployed_float_feature_different_job_setting,
     mock_initialize_new_columns,
@@ -319,6 +340,7 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
         "serving_names": ["cust_id"],
         "user_id": ObjectId("63f9506dd478b94127123456"),
     }
+    assert await has_scheduled_task(periodic_task_service, feature_table)
 
     # Check item entity feature table
     feature_table = feature_tables["fb_entity_cust_id_fjs_10800_5_900_ttl"]
@@ -351,3 +373,4 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
         "serving_names": ["cust_id"],
         "user_id": ObjectId("63f9506dd478b94127123456"),
     }
+    assert await has_scheduled_task(periodic_task_service, feature_table)

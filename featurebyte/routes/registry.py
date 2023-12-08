@@ -84,6 +84,7 @@ from featurebyte.service.feature_list_namespace import FeatureListNamespaceServi
 from featurebyte.service.feature_list_status import FeatureListStatusService
 from featurebyte.service.feature_manager import FeatureManagerService
 from featurebyte.service.feature_materialize import FeatureMaterializeService
+from featurebyte.service.feature_materialize_scheduler import FeatureMaterializeSchedulerService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_preview import FeaturePreviewService
 from featurebyte.service.feature_readiness import FeatureReadinessService
@@ -169,6 +170,7 @@ from featurebyte.worker.task.materialized_table_delete import MaterializedTableD
 from featurebyte.worker.task.observation_table import ObservationTableTask
 from featurebyte.worker.task.observation_table_upload import ObservationTableUploadTask
 from featurebyte.worker.task.online_store_cleanup import OnlineStoreCleanupTask
+from featurebyte.worker.task.scheduled_feature_materialize import ScheduledFeatureMaterializeTask
 from featurebyte.worker.task.static_source_table import StaticSourceTableTask
 from featurebyte.worker.task.target_table import TargetTableTask
 from featurebyte.worker.task.test_task import TestTask
@@ -229,6 +231,7 @@ app_container_config.register_class(FeatureListNamespaceController)
 app_container_config.register_class(FeatureListNamespaceService)
 app_container_config.register_class(FeatureListStatusService)
 app_container_config.register_class(FeatureManagerService)
+app_container_config.register_class(FeatureMaterializeSchedulerService)
 app_container_config.register_class(FeatureMaterializeService)
 app_container_config.register_class(FeatureOrTargetHelper)
 app_container_config.register_class(FeatureOrTargetMetadataExtractor)
@@ -275,6 +278,7 @@ app_container_config.register_class(
     dependency_override={"service": "scd_table_service"},
 )
 app_container_config.register_class(SCDTableService)
+app_container_config.register_class(ScheduledFeatureMaterializeTask)
 app_container_config.register_class(SchemaMetadataService)
 app_container_config.register_class(SemanticController)
 app_container_config.register_class(SemanticService)

@@ -1,5 +1,5 @@
 """
-Test task
+Online store cleanup task
 """
 from __future__ import annotations
 
