@@ -32,7 +32,7 @@ async def undeploy_feature(feature):
     """
     Helper function to undeploy a single feature
     """
-    deployment = fb.Deployment.get(f"{feature.name}_list")
+    deployment: fb.Deployment = fb.Deployment.get(f"{feature.name}_list")
     deployment.disable()
 
 
