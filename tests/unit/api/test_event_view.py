@@ -689,6 +689,33 @@ def test_add_feature__wrong_type(snowflake_event_view):
     )
 
 
+def test_combine_simple_aggregate_with_its_window_aggregate(
+    snowflake_event_table, non_time_based_feature
+):
+    """
+    Test combining simple aggregate with its window aggregates after added to EventView
+    """
+    event_view = snowflake_event_table.get_view()
+    event_view = event_view.add_feature("new_col", non_time_based_feature, "col_int")
+    new_col_avg_7d = event_view.groupby("cust_id").aggregate_over(
+        value_column="new_col",
+        method="avg",
+        windows=["7d"],
+        feature_names=["new_col_avg_7d"],
+    )["new_col_avg_7d"]
+    new_col_std_7d = event_view.groupby("cust_id").aggregate_over(
+        value_column="new_col",
+        method="std",
+        windows=["7d"],
+        feature_names=["new_col_std_7d"],
+    )["new_col_std_7d"]
+    feature_temp = non_time_based_feature - new_col_avg_7d
+    assert feature_temp.output_category == "feature"
+    feature = feature_temp / new_col_std_7d
+    feature.name = "final_feature"
+    feature.save()
+
+
 def test_pruned_feature_only_keeps_minimum_required_cleaning_operations(
     snowflake_event_table_with_entity, feature_group_feature_job_setting
 ):
