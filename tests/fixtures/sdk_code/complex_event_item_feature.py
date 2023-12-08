@@ -23,14 +23,16 @@ event_view = event_table.get_view(
 joined_view = item_view.join_event_table_attributes(
     columns=["col_float"], event_suffix=None
 )
-col = joined_view.groupby(by_keys=["event_id_col"], category=None).aggregate(
+feat = joined_view.groupby(by_keys=["event_id_col"], category=None).aggregate(
     value_column="col_float",
     method="sum",
     feature_name="non_time_sum_feature",
     skip_fill_na=True,
 )
 joined_view_1 = event_view.add_feature(
-    new_column_name="non_time_sum_feature", feature=col, entity_column="cust_id"
+    new_column_name="non_time_sum_feature",
+    feature=feat,
+    entity_column="cust_id",
 )
 grouped = joined_view_1.groupby(
     by_keys=["cust_id"], category="col_int"
@@ -44,10 +46,10 @@ grouped = joined_view_1.groupby(
     ),
     skip_fill_na=True,
 )
-feat = grouped["count_a_24h_per_col_int"]
-feat_1 = feat.cd.unique_count(include_missing=True)
-feat_2 = feat.cd.unique_count(include_missing=False)
-feat_3 = (feat.cd.entropy()) * (feat.cd.most_frequent()).str.len()
+feat_1 = grouped["count_a_24h_per_col_int"]
+feat_2 = feat_1.cd.unique_count(include_missing=True)
+feat_3 = feat_1.cd.unique_count(include_missing=False)
+feat_4 = (feat_1.cd.entropy()) * (feat_1.cd.most_frequent()).str.len()
 grouped_1 = joined_view_1.groupby(
     by_keys=["cust_id"], category=None
 ).aggregate_over(
@@ -60,5 +62,5 @@ grouped_1 = joined_view_1.groupby(
     ),
     skip_fill_na=True,
 )
-feat_4 = grouped_1["sum_a_24h"]
-output = (feat_4 + feat_3) - (feat_2 / feat_1)
+feat_5 = grouped_1["sum_a_24h"]
+output = (feat_5 + feat_4) - (feat_3 / feat_2)

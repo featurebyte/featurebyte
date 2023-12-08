@@ -176,14 +176,7 @@ class AggregationOpStructMixin:
             columns = input_operation_info.columns[:1]
 
         output_category = NodeOutputCategory.FEATURE
-        if (
-            self.type == NodeType.ITEM_GROUPBY
-            and NodeType.JOIN_FEATURE in branch_state.visited_node_types
-        ):
-            # if the output of the item_groupby will be used to join with other table,
-            # this mean the output of this item_groupby is view but not feature.
-            output_category = NodeOutputCategory.VIEW
-        elif self.type in {NodeType.FORWARD_AGGREGATE, NodeType.LOOKUP_TARGET}:
+        if self.type in {NodeType.FORWARD_AGGREGATE, NodeType.LOOKUP_TARGET}:
             output_category = NodeOutputCategory.TARGET
 
         # prepare output variable type

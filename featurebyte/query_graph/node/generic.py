@@ -1489,7 +1489,7 @@ class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
 
     @staticmethod
     def _validate_feature(feature_op_structure: OperationStructure) -> None:
-        columns = feature_op_structure.columns
+        columns = feature_op_structure.aggregations
         assert len(columns) == 1
         # For now, the supported feature should have an item_groupby node in its lineage
         assert any(node_name.startswith("item_groupby") for node_name in columns[0].node_names)
@@ -1509,12 +1509,22 @@ class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
         feature_operation_info = inputs[1]
         self._validate_feature(feature_operation_info)
 
+        # Convert the feature to view operation structure
+        derived_column = DerivedDataColumn.create(
+            name=next(iter(feature_operation_info.output_column_names), None),
+            columns=feature_operation_info.columns,
+            transform=self.transform_info,
+            node_name=self.name,
+            other_node_names=feature_operation_info.all_node_names,
+            dtype=feature_operation_info.series_output_dtype,
+        )
+
         # If this View has a column that has the same name as the feature to be added, it will be
         # omitted. This is because the added feature will replace that existing column.
         return self._construct_operation_structure(
             input_operation_info=input_operation_info,
             new_column_name=self.parameters.name,
-            columns=feature_operation_info.columns,
+            columns=[derived_column],
             node_name=self.name,
             new_column_var_type=feature_operation_info.series_output_dtype,
         )
