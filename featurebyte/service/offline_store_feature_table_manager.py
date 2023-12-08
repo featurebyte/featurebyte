@@ -102,7 +102,7 @@ class OfflineStoreFeatureTableManagerService:
             if feature_table_model is not None:
                 await self.feature_materialize_service.initialize_new_columns(feature_table_model)
                 await self.feature_materialize_scheduler_service.start_job_if_not_exist(
-                    feature_table_model.id
+                    feature_table_model
                 )
 
     async def handle_online_disabled_feature(self, feature: FeatureModel) -> None:

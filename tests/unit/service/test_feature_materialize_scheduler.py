@@ -62,7 +62,7 @@ async def test_start_and_stop_job(service, feature_job_setting, offline_store_fe
     Test start_job with different feature job settings
     """
     # Test starting job
-    await service.start_job_if_not_exist(offline_store_feature_table.id)
+    await service.start_job_if_not_exist(offline_store_feature_table)
     periodic_task = await service.get_periodic_task(offline_store_feature_table.id)
     assert periodic_task is not None
     assert periodic_task.interval == Interval(

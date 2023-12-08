@@ -7,12 +7,12 @@ from bson import ObjectId
 
 from featurebyte.logging import get_logger
 from featurebyte.models.base import User
+from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
 from featurebyte.models.periodic_task import Interval, PeriodicTask
 from featurebyte.persistent import DuplicateDocumentError
 from featurebyte.schema.worker.task.scheduled_feature_materialize import (
     ScheduledFeatureMaterializeTaskPayload,
 )
-from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
 from featurebyte.service.task_manager import TaskManager
 
 logger = get_logger(__name__)
@@ -29,32 +29,30 @@ class FeatureMaterializeSchedulerService:
         user: User,
         catalog_id: ObjectId,
         task_manager: TaskManager,
-        offline_store_feature_table_service: OfflineStoreFeatureTableService,
     ):
         self.user = user
         self.catalog_id = catalog_id
         self.task_manager = task_manager
-        self.offlinle_store_feature_table_service = offline_store_feature_table_service
 
-    async def start_job_if_not_exist(self, offline_store_feature_table_id: ObjectId) -> None:
+    async def start_job_if_not_exist(
+        self,
+        offline_store_feature_table: OfflineStoreFeatureTableModel,
+    ) -> None:
         """
         Schedule the feature materialize job if not already scheduled
 
         Parameters
         ----------
-        offline_store_feature_table_id: ObjectId
-            Offline store feature table id
+        offline_store_feature_table: OfflineStoreFeatureTableModel
+            Offline store feature table
         """
-        offline_store_feature_table = await self.offlinle_store_feature_table_service.get_document(
-            offline_store_feature_table_id
-        )
         payload = ScheduledFeatureMaterializeTaskPayload(
             user_id=self.user.id,
             catalog_id=self.catalog_id,
             offline_store_feature_table_name=offline_store_feature_table.name,
-            offline_store_feature_table_id=offline_store_feature_table_id,
+            offline_store_feature_table_id=offline_store_feature_table.id,
         )
-        if await self.get_periodic_task(offline_store_feature_table_id) is None:
+        if await self.get_periodic_task(offline_store_feature_table.id) is None:
             logger.info(
                 "Scheduling feature materialize job",
                 extra={"offline_store_feature_table": offline_store_feature_table.name},
@@ -63,7 +61,7 @@ class FeatureMaterializeSchedulerService:
                 if offline_store_feature_table.feature_job_setting is None:
                     raise RuntimeError("Feature job setting is not set")
                 await self.task_manager.schedule_interval_task(
-                    name=self._get_job_id(offline_store_feature_table_id),
+                    name=self._get_job_id(offline_store_feature_table.id),
                     payload=payload,
                     interval=Interval(
                         every=offline_store_feature_table.feature_job_setting.frequency_seconds,
@@ -74,7 +72,7 @@ class FeatureMaterializeSchedulerService:
             except DuplicateDocumentError:
                 logger.warning(
                     "Duplicate feature materialize job",
-                    extra={"task_name": self._get_job_id(offline_store_feature_table_id)},
+                    extra={"task_name": self._get_job_id(offline_store_feature_table.id)},
                 )
         else:
             logger.info(
