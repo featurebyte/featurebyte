@@ -241,6 +241,7 @@ class OfflineStoreFeatureTableManagerService:
         feature_lists = []
         async for feature_list_dict in self.feature_list_service.iterate_online_enabled_feature_lists_as_dict():
             feature_lists.append(FeatureListModel(**feature_list_dict))
+
         feast_registry = await self.feast_registry_service.get_feast_registry_for_catalog()
         if feast_registry is None:
             await self.feast_registry_service.create_document(
