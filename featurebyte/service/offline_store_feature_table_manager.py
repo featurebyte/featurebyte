@@ -10,9 +10,9 @@ from bson import ObjectId
 from featurebyte import FeatureJobSetting
 from featurebyte.feast.schema.registry import FeastRegistryCreate, FeastRegistryUpdate
 from featurebyte.feast.service.registry import FeastRegistryService
-from featurebyte.models import FeatureListModel
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature import FeatureModel
+from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.offline_store_feature_table import (
     OfflineStoreFeatureTableModel,
     OfflineStoreFeatureTableUpdate,
@@ -239,10 +239,7 @@ class OfflineStoreFeatureTableManagerService:
 
     async def _create_or_update_feast_registry(self) -> None:
         feature_lists = []
-        # TODO: move this to FeatureList service
-        async for feature_list_dict in self.feature_list_service.list_documents_as_dict_iterator(
-            query_filter={"online_enabled_feature_ids.0": {"$exists": True}}
-        ):
+        async for feature_list_dict in self.feature_list_service.iterate_online_enabled_feature_lists_as_dict():
             feature_lists.append(FeatureListModel(**feature_list_dict))
         feast_registry = await self.feast_registry_service.get_feast_registry_for_catalog()
         if feast_registry is None:
