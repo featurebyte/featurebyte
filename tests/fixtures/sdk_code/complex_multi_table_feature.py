@@ -65,14 +65,14 @@ col = joined_view["col_float_event_table"]
 col_1 = joined_view["item_amount"]
 view = joined_view.copy()
 view["percent"] = col_1 / col
-col_2 = view.groupby(by_keys=["event_id_col"], category=None).aggregate(
+feat = view.groupby(by_keys=["event_id_col"], category=None).aggregate(
     value_column="percent",
     method="max",
     feature_name="max_percent",
     skip_fill_na=True,
 )
 joined_view_1 = event_view.add_feature(
-    new_column_name="max_percent", feature=col_2, entity_column="cust_id"
+    new_column_name="max_percent", feature=feat, entity_column="cust_id"
 )
 grouped = joined_view_1.groupby(
     by_keys=["cust_id"], category=None
@@ -86,5 +86,5 @@ grouped = joined_view_1.groupby(
     ),
     skip_fill_na=True,
 )
-feat = grouped["max_percent_over_30d"]
-output = feat
+feat_1 = grouped["max_percent_over_30d"]
+output = feat_1

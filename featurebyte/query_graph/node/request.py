@@ -13,7 +13,6 @@ from featurebyte.query_graph.node.metadata.operation import (
     FeatureDataColumnType,
     NodeOutputCategory,
     OperationStructure,
-    OperationStructureBranchState,
     OperationStructureInfo,
 )
 from featurebyte.query_graph.node.metadata.sdk_code import (
@@ -51,7 +50,6 @@ class RequestColumnNode(BaseNode):
     def _derive_node_operation_info(
         self,
         inputs: List[OperationStructure],
-        branch_state: OperationStructureBranchState,
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
         return OperationStructure(

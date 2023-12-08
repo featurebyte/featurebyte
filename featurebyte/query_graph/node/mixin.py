@@ -1,7 +1,7 @@
 """
 This module contains mixins used in node classes
 """
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, List, Optional, Set
 
 from abc import abstractmethod
 
@@ -15,10 +15,8 @@ from featurebyte.query_graph.node.agg_func import construct_agg_func
 from featurebyte.query_graph.node.metadata.column import InColumnStr
 from featurebyte.query_graph.node.metadata.operation import (
     AggregationColumn,
-    DerivedDataColumn,
     NodeOutputCategory,
     OperationStructure,
-    OperationStructureBranchState,
     OperationStructureInfo,
     ViewDataColumn,
 )
@@ -128,7 +126,6 @@ class AggregationOpStructMixin:
     def _derive_node_operation_info(
         self,
         inputs: List[OperationStructure],
-        branch_state: OperationStructureBranchState,
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
         """
@@ -138,8 +135,6 @@ class AggregationOpStructMixin:
         ----------
         inputs: List[OperationStructure]
             List of input nodes' operation info
-        branch_state: OperationStructureBranchState
-            State captures the graph branching state info
         global_state: OperationStructureInfo
             State captures the global graph info (used during operation structure derivation)
 
@@ -176,14 +171,7 @@ class AggregationOpStructMixin:
             columns = input_operation_info.columns[:1]
 
         output_category = NodeOutputCategory.FEATURE
-        if (
-            self.type == NodeType.ITEM_GROUPBY
-            and NodeType.JOIN_FEATURE in branch_state.visited_node_types
-        ):
-            # if the output of the item_groupby will be used to join with other table,
-            # this mean the output of this item_groupby is view but not feature.
-            output_category = NodeOutputCategory.VIEW
-        elif self.type in {NodeType.FORWARD_AGGREGATE, NodeType.LOOKUP_TARGET}:
+        if self.type in {NodeType.FORWARD_AGGREGATE, NodeType.LOOKUP_TARGET}:
             output_category = NodeOutputCategory.TARGET
 
         # prepare output variable type
@@ -197,34 +185,18 @@ class AggregationOpStructMixin:
             # to be overriden at the _get_aggregations
             output_var_type = DBVarType.UNKNOWN
 
-        node_kwargs: Dict[str, Any] = {}
-        if output_category == NodeOutputCategory.VIEW:
-            node_kwargs["columns"] = [
-                DerivedDataColumn.create(
-                    name=self.parameters.name,
-                    columns=columns,
-                    transform=self.transform_info,
-                    node_name=self.name,
-                    other_node_names=other_node_names,
-                    dtype=output_var_type,
-                )
-            ]
-        else:
-            node_kwargs["columns"] = columns
-            node_kwargs["aggregations"] = self._get_aggregations(
+        return OperationStructure(
+            columns=columns,
+            aggregations=self._get_aggregations(  # type: ignore
                 columns,
                 node_name=self.name,
                 other_node_names=other_node_names,
                 output_var_type=output_var_type,
-            )
-
-        is_time_based = self._is_time_based()
-        return OperationStructure(
-            **node_kwargs,
+            ),
             output_type=self.output_type,
             output_category=output_category,
             row_index_lineage=(self.name,),
-            is_time_based=is_time_based,
+            is_time_based=self._is_time_based(),
         )
 
     def extract_feature_job_setting(  # pylint: disable=useless-return

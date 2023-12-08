@@ -14,14 +14,14 @@ item_view = item_table.get_view(
     event_column_cleaning_operations=[],
     event_join_column_names=["event_timestamp", "cust_id"],
 )
-col = item_view.groupby(by_keys=["event_id_col"], category=None).aggregate(
+feat = item_view.groupby(by_keys=["event_id_col"], category=None).aggregate(
     value_column="item_amount",
     method="sum",
     feature_name="sum_item_amount",
     skip_fill_na=True,
 )
-col_1 = col.copy()
-col_1[col.isnull()] = 0
+feat_1 = feat.copy()
+feat_1[feat.isnull()] = 0
 event_table = EventTable.get_by_id(ObjectId("{table_id}"))
 event_view = event_table.get_view(
     view_mode="manual",
@@ -29,7 +29,7 @@ event_view = event_table.get_view(
     column_cleaning_operations=[],
 )
 joined_view = event_view.add_feature(
-    new_column_name="sum_item_amt", feature=col_1, entity_column="cust_id"
+    new_column_name="sum_item_amt", feature=feat_1, entity_column="cust_id"
 )
 grouped = joined_view.groupby(
     by_keys=["cust_id"], category=None
@@ -43,10 +43,10 @@ grouped = joined_view.groupby(
     ),
     skip_fill_na=True,
 )
-feat = grouped["sum_item_amt_over_30d"]
-col_2 = joined_view["sum_item_amt"]
+feat_2 = grouped["sum_item_amt_over_30d"]
+col = joined_view["sum_item_amt"]
 view = joined_view.copy()
-view["sum_item_amt_plus_one"] = col_2 + 1
+view["sum_item_amt_plus_one"] = col + 1
 grouped_1 = view.groupby(by_keys=["cust_id"], category=None).aggregate_over(
     value_column="sum_item_amt_plus_one",
     method="sum",
@@ -57,7 +57,7 @@ grouped_1 = view.groupby(by_keys=["cust_id"], category=None).aggregate_over(
     ),
     skip_fill_na=True,
 )
-feat_1 = grouped_1["sum_item_amt_plus_one_over_30d"]
-feat_2 = feat / feat_1
-feat_2.name = "fraction"
-output = feat_2
+feat_3 = grouped_1["sum_item_amt_plus_one_over_30d"]
+feat_4 = feat_2 / feat_3
+feat_4.name = "fraction"
+output = feat_4

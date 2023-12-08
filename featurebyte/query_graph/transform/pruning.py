@@ -3,6 +3,8 @@ This module contains graph pruning related classes.
 """
 from typing import Any, Dict, List, Optional, Set, Tuple
 
+from pydantic import BaseModel
+
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType
 from featurebyte.query_graph.model.graph import GraphNodeNameMap, NodeNameMap, QueryGraphModel
 from featurebyte.query_graph.node import Node
@@ -10,7 +12,6 @@ from featurebyte.query_graph.node.base import BasePrunableNode
 from featurebyte.query_graph.node.generic import ProjectNode
 from featurebyte.query_graph.node.metadata.operation import (
     OperationStructure,
-    OperationStructureBranchState,
     OperationStructureInfo,
 )
 from featurebyte.query_graph.node.nested import BaseGraphNode
@@ -134,9 +135,7 @@ class NodeParametersPruningGlobalState(OperationStructureInfo):
 
 class NodeParametersPruningExtractor(
     OperationStructureExtractor,
-    BaseGraphExtractor[
-        GraphNodeNameMap, OperationStructureBranchState, NodeParametersPruningGlobalState
-    ],
+    BaseGraphExtractor[GraphNodeNameMap, BaseModel, NodeParametersPruningGlobalState],
 ):
     """
     NodeParametersPruningExtractor is used to prune the node parameters (remove redundant parameter values).
@@ -146,7 +145,7 @@ class NodeParametersPruningExtractor(
 
     def _post_compute(  # type: ignore[override]
         self,
-        branch_state: OperationStructureBranchState,
+        branch_state: BaseModel,
         global_state: NodeParametersPruningGlobalState,
         node: Node,
         inputs: List[OperationStructure],
@@ -227,15 +226,11 @@ class NodeParametersPruningExtractor(
         global_state = NodeParametersPruningGlobalState(**state_params)
         super()._extract(
             node=node,
-            branch_state=OperationStructureBranchState(),
+            branch_state=BaseModel(),
             global_state=global_state,
             topological_order_map=self.graph.node_topological_order_map,
         )
         return global_state.graph, global_state.node_name_map
-
-
-class GraphPruningBranchState:
-    """GraphPruningBranchState class"""
 
 
 class GraphPruningGlobalState(OperationStructureInfo):
@@ -265,7 +260,7 @@ class GraphPruningGlobalState(OperationStructureInfo):
 
 
 class GraphStructurePruningExtractor(
-    BaseGraphExtractor[GraphNodeNameMap, GraphPruningBranchState, GraphPruningGlobalState]
+    BaseGraphExtractor[GraphNodeNameMap, BaseModel, GraphPruningGlobalState]
 ):
     """
     GraphStructurePruningExtractor is used to prune the graph structure (remove redundant nodes).
@@ -282,7 +277,7 @@ class GraphStructurePruningExtractor(
 
     def _pre_compute(
         self,
-        branch_state: GraphPruningBranchState,
+        branch_state: BaseModel,
         global_state: GraphPruningGlobalState,
         node: Node,
         input_node_names: List[str],
@@ -301,12 +296,12 @@ class GraphStructurePruningExtractor(
 
     def _in_compute(
         self,
-        branch_state: GraphPruningBranchState,
+        branch_state: BaseModel,
         global_state: GraphPruningGlobalState,
         node: Node,
         input_node: Node,
-    ) -> GraphPruningBranchState:
-        return GraphPruningBranchState()
+    ) -> BaseModel:
+        return branch_state
 
     def _prepare_target_columns(
         self, node: Node, global_state: GraphPruningGlobalState
@@ -359,7 +354,7 @@ class GraphStructurePruningExtractor(
 
     def _post_compute(
         self,
-        branch_state: GraphPruningBranchState,
+        branch_state: BaseModel,
         global_state: GraphPruningGlobalState,
         node: Node,
         inputs: List[Any],
@@ -435,7 +430,6 @@ class GraphStructurePruningExtractor(
             )
             operation_structure = temp_node.derive_node_operation_info(
                 inputs=[operation_structure],
-                branch_state=OperationStructureBranchState(),
                 global_state=OperationStructureInfo(),
             )
 
@@ -446,10 +440,9 @@ class GraphStructurePruningExtractor(
             target_columns=target_columns,
             operation_structure_map=op_struct_info.operation_structure_map,
         )
-        branch_state = GraphPruningBranchState()
         self._extract(
             node=node,
-            branch_state=branch_state,
+            branch_state=BaseModel(),
             global_state=global_state,
             topological_order_map=self.graph.node_topological_order_map,
         )

@@ -650,15 +650,6 @@ class OperationStructure:
         )
 
 
-class OperationStructureBranchState:
-    """OperationStructureBranchState class"""
-
-    def __init__(self, visited_node_types: Optional[Set[NodeType]] = None):
-        if visited_node_types is None:
-            visited_node_types = set()
-        self.visited_node_types = visited_node_types
-
-
 class OperationStructureInfo:
     """OperationStructureInfo class"""
 

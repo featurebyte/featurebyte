@@ -512,7 +512,9 @@ def test_extract_operation__join_double_aggregations(
     order_size_column = {
         "name": "ord_size",
         "columns": [order_id_source_data],
-        "transforms": ["item_groupby", "add(value=123)"],
+        "transforms": [
+            "join_feature(feature_entity_column='order_id', name='ord_size', view_entity_column='order_id')"
+        ],
         "filter": False,
         "type": "derived",
         "node_names": {"project_1", "item_groupby_1", "join_feature_1", "add_1", "input_1"},

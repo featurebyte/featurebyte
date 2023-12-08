@@ -17,7 +17,6 @@ from featurebyte.query_graph.node.metadata.operation import (
     DerivedDataColumn,
     NodeOutputCategory,
     OperationStructure,
-    OperationStructureBranchState,
     OperationStructureInfo,
     PostAggregationColumn,
 )
@@ -248,7 +247,6 @@ class BaseNode(BaseModel):
     def derive_node_operation_info(
         self,
         inputs: List[OperationStructure],
-        branch_state: OperationStructureBranchState,
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
         """
@@ -258,8 +256,6 @@ class BaseNode(BaseModel):
         ----------
         inputs: List[OperationStructure]
             List of input nodes' operation info
-        branch_state: OperationStructureBranchState
-            State captures the graph branching state info
         global_state: OperationStructureInfo
             State captures the global graph info (used during operation structure derivation)
 
@@ -267,9 +263,7 @@ class BaseNode(BaseModel):
         -------
         OperationStructure
         """
-        operation_info = self._derive_node_operation_info(
-            inputs=inputs, branch_state=branch_state, global_state=global_state
-        )
+        operation_info = self._derive_node_operation_info(inputs=inputs, global_state=global_state)
         if operation_info.columns or operation_info.aggregations:
             # make sure node name should be included in the node operation info
             assert self.name in operation_info.all_node_names
@@ -470,7 +464,6 @@ class BaseNode(BaseModel):
     def _derive_node_operation_info(
         self,
         inputs: List[OperationStructure],
-        branch_state: OperationStructureBranchState,
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
         """
@@ -480,8 +473,6 @@ class BaseNode(BaseModel):
         ----------
         inputs: List[OperationStructure]
             List of input nodes' operation info
-        branch_state: OperationStructureBranchState
-            State captures the graph branching state info
         global_state: OperationStructureInfo
             State captures the global graph info (used during operation structure derivation)
 
@@ -692,7 +683,6 @@ class SeriesOutputNodeOpStructMixin:
     def _derive_node_operation_info(
         self,
         inputs: List[OperationStructure],
-        branch_state: OperationStructureBranchState,
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
         """
@@ -702,8 +692,6 @@ class SeriesOutputNodeOpStructMixin:
         ----------
         inputs: List[OperationStructure]
             List of input nodes' operation info
-        branch_state: OperationStructureBranchState
-            State captures the graph branching state info
         global_state: OperationStructureInfo
             State captures the global graph info (used during operation structure derivation)
 
@@ -711,7 +699,7 @@ class SeriesOutputNodeOpStructMixin:
         -------
         OperationStructure
         """
-        _ = branch_state, global_state
+        _ = global_state
         input_operation_info = inputs[0]
         output_category = input_operation_info.output_category
         columns = []

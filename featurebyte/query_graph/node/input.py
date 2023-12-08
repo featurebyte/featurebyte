@@ -18,7 +18,6 @@ from featurebyte.query_graph.node.metadata.column import InColumnStr
 from featurebyte.query_graph.node.metadata.operation import (
     NodeOutputCategory,
     OperationStructure,
-    OperationStructureBranchState,
     OperationStructureInfo,
     SourceDataColumn,
 )
@@ -381,10 +380,9 @@ class InputNode(BaseNode):
     def _derive_node_operation_info(
         self,
         inputs: List[OperationStructure],
-        branch_state: OperationStructureBranchState,
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
-        _ = branch_state, global_state
+        _ = global_state
         return OperationStructure(
             columns=[
                 SourceDataColumn(

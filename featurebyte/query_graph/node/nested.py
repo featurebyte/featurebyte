@@ -29,7 +29,6 @@ from featurebyte.query_graph.node.base import BaseNode, BasePrunableNode, NodeT
 from featurebyte.query_graph.node.cleaning_operation import ColumnCleaningOperation
 from featurebyte.query_graph.node.metadata.operation import (
     OperationStructure,
-    OperationStructureBranchState,
     OperationStructureInfo,
 )
 from featurebyte.query_graph.node.metadata.sdk_code import (
@@ -68,7 +67,6 @@ class ProxyInputNode(BaseNode):
     def _derive_node_operation_info(
         self,
         inputs: List[OperationStructure],
-        branch_state: OperationStructureBranchState,
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
         # lookup the operation structure using the proxy input's node_name parameter
@@ -598,7 +596,6 @@ class BaseGraphNode(BasePrunableNode):
     def _derive_node_operation_info(
         self,
         inputs: List[OperationStructure],
-        branch_state: OperationStructureBranchState,
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
         # this should not be called as it should be handled at operation structure extractor level
