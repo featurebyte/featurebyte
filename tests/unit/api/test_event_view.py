@@ -709,9 +709,15 @@ def test_combine_simple_aggregate_with_its_window_aggregate(
         windows=["7d"],
         feature_names=["new_col_std_7d"],
     )["new_col_std_7d"]
+
     feature_temp = non_time_based_feature - new_col_avg_7d
+    assert non_time_based_feature.output_category == "feature"
+    assert new_col_avg_7d.output_category == "feature"
     assert feature_temp.output_category == "feature"
+
     feature = feature_temp / new_col_std_7d
+    assert feature.output_category == "feature"
+
     feature.name = "final_feature"
     feature.save()
 
