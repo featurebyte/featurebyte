@@ -547,13 +547,16 @@ def test_aggregate_asat__no_entity(scd_table, scd_dataframe, config, source_type
     deployment = feature_list.deploy(make_production_ready=True)
     deployment.enable()
 
-    data = OnlineFeaturesRequestPayload(entity_serving_names=[{"row_number": 1}])
-    res = config.get_client().post(
-        f"/deployment/{deployment.id}/online_features",
-        json=data.json_dict(),
-    )
-    assert res.status_code == 200
-    assert res.json() == {"features": [{"row_number": 1, "Current Number of Users": 9}]}
+    try:
+        data = OnlineFeaturesRequestPayload(entity_serving_names=[{"row_number": 1}])
+        res = config.get_client().post(
+            f"/deployment/{deployment.id}/online_features",
+            json=data.json_dict(),
+        )
+        assert res.status_code == 200
+        assert res.json() == {"features": [{"row_number": 1, "Current Number of Users": 9}]}
+    finally:
+        deployment.disable()
 
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
