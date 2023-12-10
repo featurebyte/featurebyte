@@ -50,8 +50,12 @@ def get_offline_store_table_name(
     str
         Offline store table name
     """
-    entity_part = "_".join(primary_entity_serving_names)
-    table_name = sanitize_identifier(f"fb_entity_{entity_part}")
+    if primary_entity_serving_names:
+        entity_part = "_".join(primary_entity_serving_names)
+        table_name = sanitize_identifier(f"fb_entity_{entity_part}")
+    else:
+        table_name = "fb_entity_overall"
+
     if feature_job_setting:
         fjs = feature_job_setting.to_seconds()
         frequency = fjs["frequency"]

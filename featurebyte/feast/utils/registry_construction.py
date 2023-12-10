@@ -16,6 +16,7 @@ from feast import Field as FeastField
 from feast import OnDemandFeatureView as FeastOnDemandFeatureView
 from feast import RequestSource as FeastRequestSource
 from feast.data_source import DataSource as FeastDataSource
+from feast.feature_view import DUMMY_ENTITY
 from feast.inference import update_feature_views_with_inferred_features_and_entities
 from feast.protos.feast.core.Registry_pb2 import Registry as RegistryProto
 from feast.repo_config import RegistryConfig, RepoConfig
@@ -63,6 +64,7 @@ class OfflineStoreTable(FeatureByteBaseModel):
         """
         # FIXME: We likely need to set the value type based on the dtype of the primary entity
         value_type = to_feast_primitive_type(DBVarType.VARCHAR).to_value_type()
+        assert len(self.primary_entity_serving_names) > 0
         entity = FeastEntity(
             name=" x ".join(self.primary_entity_serving_names),
             join_keys=self.primary_entity_serving_names,
@@ -474,10 +476,13 @@ class FeastRegistryConstructor:
         )
         for offline_store_table in offline_store_tables:
             entity_key = tuple(offline_store_table.primary_entity_ids)
-            feast_entity = primary_entity_ids_to_feast_entity.get(
-                entity_key,
-                offline_store_table.create_feast_entity(),
-            )
+            if len(entity_key) > 0:
+                feast_entity = primary_entity_ids_to_feast_entity.get(
+                    entity_key,
+                    offline_store_table.create_feast_entity(),
+                )
+            else:
+                feast_entity = DUMMY_ENTITY
             if entity_key not in primary_entity_ids_to_feast_entity:
                 primary_entity_ids_to_feast_entity[entity_key] = feast_entity
 

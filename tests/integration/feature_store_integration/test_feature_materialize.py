@@ -65,7 +65,7 @@ def features_fixture(event_table):
         feature_names=["EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d"],
     )["EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d"]
 
-    # Feature with two entities (not supported yet)
+    # Complex feature with multiple unrelated entities and request column
     feature_4 = feature_1 + feature_3 + fb.RequestColumn.point_in_time().dt.day.sin()
     feature_4.name = "EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE"
 
@@ -141,6 +141,7 @@ async def check_feast_registry(app_container):
 
     # Check feature views and feature services
     assert {fv.name for fv in feature_store.list_feature_views()} == {
+        "fb_entity_overall_fjs_3600_1800_1800_ttl",
         "fb_entity_product_action_fjs_3600_1800_1800_ttl",
         "fb_entity_üserid_fjs_3600_1800_1800_ttl",
     }
@@ -161,6 +162,7 @@ async def check_feast_registry(app_container):
     assert online_features == {
         "üser id": ["1"],
         "PRODUCT_ACTION": ["detail"],
+        "EXTERNAL_FS_COUNT_OVERALL_7d": [149.0],
         "EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d": [43.0],
         "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h": [475.38],
         "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100": [47538.0],
@@ -191,6 +193,7 @@ def check_online_features(deployment, config):
             {
                 "üser id": "1",
                 "PRODUCT_ACTION": "detail",
+                "EXTERNAL_FS_COUNT_OVERALL_7d": 149.0,
                 "EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d": 43.0,
                 "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h": 475.38,
                 "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100": 47538.0,
@@ -224,6 +227,7 @@ async def test_feature_materialize_service(
         ] = feature_table
 
     assert set(primary_entity_to_feature_table.keys()) == {
+        (),
         (user_entity.id,),
         (product_action_entity.id,),
     }
