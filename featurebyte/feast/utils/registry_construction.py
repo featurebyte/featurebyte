@@ -18,7 +18,7 @@ from feast.inference import update_feature_views_with_inferred_features_and_enti
 from feast.protos.feast.core.Registry_pb2 import Registry as RegistryProto
 from feast.repo_config import RegistryConfig, RepoConfig
 
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, InternalName
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.entity import EntityModel
 from featurebyte.models.feature import FeatureModel
@@ -82,7 +82,11 @@ class OfflineStoreTable(FeatureByteBaseModel):
         FeastDataSource
             Feast data source
         """
-        return database_details.create_feast_data_source(name=name, table_name=self.table_name)
+        return database_details.create_feast_data_source(
+            name=name,
+            table_name=self.table_name,
+            timestamp_field=InternalName.FEATURE_TIMESTAMP_COLUMN,
+        )
 
     def create_feast_feature_view(
         self,

@@ -25,7 +25,7 @@ class BaseDatabaseDetails(FeatureByteBaseModel):
         self,
         name: str,
         table_name: str,
-        timestamp_field: Optional[str] = None,
+        timestamp_field: str,
         created_timestamp_column: Optional[str] = None,
     ) -> DataSource:
         """
@@ -37,7 +37,7 @@ class BaseDatabaseDetails(FeatureByteBaseModel):
             Name of the DataSource
         table_name: str
             Name of the table to create a DataSource for
-        timestamp_field: Optional[str]
+        timestamp_field: str
             Event timestamp field used for point in time joins of feature values
         created_timestamp_column: Optional[str]
             Timestamp column indicating when the row was created, used for de-duplicating rows.
@@ -115,7 +115,7 @@ class SnowflakeDetails(BaseDatabaseDetails):
         self,
         name: str,
         table_name: str,
-        timestamp_field: Optional[str] = None,
+        timestamp_field: str,
         created_timestamp_column: Optional[str] = None,
     ) -> DataSource:
         """
@@ -127,7 +127,7 @@ class SnowflakeDetails(BaseDatabaseDetails):
             Name of the DataSource
         table_name: str
             Name of the table to create a DataSource for
-        timestamp_field: Optional[str]
+        timestamp_field: str
             Event timestamp field used for point in time joins of feature values
         created_timestamp_column: Optional[str]
             Timestamp column indicating when the row was created, used for de-duplicating rows.

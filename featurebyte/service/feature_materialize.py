@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from bson import ObjectId
 from sqlglot import expressions
 
+from featurebyte.enum import InternalName
 from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
@@ -31,8 +32,6 @@ from featurebyte.service.online_store_compute_query_service import OnlineStoreCo
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.session.base import BaseSession
-
-FEATURE_TIMESTAMP_COLUMN = "__feature_timestamp"
 
 
 @dataclass
@@ -268,7 +267,9 @@ class FeatureMaterializeService:
                 ),
                 select_expr=expressions.select(
                     expressions.alias_(
-                        adapter.current_timestamp(), alias=FEATURE_TIMESTAMP_COLUMN, quoted=True
+                        adapter.current_timestamp(),
+                        alias=InternalName.FEATURE_TIMESTAMP_COLUMN,
+                        quoted=True,
                     )
                 )
                 .select(
@@ -294,7 +295,7 @@ class FeatureMaterializeService:
             expressions.Insert(
                 this=expressions.Schema(
                     this=expressions.Table(this=quoted_identifier(feature_table_model.name)),
-                    expressions=[quoted_identifier(FEATURE_TIMESTAMP_COLUMN)]
+                    expressions=[quoted_identifier(InternalName.FEATURE_TIMESTAMP_COLUMN)]
                     + [
                         quoted_identifier(column)
                         for column in materialized_features.serving_names_and_column_names
@@ -302,7 +303,9 @@ class FeatureMaterializeService:
                 ),
                 expression=expressions.select(
                     expressions.alias_(
-                        adapter.current_timestamp(), alias=FEATURE_TIMESTAMP_COLUMN, quoted=True
+                        adapter.current_timestamp(),
+                        alias=InternalName.FEATURE_TIMESTAMP_COLUMN,
+                        quoted=True,
                     )
                 )
                 .select(
@@ -323,7 +326,9 @@ class FeatureMaterializeService:
             expressions.select(
                 expressions.alias_(
                     expressions.Max(
-                        this=expressions.Column(this=quoted_identifier(FEATURE_TIMESTAMP_COLUMN))
+                        this=expressions.Column(
+                            this=quoted_identifier(InternalName.FEATURE_TIMESTAMP_COLUMN)
+                        )
                     ),
                     alias="RESULT",
                 )
@@ -351,7 +356,7 @@ class FeatureMaterializeService:
             for serving_name in feature_table_model.serving_names
         ] + [
             expressions.EQ(
-                this=quoted_identifier(FEATURE_TIMESTAMP_COLUMN),
+                this=quoted_identifier(InternalName.FEATURE_TIMESTAMP_COLUMN),
                 expression=feature_timestamp_value_expr,
             ),
         ]
@@ -369,7 +374,7 @@ class FeatureMaterializeService:
             this=expressions.Tuple(
                 expressions=[
                     quoted_identifier(col)
-                    for col in [FEATURE_TIMESTAMP_COLUMN]
+                    for col in [InternalName.FEATURE_TIMESTAMP_COLUMN.value]
                     + materialized_features.serving_names_and_column_names
                 ]
             ),
