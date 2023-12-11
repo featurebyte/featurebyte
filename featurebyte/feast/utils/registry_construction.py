@@ -14,6 +14,7 @@ from feast import FeatureStore as FeastFeatureStore
 from feast import FeatureView as FeastFeatureView
 from feast import Field as FeastField
 from feast.data_source import DataSource as FeastDataSource
+from feast.inference import update_feature_views_with_inferred_features_and_entities
 from feast.protos.feast.core.Registry_pb2 import Registry as RegistryProto
 from feast.repo_config import RegistryConfig, RepoConfig
 
@@ -52,9 +53,12 @@ class OfflineStoreTable(FeatureByteBaseModel):
         FeastEntity
             Feast entity
         """
+        # FIXME: We likely need to set the value type based on the dtype of the primary entity
+        value_type = DBVarType.VARCHAR.to_feast_primitive_type().to_value_type()
         entity = FeastEntity(
             name=" x ".join(self.primary_entity_serving_names),
             join_keys=self.primary_entity_serving_names,
+            value_type=value_type,
         )
         return entity  # type: ignore[no-any-return]
 
@@ -325,6 +329,12 @@ class FeastRegistryConstructor:
                 ),
             )
 
+            # FIXME: Temporarily calling this inference function here to populate the entity_columns
+            #  field in feature views which is needed by feast materialize. This can be removed once
+            #  we call feast apply code path directly.
+            update_feature_views_with_inferred_features_and_entities(
+                feast_feature_views, list(primary_entity_ids_to_feast_entity.values()), repo_config
+            )
             feature_store = FeastFeatureStore(config=repo_config)
             registry = feature_store.registry
             for data_source in feast_data_sources:

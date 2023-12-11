@@ -95,7 +95,12 @@ def test_feast_registry_construction(feast_registry_proto):
                     "createdTimestamp": entities[0]["meta"]["createdTimestamp"],
                     "lastUpdatedTimestamp": entities[0]["meta"]["lastUpdatedTimestamp"],
                 },
-                "spec": {"joinKey": "cust_id", "name": "cust_id", "project": "featurebyte_project"},
+                "spec": {
+                    "joinKey": "cust_id",
+                    "name": "cust_id",
+                    "project": "featurebyte_project",
+                    "valueType": "STRING",
+                },
             },
             {
                 "meta": {
@@ -106,6 +111,7 @@ def test_feast_registry_construction(feast_registry_proto):
                     "joinKey": "transaction_id",
                     "name": "transaction_id",
                     "project": "featurebyte_project",
+                    "valueType": "STRING",
                 },
             },
         ],
@@ -152,6 +158,7 @@ def test_feast_registry_construction(feast_registry_proto):
                         "type": "BATCH_SNOWFLAKE",
                     },
                     "entities": ["cust_id"],
+                    "entityColumns": [{"name": "cust_id", "valueType": "STRING"}],
                     "features": [{"name": "sum_1d", "valueType": "DOUBLE"}],
                     "name": "fb_entity_cust_id_fjs_1800_300_600_ttl",
                     "online": True,
@@ -177,6 +184,7 @@ def test_feast_registry_construction(feast_registry_proto):
                         "type": "BATCH_SNOWFLAKE",
                     },
                     "entities": ["transaction_id"],
+                    "entityColumns": [{"name": "transaction_id", "valueType": "STRING"}],
                     "features": [
                         {"name": "non_time_time_sum_amount_feature", "valueType": "DOUBLE"}
                     ],

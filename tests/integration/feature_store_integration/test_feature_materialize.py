@@ -1,6 +1,7 @@
 """
 Tests for feature materialization service
 """
+from datetime import datetime
 from unittest.mock import patch
 
 import pandas as pd
@@ -41,7 +42,8 @@ def features_fixture(event_table):
     feature_2.name = feature_1.name + "_TIMES_100"
 
     # Feature with a different entity
-    feature_3 = event_view.groupby("PRODUCT_ACTION").aggregate_over(
+    filtered_event_view = event_view[event_view["PRODUCT_ACTION"].notnull()]
+    feature_3 = filtered_event_view.groupby("PRODUCT_ACTION").aggregate_over(
         None,
         method="count",
         windows=["7d"],
@@ -123,11 +125,27 @@ async def check_feast_registry(app_container):
     feature_store = await app_container.feast_feature_store_service.get_feast_feature_store(
         feast_registry.id
     )
+
+    # Check feature views and feature services
     assert {fv.name for fv in feature_store.list_feature_views()} == {
         "fb_entity_PRODUCT_ACTION_fjs_3600_1800_1800_ttl",
         "fb_entity_üser id_fjs_3600_1800_1800_ttl",
     }
     assert {fs.name for fs in feature_store.list_feature_services()} == {"EXTERNAL_FS_FEATURE_LIST"}
+
+    # Check feast materialize and get_online_features
+    feature_store.materialize(datetime(2000, 1, 1), datetime.now())
+    feature_service = feature_store.get_feature_service("EXTERNAL_FS_FEATURE_LIST")
+    online_features = feature_store.get_online_features(
+        features=feature_service, entity_rows=[{"üser id": 1, "PRODUCT_ACTION": "detail"}]
+    ).to_dict()
+    assert online_features == {
+        "üser id": ["1"],
+        "PRODUCT_ACTION": ["detail"],
+        "EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d": [43.0],
+        "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h": [475.38],
+        "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100": [47538.0],
+    }
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
