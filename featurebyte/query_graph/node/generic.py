@@ -45,6 +45,11 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     get_object_class_from_function_call,
 )
 from featurebyte.query_graph.node.mixin import AggregationOpStructMixin, BaseGroupbyParameters
+from featurebyte.query_graph.node.utils import (
+    filter_series_or_frame_expr,
+    subset_frame_column_expr,
+    subset_frame_columns_expr,
+)
 from featurebyte.query_graph.util import (
     append_to_lineage,
     hash_input_node_hashes,
@@ -150,11 +155,11 @@ class ProjectNode(BaseNode):
         #     view.join(view["col_int", "col_float"]], rsuffix="_z")
         # after the first join, the `view` node get updated and the second join will refer to the updated `view`
         if operation_structure.output_type == NodeOutputType.FRAME:
-            expression = ExpressionStr(f"{var_name}[{self.parameters.columns}]")
+            expr = subset_frame_columns_expr(var_name, self.parameters.columns)
         else:
-            expression = ExpressionStr(f"{var_name}['{self.parameters.columns[0]}']")
+            expr = subset_frame_column_expr(var_name, self.parameters.columns[0])
 
-        statements.append((out_var_name, expression))
+        statements.append((out_var_name, ExpressionStr(expr)))
         return statements, out_var_name
 
     def normalize_and_recreate_node(
@@ -257,8 +262,10 @@ class FilterNode(BaseNode):
             to_associate_with_node_name=False,
         )
         mask_name = var_name_expressions[1].as_input()
-        expression = ExpressionStr(f"{var_name}[{mask_name}]")
-        return statements, expression
+        expr = filter_series_or_frame_expr(
+            series_or_frame_name=var_name, filter_expression=mask_name
+        )
+        return statements, ExpressionStr(expr)
 
 
 class AssignColumnMixin:
@@ -427,21 +434,21 @@ class AssignNode(AssignColumnMixin, BasePrunableNode):
             statements.append((output_var_name, ExpressionStr(f"{var_name}.copy()")))
 
         value: RightHandSide
+        var_expr = subset_frame_column_expr(frame_name=output_var_name, column_name=column_name)
         if isinstance(second_input, InfoDict):
             mask_var = second_input["mask"]
             if second_input.get("is_series_assignment"):
                 value = second_input["value"]
             else:
                 value = ValueStr.create(second_input["value"])
-            statements.append(
-                (
-                    VariableNameStr(f"{output_var_name}['{column_name}'][{mask_var}]"),
-                    value,
-                )
+
+            var_filter_expr = filter_series_or_frame_expr(
+                series_or_frame_name=var_expr, filter_expression=mask_var
             )
+            statements.append((VariableNameStr(var_filter_expr), value))
         else:
             value = second_input if second_input else ValueStr.create(self.parameters.value)
-            statements.append((VariableNameStr(f"{output_var_name}['{column_name}']"), value))
+            statements.append((VariableNameStr(var_expr), value))
         return statements, output_var_name
 
 
@@ -1940,5 +1947,8 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
 
         # This handles the normal series assignment case where `col[<condition>] = <value>` is used. In this case,
         # the conditional assignment should not update their parent view.
-        statements.append((VariableNameStr(f"{output_var_name}[{mask_var_name}]"), value))
+        var_expr = filter_series_or_frame_expr(
+            series_or_frame_name=output_var_name, filter_expression=mask_var_name
+        )
+        statements.append((VariableNameStr(var_expr), value))
         return statements, output_var_name
