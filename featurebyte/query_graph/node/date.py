@@ -13,10 +13,10 @@ from featurebyte.query_graph.node.base import (
     BaseSeriesOutputNode,
     BaseSeriesOutputWithSingleOperandNode,
 )
+from featurebyte.query_graph.node.metadata.config import SDKCodeGenConfig
 from featurebyte.query_graph.node.metadata.operation import NodeOutputCategory, OperationStructure
 from featurebyte.query_graph.node.metadata.sdk_code import (
     ClassEnum,
-    CodeGenerationConfig,
     CodeGenerationContext,
     ExpressionStr,
     StatementT,
@@ -56,7 +56,7 @@ class DatetimeExtractNode(BaseSeriesOutputNode):
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
-        config: CodeGenerationConfig,
+        config: SDKCodeGenConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_dict(node_inputs)
@@ -123,7 +123,7 @@ class DateDifference(BaseSeriesOutputNode):
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
-        config: CodeGenerationConfig,
+        config: SDKCodeGenConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_dict(node_inputs)
@@ -160,7 +160,7 @@ class TimeDelta(BaseSeriesOutputNode):
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
-        config: CodeGenerationConfig,
+        config: SDKCodeGenConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_dict(node_inputs)
@@ -208,7 +208,7 @@ class DateAdd(BaseSeriesOutputNode):
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
-        config: CodeGenerationConfig,
+        config: SDKCodeGenConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_dict(node_inputs)

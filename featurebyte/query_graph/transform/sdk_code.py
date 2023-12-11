@@ -9,10 +9,10 @@ from pydantic import BaseModel, Field
 from featurebyte.query_graph.enum import GraphNodeType, NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.node.metadata.config import SDKCodeGenConfig
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.node.metadata.sdk_code import (
     ClassEnum,
-    CodeGenerationConfig,
     CodeGenerationContext,
     CodeGenerator,
     ExpressionStr,
@@ -34,7 +34,7 @@ class SDKCodeGlobalState(BaseModel):
         Cache to store node name to _post_compute_output (to remove redundant graph node traversals)
     node_name_to_operation_structure: Dict[str, OperationStructure]
         Operation structure mapping for each node in the graph
-    code_generation_config: CodeGenerationConfig
+    code_generation_config: SDKCodeGenConfig
         Code generation configuration
     var_name_generator: VariableNameGenerator
         Variable name generator is used to generate variable names used in the generated SDK codes
@@ -44,7 +44,7 @@ class SDKCodeGlobalState(BaseModel):
 
     node_name_to_post_compute_output: Dict[str, VarNameExpressionInfo] = Field(default_factory=dict)
     node_name_to_operation_structure: Dict[str, OperationStructure] = Field(default_factory=dict)
-    code_generation_config: CodeGenerationConfig = Field(default_factory=CodeGenerationConfig)
+    code_generation_config: SDKCodeGenConfig = Field(default_factory=SDKCodeGenConfig)
     var_name_generator: VariableNameGenerator = Field(default_factory=VariableNameGenerator)
     code_generator: CodeGenerator = Field(default_factory=CodeGenerator)
     no_op_node_names: Set[str] = Field(default_factory=set)
@@ -278,7 +278,7 @@ class SDKCodeExtractor(BaseGraphExtractor[SDKCodeGlobalState, BaseModel, SDKCode
 
         global_state = SDKCodeGlobalState(
             node_name_to_operation_structure=op_struct_info.operation_structure_map,
-            code_generation_config=CodeGenerationConfig(**code_generation_config),
+            code_generation_config=SDKCodeGenConfig(**code_generation_config),
         )
         global_state.initialize(
             query_graph=self.graph,

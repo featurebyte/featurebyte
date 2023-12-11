@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field, StrictStr
 from featurebyte.enum import DBVarType, SpecialColumnName
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.base import BaseNode
+from featurebyte.query_graph.node.metadata.config import SDKCodeGenConfig
 from featurebyte.query_graph.node.metadata.operation import (
     AggregationColumn,
     FeatureDataColumnType,
@@ -17,7 +18,6 @@ from featurebyte.query_graph.node.metadata.operation import (
 )
 from featurebyte.query_graph.node.metadata.sdk_code import (
     ClassEnum,
-    CodeGenerationConfig,
     CodeGenerationContext,
     StatementT,
     VariableNameGenerator,
@@ -80,7 +80,7 @@ class RequestColumnNode(BaseNode):
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
-        config: CodeGenerationConfig,
+        config: SDKCodeGenConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         statements: List[StatementT] = []

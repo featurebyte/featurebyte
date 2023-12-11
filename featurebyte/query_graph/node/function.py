@@ -14,6 +14,7 @@ from featurebyte.enum import DBVarType, FunctionParameterInputForm
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.base import BaseSeriesOutputNode
+from featurebyte.query_graph.node.metadata.config import SDKCodeGenConfig
 from featurebyte.query_graph.node.metadata.operation import (
     DerivedDataColumn,
     NodeOutputCategory,
@@ -23,7 +24,6 @@ from featurebyte.query_graph.node.metadata.operation import (
 )
 from featurebyte.query_graph.node.metadata.sdk_code import (
     ClassEnum,
-    CodeGenerationConfig,
     CodeGenerationContext,
     CommentStr,
     InfoDict,
@@ -222,7 +222,7 @@ class GenericFunctionNode(BaseSeriesOutputNode):
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
-        config: CodeGenerationConfig,
+        config: SDKCodeGenConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         function_parameters: List[Any] = []
