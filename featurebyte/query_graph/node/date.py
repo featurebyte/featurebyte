@@ -13,7 +13,7 @@ from featurebyte.query_graph.node.base import (
     BaseSeriesOutputNode,
     BaseSeriesOutputWithSingleOperandNode,
 )
-from featurebyte.query_graph.node.metadata.config import SDKCodeGenConfig
+from featurebyte.query_graph.node.metadata.config import OnDemandViewCodeGenConfig, SDKCodeGenConfig
 from featurebyte.query_graph.node.metadata.operation import NodeOutputCategory, OperationStructure
 from featurebyte.query_graph.node.metadata.sdk_code import (
     ClassEnum,
@@ -82,6 +82,15 @@ class DatetimeExtractNode(BaseSeriesOutputNode):
 
         return [], output
 
+    def _derive_on_demand_view_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandViewCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        # TODO: implement this
+        raise NotImplementedError()
+
 
 class TimeDeltaExtractNode(BaseSeriesOutputWithSingleOperandNode):
     """TimeDeltaExtractNode class"""
@@ -131,6 +140,16 @@ class DateDifference(BaseSeriesOutputNode):
         right_operand = var_name_expressions[1].as_input()
         return [], ExpressionStr(f"{left_operand} - {right_operand}")
 
+    def _derive_on_demand_view_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandViewCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        left_operand: str = node_inputs[0]
+        right_operand = node_inputs[1]
+        return [], ExpressionStr(f"{left_operand} - {right_operand}")
+
 
 class TimeDelta(BaseSeriesOutputNode):
     """TimeDelta class"""
@@ -175,6 +194,15 @@ class TimeDelta(BaseSeriesOutputNode):
         statements.append((var_name, obj))
         return statements, var_name
 
+    def _derive_on_demand_view_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandViewCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        # TODO: implement this
+        raise NotImplementedError()
+
 
 class DateAdd(BaseSeriesOutputNode):
     """DateAdd class"""
@@ -214,4 +242,14 @@ class DateAdd(BaseSeriesOutputNode):
         var_name_expressions = self._assert_no_info_dict(node_inputs)
         left_operand: str = var_name_expressions[0].as_input()
         right_operand = var_name_expressions[1].as_input()
+        return [], ExpressionStr(f"{left_operand} + {right_operand}")
+
+    def _derive_on_demand_view_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandViewCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        left_operand: str = node_inputs[0]
+        right_operand = node_inputs[1]
         return [], ExpressionStr(f"{left_operand} + {right_operand}")

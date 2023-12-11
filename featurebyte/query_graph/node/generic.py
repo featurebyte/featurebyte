@@ -20,7 +20,7 @@ from featurebyte.query_graph.node.base import (
     NodeT,
 )
 from featurebyte.query_graph.node.metadata.column import InColumnStr, OutColumnStr
-from featurebyte.query_graph.node.metadata.config import SDKCodeGenConfig
+from featurebyte.query_graph.node.metadata.config import OnDemandViewCodeGenConfig, SDKCodeGenConfig
 from featurebyte.query_graph.node.metadata.operation import (
     AggregationColumn,
     DerivedDataColumn,
@@ -1869,6 +1869,15 @@ class AliasNode(BaseNode):
         )
         return statements, output_var_name
 
+    def _derive_on_demand_view_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandViewCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        # this is a no-op node for on-demand view, it should appear on the last node of the graph
+        return [], node_inputs[0]
+
 
 class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
     """ConditionalNode class"""
@@ -1952,3 +1961,40 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
         )
         statements.append((VariableNameStr(var_expr), value))
         return statements, output_var_name
+
+    def _derive_on_demand_view_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandViewCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        statements, var_name = self._convert_expression_to_variable(
+            var_name_expression=node_inputs[0],
+            var_name_generator=var_name_generator,
+            node_output_type=NodeOutputType.SERIES,
+            node_output_category=NodeOutputCategory.FEATURE,
+            to_associate_with_node_name=False,
+        )
+        mask_statements, mask_var_name = self._convert_expression_to_variable(
+            var_name_expression=node_inputs[1],
+            var_name_generator=var_name_generator,
+            node_output_type=NodeOutputType.SERIES,
+            node_output_category=NodeOutputCategory.FEATURE,
+            to_associate_with_node_name=False,
+            variable_name_prefix="mask",
+        )
+        statements.extend(mask_statements)
+
+        value: RightHandSide = ValueStr.create(self.parameters.value)
+        is_series_assignment = len(node_inputs) == 3
+        if is_series_assignment:
+            expr = filter_series_or_frame_expr(
+                series_or_frame_name=node_inputs[2], filter_expression=mask_var_name
+            )
+            value = ExpressionStr(expr)
+
+        var_expr = filter_series_or_frame_expr(
+            series_or_frame_name=var_name, filter_expression=mask_var_name
+        )
+        statements.append((VariableNameStr(var_expr), value))
+        return statements, var_name

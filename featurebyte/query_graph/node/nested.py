@@ -27,7 +27,7 @@ from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node.base import BaseNode, BasePrunableNode, NodeT
 from featurebyte.query_graph.node.cleaning_operation import ColumnCleaningOperation
-from featurebyte.query_graph.node.metadata.config import SDKCodeGenConfig
+from featurebyte.query_graph.node.metadata.config import OnDemandViewCodeGenConfig, SDKCodeGenConfig
 from featurebyte.query_graph.node.metadata.operation import (
     OperationStructure,
     OperationStructureInfo,
@@ -35,12 +35,14 @@ from featurebyte.query_graph.node.metadata.operation import (
 from featurebyte.query_graph.node.metadata.sdk_code import (
     ClassEnum,
     CodeGenerationContext,
+    ExpressionStr,
     ObjectClass,
     StatementT,
     VariableNameGenerator,
     VarNameExpressionInfo,
     get_object_class_from_function_call,
 )
+from featurebyte.query_graph.node.utils import subset_frame_column_expr
 
 
 class ProxyInputNode(BaseNode):
@@ -623,3 +625,23 @@ class BaseGraphNode(BasePrunableNode):
             config=config,
             node_name=self.name,
         )
+
+    def _derive_on_demand_view_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandViewCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        if self.parameters.type != GraphNodeType.OFFLINE_STORE_INGEST_QUERY:
+            raise RuntimeError("BaseGroupNode._derive_on_demand_view_code should not be called!")
+
+        assert isinstance(self.parameters, OfflineStoreIngestQueryGraphNodeParameters)
+        input_df_name = config.input_df_name
+        column_name = self.parameters.output_column_name
+        expr = subset_frame_column_expr(frame_name=input_df_name, column_name=column_name)
+        if self.parameters.output_dtype in DBVarType.supported_timestamp_types():
+            var_name = var_name_generator.convert_to_variable_name("feat", node_name=self.name)
+            expression = ClassEnum.PD_TO_DATETIME(expr)
+            return [(var_name, expression)], var_name
+        else:
+            return [], ExpressionStr(expr)

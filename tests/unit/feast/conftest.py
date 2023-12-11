@@ -33,3 +33,20 @@ def feast_registry_proto_fixture(
         feature_lists=[feature_list],
     )
     return feast_registry_proto
+
+
+@pytest.fixture(name="latest_event_timestamp_feature")
+def latest_event_timestamp_feature_fixture(
+    snowflake_event_view_with_entity, feature_group_feature_job_setting
+):
+    """
+    Fixture for a timestamp feature
+    """
+    feature = snowflake_event_view_with_entity.groupby("cust_id").aggregate_over(
+        value_column="event_timestamp",
+        method="latest",
+        windows=["90d"],
+        feature_names=["latest_event_timestamp_90d"],
+        feature_job_setting=feature_group_feature_job_setting,
+    )["latest_event_timestamp_90d"]
+    return feature

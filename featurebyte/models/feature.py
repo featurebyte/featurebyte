@@ -416,10 +416,13 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
             feature_name=self.name,
         )
 
-        decomposed_graph = result.graph
-        metadata = None
-        if not result.is_decomposed:
+        if result.is_decomposed:
+            decomposed_graph = result.graph
+            output_node_name = result.node_name_map[self.node.name]
+            metadata = None
+        else:
             decomposed_graph = self.graph
+            output_node_name = self.node.name
             feature_job_setting = None
             if self.table_id_feature_job_settings:
                 feature_job_setting = self.table_id_feature_job_settings[0].feature_job_setting
@@ -444,7 +447,6 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
                 has_ttl=has_ttl,
                 offline_store_table_name=table_name,
                 output_column_name=self.name,
-                output_node_name=self.node_name,
                 output_dtype=self.dtype,
                 primary_entity_ids=self.primary_entity_ids,
             )
@@ -452,6 +454,7 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
         # populate offline store info
         self.offline_store_info = OfflineStoreInfo(
             graph=decomposed_graph,
+            node_name=output_node_name,
             node_name_map=result.node_name_map,
             is_decomposed=result.is_decomposed,
             metadata=metadata,
