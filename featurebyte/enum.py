@@ -391,6 +391,8 @@ class InternalName(StrEnum):
     ONLINE_STORE_VERSION_COLUMN = "VERSION"
     ONLINE_STORE_VERSION_PLACEHOLDER_SUFFIX = "_VERSION_PLACEHOLDER"
 
+    FEATURE_TIMESTAMP_COLUMN = "__feature_timestamp"
+
 
 class WorkerCommand(StrEnum):
     """
