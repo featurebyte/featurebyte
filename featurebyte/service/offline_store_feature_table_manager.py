@@ -8,8 +8,11 @@ from typing import Any, Dict, List, Optional, cast
 from bson import ObjectId
 
 from featurebyte import FeatureJobSetting
+from featurebyte.feast.schema.registry import FeastRegistryCreate, FeastRegistryUpdate
+from featurebyte.feast.service.registry import FeastRegistryService
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature import FeatureModel
+from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.offline_store_feature_table import (
     OfflineStoreFeatureTableModel,
     OfflineStoreFeatureTableUpdate,
@@ -18,6 +21,7 @@ from featurebyte.models.offline_store_feature_table import (
 from featurebyte.models.offline_store_ingest_query import OfflineStoreIngestQueryGraph
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature import FeatureService
+from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_materialize import FeatureMaterializeService
 from featurebyte.service.feature_materialize_scheduler import FeatureMaterializeSchedulerService
 from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
@@ -37,6 +41,8 @@ class OfflineStoreFeatureTableManagerService:
         entity_service: EntityService,
         feature_materialize_service: FeatureMaterializeService,
         feature_materialize_scheduler_service: FeatureMaterializeSchedulerService,
+        feast_registry_service: FeastRegistryService,
+        feature_list_service: FeatureListService,
     ):
         self.offline_store_feature_table_service = offline_store_feature_table_service
         self.feature_service = feature_service
@@ -44,6 +50,8 @@ class OfflineStoreFeatureTableManagerService:
         self.entity_service = entity_service
         self.feature_materialize_service = feature_materialize_service
         self.feature_materialize_scheduler_service = feature_materialize_scheduler_service
+        self.feast_registry_service = feast_registry_service
+        self.feature_list_service = feature_list_service
 
     async def handle_online_enabled_feature(self, feature: FeatureModel) -> None:
         """
@@ -101,6 +109,7 @@ class OfflineStoreFeatureTableManagerService:
 
             if feature_table_model is not None:
                 await self.feature_materialize_service.initialize_new_columns(feature_table_model)
+                await self._create_or_update_feast_registry()
                 await self.feature_materialize_scheduler_service.start_job_if_not_exist(
                     feature_table_model
                 )
@@ -132,6 +141,7 @@ class OfflineStoreFeatureTableManagerService:
                 await self.offline_store_feature_table_service.delete_document(
                     document_id=feature_table_dict["_id"],
                 )
+            await self._create_or_update_feast_registry()
 
     async def _get_compatible_existing_feature_table(
         self, offline_ingest_graph: OfflineStoreIngestQueryGraph
@@ -226,3 +236,19 @@ class OfflineStoreFeatureTableManagerService:
             filtered_table_names.append(online_store_compute_query_model.table_name)
 
         return sorted(set(filtered_table_names))
+
+    async def _create_or_update_feast_registry(self) -> None:
+        feature_lists = []
+        async for feature_list_dict in self.feature_list_service.iterate_online_enabled_feature_lists_as_dict():
+            feature_lists.append(FeatureListModel(**feature_list_dict))
+
+        feast_registry = await self.feast_registry_service.get_feast_registry_for_catalog()
+        if feast_registry is None:
+            await self.feast_registry_service.create_document(
+                FeastRegistryCreate(project_name="featurebyte", feature_lists=feature_lists)
+            )
+        else:
+            await self.feast_registry_service.update_document(
+                document_id=feast_registry.id,
+                data=FeastRegistryUpdate(feature_lists=feature_lists),
+            )

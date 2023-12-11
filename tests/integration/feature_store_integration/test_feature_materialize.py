@@ -40,15 +40,17 @@ def features_fixture(event_table):
     feature_2 = feature_1 * 100
     feature_2.name = feature_1.name + "_TIMES_100"
 
-    # Feature with two entities
+    # Feature with a different entity
     feature_3 = event_view.groupby("PRODUCT_ACTION").aggregate_over(
         None,
         method="count",
         windows=["7d"],
-        feature_names=["temp"],
-    )["temp"]
-    feature_3 = feature_1 + feature_3
-    feature_3.name = "EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE"
+        feature_names=["EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d"],
+    )["EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d"]
+
+    # Feature with two entities (not supported yet)
+    # feature_4 = feature_1 + feature_3
+    # feature_4.name = "EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE"
 
     # Save all features to be deployed
     features = [feature_1, feature_2, feature_3]
@@ -112,6 +114,22 @@ async def check_feature_tables_populated(session, feature_tables):
         )
 
 
+async def check_feast_registry(app_container):
+    """
+    Check feast registry is populated correctly
+    """
+    feast_registry = await app_container.feast_registry_service.get_feast_registry_for_catalog()
+    assert feast_registry is not None
+    feature_store = await app_container.feast_feature_store_service.get_feast_feature_store(
+        feast_registry.id
+    )
+    assert {fv.name for fv in feature_store.list_feature_views()} == {
+        "fb_entity_PRODUCT_ACTION_fjs_3600_1800_1800_ttl",
+        "fb_entity_üser id_fjs_3600_1800_1800_ttl",
+    }
+    assert {fs.name for fs in feature_store.list_feature_services()} == {"EXTERNAL_FS_FEATURE_LIST"}
+
+
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_feature_materialize_service(
@@ -144,6 +162,8 @@ async def test_feature_materialize_service(
 
     await check_feature_tables_populated(session, primary_entity_to_feature_table.values())
 
+    await check_feast_registry(app_container)
+
     # Check offline store table for user entity
     service = app_container.feature_materialize_service
     feature_table_model = primary_entity_to_feature_table[(user_entity.id,)]
@@ -154,7 +174,6 @@ async def test_feature_materialize_service(
         "üser id",
         "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100",
         "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h",
-        "__EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE__part0",
     ]
     assert set(df.columns.tolist()) == set(expected)
     assert df.shape[0] == 18

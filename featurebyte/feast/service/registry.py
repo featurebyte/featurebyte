@@ -142,3 +142,17 @@ class FeastRegistryService(
             skip_block_modification_check=skip_block_modification_check,
         )
         return cast(FeastRegistryModel, updated)
+
+    async def get_feast_registry_for_catalog(self) -> Optional[FeastRegistryModel]:
+        """
+        Get feast registry document for the catalog if it exists
+
+        Returns
+        -------
+        Optional[FeastRegistryModel]
+        """
+        async for feast_registry_model in self.list_documents_iterator(
+            query_filter={"catalog_id": self.catalog_id}
+        ):
+            return feast_registry_model
+        return None

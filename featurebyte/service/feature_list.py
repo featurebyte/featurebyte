@@ -437,6 +437,24 @@ class FeatureListService(
             count=count,
         )
 
+    async def iterate_online_enabled_feature_lists_as_dict(self) -> AsyncIterator[dict[str, Any]]:
+        """
+        Iterate over online enabled feature lists as dictionaries. Such feature lists consist of
+        features that are all online enabled.
+
+        Yields
+        ------
+        dict[str, Any]
+            Feature list dict objects that are online enabled
+        """
+        async for feature_list_dict in self.list_documents_as_dict_iterator(
+            query_filter={"online_enabled_feature_ids.0": {"$exists": True}}
+        ):
+            if sorted(feature_list_dict["feature_ids"]) == sorted(
+                feature_list_dict["online_enabled_feature_ids"]
+            ):
+                yield feature_list_dict
+
 
 class AllFeatureListService(
     BaseDocumentService[FeatureListModel, FeatureListServiceCreate, FeatureListServiceUpdate]
