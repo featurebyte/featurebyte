@@ -1976,3 +1976,32 @@ def test_complex_feature_with_duplicated_feature_job_setting(
             "time_modulo_frequency": "300s",
         },
     }
+
+
+def test_feature_or_view_column_name_contains_quote(
+    cust_id_entity,
+    snowflake_event_table_with_entity,
+    feature_group_feature_job_setting,
+):
+    """Test feature or view column name contains quote"""
+    snowflake_event_table_with_entity.update_default_feature_job_setting(
+        feature_job_setting=feature_group_feature_job_setting,
+    )
+    event_view = snowflake_event_table_with_entity.get_view()
+    mask_col_name = '"mask" col\'s name'
+    event_view[mask_col_name] = event_view["col_float"] < 0
+    cols = ["col_float", "cust_id", mask_col_name]
+    sub_event_view = event_view[cols]
+    mask = sub_event_view[mask_col_name]
+    sub_event_view["col_float"][mask] = 0
+    feature_name = '"col_float"\'s aggregation'
+    feature = sub_event_view.groupby("cust_id").aggregate_over(
+        value_column="col_float",
+        method="sum",
+        windows=["30m"],
+        feature_job_setting=feature_group_feature_job_setting,
+        feature_names=[feature_name],
+    )[feature_name]
+
+    # check feature can be saved without error
+    feature.save()
