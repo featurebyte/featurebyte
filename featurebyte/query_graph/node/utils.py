@@ -1,7 +1,7 @@
 """
 Utility functions for query graph node module
 """
-from typing import List
+from typing import Sequence
 
 
 def subset_frame_column_expr(frame_name: str, column_name: str) -> str:
@@ -23,7 +23,7 @@ def subset_frame_column_expr(frame_name: str, column_name: str) -> str:
     return f"{frame_name}[{repr(column_name)}]"
 
 
-def subset_frame_columns_expr(frame_name: str, column_names: List[str]) -> str:
+def subset_frame_columns_expr(frame_name: str, column_names: Sequence[str]) -> str:
     """
     Subset frame columns expression
 
@@ -31,7 +31,7 @@ def subset_frame_columns_expr(frame_name: str, column_names: List[str]) -> str:
     ----------
     frame_name: str
         Frame column
-    column_names: List[str]
+    column_names: Sequence[str]
         Column names
 
     Returns

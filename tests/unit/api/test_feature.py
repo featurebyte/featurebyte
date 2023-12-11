@@ -1984,6 +1984,7 @@ def test_feature_or_view_column_name_contains_quote(
     feature_group_feature_job_setting,
 ):
     """Test feature or view column name contains quote"""
+    _ = cust_id_entity
     snowflake_event_table_with_entity.update_default_feature_job_setting(
         feature_job_setting=feature_group_feature_job_setting,
     )
