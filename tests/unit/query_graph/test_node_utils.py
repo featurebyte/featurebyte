@@ -60,11 +60,12 @@ def test_subset_frame_columns_expression(frame_name, column_names, expected_expr
         ("df", "mask", "df[mask]"),
         ("df", 'df["col"] > 0', 'df[df["col"] > 0]'),
         ("df", '(df["col"] > 0) & (df["col"] < 10)', 'df[(df["col"] > 0) & (df["col"] < 10)]'),
+        ("df", "df['\"col\"\\'s name'] > 0", "df[df['\"col\"\\'s name'] > 0]"),
     ],
 )
 def test_filter_series_or_frame_expression(frame_name, filter_expression, expected_expression):
     """Test filter_series_or_frame_expression function"""
-    df = pd.DataFrame({"col": [1, 2, 3]})
+    df = pd.DataFrame({"col": [1, 2, 3], '"col"\'s name': [1, 2, 3]})
     mask = pd.Series([True, False, True])
     expr = filter_series_or_frame_expr(frame_name, filter_expression)
     assert expr == expected_expression

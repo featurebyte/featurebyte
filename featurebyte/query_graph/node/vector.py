@@ -8,9 +8,9 @@ from pydantic import Field
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.base import BaseSeriesOutputNode
+from featurebyte.query_graph.node.metadata.config import SDKCodeGenConfig
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.node.metadata.sdk_code import (
-    CodeGenerationConfig,
     CodeGenerationContext,
     ExpressionStr,
     StatementT,
@@ -43,7 +43,7 @@ class VectorCosineSimilarityNode(BaseSeriesOutputNode):
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
-        config: CodeGenerationConfig,
+        config: SDKCodeGenConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_dict(node_inputs)

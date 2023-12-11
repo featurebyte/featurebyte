@@ -27,13 +27,13 @@ from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node.base import BaseNode, BasePrunableNode, NodeT
 from featurebyte.query_graph.node.cleaning_operation import ColumnCleaningOperation
+from featurebyte.query_graph.node.metadata.config import SDKCodeGenConfig
 from featurebyte.query_graph.node.metadata.operation import (
     OperationStructure,
     OperationStructureInfo,
 )
 from featurebyte.query_graph.node.metadata.sdk_code import (
     ClassEnum,
-    CodeGenerationConfig,
     CodeGenerationContext,
     ObjectClass,
     StatementT,
@@ -100,7 +100,7 @@ class BaseGraphNodeParameters(BaseModel):
         input_var_name_expressions: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
-        config: CodeGenerationConfig,
+        config: SDKCodeGenConfig,
         node_name: str,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         """
@@ -114,7 +114,7 @@ class BaseGraphNodeParameters(BaseModel):
             Variable name generator
         operation_structure: OperationStructure
             Operation structure of current node
-        config: CodeGenerationConfig
+        config: SDKCodeGenConfig
             Code generation configuration
         node_name: str
             Node name of the current graph node
@@ -136,7 +136,7 @@ class CleaningGraphNodeParameters(BaseGraphNodeParameters):
         input_var_name_expressions: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
-        config: CodeGenerationConfig,
+        config: SDKCodeGenConfig,
         node_name: str,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         raise RuntimeError("Not implemented")
@@ -155,7 +155,7 @@ class BaseOfflineStoreIngestQueryGraphNodeParameters(BaseGraphNodeParameters, AB
         input_var_name_expressions: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
-        config: CodeGenerationConfig,
+        config: SDKCodeGenConfig,
         node_name: str,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         raise RuntimeError("Not implemented")
@@ -308,7 +308,7 @@ class EventViewGraphNodeParameters(BaseViewGraphNodeParameters):
         input_var_name_expressions: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
-        config: CodeGenerationConfig,
+        config: SDKCodeGenConfig,
         node_name: str,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         # construct event view sdk statement
@@ -349,7 +349,7 @@ class ItemViewGraphNodeParameters(BaseViewGraphNodeParameters):
         input_var_name_expressions: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
-        config: CodeGenerationConfig,
+        config: SDKCodeGenConfig,
         node_name: str,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         # construct item view sdk statement
@@ -400,7 +400,7 @@ class DimensionViewGraphNodeParameters(BaseViewGraphNodeParameters):
         input_var_name_expressions: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
-        config: CodeGenerationConfig,
+        config: SDKCodeGenConfig,
         node_name: str,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         # construct dimension view sdk statement
@@ -430,7 +430,7 @@ class SCDViewGraphNodeParameters(BaseViewGraphNodeParameters):
         input_var_name_expressions: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
-        config: CodeGenerationConfig,
+        config: SDKCodeGenConfig,
         node_name: str,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         # construct scd view sdk statement
@@ -469,7 +469,7 @@ class ChangeViewGraphNodeParameters(BaseViewGraphNodeParameters):
         input_var_name_expressions: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
-        config: CodeGenerationConfig,
+        config: SDKCodeGenConfig,
         node_name: str,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         # construct change view sdk statement
@@ -613,7 +613,7 @@ class BaseGraphNode(BasePrunableNode):
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
-        config: CodeGenerationConfig,
+        config: SDKCodeGenConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         return self.parameters.derive_sdk_code(

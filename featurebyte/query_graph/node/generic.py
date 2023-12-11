@@ -20,6 +20,7 @@ from featurebyte.query_graph.node.base import (
     NodeT,
 )
 from featurebyte.query_graph.node.metadata.column import InColumnStr, OutColumnStr
+from featurebyte.query_graph.node.metadata.config import SDKCodeGenConfig
 from featurebyte.query_graph.node.metadata.operation import (
     AggregationColumn,
     DerivedDataColumn,
@@ -31,7 +32,6 @@ from featurebyte.query_graph.node.metadata.operation import (
 )
 from featurebyte.query_graph.node.metadata.sdk_code import (
     ClassEnum,
-    CodeGenerationConfig,
     CodeGenerationContext,
     ExpressionStr,
     InfoDict,
@@ -131,7 +131,7 @@ class ProjectNode(BaseNode):
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
-        config: CodeGenerationConfig,
+        config: SDKCodeGenConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_dict(node_inputs)
@@ -249,7 +249,7 @@ class FilterNode(BaseNode):
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
-        config: CodeGenerationConfig,
+        config: SDKCodeGenConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_dict(node_inputs)
@@ -407,7 +407,7 @@ class AssignNode(AssignColumnMixin, BasePrunableNode):
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
-        config: CodeGenerationConfig,
+        config: SDKCodeGenConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         var_name_expr = node_inputs[0]
@@ -494,7 +494,7 @@ class LagNode(BaseSeriesOutputNode):
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
-        config: CodeGenerationConfig,
+        config: SDKCodeGenConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_dict(node_inputs)
@@ -593,7 +593,7 @@ class ForwardAggregateNode(AggregationOpStructMixin, BaseNode):
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
-        config: CodeGenerationConfig,
+        config: SDKCodeGenConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_dict(node_inputs)
@@ -716,7 +716,7 @@ class GroupByNode(AggregationOpStructMixin, BaseNode):
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
-        config: CodeGenerationConfig,
+        config: SDKCodeGenConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_dict(node_inputs)
@@ -857,7 +857,7 @@ class ItemGroupbyNode(AggregationOpStructMixin, BaseNode):
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
-        config: CodeGenerationConfig,
+        config: SDKCodeGenConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         # Note: this node is a special case as the output of this node is not a complete SDK code.
@@ -1043,7 +1043,7 @@ class LookupNode(BaseLookupNode):
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
-        config: CodeGenerationConfig,
+        config: SDKCodeGenConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_dict(node_inputs)
@@ -1093,7 +1093,7 @@ class LookupTargetNode(BaseLookupNode):
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
-        config: CodeGenerationConfig,
+        config: SDKCodeGenConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_dict(node_inputs)
@@ -1331,7 +1331,7 @@ class JoinNode(BasePrunableNode):
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
-        config: CodeGenerationConfig,
+        config: SDKCodeGenConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_dict(node_inputs)
@@ -1535,7 +1535,7 @@ class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
-        config: CodeGenerationConfig,
+        config: SDKCodeGenConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_dict(node_inputs)
@@ -1642,7 +1642,7 @@ class TrackChangesNode(BaseNode):
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
-        config: CodeGenerationConfig,
+        config: SDKCodeGenConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         raise NotImplementedError()
@@ -1745,7 +1745,7 @@ class AggregateAsAtNode(AggregationOpStructMixin, BaseNode):
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
-        config: CodeGenerationConfig,
+        config: SDKCodeGenConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         # Note: this node is a special case as the output of this node is not a complete SDK code.
@@ -1844,7 +1844,7 @@ class AliasNode(BaseNode):
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
-        config: CodeGenerationConfig,
+        config: SDKCodeGenConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_dict(node_inputs)
@@ -1896,7 +1896,7 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
-        config: CodeGenerationConfig,
+        config: SDKCodeGenConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_dict(node_inputs)

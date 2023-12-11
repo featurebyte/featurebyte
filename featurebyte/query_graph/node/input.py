@@ -15,6 +15,7 @@ from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.base import BaseNode
 from featurebyte.query_graph.node.metadata.column import InColumnStr
+from featurebyte.query_graph.node.metadata.config import SDKCodeGenConfig
 from featurebyte.query_graph.node.metadata.operation import (
     NodeOutputCategory,
     OperationStructure,
@@ -23,7 +24,6 @@ from featurebyte.query_graph.node.metadata.operation import (
 )
 from featurebyte.query_graph.node.metadata.sdk_code import (
     ClassEnum,
-    CodeGenerationConfig,
     CodeGenerationContext,
     CommentStr,
     ObjectClass,
@@ -406,7 +406,7 @@ class InputNode(BaseNode):
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
-        config: CodeGenerationConfig,
+        config: SDKCodeGenConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         statements: List[StatementT] = []

@@ -17,9 +17,9 @@ from featurebyte.query_graph.node.generic import (
     LookupTargetNode,
     LookupTargetParameters,
 )
+from featurebyte.query_graph.node.metadata.config import SDKCodeGenConfig
 from featurebyte.query_graph.node.metadata.operation import NodeOutputCategory, OperationStructure
 from featurebyte.query_graph.node.metadata.sdk_code import (
-    CodeGenerationConfig,
     CodeGenerationContext,
     ExpressionStr,
     InfoDict,
@@ -89,7 +89,7 @@ def test_alias_node(node_inputs, required_copy, expected_statements, expected_in
             output_category=NodeOutputCategory.VIEW,
             row_index_lineage=tuple(),
         ),
-        config=CodeGenerationConfig(),
+        config=SDKCodeGenConfig(),
         context=CodeGenerationContext(as_info_dict=False, required_copy=required_copy),
     )
     assert statements == expected_statements
@@ -152,7 +152,7 @@ def test_assign_node(node_inputs, required_copy, expected_statements, expected_i
             output_category=NodeOutputCategory.VIEW,
             row_index_lineage=tuple(),
         ),
-        config=CodeGenerationConfig(),
+        config=SDKCodeGenConfig(),
         context=CodeGenerationContext(as_info_dict=False, required_copy=required_copy),
     )
     assert statements == expected_statements
@@ -175,7 +175,7 @@ def test_vector_node():
             output_category=NodeOutputCategory.VIEW,
             row_index_lineage=tuple(),
         ),
-        config=CodeGenerationConfig(),
+        config=SDKCodeGenConfig(),
         context=CodeGenerationContext(as_info_dict=False, required_copy=False),
     )
     assert statements == []
@@ -207,7 +207,7 @@ def test_lookup_target_node():
             output_category=NodeOutputCategory.TARGET,
             row_index_lineage=tuple(),
         ),
-        config=CodeGenerationConfig(),
+        config=SDKCodeGenConfig(),
         context=CodeGenerationContext(as_info_dict=False, required_copy=False),
     )
     assert info == 'view.target_col.as_target(target_name="target", offset="7d")'
@@ -232,7 +232,7 @@ def test_haversine_node():
             output_category=NodeOutputCategory.VIEW,
             row_index_lineage=tuple(),
         ),
-        config=CodeGenerationConfig(),
+        config=SDKCodeGenConfig(),
         context=CodeGenerationContext(as_info_dict=False, required_copy=False),
     )
     assert len(statements) == 1
@@ -344,7 +344,7 @@ def test_conditional(node_inputs, required_copy, as_info_dict, expected_statemen
             output_category=NodeOutputCategory.VIEW,
             row_index_lineage=tuple(),
         ),
-        config=CodeGenerationConfig(),
+        config=SDKCodeGenConfig(),
         context=CodeGenerationContext(as_info_dict=as_info_dict, required_copy=required_copy),
     )
     assert statements == expected_statements
