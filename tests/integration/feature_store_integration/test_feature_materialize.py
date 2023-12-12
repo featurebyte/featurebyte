@@ -1,7 +1,6 @@
 """
 Tests for feature materialization service
 """
-from datetime import datetime
 from unittest.mock import patch
 
 import pandas as pd

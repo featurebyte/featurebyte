@@ -68,7 +68,7 @@ class MaterializedFeatures:
         return self.serving_names + self.column_names
 
 
-class FeatureMaterializeService:
+class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
     """
     FeatureMaterializeService is responsible for materialising a set of currently online enabled
     features so that they can be published to an external feature store. These features are

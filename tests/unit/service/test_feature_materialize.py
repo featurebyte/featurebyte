@@ -231,6 +231,44 @@ async def test_scheduled_materialize_features(
 
 @pytest.mark.usefixtures("mock_get_feature_store_session")
 @pytest.mark.asyncio
+async def test_scheduled_materialize_features_if_materialized_before(
+    app_container,
+    feature_materialize_service,
+    offline_store_feature_table,
+    mock_materialize_partial,
+):
+    """
+    Test calling scheduled_materialize_features when the feature table has already been materialized
+    before. When calling online materialize it should provide the feature table's
+    last_materialized_at as start date.
+    """
+    offline_store_feature_table.last_materialized_at = datetime(2022, 1, 1, 0, 0)
+
+    with freeze_time("2022-01-02 00:00:00"):
+        await feature_materialize_service.scheduled_materialize_features(
+            offline_store_feature_table
+        )
+
+    # Check online materialization
+    _, kwargs = mock_materialize_partial.call_args
+    _ = kwargs.pop("feature_store")
+    feature_view = kwargs.pop("feature_view")
+    assert feature_view.name == "fb_entity_cust_id_fjs_1800_300_600_ttl"
+    assert {
+        "columns": ["sum_30m"],
+        "start_date": datetime(2022, 1, 1, 0, 0),
+        "end_date": datetime(2022, 1, 2, 0, 0),
+    }
+
+    # Check last materialization timestamp updated
+    updated_feature_table = await app_container.offline_store_feature_table_service.get_document(
+        offline_store_feature_table.id
+    )
+    assert updated_feature_table.last_materialized_at == datetime(2022, 1, 2, 0, 0)
+
+
+@pytest.mark.usefixtures("mock_get_feature_store_session")
+@pytest.mark.asyncio
 async def test_initialize_new_columns__table_does_not_exist(
     feature_materialize_service,
     mock_snowflake_session,
