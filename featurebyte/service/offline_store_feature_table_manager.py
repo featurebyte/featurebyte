@@ -14,8 +14,8 @@ from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.offline_store_feature_table import (
+    FeaturesUpdate,
     OfflineStoreFeatureTableModel,
-    OfflineStoreFeatureTableUpdate,
     get_offline_store_feature_table_model,
 )
 from featurebyte.models.offline_store_ingest_query import OfflineStoreIngestQueryGraph
@@ -169,7 +169,7 @@ class OfflineStoreFeatureTableManagerService:
             has_ttl=feature_table_dict["has_ttl"],
             feature_job_setting=FeatureJobSetting(**feature_table_dict["feature_job_setting"]),
         )
-        update_schema = OfflineStoreFeatureTableUpdate(**feature_table_model.dict())
+        update_schema = FeaturesUpdate(**feature_table_model.dict())
         return cast(
             OfflineStoreFeatureTableModel,
             await self.offline_store_feature_table_service.update_document(

@@ -1,7 +1,7 @@
 """
 OfflineStoreFeatureTableModel class
 """
-from typing import List, Literal, Optional
+from typing import List, Literal, Optional, Union
 
 from dataclasses import dataclass
 from datetime import datetime
@@ -112,17 +112,27 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
         ]
 
 
-class OfflineStoreFeatureTableUpdate(BaseDocumentServiceUpdateSchema):
+class FeaturesUpdate(BaseDocumentServiceUpdateSchema):
     """
-    OfflineStoreFeatureTableUpdate class
+    FeaturesUpdate class to be used when updating features related fields
     """
 
-    feature_ids: Optional[List[PydanticObjectId]]
-    feature_cluster: Optional[FeatureCluster]
-    output_column_names: Optional[List[str]]
-    output_dtypes: Optional[List[DBVarType]]
-    entity_universe: Optional[WindowAggregateEntityUniverse]
+    feature_ids: List[PydanticObjectId]
+    feature_cluster: FeatureCluster
+    output_column_names: List[str]
+    output_dtypes: List[DBVarType]
+    entity_universe: WindowAggregateEntityUniverse
+
+
+class LastMaterializedAtUpdate(BaseDocumentServiceUpdateSchema):
+    """
+    LastMaterializedAtUpdate class to be used when updating last_materialized_at field
+    """
+
     last_materialized_at: Optional[datetime]
+
+
+OfflineStoreFeatureTableUpdate = Union[FeaturesUpdate, LastMaterializedAtUpdate]
 
 
 @dataclass

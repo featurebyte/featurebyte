@@ -19,8 +19,8 @@ from featurebyte.feast.service.feature_store import FeastFeatureStoreService
 from featurebyte.feast.service.registry import FeastRegistryService
 from featurebyte.feast.utils.materialize_helper import materialize_partial
 from featurebyte.models.offline_store_feature_table import (
+    LastMaterializedAtUpdate,
     OfflineStoreFeatureTableModel,
-    OfflineStoreFeatureTableUpdate,
 )
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
@@ -227,7 +227,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         )
 
         # Update last materialized timestamp
-        update_schema = OfflineStoreFeatureTableUpdate(
+        update_schema = LastMaterializedAtUpdate(
             last_materialized_at=materialized_features.feature_timestamp
         )
         await self.offline_store_feature_table_service.update_document(
