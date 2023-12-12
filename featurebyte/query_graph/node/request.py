@@ -111,5 +111,4 @@ class RequestColumnNode(BaseNode):
             )
             expression = ClassEnum.PD_TO_DATETIME(expr)
             return [(var_name, expression)], var_name
-        else:
-            return [], ExpressionStr(expr)
+        return [], ExpressionStr(expr)

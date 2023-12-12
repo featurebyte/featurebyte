@@ -643,5 +643,4 @@ class BaseGraphNode(BasePrunableNode):
             var_name = var_name_generator.convert_to_variable_name("feat", node_name=self.name)
             expression = ClassEnum.PD_TO_DATETIME(expr)
             return [(var_name, expression)], var_name
-        else:
-            return [], ExpressionStr(expr)
+        return [], ExpressionStr(expr)
