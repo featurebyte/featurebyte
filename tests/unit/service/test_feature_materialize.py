@@ -220,7 +220,11 @@ async def test_scheduled_materialize_features(
     _ = kwargs.pop("feature_store")
     feature_view = kwargs.pop("feature_view")
     assert feature_view.name == "fb_entity_cust_id_fjs_1800_300_600_ttl"
-    assert {"columns": ["sum_30m"], "start_date": None, "end_date": datetime(2022, 1, 1, 0, 0)}
+    assert kwargs == {
+        "columns": ["sum_30m"],
+        "start_date": None,
+        "end_date": datetime(2022, 1, 1, 0, 0),
+    }
 
     # Check last materialization timestamp updated
     updated_feature_table = await app_container.offline_store_feature_table_service.get_document(
@@ -254,7 +258,7 @@ async def test_scheduled_materialize_features_if_materialized_before(
     _ = kwargs.pop("feature_store")
     feature_view = kwargs.pop("feature_view")
     assert feature_view.name == "fb_entity_cust_id_fjs_1800_300_600_ttl"
-    assert {
+    assert kwargs == {
         "columns": ["sum_30m"],
         "start_date": datetime(2022, 1, 1, 0, 0),
         "end_date": datetime(2022, 1, 2, 0, 0),
@@ -299,7 +303,7 @@ async def test_initialize_new_columns__table_does_not_exist(
     _ = kwargs.pop("feature_store")
     feature_view = kwargs.pop("feature_view")
     assert feature_view.name == "fb_entity_cust_id_fjs_1800_300_600_ttl"
-    assert {"columns": ["sum_30m"], "start_date": None, "end_date": datetime(2022, 1, 1, 0, 0)}
+    assert kwargs == {"columns": ["sum_30m"], "end_date": datetime(2022, 1, 1, 0, 0)}
 
 
 @pytest.mark.usefixtures("mock_get_feature_store_session")
@@ -339,4 +343,4 @@ async def test_initialize_new_columns__table_exists(
     _ = kwargs.pop("feature_store")
     feature_view = kwargs.pop("feature_view")
     assert feature_view.name == "fb_entity_cust_id_fjs_1800_300_600_ttl"
-    assert {"columns": ["sum_30m"], "start_date": None, "end_date": datetime(2022, 1, 1, 0, 0)}
+    assert kwargs == {"columns": ["sum_30m"], "end_date": datetime(2022, 10, 15, 10, 0, 0)}
