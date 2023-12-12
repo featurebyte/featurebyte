@@ -7,12 +7,21 @@ from typing import AsyncIterator, List, Optional
 
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
+from datetime import datetime
 
+import pandas as pd
 from bson import ObjectId
+from feast import FeatureStore as FeastFeatureStore
 from sqlglot import expressions
 
 from featurebyte.enum import InternalName
-from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
+from featurebyte.feast.service.feature_store import FeastFeatureStoreService
+from featurebyte.feast.service.registry import FeastRegistryService
+from featurebyte.feast.utils.materialize_helper import materialize_partial
+from featurebyte.models.offline_store_feature_table import (
+    OfflineStoreFeatureTableModel,
+    OfflineStoreFeatureTableUpdate,
+)
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
@@ -28,6 +37,7 @@ from featurebyte.query_graph.sql.online_serving import (
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
 from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.session_manager import SessionManagerService
@@ -44,6 +54,7 @@ class MaterializedFeatures:
     column_names: List[str]
     data_types: List[str]
     serving_names: List[str]
+    feature_timestamp: datetime
 
     @property
     def serving_names_and_column_names(self) -> List[str]:
@@ -72,6 +83,9 @@ class FeatureMaterializeService:
         online_store_table_version_service: OnlineStoreTableVersionService,
         feature_store_service: FeatureStoreService,
         session_manager_service: SessionManagerService,
+        feast_registry_service: FeastRegistryService,
+        feast_feature_store_service: FeastFeatureStoreService,
+        offline_store_feature_table_service: OfflineStoreFeatureTableService,
     ):
         self.feature_service = feature_service
         self.online_store_compute_query_service = online_store_compute_query_service
@@ -79,6 +93,9 @@ class FeatureMaterializeService:
         self.online_store_table_version_service = online_store_table_version_service
         self.feature_store_service = feature_store_service
         self.session_manager_service = session_manager_service
+        self.feast_registry_service = feast_registry_service
+        self.feast_feature_store_service = feast_feature_store_service
+        self.offline_store_feature_table_service = offline_store_feature_table_service
 
     @asynccontextmanager
     async def materialize_features(
@@ -127,6 +144,7 @@ class FeatureMaterializeService:
         await session.execute_query_long_running(create_batch_request_table_query)
 
         # Materialize features
+        feature_timestamp = datetime.utcnow()
         output_table_details = TableDetails(
             database_name=session.database_name,
             schema_name=session.schema_name,
@@ -163,6 +181,7 @@ class FeatureMaterializeService:
                 column_names=column_names,
                 data_types=[adapter.get_physical_type_from_dtype(dtype) for dtype in column_dtypes],
                 serving_names=feature_table_model.serving_names,
+                feature_timestamp=feature_timestamp,
             )
 
         finally:
@@ -196,6 +215,24 @@ class FeatureMaterializeService:
                 feature_table_model,
                 materialized_features,
             )
+
+        # Feast online materialize
+        feature_store = await self._get_feast_feature_store()
+        materialize_partial(
+            feature_store=feature_store,
+            feature_view=feature_store.get_feature_view(feature_table_model.name),
+            columns=feature_table_model.output_column_names,
+            start_date=feature_table_model.last_materialized_at,
+            end_date=materialized_features.feature_timestamp,
+        )
+
+        # Update last materialized timestamp
+        update_schema = OfflineStoreFeatureTableUpdate(
+            last_materialized_at=materialized_features.feature_timestamp
+        )
+        await self.offline_store_feature_table_service.update_document(
+            document_id=feature_table_model.id, data=update_schema
+        )
 
     async def initialize_new_columns(
         self,
@@ -232,6 +269,7 @@ class FeatureMaterializeService:
                     feature_table_model,
                     materialized_features,
                 )
+                materialize_end_date = materialized_features.feature_timestamp
             else:
                 # Merge into existing feature table
                 last_feature_timestamp = await self._get_last_feature_timestamp(
@@ -243,6 +281,29 @@ class FeatureMaterializeService:
                     materialized_features=materialized_features,
                     feature_timestamp_value=last_feature_timestamp,
                 )
+                materialize_end_date = pd.Timestamp(last_feature_timestamp).to_pydatetime()
+
+        # Feast online materialize. Start date is not set because these are new columns.
+        feature_store = await self._get_feast_feature_store()
+        materialize_partial(
+            feature_store=feature_store,
+            feature_view=feature_store.get_feature_view(feature_table_model.name),
+            columns=materialized_features.column_names,
+            end_date=materialize_end_date,
+        )
+
+    async def _get_feast_feature_store(self) -> FeastFeatureStore:
+        """
+        Get the FeastFeatureStore object
+
+        Returns
+        -------
+        FeastFeatureStore
+            FeastFeatureStore object
+        """
+        feast_registry = await self.feast_registry_service.get_feast_registry_for_catalog()
+        assert feast_registry is not None
+        return await self.feast_feature_store_service.get_feast_feature_store(feast_registry.id)
 
     async def _get_session(self, feature_table_model: OfflineStoreFeatureTableModel) -> BaseSession:
         feature_store = await self.feature_store_service.get_document(
@@ -267,7 +328,10 @@ class FeatureMaterializeService:
                 ),
                 select_expr=expressions.select(
                     expressions.alias_(
-                        adapter.current_timestamp(),
+                        make_literal_value(
+                            materialized_features.feature_timestamp.isoformat(),
+                            cast_as_timestamp=True,
+                        ),
                         alias=InternalName.FEATURE_TIMESTAMP_COLUMN,
                         quoted=True,
                     )
@@ -290,7 +354,6 @@ class FeatureMaterializeService:
         feature_table_model: OfflineStoreFeatureTableModel,
         materialized_features: MaterializedFeatures,
     ) -> None:
-        adapter = get_sql_adapter(session.source_type)
         query = sql_to_string(
             expressions.Insert(
                 this=expressions.Schema(
@@ -303,7 +366,10 @@ class FeatureMaterializeService:
                 ),
                 expression=expressions.select(
                     expressions.alias_(
-                        adapter.current_timestamp(),
+                        make_literal_value(
+                            materialized_features.feature_timestamp.isoformat(),
+                            cast_as_timestamp=True,
+                        ),
                         alias=InternalName.FEATURE_TIMESTAMP_COLUMN,
                         quoted=True,
                     )

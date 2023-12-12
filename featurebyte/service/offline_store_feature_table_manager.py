@@ -108,8 +108,8 @@ class OfflineStoreFeatureTableManagerService:
                 await self.offline_store_feature_table_service.create_document(feature_table_model)
 
             if feature_table_model is not None:
-                await self.feature_materialize_service.initialize_new_columns(feature_table_model)
                 await self._create_or_update_feast_registry()
+                await self.feature_materialize_service.initialize_new_columns(feature_table_model)
                 await self.feature_materialize_scheduler_service.start_job_if_not_exist(
                     feature_table_model
                 )

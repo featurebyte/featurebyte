@@ -4,6 +4,7 @@ OfflineStoreFeatureTableModel class
 from typing import List, Literal, Optional
 
 from dataclasses import dataclass
+from datetime import datetime
 
 import pymongo
 from pydantic import Field
@@ -81,6 +82,7 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
     serving_names: List[str]
     feature_job_setting: Optional[FeatureJobSetting]
     has_ttl: bool
+    last_materialized_at: Optional[datetime]
 
     feature_cluster: FeatureCluster
     output_column_names: List[str]
@@ -115,11 +117,12 @@ class OfflineStoreFeatureTableUpdate(BaseDocumentServiceUpdateSchema):
     OfflineStoreFeatureTableUpdate class
     """
 
-    feature_ids: List[PydanticObjectId]
-    feature_cluster: FeatureCluster
-    output_column_names: List[str]
-    output_dtypes: List[DBVarType]
-    entity_universe: WindowAggregateEntityUniverse
+    feature_ids: Optional[List[PydanticObjectId]]
+    feature_cluster: Optional[FeatureCluster]
+    output_column_names: Optional[List[str]]
+    output_dtypes: Optional[List[DBVarType]]
+    entity_universe: Optional[WindowAggregateEntityUniverse]
+    last_materialized_at: Optional[datetime]
 
 
 @dataclass
