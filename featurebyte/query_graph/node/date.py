@@ -2,13 +2,13 @@
 This module contains datetime operation related node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import List, Literal, Optional, Sequence, Tuple
+from typing import List, Literal, Optional, Sequence, Tuple, Union
 
 from pydantic import BaseModel, Field
 
 from featurebyte.common.typing import DatetimeSupportedPropertyType, TimedeltaSupportedUnitType
 from featurebyte.enum import DBVarType
-from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.base import (
     BaseSeriesOutputNode,
     BaseSeriesOutputWithSingleOperandNode,
@@ -88,8 +88,36 @@ class DatetimeExtractNode(BaseSeriesOutputNode):
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        # TODO: implement this
-        raise NotImplementedError()
+        var_name_expressions = self._assert_no_info_dict(node_inputs)
+        ts_operand: str = var_name_expressions[0].as_input()
+
+        statements: List[StatementT] = []
+        offset_operand: Optional[Union[str, VariableNameStr]]
+        if self.parameters.timezone_offset is not None:
+            delta = ClassEnum.PD_TO_TIMEDELTA(
+                ValueStr.create(self.parameters.timezone_offset), unit="h"
+            )
+            offset_operand = var_name_generator.convert_to_variable_name(
+                variable_name_prefix="tz_offset", node_name=None
+            )
+            statements.append((offset_operand, delta))
+        elif len(var_name_expressions) == 2:
+            offset_operand = var_name_expressions[1].as_input()
+        else:
+            offset_operand = None
+
+        dt_var_name: Union[str, VariableNameStr]
+        if offset_operand:
+            dt_var_name = var_name_generator.convert_to_variable_name(
+                variable_name_prefix="feat_dt", node_name=None
+            )
+            expr = ExpressionStr(f"{ts_operand} + {offset_operand}")
+            statements.append((dt_var_name, expr))
+        else:
+            dt_var_name = ts_operand
+
+        output = ExpressionStr(f"{dt_var_name}.dt.{self.parameters.property}")
+        return statements, output
 
 
 class TimeDeltaExtractNode(BaseSeriesOutputWithSingleOperandNode):
@@ -146,8 +174,9 @@ class DateDifference(BaseSeriesOutputNode):
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        left_operand: str = node_inputs[0]
-        right_operand = node_inputs[1]
+        var_name_expressions = self._assert_no_info_dict(node_inputs)
+        left_operand: str = var_name_expressions[0].as_input()
+        right_operand = var_name_expressions[1].as_input()
         return [], ExpressionStr(f"{left_operand} - {right_operand}")
 
 
@@ -200,8 +229,17 @@ class TimeDelta(BaseSeriesOutputNode):
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        # TODO: implement this
-        raise NotImplementedError()
+        var_name_expressions = self._assert_no_info_dict(node_inputs)
+        var_name_expression = var_name_expressions[0]
+        statements: List[StatementT] = []
+        var_name = var_name_generator.generate_variable_name(
+            node_output_type=NodeOutputType.SERIES,
+            node_output_category=NodeOutputCategory.FEATURE,
+            node_name=self.name,
+        )
+        obj = ClassEnum.PD_TO_TIMEDELTA(var_name_expression, unit=self.parameters.unit)
+        statements.append((var_name, obj))
+        return statements, var_name
 
 
 class DateAdd(BaseSeriesOutputNode):
@@ -250,6 +288,7 @@ class DateAdd(BaseSeriesOutputNode):
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        left_operand: str = node_inputs[0]
-        right_operand = node_inputs[1]
+        var_name_expressions = self._assert_no_info_dict(node_inputs)
+        left_operand = var_name_expressions[0]
+        right_operand = var_name_expressions[1]
         return [], ExpressionStr(f"{left_operand} + {right_operand}")

@@ -60,5 +60,5 @@ class VectorCosineSimilarityNode(BaseSeriesOutputNode):
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        # TODO: Implement this
+        # TODO: implement this (DEV-2797)
         raise NotImplementedError()

@@ -307,6 +307,7 @@ class BaseNode(BaseModel):
                     node_name=self.name,
                 )
             else:
+                assert variable_name_prefix is not None
                 var_name = var_name_generator.convert_to_variable_name(
                     variable_name_prefix=variable_name_prefix, node_name=self.name
                 )
@@ -605,12 +606,13 @@ class BaseNode(BaseModel):
         Returns
         -------
         Tuple[List[StatementT], VarNameExpression]
+        # noqa: DAR202
 
         Raises
         ------
         RuntimeError
             If this method is not supposed to be called
-        # noqa: DAR202, DAR401
+        # noqa: DAR401
         """
         raise RuntimeError("This method should not be called")
 
@@ -929,9 +931,16 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        statements: List[StatementT] = []
-        left_operand: str = node_inputs[0]
-        right_operand: Union[str, VariableNameStr]
+        left_operand: str
+        right_operand: str
+        var_name_expressions = self._assert_no_info_dict(node_inputs)
+        statements, left_operand = self._convert_expression_to_variable(
+            var_name_expression=var_name_expressions[0],
+            var_name_generator=var_name_generator,
+            node_output_type=NodeOutputType.SERIES,
+            node_output_category=NodeOutputCategory.FEATURE,
+            to_associate_with_node_name=False,
+        )
         if isinstance(self.parameters.value, TimestampValue):
             timestamp_val = var_name_generator.convert_to_variable_name(
                 variable_name_prefix="timestamp_value",
@@ -945,7 +954,15 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
             right_operand = ValueStr.create(self.parameters.value).as_input()
 
         if len(node_inputs) == 2:
-            right_operand = node_inputs[1]
+            stats, right_operand = self._convert_expression_to_variable(
+                var_name_expression=var_name_expressions[1],
+                var_name_generator=var_name_generator,
+                node_output_type=NodeOutputType.SERIES,
+                node_output_category=NodeOutputCategory.FEATURE,
+                to_associate_with_node_name=False,
+            )
+            statements.extend(stats)
+
         left_operand, right_operand = self._reorder_operands(left_operand, right_operand)
         return statements, ExpressionStr(self.generate_expression(left_operand, right_operand))
 

@@ -70,5 +70,5 @@ class Haversine(BaseSeriesOutputNode):
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        # TODO: implement this
+        # TODO: implement this (DEV-2797)
         raise NotImplementedError()

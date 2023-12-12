@@ -1968,15 +1968,16 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        var_name_expressions = self._assert_no_info_dict(node_inputs)
         statements, var_name = self._convert_expression_to_variable(
-            var_name_expression=node_inputs[0],
+            var_name_expression=var_name_expressions[0],
             var_name_generator=var_name_generator,
             node_output_type=NodeOutputType.SERIES,
             node_output_category=NodeOutputCategory.FEATURE,
             to_associate_with_node_name=False,
         )
         mask_statements, mask_var_name = self._convert_expression_to_variable(
-            var_name_expression=node_inputs[1],
+            var_name_expression=var_name_expressions[1],
             var_name_generator=var_name_generator,
             node_output_type=NodeOutputType.SERIES,
             node_output_category=NodeOutputCategory.FEATURE,
@@ -1989,7 +1990,7 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
         is_series_assignment = len(node_inputs) == 3
         if is_series_assignment:
             expr = filter_series_or_frame_expr(
-                series_or_frame_name=node_inputs[2], filter_expression=mask_var_name
+                series_or_frame_name=var_name_expressions[2], filter_expression=mask_var_name
             )
             value = ExpressionStr(expr)
 
