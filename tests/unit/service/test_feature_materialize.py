@@ -2,12 +2,14 @@
 Test FeatureMaterializeService
 """
 from dataclasses import asdict
+from datetime import datetime
 from unittest.mock import call, patch
 
 import pandas as pd
 import pytest
 import pytest_asyncio
 from bson import ObjectId
+from freezegun import freeze_time
 
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.online_store import OnlineFeatureSpec
@@ -94,6 +96,17 @@ async def offline_store_feature_table_fixture(app_container, deployed_feature):
         return model
 
 
+@pytest.fixture(name="mock_materialize_partial")
+def mock_materialize_partial_fixture():
+    """
+    Patch materialize_partial method
+    """
+    with patch(
+        "featurebyte.service.feature_materialize.materialize_partial",
+    ) as patched_materialize_partial:
+        yield patched_materialize_partial
+
+
 @pytest.fixture(name="mocked_unique_identifier_generator", autouse=True)
 def mocked_unique_identifier_generator_fixture():
     """
@@ -102,6 +115,15 @@ def mocked_unique_identifier_generator_fixture():
     with patch("featurebyte.service.feature_materialize.ObjectId") as patched_object_id:
         patched_object_id.return_value = ObjectId("000000000000000000000000")
         yield patched_object_id
+
+
+@pytest.fixture(name="freeze_feature_timestamp", autouse=True)
+def freeze_feature_timestamp_fixture():
+    """
+    Patch ObjectId to return a fixed value so that queries are deterministic
+    """
+    with freeze_time("2022-01-01 00:00:00"):
+        yield
 
 
 def extract_session_executed_queries(mock_snowflake_session, func="execute_query_long_running"):
@@ -142,6 +164,7 @@ async def test_materialize_features(
         "materialized_table_name": "TEMP_FEATURE_TABLE",
         "column_names": ["sum_30m"],
         "data_types": ["FLOAT"],
+        "feature_timestamp": datetime(2022, 1, 1, 0, 0),
         "serving_names": ["cust_id"],
     }
 
@@ -173,9 +196,11 @@ async def test_materialize_features(
 @pytest.mark.usefixtures("mock_get_feature_store_session")
 @pytest.mark.asyncio
 async def test_scheduled_materialize_features(
+    app_container,
     feature_materialize_service,
     mock_snowflake_session,
     offline_store_feature_table,
+    mock_materialize_partial,
     update_fixtures,
 ):
     """
@@ -190,6 +215,61 @@ async def test_scheduled_materialize_features(
         update_fixtures,
     )
 
+    # Check online materialization called
+    _, kwargs = mock_materialize_partial.call_args
+    _ = kwargs.pop("feature_store")
+    feature_view = kwargs.pop("feature_view")
+    assert feature_view.name == "fb_entity_cust_id_fjs_1800_300_600_ttl"
+    assert kwargs == {
+        "columns": ["sum_30m"],
+        "start_date": None,
+        "end_date": datetime(2022, 1, 1, 0, 0),
+    }
+
+    # Check last materialization timestamp updated
+    updated_feature_table = await app_container.offline_store_feature_table_service.get_document(
+        offline_store_feature_table.id
+    )
+    assert updated_feature_table.last_materialized_at == datetime(2022, 1, 1, 0, 0)
+
+
+@pytest.mark.usefixtures("mock_get_feature_store_session")
+@pytest.mark.asyncio
+async def test_scheduled_materialize_features_if_materialized_before(
+    app_container,
+    feature_materialize_service,
+    offline_store_feature_table,
+    mock_materialize_partial,
+):
+    """
+    Test calling scheduled_materialize_features when the feature table has already been materialized
+    before. When calling online materialize it should provide the feature table's
+    last_materialized_at as start date.
+    """
+    offline_store_feature_table.last_materialized_at = datetime(2022, 1, 1, 0, 0)
+
+    with freeze_time("2022-01-02 00:00:00"):
+        await feature_materialize_service.scheduled_materialize_features(
+            offline_store_feature_table
+        )
+
+    # Check online materialization
+    _, kwargs = mock_materialize_partial.call_args
+    _ = kwargs.pop("feature_store")
+    feature_view = kwargs.pop("feature_view")
+    assert feature_view.name == "fb_entity_cust_id_fjs_1800_300_600_ttl"
+    assert kwargs == {
+        "columns": ["sum_30m"],
+        "start_date": datetime(2022, 1, 1, 0, 0),
+        "end_date": datetime(2022, 1, 2, 0, 0),
+    }
+
+    # Check last materialization timestamp updated
+    updated_feature_table = await app_container.offline_store_feature_table_service.get_document(
+        offline_store_feature_table.id
+    )
+    assert updated_feature_table.last_materialized_at == datetime(2022, 1, 2, 0, 0)
+
 
 @pytest.mark.usefixtures("mock_get_feature_store_session")
 @pytest.mark.asyncio
@@ -197,6 +277,7 @@ async def test_initialize_new_columns__table_does_not_exist(
     feature_materialize_service,
     mock_snowflake_session,
     offline_store_feature_table,
+    mock_materialize_partial,
     update_fixtures,
 ):
     """
@@ -218,6 +299,12 @@ async def test_initialize_new_columns__table_does_not_exist(
         update_fixtures,
     )
 
+    _, kwargs = mock_materialize_partial.call_args
+    _ = kwargs.pop("feature_store")
+    feature_view = kwargs.pop("feature_view")
+    assert feature_view.name == "fb_entity_cust_id_fjs_1800_300_600_ttl"
+    assert kwargs == {"columns": ["sum_30m"], "end_date": datetime(2022, 1, 1, 0, 0)}
+
 
 @pytest.mark.usefixtures("mock_get_feature_store_session")
 @pytest.mark.asyncio
@@ -225,6 +312,7 @@ async def test_initialize_new_columns__table_exists(
     feature_materialize_service,
     mock_snowflake_session,
     offline_store_feature_table,
+    mock_materialize_partial,
     update_fixtures,
 ):
     """
@@ -250,3 +338,9 @@ async def test_initialize_new_columns__table_exists(
         "tests/fixtures/feature_materialize/initialize_new_columns_existing_table.sql",
         update_fixtures,
     )
+
+    _, kwargs = mock_materialize_partial.call_args
+    _ = kwargs.pop("feature_store")
+    feature_view = kwargs.pop("feature_view")
+    assert feature_view.name == "fb_entity_cust_id_fjs_1800_300_600_ttl"
+    assert kwargs == {"columns": ["sum_30m"], "end_date": datetime(2022, 10, 15, 10, 0, 0)}

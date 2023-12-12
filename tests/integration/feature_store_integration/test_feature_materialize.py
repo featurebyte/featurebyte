@@ -1,7 +1,6 @@
 """
 Tests for feature materialization service
 """
-from datetime import datetime
 from unittest.mock import patch
 
 import pandas as pd
@@ -134,7 +133,6 @@ async def check_feast_registry(app_container):
     assert {fs.name for fs in feature_store.list_feature_services()} == {"EXTERNAL_FS_FEATURE_LIST"}
 
     # Check feast materialize and get_online_features
-    feature_store.materialize(datetime(2000, 1, 1), datetime.now())
     feature_service = feature_store.get_feature_service("EXTERNAL_FS_FEATURE_LIST")
     online_features = feature_store.get_online_features(
         features=feature_service, entity_rows=[{"üser id": 1, "PRODUCT_ACTION": "detail"}]
