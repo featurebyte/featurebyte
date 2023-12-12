@@ -245,7 +245,15 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
         -------
         OnDemandFeatureViewGlobalState
             OnDemandFeatureViewGlobalState
+
+        Raises
+        ------
+        ValueError
+            If the feature or target query graph is not decomposed
         """
+        if not self.is_decomposed:
+            raise ValueError("On demand view can only be extracted from decomposed query graph")
+
         node = self.graph.get_node_by_name(self.node_name)
         return OnDemandFeatureViewExtractor(graph=self.graph).extract(
             node=node,

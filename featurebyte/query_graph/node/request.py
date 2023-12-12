@@ -19,9 +19,9 @@ from featurebyte.query_graph.node.metadata.operation import (
 from featurebyte.query_graph.node.metadata.sdk_code import (
     ClassEnum,
     CodeGenerationContext,
-    ExpressionStr,
     StatementT,
     VariableNameGenerator,
+    VariableNameStr,
     VarNameExpressionInfo,
 )
 from featurebyte.query_graph.node.utils import subset_frame_column_expr
@@ -104,11 +104,11 @@ class RequestColumnNode(BaseNode):
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         input_df_name = config.input_df_name
         column_name = self.parameters.column_name
-        expr = subset_frame_column_expr(input_df_name, column_name)
+        expr = VariableNameStr(subset_frame_column_expr(input_df_name, column_name))
         if self.parameters.dtype in DBVarType.supported_timestamp_types():
             var_name = var_name_generator.convert_to_variable_name(
                 "request_col", node_name=self.name
             )
             expression = ClassEnum.PD_TO_DATETIME(expr)
             return [(var_name, expression)], var_name
-        return [], ExpressionStr(expr)
+        return [], expr

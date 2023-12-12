@@ -1,5 +1,6 @@
-{{imports}}
+import numpy as np
 import pandas as pd
+{{imports}}
 
 
 def {{function_name}}({{input_df_name}}: pd.DataFrame) -> pd.DataFrame:

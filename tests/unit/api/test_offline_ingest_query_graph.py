@@ -1,12 +1,17 @@
 """
 This module contains tests for the offline ingest query graph.
 """
+import textwrap
+
 import pytest
 
 from featurebyte import FeatureJobSetting, RequestColumn
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.transform.offline_store_ingest import AggregationNodeInfo
-from tests.util.helper import check_decomposed_graph_output_node_hash
+from tests.util.helper import (
+    check_decomposed_graph_output_node_hash,
+    check_on_demand_feature_view_code_generation,
+)
 
 
 @pytest.fixture(name="latest_event_timestamp_feature")
@@ -94,7 +99,24 @@ def test_feature__ttl_and_non_ttl_components(
     check_ingest_query_graph(non_ttl_component_graph)
 
     # check consistency of decomposed graph
-    check_decomposed_graph_output_node_hash(feature_model=feature.cached_model)
+    check_decomposed_graph_output_node_hash(feature_model=feature_model)
+    check_on_demand_feature_view_code_generation(feature_model=feature_model)
+
+    # check on-demand view code
+    fv_global_state = offline_store_info.extract_on_demand_feature_view_code_generation()
+    on_demand_feature_view_codes = fv_global_state.generate_code()
+    expected = """
+    import numpy as np
+    import pandas as pd
+
+
+    def on_demand_feature_view(inputs: pd.DataFrame) -> pd.DataFrame:
+        df = pd.DataFrame()
+        feat = inputs["__feature__part0"] + inputs["__feature__part1"]
+        df["feature"] = feat
+        return df
+    """
+    assert on_demand_feature_view_codes.strip() == textwrap.dedent(expected).strip()
 
 
 def test_feature__request_column_ttl_and_non_ttl_components(
@@ -151,7 +173,28 @@ def test_feature__request_column_ttl_and_non_ttl_components(
     check_ingest_query_graph(non_ttl_component_graph)
 
     # check consistency of decomposed graph
-    check_decomposed_graph_output_node_hash(feature_model=feature.cached_model)
+    check_decomposed_graph_output_node_hash(feature_model=feature_model)
+    check_on_demand_feature_view_code_generation(feature_model=feature_model)
+
+    # check on-demand view code
+    fv_global_state = offline_store_info.extract_on_demand_feature_view_code_generation()
+    on_demand_feature_view_codes = fv_global_state.generate_code()
+    expected = """
+    import numpy as np
+    import pandas as pd
+    from pandas import to_datetime
+
+
+    def on_demand_feature_view(inputs: pd.DataFrame) -> pd.DataFrame:
+        df = pd.DataFrame()
+        feat = to_datetime(inputs["__feature__part0"])
+        request_col = to_datetime(inputs["POINT_IN_TIME"])
+        feat_1 = request_col + (request_col - request_col)
+        feat_2 = ((feat_1 - feat).dt.seconds / 86400) + inputs["__feature__part1"]
+        df["feature"] = feat_2
+        return df
+    """
+    assert on_demand_feature_view_codes.strip() == textwrap.dedent(expected).strip()
 
 
 def test_feature__multiple_non_ttl_components(
@@ -197,6 +240,12 @@ def test_feature__multiple_non_ttl_components(
     # check consistency of decomposed graph
     check_decomposed_graph_output_node_hash(feature_model=feature.cached_model)
 
+    # check on-demand view code
+    assert offline_store_info.is_decomposed is False
+    expected_error = "On demand view can only be extracted from decomposed query graph"
+    with pytest.raises(ValueError, match=expected_error):
+        offline_store_info.extract_on_demand_feature_view_code_generation()
+
 
 def test_feature__ttl_item_aggregate_request_column(
     float_feature, non_time_based_feature, latest_event_timestamp_feature, entity_id_to_serving_name
@@ -209,13 +258,40 @@ def test_feature__ttl_item_aggregate_request_column(
 
     # check offline ingest query graph
     feature_model = composite_feature.cached_model
+    feature_model.initialize_offline_store_info(entity_id_to_serving_name=entity_id_to_serving_name)
     check_decomposed_graph_output_node_hash(feature_model=feature_model)
+    check_on_demand_feature_view_code_generation(feature_model=feature_model)
+
+    # check on-demand view code
+    offline_store_info = feature_model.offline_store_info
+    fv_global_state = offline_store_info.extract_on_demand_feature_view_code_generation()
+    on_demand_feature_view_codes = fv_global_state.generate_code()
+    expected = """
+    import numpy as np
+    import pandas as pd
+    from pandas import to_datetime
+
+
+    def on_demand_feature_view(inputs: pd.DataFrame) -> pd.DataFrame:
+        df = pd.DataFrame()
+        feat = (
+            inputs["__composite_feature__part1"]
+            + inputs["__composite_feature__part2"]
+        )
+        feat_1 = to_datetime(inputs["__composite_feature__part0"])
+        request_col = to_datetime(inputs["POINT_IN_TIME"])
+        feat_2 = (request_col - feat_1).dt.seconds / 86400
+        df["composite_feature"] = feat + feat_2
+        return df
+    """
+    assert on_demand_feature_view_codes.strip() == textwrap.dedent(expected).strip()
 
 
 def test_feature__input_has_mixed_ingest_graph_node_flags(
     cust_id_entity,
     snowflake_event_table_with_entity,
     feature_group_feature_job_setting,
+    entity_id_to_serving_name,
 ):
     """Test that a feature with mixed ingest graph node flags input nodes."""
     snowflake_event_table_with_entity.update_default_feature_job_setting(
@@ -246,4 +322,23 @@ def test_feature__input_has_mixed_ingest_graph_node_flags(
 
     # check offline ingest query graph
     feature_model = feature_zscore.cached_model
+    feature_model.initialize_offline_store_info(entity_id_to_serving_name=entity_id_to_serving_name)
     check_decomposed_graph_output_node_hash(feature_model=feature_model)
+    check_on_demand_feature_view_code_generation(feature_model=feature_model)
+
+    # check on-demand view code
+    offline_store_info = feature_model.offline_store_info
+    fv_global_state = offline_store_info.extract_on_demand_feature_view_code_generation()
+    on_demand_feature_view_codes = fv_global_state.generate_code()
+    expected = """
+    import numpy as np
+    import pandas as pd
+
+
+    def on_demand_feature_view(inputs: pd.DataFrame) -> pd.DataFrame:
+        df = pd.DataFrame()
+        feat = inputs["__feature_zscore__part0"] - inputs["__feature_zscore__part1"]
+        df["feature_zscore"] = feat / inputs["__feature_zscore__part2"]
+        return df
+    """
+    assert on_demand_feature_view_codes.strip() == textwrap.dedent(expected).strip()

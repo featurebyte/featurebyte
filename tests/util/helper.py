@@ -1,10 +1,12 @@
 """
 This module contains utility functions used in tests
 """
+import importlib
 import json
 import os
 import re
 import sys
+import tempfile
 import textwrap
 from contextlib import contextmanager
 from pathlib import Path
@@ -20,9 +22,11 @@ from featurebyte import get_version
 from featurebyte.api.source_table import AbstractTableData
 from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import SampleMixin
-from featurebyte.enum import AggFunc
+from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalGraphState, GlobalQueryGraph, QueryGraph
+from featurebyte.query_graph.node.nested import OfflineStoreIngestQueryGraphNodeParameters
+from featurebyte.query_graph.node.request import RequestColumnNode
 from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
 from featurebyte.query_graph.transform.offline_store_ingest import (
     OfflineStoreIngestQueryGraphTransformer,
@@ -527,3 +531,89 @@ def check_decomposed_graph_output_node_hash(feature_model, output=None):
     original_out_hash = flattened_graph.node_name_to_ref[flattened_node_name]
     decom_out_hash = flattened_decom_graph.node_name_to_ref[flattened_decom_node_name]
     assert original_out_hash == decom_out_hash
+
+
+def _generate_data(var_type, row_number=10):
+    """Generate data for a given var_type"""
+    if var_type in DBVarType.supported_timestamp_types():
+        return pd.date_range("2020-01-01", freq="1h", periods=row_number).astype(str)
+    if var_type in DBVarType.FLOAT:
+        return np.random.uniform(size=row_number)
+    if var_type in DBVarType.INT:
+        return np.random.randint(0, 10, size=row_number)
+    if var_type in DBVarType.VARCHAR:
+        return np.random.choice(["foo", "bar"], size=row_number)
+    if var_type in DBVarType.BOOL:
+        return np.random.choice([True, False], size=row_number)
+    raise ValueError(f"Unsupported var_type: {var_type}")
+
+
+@contextmanager
+def add_sys_path(path):
+    """Temporarily add the given path to `sys.path`."""
+    path = os.fspath(path)
+    try:
+        sys.path.insert(0, path)
+        yield
+    finally:
+        sys.path.remove(path)
+
+
+def check_on_demand_feature_view_code_execution(odfv_codes, df):
+    """Check on demand feature view code execution"""
+    # create a temporary directory to write the generated code
+    with tempfile.TemporaryDirectory() as temp_dir:
+        with add_sys_path(temp_dir):
+            # write the generated code to a file
+            module_name = f"odfv_{ObjectId()}"  # use a random module name to avoid conflict
+            with open(os.path.join(temp_dir, f"{module_name}.py"), "w") as file_handle:
+                file_handle.write(odfv_codes)
+
+            # import the function & execute it on the input dataframe, check output column name
+            module = importlib.import_module(module_name)
+            try:
+                output = module.on_demand_feature_view(df)
+                return output
+            except Exception as e:
+                print("Error: ", e)
+                print("Generated code: ", odfv_codes)
+                raise e
+
+
+def check_on_demand_feature_view_code_generation(feature_model, entity_id_to_serving_name=None):
+    """Check on demand feature view code generation"""
+    if feature_model.offline_store_info is None:
+        assert entity_id_to_serving_name is not None
+        feature_model.initialize_offline_store_info(
+            entity_id_to_serving_name=entity_id_to_serving_name
+        )
+
+    offline_store_info = feature_model.offline_store_info
+    assert offline_store_info is not None, "OfflineStoreInfo is not initialized"
+    assert offline_store_info.is_decomposed, "OfflineStoreInfo is not decomposed"
+
+    # construct input dataframe for testing
+    df = pd.DataFrame()
+    decomposed_graph = offline_store_info.graph
+    target_node = decomposed_graph.get_node_by_name(offline_store_info.node_name)
+    for graph_node in decomposed_graph.iterate_nodes(
+        target_node=target_node, node_type=NodeType.GRAPH
+    ):
+        assert isinstance(graph_node.parameters, OfflineStoreIngestQueryGraphNodeParameters)
+        df[graph_node.parameters.output_column_name] = _generate_data(
+            graph_node.parameters.output_dtype
+        )
+
+    for node in decomposed_graph.iterate_nodes(
+        target_node=target_node, node_type=NodeType.REQUEST_COLUMN
+    ):
+        assert isinstance(node, RequestColumnNode)
+        df[node.parameters.column_name] = _generate_data(node.parameters.dtype)
+
+    # generate on demand feature view code
+    fv_global_state = offline_store_info.extract_on_demand_feature_view_code_generation()
+    odfv_codes = fv_global_state.generate_code()
+
+    # check the generated code can be executed successfully
+    output = check_on_demand_feature_view_code_execution(odfv_codes, df)
+    assert output.columns == [feature_model.name]

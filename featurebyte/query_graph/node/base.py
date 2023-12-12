@@ -896,6 +896,23 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
         _ = left_operand, right_operand
         return ""
 
+    def generate_odfv_expression(self, left_operand: str, right_operand: str) -> str:
+        """
+        Generate expression for the on demand feature view
+
+        Parameters
+        ----------
+        left_operand: str
+            Left operand
+        right_operand: str
+            Right operand
+
+        Returns
+        -------
+        str
+        """
+        return self.generate_expression(left_operand, right_operand)
+
     def _derive_sdk_code(
         self,
         node_inputs: List[VarNameExpressionInfo],
@@ -931,16 +948,10 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        left_operand: str
-        right_operand: str
         var_name_expressions = self._assert_no_info_dict(node_inputs)
-        statements, left_operand = self._convert_expression_to_variable(
-            var_name_expression=var_name_expressions[0],
-            var_name_generator=var_name_generator,
-            node_output_type=NodeOutputType.SERIES,
-            node_output_category=NodeOutputCategory.FEATURE,
-            to_associate_with_node_name=False,
-        )
+        left_operand: str = var_name_expressions[0].as_input()
+        statements: List[StatementT] = []
+        right_operand: Union[str, VariableNameStr]
         if isinstance(self.parameters.value, TimestampValue):
             timestamp_val = var_name_generator.convert_to_variable_name(
                 variable_name_prefix="timestamp_value",
@@ -953,18 +964,10 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
         else:
             right_operand = ValueStr.create(self.parameters.value).as_input()
 
-        if len(node_inputs) == 2:
-            stats, right_operand = self._convert_expression_to_variable(
-                var_name_expression=var_name_expressions[1],
-                var_name_generator=var_name_generator,
-                node_output_type=NodeOutputType.SERIES,
-                node_output_category=NodeOutputCategory.FEATURE,
-                to_associate_with_node_name=False,
-            )
-            statements.extend(stats)
-
+        if len(var_name_expressions) == 2:
+            right_operand = var_name_expressions[1].as_input()
         left_operand, right_operand = self._reorder_operands(left_operand, right_operand)
-        return statements, ExpressionStr(self.generate_expression(left_operand, right_operand))
+        return statements, ExpressionStr(self.generate_odfv_expression(left_operand, right_operand))
 
 
 class BinaryLogicalOpNode(BaseSeriesOutputWithAScalarParamNode):
@@ -1030,6 +1033,21 @@ class BaseSeriesOutputWithSingleOperandNode(BaseSeriesOutputNode, ABC):
         str
         """
 
+    def generate_odfv_expression(self, operand: str) -> str:
+        """
+        Generate expression for the on demand feature view
+
+        Parameters
+        ----------
+        operand: str
+            Left operand
+
+        Returns
+        -------
+        str
+        """
+        return self.generate_expression(operand)
+
     def _derive_sdk_code(
         self,
         node_inputs: List[VarNameExpressionInfo],
@@ -1052,9 +1070,7 @@ class BaseSeriesOutputWithSingleOperandNode(BaseSeriesOutputNode, ABC):
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         input_var_name_expressions = self._assert_no_info_dict(node_inputs)
         var_name_expression = input_var_name_expressions[0]
-        return [], self._derive_sdk_code_return_var_name_expression_type(
-            self.generate_expression(var_name_expression.as_input())
-        )
+        return [], ExpressionStr(self.generate_odfv_expression(var_name_expression.as_input()))
 
 
 class BasePrunableNode(BaseNode):

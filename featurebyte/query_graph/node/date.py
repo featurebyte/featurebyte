@@ -137,6 +137,21 @@ class TimeDeltaExtractNode(BaseSeriesOutputWithSingleOperandNode):
     def generate_expression(self, operand: str) -> str:
         return f"{operand}.dt.{self.parameters.property}"
 
+    def generate_odfv_expression(self, operand: str) -> str:
+        if self.parameters.property == "millisecond":
+            return f"{operand}.dt.microseconds / 1000"
+        if self.parameters.property == "microsecond":
+            return f"{operand}.dt.microseconds"
+        if self.parameters.property == "second":
+            return f"{operand}.dt.seconds"
+
+        unit_to_seconds = {
+            "day": 24 * 60 * 60,
+            "hour": 60 * 60,
+            "minute": 60,
+        }
+        return f"{operand}.dt.seconds / {unit_to_seconds[self.parameters.property]}"
+
 
 class DateDifference(BaseSeriesOutputNode):
     """DateDifference class"""
@@ -164,7 +179,7 @@ class DateDifference(BaseSeriesOutputNode):
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_dict(node_inputs)
-        left_operand: str = var_name_expressions[0].as_input()
+        left_operand = var_name_expressions[0].as_input()
         right_operand = var_name_expressions[1].as_input()
         return [], ExpressionStr(f"{left_operand} - {right_operand}")
 
@@ -175,7 +190,7 @@ class DateDifference(BaseSeriesOutputNode):
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_dict(node_inputs)
-        left_operand: str = var_name_expressions[0].as_input()
+        left_operand = var_name_expressions[0].as_input()
         right_operand = var_name_expressions[1].as_input()
         return [], ExpressionStr(f"{left_operand} - {right_operand}")
 
@@ -289,6 +304,6 @@ class DateAdd(BaseSeriesOutputNode):
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_dict(node_inputs)
-        left_operand = var_name_expressions[0]
-        right_operand = var_name_expressions[1]
+        left_operand = var_name_expressions[0].as_input()
+        right_operand = var_name_expressions[1].as_input()
         return [], ExpressionStr(f"{left_operand} + {right_operand}")
