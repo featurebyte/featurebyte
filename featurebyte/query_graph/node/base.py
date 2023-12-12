@@ -605,6 +605,12 @@ class BaseNode(BaseModel):
         Returns
         -------
         Tuple[List[StatementT], VarNameExpression]
+
+        Raises
+        ------
+        RuntimeError
+            If this method is not supposed to be called
+        # noqa: DAR202, DAR401
         """
         raise RuntimeError("This method should not be called")
 
