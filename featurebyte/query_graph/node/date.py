@@ -94,9 +94,7 @@ class DatetimeExtractNode(BaseSeriesOutputNode):
         statements: List[StatementT] = []
         offset_operand: Optional[Union[str, VariableNameStr]]
         if self.parameters.timezone_offset is not None:
-            delta = ClassEnum.PD_TO_TIMEDELTA(
-                ValueStr.create(self.parameters.timezone_offset), unit="h"
-            )
+            delta = ClassEnum.PD_TO_TIMEDELTA(f"{self.parameters.timezone_offset}:00")
             offset_operand = var_name_generator.convert_to_variable_name(
                 variable_name_prefix="tz_offset", node_name=None
             )
@@ -153,8 +151,8 @@ class TimeDeltaExtractNode(BaseSeriesOutputWithSingleOperandNode):
         return f"{operand}.dt.seconds / {unit_to_seconds[self.parameters.property]}"
 
 
-class DateDifference(BaseSeriesOutputNode):
-    """DateDifference class"""
+class DateDifferenceNode(BaseSeriesOutputNode):
+    """DateDifferenceNode class"""
 
     type: Literal[NodeType.DATE_DIFF] = Field(NodeType.DATE_DIFF, const=True)
 
@@ -178,6 +176,10 @@ class DateDifference(BaseSeriesOutputNode):
         config: SDKCodeGenConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        if len(node_inputs) == 1:
+            # we don't allow subtracting timestamp with a scalar timedelta through SDK
+            raise RuntimeError("DateAddNode with only one input is not supported")
+
         var_name_expressions = self._assert_no_info_dict(node_inputs)
         left_operand = var_name_expressions[0].as_input()
         right_operand = var_name_expressions[1].as_input()
@@ -189,14 +191,18 @@ class DateDifference(BaseSeriesOutputNode):
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        if len(node_inputs) == 1:
+            # we don't allow subtracting timestamp with a scalar timedelta through SDK
+            raise RuntimeError("DateAddNode with only one input is not supported")
+
         var_name_expressions = self._assert_no_info_dict(node_inputs)
         left_operand = var_name_expressions[0].as_input()
         right_operand = var_name_expressions[1].as_input()
         return [], ExpressionStr(f"{left_operand} - {right_operand}")
 
 
-class TimeDelta(BaseSeriesOutputNode):
-    """TimeDelta class"""
+class TimeDeltaNode(BaseSeriesOutputNode):
+    """TimeDeltaNode class"""
 
     class Parameters(BaseModel):
         """Parameters"""
@@ -257,8 +263,8 @@ class TimeDelta(BaseSeriesOutputNode):
         return statements, var_name
 
 
-class DateAdd(BaseSeriesOutputNode):
-    """DateAdd class"""
+class DateAddNode(BaseSeriesOutputNode):
+    """DateAddNode class"""
 
     class Parameters(BaseModel):
         """Parameters"""
@@ -292,6 +298,10 @@ class DateAdd(BaseSeriesOutputNode):
         config: SDKCodeGenConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        if len(node_inputs) == 1:
+            # we don't allow adding timestamp with a scalar timedelta through SDK
+            raise RuntimeError("DateAddNode with only one input is not supported")
+
         var_name_expressions = self._assert_no_info_dict(node_inputs)
         left_operand: str = var_name_expressions[0].as_input()
         right_operand = var_name_expressions[1].as_input()
@@ -303,6 +313,10 @@ class DateAdd(BaseSeriesOutputNode):
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        if len(node_inputs) == 1:
+            # we don't allow adding timestamp with a scalar timedelta through SDK
+            raise RuntimeError("DateAddNode with only one input is not supported")
+
         var_name_expressions = self._assert_no_info_dict(node_inputs)
         left_operand = var_name_expressions[0].as_input()
         right_operand = var_name_expressions[1].as_input()

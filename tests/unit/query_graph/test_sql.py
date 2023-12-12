@@ -486,6 +486,11 @@ def test_date_add__timedelta(input_node):
     assert date_add_node.sql.sql() == (
         "DATEADD(microsecond, (num_seconds * CAST(1000000 AS BIGINT) / CAST(1 AS BIGINT)), date_col)"
     )
+    context = make_context(parameters={"value": 12}, input_sql_nodes=[date_column])
+    date_add_node = DateAddNode.build(context)
+    assert date_add_node.sql.sql() == (
+        "DATEADD(microsecond, (12 * CAST(1000000 AS BIGINT) / CAST(1 AS BIGINT)), date_col)"
+    )
 
 
 def test_date_add__datediff(input_node):

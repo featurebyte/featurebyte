@@ -533,7 +533,7 @@ def check_decomposed_graph_output_node_hash(feature_model, output=None):
     assert original_out_hash == decom_out_hash
 
 
-def _generate_data(var_type, row_number=10):
+def generate_column_data(var_type, row_number=10):
     """Generate data for a given var_type"""
     if var_type in DBVarType.supported_timestamp_types():
         return pd.date_range("2020-01-01", freq="1h", periods=row_number).astype(str)
@@ -600,7 +600,7 @@ def check_on_demand_feature_view_code_generation(feature_model, entity_id_to_ser
         target_node=target_node, node_type=NodeType.GRAPH
     ):
         assert isinstance(graph_node.parameters, OfflineStoreIngestQueryGraphNodeParameters)
-        df[graph_node.parameters.output_column_name] = _generate_data(
+        df[graph_node.parameters.output_column_name] = generate_column_data(
             graph_node.parameters.output_dtype
         )
 
@@ -608,7 +608,7 @@ def check_on_demand_feature_view_code_generation(feature_model, entity_id_to_ser
         target_node=target_node, node_type=NodeType.REQUEST_COLUMN
     ):
         assert isinstance(node, RequestColumnNode)
-        df[node.parameters.column_name] = _generate_data(node.parameters.dtype)
+        df[node.parameters.column_name] = generate_column_data(node.parameters.dtype)
 
     # generate on demand feature view code
     fv_global_state = offline_store_info.extract_on_demand_feature_view_code_generation()
