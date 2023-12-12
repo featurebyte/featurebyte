@@ -73,6 +73,12 @@ def materialize_partial(
         feature_view.projection.features, columns
     )
 
+    # FIXME: This patch is related to an implementation detail of RedisOnlineStore: it checks
+    # whether the feature table's stored feature timestamp is the same as current feature timestamp,
+    # and if so skip the update. This doesn't work for partial materialization because a feature
+    # table's stored feature timestamp is always up-to-date except on the first materialization run.
+    # Patching this effectively skips the check, but a better solution might be to override the
+    # implementation of RedisOnlineStore.online_write_batch().
     with patch("google.protobuf.timestamp_pb2.Timestamp.ParseFromString"):
         provider.materialize_single_feature_view(
             config=feature_store.config,
