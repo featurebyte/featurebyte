@@ -1788,6 +1788,7 @@ class AliasNode(BaseNode):
         name: OutColumnStr
 
     type: Literal[NodeType.ALIAS] = Field(NodeType.ALIAS, const=True)
+    output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
     parameters: Parameters
 
     @property

@@ -52,7 +52,11 @@ class TrimNode(BaseSeriesOutputWithSingleOperandNode):
         value = None
         if self.parameters.character:
             value = ValueStr.create(self.parameters.character)
-        return f"{operand}.str.strip(to_strip={value})"
+        if self.parameters.side == "both":
+            return f"{operand}.str.strip(to_strip={value})"
+        if self.parameters.side == "left":
+            return f"{operand}.str.lstrip(to_strip={value})"
+        return f"{operand}.str.rstrip(to_strip={value})"
 
 
 class ReplaceNode(BaseSeriesOutputWithSingleOperandNode):

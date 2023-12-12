@@ -15,7 +15,6 @@ from featurebyte.query_graph.node.date import (
 )
 from featurebyte.query_graph.node.metadata.config import OnDemandViewCodeGenConfig
 from featurebyte.query_graph.node.metadata.sdk_code import (
-    ClassEnum,
     CodeGenerator,
     VariableNameGenerator,
     VariableNameStr,
