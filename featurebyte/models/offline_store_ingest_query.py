@@ -3,7 +3,7 @@ OfflineStoreIngestQuery object stores the offline store ingest query for a featu
 """
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from pydantic import validator
 
@@ -20,6 +20,10 @@ from featurebyte.query_graph.node.nested import (
     OfflineStoreIngestQueryGraphNodeParameters,
     OfflineStoreMetadata,
 )
+from featurebyte.query_graph.transform.on_demand_view import (
+    OnDemandFeatureViewExtractor,
+    OnDemandFeatureViewGlobalState,
+)
 from featurebyte.query_graph.transform.quick_pruning import QuickGraphStructurePruningTransformer
 
 
@@ -28,7 +32,6 @@ class OfflineStoreInfoMetadata(OfflineStoreMetadata):
     OfflineStoreInfoMetadata object stores the offline store table metadata of the feature or target.
     """
 
-    output_node_name: str
     output_column_name: str
     primary_entity_ids: List[PydanticObjectId]
 
@@ -99,7 +102,7 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
 
     @classmethod
     def create_from_metadata(
-        cls, graph: QueryGraphModel, metadata: OfflineStoreInfoMetadata
+        cls, graph: QueryGraphModel, node_name: str, metadata: OfflineStoreInfoMetadata
     ) -> OfflineStoreIngestQueryGraph:
         """
         Create OfflineStoreIngestQueryGraph from OfflineStoreInfoMetadata
@@ -108,6 +111,8 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
         ----------
         graph: QueryGraphModel
             QueryGraphModel
+        node_name: str
+            Node name that refers to the output node from the query graph
         metadata: OfflineStoreInfoMetadata
             OfflineStoreInfoMetadata
 
@@ -118,7 +123,7 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
         """
         return cls(
             graph=graph,
-            node_name=metadata.output_node_name,
+            node_name=node_name,
             ref_node_name=None,
             offline_store_table_name=metadata.offline_store_table_name,
             aggregation_nodes_info=metadata.aggregation_nodes_info,
@@ -169,11 +174,13 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
     OfflineStoreInfo object stores the offline store table information of the feature or target.
     It contains the following attributes:
     - graph: decomposed query graph used to generate the offline store table
+    - node_name: output node name from the decomposed query graph
     - is_decomposed: whether the feature or target query graph is decomposed
     - metadata: offline store table metadata
     """
 
     # map the original node name to the decomposed node name
+    node_name: str
     node_name_map: Dict[str, str]
     is_decomposed: bool
 
@@ -207,7 +214,51 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
             output.append(
                 OfflineStoreIngestQueryGraph.create_from_metadata(
                     graph=self.graph,
+                    node_name=self.node_name,
                     metadata=self.metadata,
                 )
             )
         return output
+
+    def extract_on_demand_feature_view_code_generation(
+        self,
+        input_df_name: str = "inputs",
+        output_df_name: str = "df",
+        function_name: str = "on_demand_feature_view",
+        **kwargs: Any,
+    ) -> OnDemandFeatureViewGlobalState:
+        """
+        Extract on demand view graphs from the feature or target query graph
+
+        Parameters
+        ----------
+        input_df_name: str
+            Input dataframe name
+        output_df_name: str
+            Output dataframe name
+        function_name: str
+            Function name
+        kwargs: Any
+            Other code generation config kwargs
+
+        Returns
+        -------
+        OnDemandFeatureViewGlobalState
+            OnDemandFeatureViewGlobalState
+
+        Raises
+        ------
+        ValueError
+            If the feature or target query graph is not decomposed
+        """
+        if not self.is_decomposed:
+            raise ValueError("On demand view can only be extracted from decomposed query graph")
+
+        node = self.graph.get_node_by_name(self.node_name)
+        return OnDemandFeatureViewExtractor(graph=self.graph).extract(
+            node=node,
+            input_df_name=input_df_name,
+            output_df_name=output_df_name,
+            on_demand_function_name=function_name,
+            **kwargs,
+        )

@@ -180,7 +180,8 @@ class OfflineStoreIngestQueryGraphGlobalState:  # pylint: disable=too-many-insta
         )
         if original_node_names:
             for original_node_name in original_node_names:
-                self.node_name_map[original_node_name] = inserted_node.name
+                if original_node_name not in self.node_name_map:
+                    self.node_name_map[original_node_name] = inserted_node.name
         else:
             self.node_name_map[node.name] = inserted_node.name
         return inserted_node

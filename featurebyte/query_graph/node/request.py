@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field, StrictStr
 from featurebyte.enum import DBVarType, SpecialColumnName
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.base import BaseNode
-from featurebyte.query_graph.node.metadata.config import SDKCodeGenConfig
+from featurebyte.query_graph.node.metadata.config import OnDemandViewCodeGenConfig, SDKCodeGenConfig
 from featurebyte.query_graph.node.metadata.operation import (
     AggregationColumn,
     FeatureDataColumnType,
@@ -21,8 +21,10 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     CodeGenerationContext,
     StatementT,
     VariableNameGenerator,
+    VariableNameStr,
     VarNameExpressionInfo,
 )
+from featurebyte.query_graph.node.utils import subset_frame_column_expr
 
 
 class RequestColumnNode(BaseNode):
@@ -93,3 +95,20 @@ class RequestColumnNode(BaseNode):
             raise NotImplementedError("Currently only POINT_IN_TIME column is supported")
         statements.append((var_name, obj))
         return statements, var_name
+
+    def _derive_on_demand_view_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandViewCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        input_df_name = config.input_df_name
+        column_name = self.parameters.column_name
+        expr = VariableNameStr(subset_frame_column_expr(input_df_name, column_name))
+        if self.parameters.dtype in DBVarType.supported_timestamp_types():
+            var_name = var_name_generator.convert_to_variable_name(
+                "request_col", node_name=self.name
+            )
+            expression = ClassEnum.PD_TO_DATETIME(expr)
+            return [(var_name, expression)], var_name
+        return [], expr

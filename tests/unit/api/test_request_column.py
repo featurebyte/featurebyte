@@ -11,7 +11,11 @@ from featurebyte.query_graph.enum import GraphNodeType
 from featurebyte.query_graph.transform.offline_store_ingest import (
     OfflineStoreIngestQueryGraphTransformer,
 )
-from tests.util.helper import check_decomposed_graph_output_node_hash, check_sdk_code_generation
+from tests.util.helper import (
+    check_decomposed_graph_output_node_hash,
+    check_on_demand_feature_view_code_generation,
+    check_sdk_code_generation,
+)
 
 
 def test_point_in_time_request_column():
@@ -77,6 +81,9 @@ def test_point_in_time_minus_timestamp_feature(latest_event_timestamp_feature, u
     check_decomposed_graph_output_node_hash(
         feature_model=new_feature_model,
         output=output,
+    )
+    check_on_demand_feature_view_code_generation(
+        feature_model=new_feature_model, entity_id_to_serving_name={}
     )
 
 

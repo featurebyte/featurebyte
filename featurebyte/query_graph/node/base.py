@@ -2,7 +2,20 @@
 Base classes required for constructing query graph nodes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Any, ClassVar, Dict, List, Optional, Sequence, Tuple, Type, TypeVar, Union
+# pylint: disable=too-many-lines
+from typing import (
+    Any,
+    Callable,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 
 import copy
 from abc import ABC, abstractmethod
@@ -13,7 +26,11 @@ from featurebyte.common.model_util import parse_duration_string
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.metadata.column import InColumnStr, OutColumnStr
-from featurebyte.query_graph.node.metadata.config import SDKCodeGenConfig
+from featurebyte.query_graph.node.metadata.config import (
+    BaseCodeGenConfig,
+    OnDemandViewCodeGenConfig,
+    SDKCodeGenConfig,
+)
 from featurebyte.query_graph.node.metadata.operation import (
     DerivedDataColumn,
     NodeOutputCategory,
@@ -274,6 +291,43 @@ class BaseNode(BaseModel):
         )
         return operation_info
 
+    def _handle_statement_line_width(
+        self,
+        var_name_generator: VariableNameGenerator,
+        statements: List[StatementT],
+        var_name_expression_info: VarNameExpressionInfo,
+        config: BaseCodeGenConfig,
+        operation_structure: Optional[OperationStructure],
+        variable_name_prefix: Optional[str],
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        assert (
+            operation_structure or variable_name_prefix
+        ), "Either operation_structure or variable_name_prefix should be provided"
+
+        if (
+            self._auto_convert_expression_to_variable
+            and isinstance(var_name_expression_info, ExpressionStr)
+            and len(var_name_expression_info) > config.max_expression_length
+        ):
+            # if the output of the var_name_expression is an expression and
+            # the length of expression exceeds limit specified in code generation config,
+            # then assign a new variable to reduce line width.
+            if operation_structure:
+                var_name = var_name_generator.generate_variable_name(
+                    node_output_type=operation_structure.output_type,
+                    node_output_category=operation_structure.output_category,
+                    node_name=self.name,
+                )
+            else:
+                assert variable_name_prefix is not None
+                var_name = var_name_generator.convert_to_variable_name(
+                    variable_name_prefix=variable_name_prefix, node_name=self.name
+                )
+
+            statements.append((var_name, var_name_expression_info))
+            return statements, var_name
+        return statements, var_name_expression_info
+
     def derive_sdk_code(
         self,
         node_inputs: List[VarNameExpressionInfo],
@@ -309,23 +363,50 @@ class BaseNode(BaseModel):
             config=config,
             context=context,
         )
+        return self._handle_statement_line_width(
+            var_name_generator=var_name_generator,
+            statements=statements,
+            var_name_expression_info=var_name_expression_info,
+            config=config,
+            operation_structure=operation_structure,
+            variable_name_prefix=None,
+        )
 
-        if (
-            self._auto_convert_expression_to_variable
-            and isinstance(var_name_expression_info, ExpressionStr)
-            and len(var_name_expression_info) > config.max_expression_length
-        ):
-            # if the output of the var_name_expression is an expression and
-            # the length of expression exceeds limit specified in code generation config,
-            # then assign a new variable to reduce line width.
-            var_name = var_name_generator.generate_variable_name(
-                node_output_type=operation_structure.output_type,
-                node_output_category=operation_structure.output_category,
-                node_name=self.name,
-            )
-            statements.append((var_name, var_name_expression_info))
-            return statements, var_name
-        return statements, var_name_expression_info
+    def derive_on_demand_view_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandViewCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        """
+        Derive Feast on demand feature view code based on the graph traversal from starting node(s) to this node
+
+        Parameters
+        ----------
+        node_inputs: List[VarNameExpressionStr]
+            Node inputs to derive on demand view code
+        var_name_generator: VariableNameGenerator
+            Variable name generator
+        config: OnDemandViewCodeGenConfig
+            Code generation configuration
+
+        Returns
+        -------
+        Tuple[List[StatementT], VarNameExpressionStr]
+        """
+        statements, var_name_expression_info = self._derive_on_demand_view_code(
+            node_inputs=node_inputs,
+            var_name_generator=var_name_generator,
+            config=config,
+        )
+        return self._handle_statement_line_width(
+            var_name_generator=var_name_generator,
+            statements=statements,
+            var_name_expression_info=var_name_expression_info,
+            config=config,
+            operation_structure=None,
+            variable_name_prefix="feat",
+        )
 
     def clone(self: NodeT, **kwargs: Any) -> NodeT:
         """
@@ -490,7 +571,7 @@ class BaseNode(BaseModel):
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         """
-        Derive SDK codes based to be implemented at the concrete node class
+        Derive SDK codes to be implemented at the concrete node class
 
         Parameters
         ----------
@@ -515,6 +596,37 @@ class BaseNode(BaseModel):
         input_params = ", ".join(var_name_expressions)
         expression = ExpressionStr(f"{self.type}({input_params})")
         return [], expression
+
+    def _derive_on_demand_view_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandViewCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        """
+        Derive Feast on demand feature view code to be implemented at the concrete node class
+
+        Parameters
+        ----------
+        node_inputs: List[VarNameExpression]
+            Inputs for this node to generate SDK codes
+        var_name_generator: VariableNameGenerator
+            Variable name generator
+        config: OnDemandViewCodeGenConfig
+            Code generation configuration
+
+        Returns
+        -------
+        Tuple[List[StatementT], VarNameExpression]
+        # noqa: DAR202
+
+        Raises
+        ------
+        RuntimeError
+            If this method is not supposed to be called
+        # noqa: DAR401
+        """
+        raise RuntimeError("This method should not be called")
 
     @property
     @abstractmethod
@@ -796,14 +908,29 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
         _ = left_operand, right_operand
         return ""
 
-    def _derive_sdk_code(
+    def generate_odfv_expression(self, left_operand: str, right_operand: str) -> str:
+        """
+        Generate expression for the on demand feature view
+
+        Parameters
+        ----------
+        left_operand: str
+            Left operand
+        right_operand: str
+            Right operand
+
+        Returns
+        -------
+        str
+        """
+        return self.generate_expression(left_operand, right_operand)
+
+    def _derive_python_code(
         self,
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
-        operation_structure: OperationStructure,
-        config: SDKCodeGenConfig,
-        context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        generate_expression_func: Callable[[str, str], str],
+    ) -> Tuple[List[StatementT], ExpressionStr]:
         input_var_name_expressions = self._assert_no_info_dict(node_inputs)
         left_operand: str = input_var_name_expressions[0].as_input()
         statements: List[StatementT] = []
@@ -823,7 +950,29 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
         if len(input_var_name_expressions) == 2:
             right_operand = input_var_name_expressions[1].as_input()
         left_operand, right_operand = self._reorder_operands(left_operand, right_operand)
-        return statements, ExpressionStr(self.generate_expression(left_operand, right_operand))
+        return statements, ExpressionStr(generate_expression_func(left_operand, right_operand))
+
+    def _derive_sdk_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: SDKCodeGenConfig,
+        context: CodeGenerationContext,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        _ = operation_structure, config, context
+        return self._derive_python_code(node_inputs, var_name_generator, self.generate_expression)
+
+    def _derive_on_demand_view_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandViewCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        _ = config
+        return self._derive_python_code(
+            node_inputs, var_name_generator, self.generate_odfv_expression
+        )
 
 
 class BinaryLogicalOpNode(BaseSeriesOutputWithAScalarParamNode):
@@ -889,6 +1038,21 @@ class BaseSeriesOutputWithSingleOperandNode(BaseSeriesOutputNode, ABC):
         str
         """
 
+    def generate_odfv_expression(self, operand: str) -> str:
+        """
+        Generate expression for the on demand feature view
+
+        Parameters
+        ----------
+        operand: str
+            Left operand
+
+        Returns
+        -------
+        str
+        """
+        return self.generate_expression(operand)
+
     def _derive_sdk_code(
         self,
         node_inputs: List[VarNameExpressionInfo],
@@ -902,6 +1066,16 @@ class BaseSeriesOutputWithSingleOperandNode(BaseSeriesOutputNode, ABC):
         return [], self._derive_sdk_code_return_var_name_expression_type(
             self.generate_expression(var_name_expression.as_input())
         )
+
+    def _derive_on_demand_view_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandViewCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        input_var_name_expressions = self._assert_no_info_dict(node_inputs)
+        var_name_expression = input_var_name_expressions[0]
+        return [], ExpressionStr(self.generate_odfv_expression(var_name_expression.as_input()))
 
 
 class BasePrunableNode(BaseNode):

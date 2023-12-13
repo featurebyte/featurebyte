@@ -20,7 +20,7 @@ from featurebyte.query_graph.node.base import (
     NodeT,
 )
 from featurebyte.query_graph.node.metadata.column import InColumnStr, OutColumnStr
-from featurebyte.query_graph.node.metadata.config import SDKCodeGenConfig
+from featurebyte.query_graph.node.metadata.config import OnDemandViewCodeGenConfig, SDKCodeGenConfig
 from featurebyte.query_graph.node.metadata.operation import (
     AggregationColumn,
     DerivedDataColumn,
@@ -1788,6 +1788,7 @@ class AliasNode(BaseNode):
         name: OutColumnStr
 
     type: Literal[NodeType.ALIAS] = Field(NodeType.ALIAS, const=True)
+    output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
     parameters: Parameters
 
     @property
@@ -1869,6 +1870,15 @@ class AliasNode(BaseNode):
         )
         return statements, output_var_name
 
+    def _derive_on_demand_view_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandViewCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        # this is a no-op node for on-demand view, it should appear on the last node of the graph
+        return [], node_inputs[0]
+
 
 class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
     """ConditionalNode class"""
@@ -1891,6 +1901,31 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return inputs[0].series_output_dtype
 
+    def _prepare_var_name_and_mask_var_name(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        node_output_category: NodeOutputCategory,
+    ) -> Tuple[List[StatementT], VariableNameStr, VariableNameStr]:
+        var_name_expressions = self._assert_no_info_dict(node_inputs)
+        statements, var_name = self._convert_expression_to_variable(
+            var_name_expression=var_name_expressions[0],
+            var_name_generator=var_name_generator,
+            node_output_type=NodeOutputType.SERIES,
+            node_output_category=node_output_category,
+            to_associate_with_node_name=False,
+        )
+        mask_statements, mask_var_name = self._convert_expression_to_variable(
+            var_name_expression=var_name_expressions[1],
+            var_name_generator=var_name_generator,
+            node_output_type=NodeOutputType.SERIES,
+            node_output_category=node_output_category,
+            to_associate_with_node_name=False,
+            variable_name_prefix="mask",
+        )
+        statements.extend(mask_statements)
+        return statements, var_name, mask_var_name
+
     def _derive_sdk_code(
         self,
         node_inputs: List[VarNameExpressionInfo],
@@ -1899,25 +1934,11 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
         config: SDKCodeGenConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        var_name_expressions = self._assert_no_info_dict(node_inputs)
-        var_name_expr = var_name_expressions[0]
-        mask_var_name_expr = var_name_expressions[1]
-        statements, var_name = self._convert_expression_to_variable(
-            var_name_expression=var_name_expr,
+        statements, var_name, mask_var_name = self._prepare_var_name_and_mask_var_name(
+            node_inputs=node_inputs,
             var_name_generator=var_name_generator,
-            node_output_type=operation_structure.output_type,
             node_output_category=operation_structure.output_category,
-            to_associate_with_node_name=False,
         )
-        mask_statements, mask_var_name = self._convert_expression_to_variable(
-            var_name_expression=mask_var_name_expr,
-            var_name_generator=var_name_generator,
-            node_output_type=NodeOutputType.SERIES,
-            node_output_category=operation_structure.output_category,
-            to_associate_with_node_name=False,
-            variable_name_prefix="mask",
-        )
-        statements.extend(mask_statements)
         # only make the copy if we are not generating info dict
         # if generating info dict, we will delay the copy to the assign node
         var_statements, output_var_name = self._convert_to_proper_variable_name(
@@ -1930,9 +1951,10 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
         statements.extend(var_statements)
 
         value: RightHandSide = ValueStr.create(self.parameters.value)
-        is_series_assignment = len(var_name_expressions) == 3
+        is_series_assignment = len(node_inputs) == 3
         if is_series_assignment:
-            value = var_name_expressions[2]
+            assert not isinstance(node_inputs[2], InfoDict)
+            value = node_inputs[2]
 
         if context.as_info_dict:
             # This is to handle the case where `View[<column>][<condition>] = <value>` is used.
@@ -1952,3 +1974,29 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
         )
         statements.append((VariableNameStr(var_expr), value))
         return statements, output_var_name
+
+    def _derive_on_demand_view_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandViewCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        statements, var_name, mask_var_name = self._prepare_var_name_and_mask_var_name(
+            node_inputs=node_inputs,
+            var_name_generator=var_name_generator,
+            node_output_category=NodeOutputCategory.VIEW,
+        )
+        value: RightHandSide = ValueStr.create(self.parameters.value)
+        is_series_assignment = len(node_inputs) == 3
+        if is_series_assignment:
+            assert not isinstance(node_inputs[2], InfoDict)
+            expr = filter_series_or_frame_expr(
+                series_or_frame_name=node_inputs[2], filter_expression=mask_var_name
+            )
+            value = ExpressionStr(expr)
+
+        var_expr = filter_series_or_frame_expr(
+            series_or_frame_name=var_name, filter_expression=mask_var_name
+        )
+        statements.append((VariableNameStr(var_expr), value))
+        return statements, var_name
