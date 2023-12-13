@@ -109,7 +109,7 @@ cryptography = "^41.0.3"
 databricks-sdk = { version = "^0.13.0", optional = true }
 databricks-sql-connector = { version = "2.8.0", optional = true }  # Awaiting snowflake-connector-python to support urllib3>=2.0
 fastapi = { version =  "^0.96.0", optional = true }
-feast = { version = "^0.34.1", optional = true }
+feast = { version = "^0.34.1" }
 featurebyte-freeware = { version = "^0.2.16", optional = true }
 gevent = {version = "^23.9.1", optional = true}
 humanize = "^4.4.0"
@@ -145,7 +145,7 @@ websocket-client = "^1.5.1"
 wheel = "0.40.0"
 
 [tool.poetry.extras]
-server = ["cachetools", "databricks-sdk", "fastapi", "motor", "snowflake-connector-python", "uvicorn", "pdfkit", "pyhive", "sasl", "thrift-sasl", "boto3", "smart-open", "celery", "redis", "celerybeat-mongo", "databricks-sql-connector", "featurebyte-freeware", "gevent", "aioredis", "requests-kerberos", "tenacity", "feast"]
+server = ["cachetools", "databricks-sdk", "fastapi", "motor", "snowflake-connector-python", "uvicorn", "pdfkit", "pyhive", "sasl", "thrift-sasl", "boto3", "smart-open", "celery", "redis", "celerybeat-mongo", "databricks-sql-connector", "featurebyte-freeware", "gevent", "aioredis", "requests-kerberos", "tenacity"]
 
 [tool.poetry.group.dev.dependencies]
 freezegun = "^1.2.1"
