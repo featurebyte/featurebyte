@@ -182,13 +182,12 @@ def test_feature__request_column_ttl_and_non_ttl_components(
     expected = """
     import numpy as np
     import pandas as pd
-    from pandas import to_datetime
 
 
     def on_demand_feature_view(inputs: pd.DataFrame) -> pd.DataFrame:
         df = pd.DataFrame()
-        feat = to_datetime(inputs["__feature__part0"])
-        request_col = to_datetime(inputs["POINT_IN_TIME"])
+        feat = pd.to_datetime(inputs["__feature__part0"])
+        request_col = pd.to_datetime(inputs["POINT_IN_TIME"])
         feat_1 = request_col + (request_col - request_col)
         feat_2 = ((feat_1 - feat).dt.seconds // 86400) + inputs["__feature__part1"]
         df["feature"] = feat_2
@@ -269,7 +268,6 @@ def test_feature__ttl_item_aggregate_request_column(
     expected = """
     import numpy as np
     import pandas as pd
-    from pandas import to_datetime
 
 
     def on_demand_feature_view(inputs: pd.DataFrame) -> pd.DataFrame:
@@ -278,8 +276,8 @@ def test_feature__ttl_item_aggregate_request_column(
             inputs["__composite_feature__part1"]
             + inputs["__composite_feature__part2"]
         )
-        feat_1 = to_datetime(inputs["__composite_feature__part0"])
-        request_col = to_datetime(inputs["POINT_IN_TIME"])
+        feat_1 = pd.to_datetime(inputs["__composite_feature__part0"])
+        request_col = pd.to_datetime(inputs["POINT_IN_TIME"])
         feat_2 = (request_col - feat_1).dt.seconds // 86400
         df["composite_feature"] = feat + feat_2
         return df
@@ -288,7 +286,6 @@ def test_feature__ttl_item_aggregate_request_column(
 
 
 def test_feature__input_has_mixed_ingest_graph_node_flags(
-    cust_id_entity,
     snowflake_event_table_with_entity,
     feature_group_feature_job_setting,
     entity_id_to_serving_name,

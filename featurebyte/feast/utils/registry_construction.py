@@ -13,12 +13,15 @@ from feast import FeatureService as FeastFeatureService
 from feast import FeatureStore as FeastFeatureStore
 from feast import FeatureView as FeastFeatureView
 from feast import Field as FeastField
+from feast import OnDemandFeatureView as FeastOnDemandFeatureView
+from feast import RequestSource as FeastRequestSource
 from feast.data_source import DataSource as FeastDataSource
 from feast.inference import update_feature_views_with_inferred_features_and_entities
 from feast.protos.feast.core.Registry_pb2 import Registry as RegistryProto
 from feast.repo_config import RegistryConfig, RepoConfig
 
 from featurebyte.enum import DBVarType, InternalName
+from featurebyte.feast.utils.on_demand_view import OnDemandFeatureViewConstructor
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.entity import EntityModel
 from featurebyte.models.feature import FeatureModel
@@ -247,11 +250,80 @@ class FeastRegistryConstructor:
         return offline_store_tables
 
     @classmethod
+    def create_feast_name_to_request_source(
+        cls, features: List[FeatureModel]
+    ) -> Dict[str, FeastRequestSource]:
+        """
+        Create feast request source based on the features
+
+        Parameters
+        ----------
+        features: List[FeatureModel]
+            List of featurebyte feature models
+
+        Returns
+        -------
+        Dict[str, FeastRequestSource]
+            Mapping from feast request source name to feast request source
+        """
+        name_to_feast_request_source: Dict[str, FeastRequestSource] = {}
+        for feature in features:
+            for req_col_node in feature.extract_request_column_nodes():
+                req_col_name = req_col_node.parameters.column_name
+                if req_col_name not in name_to_feast_request_source:
+                    fb_type = DBVarType(req_col_node.parameters.dtype)
+                    name_to_feast_request_source[req_col_name] = FeastRequestSource(
+                        name=req_col_name,
+                        schema=[
+                            FeastField(name=req_col_name, dtype=fb_type.to_feast_primitive_type())
+                        ],
+                    )
+        return name_to_feast_request_source
+
+    @classmethod
+    def create_feast_on_demand_feature_views(
+        cls,
+        features: List[FeatureModel],
+        name_to_feast_feature_view: Dict[str, FeastFeatureView],
+        name_to_feast_request_source: Dict[str, FeastRequestSource],
+    ) -> List[FeastOnDemandFeatureView]:
+        """
+        Create feast on demand feature views based on the features
+
+        Parameters
+        ----------
+        features: List[FeatureModel]
+            List of featurebyte feature models
+        name_to_feast_feature_view: Dict[str, FeastFeatureView]
+            Mapping from feast feature view name to feast feature view
+        name_to_feast_request_source: Dict[str, FeastRequestSource]
+            Mapping from feast request source name to feast request source
+
+        Returns
+        -------
+        List[FeastOnDemandFeatureView]
+            List of feast on demand feature views
+        """
+        on_demand_feature_views: List[FeastOnDemandFeatureView] = []
+        for feature in features:
+            if feature.offline_store_info is None or not feature.offline_store_info.is_decomposed:
+                continue
+
+            on_demand_feature_view = OnDemandFeatureViewConstructor.create(
+                feature_model=feature,
+                name_to_feast_feature_view=name_to_feast_feature_view,
+                name_to_feast_request_source=name_to_feast_request_source,
+            )
+            on_demand_feature_views.append(on_demand_feature_view)
+        return on_demand_feature_views
+
+    @classmethod
     def create_feast_feature_services(
         cls,
         feature_lists: List[FeatureListModel],
         features: List[FeatureModel],
         feast_feature_views: List[FeastFeatureView],
+        feast_on_demand_feature_views: List[FeastOnDemandFeatureView],
     ) -> List[FeastFeatureService]:
         """
         Create feast feature services based on the feature lists
@@ -264,6 +336,8 @@ class FeastRegistryConstructor:
             List of featurebyte feature models
         feast_feature_views: List[FeastFeatureView]
             List of feast feature views
+        feast_on_demand_feature_views: List[FeastOnDemandFeatureView]
+            List of feast on demand feature views
 
         Returns
         -------
@@ -285,7 +359,7 @@ class FeastRegistryConstructor:
             # construct input for feature service
             input_feature_views = []
             found_feature_names = set()
-            for feature_view in feast_feature_views:
+            for feature_view in feast_feature_views + feast_on_demand_feature_views:
                 feast_feat_names = [
                     feat.name for feat in feature_view.features if feat.name in feature_names
                 ]
@@ -314,7 +388,9 @@ class FeastRegistryConstructor:
         project_name: Optional[str],
         feast_data_sources: List[FeastDataSource],
         primary_entity_ids_to_feast_entity: Dict[Tuple[PydanticObjectId, ...], FeastEntity],
+        feast_request_sources: List[FeastRequestSource],
         feast_feature_views: List[FeastFeatureView],
+        feast_on_demand_feature_views: List[FeastOnDemandFeatureView],
         feast_feature_services: List[FeastFeatureService],
     ) -> RegistryProto:
         project_name = project_name or "featurebyte_project"
@@ -337,11 +413,11 @@ class FeastRegistryConstructor:
             )
             feature_store = FeastFeatureStore(config=repo_config)
             registry = feature_store.registry
-            for data_source in feast_data_sources:
+            for data_source in feast_data_sources + feast_request_sources:
                 registry.apply_data_source(data_source=data_source, project=project_name)
             for entity in primary_entity_ids_to_feast_entity.values():
                 registry.apply_entity(entity=entity, project=project_name)
-            for feature_view in feast_feature_views:
+            for feature_view in feast_feature_views + feast_on_demand_feature_views:
                 registry.apply_feature_view(feature_view=feature_view, project=project_name)
             for feature_service in feast_feature_services:
                 registry.apply_feature_service(
@@ -388,7 +464,7 @@ class FeastRegistryConstructor:
         )
         primary_entity_ids_to_feast_entity: Dict[Tuple[PydanticObjectId, ...], FeastEntity] = {}
         feast_data_sources = []
-        feast_feature_views = []
+        name_to_feast_feature_view: Dict[str, FeastFeatureView] = {}
         feature_store_details = feature_store.get_feature_store_details()
         for offline_store_table in offline_store_tables:
             entity_key = tuple(offline_store_table.primary_entity_ids)
@@ -410,12 +486,19 @@ class FeastRegistryConstructor:
                 entity=feast_entity,
                 data_source=feast_data_source,
             )
-            feast_feature_views.append(feast_feature_view)
+            name_to_feast_feature_view[offline_store_table.table_name] = feast_feature_view
 
+        name_to_feast_request_source = cls.create_feast_name_to_request_source(features)
+        on_demand_feature_views = cls.create_feast_on_demand_feature_views(
+            features=features,
+            name_to_feast_feature_view=name_to_feast_feature_view,
+            name_to_feast_request_source=name_to_feast_request_source,
+        )
         feast_feature_services = cls.create_feast_feature_services(
             feature_lists=feature_lists,
             features=features,
-            feast_feature_views=feast_feature_views,
+            feast_feature_views=list(name_to_feast_feature_view.values()),
+            feast_on_demand_feature_views=on_demand_feature_views,
         )
 
         # construct feast registry by constructing a feast feature store and extracting the registry
@@ -423,6 +506,8 @@ class FeastRegistryConstructor:
             project_name=project_name,
             feast_data_sources=feast_data_sources,
             primary_entity_ids_to_feast_entity=primary_entity_ids_to_feast_entity,
-            feast_feature_views=feast_feature_views,
+            feast_request_sources=list(name_to_feast_request_source.values()),
+            feast_feature_views=list(name_to_feast_feature_view.values()),
+            feast_on_demand_feature_views=on_demand_feature_views,
             feast_feature_services=feast_feature_services,
         )
