@@ -19,6 +19,7 @@ from feast.protos.feast.core.Registry_pb2 import Registry as RegistryProto
 from feast.repo_config import RegistryConfig, RepoConfig
 
 from featurebyte.enum import DBVarType, InternalName
+from featurebyte.feast.enum import to_feast_primitive_type
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.entity import EntityModel
 from featurebyte.models.feature import FeatureModel
@@ -54,7 +55,7 @@ class OfflineStoreTable(FeatureByteBaseModel):
             Feast entity
         """
         # FIXME: We likely need to set the value type based on the dtype of the primary entity
-        value_type = DBVarType.VARCHAR.to_feast_primitive_type().to_value_type()
+        value_type = to_feast_primitive_type(DBVarType.VARCHAR).to_value_type()
         entity = FeastEntity(
             name=" x ".join(self.primary_entity_serving_names),
             join_keys=self.primary_entity_serving_names,
@@ -120,7 +121,7 @@ class OfflineStoreTable(FeatureByteBaseModel):
             schema.append(
                 FeastField(
                     name=ingest_query_graph.output_column_name,
-                    dtype=DBVarType(ingest_query_graph.output_dtype).to_feast_primitive_type(),
+                    dtype=to_feast_primitive_type(DBVarType(ingest_query_graph.output_dtype)),
                 )
             )
 
