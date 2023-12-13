@@ -139,7 +139,7 @@ async def test_feature_table_one_feature_deployed(
     """
     Test feature table creation when one feature is deployed
     """
-    await manager_service.handle_online_enabled_feature(deployed_float_feature)
+    await manager_service.handle_online_enabled_features([deployed_float_feature])
 
     assert mock_initialize_new_columns.call_count == 1
 
@@ -192,8 +192,10 @@ async def test_feature_table_one_feature_deployed(
     )
 
 
+@pytest.mark.parametrize("is_deployed_together", [False, True])
 @pytest.mark.asyncio
 async def test_feature_table_two_features_deployed(
+    is_deployed_together,
     app_container,
     document_service,
     manager_service,
@@ -206,10 +208,17 @@ async def test_feature_table_two_features_deployed(
     """
     Test feature table creation and update when two features are deployed
     """
-    await manager_service.handle_online_enabled_feature(deployed_float_feature)
-    await manager_service.handle_online_enabled_feature(deployed_float_feature_post_processed)
-
-    assert mock_initialize_new_columns.call_count == 2
+    if is_deployed_together:
+        await manager_service.handle_online_enabled_features(
+            [deployed_float_feature, deployed_float_feature_post_processed]
+        )
+        assert mock_initialize_new_columns.call_count == 1
+    else:
+        await manager_service.handle_online_enabled_features([deployed_float_feature])
+        await manager_service.handle_online_enabled_features(
+            [deployed_float_feature_post_processed]
+        )
+        assert mock_initialize_new_columns.call_count == 2
 
     feature_tables = await get_all_feature_tables(document_service)
     assert len(feature_tables) == 1
@@ -275,13 +284,14 @@ async def test_feature_table_undeploy(
     Test feature table creation and update when two features are deployed
     """
     # Simulate online enabling two features then online disable one
-    await manager_service.handle_online_enabled_feature(deployed_float_feature)
-    await manager_service.handle_online_enabled_feature(deployed_float_feature_post_processed)
+    await manager_service.handle_online_enabled_features(
+        [deployed_float_feature, deployed_float_feature_post_processed]
+    )
 
     await undeploy_feature(deployed_float_feature)
-    await manager_service.handle_online_disabled_feature(deployed_float_feature)
+    await manager_service.handle_online_disabled_features([deployed_float_feature])
 
-    assert mock_initialize_new_columns.call_count == 2
+    assert mock_initialize_new_columns.call_count == 1
 
     feature_tables = await get_all_feature_tables(document_service)
     assert len(feature_tables) == 1
@@ -325,7 +335,7 @@ async def test_feature_table_undeploy(
 
     # Check online disabling the last feature deletes the feature table
     await undeploy_feature(deployed_float_feature_post_processed)
-    await manager_service.handle_online_disabled_feature(deployed_float_feature_post_processed)
+    await manager_service.handle_online_disabled_features([deployed_float_feature_post_processed])
     feature_tables = await get_all_feature_tables(document_service)
     assert len(feature_tables) == 0
     assert not await has_scheduled_task(periodic_task_service, feature_table)
@@ -350,9 +360,8 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
     """
     Test feature table creation and update when two features are deployed
     """
-    await manager_service.handle_online_enabled_feature(deployed_float_feature)
-    await manager_service.handle_online_enabled_feature(
-        deployed_float_feature_different_job_setting
+    await manager_service.handle_online_enabled_features(
+        [deployed_float_feature, deployed_float_feature_different_job_setting]
     )
 
     assert mock_initialize_new_columns.call_count == 2

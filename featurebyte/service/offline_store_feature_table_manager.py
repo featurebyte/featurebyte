@@ -3,7 +3,10 @@ OfflineStoreFeatureTableUpdateService class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, Iterable, List, Optional, Tuple, cast
+
+from collections import defaultdict
+from dataclasses import dataclass
 
 from bson import ObjectId
 
@@ -26,6 +29,95 @@ from featurebyte.service.feature_materialize import FeatureMaterializeService
 from featurebyte.service.feature_materialize_scheduler import FeatureMaterializeSchedulerService
 from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
 from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
+
+
+@dataclass
+class OfflineIngestGraphContainer:
+    """
+    OfflineIngestGraphContainer class
+
+    This helper class breaks FeatureModel objects into groups by offline store feature table name.
+    """
+
+    offline_store_table_name_to_features: Dict[str, List[FeatureModel]]
+    offline_store_table_name_to_graphs: Dict[str, List[OfflineStoreIngestQueryGraph]]
+
+    @classmethod
+    async def build(
+        cls,
+        entity_service: EntityService,
+        features: List[FeatureModel],
+    ) -> OfflineIngestGraphContainer:
+        """
+        Build OfflineIngestGraphContainer
+        """
+        # Build mapping from entity id to serving names needed by offline store info extraction
+        all_feature_entity_ids = set()
+        for feature in features:
+            all_feature_entity_ids.update(feature.entity_ids)
+        feature_entities = []
+        async for entity_model in entity_service.list_documents_iterator(
+            query_filter={"_id": {"$in": list(all_feature_entity_ids)}}
+        ):
+            feature_entities.append(entity_model)
+        entity_id_to_serving_name = {
+            entity.id: entity.serving_names[0] for entity in feature_entities
+        }
+
+        # Group features by offline store feature table name
+        offline_store_table_name_to_features = defaultdict(list)
+        offline_store_table_name_to_graphs = defaultdict(list)
+        for feature in features:
+            # FIXME: cleanup this logic once integrate this with feast feature store
+            if feature.offline_store_info is None:
+                feature.initialize_offline_store_info(
+                    entity_id_to_serving_name=entity_id_to_serving_name
+                )
+            offline_store_info = feature.offline_store_info
+            assert offline_store_info is not None, "Offline store info should not be None"
+            offline_ingest_graphs = offline_store_info.extract_offline_store_ingest_query_graphs()
+
+            for offline_ingest_graph in offline_ingest_graphs:
+                offline_store_table_name_to_features[
+                    offline_ingest_graph.offline_store_table_name
+                ].append(feature)
+                offline_store_table_name_to_graphs[
+                    offline_ingest_graph.offline_store_table_name
+                ].append(offline_ingest_graph)
+
+        return cls(
+            offline_store_table_name_to_features=offline_store_table_name_to_features,
+            offline_store_table_name_to_graphs=offline_store_table_name_to_graphs,
+        )
+
+    def get_offline_ingest_graphs(
+        self, feature_table_name: str
+    ) -> List[OfflineStoreIngestQueryGraph]:
+        """
+        Get offline ingest graphs by offline store feature table name
+
+        Parameters
+        ----------
+        feature_table_name: str
+            Offline store feature table name
+
+        Returns
+        -------
+        List[OfflineStoreIngestQueryGraph]
+        """
+        return self.offline_store_table_name_to_graphs[feature_table_name]
+
+    def iterate_features_by_table_name(self) -> Iterable[Tuple[str, List[FeatureModel]]]:
+        """
+        Iterate features by offline store feature table name
+
+        Yields
+        ------
+        Tuple[str, List[FeatureModel]]
+            Tuple of offline store feature table name and list of features
+        """
+        for table_name, features in self.offline_store_table_name_to_features.items():
+            yield table_name, features
 
 
 class OfflineStoreFeatureTableManagerService:
@@ -53,44 +145,35 @@ class OfflineStoreFeatureTableManagerService:
         self.feast_registry_service = feast_registry_service
         self.feature_list_service = feature_list_service
 
-    async def handle_online_enabled_feature(self, feature: FeatureModel) -> None:
+    async def handle_online_enabled_features(self, features: List[FeatureModel]) -> None:
         """
-        Handles the case where a feature is enabled for online serving by updating all affected
+        Handles the case where features are enabled for online serving by updating all affected
         feature tables.
 
         Parameters
         ----------
-        feature: FeatureModel
-            Model of the feature to be enabled for online serving
+        features: List[FeatureModel]
+            Features to be enabled for online serving
         """
-        feature_entities = []
-        async for entity_model in self.entity_service.list_documents_iterator(
-            query_filter={"_id": {"$in": feature.entity_ids}}
-        ):
-            feature_entities.append(entity_model)
+        ingest_graph_container = await OfflineIngestGraphContainer.build(
+            self.entity_service, features
+        )
 
-        # FIXME: cleanup this logic once integrate this with feast feature store
-        if feature.offline_store_info is None:
-            feature.initialize_offline_store_info(
-                entity_id_to_serving_name={
-                    entity.id: entity.serving_names[0] for entity in feature_entities
-                }
-            )
-
-        offline_store_info = feature.offline_store_info
-        assert offline_store_info is not None, "Offline store info should not be None"
-        offline_ingest_graphs = offline_store_info.extract_offline_store_ingest_query_graphs()
-
-        for offline_ingest_graph in offline_ingest_graphs:
+        for (
+            offline_store_table_name,
+            features,
+        ) in ingest_graph_container.iterate_features_by_table_name():
             feature_table_dict = await self._get_compatible_existing_feature_table(
-                offline_ingest_graph=offline_ingest_graph
+                table_name=offline_store_table_name,
             )
 
             if feature_table_dict is not None:
                 # update existing table
                 feature_ids = feature_table_dict["feature_ids"][:]
-                if feature.id not in feature_ids:
-                    feature_ids.append(feature.id)
+                for feature in features:
+                    if feature.id not in feature_ids:
+                        feature_ids.append(feature.id)
+                if feature_ids != feature_table_dict["feature_ids"]:
                     feature_table_model = await self._update_offline_store_feature_table(
                         feature_table_dict, feature_ids
                     )
@@ -98,9 +181,12 @@ class OfflineStoreFeatureTableManagerService:
                     feature_table_model = None
             else:
                 # create new table
+                offline_ingest_graph = ingest_graph_container.get_offline_ingest_graphs(
+                    feature_table_name=offline_store_table_name
+                )[0]
                 feature_table_model = await self._construct_offline_store_feature_table_model(
-                    feature_table_name=offline_ingest_graph.offline_store_table_name,
-                    feature_ids=[feature.id],
+                    feature_table_name=offline_store_table_name,
+                    feature_ids=[feature.id for feature in features],
                     primary_entity_ids=offline_ingest_graph.primary_entity_ids,
                     has_ttl=offline_ingest_graph.has_ttl,
                     feature_job_setting=offline_ingest_graph.feature_job_setting,
@@ -114,7 +200,7 @@ class OfflineStoreFeatureTableManagerService:
                     feature_table_model
                 )
 
-    async def handle_online_disabled_feature(self, feature: FeatureModel) -> None:
+    async def handle_online_disabled_features(self, features: List[FeatureModel]) -> None:
         """
         Handles the case where a feature is disabled for online serving by updating all affected
         feature tables. In normal case there should only be one.
@@ -124,12 +210,14 @@ class OfflineStoreFeatureTableManagerService:
         feature: FeatureModel
             Model of the feature to be disabled for online serving
         """
+        feature_ids = list(set([feature.id for feature in features]))
         feature_table_data = await self.offline_store_feature_table_service.list_documents_as_dict(
-            query_filter={"feature_ids": feature.id}
+            query_filter={"feature_ids": {"$in": feature_ids}},
         )
         for feature_table_dict in feature_table_data["data"]:
             updated_feature_ids = feature_table_dict["feature_ids"][:]
-            updated_feature_ids.remove(feature.id)
+            for feature_id in feature_ids:
+                updated_feature_ids.remove(feature_id)
             if updated_feature_ids:
                 await self._update_offline_store_feature_table(
                     feature_table_dict, updated_feature_ids
@@ -144,16 +232,10 @@ class OfflineStoreFeatureTableManagerService:
             await self._create_or_update_feast_registry()
 
     async def _get_compatible_existing_feature_table(
-        self, offline_ingest_graph: OfflineStoreIngestQueryGraph
+        self, table_name: str
     ) -> Optional[Dict[str, Any]]:
         feature_table_data = await self.offline_store_feature_table_service.list_documents_as_dict(
-            query_filter={
-                "primary_entity_ids": offline_ingest_graph.primary_entity_ids,
-                "has_ttl": offline_ingest_graph.has_ttl,
-                "feature_job_setting": offline_ingest_graph.feature_job_setting.dict()
-                if offline_ingest_graph.feature_job_setting is not None
-                else None,
-            },
+            query_filter={"name": table_name},
         )
         if feature_table_data["total"] > 0:
             return cast(Dict[str, Any], feature_table_data["data"][0])
