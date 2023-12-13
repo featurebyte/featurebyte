@@ -263,6 +263,8 @@ class DBVarType(StrEnum):
             self.VARCHAR: PrimitiveFeastType.STRING,
             self.FLOAT: PrimitiveFeastType.FLOAT64,
             self.INT: PrimitiveFeastType.INT64,
+            self.TIMESTAMP_TZ: PrimitiveFeastType.UNIX_TIMESTAMP,
+            self.TIMESTAMP: PrimitiveFeastType.UNIX_TIMESTAMP,
         }
         if self in mapping:  # type: ignore
             return mapping[self]  # type: ignore

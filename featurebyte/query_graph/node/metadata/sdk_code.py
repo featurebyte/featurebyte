@@ -202,8 +202,6 @@ class ClassEnum(Enum):
     # non-featurebyte related
     OBJECT_ID = ("bson", "ObjectId")
     PD_TIMESTAMP = ("pandas", "Timestamp")
-    PD_TO_DATETIME = ("pandas", "to_datetime")
-    PD_TO_TIMEDELTA = ("pandas", "to_timedelta")
 
     # feature store
     FEATURE_STORE = ("featurebyte", "FeatureStore")

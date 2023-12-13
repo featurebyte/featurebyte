@@ -24,6 +24,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     VariableNameGenerator,
     VariableNameStr,
     VarNameExpressionInfo,
+    get_object_class_from_function_call,
 )
 
 
@@ -94,7 +95,8 @@ class DatetimeExtractNode(BaseSeriesOutputNode):
         statements: List[StatementT] = []
         offset_operand: Optional[Union[str, VariableNameStr]]
         if self.parameters.timezone_offset is not None:
-            delta = ClassEnum.PD_TO_TIMEDELTA(f"{self.parameters.timezone_offset}:00")
+            delta_val = f"{self.parameters.timezone_offset}:00"
+            delta = get_object_class_from_function_call("pd.to_timedelta", delta_val)
             offset_operand = var_name_generator.convert_to_variable_name(
                 variable_name_prefix="tz_offset", node_name=None
             )
@@ -231,7 +233,7 @@ class TimeDeltaNode(BaseSeriesOutputNode):
         var_name_generator: VariableNameGenerator,
         node_output_type: NodeOutputType,
         node_output_category: NodeOutputCategory,
-        timedelta_class_enum: ClassEnum,
+        timedelta_func: Union[ClassEnum, str],
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_dict(node_inputs)
         var_name_expression = var_name_expressions[0]
@@ -241,7 +243,12 @@ class TimeDeltaNode(BaseSeriesOutputNode):
             node_output_category=node_output_category,
             node_name=self.name,
         )
-        obj = timedelta_class_enum(var_name_expression, unit=self.parameters.unit)
+        if isinstance(timedelta_func, ClassEnum):
+            obj = timedelta_func(var_name_expression, unit=self.parameters.unit)
+        else:
+            obj = get_object_class_from_function_call(
+                timedelta_func, var_name_expression, unit=self.parameters.unit
+            )
         statements.append((var_name, obj))
         return statements, var_name
 
@@ -274,7 +281,7 @@ class TimeDeltaNode(BaseSeriesOutputNode):
             var_name_generator,
             NodeOutputType.SERIES,
             NodeOutputCategory.FEATURE,
-            ClassEnum.PD_TO_TIMEDELTA,
+            "pd.to_timedelta",
         )
 
 
