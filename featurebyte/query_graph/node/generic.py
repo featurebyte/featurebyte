@@ -1905,20 +1905,21 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
         self,
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
+        node_output_category: NodeOutputCategory,
     ) -> Tuple[List[StatementT], VariableNameStr, VariableNameStr]:
         var_name_expressions = self._assert_no_info_dict(node_inputs)
         statements, var_name = self._convert_expression_to_variable(
             var_name_expression=var_name_expressions[0],
             var_name_generator=var_name_generator,
             node_output_type=NodeOutputType.SERIES,
-            node_output_category=NodeOutputCategory.FEATURE,
+            node_output_category=node_output_category,
             to_associate_with_node_name=False,
         )
         mask_statements, mask_var_name = self._convert_expression_to_variable(
             var_name_expression=var_name_expressions[1],
             var_name_generator=var_name_generator,
             node_output_type=NodeOutputType.SERIES,
-            node_output_category=NodeOutputCategory.FEATURE,
+            node_output_category=node_output_category,
             to_associate_with_node_name=False,
             variable_name_prefix="mask",
         )
@@ -1934,7 +1935,9 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         statements, var_name, mask_var_name = self._prepare_var_name_and_mask_var_name(
-            node_inputs=node_inputs, var_name_generator=var_name_generator
+            node_inputs=node_inputs,
+            var_name_generator=var_name_generator,
+            node_output_category=operation_structure.output_category,
         )
         # only make the copy if we are not generating info dict
         # if generating info dict, we will delay the copy to the assign node
@@ -1979,7 +1982,9 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         statements, var_name, mask_var_name = self._prepare_var_name_and_mask_var_name(
-            node_inputs=node_inputs, var_name_generator=var_name_generator
+            node_inputs=node_inputs,
+            var_name_generator=var_name_generator,
+            node_output_category=NodeOutputCategory.VIEW,
         )
         value: RightHandSide = ValueStr.create(self.parameters.value)
         is_series_assignment = len(node_inputs) == 3
