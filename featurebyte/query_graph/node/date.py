@@ -137,7 +137,7 @@ class TimeDeltaExtractNode(BaseSeriesOutputWithSingleOperandNode):
 
     def generate_odfv_expression(self, operand: str) -> str:
         if self.parameters.property == "millisecond":
-            return f"{operand}.dt.microseconds / 1000"
+            return f"{operand}.dt.microseconds // 1000"
         if self.parameters.property == "microsecond":
             return f"{operand}.dt.microseconds"
         if self.parameters.property == "second":
@@ -148,7 +148,7 @@ class TimeDeltaExtractNode(BaseSeriesOutputWithSingleOperandNode):
             "hour": 60 * 60,
             "minute": 60,
         }
-        return f"{operand}.dt.seconds / {unit_to_seconds[self.parameters.property]}"
+        return f"{operand}.dt.seconds // {unit_to_seconds[self.parameters.property]}"
 
 
 class DateDifferenceNode(BaseSeriesOutputNode):

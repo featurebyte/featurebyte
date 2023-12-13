@@ -118,11 +118,11 @@ def test_datetime_extract(config, property):
 @pytest.mark.parametrize(
     "property,expected_expr",
     [
-        ("day", "feat.dt.seconds / 86400"),  # 86400 = 24 * 60 * 60
-        ("hour", "feat.dt.seconds / 3600"),  # 3600 = 60 * 60
-        ("minute", "feat.dt.seconds / 60"),
+        ("day", "feat.dt.seconds // 86400"),  # 86400 = 24 * 60 * 60
+        ("hour", "feat.dt.seconds // 3600"),  # 3600 = 60 * 60
+        ("minute", "feat.dt.seconds // 60"),
         ("second", "feat.dt.seconds"),
-        ("millisecond", "feat.dt.microseconds / 1000"),
+        ("millisecond", "feat.dt.microseconds // 1000"),
         ("microsecond", "feat.dt.microseconds"),
     ],
 )

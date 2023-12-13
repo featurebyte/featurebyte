@@ -190,7 +190,7 @@ def test_feature__request_column_ttl_and_non_ttl_components(
         feat = to_datetime(inputs["__feature__part0"])
         request_col = to_datetime(inputs["POINT_IN_TIME"])
         feat_1 = request_col + (request_col - request_col)
-        feat_2 = ((feat_1 - feat).dt.seconds / 86400) + inputs["__feature__part1"]
+        feat_2 = ((feat_1 - feat).dt.seconds // 86400) + inputs["__feature__part1"]
         df["feature"] = feat_2
         return df
     """
@@ -280,7 +280,7 @@ def test_feature__ttl_item_aggregate_request_column(
         )
         feat_1 = to_datetime(inputs["__composite_feature__part0"])
         request_col = to_datetime(inputs["POINT_IN_TIME"])
-        feat_2 = (request_col - feat_1).dt.seconds / 86400
+        feat_2 = (request_col - feat_1).dt.seconds // 86400
         df["composite_feature"] = feat + feat_2
         return df
     """
