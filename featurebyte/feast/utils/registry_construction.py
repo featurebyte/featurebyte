@@ -20,6 +20,7 @@ from feast.repo_config import RegistryConfig, RepoConfig
 
 from featurebyte.enum import DBVarType, InternalName
 from featurebyte.feast.enum import to_feast_primitive_type
+from featurebyte.feast.model.feature_store import FeatureStoreDetails
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.entity import EntityModel
 from featurebyte.models.feature import FeatureModel
@@ -390,7 +391,9 @@ class FeastRegistryConstructor:
         primary_entity_ids_to_feast_entity: Dict[Tuple[PydanticObjectId, ...], FeastEntity] = {}
         feast_data_sources = []
         feast_feature_views = []
-        feature_store_details = feature_store.get_feature_store_details()
+        feature_store_details = FeatureStoreDetails(
+            **feature_store.get_feature_store_details().dict()
+        )
         for offline_store_table in offline_store_tables:
             entity_key = tuple(offline_store_table.primary_entity_ids)
             feast_entity = primary_entity_ids_to_feast_entity.get(
