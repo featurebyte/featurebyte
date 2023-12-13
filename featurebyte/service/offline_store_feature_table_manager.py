@@ -50,6 +50,17 @@ class OfflineIngestGraphContainer:
     ) -> OfflineIngestGraphContainer:
         """
         Build OfflineIngestGraphContainer
+
+        Parameters
+        ----------
+        entity_service : EntityService
+            Entity service
+        features : List[FeatureModel]
+            List of features
+
+        Returns
+        -------
+        OfflineIngestGraphContainer
         """
         # Build mapping from entity id to serving names needed by offline store info extraction
         all_feature_entity_ids = set()
@@ -161,7 +172,7 @@ class OfflineStoreFeatureTableManagerService:
 
         for (
             offline_store_table_name,
-            features,
+            offline_store_table_features,
         ) in ingest_graph_container.iterate_features_by_table_name():
             feature_table_dict = await self._get_compatible_existing_feature_table(
                 table_name=offline_store_table_name,
@@ -170,7 +181,7 @@ class OfflineStoreFeatureTableManagerService:
             if feature_table_dict is not None:
                 # update existing table
                 feature_ids = feature_table_dict["feature_ids"][:]
-                for feature in features:
+                for feature in offline_store_table_features:
                     if feature.id not in feature_ids:
                         feature_ids.append(feature.id)
                 if feature_ids != feature_table_dict["feature_ids"]:
@@ -186,7 +197,7 @@ class OfflineStoreFeatureTableManagerService:
                 )[0]
                 feature_table_model = await self._construct_offline_store_feature_table_model(
                     feature_table_name=offline_store_table_name,
-                    feature_ids=[feature.id for feature in features],
+                    feature_ids=[feature.id for feature in offline_store_table_features],
                     primary_entity_ids=offline_ingest_graph.primary_entity_ids,
                     has_ttl=offline_ingest_graph.has_ttl,
                     feature_job_setting=offline_ingest_graph.feature_job_setting,
@@ -207,10 +218,10 @@ class OfflineStoreFeatureTableManagerService:
 
         Parameters
         ----------
-        feature: FeatureModel
+        features: FeatureModel
             Model of the feature to be disabled for online serving
         """
-        feature_ids = set([feature.id for feature in features])
+        feature_ids = {feature.id for feature in features}
         feature_table_data = await self.offline_store_feature_table_service.list_documents_as_dict(
             query_filter={"feature_ids": {"$in": list(feature_ids)}},
         )
