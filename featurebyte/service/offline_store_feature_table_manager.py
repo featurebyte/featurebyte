@@ -210,14 +210,16 @@ class OfflineStoreFeatureTableManagerService:
         feature: FeatureModel
             Model of the feature to be disabled for online serving
         """
-        feature_ids = list(set([feature.id for feature in features]))
+        feature_ids = set([feature.id for feature in features])
         feature_table_data = await self.offline_store_feature_table_service.list_documents_as_dict(
-            query_filter={"feature_ids": {"$in": feature_ids}},
+            query_filter={"feature_ids": {"$in": list(feature_ids)}},
         )
         for feature_table_dict in feature_table_data["data"]:
-            updated_feature_ids = feature_table_dict["feature_ids"][:]
-            for feature_id in feature_ids:
-                updated_feature_ids.remove(feature_id)
+            updated_feature_ids = [
+                feature_id
+                for feature_id in feature_table_dict["feature_ids"]
+                if feature_id not in feature_ids
+            ]
             if updated_feature_ids:
                 await self._update_offline_store_feature_table(
                     feature_table_dict, updated_feature_ids
