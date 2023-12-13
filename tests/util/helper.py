@@ -23,6 +23,7 @@ from featurebyte.api.source_table import AbstractTableData
 from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import SampleMixin
 from featurebyte.enum import AggFunc, DBVarType
+from featurebyte.feast.utils.on_demand_view import add_sys_path
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalGraphState, GlobalQueryGraph, QueryGraph
 from featurebyte.query_graph.node.nested import OfflineStoreIngestQueryGraphNodeParameters
@@ -546,17 +547,6 @@ def generate_column_data(var_type, row_number=10):
     if var_type in DBVarType.BOOL:
         return np.random.choice([True, False], size=row_number)
     raise ValueError(f"Unsupported var_type: {var_type}")
-
-
-@contextmanager
-def add_sys_path(path):
-    """Temporarily add the given path to `sys.path`."""
-    path = os.fspath(path)
-    try:
-        sys.path.insert(0, path)
-        yield
-    finally:
-        sys.path.remove(path)
 
 
 def check_on_demand_feature_view_code_execution(odfv_codes, df):

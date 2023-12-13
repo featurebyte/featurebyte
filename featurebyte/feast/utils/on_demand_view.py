@@ -1,11 +1,12 @@
 """
 On demand feature view related classes and functions.
 """
-from typing import Dict, List, Union, cast
+from typing import Dict, Generator, List, Union, cast
 
 import importlib
+import os
 import sys
-import tempfile
+from contextlib import contextmanager
 
 from feast import FeatureView, Field, RequestSource
 from feast.feature_view_projection import FeatureViewProjection
@@ -16,11 +17,35 @@ from featurebyte.enum import DBVarType
 from featurebyte.models.feature import FeatureModel
 
 
+@contextmanager
+def add_sys_path(path: str) -> Generator[None, None, None]:
+    """
+    Temporarily add the given path to `sys.path`.
+
+    Parameters
+    ----------
+    path: str
+        Path to add to `sys.path`
+
+    Yields
+    ------
+    None
+        This context manager yields nothing and is used for its side effects only.
+    """
+    path = os.fspath(path)
+    try:
+        sys.path.insert(0, path)
+        yield
+    finally:
+        sys.path.remove(path)
+
+
 def create_feast_on_demand_feature_view(
     definition: str,
     function_name: str,
     sources: List[Union[FeatureView, RequestSource, FeatureViewProjection]],
     schema: List[Field],
+    on_demand_feature_view_dir: str,
 ) -> OnDemandFeatureView:
     """
     Create a Feast OnDemandFeatureView from a function definition.
@@ -35,19 +60,22 @@ def create_feast_on_demand_feature_view(
         List of FeatureViews and RequestSources to be used as sources for the OnDemandFeatureView
     schema: List[Field]
         List of Fields to be used as schema for the OnDemandFeatureView
+    on_demand_feature_view_dir: str
+        Directory to write the on demand feature view code to
 
     Returns
     -------
     OnDemandFeatureView
         The created OnDemandFeatureView
     """
-    with tempfile.TemporaryDirectory() as repo_dir:
-        module_name = "on_demand_feature_view"
-        with open(f"{repo_dir}/{module_name}.py", "w", encoding="utf-8") as file_handle:
-            file_handle.write(definition)
+    module_name = "on_demand_feature_view"
+    with open(
+        f"{on_demand_feature_view_dir}/{module_name}.py", "w", encoding="utf-8"
+    ) as file_handle:
+        file_handle.write(definition)
 
-        # add repo_dir to sys.path so that we can import the module
-        sys.path.append(repo_dir)
+    # add repo_dir to sys.path so that we can import the module
+    with add_sys_path(on_demand_feature_view_dir):
         module = importlib.import_module(module_name)
         func = getattr(module, function_name)
         output = on_demand_feature_view(sources=sources, schema=schema)(func)
@@ -65,6 +93,7 @@ class OnDemandFeatureViewConstructor:
         feature_model: FeatureModel,
         name_to_feast_feature_view: Dict[str, FeatureView],
         name_to_feast_request_source: Dict[str, RequestSource],
+        on_demand_feature_view_dir: str,
     ) -> OnDemandFeatureView:
         """
         Create a Feast OnDemandFeatureView from an offline store info.
@@ -77,6 +106,8 @@ class OnDemandFeatureViewConstructor:
             Dict of FeatureView names to FeatureViews to be used as sources for the OnDemandFeatureView
         name_to_feast_request_source: Dict[str, RequestSource]
             Dict of RequestSource names to RequestSources to be used as sources for the OnDemandFeatureView
+        on_demand_feature_view_dir: str
+            Directory to write the on demand feature view code to
 
         Returns
         -------
@@ -118,5 +149,6 @@ class OnDemandFeatureViewConstructor:
                     dtype=DBVarType(feature_model.dtype).to_feast_primitive_type(),
                 )
             ],
+            on_demand_feature_view_dir=on_demand_feature_view_dir,
         )
         return feature_view

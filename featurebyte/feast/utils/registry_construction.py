@@ -286,6 +286,7 @@ class FeastRegistryConstructor:
         features: List[FeatureModel],
         name_to_feast_feature_view: Dict[str, FeastFeatureView],
         name_to_feast_request_source: Dict[str, FeastRequestSource],
+        on_demand_feature_view_dir: str,
     ) -> List[FeastOnDemandFeatureView]:
         """
         Create feast on demand feature views based on the features
@@ -298,6 +299,8 @@ class FeastRegistryConstructor:
             Mapping from feast feature view name to feast feature view
         name_to_feast_request_source: Dict[str, FeastRequestSource]
             Mapping from feast request source name to feast request source
+        on_demand_feature_view_dir: str
+            Directory to store the on demand feature view
 
         Returns
         -------
@@ -313,6 +316,7 @@ class FeastRegistryConstructor:
                 feature_model=feature,
                 name_to_feast_feature_view=name_to_feast_feature_view,
                 name_to_feast_request_source=name_to_feast_request_source,
+                on_demand_feature_view_dir=on_demand_feature_view_dir,
             )
             on_demand_feature_views.append(on_demand_feature_view)
         return on_demand_feature_views
@@ -458,9 +462,9 @@ class FeastRegistryConstructor:
         cls._check_missing_entities(entities, features)
         cls._check_missing_features(features, feature_lists)
 
-        entity_id_to_serving_name = {entity.id: entity.serving_names[0] for entity in entities}
         offline_store_tables = cls.create_offline_store_tables(
-            features=features, entity_id_to_serving_name=entity_id_to_serving_name
+            features=features,
+            entity_id_to_serving_name={entity.id: entity.serving_names[0] for entity in entities},
         )
         primary_entity_ids_to_feast_entity: Dict[Tuple[PydanticObjectId, ...], FeastEntity] = {}
         feast_data_sources = []
@@ -489,25 +493,27 @@ class FeastRegistryConstructor:
             name_to_feast_feature_view[offline_store_table.table_name] = feast_feature_view
 
         name_to_feast_request_source = cls.create_feast_name_to_request_source(features)
-        on_demand_feature_views = cls.create_feast_on_demand_feature_views(
-            features=features,
-            name_to_feast_feature_view=name_to_feast_feature_view,
-            name_to_feast_request_source=name_to_feast_request_source,
-        )
-        feast_feature_services = cls.create_feast_feature_services(
-            feature_lists=feature_lists,
-            features=features,
-            feast_feature_views=list(name_to_feast_feature_view.values()),
-            feast_on_demand_feature_views=on_demand_feature_views,
-        )
+        with tempfile.TemporaryDirectory() as temp_dir:
+            on_demand_feature_views = cls.create_feast_on_demand_feature_views(
+                features=features,
+                name_to_feast_feature_view=name_to_feast_feature_view,
+                name_to_feast_request_source=name_to_feast_request_source,
+                on_demand_feature_view_dir=temp_dir,
+            )
+            feast_feature_services = cls.create_feast_feature_services(
+                feature_lists=feature_lists,
+                features=features,
+                feast_feature_views=list(name_to_feast_feature_view.values()),
+                feast_on_demand_feature_views=on_demand_feature_views,
+            )
 
-        # construct feast registry by constructing a feast feature store and extracting the registry
-        return cls._create_feast_registry_proto(
-            project_name=project_name,
-            feast_data_sources=feast_data_sources,
-            primary_entity_ids_to_feast_entity=primary_entity_ids_to_feast_entity,
-            feast_request_sources=list(name_to_feast_request_source.values()),
-            feast_feature_views=list(name_to_feast_feature_view.values()),
-            feast_on_demand_feature_views=on_demand_feature_views,
-            feast_feature_services=feast_feature_services,
-        )
+            # construct feast registry by constructing a feast feature store and extracting the registry
+            return cls._create_feast_registry_proto(
+                project_name=project_name,
+                feast_data_sources=feast_data_sources,
+                primary_entity_ids_to_feast_entity=primary_entity_ids_to_feast_entity,
+                feast_request_sources=list(name_to_feast_request_source.values()),
+                feast_feature_views=list(name_to_feast_feature_view.values()),
+                feast_on_demand_feature_views=on_demand_feature_views,
+                feast_feature_services=feast_feature_services,
+            )
