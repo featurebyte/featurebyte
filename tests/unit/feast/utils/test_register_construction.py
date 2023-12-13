@@ -42,7 +42,7 @@ def test_feast_registry_construction__with_post_processing_features(
 ):
     """Test the construction of the feast register (with post processing features)"""
     feature_requires_post_processing = (
-        (RequestColumn.point_in_time() - latest_event_timestamp_feature).dt.day
+        (RequestColumn.point_in_time() - latest_event_timestamp_feature).dt.day.cos()
         + float_feature
         + non_time_based_feature
     )
