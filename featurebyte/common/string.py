@@ -5,7 +5,7 @@ String utilities.
 
 def sanitize_identifier(string: str) -> str:
     """
-    Sanitizes a string to make it a valid identifier for databases.
+    Sanitizes a string to make it a valid identifier for database tables and columns.
 
     Parameters
     ----------
