@@ -168,6 +168,19 @@ class DateDifferenceNode(BaseSeriesOutputNode):
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.TIMEDELTA
 
+    def _derive_python_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        if len(node_inputs) == 1:
+            # we don't allow subtracting timestamp with a scalar timedelta through SDK
+            raise RuntimeError("DateAddNode with only one input is not supported")
+
+        var_name_expressions = self._assert_no_info_dict(node_inputs)
+        left_operand = var_name_expressions[0].as_input()
+        right_operand = var_name_expressions[1].as_input()
+        return [], ExpressionStr(f"{left_operand} - {right_operand}")
+
     def _derive_sdk_code(
         self,
         node_inputs: List[VarNameExpressionInfo],
@@ -176,14 +189,8 @@ class DateDifferenceNode(BaseSeriesOutputNode):
         config: SDKCodeGenConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        if len(node_inputs) == 1:
-            # we don't allow subtracting timestamp with a scalar timedelta through SDK
-            raise RuntimeError("DateAddNode with only one input is not supported")
-
-        var_name_expressions = self._assert_no_info_dict(node_inputs)
-        left_operand = var_name_expressions[0].as_input()
-        right_operand = var_name_expressions[1].as_input()
-        return [], ExpressionStr(f"{left_operand} - {right_operand}")
+        _ = var_name_generator, operation_structure, config, context
+        return self._derive_python_code(node_inputs)
 
     def _derive_on_demand_view_code(
         self,
@@ -191,14 +198,8 @@ class DateDifferenceNode(BaseSeriesOutputNode):
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        if len(node_inputs) == 1:
-            # we don't allow subtracting timestamp with a scalar timedelta through SDK
-            raise RuntimeError("DateAddNode with only one input is not supported")
-
-        var_name_expressions = self._assert_no_info_dict(node_inputs)
-        left_operand = var_name_expressions[0].as_input()
-        right_operand = var_name_expressions[1].as_input()
-        return [], ExpressionStr(f"{left_operand} - {right_operand}")
+        _ = var_name_generator, config
+        return self._derive_python_code(node_inputs)
 
 
 class TimeDeltaNode(BaseSeriesOutputNode):
@@ -224,6 +225,26 @@ class TimeDeltaNode(BaseSeriesOutputNode):
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.TIMEDELTA
 
+    def _derive_python_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        node_output_type: NodeOutputType,
+        node_output_category: NodeOutputCategory,
+        timedelta_class_enum: ClassEnum,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        var_name_expressions = self._assert_no_info_dict(node_inputs)
+        var_name_expression = var_name_expressions[0]
+        statements: List[StatementT] = []
+        var_name = var_name_generator.generate_variable_name(
+            node_output_type=node_output_type,
+            node_output_category=node_output_category,
+            node_name=self.name,
+        )
+        obj = timedelta_class_enum(var_name_expression, unit=self.parameters.unit)
+        statements.append((var_name, obj))
+        return statements, var_name
+
     def _derive_sdk_code(
         self,
         node_inputs: List[VarNameExpressionInfo],
@@ -232,17 +253,14 @@ class TimeDeltaNode(BaseSeriesOutputNode):
         config: SDKCodeGenConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        var_name_expressions = self._assert_no_info_dict(node_inputs)
-        var_name_expression = var_name_expressions[0]
-        statements: List[StatementT] = []
-        var_name = var_name_generator.generate_variable_name(
-            node_output_type=operation_structure.output_type,
-            node_output_category=operation_structure.output_category,
-            node_name=self.name,
+        _ = config, context
+        return self._derive_python_code(
+            node_inputs,
+            var_name_generator,
+            operation_structure.output_type,
+            operation_structure.output_category,
+            ClassEnum.TO_TIMEDELTA,
         )
-        obj = ClassEnum.TO_TIMEDELTA(series=var_name_expression, unit=self.parameters.unit)
-        statements.append((var_name, obj))
-        return statements, var_name
 
     def _derive_on_demand_view_code(
         self,
@@ -250,17 +268,14 @@ class TimeDeltaNode(BaseSeriesOutputNode):
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        var_name_expressions = self._assert_no_info_dict(node_inputs)
-        var_name_expression = var_name_expressions[0]
-        statements: List[StatementT] = []
-        var_name = var_name_generator.generate_variable_name(
-            node_output_type=NodeOutputType.SERIES,
-            node_output_category=NodeOutputCategory.FEATURE,
-            node_name=self.name,
+        _ = config
+        return self._derive_python_code(
+            node_inputs,
+            var_name_generator,
+            NodeOutputType.SERIES,
+            NodeOutputCategory.FEATURE,
+            ClassEnum.PD_TO_TIMEDELTA,
         )
-        obj = ClassEnum.PD_TO_TIMEDELTA(var_name_expression, unit=self.parameters.unit)
-        statements.append((var_name, obj))
-        return statements, var_name
 
 
 class DateAddNode(BaseSeriesOutputNode):
@@ -290,13 +305,9 @@ class DateAddNode(BaseSeriesOutputNode):
             return inputs[0].aggregations[0].dtype
         return inputs[0].columns[0].dtype
 
-    def _derive_sdk_code(
+    def _derive_python_code(
         self,
         node_inputs: List[VarNameExpressionInfo],
-        var_name_generator: VariableNameGenerator,
-        operation_structure: OperationStructure,
-        config: SDKCodeGenConfig,
-        context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         if len(node_inputs) == 1:
             # we don't allow adding timestamp with a scalar timedelta through SDK
@@ -307,17 +318,22 @@ class DateAddNode(BaseSeriesOutputNode):
         right_operand = var_name_expressions[1].as_input()
         return [], ExpressionStr(f"{left_operand} + {right_operand}")
 
+    def _derive_sdk_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: SDKCodeGenConfig,
+        context: CodeGenerationContext,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        _ = var_name_generator, operation_structure, config, context
+        return self._derive_python_code(node_inputs)
+
     def _derive_on_demand_view_code(
         self,
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        if len(node_inputs) == 1:
-            # we don't allow adding timestamp with a scalar timedelta through SDK
-            raise RuntimeError("DateAddNode with only one input is not supported")
-
-        var_name_expressions = self._assert_no_info_dict(node_inputs)
-        left_operand = var_name_expressions[0].as_input()
-        right_operand = var_name_expressions[1].as_input()
-        return [], ExpressionStr(f"{left_operand} + {right_operand}")
+        _ = var_name_generator, config
+        return self._derive_python_code(node_inputs)

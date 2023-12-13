@@ -3,7 +3,19 @@ Base classes required for constructing query graph nodes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
 # pylint: disable=too-many-lines
-from typing import Any, ClassVar, Dict, List, Optional, Sequence, Tuple, Type, TypeVar, Union
+from typing import (
+    Any,
+    Callable,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 
 import copy
 from abc import ABC, abstractmethod
@@ -913,14 +925,12 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
         """
         return self.generate_expression(left_operand, right_operand)
 
-    def _derive_sdk_code(
+    def _derive_python_code(
         self,
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
-        operation_structure: OperationStructure,
-        config: SDKCodeGenConfig,
-        context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        generate_expression_func: Callable[[str, str], str],
+    ) -> Tuple[List[StatementT], ExpressionStr]:
         input_var_name_expressions = self._assert_no_info_dict(node_inputs)
         left_operand: str = input_var_name_expressions[0].as_input()
         statements: List[StatementT] = []
@@ -940,7 +950,18 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
         if len(input_var_name_expressions) == 2:
             right_operand = input_var_name_expressions[1].as_input()
         left_operand, right_operand = self._reorder_operands(left_operand, right_operand)
-        return statements, ExpressionStr(self.generate_expression(left_operand, right_operand))
+        return statements, ExpressionStr(generate_expression_func(left_operand, right_operand))
+
+    def _derive_sdk_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: SDKCodeGenConfig,
+        context: CodeGenerationContext,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        _ = operation_structure, config, context
+        return self._derive_python_code(node_inputs, var_name_generator, self.generate_expression)
 
     def _derive_on_demand_view_code(
         self,
@@ -948,26 +969,10 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        var_name_expressions = self._assert_no_info_dict(node_inputs)
-        left_operand: str = var_name_expressions[0].as_input()
-        statements: List[StatementT] = []
-        right_operand: Union[str, VariableNameStr]
-        if isinstance(self.parameters.value, TimestampValue):
-            timestamp_val = var_name_generator.convert_to_variable_name(
-                variable_name_prefix="timestamp_value",
-                node_name=self.name,
-            )
-            statements.append(
-                (timestamp_val, ClassEnum.PD_TIMESTAMP(self.parameters.value.iso_format_str))
-            )
-            right_operand = timestamp_val
-        else:
-            right_operand = ValueStr.create(self.parameters.value).as_input()
-
-        if len(var_name_expressions) == 2:
-            right_operand = var_name_expressions[1].as_input()
-        left_operand, right_operand = self._reorder_operands(left_operand, right_operand)
-        return statements, ExpressionStr(self.generate_odfv_expression(left_operand, right_operand))
+        _ = config
+        return self._derive_python_code(
+            node_inputs, var_name_generator, self.generate_odfv_expression
+        )
 
 
 class BinaryLogicalOpNode(BaseSeriesOutputWithAScalarParamNode):
