@@ -3,7 +3,7 @@ DeployService class
 """
 from __future__ import annotations
 
-from typing import Any, Callable, Coroutine, Optional
+from typing import Any, Callable, Coroutine, List, Optional
 
 from bson.objectid import ObjectId
 
@@ -278,10 +278,7 @@ class DeployService(OpsServiceMixin):
                         )
                         if updated_feature.online_enabled != feature.online_enabled:
                             feature_models.append(feature)
-                            if updated_feature.online_enabled:
-                                is_online_enabling = True
-                            else:
-                                is_online_enabling = False
+                            is_online_enabling = updated_feature.online_enabled
 
                     # move update warehouse and backfill tiles to outside of transaction
                     await self.online_enable_service.update_data_warehouse(
@@ -305,15 +302,7 @@ class DeployService(OpsServiceMixin):
                     if update_progress:
                         await update_progress(100, "Updated feature list")
 
-                if feature_models:
-                    if is_online_enabling:
-                        await self.offline_store_feature_table_manager_service.handle_online_enabled_features(
-                            feature_models
-                        )
-                    else:
-                        await self.offline_store_feature_table_manager_service.handle_online_disabled_features(
-                            feature_models
-                        )
+                await self._update_offline_store_feature_tables(feature_models, is_online_enabling)
 
             except Exception as exc:
                 try:
@@ -390,6 +379,19 @@ class DeployService(OpsServiceMixin):
             if isinstance(exc, DocumentError):
                 raise exc
             raise DocumentCreationError("Failed to create deployment") from exc
+
+    async def _update_offline_store_feature_tables(
+        self, feature_models: List[FeatureModel], is_online_enabling: bool
+    ) -> None:
+        if feature_models:
+            if is_online_enabling:
+                await self.offline_store_feature_table_manager_service.handle_online_enabled_features(
+                    feature_models
+                )
+            else:
+                await self.offline_store_feature_table_manager_service.handle_online_disabled_features(
+                    feature_models
+                )
 
     async def update_deployment(
         self,

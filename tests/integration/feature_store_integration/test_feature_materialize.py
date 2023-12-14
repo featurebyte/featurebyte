@@ -143,7 +143,6 @@ async def test_feature_materialize_service(
     session,
     user_entity,
     product_action_entity,
-    features,
     deployed_feature_list,
 ):
     """

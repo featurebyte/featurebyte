@@ -74,14 +74,6 @@ def document_service(app_container):
     return app_container.offline_store_feature_table_service
 
 
-@pytest.fixture
-def manager_service(app_container):
-    """
-    Fixture for OfflineStoreFeatureTableManagerService
-    """
-    return app_container.offline_store_feature_table_manager_service
-
-
 async def get_all_feature_tables(document_service) -> Dict[str, OfflineStoreFeatureTableModel]:
     """
     Helper function to get all feature tables keyed by feature table name
@@ -132,7 +124,6 @@ async def check_feast_registry(app_container, expected_feature_views, expected_f
 async def test_feature_table_one_feature_deployed(
     app_container,
     document_service,
-    manager_service,
     periodic_task_service,
     deployed_float_feature,
     update_fixtures,
@@ -193,7 +184,6 @@ async def test_feature_table_one_feature_deployed(
 async def test_feature_table_two_features_deployed(
     app_container,
     document_service,
-    manager_service,
     periodic_task_service,
     deployed_float_feature,
     deployed_float_feature_post_processed,
@@ -255,7 +245,6 @@ async def test_feature_table_two_features_deployed(
 async def test_feature_table_undeploy(
     app_container,
     document_service,
-    manager_service,
     periodic_task_service,
     deployed_float_feature,
     deployed_float_feature_post_processed,
@@ -324,7 +313,6 @@ async def test_feature_table_undeploy(
 async def test_feature_table_two_features_different_feature_job_settings_deployed(
     app_container,
     document_service,
-    manager_service,
     periodic_task_service,
     deployed_float_feature,
     deployed_float_feature_different_job_setting,
