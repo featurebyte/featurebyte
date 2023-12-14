@@ -34,6 +34,16 @@ tasks:
       - poetry run pip uninstall --yes featurebyte
       - poetry run pip install featurebyte
 
+  check-poetry:
+    desc: "Check that pyproject.toml and poetry.lock are consistent"
+    run: once
+    sources:
+      - pyproject.toml
+      - poetry.lock
+    cmds:
+      - poetry check
+      - poetry lock --check
+
   lint-java:
     desc: "Run linter for java"
     sources:
