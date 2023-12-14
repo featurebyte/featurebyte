@@ -67,8 +67,8 @@ async def deployed_feature_list_fixture(
         with patch(
             "featurebyte.service.offline_store_feature_table_manager.FeatureMaterializeService.initialize_new_columns"
         ):
-            await app_container.offline_store_feature_table_manager_service.handle_online_enabled_feature(
-                feature_model,
+            await app_container.offline_store_feature_table_manager_service.handle_online_enabled_features(
+                [feature_model],
             )
     deployment = await app_container.deployment_service.get_document(document_id=deployment_id)
     deployed_feature_list = await app_container.feature_list_service.get_document(
