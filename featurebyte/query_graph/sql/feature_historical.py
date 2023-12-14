@@ -39,6 +39,7 @@ NUM_FEATURES_PER_QUERY = 50
 FB_ROW_INDEX_FOR_JOIN = "__FB_ROW_INDEX_FOR_JOIN"
 
 PROGRESS_MESSAGE_COMPUTING_FEATURES = "Computing features"
+PROGRESS_MESSAGE_COMPUTING_TARGET = "Computing target"
 TILE_COMPUTE_PROGRESS_MAX_PERCENT = 50  #  Progress percentage to report at end of tile computation
 
 
@@ -173,6 +174,7 @@ class HistoricalFeatureQuerySet:
 
     feature_queries: list[FeatureQuery]
     output_query: str
+    progress_message: str
 
     async def execute(
         self,
@@ -198,12 +200,12 @@ class HistoricalFeatureQuerySet:
                 if progress_callback:
                     await progress_callback(
                         int(100 * (i + 1) / total_num_queries),
-                        PROGRESS_MESSAGE_COMPUTING_FEATURES,
+                        self.progress_message,
                     )
 
             await session.execute_query_long_running(self.output_query)
             if progress_callback:
-                await progress_callback(100, PROGRESS_MESSAGE_COMPUTING_FEATURES)
+                await progress_callback(100, self.progress_message)
 
         finally:
             for table_name in materialized_feature_table:
@@ -484,6 +486,7 @@ def get_historical_features_query_set(  # pylint: disable=too-many-locals
     output_feature_names: list[str],
     serving_names_mapping: dict[str, str] | None = None,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
+    progress_message: str = PROGRESS_MESSAGE_COMPUTING_FEATURES,
 ) -> HistoricalFeatureQuerySet:
     """Construct the SQL code that extracts historical features
 
@@ -507,6 +510,8 @@ def get_historical_features_query_set(  # pylint: disable=too-many-locals
         Optional mapping from original serving name to new serving name
     parent_serving_preparation: Optional[ParentServingPreparation]
         Preparation required for serving parent features
+    progress_message : str
+        Customised progress message which will be send to a client.
 
     Returns
     -------
@@ -533,7 +538,11 @@ def get_historical_features_query_set(  # pylint: disable=too-many-locals
             ),
             source_type=source_type,
         )
-        return HistoricalFeatureQuerySet(feature_queries=[], output_query=output_query)
+        return HistoricalFeatureQuerySet(
+            feature_queries=[],
+            output_query=output_query,
+            progress_message=progress_message,
+        )
 
     feature_queries = []
     feature_set_table_name_prefix = f"__TEMP_{ObjectId()}"
@@ -576,7 +585,11 @@ def get_historical_features_query_set(  # pylint: disable=too-many-locals
         ),
         source_type=source_type,
     )
-    return HistoricalFeatureQuerySet(feature_queries=feature_queries, output_query=output_query)
+    return HistoricalFeatureQuerySet(
+        feature_queries=feature_queries,
+        output_query=output_query,
+        progress_message=progress_message,
+    )
 
 
 def get_feature_names(graph: QueryGraph, nodes: list[Node]) -> list[str]:

@@ -12,6 +12,7 @@ from featurebyte.logging import get_logger
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
 from featurebyte.query_graph.sql.feature_historical import (
     NUM_FEATURES_PER_QUERY,
+    PROGRESS_MESSAGE_COMPUTING_TARGET,
     TILE_COMPUTE_PROGRESS_MAX_PERCENT,
     get_feature_names,
     get_historical_features_query_set,
@@ -80,6 +81,7 @@ class TargetExecutor(QueryExecutor[ExecutorParams]):
             output_feature_names=get_feature_names(executor_params.graph, executor_params.nodes),
             request_table_name=request_table_name,
             parent_serving_preparation=executor_params.parent_serving_preparation,
+            progress_message=PROGRESS_MESSAGE_COMPUTING_TARGET,
         )
         await historical_feature_query_set.execute(
             executor_params.session,

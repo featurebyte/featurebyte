@@ -12,6 +12,8 @@ from featurebyte.enum import SourceType
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, sql_to_string
 from featurebyte.query_graph.sql.feature_historical import (
+    PROGRESS_MESSAGE_COMPUTING_FEATURES,
+    PROGRESS_MESSAGE_COMPUTING_TARGET,
     FeatureQuery,
     HistoricalFeatureQuerySet,
     convert_point_in_time_dtype_if_needed,
@@ -159,8 +161,10 @@ def test_get_historical_feature_query_set__single_batch(
         source_type=SourceType.SNOWFLAKE,
         output_table_details=output_table_details,
         output_feature_names=[float_feature.node.name],
+        progress_message=PROGRESS_MESSAGE_COMPUTING_FEATURES,
     )
     assert query_set.feature_queries == []
+    assert query_set.progress_message == PROGRESS_MESSAGE_COMPUTING_FEATURES
     assert_equal_with_expected_fixture(
         query_set.output_query,
         "tests/fixtures/expected_historical_requests_single_batch_output_query.sql",
@@ -202,8 +206,11 @@ def test_get_historical_feature_query_set__multiple_batches(
     )
 
 
+@pytest.mark.parametrize(
+    "progress_message", [PROGRESS_MESSAGE_COMPUTING_FEATURES, PROGRESS_MESSAGE_COMPUTING_TARGET]
+)
 @pytest.mark.asyncio
-async def test_historical_feature_query_set_execute(mocked_session):
+async def test_historical_feature_query_set_execute(mocked_session, progress_message):
     """
     Test HistoricalFeatureQuerySet execution
     """
@@ -223,6 +230,7 @@ async def test_historical_feature_query_set_execute(mocked_session):
     historical_feature_query_set = HistoricalFeatureQuerySet(
         feature_queries=feature_queries,
         output_query="some_final_join_query",
+        progress_message=progress_message,
     )
     await historical_feature_query_set.execute(mocked_session, progress_callback)
     assert mocked_session.execute_query_long_running.call_args_list == [
@@ -235,7 +243,7 @@ async def test_historical_feature_query_set_execute(mocked_session):
         call(database_name="sf_database", schema_name="sf_schema", table_name="B", if_exists=True),
     ]
     assert progress_callback.call_args_list == [
-        call(33, "Computing features"),
-        call(66, "Computing features"),
-        call(100, "Computing features"),
+        call(33, progress_message),
+        call(66, progress_message),
+        call(100, progress_message),
     ]

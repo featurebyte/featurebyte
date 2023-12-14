@@ -242,6 +242,7 @@ async def get_historical_features(  # pylint: disable=too-many-locals, too-many-
         output_feature_names=get_feature_names(graph, nodes),
         request_table_name=request_table_name,
         parent_serving_preparation=parent_serving_preparation,
+        progress_message=PROGRESS_MESSAGE_COMPUTING_FEATURES,
     )
     await historical_feature_query_set.execute(
         session,
