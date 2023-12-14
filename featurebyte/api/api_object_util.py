@@ -63,7 +63,6 @@ class ProgressThread(threading.Thread):
         with Configurations().get_websocket_client(task_id=self.task_id) as websocket_client:
             try:
                 while True:
-                    logger.debug("Waiting for websocket message")
                     message = websocket_client.receive_json()
                     # socket closed
                     if not message:
@@ -79,7 +78,7 @@ class ProgressThread(threading.Thread):
                             break
                         self.progress_bar(percent / 100)  # pylint: disable=not-callable
             finally:
-                logger.debug("Progress tracking ended.")
+                pass
 
     def get_id(self) -> Optional[int]:
         """
