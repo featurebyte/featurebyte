@@ -180,7 +180,7 @@ if __name__ == "__main__":
         # import rules for directories used by both backend and client
         "featurebyte/enum": {
             "whitelist": COMMON_LIBS.union({"featurebyte.common.doc_util"}),
-            "no_import_from": BACKEND_ONLY_MODS,
+            "no_import_from": BACKEND_ONLY_MODS.union(CLIENT_ONLY_MODS),
         },
         "featurebyte/models": {
             "whitelist": COMMON_LIBS.union(COMMON_MODS).union(
