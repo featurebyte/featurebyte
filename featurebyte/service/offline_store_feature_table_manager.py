@@ -181,8 +181,9 @@ class OfflineStoreFeatureTableManagerService:
             if feature_table_dict is not None:
                 # update existing table
                 feature_ids = feature_table_dict["feature_ids"][:]
+                feature_ids_set = set(feature_ids)
                 for feature in offline_store_table_features:
-                    if feature.id not in feature_ids:
+                    if feature.id not in feature_ids_set:
                         feature_ids.append(feature.id)
                 if feature_ids != feature_table_dict["feature_ids"]:
                     feature_table_model = await self._update_offline_store_feature_table(
