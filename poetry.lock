@@ -4,7 +4,7 @@
 server = ["aioredis", "cachetools", "celery", "celerybeat-mongo", "databricks-sdk", "databricks-sql-connector", "fastapi", "featurebyte-freeware", "gevent", "motor", "pdfkit", "pyhive", "redis", "requests-kerberos", "sasl", "smart-open", "snowflake-connector-python", "tenacity", "thrift-sasl", "uvicorn"]
 
 [metadata]
-content-hash = "427d17d55cd2a47ffea25cafcd5fcd6dd7459dd1a347e125915c82aa126c5747"
+content-hash = "96e5a2fab668e0d739f8dd6c676a04fddcd4fc911253bf52568fd4e1f9c5313c"
 lock-version = "2.0"
 python-versions = ">=3.8,<3.12"
 
@@ -272,7 +272,7 @@ files = [
     {file = "appdirs-1.4.4.tar.gz", hash = "sha256:7d5d0167b2b1ba821647616af46a749d1c653740dd0d2415100fe26e27afdf41"},
 ]
 name = "appdirs"
-optional = true
+optional = false
 python-versions = "*"
 version = "1.4.4"
 
@@ -370,7 +370,7 @@ files = [
     {file = "asn1crypto-1.5.1.tar.gz", hash = "sha256:13ae38502be632115abf8a24cbe5f4da52e3b5231990aff31123c805306ccb9c"},
 ]
 name = "asn1crypto"
-optional = true
+optional = false
 python-versions = "*"
 version = "1.5.1"
 
@@ -752,7 +752,7 @@ files = [
     {file = "bowler-0.9.0.tar.gz", hash = "sha256:cdb85ce2e7bd545802a15d755d1daf2b6a125429355c50d2019a9f35d63e45db"},
 ]
 name = "bowler"
-optional = true
+optional = false
 python-versions = ">=3.6"
 version = "0.9.0"
 
@@ -1134,7 +1134,7 @@ files = [
     {file = "cloudpickle-3.0.0.tar.gz", hash = "sha256:996d9a482c6fb4f33c1a35335cf8afd065d2a56e973270364840712d9131a882"},
 ]
 name = "cloudpickle"
-optional = true
+optional = false
 python-versions = ">=3.8"
 version = "3.0.0"
 
@@ -1409,7 +1409,7 @@ files = [
     {file = "dask-2023.5.0.tar.gz", hash = "sha256:4f4c28ac406e81b8f21b5be4b31b21308808f3e0e7c7e2f4a914f16476d9941b"},
 ]
 name = "dask"
-optional = true
+optional = false
 python-versions = ">=3.8"
 version = "2023.5.0"
 
@@ -1642,7 +1642,7 @@ files = [
     {file = "fastapi-0.96.1.tar.gz", hash = "sha256:5c1d243030e63089ccfc0aec69c2da6d619943917727e8e82ee502358d5119bf"},
 ]
 name = "fastapi"
-optional = true
+optional = false
 python-versions = ">=3.7"
 version = "0.96.1"
 
@@ -1692,7 +1692,7 @@ files = [
     {file = "fastavro-1.9.1.tar.gz", hash = "sha256:f37011d66de8ba81b26760db0478009a14c08ebfd34269b3390abfd4616b308f"},
 ]
 name = "fastavro"
-optional = true
+optional = false
 python-versions = ">=3.8"
 version = "1.9.1"
 
@@ -1723,7 +1723,7 @@ files = [
     {file = "feast-0.34.1.tar.gz", hash = "sha256:55297d1ba730209b140f84d7b9048942126955e4adf111a724c728db1c9732ac"},
 ]
 name = "feast"
-optional = true
+optional = false
 python-versions = ">=3.8.0"
 version = "0.34.1"
 
@@ -1858,7 +1858,7 @@ files = [
     {file = "fissix-21.11.13.tar.gz", hash = "sha256:496a51b86afb4c64cf15cfed38a0f3a371f300b298c962c881e33620f076a514"},
 ]
 name = "fissix"
-optional = true
+optional = false
 python-versions = ">=3.6"
 version = "21.11.13"
 
@@ -2032,7 +2032,7 @@ files = [
     {file = "fsspec-2023.12.2.tar.gz", hash = "sha256:8548d39e8810b59c38014934f6b31e57f40c1b20f911f4cc2b85389c7e9bf0cb"},
 ]
 name = "fsspec"
-optional = true
+optional = false
 python-versions = ">=3.8"
 version = "2023.12.2"
 
@@ -2459,7 +2459,7 @@ files = [
     {file = "greenlet-3.0.2.tar.gz", hash = "sha256:1c1129bc47266d83444c85a8e990ae22688cf05fb20d7951fd2866007c2ba9bc"},
 ]
 name = "greenlet"
-optional = true
+optional = false
 python-versions = ">=3.7"
 version = "3.0.2"
 
@@ -2526,7 +2526,7 @@ files = [
     {file = "grpcio-1.60.0.tar.gz", hash = "sha256:2199165a1affb666aa24adf0c97436686d0a61bc5fc113c037701fb7c7fceb96"},
 ]
 name = "grpcio"
-optional = true
+optional = false
 python-versions = ">=3.7"
 version = "1.60.0"
 
@@ -2540,7 +2540,7 @@ files = [
     {file = "grpcio_health_checking-1.60.0-py3-none-any.whl", hash = "sha256:13caf28bc93795bd6bdb580b21832ebdd1aa3f5b648ea47ed17362d85bed96d3"},
 ]
 name = "grpcio-health-checking"
-optional = true
+optional = false
 python-versions = ">=3.6"
 version = "1.60.0"
 
@@ -2555,7 +2555,7 @@ files = [
     {file = "grpcio_reflection-1.60.0-py3-none-any.whl", hash = "sha256:f7a347ebd6cecf347fc836fd520fd1f0b3411912981649c7fb34d62a3a15aa4e"},
 ]
 name = "grpcio-reflection"
-optional = true
+optional = false
 python-versions = ">=3.6"
 version = "1.60.0"
 
@@ -2622,7 +2622,7 @@ files = [
     {file = "grpcio_tools-1.60.0-cp39-cp39-win_amd64.whl", hash = "sha256:1b93ae8ffd18e9af9a965ebca5fa521e89066267de7abdde20721edc04e42721"},
 ]
 name = "grpcio-tools"
-optional = true
+optional = false
 python-versions = ">=3.7"
 version = "1.60.0"
 
@@ -2674,7 +2674,7 @@ files = [
     {file = "gunicorn-21.2.0.tar.gz", hash = "sha256:88ec8bff1d634f98e61b9f65bc4bf3cd918a90806c6f5c48bc5603849ec81033"},
 ]
 name = "gunicorn"
-optional = true
+optional = false
 python-versions = ">=3.5"
 version = "21.2.0"
 
@@ -2792,7 +2792,7 @@ files = [
     {file = "hiredis-2.2.3.tar.gz", hash = "sha256:e75163773a309e56a9b58165cf5a50e0f84b755f6ff863b2c01a38918fe92daa"},
 ]
 name = "hiredis"
-optional = true
+optional = false
 python-versions = ">=3.7"
 version = "2.2.3"
 
@@ -2889,7 +2889,7 @@ files = [
     {file = "httptools-0.6.1.tar.gz", hash = "sha256:c6e26c30455600b95d94b1b836085138e82f177351454ee841c148f93a9bad5a"},
 ]
 name = "httptools"
-optional = true
+optional = false
 python-versions = ">=3.8.0"
 version = "0.6.1"
 
@@ -3734,7 +3734,7 @@ files = [
     {file = "locket-1.0.0.tar.gz", hash = "sha256:5c0d4c052a8bbbf750e056a8e65ccd309086f4f0f18a2eac306a8dfa4112a632"},
 ]
 name = "locket"
-optional = true
+optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 version = "1.0.0"
 
@@ -4379,7 +4379,7 @@ files = [
     {file = "mmh3-4.0.1.tar.gz", hash = "sha256:ad8be695dc4e44a79631748ba5562d803f0ac42d36a6b97a53aca84a70809385"},
 ]
 name = "mmh3"
-optional = true
+optional = false
 python-versions = "*"
 version = "4.0.1"
 
@@ -4436,7 +4436,7 @@ files = [
     {file = "moreorless-0.4.0.tar.gz", hash = "sha256:85e19972c1a0b3a49f8543914f57bd83f6e1b10df144d5b97b8c5e9744d9c08c"},
 ]
 name = "moreorless"
-optional = true
+optional = false
 python-versions = ">=3.6"
 version = "0.4.0"
 
@@ -4675,7 +4675,7 @@ files = [
     {file = "mypy_protobuf-3.1.0-py3-none-any.whl", hash = "sha256:dfaad58dea15603f93dd8273ac6e82d0d1cbd405d69133a732b7737a16d8e7d9"},
 ]
 name = "mypy-protobuf"
-optional = true
+optional = false
 python-versions = ">=3.6"
 version = "3.1.0"
 
@@ -4954,7 +4954,7 @@ files = [
     {file = "oscrypto-1.3.0.tar.gz", hash = "sha256:6f5fef59cb5b3708321db7cca56aed8ad7e662853351e7991fcf60ec606d47a4"},
 ]
 name = "oscrypto"
-optional = true
+optional = false
 python-versions = "*"
 version = "1.3.0"
 
@@ -5064,7 +5064,7 @@ files = [
     {file = "pandavro-1.5.2.tar.gz", hash = "sha256:fd4ede1600cfc08150f28a7a1c1dd4abfbc87d76cd4a5b1639c8f55a04e97914"},
 ]
 name = "pandavro"
-optional = true
+optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 version = "1.5.2"
 
@@ -5110,7 +5110,7 @@ files = [
     {file = "partd-1.4.1.tar.gz", hash = "sha256:56c25dd49e6fea5727e731203c466c6e092f308d8f0024e199d02f6aa2167f67"},
 ]
 name = "partd"
-optional = true
+optional = false
 python-versions = ">=3.7"
 version = "1.4.1"
 
@@ -5430,7 +5430,7 @@ files = [
     {file = "proto_plus-1.23.0-py3-none-any.whl", hash = "sha256:a829c79e619e1cf632de091013a4173deed13a55f326ef84f05af6f50ff4c82c"},
 ]
 name = "proto-plus"
-optional = true
+optional = false
 python-versions = ">=3.6"
 version = "1.23.0"
 
@@ -5458,7 +5458,7 @@ files = [
     {file = "protobuf-4.23.3.tar.gz", hash = "sha256:7a92beb30600332a52cdadbedb40d33fd7c8a0d7f549c440347bc606fb3fe34b"},
 ]
 name = "protobuf"
-optional = true
+optional = false
 python-versions = ">=3.7"
 version = "4.23.3"
 
@@ -5663,7 +5663,7 @@ files = [
     {file = "pycryptodomex-3.19.0.tar.gz", hash = "sha256:af83a554b3f077564229865c45af0791be008ac6469ef0098152139e6bd4b5b6"},
 ]
 name = "pycryptodomex"
-optional = true
+optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 version = "3.19.0"
 
@@ -5762,7 +5762,7 @@ files = [
     {file = "PyJWT-2.8.0.tar.gz", hash = "sha256:57e28d156e3d5c10088e0c68abb90bfac3df82b40a71bd0daa20c65ccd5c23de"},
 ]
 name = "pyjwt"
-optional = true
+optional = false
 python-versions = ">=3.7"
 version = "2.8.0"
 
@@ -5928,7 +5928,7 @@ files = [
     {file = "pyOpenSSL-23.3.0.tar.gz", hash = "sha256:6b2cba5cc46e822750ec3e5a81ee12819850b11303630d575e98108a079c2b12"},
 ]
 name = "pyopenssl"
-optional = true
+optional = false
 python-versions = ">=3.7"
 version = "23.3.0"
 
@@ -6101,7 +6101,7 @@ files = [
     {file = "python_dotenv-1.0.0-py3-none-any.whl", hash = "sha256:f5971a9226b701070a4bf2c38c89e5a3f0d64de8debda981d1db98583009122a"},
 ]
 name = "python-dotenv"
-optional = true
+optional = false
 python-versions = ">=3.8"
 version = "1.0.0"
 
@@ -6399,7 +6399,7 @@ files = [
     {file = "redis-4.6.0.tar.gz", hash = "sha256:585dc516b9eb042a619ef0a39c3d7d55fe81bdb4df09a52c9cdde0d07bf1aa7d"},
 ]
 name = "redis"
-optional = true
+optional = false
 python-versions = ">=3.7"
 version = "4.6.0"
 
@@ -6921,7 +6921,7 @@ files = [
     {file = "snowflake_connector_python-3.1.1-cp39-cp39-win_amd64.whl", hash = "sha256:daedeff774cd68df05e68dbfa66e83a877e63a99461b8262eb5c8cd37e309aa7"},
 ]
 name = "snowflake-connector-python"
-optional = true
+optional = false
 python-versions = ">=3.8"
 version = "3.1.1"
 
@@ -7005,7 +7005,7 @@ files = [
     {file = "SQLAlchemy-1.4.50.tar.gz", hash = "sha256:3b97ddf509fc21e10b09403b5219b06c5b558b27fc2453150274fa4e70707dbf"},
 ]
 name = "sqlalchemy"
-optional = true
+optional = false
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,>=2.7"
 version = "1.4.50"
 
@@ -7042,7 +7042,7 @@ files = [
     {file = "sqlalchemy2_stubs-0.0.2a37-py3-none-any.whl", hash = "sha256:43067e3f67bd16a7fb2b574ee696f7ed53bf60f3e73329cf234a7b4dd4d3816a"},
 ]
 name = "sqlalchemy2-stubs"
-optional = true
+optional = false
 python-versions = ">=3.6"
 version = "0.0.2a37"
 
@@ -7128,7 +7128,7 @@ files = [
     {file = "starlette-0.27.0.tar.gz", hash = "sha256:6a6b0d042acb8d469a01eba54e9cda6cbd24ac602c4cd016723117d6a7e73b75"},
 ]
 name = "starlette"
-optional = true
+optional = false
 python-versions = ">=3.7"
 version = "0.27.0"
 
@@ -7174,7 +7174,7 @@ files = [
     {file = "tenacity-8.2.3.tar.gz", hash = "sha256:5398ef0d78e63f40007c1fb4c0bff96e1911394d2fa8d194f77619c05ff6cc8a"},
 ]
 name = "tenacity"
-optional = true
+optional = false
 python-versions = ">=3.7"
 version = "8.2.3"
 
@@ -7319,7 +7319,7 @@ files = [
     {file = "toolz-0.12.0.tar.gz", hash = "sha256:88c570861c440ee3f2f6037c4654613228ff40c93a6c25e0eba70d17282c6194"},
 ]
 name = "toolz"
-optional = true
+optional = false
 python-versions = ">=3.5"
 version = "0.12.0"
 
@@ -7511,7 +7511,7 @@ files = [
     {file = "types_protobuf-4.24.0.4-py3-none-any.whl", hash = "sha256:131ab7d0cbc9e444bc89c994141327dcce7bcaeded72b1acb72a94827eb9c7af"},
 ]
 name = "types-protobuf"
-optional = true
+optional = false
 python-versions = ">=3.7"
 version = "4.24.0.4"
 
@@ -7741,7 +7741,7 @@ files = [
     {file = "uvicorn-0.21.1.tar.gz", hash = "sha256:0fac9cb342ba099e0d582966005f3fdba5b0290579fed4a6266dc702ca7bb032"},
 ]
 name = "uvicorn"
-optional = true
+optional = false
 python-versions = ">=3.7"
 version = "0.21.1"
 
@@ -7795,7 +7795,7 @@ files = [
     {file = "uvloop-0.19.0.tar.gz", hash = "sha256:0246f4fd1bf2bf702e06b0d45ee91677ee5c31242f39aab4ea6fe0c51aedd0fd"},
 ]
 name = "uvloop"
-optional = true
+optional = false
 python-versions = ">=3.8.0"
 version = "0.19.0"
 
@@ -7840,7 +7840,7 @@ files = [
     {file = "volatile-2.1.0.tar.gz", hash = "sha256:9be36ad508e3354e016c115de0397dc2203b9800a73d9d177ca9d37a8d3a31d3"},
 ]
 name = "volatile"
-optional = true
+optional = false
 python-versions = "*"
 version = "2.1.0"
 
@@ -7963,7 +7963,7 @@ files = [
     {file = "watchfiles-0.21.0.tar.gz", hash = "sha256:c76c635fabf542bb78524905718c39f736a98e5ab25b23ec6d4abede1a85a6a3"},
 ]
 name = "watchfiles"
-optional = true
+optional = false
 python-versions = ">=3.8"
 version = "0.21.0"
 
@@ -8114,7 +8114,7 @@ files = [
     {file = "websockets-12.0.tar.gz", hash = "sha256:81df9cbcbb6c260de1e007e58c011bfebe2dafc8435107b0537f393dd38c8b1b"},
 ]
 name = "websockets"
-optional = true
+optional = false
 python-versions = ">=3.8"
 version = "12.0"
 
