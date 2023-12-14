@@ -11,6 +11,7 @@ from contextlib import asynccontextmanager
 
 from bson.objectid import ObjectId
 
+from featurebyte.common.model_util import get_utc_now
 from featurebyte.models.persistent import (
     AuditActionType,
     AuditDocument,
@@ -24,7 +25,6 @@ from featurebyte.persistent.audit import (
     get_audit_collection_name,
     get_previous_and_current_values,
 )
-from featurebyte.routes.common.util import get_utc_now
 
 
 class DuplicateDocumentError(Exception):

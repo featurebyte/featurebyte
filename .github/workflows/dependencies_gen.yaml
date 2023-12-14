@@ -50,6 +50,8 @@ jobs:
       uses: abatilo/actions-poetry@v2
       with:
         poetry-version: 1.5.1
+    - name: Check pyproject.toml and poetry.lock are consistent
+      run: task check-poetry
     - name: Build package (branch)
       run: |-
         poetry version 1

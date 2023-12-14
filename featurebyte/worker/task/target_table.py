@@ -3,10 +3,10 @@ TargetTable creation task
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
 from featurebyte.logging import get_logger
-from featurebyte.models.observation_table import ObservationTableModel
+from featurebyte.models.observation_table import ObservationTableModel, Purpose
 from featurebyte.routes.common.derive_primary_entity_helper import DerivePrimaryEntityHelper
 from featurebyte.schema.target import ComputeTargetRequest
 from featurebyte.schema.worker.task.target_table import TargetTableTaskPayload
@@ -94,6 +94,10 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
                 )
             )
 
+            purpose: Optional[Purpose] = None
+            if isinstance(observation_set, ObservationTableModel):
+                purpose = observation_set.purpose
+
             observation_table = ObservationTableModel(
                 _id=payload.output_document_id,
                 user_id=payload.user_id,
@@ -102,6 +106,7 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
                 context_id=payload.context_id,
                 request_input=payload.request_input,
                 primary_entity_ids=primary_entity_ids,
+                purpose=purpose,
                 **additional_metadata,
             )
             await self.observation_table_service.create_document(observation_table)

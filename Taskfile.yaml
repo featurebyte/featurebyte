@@ -34,6 +34,16 @@ tasks:
       - poetry run pip uninstall --yes featurebyte
       - poetry run pip install featurebyte
 
+  check-poetry:
+    desc: "Check that pyproject.toml and poetry.lock are consistent"
+    run: once
+    sources:
+      - pyproject.toml
+      - poetry.lock
+    cmds:
+      - poetry check
+      - poetry lock --check
+
   lint-java:
     desc: "Run linter for java"
     sources:
@@ -115,6 +125,7 @@ tasks:
     deps:
       - task: install
     cmds:
+      - task: check-import-rules
       - task: lint-pr
       - task: lint-safety
 
@@ -192,6 +203,14 @@ tasks:
       - featurebyte/**/*
     cmds:
       - poetry run bandit -c pyproject.toml -ll --recursive featurebyte
+
+  check-import-rules:
+    desc: Check for import rule violations
+    sources:
+      - featurebyte/**/*
+      - scripts/enforce_import_rules.py
+    cmds:
+      - python scripts/enforce_import_rules.py
 
   test:
     desc: Runs full test-suite

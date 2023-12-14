@@ -7,7 +7,6 @@ from typing import List, Literal, Optional, Union
 
 from typeguard import typechecked
 
-from featurebyte import FeatureJobSetting
 from featurebyte.api.aggregator.asat_aggregator import AsAtAggregator
 from featurebyte.api.aggregator.forward_aggregator import ForwardAggregator
 from featurebyte.api.aggregator.simple_aggregator import SimpleAggregator
@@ -23,6 +22,7 @@ from featurebyte.api.target import Target
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.typing import OptionalScalar
 from featurebyte.enum import AggFunc
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 
 
 class GroupBy:
