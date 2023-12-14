@@ -115,6 +115,7 @@ tasks:
     deps:
       - task: install
     cmds:
+      - task: check-import-rules
       - task: lint-pr
       - task: lint-safety
 
@@ -192,6 +193,14 @@ tasks:
       - featurebyte/**/*
     cmds:
       - poetry run bandit -c pyproject.toml -ll --recursive featurebyte
+
+  check-import-rules:
+    desc: Check for import rule violations
+    sources:
+      - featurebyte/**/*
+      - scripts/enforce_import_rules.py
+    cmds:
+      - python scripts/enforce_import_rules.py
 
   test:
     desc: Runs full test-suite

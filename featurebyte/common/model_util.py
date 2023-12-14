@@ -163,3 +163,18 @@ def validate_timezone_offset_string(timezone_offset: str) -> None:
 
     if int(hours) > 24 or int(minutes) > 60:
         raise exception
+
+
+def get_utc_now() -> datetime:
+    """
+    Get current datetime object in UTC timezone
+
+    Returns
+    -------
+    datetime
+        Truncated current datetime object
+    """
+    # exclude microseconds from timestamp as it's not supported in persistent
+    utc_now = datetime.utcnow()
+    utc_now = utc_now.replace(microsecond=int(utc_now.microsecond / 1000) * 1000)
+    return utc_now

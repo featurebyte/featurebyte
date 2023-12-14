@@ -11,7 +11,6 @@ from pydantic import Field
 from sqlglot import expressions
 from sqlglot.expressions import Select, select
 
-from featurebyte import FeatureJobSetting
 from featurebyte.enum import DBVarType, StrEnum
 from featurebyte.models.base import (
     FeatureByteBaseModel,
@@ -23,6 +22,7 @@ from featurebyte.models.entity import EntityModel
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureCluster
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.sql.common import quoted_identifier
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 

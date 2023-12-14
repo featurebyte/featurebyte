@@ -7,9 +7,9 @@ from typing import List, Optional, Type, Union
 
 from abc import ABC, abstractmethod
 
-from featurebyte import Target
 from featurebyte.api.aggregator.vector_validator import validate_vector_aggregate_parameters
 from featurebyte.api.feature import Feature
+from featurebyte.api.target import Target
 from featurebyte.api.view import View
 from featurebyte.common.typing import OptionalScalar, get_or_default
 from featurebyte.enum import AggFunc, DBVarType

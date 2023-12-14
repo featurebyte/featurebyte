@@ -8,9 +8,9 @@ from datetime import datetime
 from bson import ObjectId
 from pydantic import Field
 
+from featurebyte.common.model_util import get_utc_now
 from featurebyte.enum import StrEnum
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
-from featurebyte.routes.common.util import get_utc_now
 from featurebyte.schema.common.base import PaginationMixin
 
 Document = MutableMapping[str, Any]
