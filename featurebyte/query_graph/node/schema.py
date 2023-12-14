@@ -3,79 +3,19 @@ This module contains feature store & table schemas that are used in node paramet
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Optional, Union
+from typing import ClassVar, Optional, Union
 
-from feast import SnowflakeSource
-from feast.data_source import DataSource
-from feast.infra.offline_stores.snowflake import SnowflakeOfflineStoreConfig
 from pydantic import Field, StrictStr
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import DBVarType, SourceType, StorageType
 from featurebyte.models.base import FeatureByteBaseModel
-from featurebyte.models.credential import BaseDatabaseCredential, UsernamePasswordCredential
 
 
 class BaseDatabaseDetails(FeatureByteBaseModel):
     """Model for data source information"""
 
     is_local_source: ClassVar[bool] = False
-
-    def create_feast_data_source(
-        self,
-        name: str,
-        table_name: str,
-        timestamp_field: str,
-        created_timestamp_column: Optional[str] = None,
-    ) -> DataSource:
-        """
-        Create a Feast DataSource from the details in this class
-
-        Parameters
-        ----------
-        name: str
-            Name of the DataSource
-        table_name: str
-            Name of the table to create a DataSource for
-        timestamp_field: str
-            Event timestamp field used for point in time joins of feature values
-        created_timestamp_column: Optional[str]
-            Timestamp column indicating when the row was created, used for de-duplicating rows.
-
-        Returns
-        -------
-        DataSource
-            Feast DataSource object
-        # noqa: DAR202
-
-        Raises
-        ------
-        NotImplementedError
-            If the method is not implemented by the subclass
-        """
-        raise NotImplementedError()
-
-    def get_offline_store_config(self, credential: Optional[BaseDatabaseCredential]) -> Any:
-        """
-        Get Feast offline store config based on the feature store details
-
-        Parameters
-        ----------
-        credential: Optional[BaseDatabaseCredential]
-            Credential to use to connect to the database
-
-        Returns
-        -------
-        Any
-            Feast offline store config
-        # noqa: DAR202
-
-        Raises
-        ------
-        NotImplementedError
-            If the method is not implemented by the subclass
-        """
-        raise NotImplementedError()
 
 
 class SnowflakeDetails(BaseDatabaseDetails):
@@ -110,59 +50,6 @@ class SnowflakeDetails(BaseDatabaseDetails):
     sf_schema: StrictStr = Field(
         description="The name of the schema containing the database, tables and columns."
     )
-
-    def create_feast_data_source(
-        self,
-        name: str,
-        table_name: str,
-        timestamp_field: str,
-        created_timestamp_column: Optional[str] = None,
-    ) -> DataSource:
-        """
-        Create a Feast DataSource from the details in this class
-
-        Parameters
-        ----------
-        name: str
-            Name of the DataSource
-        table_name: str
-            Name of the table to create a DataSource for
-        timestamp_field: str
-            Event timestamp field used for point in time joins of feature values
-        created_timestamp_column: Optional[str]
-            Timestamp column indicating when the row was created, used for de-duplicating rows.
-
-        Returns
-        -------
-        DataSource
-            Feast DataSource object
-        """
-        return SnowflakeSource(
-            name=name,
-            timestamp_field=timestamp_field,
-            database=self.database,
-            warehouse=self.warehouse,
-            schema=self.sf_schema,
-            table=table_name,
-            created_timestamp_column=created_timestamp_column,
-        )
-
-    def get_offline_store_config(self, credential: Optional[BaseDatabaseCredential]) -> Any:
-        username, password = None, None
-        if credential:
-            assert isinstance(credential, UsernamePasswordCredential)
-            username = credential.username
-            password = credential.password
-
-        return SnowflakeOfflineStoreConfig(
-            account=self.account,
-            user=username,
-            password=password,
-            role=None,
-            warehouse=self.warehouse,
-            database=self.database,
-            schema_=self.sf_schema,
-        )
 
 
 class SQLiteDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method
