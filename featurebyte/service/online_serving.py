@@ -3,21 +3,26 @@ OnlineServingService class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, cast
 
 import json
 import os
+from datetime import datetime
 
 import pandas as pd
 from jinja2 import Template
 
+from featurebyte.enum import SpecialColumnName
 from featurebyte.exception import (
     FeatureListNotOnlineEnabledError,
     UnsupportedRequestCodeTemplateLanguage,
 )
+from featurebyte.feast.service.feature_store import FeastFeatureStoreService
 from featurebyte.models.batch_request_table import BatchRequestTableModel
 from featurebyte.models.deployment import DeploymentModel
-from featurebyte.models.feature_list import FeatureListModel
+from featurebyte.models.feature_list import FeatureCluster, FeatureListModel
+from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.node.request import RequestColumnNode
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.online_serving import get_online_features
 from featurebyte.schema.deployment import OnlineFeaturesResponseModel
@@ -32,7 +37,7 @@ from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.table import TableService
 
 
-class OnlineServingService:
+class OnlineServingService:  # pylint: disable=too-many-instance-attributes
     """
     OnlineServingService is responsible for retrieving features from online store
     """
@@ -47,6 +52,7 @@ class OnlineServingService:
         feature_list_service: FeatureListService,
         entity_service: EntityService,
         table_service: TableService,
+        feast_feature_store_service: FeastFeatureStoreService,
     ):
         self.feature_store_service = feature_store_service
         self.session_manager_service = session_manager_service
@@ -56,6 +62,7 @@ class OnlineServingService:
         self.feature_list_service = feature_list_service
         self.entity_service = entity_service
         self.table_service = table_service
+        self.feast_feature_store_service = feast_feature_store_service
 
     async def get_online_features_from_feature_list(
         self,
@@ -130,6 +137,76 @@ class OnlineServingService:
         if features is None:
             return None
         return OnlineFeaturesResponseModel(features=features)
+
+    async def get_online_features_by_feast(
+        self,
+        feature_list: FeatureListModel,
+        request_data: List[Dict[str, Any]],
+    ) -> OnlineFeaturesResponseModel:
+        """
+        Get online features for a Feature List via feast online store
+
+        Parameters
+        ----------
+        feature_list: FeatureListModel
+            Feature List
+        request_data: List[Dict[str, Any]]
+            Request data containing entity serving names
+
+        Returns
+        -------
+        OnlineFeaturesResponseModel
+
+        Raises
+        ------
+        RuntimeError
+            When the provided FeatureList is not available for online serving using feast.
+        """
+        feast_store = await self.feast_feature_store_service.get_feast_feature_store_for_catalog()
+        if feast_store is None:
+            raise RuntimeError("Feast feature store is not available")
+
+        feature_service = feast_store.get_feature_service(feature_list.name)
+        entity_rows = request_data[:]
+
+        assert feature_list.feature_clusters is not None
+        feature_cluster = feature_list.feature_clusters[0]
+
+        # Validate required entities are present
+        request_column_names = set(request_data[0].keys())
+        feature_store = await self.feature_store_service.get_document(
+            document_id=feature_cluster.feature_store_id
+        )
+        _ = await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
+            graph=feature_cluster.graph,
+            nodes=feature_cluster.nodes,
+            request_column_names=request_column_names,
+            feature_store=feature_store,
+        )
+
+        # Include point in time column if it is required
+        has_point_in_time_column = self._has_point_in_time_request_column(feature_cluster)
+        if has_point_in_time_column:
+            point_in_time_value = datetime.utcnow().isoformat()
+            for row in entity_rows:
+                row[SpecialColumnName.POINT_IN_TIME] = point_in_time_value
+
+        feast_online_features = feast_store.get_online_features(feature_service, request_data)
+
+        return OnlineFeaturesResponseModel(
+            features=feast_online_features.to_df().to_dict(orient="records")
+        )
+
+    @staticmethod
+    def _has_point_in_time_request_column(feature_cluster: FeatureCluster) -> bool:
+        for node in feature_cluster.nodes:
+            for request_column_node in feature_cluster.graph.iterate_nodes(
+                node, NodeType.REQUEST_COLUMN
+            ):
+                request_column_node = cast(RequestColumnNode, request_column_node)
+                if request_column_node.parameters.column_name == SpecialColumnName.POINT_IN_TIME:
+                    return True
+        return False
 
     async def get_request_code_template(  # pylint: disable=too-many-locals
         self,

@@ -1003,3 +1003,14 @@ def feature_materialize_service_fixture(app_container):
     Fixture for FeatureMaterializeService
     """
     return app_container.feature_materialize_service
+
+
+@pytest.fixture(name="mock_initialize_new_columns")
+def mock_initialize_new_columns_fixture():
+    """
+    Fixture to mock FeatureMaterializeService.initialize_new_columns
+    """
+    with patch(
+        "featurebyte.service.offline_store_feature_table_manager.FeatureMaterializeService.initialize_new_columns"
+    ) as patched:
+        yield patched

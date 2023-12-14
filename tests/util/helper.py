@@ -19,6 +19,8 @@ from pandas.core.dtypes.common import is_numeric_dtype
 from sqlglot import expressions
 
 from featurebyte import get_version
+from featurebyte.api.deployment import Deployment
+from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.source_table import AbstractTableData
 from featurebyte.common.env_util import add_sys_path
 from featurebyte.core.generic import QueryObject
@@ -618,3 +620,27 @@ def check_on_demand_feature_view_code_generation(feature_model):
     # check the generated code can be executed successfully
     output = check_on_demand_feature_view_code_execution(odfv_codes, df)
     assert output.columns == [feature_model.name]
+
+
+async def deploy_feature(app_container, feature, return_type="feature"):
+    """
+    Helper function to create deploy a single feature
+    """
+    assert return_type in {"feature", "feature_list"}
+    feature_list = FeatureList([feature], name=f"{feature.name}_list")
+    feature_list.save()
+    deployment = feature_list.deploy(
+        deployment_name=feature_list.name, make_production_ready=True, ignore_guardrails=True
+    )
+    deployment.enable()
+    if return_type == "feature":
+        return await app_container.feature_service.get_feature(feature.name)
+    return await app_container.feature_list_service.get_document(feature_list.id)
+
+
+def undeploy_feature(feature):
+    """
+    Helper function to undeploy a single feature
+    """
+    deployment: Deployment = Deployment.get(f"{feature.name}_list")
+    deployment.disable()  # pylint: disable=no-member

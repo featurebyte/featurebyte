@@ -1,7 +1,7 @@
 """
 This module contains classes for constructing feast repository config
 """
-from typing import Any, cast
+from typing import Any, Optional, cast
 
 import tempfile
 
@@ -88,3 +88,16 @@ class FeastFeatureStoreService:
                 online_store=RedisOnlineStoreConfig(connection_string="localhost:6379"),
             )
             return cast(FeatureStore, FeatureStore(config=repo_config))
+
+    async def get_feast_feature_store_for_catalog(self) -> Optional[FeatureStore]:
+        """
+        Retrieve a FeatureStore object for the current catalog
+
+        Returns
+        -------
+        Optional[FeatureStore]
+        """
+        feast_registry = await self.feast_registry_service.get_feast_registry_for_catalog()
+        if feast_registry is None:
+            return None
+        return await self.get_feast_feature_store(feast_registry_id=feast_registry.id)
