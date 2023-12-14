@@ -22,7 +22,10 @@ from feast.repo_config import RegistryConfig, RepoConfig
 
 from featurebyte.enum import DBVarType, InternalName
 from featurebyte.feast.enum import to_feast_primitive_type
-from featurebyte.feast.model.feature_store import DatabaseDetails, FeatureStoreDetails
+from featurebyte.feast.model.feature_store import (
+    FeastDatabaseDetails,
+    FeatureStoreDetailsWithFeastConfiguration,
+)
 from featurebyte.feast.utils.on_demand_view import OnDemandFeatureViewConstructor
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.entity import EntityModel
@@ -68,7 +71,7 @@ class OfflineStoreTable(FeatureByteBaseModel):
 
     def create_feast_data_source(
         self,
-        database_details: DatabaseDetails,
+        database_details: FeastDatabaseDetails,
         name: str,
     ) -> FeastDataSource:
         """
@@ -474,7 +477,7 @@ class FeastRegistryConstructor:
         primary_entity_ids_to_feast_entity: Dict[Tuple[PydanticObjectId, ...], FeastEntity] = {}
         feast_data_sources = []
         name_to_feast_feature_view: Dict[str, FeastFeatureView] = {}
-        feature_store_details = FeatureStoreDetails(
+        feature_store_details = FeatureStoreDetailsWithFeastConfiguration(
             **feature_store.get_feature_store_details().dict()
         )
         for offline_store_table in offline_store_tables:

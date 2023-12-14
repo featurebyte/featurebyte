@@ -66,7 +66,7 @@ class AbstractDatabaseDetailsForFeast(BaseDatabaseDetails, ABC):
         """
 
 
-class SnowflakeDetails(AbstractDatabaseDetailsForFeast, BaseSnowflakeDetails):
+class FeastSnowflakeDetails(AbstractDatabaseDetailsForFeast, BaseSnowflakeDetails):
     """
     Snowflake database details.
     """
@@ -125,10 +125,10 @@ class SnowflakeDetails(AbstractDatabaseDetailsForFeast, BaseSnowflakeDetails):
         )
 
 
-DatabaseDetails = Union[SnowflakeDetails]
+FeastDatabaseDetails = Union[FeastSnowflakeDetails]
 
 
-class FeatureStoreDetails(BaseFeatureStoreDetails):
+class FeatureStoreDetailsWithFeastConfiguration(BaseFeatureStoreDetails):
     """
     Feature store details
 
@@ -139,4 +139,4 @@ class FeatureStoreDetails(BaseFeatureStoreDetails):
     """
 
     type: SourceType
-    details: DatabaseDetails
+    details: FeastDatabaseDetails
