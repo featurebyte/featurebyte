@@ -14,6 +14,7 @@ from feast.on_demand_feature_view import OnDemandFeatureView, on_demand_feature_
 
 from featurebyte.common.string import sanitize_identifier
 from featurebyte.enum import DBVarType
+from featurebyte.feast.enum import to_feast_primitive_type
 from featurebyte.models.feature import FeatureModel
 
 
@@ -146,7 +147,7 @@ class OnDemandFeatureViewConstructor:
             schema=[
                 Field(
                     name=feature_model.name,
-                    dtype=DBVarType(feature_model.dtype).to_feast_primitive_type(),
+                    dtype=to_feast_primitive_type(DBVarType(feature_model.dtype)),
                 )
             ],
             on_demand_feature_view_dir=on_demand_feature_view_dir,

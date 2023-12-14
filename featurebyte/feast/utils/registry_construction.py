@@ -272,11 +272,15 @@ class FeastRegistryConstructor:
             for req_col_node in feature.extract_request_column_nodes():
                 req_col_name = req_col_node.parameters.column_name
                 if req_col_name not in name_to_feast_request_source:
-                    fb_type = DBVarType(req_col_node.parameters.dtype)
                     name_to_feast_request_source[req_col_name] = FeastRequestSource(
                         name=req_col_name,
                         schema=[
-                            FeastField(name=req_col_name, dtype=fb_type.to_feast_primitive_type())
+                            FeastField(
+                                name=req_col_name,
+                                dtype=to_feast_primitive_type(
+                                    DBVarType(req_col_node.parameters.dtype)
+                                ),
+                            )
                         ],
                     )
         return name_to_feast_request_source
