@@ -4,6 +4,7 @@ On demand feature view related classes and functions.
 from typing import Dict, List, Union, cast
 
 import importlib
+import os
 from unittest.mock import patch
 
 from feast import FeatureView, Field, RequestSource
@@ -46,7 +47,7 @@ def create_feast_on_demand_feature_view(
     """
     module_name = "on_demand_feature_view"
     with open(
-        f"{on_demand_feature_view_dir}/{module_name}.py", "w", encoding="utf-8"
+        os.path.join(on_demand_feature_view_dir, f"{module_name}.py"), "w", encoding="utf-8"
     ) as file_handle:
         file_handle.write(definition)
 
