@@ -19,6 +19,8 @@ from feast.protos.feast.core.Registry_pb2 import Registry as RegistryProto
 from feast.repo_config import RegistryConfig, RepoConfig
 
 from featurebyte.enum import DBVarType, InternalName
+from featurebyte.feast.enum import to_feast_primitive_type
+from featurebyte.feast.model.feature_store import DatabaseDetails, FeatureStoreDetails
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.entity import EntityModel
 from featurebyte.models.feature import FeatureModel
@@ -26,7 +28,6 @@ from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.offline_store_ingest_query import OfflineStoreIngestQueryGraph
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
-from featurebyte.query_graph.node.schema import DatabaseDetails
 
 
 class OfflineStoreTable(FeatureByteBaseModel):
@@ -54,7 +55,7 @@ class OfflineStoreTable(FeatureByteBaseModel):
             Feast entity
         """
         # FIXME: We likely need to set the value type based on the dtype of the primary entity
-        value_type = DBVarType.VARCHAR.to_feast_primitive_type().to_value_type()
+        value_type = to_feast_primitive_type(DBVarType.VARCHAR).to_value_type()
         entity = FeastEntity(
             name=" x ".join(self.primary_entity_serving_names),
             join_keys=self.primary_entity_serving_names,
@@ -120,7 +121,7 @@ class OfflineStoreTable(FeatureByteBaseModel):
             schema.append(
                 FeastField(
                     name=ingest_query_graph.output_column_name,
-                    dtype=DBVarType(ingest_query_graph.output_dtype).to_feast_primitive_type(),
+                    dtype=to_feast_primitive_type(DBVarType(ingest_query_graph.output_dtype)),
                 )
             )
 
@@ -389,7 +390,9 @@ class FeastRegistryConstructor:
         primary_entity_ids_to_feast_entity: Dict[Tuple[PydanticObjectId, ...], FeastEntity] = {}
         feast_data_sources = []
         feast_feature_views = []
-        feature_store_details = feature_store.get_feature_store_details()
+        feature_store_details = FeatureStoreDetails(
+            **feature_store.get_feature_store_details().dict()
+        )
         for offline_store_table in offline_store_tables:
             entity_key = tuple(offline_store_table.primary_entity_ids)
             feast_entity = primary_entity_ids_to_feast_entity.get(

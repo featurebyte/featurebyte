@@ -145,7 +145,7 @@ websocket-client = "^1.5.1"
 wheel = "0.40.0"
 
 [tool.poetry.extras]
-server = ["cachetools", "databricks-sdk", "fastapi", "motor", "snowflake-connector-python", "uvicorn", "pdfkit", "pyhive", "sasl", "thrift-sasl", "boto3", "smart-open", "celery", "redis", "celerybeat-mongo", "databricks-sql-connector", "featurebyte-freeware", "gevent", "aioredis", "requests-kerberos", "tenacity"]
+server = ["cachetools", "databricks-sdk", "fastapi", "motor", "snowflake-connector-python", "uvicorn", "pdfkit", "pyhive", "sasl", "thrift-sasl", "boto3", "smart-open", "celery", "redis", "celerybeat-mongo", "databricks-sql-connector", "featurebyte-freeware", "gevent", "aioredis", "requests-kerberos", "tenacity", "feast"]
 
 [tool.poetry.group.dev.dependencies]
 freezegun = "^1.2.1"
