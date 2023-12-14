@@ -20,7 +20,7 @@ from feast.repo_config import RegistryConfig, RepoConfig
 
 from featurebyte.enum import DBVarType, InternalName
 from featurebyte.feast.enum import to_feast_primitive_type
-from featurebyte.feast.model.feature_store import FeatureStoreDetails
+from featurebyte.feast.model.feature_store import DatabaseDetails, FeatureStoreDetails
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.entity import EntityModel
 from featurebyte.models.feature import FeatureModel
@@ -28,7 +28,6 @@ from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.offline_store_ingest_query import OfflineStoreIngestQueryGraph
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
-from featurebyte.query_graph.node.schema import DatabaseDetails
 
 
 class OfflineStoreTable(FeatureByteBaseModel):
