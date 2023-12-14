@@ -84,8 +84,8 @@ async def register_offline_store_feature_tables(app_container, features):
     Register offline store feature tables
     """
     for feature in features:
-        await app_container.offline_store_feature_table_manager_service.handle_online_enabled_feature(
-            await app_container.feature_service.get_document(feature.id)
+        await app_container.offline_store_feature_table_manager_service.handle_online_enabled_features(
+            [await app_container.feature_service.get_document(feature.id)],
         )
 
 
