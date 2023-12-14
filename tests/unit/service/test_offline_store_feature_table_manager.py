@@ -269,7 +269,6 @@ async def test_feature_table_two_features_deployed(
     )
 
 
-@pytest.mark.skip(reason="This test sometimes hangs. Skip for now to unblock CI.")
 @pytest.mark.asyncio
 async def test_feature_table_undeploy(
     app_container,
