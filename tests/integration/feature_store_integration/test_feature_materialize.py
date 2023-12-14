@@ -1,6 +1,7 @@
 """
 Tests for feature materialization service
 """
+import os
 from unittest.mock import patch
 
 import pandas as pd
@@ -10,6 +11,15 @@ import featurebyte as fb
 from featurebyte.schema.worker.task.scheduled_feature_materialize import (
     ScheduledFeatureMaterializeTaskPayload,
 )
+
+
+@pytest.fixture(name="always_enable_feast_integration", scope="module", autouse=True)
+def always_enable_feast_integration_fixture():
+    """
+    Enable feast integration for all tests in this module
+    """
+    with patch.dict(os.environ, {"FEATUREBYTE_FEAST_INTEGRATION_ENABLED": "True"}):
+        yield
 
 
 @pytest.fixture(name="features", scope="module")

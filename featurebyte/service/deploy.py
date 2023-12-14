@@ -9,7 +9,7 @@ from bson.objectid import ObjectId
 
 from featurebyte.exception import DocumentCreationError, DocumentError, DocumentUpdateError
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.deployment import DeploymentModel
+from featurebyte.models.deployment import DeploymentModel, FeastIntegrationSettings
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import (
     FeatureListModel,
@@ -383,7 +383,7 @@ class DeployService(OpsServiceMixin):
     async def _update_offline_store_feature_tables(
         self, feature_models: List[FeatureModel], is_online_enabling: bool
     ) -> None:
-        if feature_models:
+        if FeastIntegrationSettings().FEATUREBYTE_FEAST_INTEGRATION_ENABLED and feature_models:
             if is_online_enabling:
                 await self.offline_store_feature_table_manager_service.handle_online_enabled_features(
                     feature_models

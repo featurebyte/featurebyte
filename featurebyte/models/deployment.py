@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import List, Optional
 
 import pymongo
-from pydantic import Field, StrictStr
+from pydantic import BaseSettings, Field, StrictStr
 
 from featurebyte.models.base import (
     FeatureByteCatalogBaseDocumentModel,
@@ -51,3 +51,11 @@ class DeploymentModel(FeatureByteCatalogBaseDocumentModel):
                 ("description", pymongo.TEXT),
             ],
         ]
+
+
+class FeastIntegrationSettings(BaseSettings):
+    """
+    Feast integration settings
+    """
+
+    FEATUREBYTE_FEAST_INTEGRATION_ENABLED: bool = False
