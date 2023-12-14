@@ -4,6 +4,7 @@ On demand feature view related classes and functions.
 from typing import Dict, List, Union, cast
 
 import importlib
+from unittest.mock import patch
 
 from feast import FeatureView, Field, RequestSource
 from feast.feature_view_projection import FeatureViewProjection
@@ -51,7 +52,14 @@ def create_feast_on_demand_feature_view(
 
     module = importlib.import_module(module_name)
     func = getattr(module, function_name)
-    output = on_demand_feature_view(sources=sources, schema=schema)(func)
+    try:
+        output = on_demand_feature_view(sources=sources, schema=schema)(func)
+    except IOError:
+        # dill.source.getsource fails to find the source code of the function in some environments
+        # since we already have the source code, we can just use that instead
+        with patch("dill.source.getsource", return_value=definition):
+            output = on_demand_feature_view(sources=sources, schema=schema)(func)
+
     return cast(OnDemandFeatureView, output)
 
 

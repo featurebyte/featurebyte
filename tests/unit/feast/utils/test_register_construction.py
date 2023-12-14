@@ -1,6 +1,8 @@
 """
 Test the construction of the feast register.
 """
+from unittest.mock import patch
+
 import pytest
 from google.protobuf.json_format import MessageToDict
 
@@ -84,6 +86,23 @@ def test_feast_registry_construction__with_post_processing_features(
         },
         "type": "REQUEST_SOURCE",
     }
+
+    # dill's getsource() does not include the import statements
+    udf = feast_registry_proto.on_demand_feature_views[0].spec.user_defined_function
+    assert udf.body_text.startswith("def compute_feature_feature_")
+
+    with patch("dill.source.getsource") as getsource_mock:
+        getsource_mock.side_effect = IOError
+        feast_registry_proto = FeastRegistryConstructor.create(
+            feature_store=snowflake_feature_store.cached_model,
+            entities=[cust_id_entity.cached_model, transaction_entity.cached_model],
+            features=[feature_requires_post_processing.cached_model],
+            feature_lists=[feature_list.cached_model],  # type: ignore
+        )
+
+        # patch version of getsource() contains the import statements
+        udf = feast_registry_proto.on_demand_feature_views[0].spec.user_defined_function
+        assert udf.body_text.startswith("'import numpy as np\nimport pandas as pd")
 
 
 def test_feast_registry_construction(feast_registry_proto):
