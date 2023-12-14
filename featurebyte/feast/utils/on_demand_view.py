@@ -1,12 +1,9 @@
 """
 On demand feature view related classes and functions.
 """
-from typing import Dict, Generator, List, Union, cast
+from typing import Dict, List, Union, cast
 
 import importlib
-import os
-import sys
-from contextlib import contextmanager
 
 from feast import FeatureView, Field, RequestSource
 from feast.feature_view_projection import FeatureViewProjection
@@ -16,29 +13,6 @@ from featurebyte.common.string import sanitize_identifier
 from featurebyte.enum import DBVarType
 from featurebyte.feast.enum import to_feast_primitive_type
 from featurebyte.models.feature import FeatureModel
-
-
-@contextmanager
-def add_sys_path(path: str) -> Generator[None, None, None]:
-    """
-    Temporarily add the given path to `sys.path`.
-
-    Parameters
-    ----------
-    path: str
-        Path to add to `sys.path`
-
-    Yields
-    ------
-    None
-        This context manager yields nothing and is used for its side effects only.
-    """
-    path = os.fspath(path)
-    try:
-        sys.path.insert(0, path)
-        yield
-    finally:
-        sys.path.remove(path)
 
 
 def create_feast_on_demand_feature_view(
@@ -75,12 +49,10 @@ def create_feast_on_demand_feature_view(
     ) as file_handle:
         file_handle.write(definition)
 
-    # add repo_dir to sys.path so that we can import the module
-    with add_sys_path(on_demand_feature_view_dir):
-        module = importlib.import_module(module_name)
-        func = getattr(module, function_name)
-        output = on_demand_feature_view(sources=sources, schema=schema)(func)
-        return cast(OnDemandFeatureView, output)
+    module = importlib.import_module(module_name)
+    func = getattr(module, function_name)
+    output = on_demand_feature_view(sources=sources, schema=schema)(func)
+    return cast(OnDemandFeatureView, output)
 
 
 class OnDemandFeatureViewConstructor:

@@ -3,7 +3,11 @@ This module contains utility functions related to execution environment
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Generator
+
+import os
+import sys
+from contextlib import contextmanager
 
 
 def is_notebook() -> bool:
@@ -51,3 +55,26 @@ def display_html_in_notebook(html_content: str) -> None:
         from IPython.display import HTML, display  # type: ignore
 
         display(HTML(html_content), metadata={"isolated": True})
+
+
+@contextmanager
+def add_sys_path(path: str) -> Generator[None, None, None]:
+    """
+    Temporarily add the given path to `sys.path`.
+
+    Parameters
+    ----------
+    path: str
+        Path to add to `sys.path`
+
+    Yields
+    ------
+    None
+        This context manager yields nothing and is used for its side effects only.
+    """
+    path = os.fspath(path)
+    try:
+        sys.path.insert(0, path)
+        yield
+    finally:
+        sys.path.remove(path)

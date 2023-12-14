@@ -20,10 +20,10 @@ from sqlglot import expressions
 
 from featurebyte import get_version
 from featurebyte.api.source_table import AbstractTableData
+from featurebyte.common.env_util import add_sys_path
 from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import SampleMixin
 from featurebyte.enum import AggFunc, DBVarType
-from featurebyte.feast.utils.on_demand_view import add_sys_path
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalGraphState, GlobalQueryGraph, QueryGraph
 from featurebyte.query_graph.node.nested import OfflineStoreIngestQueryGraphNodeParameters

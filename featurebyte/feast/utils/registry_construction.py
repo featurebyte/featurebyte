@@ -20,6 +20,7 @@ from feast.inference import update_feature_views_with_inferred_features_and_enti
 from feast.protos.feast.core.Registry_pb2 import Registry as RegistryProto
 from feast.repo_config import RegistryConfig, RepoConfig
 
+from featurebyte.common.env_util import add_sys_path
 from featurebyte.enum import DBVarType, InternalName
 from featurebyte.feast.enum import to_feast_primitive_type
 from featurebyte.feast.model.feature_store import (
@@ -79,7 +80,7 @@ class OfflineStoreTable(FeatureByteBaseModel):
 
         Parameters
         ----------
-        database_details: DatabaseDetails
+        database_details: FeastDatabaseDetails
             Database details
         name: str
             Feast data source name
@@ -504,26 +505,27 @@ class FeastRegistryConstructor:
 
         name_to_feast_request_source = cls.create_feast_name_to_request_source(features)
         with tempfile.TemporaryDirectory() as temp_dir:
-            on_demand_feature_views = cls.create_feast_on_demand_feature_views(
-                features=features,
-                name_to_feast_feature_view=name_to_feast_feature_view,
-                name_to_feast_request_source=name_to_feast_request_source,
-                on_demand_feature_view_dir=temp_dir,
-            )
-            feast_feature_services = cls.create_feast_feature_services(
-                feature_lists=feature_lists,
-                features=features,
-                feast_feature_views=list(name_to_feast_feature_view.values()),
-                feast_on_demand_feature_views=on_demand_feature_views,
-            )
+            with add_sys_path(temp_dir):
+                on_demand_feature_views = cls.create_feast_on_demand_feature_views(
+                    features=features,
+                    name_to_feast_feature_view=name_to_feast_feature_view,
+                    name_to_feast_request_source=name_to_feast_request_source,
+                    on_demand_feature_view_dir=temp_dir,
+                )
+                feast_feature_services = cls.create_feast_feature_services(
+                    feature_lists=feature_lists,
+                    features=features,
+                    feast_feature_views=list(name_to_feast_feature_view.values()),
+                    feast_on_demand_feature_views=on_demand_feature_views,
+                )
 
-            # construct feast registry by constructing a feast feature store and extracting the registry
-            return cls._create_feast_registry_proto(
-                project_name=project_name,
-                feast_data_sources=feast_data_sources,
-                primary_entity_ids_to_feast_entity=primary_entity_ids_to_feast_entity,
-                feast_request_sources=list(name_to_feast_request_source.values()),
-                feast_feature_views=list(name_to_feast_feature_view.values()),
-                feast_on_demand_feature_views=on_demand_feature_views,
-                feast_feature_services=feast_feature_services,
-            )
+                # construct feast registry by constructing a feast feature store and extracting the registry
+                return cls._create_feast_registry_proto(
+                    project_name=project_name,
+                    feast_data_sources=feast_data_sources,
+                    primary_entity_ids_to_feast_entity=primary_entity_ids_to_feast_entity,
+                    feast_request_sources=list(name_to_feast_request_source.values()),
+                    feast_feature_views=list(name_to_feast_feature_view.values()),
+                    feast_on_demand_feature_views=on_demand_feature_views,
+                    feast_feature_services=feast_feature_services,
+                )
