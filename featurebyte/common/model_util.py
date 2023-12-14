@@ -167,7 +167,12 @@ def validate_timezone_offset_string(timezone_offset: str) -> None:
 
 def get_utc_now() -> datetime:
     """
-    Return truncated current datetime object
+    Get current datetime object in UTC timezone
+
+    Returns
+    -------
+    datetime
+        Truncated current datetime object
     """
     # exclude microseconds from timestamp as it's not supported in persistent
     utc_now = datetime.utcnow()
