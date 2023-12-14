@@ -5,12 +5,15 @@ from __future__ import annotations
 
 from typing import Any, List, Optional, Type, cast
 
-from featurebyte import AggFunc, ChangeView, EventView, ItemView
 from featurebyte.api.aggregator.base_aggregator import BaseAggregator
+from featurebyte.api.change_view import ChangeView
+from featurebyte.api.event_view import EventView
+from featurebyte.api.item_view import ItemView
 from featurebyte.api.target import Target
 from featurebyte.api.view import View
 from featurebyte.common.model_util import parse_duration_string
 from featurebyte.common.typing import OptionalScalar
+from featurebyte.enum import AggFunc
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.agg_func import construct_agg_func
 
