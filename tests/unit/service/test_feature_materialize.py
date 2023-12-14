@@ -51,12 +51,6 @@ async def deployed_feature_list_fixture(
     _ = mock_update_data_warehouse
 
     deployment_id = ObjectId()
-    await app_container.deploy_service.create_deployment(
-        feature_list_id=production_ready_feature_list.id,
-        deployment_id=deployment_id,
-        deployment_name=None,
-        to_enable_deployment=True,
-    )
     for feature_id in production_ready_feature_list.feature_ids:
         feature_model = await app_container.feature_service.get_document(
             document_id=feature_id,
@@ -64,12 +58,16 @@ async def deployed_feature_list_fixture(
         await create_online_store_compute_query(
             app_container.online_store_compute_query_service, feature_model
         )
-        with patch(
-            "featurebyte.service.offline_store_feature_table_manager.FeatureMaterializeService.initialize_new_columns"
-        ):
-            await app_container.offline_store_feature_table_manager_service.handle_online_enabled_features(
-                [feature_model],
-            )
+
+    with patch(
+        "featurebyte.service.offline_store_feature_table_manager.FeatureMaterializeService.initialize_new_columns"
+    ):
+        await app_container.deploy_service.create_deployment(
+            feature_list_id=production_ready_feature_list.id,
+            deployment_id=deployment_id,
+            deployment_name=None,
+            to_enable_deployment=True,
+        )
     deployment = await app_container.deployment_service.get_document(document_id=deployment_id)
     deployed_feature_list = await app_container.feature_list_service.get_document(
         document_id=deployment.feature_list_id
