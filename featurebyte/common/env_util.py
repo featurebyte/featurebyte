@@ -73,8 +73,8 @@ def add_sys_path(path: str) -> Generator[None, None, None]:
         This context manager yields nothing and is used for its side effects only.
     """
     path = os.fspath(path)
+    sys.path.insert(0, path)
     try:
-        sys.path.insert(0, path)
         yield
     finally:
         sys.path.remove(path)

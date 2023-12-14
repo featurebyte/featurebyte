@@ -20,9 +20,9 @@ def sanitize_identifier(string: str) -> str:
     # Remove invalid characters
     sanitized = "".join(char for char in string if char.isalnum() or char == "_")
 
-    # Ensure it starts with an alphabetic character
-    if sanitized and (sanitized[0].isdigit() or sanitized[0] == "_"):
-        sanitized = "a" + sanitized
+    # Ensure it starts with an alphabetic character or underscore
+    if sanitized and not (sanitized[0].isalpha() or sanitized[0] == "_"):
+        sanitized = "_" + sanitized
 
     # Truncate to a reasonable length
     max_length = 64
