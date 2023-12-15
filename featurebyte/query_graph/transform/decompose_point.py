@@ -181,34 +181,41 @@ class DecomposePointGlobalState:
         # update the mapping
         self.node_name_to_aggregation_info[node.name] = aggregation_info
 
-    def _check_input_aggregations(
+    def check_input_aggregations(
         self, agg_info: AggregationInfo, input_node_names: List[str]
     ) -> bool:
+        """
+        Check whether the input nodes can be merged into one offline store ingest query graph
+
+        Parameters
+        ----------
+        agg_info: AggregationInfo
+            Aggregation info of the current node
+        input_node_names: List[str]
+            List of input node names
+
+        Returns
+        -------
+        bool
+        """
         # check whether the input nodes have mixed request column flags or mixed ingest graph node flags
         input_aggregations_info = [
-            self.node_name_to_aggregation_info[input_node_name]
-            for input_node_name in input_node_names
+            self.node_name_to_aggregation_info[node_name] for node_name in input_node_names
         ]
-        input_has_request_column_flags = set()
-        input_has_ingest_graph_node_flags = set()
+
+        # Check for conditions where splitting should occur
+        split_conditions = []
         for input_agg_info in input_aggregations_info:
-            input_has_request_column_flags.add(input_agg_info.has_request_column)
-            input_has_ingest_graph_node_flags.add(input_agg_info.has_ingest_graph_node)
+            split_conditions.append(
+                input_agg_info.has_request_column or input_agg_info.has_ingest_graph_node
+            )
 
-        if len(input_has_request_column_flags) > 1:
-            # if the input nodes have mixed request column flags that means we should split the query graph
-            # as offline store ingest query graph should not have request column
+        # Check if any of the inputs have either request column or ingest graph node, split it
+        if any(split_conditions):
+            # If all inputs have either request columns or ingest graph nodes, do not split
+            if all(split_conditions):
+                return False
             return True
-
-        if len(input_has_ingest_graph_node_flags) > 1:
-            # if the input nodes have mixed ingest graph node flags that means we should split the query graph
-            # as offline store ingest query graph should not have another offline store ingest graph node
-            return True
-
-        if input_has_ingest_graph_node_flags == {True}:
-            # if all the input nodes have ingest graph node flags that means we should not split the query graph
-            # as it has already been split at the ancestor level
-            return False
 
         # check whether the input nodes can be merged into one offline store ingest query graph
         all_inputs_have_empty_agg_node_types = True
@@ -257,7 +264,7 @@ class DecomposePointGlobalState:
             # do not decompose if aggregation operation has not been introduced
             return False
 
-        return self._check_input_aggregations(agg_info=agg_info, input_node_names=input_node_names)
+        return self.check_input_aggregations(agg_info=agg_info, input_node_names=input_node_names)
 
     def update_ingest_graph_node_output_names(self, input_node_names: List[str]) -> None:
         """
