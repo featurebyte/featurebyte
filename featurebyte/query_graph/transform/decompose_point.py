@@ -185,7 +185,7 @@ class DecomposePointGlobalState:
         self, agg_info: AggregationInfo, input_node_names: List[str]
     ) -> bool:
         """
-        Check whether the input nodes can be merged into one offline store ingest query graph
+        Check whether to split the input nodes into multiple offline store ingest query graphs
 
         Parameters
         ----------
