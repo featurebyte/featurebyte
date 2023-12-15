@@ -219,17 +219,8 @@ class FeastRegistryConstructor:
         """
         offline_table_key_to_ingest_query_graphs = defaultdict(list)
         for feature in features:
-            # FIXME: cleanup this logic once integrate this with feast feature store
-            if feature.offline_store_info is None:
-                feature.initialize_offline_store_info(
-                    entity_id_to_serving_name=entity_id_to_serving_name
-                )
-
-            offline_store_info = feature.offline_store_info
-            assert offline_store_info is not None, "Offline store info should not be None"
-
             offline_ingest_query_graphs = (
-                offline_store_info.extract_offline_store_ingest_query_graphs()
+                feature.offline_store_info.extract_offline_store_ingest_query_graphs()
             )
             for ingest_query_graph in offline_ingest_query_graphs:
                 table_name = ingest_query_graph.offline_store_table_name

@@ -178,19 +178,9 @@ def get_combined_ingest_graph(
 
     primary_entity_ids = sorted([entity.id for entity in primary_entities])
     for feature in features:
-        # Set entity_id_to_serving_name to empty as the table name will not be used here
-        # FIXME: cleanup this logic once integrate this with feast feature store
-        if feature.offline_store_info is None:
-            feature.initialize_offline_store_info(
-                entity_id_to_serving_name={
-                    entity.id: entity.serving_names[0] for entity in primary_entities
-                }
-            )
-
-        offline_store_info = feature.offline_store_info
-        assert offline_store_info is not None, "Offline store info should not be None"
-
-        offline_ingest_graphs = offline_store_info.extract_offline_store_ingest_query_graphs()
+        offline_ingest_graphs = (
+            feature.offline_store_info.extract_offline_store_ingest_query_graphs()
+        )
         for offline_ingest_graph in offline_ingest_graphs:
             if (
                 offline_ingest_graph.primary_entity_ids != primary_entity_ids
@@ -201,6 +191,7 @@ def get_combined_ingest_graph(
                 # published to different feature tables. Skip if it is not the same as the current
                 # feature table.
                 continue
+
             graph, node = offline_ingest_graph.ingest_graph_and_node()
             local_query_graph, local_name_map = local_query_graph.load(graph)
             output_nodes.append(local_query_graph.get_node_by_name(local_name_map[node.name]))
@@ -269,6 +260,7 @@ def get_offline_store_feature_table_model(
         name=feature_table_name,
         feature_ids=[feature.id for feature in features],
         primary_entity_ids=[entity.id for entity in primary_entities],
+        # FIXME: consolidate all the offline store serving names (get_entity_id_to_serving_name_for_offline_store)
         serving_names=[entity.serving_names[0] for entity in primary_entities],
         feature_cluster=ingest_graph_metadata.feature_cluster,
         output_column_names=ingest_graph_metadata.output_column_names,

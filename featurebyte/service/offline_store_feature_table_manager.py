@@ -45,7 +45,6 @@ class OfflineIngestGraphContainer:
     @classmethod
     async def build(
         cls,
-        entity_service: EntityService,
         features: List[FeatureModel],
     ) -> OfflineIngestGraphContainer:
         """
@@ -53,8 +52,6 @@ class OfflineIngestGraphContainer:
 
         Parameters
         ----------
-        entity_service : EntityService
-            Entity service
         features : List[FeatureModel]
             List of features
 
@@ -66,27 +63,14 @@ class OfflineIngestGraphContainer:
         all_feature_entity_ids = set()
         for feature in features:
             all_feature_entity_ids.update(feature.entity_ids)
-        feature_entities = []
-        async for entity_model in entity_service.list_documents_iterator(
-            query_filter={"_id": {"$in": list(all_feature_entity_ids)}}
-        ):
-            feature_entities.append(entity_model)
-        entity_id_to_serving_name = {
-            entity.id: entity.serving_names[0] for entity in feature_entities
-        }
 
         # Group features by offline store feature table name
         offline_store_table_name_to_features = defaultdict(list)
         offline_store_table_name_to_graphs = defaultdict(list)
         for feature in features:
-            # FIXME: cleanup this logic once integrate this with feast feature store
-            if feature.offline_store_info is None:
-                feature.initialize_offline_store_info(
-                    entity_id_to_serving_name=entity_id_to_serving_name
-                )
-            offline_store_info = feature.offline_store_info
-            assert offline_store_info is not None, "Offline store info should not be None"
-            offline_ingest_graphs = offline_store_info.extract_offline_store_ingest_query_graphs()
+            offline_ingest_graphs = (
+                feature.offline_store_info.extract_offline_store_ingest_query_graphs()
+            )
 
             for offline_ingest_graph in offline_ingest_graphs:
                 offline_store_table_name_to_features[
@@ -166,9 +150,7 @@ class OfflineStoreFeatureTableManagerService:
         features: List[FeatureModel]
             Features to be enabled for online serving
         """
-        ingest_graph_container = await OfflineIngestGraphContainer.build(
-            self.entity_service, features
-        )
+        ingest_graph_container = await OfflineIngestGraphContainer.build(features)
 
         for (
             offline_store_table_name,

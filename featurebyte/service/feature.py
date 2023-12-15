@@ -11,6 +11,7 @@ from bson import ObjectId
 
 from featurebyte.exception import DocumentCreationError, DocumentNotFoundError
 from featurebyte.models.base import VersionIdentifier
+from featurebyte.models.deployment import FeastIntegrationSettings
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_namespace import DefaultVersionMode, FeatureReadiness
 from featurebyte.persistent import Persistent
@@ -157,6 +158,17 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
 
             # prepare feature definition
             definition = await self.namespace_handler.prepare_definition(document=document)
+
+            if FeastIntegrationSettings().FEATUREBYTE_FEAST_INTEGRATION_ENABLED:
+                service = self.entity_serving_names_service
+                entity_id_to_serving_name = (
+                    await service.get_entity_id_to_serving_name_for_offline_store(
+                        entity_ids=document.entity_ids
+                    )
+                )
+                document.initialize_offline_store_info(
+                    entity_id_to_serving_name=entity_id_to_serving_name
+                )
 
             # insert the document
             definition_hash_output = document.extract_definition_hash()

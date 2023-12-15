@@ -820,13 +820,9 @@ def check_offline_store_ingest_graph_on_composite_feature(
     """Check offline store ingest graph on composite feature"""
     # case 1: no entity relationship
     assert feature_model.relationships_info == []
-    # FIXME: cleanup this logic once integrate this with feast feature store
-    if feature_model.offline_store_info is None:
-        feature_model.initialize_offline_store_info(entity_id_to_serving_name={})
-
-    offline_store_info = feature_model.offline_store_info
-    assert offline_store_info is not None, "Offline store info should not be None"
-    ingest_query_graphs = offline_store_info.extract_offline_store_ingest_query_graphs()
+    ingest_query_graphs = (
+        feature_model.offline_store_info.extract_offline_store_ingest_query_graphs()
+    )
 
     # check the first offline store ingest query graph
     assert len(ingest_query_graphs) == 2
@@ -875,13 +871,7 @@ def check_offline_store_ingest_graph_on_composite_feature(
 
     # check the output node hash before and after decomposition
     check_decomposed_graph_output_node_hash(feature_model=feature_model, output=output)
-    check_on_demand_feature_view_code_generation(
-        feature_model=feature_model,
-        entity_id_to_serving_name={
-            cust_entity_id: "cust",
-            transaction_entity_id: "transaction",
-        },
-    )
+    check_on_demand_feature_view_code_generation(feature_model=feature_model)
 
     # case 2: with entity relationship between the two entities (expect no query graph decomposition)
     entity_ids = feature_model.entity_ids
@@ -901,7 +891,6 @@ def check_offline_store_ingest_graph_on_composite_feature(
         ),
     ]
     new_feature_model = feature_model.copy(update={"relationships_info": relationships_info})
-    # FIXME: cleanup this logic once integrate this with feast feature store
     new_feature_model.initialize_offline_store_info(
         entity_id_to_serving_name={
             cust_entity_id: "cust_id",
@@ -920,8 +909,11 @@ def check_offline_store_ingest_graph_on_composite_feature(
     assert ingest_query_graph.output_column_name == "composite_feature"
 
 
-def test_composite_features(snowflake_event_table_with_entity, cust_id_entity):
+def test_composite_features(
+    snowflake_event_table_with_entity, cust_id_entity, enable_feast_integration
+):
     """Test composite features' property"""
+    _ = enable_feast_integration
     entity = Entity(name="binary", serving_names=["col_binary"])
     entity.save()
 
@@ -984,18 +976,15 @@ def test_composite_features(snowflake_event_table_with_entity, cust_id_entity):
 
 
 def test_offline_store_ingest_query_graphs__without_graph_decomposition(
-    saved_feature, cust_id_entity
+    enable_feast_integration, saved_feature
 ):
     """Test offline store ingest query graphs"""
+    _ = enable_feast_integration
     feature_model = saved_feature.cached_model
     assert isinstance(feature_model, FeatureModel)
-
-    feature_model.initialize_offline_store_info(
-        entity_id_to_serving_name={cust_id_entity.id: cust_id_entity.serving_names[0]}
+    ingest_query_graphs = (
+        feature_model.offline_store_info.extract_offline_store_ingest_query_graphs()
     )
-    offline_store_info = feature_model.offline_store_info
-    assert offline_store_info is not None
-    ingest_query_graphs = offline_store_info.extract_offline_store_ingest_query_graphs()
     assert len(ingest_query_graphs) == 1
     assert ingest_query_graphs[0].graph == feature_model.graph
     assert ingest_query_graphs[0].node_name == feature_model.node_name

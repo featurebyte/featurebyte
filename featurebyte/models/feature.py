@@ -114,7 +114,9 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
 
     # offline store info contains the information used to construct the offline store table(s) required
     # by the feature or target.
-    offline_store_info: Optional[OfflineStoreInfo] = Field(default=None)
+    internal_offline_store_info: Optional[Dict[str, Any]] = Field(
+        alias="offline_store_info", default=None
+    )
 
     # pydantic validators
     _version_validator = validator("version", pre=True, allow_reuse=True)(version_validator)
@@ -219,6 +221,25 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
         """
 
         return self.graph.get_node_by_name(self.node_name)
+
+    @property
+    def offline_store_info(self) -> OfflineStoreInfo:
+        """
+        Retrieve offline store info
+
+        Returns
+        -------
+        OfflineStoreInfo
+            Offline store info
+
+        Raises
+        ------
+        ValueError
+            If offline store info is not initialized
+        """
+        if self.internal_offline_store_info is None:
+            raise ValueError("Offline store info is not initialized")
+        return OfflineStoreInfo(**self.internal_offline_store_info)
 
     def extract_pruned_graph_and_node(self, **kwargs: Any) -> tuple[QueryGraphModel, Node]:
         """
@@ -470,13 +491,13 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
             )
 
         # populate offline store info
-        self.offline_store_info = OfflineStoreInfo(
+        self.internal_offline_store_info = OfflineStoreInfo(
             graph=decomposed_graph,
             node_name=output_node_name,
             node_name_map=result.node_name_map,
             is_decomposed=result.is_decomposed,
             metadata=metadata,
-        )
+        ).dict(by_alias=True)
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """

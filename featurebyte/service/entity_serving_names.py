@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional, Sequence
 
 from bson import ObjectId
 
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreModel, TableModel
 from featurebyte.models.relationship_analysis import derive_primary_entity
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
@@ -148,3 +149,26 @@ class EntityServingNamesService:
             }
             for row_idx in range(count)
         ]
+
+    async def get_entity_id_to_serving_name_for_offline_store(
+        self, entity_ids: List[PydanticObjectId]
+    ) -> Dict[PydanticObjectId, str]:
+        """
+        Get entity id to serving name mapping for offline store
+
+        Parameters
+        ----------
+        entity_ids: List[ObjectId]
+            List of entity ids
+
+        Returns
+        -------
+        Dict[ObjectId, str]
+        """
+        primary_entities = [
+            entity
+            async for entity in self.entity_service.list_documents_iterator(
+                query_filter={"_id": {"$in": entity_ids}}
+            )
+        ]
+        return {entity.id: entity.serving_names[0] for entity in primary_entities}

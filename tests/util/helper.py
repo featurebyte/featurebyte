@@ -570,16 +570,9 @@ def check_on_demand_feature_view_code_execution(odfv_codes, df):
                 raise e
 
 
-def check_on_demand_feature_view_code_generation(feature_model, entity_id_to_serving_name=None):
+def check_on_demand_feature_view_code_generation(feature_model):
     """Check on demand feature view code generation"""
-    if feature_model.offline_store_info is None:
-        assert entity_id_to_serving_name is not None
-        feature_model.initialize_offline_store_info(
-            entity_id_to_serving_name=entity_id_to_serving_name
-        )
-
     offline_store_info = feature_model.offline_store_info
-    assert offline_store_info is not None, "OfflineStoreInfo is not initialized"
     assert offline_store_info.is_decomposed, "OfflineStoreInfo is not decomposed"
 
     # construct input dataframe for testing
