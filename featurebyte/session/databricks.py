@@ -13,6 +13,7 @@ from io import BytesIO
 
 import pandas as pd
 import pyarrow as pa
+import pyarrow_hotfix  # pylint: disable=unused-import  # noqa: F401
 from bson import ObjectId
 from pydantic import Field, PrivateAttr
 

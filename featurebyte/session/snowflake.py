@@ -12,6 +12,7 @@ import logging
 
 import pandas as pd
 import pyarrow as pa
+import pyarrow_hotfix  # pylint: disable=unused-import  # noqa: F401
 from pydantic import Field
 from snowflake import connector
 from snowflake.connector.cursor import ResultMetadata

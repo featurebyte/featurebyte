@@ -17,6 +17,7 @@ from io import BytesIO
 import aiofiles
 import pandas as pd
 import pyarrow as pa
+import pyarrow_hotfix  # pylint: disable=unused-import  # noqa: F401
 from pydantic import BaseModel, PrivateAttr
 from sqlglot import expressions
 

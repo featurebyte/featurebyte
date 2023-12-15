@@ -17,6 +17,7 @@ import numpy as np
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
+import pyarrow_hotfix  # pylint: disable=unused-import  # noqa: F401
 from alive_progress import alive_bar
 from dateutil import parser
 from pandas.core.dtypes.common import is_string_dtype

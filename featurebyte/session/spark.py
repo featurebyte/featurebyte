@@ -14,6 +14,7 @@ import tempfile
 
 import pandas as pd
 import pyarrow as pa
+import pyarrow_hotfix  # pylint: disable=unused-import  # noqa: F401
 from pandas.core.dtypes.common import is_datetime64_dtype, is_float_dtype
 from pyarrow import Schema
 from pydantic import Field, PrivateAttr

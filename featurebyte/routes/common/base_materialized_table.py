@@ -6,6 +6,7 @@ from typing import Any, AsyncGenerator, Optional, TypeVar
 from io import BytesIO
 
 import pyarrow as pa
+import pyarrow_hotfix  # pylint: disable=unused-import  # noqa: F401
 from bson import ObjectId
 from pyarrow import parquet as pq
 from starlette.responses import StreamingResponse
