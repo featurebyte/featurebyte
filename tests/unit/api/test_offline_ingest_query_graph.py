@@ -1,11 +1,14 @@
 """
 This module contains tests for the offline ingest query graph.
 """
+import os
 import textwrap
 
 import pytest
+from bson import json_util
 
 from featurebyte import FeatureJobSetting, RequestColumn
+from featurebyte.models.feature import FeatureModel
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.transform.offline_store_ingest import AggregationNodeInfo
 from tests.util.helper import (
@@ -330,3 +333,19 @@ def test_feature__input_has_mixed_ingest_graph_node_flags(
         return df
     """
     assert on_demand_feature_view_codes.strip() == textwrap.dedent(expected).strip()
+
+
+def test_feature__input_has_ingest_query_graph_node(test_dir):
+    """
+    Test a complex feature when there exist a node fulfills the split condition except all the input nodes
+    have already contained ingest query graph nodes.
+    """
+    fixture_path = os.path.join(
+        test_dir,
+        "fixtures/graph/TXN_IsWeekend_Representation_in_CARD_Cash_advance_Txn_Amount_90d.json",
+    )
+    with open(fixture_path, "r") as file_handle:
+        feature_dict = json_util.loads(file_handle.read())
+
+    feature_model = FeatureModel(**feature_dict)
+    check_decomposed_graph_output_node_hash(feature_model=feature_model)
