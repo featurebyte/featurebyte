@@ -24,7 +24,7 @@ from featurebyte.common.env_util import add_sys_path
 from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import SampleMixin
 from featurebyte.enum import AggFunc, DBVarType
-from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalGraphState, GlobalQueryGraph, QueryGraph
 from featurebyte.query_graph.node.nested import OfflineStoreIngestQueryGraphNodeParameters
 from featurebyte.query_graph.node.request import RequestColumnNode
@@ -502,12 +502,12 @@ def check_decomposed_graph_output_node_hash(feature_model, output=None):
         assert output.node_name_map == {}
         return
 
-    # check all the original graph's node_name can be found in node_name_map
-    assert set(feature_model.graph.nodes_map.keys()) == set(output.node_name_map.keys())
+    # check number of leaf nodes (node without incoming edges)
+    decom_graph = output.graph
+    leaf_nodes = set(decom_graph.nodes_map).difference(decom_graph.edges_map)
+    assert len(leaf_nodes) == 1, "Decomposed graph should have only one leaf node"
 
-    # check that no unexpected node type is present in the decomposed graph
-    unexpected_node_types = {
-        NodeType.INPUT,
+    aggregation_nodes = {
         NodeType.GROUPBY,
         NodeType.ITEM_GROUPBY,
         NodeType.AGGREGATE_AS_AT,
@@ -516,6 +516,24 @@ def check_decomposed_graph_output_node_hash(feature_model, output=None):
         NodeType.JOIN,
         NodeType.JOIN_FEATURE,
     }
+
+    # check the graph node & it should contain at least one aggregation node
+    for graph_node in decom_graph.iterate_sorted_graph_nodes(
+        graph_node_types={GraphNodeType.OFFLINE_STORE_INGEST_QUERY}
+    ):
+        nested_graph = graph_node.parameters.graph
+        has_agg_node = False
+        for node in nested_graph.iterate_sorted_nodes():
+            if node.type in aggregation_nodes:
+                has_agg_node = True
+                break
+        assert has_agg_node, "Decomposed graph should contain at least one aggregation node"
+
+    # check all the original graph's node_name can be found in node_name_map
+    assert set(feature_model.graph.nodes_map.keys()) == set(output.node_name_map.keys())
+
+    # check that no unexpected node type is present in the decomposed graph
+    unexpected_node_types = aggregation_nodes.union({NodeType.INPUT})
     for node in output.graph.nodes:
         assert node.type not in unexpected_node_types, "Unexpected node type in decomposed graph"
 

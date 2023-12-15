@@ -1,7 +1,7 @@
 """
 This module contains
 """
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Set
 
 from dataclasses import dataclass
 
@@ -16,7 +16,7 @@ from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import LookupNode, LookupTargetNode
 from featurebyte.query_graph.node.mixin import AggregationOpStructMixin, BaseGroupbyParameters
 from featurebyte.query_graph.node.request import RequestColumnNode
-from featurebyte.query_graph.transform.base import BaseGraphExtractor
+from featurebyte.query_graph.transform.base import BaseGraphTransformer
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 
 
@@ -181,26 +181,9 @@ class DecomposePointGlobalState:
         # update the mapping
         self.node_name_to_aggregation_info[node.name] = aggregation_info
 
-    def should_decompose_query_graph(self, node_name: str, input_node_names: List[str]) -> bool:
-        """
-        Check whether to decompose the query graph into graph with nested offline store ingest query nodes
-
-        Parameters
-        ----------
-        node_name: str
-            Node name
-        input_node_names: List[str]
-            List of input node names
-
-        Returns
-        -------
-        bool
-        """
-        agg_info = self.node_name_to_aggregation_info[node_name]
-        if not agg_info.agg_node_types:
-            # do not decompose if aggregation operation has not been introduced
-            return False
-
+    def _check_input_aggregations(
+        self, agg_info: AggregationInfo, input_node_names: List[str]
+    ) -> bool:
         # check whether the input nodes have mixed request column flags or mixed ingest graph node flags
         input_aggregations_info = [
             self.node_name_to_aggregation_info[input_node_name]
@@ -221,6 +204,11 @@ class DecomposePointGlobalState:
             # if the input nodes have mixed ingest graph node flags that means we should split the query graph
             # as offline store ingest query graph should not have another offline store ingest graph node
             return True
+
+        if input_has_ingest_graph_node_flags == {True}:
+            # if all the input nodes have ingest graph node flags that means we should not split the query graph
+            # as it has already been split at the ancestor level
+            return False
 
         # check whether the input nodes can be merged into one offline store ingest query graph
         all_inputs_have_empty_agg_node_types = True
@@ -248,6 +236,28 @@ class DecomposePointGlobalState:
 
         # if none of the above conditions are met, that means we should split the query graph
         return True
+
+    def should_decompose_query_graph(self, node_name: str, input_node_names: List[str]) -> bool:
+        """
+        Check whether to decompose the query graph into graph with nested offline store ingest query nodes
+
+        Parameters
+        ----------
+        node_name: str
+            Node name
+        input_node_names: List[str]
+            List of input node names
+
+        Returns
+        -------
+        bool
+        """
+        agg_info = self.node_name_to_aggregation_info[node_name]
+        if not agg_info.agg_node_types:
+            # do not decompose if aggregation operation has not been introduced
+            return False
+
+        return self._check_input_aggregations(agg_info=agg_info, input_node_names=input_node_names)
 
     def update_ingest_graph_node_output_names(self, input_node_names: List[str]) -> None:
         """
@@ -280,6 +290,10 @@ class DecomposePointGlobalState:
                 # if the input node has request column, it must not be an offline store ingest query graph
                 continue
 
+            if input_agg_info.has_ingest_graph_node:
+                # if the input node has ingest graph node, it must not be an offline store ingest query graph
+                continue
+
             # if any of the following conditions are met, that means the input node should be an offline store
             # ingest query graph
             if any_input_has_request_column and not input_agg_info.has_request_column:
@@ -302,48 +316,18 @@ class DecomposePointGlobalState:
             assert False, "No offline store ingest query graph output node found"
 
 
-@dataclass
-class DecomposePointBranchState:
-    """DecomposePointBranchState class stores branch state of the decompose point extractor"""
-
-
 class DecomposePointExtractor(
-    BaseGraphExtractor[
-        DecomposePointGlobalState,
-        DecomposePointBranchState,
-        DecomposePointGlobalState,
-    ]
+    BaseGraphTransformer[DecomposePointGlobalState, DecomposePointGlobalState]
 ):
     """
     DecomposePointExtractor class is used to extract information about the decompose point
     used in offline ingest graph decomposition.
     """
 
-    def _pre_compute(
+    def _compute(
         self,
-        branch_state: DecomposePointBranchState,
         global_state: DecomposePointGlobalState,
         node: Node,
-        input_node_names: List[str],
-    ) -> Tuple[List[str], bool]:
-        return input_node_names, False
-
-    def _in_compute(
-        self,
-        branch_state: DecomposePointBranchState,
-        global_state: DecomposePointGlobalState,
-        node: Node,
-        input_node: Node,
-    ) -> DecomposePointBranchState:
-        return branch_state
-
-    def _post_compute(
-        self,
-        branch_state: DecomposePointBranchState,
-        global_state: DecomposePointGlobalState,
-        node: Node,
-        inputs: List[Any],
-        skip_post: bool,
     ) -> None:
         input_node_names = self.graph.get_input_node_names(node)
         global_state.update_aggregation_info(node=node, input_node_names=input_node_names)
@@ -359,8 +343,21 @@ class DecomposePointExtractor(
         self,
         node: Node,
         relationships_info: Optional[List[EntityRelationshipInfo]] = None,
-        **kwargs: Any,
     ) -> DecomposePointGlobalState:
+        """
+        Extract information about offline store ingest query graph decomposition
+
+        Parameters
+        ----------
+        node: Node
+            Target output node
+        relationships_info: Optional[List[EntityRelationshipInfo]]
+            List of entity relationship info
+
+        Returns
+        -------
+        DecomposePointGlobalState
+        """
         # identify aggregation node names in the graph, aggregation node names are used to determine
         # whether to start decomposing the graph
         op_struct_state = OperationStructureExtractor(graph=self.graph).extract(node=node)
@@ -371,10 +368,5 @@ class DecomposePointExtractor(
             relationships_info=relationships_info or [],
             aggregation_node_names=aggregation_node_names,
         )
-        self._extract(
-            node=node,
-            branch_state=DecomposePointBranchState(),
-            global_state=global_state,
-            topological_order_map=self.graph.node_topological_order_map,
-        )
+        self._transform(global_state=global_state)
         return global_state
