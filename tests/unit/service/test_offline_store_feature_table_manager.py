@@ -28,7 +28,7 @@ async def deploy_feature(app_container, feature) -> FeatureModel:
     return await app_container.feature_service.get_document(feature.id)
 
 
-async def undeploy_feature(feature):
+def undeploy_feature(feature):
     """
     Helper function to undeploy a single feature
     """
@@ -36,12 +36,22 @@ async def undeploy_feature(feature):
     deployment.disable()  # pylint: disable=no-member
 
 
+@pytest.fixture(name="always_enable_feast_integration", autouse=True)
+def always_enable_feast_integration_fixture(enable_feast_integration):
+    """
+    Enable feast integration for all tests in this module
+    """
+    _ = enable_feast_integration
+
+
 @pytest_asyncio.fixture
-async def deployed_float_feature(app_container, float_feature):
+async def deployed_float_feature(app_container, float_feature, mock_initialize_new_columns):
     """
     Fixture for deployed float feature
     """
-    return await deploy_feature(app_container, float_feature)
+    out = await deploy_feature(app_container, float_feature)
+    assert mock_initialize_new_columns.call_count == 1
+    return out
 
 
 @pytest_asyncio.fixture
@@ -70,14 +80,6 @@ def document_service(app_container):
     Fixture for OfflineStoreFeatureTableService
     """
     return app_container.offline_store_feature_table_service
-
-
-@pytest.fixture
-def manager_service(app_container):
-    """
-    Fixture for OfflineStoreFeatureTableManagerService
-    """
-    return app_container.offline_store_feature_table_manager_service
 
 
 async def get_all_feature_tables(document_service) -> Dict[str, OfflineStoreFeatureTableModel]:
@@ -130,19 +132,13 @@ async def check_feast_registry(app_container, expected_feature_views, expected_f
 async def test_feature_table_one_feature_deployed(
     app_container,
     document_service,
-    manager_service,
     periodic_task_service,
     deployed_float_feature,
-    mock_initialize_new_columns,
     update_fixtures,
 ):
     """
     Test feature table creation when one feature is deployed
     """
-    await manager_service.handle_online_enabled_features([deployed_float_feature])
-
-    assert mock_initialize_new_columns.call_count == 1
-
     feature_tables = await get_all_feature_tables(document_service)
     assert len(feature_tables) == 1
     feature_table = feature_tables["fb_entity_cust_id_fjs_1800_300_600_ttl"]
@@ -175,7 +171,7 @@ async def test_feature_table_one_feature_deployed(
         "output_dtypes": ["FLOAT"],
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
         "serving_names": ["cust_id"],
-        "user_id": ObjectId("63f9506dd478b94127123456"),
+        "user_id": None,
     }
     assert_equal_json_fixture(
         feature_cluster,
@@ -192,34 +188,18 @@ async def test_feature_table_one_feature_deployed(
     )
 
 
-@pytest.mark.parametrize("is_deployed_together", [False, True])
 @pytest.mark.asyncio
 async def test_feature_table_two_features_deployed(
-    is_deployed_together,
     app_container,
     document_service,
-    manager_service,
     periodic_task_service,
     deployed_float_feature,
     deployed_float_feature_post_processed,
-    mock_initialize_new_columns,
     update_fixtures,
 ):
     """
     Test feature table creation and update when two features are deployed
     """
-    if is_deployed_together:
-        await manager_service.handle_online_enabled_features(
-            [deployed_float_feature, deployed_float_feature_post_processed]
-        )
-        assert mock_initialize_new_columns.call_count == 1
-    else:
-        await manager_service.handle_online_enabled_features([deployed_float_feature])
-        await manager_service.handle_online_enabled_features(
-            [deployed_float_feature_post_processed]
-        )
-        assert mock_initialize_new_columns.call_count == 2
-
     feature_tables = await get_all_feature_tables(document_service)
     assert len(feature_tables) == 1
     feature_table = feature_tables["fb_entity_cust_id_fjs_1800_300_600_ttl"]
@@ -252,7 +232,7 @@ async def test_feature_table_two_features_deployed(
         "output_dtypes": ["FLOAT", "FLOAT"],
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
         "serving_names": ["cust_id"],
-        "user_id": ObjectId("63f9506dd478b94127123456"),
+        "user_id": None,
     }
     assert_equal_json_fixture(
         feature_cluster,
@@ -273,25 +253,16 @@ async def test_feature_table_two_features_deployed(
 async def test_feature_table_undeploy(
     app_container,
     document_service,
-    manager_service,
     periodic_task_service,
     deployed_float_feature,
     deployed_float_feature_post_processed,
-    mock_initialize_new_columns,
     update_fixtures,
 ):
     """
     Test feature table creation and update when two features are deployed
     """
     # Simulate online enabling two features then online disable one
-    await manager_service.handle_online_enabled_features(
-        [deployed_float_feature, deployed_float_feature_post_processed]
-    )
-
-    await undeploy_feature(deployed_float_feature)
-    await manager_service.handle_online_disabled_features([deployed_float_feature])
-
-    assert mock_initialize_new_columns.call_count == 1
+    undeploy_feature(deployed_float_feature)
 
     feature_tables = await get_all_feature_tables(document_service)
     assert len(feature_tables) == 1
@@ -325,7 +296,7 @@ async def test_feature_table_undeploy(
         "output_dtypes": ["FLOAT"],
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
         "serving_names": ["cust_id"],
-        "user_id": ObjectId("63f9506dd478b94127123456"),
+        "user_id": None,
     }
     assert_equal_json_fixture(
         feature_cluster,
@@ -334,8 +305,7 @@ async def test_feature_table_undeploy(
     )
 
     # Check online disabling the last feature deletes the feature table
-    await undeploy_feature(deployed_float_feature_post_processed)
-    await manager_service.handle_online_disabled_features([deployed_float_feature_post_processed])
+    undeploy_feature(deployed_float_feature_post_processed)
     feature_tables = await get_all_feature_tables(document_service)
     assert len(feature_tables) == 0
     assert not await has_scheduled_task(periodic_task_service, feature_table)
@@ -351,21 +321,13 @@ async def test_feature_table_undeploy(
 async def test_feature_table_two_features_different_feature_job_settings_deployed(
     app_container,
     document_service,
-    manager_service,
     periodic_task_service,
     deployed_float_feature,
     deployed_float_feature_different_job_setting,
-    mock_initialize_new_columns,
 ):
     """
     Test feature table creation and update when two features are deployed
     """
-    await manager_service.handle_online_enabled_features(
-        [deployed_float_feature, deployed_float_feature_different_job_setting]
-    )
-
-    assert mock_initialize_new_columns.call_count == 2
-
     feature_tables = await get_all_feature_tables(document_service)
     assert len(feature_tables) == 2
 
@@ -399,7 +361,7 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
         "output_dtypes": ["FLOAT"],
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
         "serving_names": ["cust_id"],
-        "user_id": ObjectId("63f9506dd478b94127123456"),
+        "user_id": None,
     }
     assert await has_scheduled_task(periodic_task_service, feature_table)
 
@@ -433,7 +395,7 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
         "output_dtypes": ["FLOAT"],
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
         "serving_names": ["cust_id"],
-        "user_id": ObjectId("63f9506dd478b94127123456"),
+        "user_id": None,
     }
     assert await has_scheduled_task(periodic_task_service, feature_table)
 

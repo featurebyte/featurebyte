@@ -111,3 +111,12 @@ def index_to_timestamp_fixture(request):
     Parameterized fixture for index to timestamp conversion
     """
     return request.param
+
+
+@pytest.fixture(name="enable_feast_integration")
+def enable_feast_integration_fixture():
+    """
+    Enable feast integration
+    """
+    with patch.dict(os.environ, {"FEATUREBYTE_FEAST_INTEGRATION_ENABLED": "True"}):
+        yield

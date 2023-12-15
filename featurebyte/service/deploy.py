@@ -3,13 +3,13 @@ DeployService class
 """
 from __future__ import annotations
 
-from typing import Any, Callable, Coroutine, Optional
+from typing import Any, Callable, Coroutine, List, Optional
 
 from bson.objectid import ObjectId
 
 from featurebyte.exception import DocumentCreationError, DocumentError, DocumentUpdateError
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.deployment import DeploymentModel
+from featurebyte.models.deployment import DeploymentModel, FeastIntegrationSettings
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import (
     FeatureListModel,
@@ -28,6 +28,9 @@ from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_list_status import FeatureListStatusService
 from featurebyte.service.mixin import OpsServiceMixin
+from featurebyte.service.offline_store_feature_table_manager import (
+    OfflineStoreFeatureTableManagerService,
+)
 from featurebyte.service.online_enable import OnlineEnableService
 
 
@@ -46,6 +49,7 @@ class DeployService(OpsServiceMixin):
         deployment_service: DeploymentService,
         feature_list_namespace_service: FeatureListNamespaceService,
         feature_list_service: FeatureListService,
+        offline_store_feature_table_manager_service: OfflineStoreFeatureTableManagerService,
     ):
         self.persistent = persistent
         self.feature_service = feature_service
@@ -54,6 +58,9 @@ class DeployService(OpsServiceMixin):
         self.feature_list_status_service = feature_list_status_service
         self.feature_list_namespace_service = feature_list_namespace_service
         self.deployment_service = deployment_service
+        self.offline_store_feature_table_manager_service = (
+            offline_store_feature_table_manager_service
+        )
 
     @classmethod
     def _extract_deployed_feature_list_ids(
@@ -81,7 +88,7 @@ class DeployService(OpsServiceMixin):
 
         Returns
         -------
-        FeatureModel:
+        FeatureModel
         """
         document = await self.feature_service.get_document(document_id=feature_id)
         deployed_feature_list_ids = self._extract_deployed_feature_list_ids(
@@ -259,6 +266,8 @@ class DeployService(OpsServiceMixin):
                     await update_progress(20, "Update features")
 
                 # make each feature online enabled first
+                feature_models = []
+                is_online_enabling = True
                 for ind, feature_id in enumerate(document.feature_ids):
                     async with self.persistent.start_transaction():
                         feature = await self.feature_service.get_document(document_id=feature_id)
@@ -267,13 +276,15 @@ class DeployService(OpsServiceMixin):
                             feature_id=feature_id,
                             feature_list=feature_list,
                         )
+                        if updated_feature.online_enabled != feature.online_enabled:
+                            feature_models.append(feature)
+                            is_online_enabling = updated_feature.online_enabled
 
-                    if updated_feature:
-                        # move update warehouse and backfill tiles to outside of transaction
-                        await self.online_enable_service.update_data_warehouse(
-                            updated_feature=updated_feature,
-                            online_enabled_before_update=feature.online_enabled,
-                        )
+                    # move update warehouse and backfill tiles to outside of transaction
+                    await self.online_enable_service.update_data_warehouse(
+                        updated_feature=updated_feature,
+                        online_enabled_before_update=feature.online_enabled,
+                    )
 
                     if update_progress:
                         percent = 20 + int(60 / len(document.feature_ids) * (ind + 1))
@@ -290,6 +301,8 @@ class DeployService(OpsServiceMixin):
 
                     if update_progress:
                         await update_progress(100, "Updated feature list")
+
+                await self._update_offline_store_feature_tables(feature_models, is_online_enabling)
 
             except Exception as exc:
                 try:
@@ -366,6 +379,19 @@ class DeployService(OpsServiceMixin):
             if isinstance(exc, DocumentError):
                 raise exc
             raise DocumentCreationError("Failed to create deployment") from exc
+
+    async def _update_offline_store_feature_tables(
+        self, feature_models: List[FeatureModel], is_online_enabling: bool
+    ) -> None:
+        if FeastIntegrationSettings().FEATUREBYTE_FEAST_INTEGRATION_ENABLED and feature_models:
+            if is_online_enabling:
+                await self.offline_store_feature_table_manager_service.handle_online_enabled_features(
+                    feature_models
+                )
+            else:
+                await self.offline_store_feature_table_manager_service.handle_online_disabled_features(
+                    feature_models
+                )
 
     async def update_deployment(
         self,
