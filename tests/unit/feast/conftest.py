@@ -7,6 +7,13 @@ from featurebyte import FeatureList, RequestColumn
 from featurebyte.feast.utils.registry_construction import FeastRegistryConstructor
 
 
+@pytest.fixture(name="always_enable_feast_integration", autouse=True)
+def always_enable_feast_integration_fixture(enable_feast_integration):
+    """Enable feast integration for all tests in this directory"""
+    _ = enable_feast_integration
+    yield
+
+
 @pytest.fixture(name="feature_list")
 def feature_list_fixture(float_feature, non_time_based_feature):
     """Fixture for the feature list"""
