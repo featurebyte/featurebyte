@@ -200,7 +200,8 @@ class DecomposePointGlobalState:
         """
         # check whether the input nodes have mixed request column flags or mixed ingest graph node flags
         input_aggregations_info = [
-            self.node_name_to_aggregation_info[node_name] for node_name in input_node_names
+            self.node_name_to_aggregation_info[input_node_name]
+            for input_node_name in input_node_names
         ]
 
         # Check for conditions where splitting should occur
@@ -286,12 +287,6 @@ class DecomposePointGlobalState:
             any_input_has_request_column |= input_agg_info.has_request_column
             any_input_has_ingest_graph_node |= input_agg_info.has_ingest_graph_node
 
-        common_primary_entity_ids = set.intersection(
-            *[set(info.primary_entity_ids) for info in input_aggregations_info]
-        )
-        common_feature_job_settings = set.intersection(
-            *[set(info.feature_job_settings) for info in input_aggregations_info]
-        )
         for input_node_name, input_agg_info in zip(input_node_names, input_aggregations_info):
             if input_agg_info.has_request_column:
                 # if the input node has request column, it must not be an offline store ingest query graph
@@ -301,23 +296,8 @@ class DecomposePointGlobalState:
                 # if the input node has ingest graph node, it must not be an offline store ingest query graph
                 continue
 
-            # if any of the following conditions are met, that means the input node should be an offline store
-            # ingest query graph
-            if any_input_has_request_column and not input_agg_info.has_request_column:
-                self.ingest_graph_output_node_names.add(input_node_name)
-            if any_input_has_ingest_graph_node and not input_agg_info.has_ingest_graph_node:
-                self.ingest_graph_output_node_names.add(input_node_name)
-
-            # if new entity ids or new feature job settings are introduced, that means the input node should be
-            # an offline store ingest query graph
-            if set(input_agg_info.primary_entity_ids) != common_primary_entity_ids:
-                self.ingest_graph_output_node_names.add(input_node_name)
-            if set(input_agg_info.feature_job_settings) != common_feature_job_settings:
-                self.ingest_graph_output_node_names.add(input_node_name)
-
-            # mark has_ingest_graph_node flag as True if the input node is an offline store ingest query graph
-            if input_node_name in self.ingest_graph_output_node_names:
-                self.node_name_to_aggregation_info[input_node_name].has_ingest_graph_node = True
+            self.ingest_graph_output_node_names.add(input_node_name)
+            self.node_name_to_aggregation_info[input_node_name].has_ingest_graph_node = True
 
         if not self.ingest_graph_output_node_names.intersection(input_node_names):
             assert False, "No offline store ingest query graph output node found"
