@@ -31,6 +31,8 @@ def to_feast_primitive_type(dtype: DBVarType) -> PrimitiveFeastType:
         DBVarType.VARCHAR: PrimitiveFeastType.STRING,
         DBVarType.FLOAT: PrimitiveFeastType.FLOAT64,
         DBVarType.INT: PrimitiveFeastType.INT64,
+        DBVarType.TIMESTAMP_TZ: PrimitiveFeastType.UNIX_TIMESTAMP,
+        DBVarType.TIMESTAMP: PrimitiveFeastType.UNIX_TIMESTAMP,
     }
     if dtype in mapping:
         return mapping[dtype]

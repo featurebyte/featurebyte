@@ -23,6 +23,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     VariableNameGenerator,
     VariableNameStr,
     VarNameExpressionInfo,
+    get_object_class_from_function_call,
 )
 from featurebyte.query_graph.node.utils import subset_frame_column_expr
 
@@ -109,6 +110,6 @@ class RequestColumnNode(BaseNode):
             var_name = var_name_generator.convert_to_variable_name(
                 "request_col", node_name=self.name
             )
-            expression = ClassEnum.PD_TO_DATETIME(expr)
+            expression = get_object_class_from_function_call("pd.to_datetime", expr)
             return [(var_name, expression)], var_name
         return [], expr

@@ -108,8 +108,7 @@ def test_datetime_extract(config, property):
     code_gen = CodeGenerator(statements=statements + [(VariableNameStr("output"), expr)])
     codes = code_gen.generate().strip()
     assert codes == (
-        "from pandas import to_timedelta\n\n"
-        'tz_offset = to_timedelta("+06:00:00")\n'
+        'tz_offset = pd.to_timedelta("+06:00:00")\n'
         "feat_dt = feat + tz_offset\n"
         f"output = feat_dt.dt.{property}"
     )
@@ -118,11 +117,11 @@ def test_datetime_extract(config, property):
 @pytest.mark.parametrize(
     "property,expected_expr",
     [
-        ("day", "feat.dt.seconds / 86400"),  # 86400 = 24 * 60 * 60
-        ("hour", "feat.dt.seconds / 3600"),  # 3600 = 60 * 60
-        ("minute", "feat.dt.seconds / 60"),
+        ("day", "feat.dt.seconds // 86400"),  # 86400 = 24 * 60 * 60
+        ("hour", "feat.dt.seconds // 3600"),  # 3600 = 60 * 60
+        ("minute", "feat.dt.seconds // 60"),
         ("second", "feat.dt.seconds"),
-        ("millisecond", "feat.dt.microseconds / 1000"),
+        ("millisecond", "feat.dt.microseconds // 1000"),
         ("microsecond", "feat.dt.microseconds"),
     ],
 )
@@ -155,8 +154,4 @@ def test_time_delta(config, unit):
     )
     code_gen = CodeGenerator(statements=statements + [(VariableNameStr("output"), expr)])
     codes = code_gen.generate().strip()
-    assert codes == (
-        "from pandas import to_timedelta\n\n"
-        f'feat = to_timedelta(val, unit="{unit}")\n'
-        "output = feat"
-    )
+    assert codes == (f'feat = pd.to_timedelta(val, unit="{unit}")\n' "output = feat")

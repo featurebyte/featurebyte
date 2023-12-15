@@ -49,6 +49,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     VariableNameStr,
     VarNameExpressionInfo,
     VarNameExpressionStr,
+    get_object_class_from_function_call,
 )
 from featurebyte.query_graph.node.scalar import TimestampValue, ValueParameterType
 from featurebyte.query_graph.util import hash_input_node_hashes
@@ -929,6 +930,7 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
         self,
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
+        to_timestamp_func: Union[ClassEnum, str],
         generate_expression_func: Callable[[str, str], str],
     ) -> Tuple[List[StatementT], ExpressionStr]:
         input_var_name_expressions = self._assert_no_info_dict(node_inputs)
@@ -936,14 +938,19 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
         statements: List[StatementT] = []
         right_operand: Union[str, VariableNameStr]
         if isinstance(self.parameters.value, TimestampValue):
-            timestamp_val = var_name_generator.convert_to_variable_name(
+            timestamp_var = var_name_generator.convert_to_variable_name(
                 variable_name_prefix="timestamp_value",
                 node_name=self.name,
             )
-            statements.append(
-                (timestamp_val, ClassEnum.PD_TIMESTAMP(self.parameters.value.iso_format_str))
-            )
-            right_operand = timestamp_val
+            if isinstance(to_timestamp_func, ClassEnum):
+                timestamp_val = to_timestamp_func(self.parameters.value.iso_format_str)
+            else:
+                timestamp_val = get_object_class_from_function_call(
+                    to_timestamp_func, self.parameters.value.iso_format_str
+                )
+
+            statements.append((timestamp_var, timestamp_val))
+            right_operand = timestamp_var
         else:
             right_operand = ValueStr.create(self.parameters.value).as_input()
 
@@ -961,7 +968,9 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         _ = operation_structure, config, context
-        return self._derive_python_code(node_inputs, var_name_generator, self.generate_expression)
+        return self._derive_python_code(
+            node_inputs, var_name_generator, ClassEnum.PD_TIMESTAMP, self.generate_expression
+        )
 
     def _derive_on_demand_view_code(
         self,
@@ -971,7 +980,10 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         _ = config
         return self._derive_python_code(
-            node_inputs, var_name_generator, self.generate_odfv_expression
+            node_inputs,
+            var_name_generator,
+            "pd.Timestamp",
+            self.generate_odfv_expression,
         )
 
 

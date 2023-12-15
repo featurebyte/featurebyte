@@ -1,8 +1,5 @@
 import numpy as np
 import pandas as pd
-{%- if imports %}
-{{imports}}
-{%- endif %}
 
 
 def {{function_name}}({{input_df_name}}: pd.DataFrame) -> pd.DataFrame:

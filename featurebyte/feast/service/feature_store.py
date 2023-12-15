@@ -10,7 +10,7 @@ from feast import FeatureStore, RepoConfig
 from feast.infra.online_stores.redis import RedisOnlineStoreConfig
 from feast.repo_config import RegistryConfig
 
-from featurebyte.feast.model.feature_store import FeatureStoreDetails
+from featurebyte.feast.model.feature_store import FeatureStoreDetailsWithFeastConfiguration
 from featurebyte.feast.service.registry import FeastRegistryService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.utils.credential import MongoBackedCredentialProvider
@@ -72,7 +72,7 @@ class FeastFeatureStoreService:
                 path=feast_registry_path,
                 cache_ttl_seconds=0,
             )
-            feature_store_details = FeatureStoreDetails(
+            feature_store_details = FeatureStoreDetailsWithFeastConfiguration(
                 **feature_store.get_feature_store_details().dict()
             )
             database_credential = None

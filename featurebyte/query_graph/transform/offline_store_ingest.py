@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional, Set
 
 from dataclasses import dataclass
 
+from featurebyte.common.string import sanitize_identifier
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.graph_node.base import GraphNode
@@ -50,7 +51,7 @@ def get_offline_store_table_name(
         Offline store table name
     """
     entity_part = "_".join(primary_entity_serving_names)
-    table_name = f"fb_entity_{entity_part}"
+    table_name = sanitize_identifier(f"fb_entity_{entity_part}")
     if feature_job_setting:
         fjs = feature_job_setting.to_seconds()
         frequency = fjs["frequency"]

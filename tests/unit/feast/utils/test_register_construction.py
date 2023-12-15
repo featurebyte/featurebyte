@@ -1,10 +1,12 @@
 """
 Test the construction of the feast register.
 """
+from unittest.mock import patch
+
 import pytest
 from google.protobuf.json_format import MessageToDict
 
-from featurebyte import FeatureList
+from featurebyte import FeatureList, RequestColumn
 from featurebyte.feast.utils.registry_construction import FeastRegistryConstructor
 
 
@@ -32,28 +34,75 @@ def test_feast_registry_construction__missing_asset(
         )
 
 
-def test_feast_registry_construction__feast_feature_name_not_found(
+def test_feast_registry_construction__with_post_processing_features(
     snowflake_feature_store,
     cust_id_entity,
     transaction_entity,
     float_feature,
     non_time_based_feature,
+    latest_event_timestamp_feature,
 ):
-    """Test the construction of the feast register (feast feature name not found)"""
-    feature_requires_post_processing = float_feature + non_time_based_feature
+    """Test the construction of the feast register (with post processing features)"""
+    feature_requires_post_processing = (
+        (RequestColumn.point_in_time() - latest_event_timestamp_feature).dt.day.cos()
+        + float_feature
+        + non_time_based_feature
+    )
     feature_requires_post_processing.name = "feature"
     feature_requires_post_processing.save()
 
     feature_list = FeatureList([feature_requires_post_processing], name="test_feature_list")
     feature_list.save()
 
-    with pytest.raises(ValueError, match="Missing features: {'feature'}"):
-        FeastRegistryConstructor.create(
+    feast_registry_proto = FeastRegistryConstructor.create(
+        feature_store=snowflake_feature_store.cached_model,
+        entities=[cust_id_entity.cached_model, transaction_entity.cached_model],
+        features=[feature_requires_post_processing.cached_model],
+        feature_lists=[feature_list.cached_model],  # type: ignore
+    )
+    feast_registry_dict = MessageToDict(feast_registry_proto)
+    on_demand_feature_views = feast_registry_dict["onDemandFeatureViews"]
+    assert len(on_demand_feature_views) == 1
+    odfv_spec = on_demand_feature_views[0]["spec"]
+    assert odfv_spec["name"].startswith("compute_feature_feature_")
+    assert odfv_spec["project"] == "featurebyte_project"
+    assert odfv_spec["features"] == [{"name": "feature", "valueType": "DOUBLE"}]
+    assert odfv_spec["sources"].keys() == {
+        "POINT_IN_TIME",
+        "fb_entity_cust_id_fjs_1800_300_600_ttl",
+        "fb_entity_transaction_id",
+    }
+
+    data_sources = feast_registry_dict["dataSources"]
+    pit_data_source = next(
+        data_source for data_source in data_sources if data_source["name"] == "POINT_IN_TIME"
+    )
+    assert pit_data_source == {
+        "dataSourceClassType": "feast.data_source.RequestSource",
+        "name": "POINT_IN_TIME",
+        "project": "featurebyte_project",
+        "requestDataOptions": {
+            "schema": [{"name": "POINT_IN_TIME", "valueType": "UNIX_TIMESTAMP"}]
+        },
+        "type": "REQUEST_SOURCE",
+    }
+
+    # dill's getsource() does not include the import statements
+    udf = feast_registry_proto.on_demand_feature_views[0].spec.user_defined_function
+    assert udf.body_text.startswith("def compute_feature_feature_")
+
+    with patch("dill.source.getsource") as getsource_mock:
+        getsource_mock.side_effect = IOError
+        feast_registry_proto = FeastRegistryConstructor.create(
             feature_store=snowflake_feature_store.cached_model,
             entities=[cust_id_entity.cached_model, transaction_entity.cached_model],
             features=[feature_requires_post_processing.cached_model],
             feature_lists=[feature_list.cached_model],  # type: ignore
         )
+
+        # patch version of getsource() contains the import statements
+        udf = feast_registry_proto.on_demand_feature_views[0].spec.user_defined_function
+        assert udf.body_text.startswith("import numpy as np\nimport pandas as pd")
 
 
 def test_feast_registry_construction(feast_registry_proto):

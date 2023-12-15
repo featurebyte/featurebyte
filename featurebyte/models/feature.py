@@ -40,6 +40,7 @@ from featurebyte.query_graph.node.cleaning_operation import (
 )
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
 from featurebyte.query_graph.node.nested import AggregationNodeInfo
+from featurebyte.query_graph.node.request import RequestColumnNode
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.sql.online_store_compute_query import (
     get_online_store_precompute_queries,
@@ -366,6 +367,23 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
                     column_cleaning_operations=cleaning_operation.column_cleaning_operations,
                 )
             )
+        return output
+
+    def extract_request_column_nodes(self) -> List[RequestColumnNode]:
+        """
+        Extract request column nodes
+
+        Returns
+        -------
+        List[RequestColumnNode]
+            List of request column nodes
+        """
+        output = []
+        for node in self.graph.iterate_nodes(
+            target_node=self.node, node_type=NodeType.REQUEST_COLUMN
+        ):
+            assert isinstance(node, RequestColumnNode)
+            output.append(node)
         return output
 
     def extract_definition_hash(self) -> DefinitionHashOutput:

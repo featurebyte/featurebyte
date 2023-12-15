@@ -643,6 +643,6 @@ class BaseGraphNode(BasePrunableNode):
         )
         if self.parameters.output_dtype in DBVarType.supported_timestamp_types():
             var_name = var_name_generator.convert_to_variable_name("feat", node_name=self.name)
-            expression = ClassEnum.PD_TO_DATETIME(expr)
+            expression = get_object_class_from_function_call("pd.to_datetime", expr)
             return [(var_name, expression)], var_name
         return [], expr
