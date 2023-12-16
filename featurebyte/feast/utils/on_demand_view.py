@@ -53,10 +53,7 @@ def create_feast_on_demand_feature_view(
         file_handle.write(definition)
 
     module = importlib.import_module(module_name)
-    try:
-        func = getattr(module, function_name)
-    except:
-        raise
+    func = getattr(module, function_name)
     try:
         output = on_demand_feature_view(sources=sources, schema=schema)(func)
     except IOError:
