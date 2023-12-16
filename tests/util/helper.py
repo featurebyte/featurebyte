@@ -10,7 +10,7 @@ import tempfile
 import textwrap
 from contextlib import contextmanager
 from pathlib import Path
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import numpy as np
 import pandas as pd
@@ -35,7 +35,8 @@ from featurebyte.query_graph.transform.offline_store_ingest import (
     OfflineStoreIngestQueryGraphTransformer,
 )
 from featurebyte.query_graph.util import get_aggregation_identifier, get_tile_table_identifier
-from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
+from featurebyte.schema.feature import FeatureServiceCreate
+from featurebyte.schema.feature_list import FeatureListServiceCreate, OnlineFeaturesRequestPayload
 
 
 def reset_global_graph():
@@ -624,18 +625,33 @@ def check_on_demand_feature_view_code_generation(feature_model):
 
 async def deploy_feature(app_container, feature, return_type="feature"):
     """
-    Helper function to create deploy a single feature
+    Helper function to create deploy a single feature using services
     """
     assert return_type in {"feature", "feature_list"}
-    feature_list = FeatureList([feature], name=f"{feature.name}_list")
-    feature_list.save()
-    deployment = feature_list.deploy(
-        deployment_name=feature_list.name, make_production_ready=True, ignore_guardrails=True
+
+    # Create feature and make production ready
+    feature_create_payload = FeatureServiceCreate(**feature._get_create_payload())
+    await app_container.feature_service.create_document(data=feature_create_payload)
+    await app_container.feature_readiness_service.update_feature(
+        feature_id=feature.id, readiness="PRODUCTION_READY", ignore_guardrails=True
     )
-    deployment.enable()
+
+    # Create feature list and deploy
+    data = FeatureListServiceCreate(
+        name=f"{feature.name}_list",
+        feature_ids=[feature.id],
+    )
+    feature_list_model = await app_container.feature_list_service.create_document(data)
+    await app_container.deploy_service.create_deployment(
+        feature_list_id=feature_list_model.id,
+        deployment_id=ObjectId(),
+        deployment_name=feature_list_model.name,
+        to_enable_deployment=True,
+    )
+
     if return_type == "feature":
         return await app_container.feature_service.get_document(feature.id)
-    return await app_container.feature_list_service.get_document(feature_list.id)
+    return await app_container.feature_list_service.get_document(feature_list_model.id)
 
 
 def undeploy_feature(feature):

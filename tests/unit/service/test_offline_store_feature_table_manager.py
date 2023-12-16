@@ -21,10 +21,13 @@ def always_enable_feast_integration_fixture(enable_feast_integration):
 
 
 @pytest_asyncio.fixture
-async def deployed_float_feature(app_container, float_feature, mock_initialize_new_columns):
+async def deployed_float_feature(
+    app_container, float_feature, mock_update_data_warehouse, mock_initialize_new_columns
+):
     """
     Fixture for deployed float feature
     """
+    _ = mock_update_data_warehouse
     out = await deploy_feature(app_container, float_feature)
     assert mock_initialize_new_columns.call_count == 1
     return out
@@ -136,7 +139,7 @@ async def test_feature_table_one_feature_deployed(
         "output_dtypes": ["FLOAT"],
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
         "serving_names": ["cust_id"],
-        "user_id": None,
+        "user_id": ObjectId("63f9506dd478b94127123456"),
     }
     assert_equal_json_fixture(
         feature_cluster,
@@ -197,7 +200,7 @@ async def test_feature_table_two_features_deployed(
         "output_dtypes": ["FLOAT", "FLOAT"],
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
         "serving_names": ["cust_id"],
-        "user_id": None,
+        "user_id": ObjectId("63f9506dd478b94127123456"),
     }
     assert_equal_json_fixture(
         feature_cluster,
@@ -261,7 +264,7 @@ async def test_feature_table_undeploy(
         "output_dtypes": ["FLOAT"],
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
         "serving_names": ["cust_id"],
-        "user_id": None,
+        "user_id": ObjectId("63f9506dd478b94127123456"),
     }
     assert_equal_json_fixture(
         feature_cluster,
@@ -326,7 +329,7 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
         "output_dtypes": ["FLOAT"],
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
         "serving_names": ["cust_id"],
-        "user_id": None,
+        "user_id": ObjectId("63f9506dd478b94127123456"),
     }
     assert await has_scheduled_task(periodic_task_service, feature_table)
 
@@ -360,7 +363,7 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
         "output_dtypes": ["FLOAT"],
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
         "serving_names": ["cust_id"],
-        "user_id": None,
+        "user_id": ObjectId("63f9506dd478b94127123456"),
     }
     assert await has_scheduled_task(periodic_task_service, feature_table)
 
