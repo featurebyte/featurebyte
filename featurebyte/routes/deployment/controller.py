@@ -11,7 +11,7 @@ from bson import ObjectId
 from fastapi import HTTPException
 
 from featurebyte.exception import DocumentDeletionError, FeatureListNotOnlineEnabledError
-from featurebyte.models.deployment import DeploymentModel
+from featurebyte.models.deployment import DeploymentModel, FeastIntegrationSettings
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.routes.common.base import BaseDocumentController
@@ -216,12 +216,20 @@ class DeploymentController(
             Invalid request payload
         """
         document = await self.service.get_document(deployment_id)
+
         feature_list = await self.feature_list_service.get_document(document.feature_list_id)
         try:
-            result = await self.online_serving_service.get_online_features_from_feature_list(
-                feature_list=feature_list,
-                request_data=data.entity_serving_names,
-            )
+            result: Optional[OnlineFeaturesResponseModel]
+            if FeastIntegrationSettings().FEATUREBYTE_FEAST_INTEGRATION_ENABLED:
+                result = await self.online_serving_service.get_online_features_by_feast(
+                    feature_list=feature_list,
+                    request_data=data.entity_serving_names,
+                )
+            else:
+                result = await self.online_serving_service.get_online_features_from_feature_list(
+                    feature_list=feature_list,
+                    request_data=data.entity_serving_names,
+                )
         except (FeatureListNotOnlineEnabledError, RuntimeError) as exc:
             raise HTTPException(
                 status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]

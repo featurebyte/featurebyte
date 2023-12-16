@@ -7,6 +7,7 @@ import importlib
 import os
 from unittest.mock import patch
 
+from bson import ObjectId
 from feast import FeatureView, Field, RequestSource
 from feast.feature_view_projection import FeatureViewProjection
 from feast.on_demand_feature_view import OnDemandFeatureView, on_demand_feature_view
@@ -45,7 +46,7 @@ def create_feast_on_demand_feature_view(
     OnDemandFeatureView
         The created OnDemandFeatureView
     """
-    module_name = "on_demand_feature_view"
+    module_name = f"on_demand_feature_view_{ObjectId()}"
     with open(
         os.path.join(on_demand_feature_view_dir, f"{module_name}.py"), "w", encoding="utf-8"
     ) as file_handle:

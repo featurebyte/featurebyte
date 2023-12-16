@@ -19,6 +19,7 @@ from pandas.core.dtypes.common import is_numeric_dtype
 from sqlglot import expressions
 
 from featurebyte import get_version
+from featurebyte.api.deployment import Deployment
 from featurebyte.api.source_table import AbstractTableData
 from featurebyte.common.env_util import add_sys_path
 from featurebyte.core.generic import QueryObject
@@ -33,7 +34,8 @@ from featurebyte.query_graph.transform.offline_store_ingest import (
     OfflineStoreIngestQueryGraphTransformer,
 )
 from featurebyte.query_graph.util import get_aggregation_identifier, get_tile_table_identifier
-from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
+from featurebyte.schema.feature import FeatureServiceCreate
+from featurebyte.schema.feature_list import FeatureListServiceCreate, OnlineFeaturesRequestPayload
 
 
 def reset_global_graph():
@@ -618,3 +620,42 @@ def check_on_demand_feature_view_code_generation(feature_model):
     # check the generated code can be executed successfully
     output = check_on_demand_feature_view_code_execution(odfv_codes, df)
     assert output.columns == [feature_model.name]
+
+
+async def deploy_feature(app_container, feature, return_type="feature"):
+    """
+    Helper function to create deploy a single feature using services
+    """
+    assert return_type in {"feature", "feature_list"}
+
+    # Create feature and make production ready
+    feature_create_payload = FeatureServiceCreate(**feature._get_create_payload())
+    await app_container.feature_service.create_document(data=feature_create_payload)
+    await app_container.feature_readiness_service.update_feature(
+        feature_id=feature.id, readiness="PRODUCTION_READY", ignore_guardrails=True
+    )
+
+    # Create feature list and deploy
+    data = FeatureListServiceCreate(
+        name=f"{feature.name}_list",
+        feature_ids=[feature.id],
+    )
+    feature_list_model = await app_container.feature_list_service.create_document(data)
+    await app_container.deploy_service.create_deployment(
+        feature_list_id=feature_list_model.id,
+        deployment_id=ObjectId(),
+        deployment_name=feature_list_model.name,
+        to_enable_deployment=True,
+    )
+
+    if return_type == "feature":
+        return await app_container.feature_service.get_document(feature.id)
+    return await app_container.feature_list_service.get_document(feature_list_model.id)
+
+
+def undeploy_feature(feature):
+    """
+    Helper function to undeploy a single feature
+    """
+    deployment: Deployment = Deployment.get(f"{feature.name}_list")
+    deployment.disable()  # pylint: disable=no-member

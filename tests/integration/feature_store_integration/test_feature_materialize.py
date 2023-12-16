@@ -2,15 +2,21 @@
 Tests for feature materialization service
 """
 import os
+import time
 from unittest.mock import patch
 
+import freezegun
 import pandas as pd
 import pytest
 
 import featurebyte as fb
+from featurebyte.logging import get_logger
+from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 from featurebyte.schema.worker.task.scheduled_feature_materialize import (
     ScheduledFeatureMaterializeTaskPayload,
 )
+
+logger = get_logger(__name__)
 
 
 @pytest.fixture(name="always_enable_feast_integration", scope="module", autouse=True)
@@ -154,6 +160,38 @@ async def check_feast_registry(app_container):
     }
 
 
+@freezegun.freeze_time("2001-01-02 12:00:00")
+def check_online_features(deployment, config):
+    """
+    Check online features are populated correctly
+    """
+    client = config.get_client()
+
+    entity_serving_names = [{"üser id": 1, "PRODUCT_ACTION": "detail"}]
+    data = OnlineFeaturesRequestPayload(entity_serving_names=entity_serving_names)
+
+    tic = time.time()
+    res = client.post(
+        f"/deployment/{deployment.id}/online_features",
+        json=data.json_dict(),
+    )
+    assert res.status_code == 200
+    elapsed = time.time() - tic
+    logger.info("online_features elapsed: %fs", elapsed)
+    assert res.json() == {
+        "features": [
+            {
+                "üser id": "1",
+                "PRODUCT_ACTION": "detail",
+                "EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d": 43.0,
+                "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h": 475.38,
+                "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100": 47538.0,
+                "EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE": 519.2892974268257,
+            }
+        ]
+    }
+
+
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_feature_materialize_service(
@@ -162,6 +200,7 @@ async def test_feature_materialize_service(
     user_entity,
     product_action_entity,
     deployed_feature_list,
+    config,
 ):
     """
     Test FeatureMaterializeService
@@ -184,6 +223,8 @@ async def test_feature_materialize_service(
     await check_feature_tables_populated(session, primary_entity_to_feature_table.values())
 
     await check_feast_registry(app_container)
+
+    check_online_features(deployed_feature_list, config)
 
     # Check offline store table for user entity
     service = app_container.feature_materialize_service

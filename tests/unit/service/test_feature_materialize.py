@@ -11,8 +11,6 @@ import pytest_asyncio
 from bson import ObjectId
 from freezegun import freeze_time
 
-from featurebyte.feature_manager.model import ExtendedFeatureModel
-from featurebyte.models.online_store import OnlineFeatureSpec
 from tests.util.helper import assert_equal_with_expected_fixture
 
 
@@ -22,17 +20,6 @@ def always_enable_feast_integration_fixture(enable_feast_integration):
     Enable feast integration for all tests in this module
     """
     _ = enable_feast_integration
-
-
-async def create_online_store_compute_query(online_store_compute_query_service, feature_model):
-    """
-    Helper to create online store compute query since that step is skipped because of
-    mock_update_data_warehouse
-    """
-    extended_feature_model = ExtendedFeatureModel(**feature_model.dict(by_alias=True))
-    online_feature_spec = OnlineFeatureSpec(feature=extended_feature_model)
-    for query in online_feature_spec.precompute_queries:
-        await online_store_compute_query_service.create_document(query)
 
 
 @pytest.fixture(name="mock_get_feature_store_session")
@@ -58,15 +45,8 @@ async def deployed_feature_list_fixture(
     """
     _ = mock_update_data_warehouse
 
+    # TODO: use deploy_feature() helper
     deployment_id = ObjectId()
-    for feature_id in production_ready_feature_list.feature_ids:
-        feature_model = await app_container.feature_service.get_document(
-            document_id=feature_id,
-        )
-        await create_online_store_compute_query(
-            app_container.online_store_compute_query_service, feature_model
-        )
-
     with patch(
         "featurebyte.service.offline_store_feature_table_manager.FeatureMaterializeService.initialize_new_columns"
     ):
