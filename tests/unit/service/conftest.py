@@ -995,8 +995,7 @@ def mock_update_data_warehouse(app_container):
     """Mock update data warehouse method"""
 
     async def mock_func(updated_feature, online_enabled_before_update):
-        if updated_feature.online_enabled == online_enabled_before_update:
-            return
+        _ = online_enabled_before_update
         extended_feature_model = ExtendedFeatureModel(**updated_feature.dict(by_alias=True))
         online_feature_spec = OnlineFeatureSpec(feature=extended_feature_model)
         for query in online_feature_spec.precompute_queries:

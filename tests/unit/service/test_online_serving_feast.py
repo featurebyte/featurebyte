@@ -80,7 +80,7 @@ async def test_feature_with_point_in_time(
 @pytest.mark.asyncio
 async def test_validate_required_serving_names(
     online_serving_service,
-    deployed_feature_list_with_float_feature,
+    deployed_feature_list_with_point_in_time_request_column_feature,
 ):
     """
     Test validation for missing required serving names
@@ -88,7 +88,7 @@ async def test_validate_required_serving_names(
     request_data = [{"cust_idz": "a"}]
     with pytest.raises(RequiredEntityNotProvidedError) as exc_info:
         await online_serving_service.get_online_features_by_feast(
-            deployed_feature_list_with_float_feature, request_data
+            deployed_feature_list_with_point_in_time_request_column_feature, request_data
         )
     assert (
         str(exc_info.value)
