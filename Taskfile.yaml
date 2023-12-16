@@ -232,7 +232,9 @@ tasks:
       - featurebyte/**/*
       - tests/**/*
     cmds:
+      - task: test-setup
       - poetry run pytest --reruns=3 --timeout=240 --junitxml=pytest.xml.0 -n auto --cov=featurebyte tests/unit
+      - task: test-teardown
 
   generate-unit-test-fixtures:
     desc: Generate unit test fixtures
