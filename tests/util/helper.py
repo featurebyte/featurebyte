@@ -634,7 +634,7 @@ async def deploy_feature(app_container, feature, return_type="feature"):
     )
     deployment.enable()
     if return_type == "feature":
-        return await app_container.feature_service.get_feature(feature.name)
+        return await app_container.feature_service.get_document(feature.id)
     return await app_container.feature_list_service.get_document(feature_list.id)
 
 
