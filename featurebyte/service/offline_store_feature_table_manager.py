@@ -224,7 +224,11 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                     updated_feature_table, self._get_offline_store_feature_table_columns(features)
                 )
             else:
-                # TODO: drop table
+                await self.feature_materialize_service.drop_table(
+                    await self.offline_store_feature_table_service.get_document(
+                        feature_table_dict["_id"],
+                    )
+                )
                 await self.feature_materialize_scheduler_service.stop_job(
                     feature_table_dict["_id"],
                 )
@@ -242,6 +246,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
             for ingest_query_graph in info.extract_offline_store_ingest_query_graphs():
                 output_column_names.append(ingest_query_graph.output_column_name)
             return output_column_names
+        return []
 
     async def _get_compatible_existing_feature_table(
         self, table_name: str

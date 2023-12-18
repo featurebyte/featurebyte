@@ -317,6 +317,23 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
             )
             await session.execute_query(query)
 
+    async def drop_table(self, feature_table_model: OfflineStoreFeatureTableModel) -> None:
+        """
+        Drop the feature table. This is expected to be called when the feature table is deleted.
+
+        Parameters
+        ----------
+        feature_table_model: OfflineStoreFeatureTableModel
+            OfflineStoreFeatureTableModel object
+        """
+        session = await self._get_session(feature_table_model)
+        await session.drop_table(
+            feature_table_model.name,
+            schema_name=session.schema_name,
+            database_name=session.database_name,
+            if_exists=True,
+        )
+
     async def _get_feast_feature_store(self) -> FeastFeatureStore:
         """
         Get the FeastFeatureStore object

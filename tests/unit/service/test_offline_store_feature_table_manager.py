@@ -285,6 +285,8 @@ async def test_feature_table_undeploy(
     assert len(feature_tables) == 0
     assert not await has_scheduled_task(periodic_task_service, feature_table)
 
+    args, _ = mock_feature_materialize_service["drop_table"].call_args
+    assert args[0].name == "fb_entity_cust_id_fjs_1800_300_600_ttl"
     await check_feast_registry(
         app_container,
         expected_feature_views=set(),

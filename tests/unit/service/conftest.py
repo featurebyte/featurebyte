@@ -1025,7 +1025,7 @@ def mock_feature_materialize_service_fixture():
     service_name = (
         "featurebyte.service.offline_store_feature_table_manager.FeatureMaterializeService"
     )
-    for method_name in ["initialize_new_columns", "drop_columns"]:
+    for method_name in ["initialize_new_columns", "drop_columns", "drop_table"]:
         patcher = patch(f"{service_name}.{method_name}")
         patched[method_name] = patcher.start()
     yield patched

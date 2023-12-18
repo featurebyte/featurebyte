@@ -350,3 +350,23 @@ async def test_drop_columns(
         "tests/fixtures/feature_materialize/drop_columns.sql",
         update_fixtures,
     )
+
+
+@pytest.mark.usefixtures("mock_get_feature_store_session")
+@pytest.mark.asyncio
+async def test_drop_table(
+    feature_materialize_service,
+    mock_snowflake_session,
+    offline_store_feature_table,
+    update_fixtures,
+):
+    """
+    Test drop_columns
+    """
+    await feature_materialize_service.drop_table(offline_store_feature_table)
+    assert mock_snowflake_session.drop_table.call_args == call(
+        offline_store_feature_table.name,
+        schema_name="sf_schema",
+        database_name="sf_db",
+        if_exists=True,
+    )
