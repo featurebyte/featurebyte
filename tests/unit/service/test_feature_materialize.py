@@ -358,7 +358,6 @@ async def test_drop_table(
     feature_materialize_service,
     mock_snowflake_session,
     offline_store_feature_table,
-    update_fixtures,
 ):
     """
     Test drop_columns
