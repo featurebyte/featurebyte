@@ -206,21 +206,25 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         features: FeatureModel
             Model of the feature to be disabled for online serving
         """
-        feature_ids = {feature.id for feature in features}
+        feature_ids_to_remove = {feature.id for feature in features}
         feature_table_data = await self.offline_store_feature_table_service.list_documents_as_dict(
-            query_filter={"feature_ids": {"$in": list(feature_ids)}},
+            query_filter={"feature_ids": {"$in": list(feature_ids_to_remove)}},
         )
         for feature_table_dict in feature_table_data["data"]:
             updated_feature_ids = [
                 feature_id
                 for feature_id in feature_table_dict["feature_ids"]
-                if feature_id not in feature_ids
+                if feature_id not in feature_ids_to_remove
             ]
             if updated_feature_ids:
-                await self._update_offline_store_feature_table(
+                updated_feature_table = await self._update_offline_store_feature_table(
                     feature_table_dict, updated_feature_ids
                 )
+                await self.feature_materialize_service.drop_columns(
+                    updated_feature_table, self._get_offline_store_feature_table_columns(features)
+                )
             else:
+                # TODO: drop table
                 await self.feature_materialize_scheduler_service.stop_job(
                     feature_table_dict["_id"],
                 )
@@ -228,6 +232,16 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                     document_id=feature_table_dict["_id"],
                 )
             await self._create_or_update_feast_registry()
+
+    @staticmethod
+    def _get_offline_store_feature_table_columns(features: List[FeatureModel]) -> List[str]:
+        for feature_model in features:
+            info = feature_model.offline_store_info
+            assert info is not None
+            output_column_names = []
+            for ingest_query_graph in info.extract_offline_store_ingest_query_graphs():
+                output_column_names.append(ingest_query_graph.output_column_name)
+            return output_column_names
 
     async def _get_compatible_existing_feature_table(
         self, table_name: str

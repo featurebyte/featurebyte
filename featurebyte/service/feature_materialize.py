@@ -292,6 +292,31 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
             end_date=materialize_end_date,
         )
 
+    async def drop_columns(
+        self, feature_table_model: OfflineStoreFeatureTableModel, column_names: List[str]
+    ) -> None:
+        """
+        Remove columns from the feature table. This is expected to be called when some features in
+        the feature table model were just online disabled.
+
+        Parameters
+        ----------
+        feature_table_model: OfflineStoreFeatureTableModel
+            OfflineStoreFeatureTableModel object
+        column_names: List[str]
+            List of column names to drop
+        """
+        session = await self._get_session(feature_table_model)
+        for column_name in column_names:
+            query = sql_to_string(
+                expressions.AlterTable(
+                    this=expressions.Table(this=quoted_identifier(feature_table_model.name)),
+                    actions=[expressions.Drop(this=quoted_identifier(column_name), kind="COLUMN")],
+                ),
+                source_type=session.source_type,
+            )
+            await session.execute_query(query)
+
     async def _get_feast_feature_store(self) -> FeastFeatureStore:
         """
         Get the FeastFeatureStore object
