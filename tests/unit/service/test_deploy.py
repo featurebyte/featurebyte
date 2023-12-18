@@ -258,12 +258,12 @@ async def test_update_deployment_error__state_is_reverted_when_update_feature_li
     assert mock_update_data_warehouse.call_count == 2
 
     # check the first call (enabling)
-    args, kwargs = mock_update_data_warehouse.call_args_list[0]
+    _, kwargs = mock_update_data_warehouse.call_args_list[0]
     assert kwargs["updated_feature"].online_enabled is True
     assert kwargs["online_enabled_before_update"] is False
 
     # check the second call (disabling during revert)
-    args, kwargs = mock_update_data_warehouse.call_args_list[1]
+    _, kwargs = mock_update_data_warehouse.call_args_list[1]
     assert kwargs["updated_feature"].online_enabled is False
     assert kwargs["online_enabled_before_update"] is True
 
