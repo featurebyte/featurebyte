@@ -115,13 +115,14 @@ class OfflineIngestGraphContainer:
             yield table_name, features
 
 
-class OfflineStoreFeatureTableManagerService:
+class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instance-attributes
     """
     OfflineStoreFeatureTableManagerService class
     """
 
     def __init__(
         self,
+        catalog_id: ObjectId,
         offline_store_feature_table_service: OfflineStoreFeatureTableService,
         feature_service: FeatureService,
         online_store_compute_query_service: OnlineStoreComputeQueryService,
@@ -131,6 +132,7 @@ class OfflineStoreFeatureTableManagerService:
         feast_registry_service: FeastRegistryService,
         feature_list_service: FeatureListService,
     ):
+        self.catalog_id = catalog_id
         self.offline_store_feature_table_service = offline_store_feature_table_service
         self.feature_service = feature_service
         self.online_store_compute_query_service = online_store_compute_query_service
@@ -323,7 +325,7 @@ class OfflineStoreFeatureTableManagerService:
         feast_registry = await self.feast_registry_service.get_feast_registry_for_catalog()
         if feast_registry is None:
             await self.feast_registry_service.create_document(
-                FeastRegistryCreate(project_name="featurebyte", feature_lists=feature_lists)
+                FeastRegistryCreate(project_name=str(self.catalog_id), feature_lists=feature_lists)
             )
         else:
             await self.feast_registry_service.update_document(
