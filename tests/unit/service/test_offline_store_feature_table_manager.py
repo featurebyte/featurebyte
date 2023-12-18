@@ -92,6 +92,7 @@ async def check_feast_registry(app_container, expected_feature_views, expected_f
     feature_store = await app_container.feast_feature_store_service.get_feast_feature_store(
         feast_registry.id
     )
+    assert feature_store.project == str(app_container.catalog_id)
     assert {fv.name for fv in feature_store.list_feature_views()} == expected_feature_views
     assert {fs.name for fs in feature_store.list_feature_services()} == expected_feature_services
 
