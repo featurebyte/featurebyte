@@ -8,12 +8,13 @@ import tempfile
 from bson import ObjectId
 from feast import FeatureStore, RepoConfig
 from feast.infra.online_stores.redis import RedisOnlineStoreConfig
-from feast.repo_config import RegistryConfig
+from feast.repo_config import FeastConfigBaseModel, RegistryConfig
 
 from featurebyte.feast.model.feature_store import FeatureStoreDetailsWithFeastConfiguration
 from featurebyte.feast.service.registry import FeastRegistryService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.utils.credential import MongoBackedCredentialProvider
+from featurebyte.utils.messaging import REDIS_URI
 
 
 class FeastFeatureStoreService:
@@ -85,7 +86,7 @@ class FeastFeatureStoreService:
                 offline_store=feature_store_details.details.get_offline_store_config(
                     credential=database_credential
                 ),
-                online_store=RedisOnlineStoreConfig(connection_string="localhost:6379"),
+                online_store=self.get_default_online_store(),
             )
             return cast(FeatureStore, FeatureStore(config=repo_config))
 
@@ -101,3 +102,13 @@ class FeastFeatureStoreService:
         if feast_registry is None:
             return None
         return await self.get_feast_feature_store(feast_registry_id=feast_registry.id)
+
+    def get_default_online_store(self) -> FeastConfigBaseModel:
+        """
+        Get default online store configuration
+
+        Returns
+        -------
+        FeastConfigBaseModel
+        """
+        return RedisOnlineStoreConfig(connection_string=REDIS_URI.replace("redis://", ""))
