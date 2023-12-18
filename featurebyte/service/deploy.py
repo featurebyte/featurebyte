@@ -196,14 +196,16 @@ class DeployService(OpsServiceMixin):
         # revert all online enabled status back before raising exception
         for feature_id, online_enabled in feature_online_enabled_map.items():
             async with self.persistent.start_transaction():
+                document_before_update = await self.feature_service.get_document(
+                    document_id=feature_id,
+                )
                 document = await self.online_enable_service.update_feature(
                     feature_id=feature_id,
                     online_enabled=online_enabled,
                 )
-            # move update warehouse and backfill tiles to outside of transaction
             await self.online_enable_service.update_data_warehouse(
                 updated_feature=document,
-                online_enabled_before_update=online_enabled,
+                online_enabled_before_update=document_before_update.online_enabled,
             )
 
         # update feature list namespace again

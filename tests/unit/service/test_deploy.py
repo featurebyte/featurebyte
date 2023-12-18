@@ -254,6 +254,19 @@ async def test_update_deployment_error__state_is_reverted_when_update_feature_li
     assert feature_list.online_enabled_feature_ids == []
     assert feature_list_namespace.deployed_feature_list_ids == []
 
+    # check update_data_warehouse is provided with the right parameters during revert
+    assert mock_update_data_warehouse.call_count == 2
+
+    # check the first call (enabling)
+    args, kwargs = mock_update_data_warehouse.call_args_list[0]
+    assert kwargs["updated_feature"].online_enabled is True
+    assert kwargs["online_enabled_before_update"] is False
+
+    # check the second call (disabling during revert)
+    args, kwargs = mock_update_data_warehouse.call_args_list[1]
+    assert kwargs["updated_feature"].online_enabled is False
+    assert kwargs["online_enabled_before_update"] is True
+
 
 @pytest.mark.asyncio
 async def test_update_deployment_error__state_is_reverted_when_update_feature_is_failed(
