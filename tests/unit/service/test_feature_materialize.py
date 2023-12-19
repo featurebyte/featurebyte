@@ -330,3 +330,42 @@ async def test_initialize_new_columns__table_exists(
     feature_view = kwargs.pop("feature_view")
     assert feature_view.name == "fb_entity_cust_id_fjs_1800_300_600_ttl"
     assert kwargs == {"columns": ["sum_30m"], "end_date": datetime(2022, 10, 15, 10, 0, 0)}
+
+
+@pytest.mark.usefixtures("mock_get_feature_store_session")
+@pytest.mark.asyncio
+async def test_drop_columns(
+    feature_materialize_service,
+    mock_snowflake_session,
+    offline_store_feature_table,
+    update_fixtures,
+):
+    """
+    Test drop_columns
+    """
+    await feature_materialize_service.drop_columns(offline_store_feature_table, ["a", "b"])
+    queries = extract_session_executed_queries(mock_snowflake_session, "execute_query")
+    assert_equal_with_expected_fixture(
+        queries,
+        "tests/fixtures/feature_materialize/drop_columns.sql",
+        update_fixtures,
+    )
+
+
+@pytest.mark.usefixtures("mock_get_feature_store_session")
+@pytest.mark.asyncio
+async def test_drop_table(
+    feature_materialize_service,
+    mock_snowflake_session,
+    offline_store_feature_table,
+):
+    """
+    Test drop_columns
+    """
+    await feature_materialize_service.drop_table(offline_store_feature_table)
+    assert mock_snowflake_session.drop_table.call_args == call(
+        offline_store_feature_table.name,
+        schema_name="sf_schema",
+        database_name="sf_db",
+        if_exists=True,
+    )

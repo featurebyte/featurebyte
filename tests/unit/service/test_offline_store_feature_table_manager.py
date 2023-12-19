@@ -22,14 +22,14 @@ def always_enable_feast_integration_fixture(enable_feast_integration):
 
 @pytest_asyncio.fixture
 async def deployed_float_feature(
-    app_container, float_feature, mock_update_data_warehouse, mock_initialize_new_columns
+    app_container, float_feature, mock_update_data_warehouse, mock_feature_materialize_service
 ):
     """
     Fixture for deployed float feature
     """
     _ = mock_update_data_warehouse
     out = await deploy_feature(app_container, float_feature)
-    assert mock_initialize_new_columns.call_count == 1
+    assert mock_feature_materialize_service["initialize_new_columns"].call_count == 1
     return out
 
 
@@ -225,6 +225,7 @@ async def test_feature_table_undeploy(
     periodic_task_service,
     deployed_float_feature,
     deployed_float_feature_post_processed,
+    mock_feature_materialize_service,
     update_fixtures,
 ):
     """
@@ -273,12 +274,19 @@ async def test_feature_table_undeploy(
         update_fixtures,
     )
 
+    # Check drop_columns called
+    args, _ = mock_feature_materialize_service["drop_columns"].call_args
+    assert args[0].name == "fb_entity_cust_id_fjs_1800_300_600_ttl"
+    assert args[1] == ["sum_1d"]
+
     # Check online disabling the last feature deletes the feature table
     undeploy_feature(deployed_float_feature_post_processed)
     feature_tables = await get_all_feature_tables(document_service)
     assert len(feature_tables) == 0
     assert not await has_scheduled_task(periodic_task_service, feature_table)
 
+    args, _ = mock_feature_materialize_service["drop_table"].call_args
+    assert args[0].name == "fb_entity_cust_id_fjs_1800_300_600_ttl"
     await check_feast_registry(
         app_container,
         expected_feature_views=set(),
