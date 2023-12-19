@@ -112,8 +112,10 @@ def test_feature__ttl_and_non_ttl_components(float_feature, non_time_based_featu
     fv_global_state = offline_store_info.extract_on_demand_feature_view_code_generation()
     on_demand_feature_view_codes = fv_global_state.generate_code()
     expected = """
+    import ast
     import numpy as np
     import pandas as pd
+    import scipy as sp
 
 
     def on_demand_feature_view(inputs: pd.DataFrame) -> pd.DataFrame:
@@ -183,8 +185,10 @@ def test_feature__request_column_ttl_and_non_ttl_components(
     fv_global_state = offline_store_info.extract_on_demand_feature_view_code_generation()
     on_demand_feature_view_codes = fv_global_state.generate_code()
     expected = """
+    import ast
     import numpy as np
     import pandas as pd
+    import scipy as sp
 
 
     def on_demand_feature_view(inputs: pd.DataFrame) -> pd.DataFrame:
@@ -262,8 +266,10 @@ def test_feature__ttl_item_aggregate_request_column(
     fv_global_state = offline_store_info.extract_on_demand_feature_view_code_generation()
     on_demand_feature_view_codes = fv_global_state.generate_code()
     expected = """
+    import ast
     import numpy as np
     import pandas as pd
+    import scipy as sp
 
 
     def on_demand_feature_view(inputs: pd.DataFrame) -> pd.DataFrame:
@@ -322,8 +328,10 @@ def test_feature__input_has_mixed_ingest_graph_node_flags(
     fv_global_state = offline_store_info.extract_on_demand_feature_view_code_generation()
     on_demand_feature_view_codes = fv_global_state.generate_code()
     expected = """
+    import ast
     import numpy as np
     import pandas as pd
+    import scipy as sp
 
 
     def on_demand_feature_view(inputs: pd.DataFrame) -> pd.DataFrame:

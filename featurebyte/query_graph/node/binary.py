@@ -2,7 +2,7 @@
 This module contains binary operation node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import List, Literal, Sequence
+from typing import List, Literal, Sequence, Tuple
 
 from pydantic import Field
 
@@ -14,7 +14,14 @@ from featurebyte.query_graph.node.base import (
     BinaryLogicalOpNode,
     BinaryRelationalOpNode,
 )
+from featurebyte.query_graph.node.metadata.config import OnDemandViewCodeGenConfig
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
+from featurebyte.query_graph.node.metadata.sdk_code import (
+    ExpressionStr,
+    StatementT,
+    VariableNameGenerator,
+    VarNameExpressionInfo,
+)
 
 
 class AndNode(BinaryLogicalOpNode):
@@ -183,3 +190,21 @@ class IsInNode(BaseSeriesOutputWithAScalarParamNode):
 
     def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand}.isin({right_operand})"
+
+    def _derive_on_demand_view_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandViewCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        if len(node_inputs) == 1:
+            return super()._derive_on_demand_view_code(node_inputs, var_name_generator, config)
+
+        # handle case when right_operand is a dictionary feature
+        input_var_name_expressions = self._assert_no_info_dict(node_inputs)
+        left_op: str = input_var_name_expressions[0].as_input()
+        right_op: str = input_var_name_expressions[1].as_input()
+        expr = ExpressionStr(
+            f"{left_op}.combine({right_op}, lambda x, y: False if not x or not y else x in y)"
+        )
+        return [], expr

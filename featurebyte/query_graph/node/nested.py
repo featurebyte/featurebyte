@@ -35,6 +35,7 @@ from featurebyte.query_graph.node.metadata.operation import (
 from featurebyte.query_graph.node.metadata.sdk_code import (
     ClassEnum,
     CodeGenerationContext,
+    ExpressionStr,
     ObjectClass,
     StatementT,
     VariableNameGenerator,
@@ -144,25 +145,6 @@ class CleaningGraphNodeParameters(BaseGraphNodeParameters):
         raise RuntimeError("Not implemented")
 
 
-class BaseOfflineStoreIngestQueryGraphNodeParameters(BaseGraphNodeParameters, ABC):
-    """
-    Base class used for offline store ingest query graph node parameters
-    """
-
-    output_column_name: str
-    primary_entity_ids: List[PydanticObjectId]
-
-    def derive_sdk_code(
-        self,
-        input_var_name_expressions: List[VarNameExpressionInfo],
-        var_name_generator: VariableNameGenerator,
-        operation_structure: OperationStructure,
-        config: SDKCodeGenConfig,
-        node_name: str,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        raise RuntimeError("Not implemented")
-
-
 class AggregationNodeInfo(FeatureByteBaseModel):
     """
     AggregationNodeInfo class stores information about the aggregation-type node.
@@ -185,14 +167,26 @@ class OfflineStoreMetadata(FeatureByteBaseModel):
     output_dtype: DBVarType
 
 
-class OfflineStoreIngestQueryGraphNodeParameters(
-    OfflineStoreMetadata, BaseOfflineStoreIngestQueryGraphNodeParameters
-):
-    """GraphNode (type:offline_store_ingest_query) parameters"""
+class OfflineStoreIngestQueryGraphNodeParameters(OfflineStoreMetadata, BaseGraphNodeParameters):
+    """
+    Base class used for offline store ingest query graph node parameters
+    """
 
     type: Literal[GraphNodeType.OFFLINE_STORE_INGEST_QUERY] = Field(
         GraphNodeType.OFFLINE_STORE_INGEST_QUERY, const=True
     )
+    output_column_name: str
+    primary_entity_ids: List[PydanticObjectId]
+
+    def derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: SDKCodeGenConfig,
+        node_name: str,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        raise RuntimeError("Not implemented")
 
 
 ViewMetadataT = TypeVar("ViewMetadataT", bound="ViewMetadata")
@@ -644,5 +638,12 @@ class BaseGraphNode(BasePrunableNode):
         if self.parameters.output_dtype in DBVarType.supported_timestamp_types():
             var_name = var_name_generator.convert_to_variable_name("feat", node_name=self.name)
             expression = get_object_class_from_function_call("pd.to_datetime", expr)
+            return [(var_name, expression)], var_name
+        if self.parameters.output_dtype == DBVarType.OBJECT:
+            var_name = var_name_generator.convert_to_variable_name("feat", node_name=self.name)
+            expression = get_object_class_from_function_call(
+                f"{expr}.apply",
+                ExpressionStr("lambda x: np.nan if pd.isna(x) else ast.literal_eval(x)"),
+            )
             return [(var_name, expression)], var_name
         return [], expr
