@@ -69,8 +69,16 @@ def features_fixture(event_table):
     feature_4 = feature_1 + feature_3 + fb.RequestColumn.point_in_time().dt.day.sin()
     feature_4.name = "EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE"
 
+    # Feature without entity
+    feature_5 = filtered_event_view.groupby([]).aggregate_over(
+        None,
+        method="count",
+        windows=["7d"],
+        feature_names=["EXTERNAL_FS_COUNT_OVERALL_7d"],
+    )["EXTERNAL_FS_COUNT_OVERALL_7d"]
+
     # Save all features to be deployed
-    features = [feature_1, feature_2, feature_3, feature_4]
+    features = [feature_1, feature_2, feature_3, feature_4, feature_5]
     for feature in features:
         feature.save()
         feature.update_readiness("PRODUCTION_READY")
