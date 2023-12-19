@@ -322,13 +322,19 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
 
         # Get aggregate result tables
         filtered_table_names = []
-        query_filter = {
-            "table_name": {"$in": aggregate_result_table_names},
-            "serving_names": {
-                "$all": primary_entity_serving_names,
-                "$size": len(primary_entity_serving_names),
-            },
-        }
+        if primary_entity_serving_names:
+            query_filter = {
+                "table_name": {"$in": aggregate_result_table_names},
+                "serving_names": {
+                    "$all": primary_entity_serving_names,
+                    "$size": len(primary_entity_serving_names),
+                },
+            }
+        else:
+            query_filter = {
+                "table_name": {"$in": aggregate_result_table_names},
+            }
+
         async for online_store_compute_query_model in self.online_store_compute_query_service.list_documents_iterator(
             query_filter=query_filter
         ):

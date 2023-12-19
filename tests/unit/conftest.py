@@ -1556,6 +1556,24 @@ def multiple_scd_joined_feature_fixture(
     yield feature
 
 
+@pytest.fixture(name="feature_without_entity")
+def feature_without_entity_fixture(snowflake_event_table):
+    """
+    Fixture to get a feature without entity
+    """
+    event_view = snowflake_event_table.get_view()
+    feature_group = event_view.groupby([]).aggregate_over(
+        value_column=None,
+        method="count",
+        windows=["1d"],
+        feature_job_setting=FeatureJobSetting(
+            frequency="24h", time_modulo_frequency="1h", blind_spot="2h"
+        ),
+        feature_names=["count_1d"],
+    )
+    yield feature_group["count_1d"]
+
+
 @pytest.fixture(name="session_manager")
 def session_manager_fixture(credentials, snowflake_connector):
     """

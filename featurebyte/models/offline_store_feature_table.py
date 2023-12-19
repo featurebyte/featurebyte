@@ -23,6 +23,7 @@ from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureCluster
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import quoted_identifier
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 
@@ -54,6 +55,11 @@ class WindowAggregateEntityUniverse(FeatureByteBaseModel):
         -------
         Select
         """
+        if not self.serving_names:
+            return expressions.select(
+                expressions.alias_(make_literal_value(1), "dummy_entity", quoted=True)
+            )
+
         assert len(self.aggregate_result_table_names) > 0
 
         # select distinct serving names across all aggregation result tables
