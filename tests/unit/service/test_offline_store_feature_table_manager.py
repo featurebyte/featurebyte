@@ -53,6 +53,21 @@ async def deployed_float_feature_different_job_setting(
     return await deploy_feature(app_container, float_feature_different_job_setting)
 
 
+@pytest_asyncio.fixture
+async def deployed_feature_without_entity(
+    app_container,
+    feature_without_entity,
+    mock_update_data_warehouse,
+    mock_feature_materialize_service,
+):
+    """
+    Fixture for deployed feature without entity
+    """
+    _ = mock_update_data_warehouse
+    _ = mock_feature_materialize_service
+    return await deploy_feature(app_container, feature_without_entity)
+
+
 @pytest.fixture
 def document_service(app_container):
     """
@@ -383,4 +398,57 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
             "fb_entity_cust_id_fjs_1800_300_600_ttl",
         },
         expected_feature_services={"sum_24h_every_3h_list", "sum_1d_list"},
+    )
+
+
+@pytest.mark.asyncio
+async def test_feature_table_without_entity(
+    app_container,
+    document_service,
+    periodic_task_service,
+    deployed_feature_without_entity,
+    update_fixtures,
+):
+    """
+    Test feature table creation when feature has no entity
+    """
+    feature_tables = await get_all_feature_tables(document_service)
+    assert len(feature_tables) == 1
+    feature_table = feature_tables["fb_entity_overall_fjs_86400_3600_7200_ttl"]
+
+    feature_table_dict = feature_table.dict(
+        by_alias=True, exclude={"created_at", "updated_at", "id"}
+    )
+    _ = feature_table_dict.pop("feature_cluster")
+    assert feature_table_dict == {
+        "block_modification_by": [],
+        "catalog_id": ObjectId("646f6c1c0ed28a5271fb02db"),
+        "description": None,
+        "entity_universe": {
+            "aggregate_result_table_names": [
+                "online_store_e4d5f4dff76dea2d344a4cc284d7881e0b183981"
+            ],
+            "serving_names": [],
+            "type": "window_aggregate",
+        },
+        "feature_ids": [deployed_feature_without_entity.id],
+        "feature_job_setting": {
+            "blind_spot": "7200s",
+            "frequency": "86400s",
+            "time_modulo_frequency": "3600s",
+        },
+        "has_ttl": True,
+        "last_materialized_at": None,
+        "name": "fb_entity_overall_fjs_86400_3600_7200_ttl",
+        "output_column_names": ["count_1d"],
+        "output_dtypes": ["FLOAT"],
+        "primary_entity_ids": [],
+        "serving_names": [],
+        "user_id": ObjectId("63f9506dd478b94127123456"),
+    }
+    assert await has_scheduled_task(periodic_task_service, feature_table)
+    await check_feast_registry(
+        app_container,
+        expected_feature_views={"fb_entity_overall_fjs_86400_3600_7200_ttl"},
+        expected_feature_services={"count_1d_list"},
     )
