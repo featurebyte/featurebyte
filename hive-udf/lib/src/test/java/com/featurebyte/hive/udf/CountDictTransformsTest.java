@@ -22,6 +22,9 @@ public class CountDictTransformsTest {
       ObjectInspectorFactory.getStandardMapObjectInspector(
           PrimitiveObjectInspectorFactory.writableStringObjectInspector,
           PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
+
+  private final ObjectInspector nullValueOI =
+      PrimitiveObjectInspectorFactory.writableVoidObjectInspector;
   private final ObjectInspector stringValueOI =
       PrimitiveObjectInspectorFactory.javaStringObjectInspector;
   private final ObjectInspector boolValueOI =
@@ -95,6 +98,16 @@ public class CountDictTransformsTest {
     GenericUDF.DeferredObject[] args = {new GenericUDF.DeferredJavaObject(countDict)};
     IntWritable output = (IntWritable) udf.evaluate(args);
     assertEquals(output.get(), 10);
+  }
+
+  @Test
+  public void testCountDictNumUniqueNullArg() throws HiveException {
+    CountDictNumUnique udf = new CountDictNumUnique();
+    ObjectInspector[] arguments = {nullValueOI};
+    udf.initialize(arguments);
+    GenericUDF.DeferredObject[] args = {new GenericUDF.DeferredJavaObject(null)};
+    IntWritable output = (IntWritable) udf.evaluate(args);
+    assertEquals(output.get(), 0);
   }
 
   @Test

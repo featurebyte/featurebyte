@@ -1,7 +1,6 @@
 package com.featurebyte.hive.udf;
 
 import static com.featurebyte.hive.udf.UDFUtils.isNullOI;
-import static com.featurebyte.hive.udf.UDFUtils.nullOI;
 
 import java.util.Map;
 import org.apache.hadoop.hive.ql.exec.Description;
@@ -20,16 +19,15 @@ public class CountDictNumUnique extends CountDictUDF {
   @Override
   public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
     checkArgsSize(arguments, 1, 1);
-    if (isNullOI(arguments[0])) {
-      return nullOI;
+    if (!isNullOI(arguments[0])) {
+      checkTypesAndInitialize(arguments);
     }
-    checkTypesAndInitialize(arguments);
     return PrimitiveObjectInspectorFactory.writableIntObjectInspector;
   }
 
   @Override
   public Object evaluate(DeferredObject[] arguments) throws HiveException {
-    if (arguments[0].get() == null) {
+    if (arguments[0] == null || arguments[0].get() == null) {
       output.set(0);
       return output;
     }
