@@ -407,7 +407,6 @@ async def test_feature_table_without_entity(
     document_service,
     periodic_task_service,
     deployed_feature_without_entity,
-    update_fixtures,
 ):
     """
     Test feature table creation when feature has no entity
