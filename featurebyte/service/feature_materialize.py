@@ -232,6 +232,8 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
 
         # Feast online materialize
         feature_store = await self._get_feast_feature_store()
+        if feature_store is None:
+            return
         materialize_partial(
             feature_store=feature_store,
             feature_view=feature_store.get_feature_view(feature_table_model.name),
@@ -301,13 +303,14 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
 
         # Feast online materialize. Start date is not set because these are new columns.
         feature_store = await self._get_feast_feature_store()
-        materialize_partial(
-            feature_store=feature_store,
-            feature_view=feature_store.get_feature_view(feature_table_model.name),
-            columns=materialized_features.column_names,
-            end_date=materialize_end_date,
-            with_feature_timestamp=feature_table_model.has_ttl,
-        )
+        if feature_store is not None:
+            materialize_partial(
+                feature_store=feature_store,
+                feature_view=feature_store.get_feature_view(feature_table_model.name),
+                columns=materialized_features.column_names,
+                end_date=materialize_end_date,
+                with_feature_timestamp=feature_table_model.has_ttl,
+            )
 
     async def drop_columns(
         self, feature_table_model: OfflineStoreFeatureTableModel, column_names: List[str]
@@ -351,17 +354,18 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
             if_exists=True,
         )
 
-    async def _get_feast_feature_store(self) -> FeastFeatureStore:
+    async def _get_feast_feature_store(self) -> Optional[FeastFeatureStore]:
         """
         Get the FeastFeatureStore object
 
         Returns
         -------
-        FeastFeatureStore
+        Optional[FeastFeatureStore]
             FeastFeatureStore object
         """
         feast_registry = await self.feast_registry_service.get_feast_registry_for_catalog()
-        assert feast_registry is not None
+        if feast_registry is None:
+            return None
         return await self.feast_feature_store_service.get_feast_feature_store(feast_registry.id)
 
     async def _get_session(self, feature_table_model: OfflineStoreFeatureTableModel) -> BaseSession:

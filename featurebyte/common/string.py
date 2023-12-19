@@ -1,6 +1,7 @@
 """
 String utilities.
 """
+import unicodedata
 
 
 def sanitize_identifier(string: str) -> str:
@@ -17,6 +18,9 @@ def sanitize_identifier(string: str) -> str:
     str
         A sanitized version of the string suitable as a database identifier.
     """
+    # Normalize unicode characters if any
+    string = unicodedata.normalize("NFKD", string)
+
     # Remove invalid characters
     sanitized = "".join(char for char in string if char.isalnum() or char == "_")
 
