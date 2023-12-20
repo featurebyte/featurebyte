@@ -157,28 +157,23 @@ More data warehouses will be supported soon!
 
 ![FeatureByte Architecture](https://github.com/featurebyte/featurebyte/blob/main/assets/images/system_architecture.png)
 The FeatureByte platform comprises the following components:
-- **FeatureByte SDK** (Python Package): Connects to the API service to provide feature authoring and management functionality through python classes and functions.
-- **FeatureByte Service** (Docker Containers):
-  - **API Service**: REST-API service that validates and executes requests, queries data warehouses, and stores data.
-  - **Worker**: Executes asynchronous or scheduled tasks.
+- **FeatureByte Client (SDK)**: Connects to the API service to provide feature authoring and management functionality through python classes and functions.
+- **FeatureByte Cluster** (Docker Containers / Kubernetes Pods):
+  - **API Service**: REST-API service that validates and executes requests, queries data warehouses.
+  - **Worker**: Executes asynchronous and scheduled tasks.
   - **MongoDB**: Store metadata for created assets.
-  - **Redis**: Broker and queue for workers, messenger service for publishing progress updates.
+  - **Redis**: Broker and queue for workers, notification queue.
+
 - **Query Graph Transpiler** (Python Package): Construct data transformation steps as a query graph, which can be transpiled to platform-specific SQL.
 - **Source Tables** (Data Warehouse): Tables used as data sources for feature engineering.
 - **Feature Store** (Data Warehouse): Database that store data used to support feature serving.
 
 ## FeatureByte Service Deployment Options
-The **FeatureByte Service** can be installed in three different modes:
+The **FeatureByte Cluster** can be deployed in three different modes:
 
-* **Local installation:** The easiest way to get started with the FeatureByte SDK. It is a single-user installation that can be used to prototype features locally with your data warehouse.
-
-
-* **Hosted on a single server:** A light-weight option to support collaboration and job scheduling with limited scalability and availability. Multiple users can connect to the service using the FeatureByte SDK, and deploy features for production.
-
-
-* **High availability installation (coming soon):** The recommended way to run the service in production. Scale to a large number of users and deployed features, and provide highly available services.
-
-The FeatureByte Service runs on **Docker** for the first two installation modes, and is deployed on a **Kubernetes Cluster** for the high availability installation mode.
++ **Tutorial mode**: Test FeatureByte against our pre-populated data warehouse. Refer to [Quick-Start Tutorial](https://docs.featurebyte.com/latest/get_started/tutorials/quick_start/) for more details.
++ **Local installation:** The easiest way to get started with the FeatureByte SDK. It is a single-user installation that can be used to prototype features locally with your data warehouse.
++ **High availability installation:** The recommended way to run the service in production. Please reach out to us at https://featurebyte.com for more details.
 
 Refer to the [installation](https://docs.featurebyte.com/latest/get_started/installation/) section of the documentation for more details.
 
