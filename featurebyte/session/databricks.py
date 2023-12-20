@@ -17,6 +17,7 @@ from bson import ObjectId
 from pydantic import Field, PrivateAttr
 
 from featurebyte import AccessTokenCredential, logging
+from featurebyte.common.utils import pa_table_to_record_batches
 from featurebyte.enum import SourceType
 from featurebyte.session.base_spark import BaseSparkSession
 
@@ -159,10 +160,14 @@ class DatabricksSession(BaseSparkSession):
         if schema:
             post_processor = ArrowTablePostProcessor(schema=schema)
             # fetch results in batches
+            counter = 0
             while True:
                 dataframe = post_processor.to_dataframe(cursor.fetchmany_arrow(size=1000))
                 arrow_table = pa.Table.from_pandas(dataframe)
                 if arrow_table.num_rows == 0:
+                    if counter == 0:
+                        yield pa_table_to_record_batches(arrow_table)[0]
                     break
                 for record_batch in arrow_table.to_batches():
+                    counter += 1
                     yield record_batch
