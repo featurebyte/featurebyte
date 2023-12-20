@@ -3,6 +3,8 @@ Vector node module
 """
 from typing import List, Literal, Sequence, Tuple
 
+import textwrap
+
 from pydantic import Field
 
 from featurebyte.enum import DBVarType
@@ -13,6 +15,7 @@ from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.node.metadata.sdk_code import (
     CodeGenerationContext,
     ExpressionStr,
+    StatementStr,
     StatementT,
     VariableNameGenerator,
     VarNameExpressionInfo,
@@ -60,5 +63,32 @@ class VectorCosineSimilarityNode(BaseSeriesOutputNode):
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        # TODO: implement this (DEV-2797)
-        raise NotImplementedError()
+        statements: List[StatementT] = []
+        input_var_name_expressions = self._assert_no_info_dict(node_inputs)
+        func_name = "vector_cosine_similarity"
+        if func_name not in var_name_generator.var_name_counter:
+            # add custom function if it doesn't exist
+            func_name = var_name_generator.convert_to_variable_name(
+                variable_name_prefix=func_name, node_name=None
+            )
+            func_string = f"""
+            def {func_name}(vec1, vec2):
+                if not isinstance(vec1, (np.ndarray, list)) and pd.isna(vec1):
+                    return 0
+                if not isinstance(vec2, (np.ndarray, list)) and pd.isna(vec2):
+                    return 0
+                if len(vec1) != len(vec2):
+                    raise ValueError("Vector lengths must be equal")
+                if len(vec1) == 0 or len(vec2) == 0:
+                    return 0
+
+                dot_product = np.dot(vec1, vec2)
+                magnitude = np.linalg.norm(vec1) * np.linalg.norm(vec2)
+                return dot_product / magnitude if magnitude != 0 else np.nan
+            """
+            statements.append(StatementStr(textwrap.dedent(func_string)))
+
+        left_operand = input_var_name_expressions[0].as_input()
+        right_operand = input_var_name_expressions[1].as_input()
+        expr = ExpressionStr(f"{left_operand}.combine({right_operand}, {func_name})")
+        return statements, expr

@@ -3,6 +3,8 @@ Distance node module
 """
 from typing import List, Literal, Sequence, Tuple
 
+import textwrap
+
 from pydantic import BaseModel, Field
 
 from featurebyte.enum import DBVarType
@@ -13,13 +15,15 @@ from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.node.metadata.sdk_code import (
     ClassEnum,
     CodeGenerationContext,
+    ExpressionStr,
+    StatementStr,
     StatementT,
     VariableNameGenerator,
     VarNameExpressionInfo,
 )
 
 
-class Haversine(BaseSeriesOutputNode):
+class HaversineNode(BaseSeriesOutputNode):
     """Haversine class"""
 
     class Parameters(BaseModel):
@@ -70,5 +74,31 @@ class Haversine(BaseSeriesOutputNode):
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        # TODO: implement this (DEV-2797)
-        raise NotImplementedError()
+        statements: List[StatementT] = []
+        input_var_name_expressions = self._assert_no_info_dict(node_inputs)
+        func_name = "haversine_distance"
+        if func_name not in var_name_generator.var_name_counter:
+            # add custom function if it doesn't exist
+            func_name = var_name_generator.convert_to_variable_name(
+                variable_name_prefix=func_name, node_name=None
+            )
+            func_string = f"""
+            def {func_name}(lat1, lon1, lat2, lon2):
+                R = 6371.0
+                lat1_rad, lon1_rad = np.radians(lat1), np.radians(lon1)
+                lat2_rad, lon2_rad = np.radians(lat2), np.radians(lon2)
+                dlat = lat2_rad - lat1_rad
+                dlon = lon2_rad - lon1_rad
+                a = np.sin(dlat / 2)**2 + np.cos(lat1_rad) * np.cos(lat2_rad) * np.sin(dlon / 2)**2
+                c = 2 * np.arcsin(np.sqrt(a))
+                distance = R * c
+                return distance
+            """
+            statements.append(StatementStr(textwrap.dedent(func_string)))
+
+        lat_1 = input_var_name_expressions[0]
+        lon_1 = input_var_name_expressions[1]
+        lat_2 = input_var_name_expressions[2]
+        lon_2 = input_var_name_expressions[3]
+        dist_expr = ExpressionStr(f"haversine_distance({lat_1}, {lon_1}, {lat_2}, {lon_2})")
+        return statements, dist_expr
