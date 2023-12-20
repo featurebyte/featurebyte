@@ -205,7 +205,7 @@ class CountDictTransformNode(BaseCountDictOpNode):
         extreme_value_key_expr = get_object_class_from_function_call(
             f"{count_dict_var_name}.apply",
             ExpressionStr(
-                f"lambda x: min([key for key, value in x.items() if value == {operation}(x.values())])"
+                f"lambda x: min([key for key, value in x.items() if value == {operation}(x.values())]) if x else np.nan"
             ),
         )
         extreme_value_key_var = var_name_generator.convert_to_variable_name(
@@ -286,7 +286,7 @@ class CosineSimilarityNode(BaseCountDictOpNode):
 
     def generate_odfv_expression(self, operand: str, other_operands: List[str]) -> str:
         lambda_func = (
-            "lambda d1, d2: None if pd.isna(d1) or pd.isna(d2) else cosine_similarity(d1, d2)"
+            "lambda d1, d2: np.nan if pd.isna(d1) or pd.isna(d2) else cosine_similarity(d1, d2)"
         )
         return f"{operand}.combine({other_operands[0]}, {lambda_func})"
 
@@ -305,6 +305,8 @@ class CosineSimilarityNode(BaseCountDictOpNode):
             )
             func_string = f"""
             def {func_name}(dict1, dict2):
+                if len(dict1) == 0 or len(dict2) == 0:
+                    return 0.0
                 all_keys = set(dict1.keys()).union(dict2.keys())
                 series1 = pd.Series(dict1).reindex(all_keys, fill_value=0)
                 series2 = pd.Series(dict2).reindex(all_keys, fill_value=0)
@@ -358,9 +360,10 @@ class DictionaryKeysNode(BaseSeriesOutputNode):
         statements: List[StatementT] = []
         input_var_name_expressions = self._assert_no_info_dict(node_inputs)
         var_name: str = input_var_name_expressions[0].as_input()
+        # make the missing value as empty list so that it can be handled by the IS_IN node
         keys_expr = get_object_class_from_function_call(
             f"{var_name}.apply",
-            ExpressionStr("lambda x: None if pd.isna(x) else list(x.keys())"),
+            ExpressionStr("lambda x: [] if pd.isna(x) else list(x.keys())"),
         )
         keys_var = var_name_generator.convert_to_variable_name(
             variable_name_prefix="feat_keys", node_name=None

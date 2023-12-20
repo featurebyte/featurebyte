@@ -31,6 +31,7 @@ def fixture_count_dict_feature1():
         [
             None,
             {"a": 1},
+            {},
             {"a": 1, "b": 1, "c": 1},
             {"a": 1, "b": 2, "c": 3, "__MISSING__": 4},
         ]
@@ -44,6 +45,7 @@ def fixture_count_dict_feature2():
         [
             {"a": 1},
             None,
+            {"b": 1},
             {"a": 1, "b": 1, "c": 1},
             {"a": 1, "b": 2},
         ]
@@ -73,6 +75,7 @@ def fixture_item_feature():
         [
             "a",
             None,
+            "a",
             "b",
             "d",
         ]
@@ -100,27 +103,27 @@ def fixture_rank_key_feat():
     [
         (
             {"parameters": {"transform_type": "entropy"}},
-            pd.Series([np.nan, 0, 1.098612, 1.279854]),
+            pd.Series([np.nan, 0, 0, 1.098612, 1.279854]),
         ),
         (
             {"parameters": {"transform_type": "most_frequent"}},
-            pd.Series([np.nan, "a", "a", "__MISSING__"]),
+            pd.Series([np.nan, "a", np.nan, "a", "__MISSING__"]),
         ),
         (
             {"parameters": {"transform_type": "key_with_highest_value"}},
-            pd.Series([np.nan, "a", "a", "__MISSING__"]),
+            pd.Series([np.nan, "a", np.nan, "a", "__MISSING__"]),
         ),
         (
             {"parameters": {"transform_type": "key_with_lowest_value"}},
-            pd.Series([np.nan, "a", "a", "a"]),
+            pd.Series([np.nan, "a", np.nan, "a", "a"]),
         ),
         (
             {"parameters": {"transform_type": "unique_count", "include_missing": True}},
-            pd.Series([np.nan, 1, 3, 4]),
+            pd.Series([np.nan, 1, 0, 3, 4]),
         ),
         (
             {"parameters": {"transform_type": "unique_count", "include_missing": False}},
-            pd.Series([np.nan, 1, 3, 3]),
+            pd.Series([np.nan, 1, 0, 3, 3]),
         ),
     ],
 )
@@ -194,7 +197,7 @@ def test_derive_on_demand_view_code__cosine_similarity(count_dict_feature1, coun
     exec_codes = codes + "\n\nout_df = on_demand_func(df)"
     exec(exec_codes, local_vars)
     out_df = local_vars["out_df"]
-    expected_values = pd.Series([np.nan, np.nan, 1.0, 0.408248], name="feature")
+    expected_values = pd.Series([np.nan, np.nan, 0.0, 1.0, 0.408248], name="feature")
     pd.testing.assert_series_equal(out_df["feature"], expected_values)
 
 
@@ -242,7 +245,7 @@ def test_derive_on_demand_view_code__dictionary_keys(count_dict_feature1, item_f
     exec_codes = codes + "\n\nout_df = on_demand_func(df)"
     exec(exec_codes, local_vars)
     out_df = local_vars["out_df"]
-    expected_values = pd.Series([False, False, True, False], name="feature")
+    expected_values = pd.Series([False, False, False, True, False], name="feature")
     pd.testing.assert_series_equal(out_df["feature"], expected_values)
 
 
@@ -281,7 +284,7 @@ def test_derive_on_demand_view_code__dictionary_get_value(count_dict_feature1, i
     exec_codes = codes + "\n\nout_df = on_demand_func(df)"
     exec(exec_codes, local_vars)
     out_df = local_vars["out_df"]
-    expected_values = pd.Series([None, None, 1.0, None], name="feature")
+    expected_values = pd.Series([None, None, None, 1.0, None], name="feature")
     pd.testing.assert_series_equal(out_df["feature"], expected_values)
 
     # test on one operand & one scalar value
@@ -303,7 +306,7 @@ def test_derive_on_demand_view_code__dictionary_get_value(count_dict_feature1, i
     exec_codes = codes + "\n\nout_df = on_demand_func(df)"
     exec(exec_codes, local_vars)
     out_df = local_vars["out_df"]
-    expected_values = pd.Series([None, None, 1.0, 2.0], name="feature")
+    expected_values = pd.Series([None, None, None, 1.0, 2.0], name="feature")
     pd.testing.assert_series_equal(out_df["feature"], expected_values)
 
 

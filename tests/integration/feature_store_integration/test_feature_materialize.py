@@ -77,8 +77,34 @@ def features_fixture(event_table):
         feature_names=["EXTERNAL_FS_COUNT_OVERALL_7d"],
     )["EXTERNAL_FS_COUNT_OVERALL_7d"]
 
+    # Dict feature
+    cross_aggregate_feature1 = event_view.groupby(
+        "ÜSER ID", category="PRODUCT_ACTION"
+    ).aggregate_over(
+        "ÀMOUNT",
+        method="sum",
+        windows=["7d"],
+        feature_names=["amount_sum_across_action_7d"],
+    )[
+        "amount_sum_across_action_7d"
+    ]
+
+    cross_aggregate_feature2 = event_view.groupby(
+        ["CUST_ID"], category="PRODUCT_ACTION"
+    ).aggregate_over(
+        "ÀMOUNT",
+        method="sum",
+        windows=["24d"],
+        feature_names=["amount_sum_across_action_24d"],
+    )[
+        "amount_sum_across_action_24d"
+    ]
+
+    feature_6 = cross_aggregate_feature1.cd.cosine_similarity(cross_aggregate_feature2)
+    feature_6.name = "EXTERNAL_FS_COSINE_SIMILARITY"
+
     # Save all features to be deployed
-    features = [feature_1, feature_2, feature_3, feature_4, feature_5]
+    features = [feature_1, feature_2, feature_3, feature_4, feature_5, feature_6]
     for feature in features:
         feature.save()
         feature.update_readiness("PRODUCTION_READY")
@@ -143,6 +169,7 @@ async def check_feast_registry(app_container):
     assert {fv.name for fv in feature_store.list_feature_views()} == {
         "fb_entity_overall_fjs_3600_1800_1800_ttl",
         "fb_entity_product_action_fjs_3600_1800_1800_ttl",
+        "fb_entity_cust_id_fjs_3600_1800_1800_ttl",
         "fb_entity_üserid_fjs_3600_1800_1800_ttl",
     }
     assert {fs.name for fs in feature_store.list_feature_services()} == {"EXTERNAL_FS_FEATURE_LIST"}
@@ -154,6 +181,7 @@ async def check_feast_registry(app_container):
         entity_rows=[
             {
                 "üser id": 1,
+                "cust_id": 761,
                 "PRODUCT_ACTION": "detail",
                 "POINT_IN_TIME": pd.Timestamp("2001-01-02 12:00:00"),
             }
@@ -161,12 +189,14 @@ async def check_feast_registry(app_container):
     ).to_dict()
     assert online_features == {
         "üser id": ["1"],
+        "cust_id": ["761"],
         "PRODUCT_ACTION": ["detail"],
         "EXTERNAL_FS_COUNT_OVERALL_7d": [149.0],
         "EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d": [43.0],
         "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h": [475.38],
         "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100": [47538.0],
         "EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE": [519.2892974268257],
+        "EXTERNAL_FS_COSINE_SIMILARITY": [1],
     }
 
 
@@ -177,7 +207,7 @@ def check_online_features(deployment, config):
     """
     client = config.get_client()
 
-    entity_serving_names = [{"üser id": 1, "PRODUCT_ACTION": "detail"}]
+    entity_serving_names = [{"üser id": 1, "cust_id": 761, "PRODUCT_ACTION": "detail"}]
     data = OnlineFeaturesRequestPayload(entity_serving_names=entity_serving_names)
 
     tic = time.time()
@@ -192,12 +222,14 @@ def check_online_features(deployment, config):
         "features": [
             {
                 "üser id": "1",
+                "cust_id": "761",
                 "PRODUCT_ACTION": "detail",
                 "EXTERNAL_FS_COUNT_OVERALL_7d": 149.0,
                 "EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d": 43.0,
                 "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h": 475.38,
                 "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100": 47538.0,
                 "EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE": 519.2892974268257,
+                "EXTERNAL_FS_COSINE_SIMILARITY": 1,
             }
         ]
     }
@@ -209,6 +241,7 @@ async def test_feature_materialize_service(
     app_container,
     session,
     user_entity,
+    customer_entity,
     product_action_entity,
     deployed_feature_list,
     config,
@@ -229,6 +262,7 @@ async def test_feature_materialize_service(
     assert set(primary_entity_to_feature_table.keys()) == {
         (),
         (user_entity.id,),
+        (customer_entity.id,),
         (product_action_entity.id,),
     }
 
@@ -248,6 +282,7 @@ async def test_feature_materialize_service(
         "üser id",
         "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100",
         "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h",
+        "__EXTERNAL_FS_COSINE_SIMILARITY__part0",
         "__EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE__part0",
     ]
     assert set(df.columns.tolist()) == set(expected)
