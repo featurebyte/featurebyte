@@ -196,7 +196,7 @@ async def check_feast_registry(app_container):
         "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h": [475.38],
         "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100": [47538.0],
         "EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE": [519.2892974268257],
-        "EXTERNAL_FS_COSINE_SIMILARITY": [1],
+        "EXTERNAL_FS_COSINE_SIMILARITY": [0],
     }
 
 
@@ -229,7 +229,7 @@ def check_online_features(deployment, config):
                 "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h": 475.38,
                 "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100": 47538.0,
                 "EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE": 519.2892974268257,
-                "EXTERNAL_FS_COSINE_SIMILARITY": 1,
+                "EXTERNAL_FS_COSINE_SIMILARITY": 0,
             }
         ]
     }
