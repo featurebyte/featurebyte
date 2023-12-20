@@ -15,7 +15,6 @@ from sqlglot import expressions, parse_one
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node.metadata.operation import ViewDataColumn
-from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.ast.base import ExpressionNode, TableNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
