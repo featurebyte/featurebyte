@@ -169,7 +169,7 @@ class OfflineStoreMetadata(FeatureByteBaseModel):
 
 class OfflineStoreIngestQueryGraphNodeParameters(OfflineStoreMetadata, BaseGraphNodeParameters):
     """
-    Base class used for offline store ingest query graph node parameters
+    Class used for offline store ingest query graph node parameters
     """
 
     type: Literal[GraphNodeType.OFFLINE_STORE_INGEST_QUERY] = Field(
