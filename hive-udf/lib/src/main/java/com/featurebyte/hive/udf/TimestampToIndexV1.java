@@ -24,7 +24,7 @@ import org.apache.hadoop.io.LongWritable;
         "Example:\n"
             + "  > SELECT F_TIMESTAMP_TO_INDEX('2020-10-05 10:00:00', 0, 120, 60);\n"
             + "  444970\n")
-public class TimestampToIndex extends GenericUDF {
+public class TimestampToIndexV1 extends GenericUDF {
   private IntWritable output = new IntWritable();
   private transient Converter[] converters = new Converter[4];
   private transient PrimitiveCategory[] inputTypes = new PrimitiveCategory[4];

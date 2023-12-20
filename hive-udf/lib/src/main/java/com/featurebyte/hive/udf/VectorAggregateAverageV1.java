@@ -23,9 +23,9 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
     name = "vector_aggregate_average",
     value = "_FUNC_(x) - Aggregate vectors by taking the average")
 @SuppressWarnings("deprecation")
-public class VectorAggregateAverage extends AbstractGenericUDAFResolver {
+public class VectorAggregateAverageV1 extends AbstractGenericUDAFResolver {
 
-  public VectorAggregateAverage() {}
+  public VectorAggregateAverageV1() {}
 
   public GenericUDAFEvaluator getEvaluator(GenericUDAFParameterInfo info) throws SemanticException {
     ObjectInspector firstParameter = getObjectInspector(info);

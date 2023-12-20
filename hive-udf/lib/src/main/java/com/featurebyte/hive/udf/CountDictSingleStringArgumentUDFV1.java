@@ -6,7 +6,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 
-public abstract class CountDictSingleStringArgumentUDF extends CountDictUDF {
+public abstract class CountDictSingleStringArgumentUDFV1 extends CountDictUDFV1 {
 
   protected final transient PrimitiveObjectInspector.PrimitiveCategory[] stringInputTypes =
       new PrimitiveObjectInspector.PrimitiveCategory[1];

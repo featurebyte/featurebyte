@@ -9,7 +9,7 @@ import org.apache.hadoop.io.Text;
 @Description(
     name = "F_COUNT_DICT_MOST_FREQUENT",
     value = "_FUNC_(counts) - compute most frequent value from count dictionary")
-public class CountDictMostFrequent extends CountDictMostFrequentKeyValue {
+public class CountDictMostFrequentV1 extends CountDictMostFrequentKeyValueV1 {
   private final Text output = new Text();
 
   public ObjectInspector getOutputOI() {

@@ -25,7 +25,7 @@ import org.apache.hadoop.io.Text;
         "Example:\n"
             + "  > SELECT F_INDEX_TO_TIMESTAMP(27585172, 15, 25, 1);\n"
             + "  \"2022-06-13T08:51:50.000Z\"\n")
-public class IndexToTimestamp extends GenericUDF {
+public class IndexToTimestampV1 extends GenericUDF {
   private final Text output = new Text();
   private final transient Converter[] converters = new Converter[4];
   private final transient PrimitiveCategory[] inputTypes = new PrimitiveCategory[4];

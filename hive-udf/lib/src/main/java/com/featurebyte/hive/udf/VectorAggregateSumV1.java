@@ -5,9 +5,9 @@ import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
 
 @Description(name = "vector_aggregate_sum", value = "_FUNC_(x) - Aggregate vectors by summing them")
-public class VectorAggregateSum extends BaseVectorAggregate {
+public class VectorAggregateSumV1 extends BaseVectorAggregateV1 {
 
-  public VectorAggregateSum() {}
+  public VectorAggregateSumV1() {}
 
   public GenericUDAFEvaluator getEvaluator() {
     return new VectorAggregateSumEvaluator();

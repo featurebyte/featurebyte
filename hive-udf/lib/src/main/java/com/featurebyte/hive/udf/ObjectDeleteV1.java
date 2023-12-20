@@ -10,7 +10,7 @@ import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 
 @Description(name = "object_delete", value = "_FUNC_(counts) - remove a key from count dictionary")
-public class ObjectDelete extends CountDictSingleStringArgumentUDF {
+public class ObjectDeleteV1 extends CountDictSingleStringArgumentUDFV1 {
 
   @Override
   public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {

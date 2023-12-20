@@ -10,7 +10,7 @@ import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.io.Text;
 
-public abstract class CountDictMostFrequentKeyValue extends CountDictUDF {
+public abstract class CountDictMostFrequentKeyValueV1 extends CountDictUDFV1 {
 
   protected final Text outputKey = new Text();
   protected final DoubleWritable outputValue = new DoubleWritable();

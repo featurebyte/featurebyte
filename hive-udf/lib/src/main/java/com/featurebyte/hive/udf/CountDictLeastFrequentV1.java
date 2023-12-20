@@ -10,7 +10,7 @@ import org.apache.hadoop.io.Text;
     name = "F_COUNT_DICT_LEAST_FREQUENT",
     value =
         "_FUNC_(counts) - compute least frequent key / key with lowest value from count dictionary")
-public class CountDictLeastFrequent extends CountDictMostFrequentKeyValue {
+public class CountDictLeastFrequentV1 extends CountDictMostFrequentKeyValueV1 {
   private final Text output = new Text();
 
   public ObjectInspector getOutputOI() {

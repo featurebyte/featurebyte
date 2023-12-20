@@ -27,7 +27,7 @@ public class VectorCosineSimilarityTest {
     List<Integer> inputOne = new ArrayList<>(Arrays.asList(1, 2, 3));
     List<Double> inputTwo = new ArrayList<>(Arrays.asList(1.0, 2.0, 3.0));
 
-    VectorCosineSimilarity udf = new VectorCosineSimilarity();
+    VectorCosineSimilarityV1 udf = new VectorCosineSimilarityV1();
     ObjectInspector[] arguments = {listValueOI, listValueOI};
     udf.initialize(arguments);
     GenericUDF.DeferredObject[] args = {

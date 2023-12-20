@@ -330,6 +330,7 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
 
     @property
     def current_working_schema_version(self) -> int:
+        # NOTE: Please also update the version in hive-udf/lib/build.gradle
         return 11
 
     @property
@@ -437,33 +438,33 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
         # To ensure functionality is updated for a function we should create a new class
         # and re-register the function with the new class
         udf_functions = [
-            ("F_VECTOR_COSINE_SIMILARITY", "com.featurebyte.hive.udf.VectorCosineSimilarity"),
-            ("VECTOR_AGGREGATE_MAX", "com.featurebyte.hive.udf.VectorAggregateMax"),
-            ("VECTOR_AGGREGATE_SUM", "com.featurebyte.hive.udf.VectorAggregateSum"),
-            ("VECTOR_AGGREGATE_AVG", "com.featurebyte.hive.udf.VectorAggregateAverage"),
+            ("F_VECTOR_COSINE_SIMILARITY", "com.featurebyte.hive.udf.VectorCosineSimilarityV1"),
+            ("VECTOR_AGGREGATE_MAX", "com.featurebyte.hive.udf.VectorAggregateMaxV1"),
+            ("VECTOR_AGGREGATE_SUM", "com.featurebyte.hive.udf.VectorAggregateSumV1"),
+            ("VECTOR_AGGREGATE_AVG", "com.featurebyte.hive.udf.VectorAggregateAverageV1"),
             (
                 "VECTOR_AGGREGATE_SIMPLE_AVERAGE",
-                "com.featurebyte.hive.udf.VectorAggregateSimpleAverage",
+                "com.featurebyte.hive.udf.VectorAggregateSimpleAverageV1",
             ),
-            ("OBJECT_AGG", "com.featurebyte.hive.udf.ObjectAggregate"),
-            ("OBJECT_DELETE", "com.featurebyte.hive.udf.ObjectDelete"),
-            ("F_TIMESTAMP_TO_INDEX", "com.featurebyte.hive.udf.TimestampToIndex"),
-            ("F_INDEX_TO_TIMESTAMP", "com.featurebyte.hive.udf.IndexToTimestamp"),
+            ("OBJECT_AGG", "com.featurebyte.hive.udf.ObjectAggregateV1"),
+            ("OBJECT_DELETE", "com.featurebyte.hive.udf.ObjectDeleteV1"),
+            ("F_TIMESTAMP_TO_INDEX", "com.featurebyte.hive.udf.TimestampToIndexV1"),
+            ("F_INDEX_TO_TIMESTAMP", "com.featurebyte.hive.udf.IndexToTimestampV1"),
             (
                 "F_COUNT_DICT_COSINE_SIMILARITY",
-                "com.featurebyte.hive.udf.CountDictCosineSimilarity",
+                "com.featurebyte.hive.udf.CountDictCosineSimilarityV1",
             ),
-            ("F_COUNT_DICT_ENTROPY", "com.featurebyte.hive.udf.CountDictEntropy"),
-            ("F_COUNT_DICT_MOST_FREQUENT", "com.featurebyte.hive.udf.CountDictMostFrequent"),
+            ("F_COUNT_DICT_ENTROPY", "com.featurebyte.hive.udf.CountDictEntropyV1"),
+            ("F_COUNT_DICT_MOST_FREQUENT", "com.featurebyte.hive.udf.CountDictMostFrequentV1"),
             (
                 "F_COUNT_DICT_MOST_FREQUENT_VALUE",
-                "com.featurebyte.hive.udf.CountDictMostFrequentValue",
+                "com.featurebyte.hive.udf.CountDictMostFrequentValueV1",
             ),
-            ("F_COUNT_DICT_LEAST_FREQUENT", "com.featurebyte.hive.udf.CountDictLeastFrequent"),
-            ("F_COUNT_DICT_NUM_UNIQUE", "com.featurebyte.hive.udf.CountDictNumUnique"),
-            ("F_GET_RELATIVE_FREQUENCY", "com.featurebyte.hive.udf.CountDictRelativeFrequency"),
-            ("F_GET_RANK", "com.featurebyte.hive.udf.CountDictRank"),
-            ("F_TIMEZONE_OFFSET_TO_SECOND", "com.featurebyte.hive.udf.TimezoneOffsetToSecond"),
+            ("F_COUNT_DICT_LEAST_FREQUENT", "com.featurebyte.hive.udf.CountDictLeastFrequentV1"),
+            ("F_COUNT_DICT_NUM_UNIQUE", "com.featurebyte.hive.udf.CountDictNumUniqueV1"),
+            ("F_GET_RELATIVE_FREQUENCY", "com.featurebyte.hive.udf.CountDictRelativeFrequencyV1"),
+            ("F_GET_RANK", "com.featurebyte.hive.udf.CountDictRankV1"),
+            ("F_TIMEZONE_OFFSET_TO_SECOND", "com.featurebyte.hive.udf.TimezoneOffsetToSecondV1"),
         ]
         for function_name, class_name in udf_functions:
             logger.debug(

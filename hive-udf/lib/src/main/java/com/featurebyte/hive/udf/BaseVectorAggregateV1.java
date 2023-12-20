@@ -17,9 +17,9 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 
 @SuppressWarnings("deprecation")
-public abstract class BaseVectorAggregate extends AbstractGenericUDAFResolver {
+public abstract class BaseVectorAggregateV1 extends AbstractGenericUDAFResolver {
 
-  public BaseVectorAggregate() {}
+  public BaseVectorAggregateV1() {}
 
   /**
    * Return the evaluator that will be used.

@@ -15,9 +15,9 @@ import org.apache.hadoop.hive.serde2.typeinfo.PrimitiveTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 
 @Description(name = "object_agg", value = "_FUNC_(x) - Aggregate objects")
-public class ObjectAggregate extends AbstractGenericUDAFResolver {
+public class ObjectAggregateV1 extends AbstractGenericUDAFResolver {
 
-  public ObjectAggregate() {}
+  public ObjectAggregateV1() {}
 
   @Override
   public GenericUDAFEvaluator getEvaluator(TypeInfo[] parameters) throws SemanticException {

@@ -13,7 +13,7 @@ import org.apache.hadoop.io.IntWritable;
 import org.junit.jupiter.api.Test;
 
 public class TimestampToIndexTest {
-  TimestampToIndex udf = new TimestampToIndex();
+  TimestampToIndexV1 udf = new TimestampToIndexV1();
 
   @Test
   public void testConvertTimestampToIndex() throws HiveException {

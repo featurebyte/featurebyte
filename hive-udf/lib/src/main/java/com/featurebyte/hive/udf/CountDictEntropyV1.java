@@ -12,53 +12,52 @@ import org.apache.hadoop.hive.serde2.objectinspector.*;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
 @Description(
-    name = "F_GET_RELATIVE_FREQUENCY",
-    value = "_FUNC_(counts, key) - compute relative frequency of a key in a dictionary")
-public class CountDictRelativeFrequency extends CountDictSingleStringArgumentUDF {
-
+    name = "F_COUNT_DICT_ENTROPY",
+    value = "_FUNC_(counts) - compute entropy value from count dictionary")
+public class CountDictEntropyV1 extends CountDictUDFV1 {
   private final DoubleWritable output = new DoubleWritable();
 
   @Override
   public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
-    // Input arguments: dictionary, key of interest
-    checkArgsSize(arguments, 2, 2);
+    checkArgsSize(arguments, 1, 1);
     if (isNullOI(arguments[0])) {
       return nullOI;
     }
-    if (isNullOI(arguments[1])) {
-      return nullOI;
-    }
-    // Map
     checkTypesAndInitialize(arguments);
     return PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
   }
 
   @Override
   public Object evaluate(DeferredObject[] arguments) throws HiveException {
-    if (arguments[0].get() == null || arguments[1].get() == null) {
+    if (arguments[0].get() == null) {
       return null;
     }
     Map<String, Object> counts = (Map<String, Object>) inputMapOI.getMap(arguments[0].get());
-    String key = getStringArgument(arguments);
-    if (!counts.containsKey(key)) {
-      output.set(0.0);
-      return output;
-    }
-    double keyValue = convertMapValueAsDouble(counts.get(key));
+    int index = 0;
     double total = 0.0;
+    double[] values = new double[counts.size()];
     for (Object value : counts.values()) {
       if (value != null) {
         double doubleValue = convertMapValueAsDouble(value);
         if (Double.isNaN((doubleValue))) continue;
         total += doubleValue;
+        values[index++] = doubleValue;
       }
     }
-    output.set(keyValue / total);
+
+    double entropy = 0.0;
+    int count_length = index;
+    for (index = 0; index < count_length; index++) {
+      double p = values[index] / total;
+      entropy += p * Math.log(p);
+    }
+    entropy *= -1.0;
+    output.set(entropy);
     return output;
   }
 
   @Override
   public String getDisplayString(String[] children) {
-    return "F_GET_RELATIVE_FREQUENCY";
+    return "F_COUNT_DICT_ENTROPY";
   }
 }

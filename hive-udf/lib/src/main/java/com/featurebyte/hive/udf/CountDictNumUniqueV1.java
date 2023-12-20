@@ -13,7 +13,7 @@ import org.apache.hadoop.io.IntWritable;
 @Description(
     name = "F_COUNT_DICT_NUM_UNIQUE",
     value = "_FUNC_(counts) - compute number of unique keys in count dictionary")
-public class CountDictNumUnique extends CountDictUDF {
+public class CountDictNumUniqueV1 extends CountDictUDFV1 {
   private final IntWritable output = new IntWritable();
 
   @Override
