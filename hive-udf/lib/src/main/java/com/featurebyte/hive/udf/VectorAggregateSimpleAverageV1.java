@@ -14,9 +14,9 @@ import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
 @Description(
     name = "vector_aggregate_simple_average",
     value = "_FUNC_(x) - Aggregate vectors by finding the average value")
-public class VectorAggregateSimpleAverage extends BaseVectorAggregate {
+public class VectorAggregateSimpleAverageV1 extends BaseVectorAggregateV1 {
 
-  public VectorAggregateSimpleAverage() {}
+  public VectorAggregateSimpleAverageV1() {}
 
   protected static class AverageAggregationBuffer
       extends GenericUDAFEvaluator.AbstractAggregationBuffer {

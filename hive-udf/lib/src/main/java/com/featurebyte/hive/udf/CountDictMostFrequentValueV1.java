@@ -9,7 +9,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 @Description(
     name = "F_COUNT_DICT_MOST_FREQUENT_VALUE",
     value = "_FUNC_(counts) - compute most frequent value from count dictionary")
-public class CountDictMostFrequentValue extends CountDictMostFrequentKeyValue {
+public class CountDictMostFrequentValueV1 extends CountDictMostFrequentKeyValueV1 {
 
   private final DoubleWritable output = new DoubleWritable();
 

@@ -7,9 +7,9 @@ import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
 @Description(
     name = "vector_aggregate_max",
     value = "_FUNC_(x) - Aggregate vectors by selecting the maximum value")
-public class VectorAggregateMax extends BaseVectorAggregate {
+public class VectorAggregateMaxV1 extends BaseVectorAggregateV1 {
 
-  public VectorAggregateMax() {}
+  public VectorAggregateMaxV1() {}
 
   protected GenericUDAFEvaluator getEvaluator() {
     return new VectorAggregateMaxEvaluator();

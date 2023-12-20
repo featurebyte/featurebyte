@@ -5,8 +5,8 @@ import java.util.List;
 
 public class VectorAggregateMaxTest extends BaseVectorAggregateListTest {
 
-  protected BaseVectorAggregate getAggregator() {
-    return new VectorAggregateMax();
+  protected BaseVectorAggregateV1 getAggregator() {
+    return new VectorAggregateMaxV1();
   }
 
   protected List<Double> getResults() {

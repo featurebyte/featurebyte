@@ -10,7 +10,7 @@ import org.apache.hadoop.io.IntWritable;
 import org.junit.jupiter.api.Test;
 
 public class TimezoneOffsetToSecondTest {
-  TimezoneOffsetToSecond udf = new TimezoneOffsetToSecond();
+  TimezoneOffsetToSecondV1 udf = new TimezoneOffsetToSecondV1();
 
   @Test
   public void testConvertTimestampToIndex_1() throws HiveException {

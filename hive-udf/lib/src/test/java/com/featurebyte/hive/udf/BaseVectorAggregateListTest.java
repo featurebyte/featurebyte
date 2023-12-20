@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
 @SuppressWarnings("deprecation")
 public abstract class BaseVectorAggregateListTest {
 
-  protected abstract BaseVectorAggregate getAggregator();
+  protected abstract BaseVectorAggregateV1 getAggregator();
 
   /**
    * getResults should return the final aggregated result. Input is hardcoded into the test, so
@@ -31,7 +31,7 @@ public abstract class BaseVectorAggregateListTest {
           ObjectInspectorFactory.getStandardListObjectInspector(
               PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
         };
-    BaseVectorAggregate udaf = getAggregator();
+    BaseVectorAggregateV1 udaf = getAggregator();
     SimpleGenericUDAFParameterInfo info =
         new SimpleGenericUDAFParameterInfo(doubleOI, false, false, false);
     GenericUDAFEvaluator eval1 = udaf.getEvaluator(info);
@@ -55,7 +55,7 @@ public abstract class BaseVectorAggregateListTest {
         new ObjectInspector[] {
           ObjectInspectorFactory.getStandardListObjectInspector(listElementOI),
         };
-    BaseVectorAggregate udaf = getAggregator();
+    BaseVectorAggregateV1 udaf = getAggregator();
     SimpleGenericUDAFParameterInfo info =
         new SimpleGenericUDAFParameterInfo(listOI, false, false, false);
     GenericUDAFEvaluator eval1 = udaf.getEvaluator(info);

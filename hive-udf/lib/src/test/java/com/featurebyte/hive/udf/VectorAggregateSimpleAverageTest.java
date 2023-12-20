@@ -5,8 +5,8 @@ import java.util.List;
 
 public class VectorAggregateSimpleAverageTest extends BaseVectorAggregateListTest {
 
-  protected BaseVectorAggregate getAggregator() {
-    return new VectorAggregateSimpleAverage();
+  protected BaseVectorAggregateV1 getAggregator() {
+    return new VectorAggregateSimpleAverageV1();
   }
 
   protected List<Double> getResults() {

@@ -15,7 +15,7 @@ import org.apache.hadoop.io.IntWritable;
     name = "F_TIMEZONE_OFFSET_TO_SECOND",
     value = "_FUNC_(timezoneOffsetString) - returns the number of seconds of timezone offset",
     extended = "Example:\n" + "  > SELECT F_TIMEZONE_OFFSET_TO_SECOND('+08:00');\n" + "  480\n")
-public class TimezoneOffsetToSecond extends GenericUDF {
+public class TimezoneOffsetToSecondV1 extends GenericUDF {
   private final IntWritable output = new IntWritable();
 
   protected final transient PrimitiveObjectInspector.PrimitiveCategory[] stringInputTypes =

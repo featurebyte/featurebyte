@@ -9,7 +9,7 @@ import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.*;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector.PrimitiveCategory;
 
-public abstract class CountDictUDF extends GenericUDF {
+public abstract class CountDictUDFV1 extends GenericUDF {
 
   protected transient MapObjectInspector inputMapOI;
 

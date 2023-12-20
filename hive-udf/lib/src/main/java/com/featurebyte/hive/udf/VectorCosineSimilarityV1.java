@@ -17,7 +17,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 @Description(
     name = "F_VECTOR_COSINE_SIMILARITY",
     value = "_FUNC_(counts) - compute cosine similarity between two arrays")
-public class VectorCosineSimilarity extends GenericUDF {
+public class VectorCosineSimilarityV1 extends GenericUDF {
 
   private transient ListObjectInspector firstListOI;
   private transient ListObjectInspector secondListOI;

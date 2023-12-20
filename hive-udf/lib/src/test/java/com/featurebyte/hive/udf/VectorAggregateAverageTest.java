@@ -22,7 +22,7 @@ public class VectorAggregateAverageTest {
               PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
           PrimitiveObjectInspectorFactory.javaLongObjectInspector,
         };
-    VectorAggregateAverage udaf = new VectorAggregateAverage();
+    VectorAggregateAverageV1 udaf = new VectorAggregateAverageV1();
     SimpleGenericUDAFParameterInfo info =
         new SimpleGenericUDAFParameterInfo(doubleOI, false, false, false);
     GenericUDAFEvaluator eval1 = udaf.getEvaluator(info);
