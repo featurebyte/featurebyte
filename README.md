@@ -125,21 +125,21 @@ Install FeatureByte SDK with pip:
 ```shell
 pip install featurebyte
 ```
-**Note**: To avoid potential conflicts with other packages it is strongly recommended to use a [virtual environment](https://docs.python.org/3/tutorial/venv.html) or a [conda environment](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html).
+**Note**: To avoid potential conflicts with other packages we strongly recommend using a [virtual environment](https://docs.python.org/3/tutorial/venv.html) or a [conda environment](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html).
 
-If you would like to use our Hosted Tutorial server, you can signup for access [here](https://tutorials.featurebyte.com/tutorial/sign-up).
-
-Alternatively, run the following python code to start the FeatureByte services locally with [Docker](https://docs.docker.com/engine/install/).
-
+Sign up for access to the Hosted Tutorial server [here](https://tutorials.featurebyte.com/tutorial/sign-up) and register your credentials with FeatureByte SDK:
 ``` python
 import featurebyte as fb
-fb.playground()
+
+# replace <api_token> with your API token you received after registering
+fb.register_tutorial_api_token("<api_token>")
 ```
-This will create a local Spark data warehouse with pre-populated data. Once the environment is ready, you can [download](https://docs.featurebyte.com/latest/get_started/tutorials/overview/#download-tutorials) and run notebooks from the [tutorials](https://docs.featurebyte.com/latest/get_started/tutorials/overview/) section.
+This will create a "tutorial" profile that uses the hosted tutorial server.
+You can now [download](https://docs.featurebyte.com/latest/get_started/tutorials/overview/#download-tutorials) and run notebooks from the [tutorials](https://docs.featurebyte.com/latest/get_started/tutorials/overview/) section.
 
 ## Leverage your data warehouse
 
-FeatureByte is developed to integrate seamlessly with your **Snowflake, Databricks, or Spark** data warehouses, enhancing security and efficiency by bypassing large-scale outbound data transfers. This integration allows feature calculations to be performed within the data warehouse, leveraging scalability, stability, and efficiency.
+FeatureByte integrates seamlessly with your **Snowflake, Databricks, or Spark** data warehouses, enhancing security and efficiency by bypassing large-scale outbound data transfers. This integration allows feature calculations to be performed within the data warehouse, leveraging scalability, stability, and efficiency.
 
 <div align="center">
   <img src="https://github.com/featurebyte/featurebyte/blob/main/assets/images/Data%20Warehouse.png" width="600" alt="Warehouse Diagram">
@@ -150,8 +150,6 @@ FeatureByte utilizes your data warehouse as a:
 * data source.
 * compute engine to leverage its scalability, stability, and efficiency.
 * storage of partial aggregates (tiles) and precomputed feature values to support feature serving.
-
-More data warehouses will be supported soon!
 
 ## Architecture
 
