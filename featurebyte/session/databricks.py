@@ -166,6 +166,7 @@ class DatabricksSession(BaseSparkSession):
                 arrow_table = pa.Table.from_pandas(dataframe)
                 if arrow_table.num_rows == 0:
                     if counter == 0:
+                        # return empty dataframe with correct schema
                         yield pa_table_to_record_batches(arrow_table)[0]
                     break
                 for record_batch in arrow_table.to_batches():
