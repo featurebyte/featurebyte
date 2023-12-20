@@ -202,16 +202,30 @@ class CountDictTransformNode(BaseCountDictOpNode):
         var_name_generator: VariableNameGenerator,
         operation: Literal["max", "min"] = "max",
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        statements: List[StatementT] = []
+        func_name = "extract_extreme_value"
+        if func_name not in var_name_generator.var_name_counter:
+            func_name = var_name_generator.convert_to_variable_name(
+                variable_name_prefix=func_name, node_name=None
+            )
+            func_string = f"""
+            def {func_name}(input_dict):
+                if pd.isna(input_dict) or len(input_dict) == 0:
+                    return np.nan
+                return min(
+                    [key for key, value in input_dict.items() if value == {operation}(input_dict.values())]
+                )
+            """
+            statements.append(StatementStr(textwrap.dedent(func_string)))
+
         extreme_value_key_expr = get_object_class_from_function_call(
             f"{count_dict_var_name}.apply",
-            ExpressionStr(
-                f"lambda x: min([key for key, value in x.items() if value == {operation}(x.values())]) if x else np.nan"
-            ),
+            ExpressionStr(func_name),
         )
         extreme_value_key_var = var_name_generator.convert_to_variable_name(
             variable_name_prefix=f"feat_key_with_{operation}", node_name=None
         )
-        statements: List[StatementT] = [(extreme_value_key_var, extreme_value_key_expr)]
+        statements.append((extreme_value_key_var, extreme_value_key_expr))
         return statements, extreme_value_key_var
 
     @staticmethod
@@ -466,7 +480,7 @@ class GetRankFromDictionaryNode(BaseCountDictOpNode):
             )
             func_string = f"""
             def {func_name}(input_dict, key, is_descending):
-                if input_dict is None or key not in input_dict:
+                if pd.isna(input_dict) or key not in input_dict:
                     return np.nan
                 sorted_values = sorted(input_dict.values(), reverse=is_descending)
                 return sorted_values.index(input_dict[key]) + 1
@@ -529,7 +543,7 @@ class GetRelativeFrequencyFromDictionaryNode(BaseCountDictOpNode):
             )
             func_string = f"""
             def {func_name}(input_dict, key):
-                if input_dict is None or key not in input_dict:
+                if pd.isna(input_dict) or key not in input_dict:
                     return np.nan
                 total_count = sum(input_dict.values())
                 if total_count == 0:

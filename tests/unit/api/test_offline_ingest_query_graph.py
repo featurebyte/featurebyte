@@ -7,7 +7,7 @@ import textwrap
 import pytest
 from bson import json_util
 
-from featurebyte import FeatureJobSetting, RequestColumn
+from featurebyte import Entity, FeatureJobSetting, RequestColumn
 from featurebyte.models.feature import FeatureModel
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.transform.offline_store_ingest import AggregationNodeInfo
@@ -341,6 +341,36 @@ def test_feature__input_has_mixed_ingest_graph_node_flags(
         return df
     """
     assert on_demand_feature_view_codes.strip() == textwrap.dedent(expected).strip()
+
+
+def test_feature__composite_count_dict(
+    snowflake_event_table_with_entity, feature_group_feature_job_setting
+):
+    """Test that a feature with composite count dict feature."""
+    another_entity = Entity.create(name="another_entity", serving_names=["another_entity"])
+    snowflake_event_table_with_entity.col_text.as_entity(another_entity.name)
+    event_view = snowflake_event_table_with_entity.get_view()
+    count_dict_feat1 = event_view.groupby("cust_id", category="col_char").aggregate_over(
+        method="count",
+        windows=["7d"],
+        feature_job_setting=feature_group_feature_job_setting,
+        feature_names=["counts_7d"],
+    )["counts_7d"]
+    count_dict_feat2 = event_view.groupby("col_text", category="col_char").aggregate_over(
+        method="count",
+        windows=["14d"],
+        feature_job_setting=feature_group_feature_job_setting,
+        feature_names=["counts_14d"],
+    )["counts_14d"]
+    feature = count_dict_feat1.cd.cosine_similarity(count_dict_feat2)
+    feature.name = "feature_cosine_similarity"
+    feature.save()
+
+    # check offline ingest query graph
+    feature_model = feature.cached_model
+    assert feature_model.offline_store_info.is_decomposed is True
+    check_decomposed_graph_output_node_hash(feature_model=feature_model)
+    check_on_demand_feature_view_code_generation(feature_model=feature_model)
 
 
 def test_feature__input_has_ingest_query_graph_node(test_dir):
