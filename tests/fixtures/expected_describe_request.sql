@@ -17,7 +17,10 @@ WITH data AS (
     F_COUNT_DICT_MOST_FREQUENT_VALUE(count_dict."COUNT_DICT") AS "freq__0"
   FROM (
     SELECT
-      OBJECT_AGG("col_float", "__FB_COUNTS") AS "COUNT_DICT"
+      OBJECT_AGG(
+        CASE WHEN "col_float" IS NULL THEN '__MISSING__' ELSE "col_float" END,
+        TO_VARIANT("__FB_COUNTS")
+      ) AS "COUNT_DICT"
     FROM (
       SELECT
         "col_float",
@@ -37,7 +40,10 @@ WITH data AS (
     F_COUNT_DICT_MOST_FREQUENT_VALUE(count_dict."COUNT_DICT") AS "freq__1"
   FROM (
     SELECT
-      OBJECT_AGG("col_text", "__FB_COUNTS") AS "COUNT_DICT"
+      OBJECT_AGG(
+        CASE WHEN "col_text" IS NULL THEN '__MISSING__' ELSE "col_text" END,
+        TO_VARIANT("__FB_COUNTS")
+      ) AS "COUNT_DICT"
     FROM (
       SELECT
         "col_text",
