@@ -78,16 +78,12 @@ def features_fixture(event_table):
     )["EXTERNAL_FS_COUNT_OVERALL_7d"]
 
     # Dict feature
-    cross_aggregate_feature1 = event_view.groupby(
-        "ÜSER ID", category="PRODUCT_ACTION"
-    ).aggregate_over(
+    feature_6 = event_view.groupby("ÜSER ID", category="PRODUCT_ACTION").aggregate_over(
         "ÀMOUNT",
         method="sum",
         windows=["7d"],
-        feature_names=["amount_sum_across_action_7d"],
-    )[
-        "amount_sum_across_action_7d"
-    ]
+        feature_names=["EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d"],
+    )["EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d"]
 
     cross_aggregate_feature2 = event_view.groupby(
         ["CUST_ID"], category="PRODUCT_ACTION"
@@ -100,11 +96,11 @@ def features_fixture(event_table):
         "amount_sum_across_action_24d"
     ]
 
-    feature_6 = cross_aggregate_feature1.cd.cosine_similarity(cross_aggregate_feature2)
-    feature_6.name = "EXTERNAL_FS_COSINE_SIMILARITY"
+    feature_7 = feature_6.cd.cosine_similarity(cross_aggregate_feature2)
+    feature_7.name = "EXTERNAL_FS_COSINE_SIMILARITY"
 
     # Save all features to be deployed
-    features = [feature_1, feature_2, feature_3, feature_4, feature_5, feature_6]
+    features = [feature_1, feature_2, feature_3, feature_4, feature_5, feature_6, feature_7]
     for feature in features:
         feature.save()
         feature.update_readiness("PRODUCTION_READY")
@@ -196,6 +192,11 @@ async def check_feast_registry(app_container):
         "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h": [475.38],
         "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100": [47538.0],
         "EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE": [519.2892974268257],
+        "EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d": [
+            '{\n  "__MISSING__": 2.347700000000000e+02,\n  "detail": 2.352400000000000e+02,\n  '
+            '"purchase": 2.257800000000000e+02,\n  "rëmove": 1.139000000000000e+01,\n  '
+            '"àdd": 3.385100000000000e+02\n}'
+        ],
         "EXTERNAL_FS_COSINE_SIMILARITY": [0],
     }
 
@@ -229,6 +230,12 @@ def check_online_features(deployment, config):
                 "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h": 475.38,
                 "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100": 47538.0,
                 "EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE": 519.2892974268257,
+                "EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d": (
+                    "{\n  "
+                    '"__MISSING__": 2.347700000000000e+02,\n  "detail": 2.352400000000000e+02,\n  '
+                    '"purchase": 2.257800000000000e+02,\n  "rëmove": 1.139000000000000e+01,\n  '
+                    '"àdd": 3.385100000000000e+02\n}'
+                ),
                 "EXTERNAL_FS_COSINE_SIMILARITY": 0,
             }
         ]
@@ -282,6 +289,7 @@ async def test_feature_materialize_service(
         "üser id",
         "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100",
         "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h",
+        "EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d",
         "__EXTERNAL_FS_COSINE_SIMILARITY__part0",
         "__EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE__part0",
     ]

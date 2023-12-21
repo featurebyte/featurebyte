@@ -566,15 +566,14 @@ def generate_column_data(var_type, row_number=10):
         return np.random.choice(["foo", "bar"], size=row_number)
     if var_type in DBVarType.BOOL:
         return np.random.choice([True, False], size=row_number)
-    if var_type in DBVarType.OBJECT:
+    if var_type in DBVarType.dictionary_types().union([DBVarType.FLAT_DICT]):
         selections = [
             None,
             np.nan,
-            "{}",
-            '{"foo": 1, "bar": 2}',
-            '{"bar": 2}',
-            '{"foo": 1}',
-            '{"foo": 1, "bar": 2, "baz": 3}',
+            json.dumps({}),
+            json.dumps({"foo": 1, "bar": 2}),
+            json.dumps({"你好": 1, "世界": 2}),
+            json.dumps({"foo": 1, "bar": 2, "baz": 3}),
         ]
         return np.random.choice(selections, size=row_number)
     raise ValueError(f"Unsupported var_type: {var_type}")
