@@ -7,8 +7,9 @@
     "details": {
       "account": "demo_account",
       "warehouse": "DEMO",
-      "database": "DEMO",
-      "sf_schema": "demo_schema"
+      "database_name": "DEMO",
+      "schema_name": "demo_schema",
+      "role_name": "TESTING"
     },
     "user_id": {
       "$oid": "64645f76cfc8e397f762c868"

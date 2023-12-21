@@ -22,9 +22,9 @@ def databricks_session_dict():
     return {
         "host": "some-databricks-hostname",
         "http_path": "some-databricks-http-endpoint",
-        "featurebyte_catalog": "hive_metastore",
-        "featurebyte_schema": "featurebyte",
-        "storage_spark_url": "http://some-url/bucket",
+        "catalog_name": "hive_metastore",
+        "schema_name": "featurebyte",
+        "storage_path": "dbfs:/some/path",
         "database_credential": {
             "type": "ACCESS_TOKEN",
             "access_token": "some-databricks-access-token",
@@ -133,8 +133,8 @@ def patched_databricks_session_cls_fixture(
     """Fixture for a patched session class"""
     with patch("featurebyte.session.databricks.DatabricksSession", autospec=True) as patched_class:
         mock_session_obj = patched_class.return_value
-        mock_session_obj.database_name = databricks_session_dict["featurebyte_catalog"]
-        mock_session_obj.schema_name = databricks_session_dict["featurebyte_schema"]
+        mock_session_obj.database_name = databricks_session_dict["catalog_name"]
+        mock_session_obj.schema_name = databricks_session_dict["schema_name"]
         yield patched_class
 
 

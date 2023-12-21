@@ -3,9 +3,9 @@ This module contains feature store & table schemas that are used in node paramet
 """
 from __future__ import annotations
 
-from typing import ClassVar, Optional, Union
+from typing import Any, ClassVar, Dict, Optional, Union
 
-from pydantic import Field, StrictStr
+from pydantic import Field, StrictStr, root_validator
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import DBVarType, SourceType, StorageType
@@ -27,8 +27,9 @@ class SnowflakeDetails(BaseDatabaseDetails):
     >>> details= fb.SnowflakeDetails(
     ...   account="<account>",
     ...   warehouse="snowflake",
-    ...   database="<database_name>",
-    ...   sf_schema="<schema_name>",
+    ...   database_name="<database_name>",
+    ...   schema_name="<schema_name>",
+    ...   role_name="<role_name>",
     ... )
     """
 
@@ -42,14 +43,30 @@ class SnowflakeDetails(BaseDatabaseDetails):
         "- For all regions on Microsoft Azure, use `<account>.<region>.azure.snowflakecomputing.com`"
     )
     warehouse: StrictStr = Field(
-        description="The name of the warehouse containing the schema tables and columns."
+        description="The name of default warehouse to use for computation."
     )
-    database: StrictStr = Field(
-        description="The name of the database containing the schema tables and columns."
+    database_name: StrictStr = Field(
+        description="The name of the database to use for creation of output tables."
     )
-    sf_schema: StrictStr = Field(
-        description="The name of the schema containing the database, tables and columns."
+    schema_name: StrictStr = Field(
+        description="The name of the schema to use for creation of output tables."
     )
+    role_name: StrictStr = Field(
+        description="The name of the role to use for creation of output tables.",
+        default="PUBLIC",
+    )
+
+    @root_validator(pre=True)
+    @classmethod
+    def _support_old_parameters(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        # support old parameters
+        database = values.get("database")
+        if database:
+            values["database_name"] = database
+        sf_schema = values.get("sf_schema")
+        if sf_schema:
+            values["schema_name"] = sf_schema
+        return values
 
 
 class SQLiteDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method
@@ -68,9 +85,10 @@ class DatabricksDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method
     >>> details = fb.DatabricksDetails(
     ...   host="<host_name>",
     ...   http_path="<http_path>",
-    ...   featurebyte_catalog="hive_metastore",
-    ...   featurebyte_schema="<schema_name>",
-    ...   storage_spark_url="dbfs:/FileStore/<schema_name>",
+    ...   catalog_name="hive_metastore",
+    ...   schema_name="<schema_name>",
+    ...   group_name="<group_name>",
+    ...   storage_path="dbfs:/FileStore/<schema_name>",
     ... )
     """
 
@@ -80,16 +98,31 @@ class DatabricksDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method
         description="Databricks host. This is typically the URL you use to go to to access your databricks environment."
     )
     http_path: StrictStr = Field(description="Databricks compute resource URL.")
-    featurebyte_catalog: StrictStr = Field(
-        description="Name of the database that holds metadata about the actual data. This is commonly filled as "
-        "`hive_metastore`."
+    catalog_name: StrictStr = Field(
+        description="The name of the catalog to use for creation of output tables."
     )
-    featurebyte_schema: StrictStr = Field(
-        description="The name of the schema containing the tables and columns."
+    schema_name: StrictStr = Field(
+        description="The name of the schema to use for creation of output tables."
     )
-    storage_spark_url: StrictStr = Field(
-        description="DBFS path where we will be reading our data from."
+    group_name: Optional[StrictStr] = Field(
+        description="The name of the group to use for creation of output tables."
     )
+    storage_path: StrictStr = Field(description="DBFS path to use for file storage.")
+
+    @root_validator(pre=True)
+    @classmethod
+    def _support_old_parameters(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        # support old parameters
+        featurebyte_catalog = values.get("featurebyte_catalog")
+        if featurebyte_catalog:
+            values["catalog_name"] = featurebyte_catalog
+        featurebyte_schema = values.get("featurebyte_schema")
+        if featurebyte_schema:
+            values["schema_name"] = featurebyte_schema
+        storage_spark_url = values.get("storage_spark_url")
+        if storage_spark_url:
+            values["storage_path"] = storage_spark_url
+        return values
 
 
 class SparkDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method
@@ -101,11 +134,11 @@ class SparkDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method
     >>> details = fb.SparkDetails(
     ...   host="<host>",
     ...   port=10003,
-    ...   featurebyte_catalog="spark_catalog",
-    ...   featurebyte_schema="<schema_name>",
+    ...   catalog_name="spark_catalog",
+    ...   schema_name="<schema_name>",
     ...   storage_type=fb.StorageType.S3,
     ...   storage_url="<storage_url>",
-    ...   storage_spark_url="gs://dataproc-cluster-staging/{<schema_name>}"
+    ...   storage_path="gs://dataproc-cluster-staging/{<schema_name>}"
     ... )
     """
 
@@ -128,18 +161,32 @@ class SparkDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method
         description="Storage type of where we will be persisting the feature store to."
     )
     storage_url: str = Field(description="URL of where we will be uploading our custom UDFs to.")
-    storage_spark_url: StrictStr = Field(
-        description="URL of where we will be reading our data from. Note that this technically points to the same "
+    storage_path: StrictStr = Field(
+        description="Path where we will be reading our data from. Note that this technically points to the same "
         "location as the storage_url. However, the format that the warehouse accepts differs between the read and "
         "write path, and as such, we require two fields."
     )
-    featurebyte_catalog: StrictStr = Field(
-        description="Name of the database that holds metadata about the actual data. This is commonly filled as "
-        "`hive_metastore`."
+    catalog_name: StrictStr = Field(
+        description="The name of the catalog to use for creation of output tables."
     )
-    featurebyte_schema: StrictStr = Field(
-        description="The name of the schema containing the tables and columns."
+    schema_name: StrictStr = Field(
+        description="The name of the schema to use for creation of output tables."
     )
+
+    @root_validator(pre=True)
+    @classmethod
+    def _support_old_parameters(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        # support old parameters
+        featurebyte_catalog = values.get("featurebyte_catalog")
+        if featurebyte_catalog:
+            values["catalog_name"] = featurebyte_catalog
+        featurebyte_schema = values.get("featurebyte_schema")
+        if featurebyte_schema:
+            values["schema_name"] = featurebyte_schema
+        storage_spark_url = values.get("storage_spark_url")
+        if storage_spark_url:
+            values["storage_path"] = storage_spark_url
+        return values
 
 
 class TestDatabaseDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method

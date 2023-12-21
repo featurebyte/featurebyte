@@ -81,8 +81,9 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         mock_get_session.return_value = SnowflakeSession(
             account="test_account",
             warehouse="test_warehouse",
-            database="test_database",
-            sf_schema="test_schema",
+            database_name="test_database",
+            schema_name="test_schema",
+            role_name="TESTING",
             database_credential={
                 "type": "USERNAME_PASSWORD",
                 "username": "test_username",

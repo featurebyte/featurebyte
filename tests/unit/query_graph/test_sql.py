@@ -89,8 +89,9 @@ def input_node_fixture():
         feature_store={
             "type": "snowflake",
             "details": {
-                "database": "db",
-                "sf_schema": "public",
+                "database_name": "db",
+                "schema_name": "public",
+                "role_name": "role",
             },
         },
     )
@@ -242,8 +243,9 @@ def test_make_input_node_escape_special_characters():
         "feature_store_details": {
             "type": "snowflake",
             "details": {
-                "database": "db",
-                "sf_schema": "public",
+                "database_name": "db",
+                "schema_name": "public",
+                "role_name": "role",
             },
         },
     }

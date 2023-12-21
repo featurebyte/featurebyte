@@ -37,14 +37,6 @@ class SQLiteSession(BaseSession):
 
         self._connection = sqlite3.connect(filename)
 
-    @property
-    def database_name(self) -> str:
-        raise NotImplementedError()
-
-    @property
-    def schema_name(self) -> str:
-        raise NotImplementedError()
-
     @classmethod
     def is_threadsafe(cls) -> bool:
         return False

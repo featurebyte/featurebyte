@@ -23,9 +23,9 @@ def test_s3_storage(config):
         http_path="cliservice",
         storage_type=StorageType.S3,
         storage_url="https://storage.googleapis.com/test/",
-        storage_spark_url="s3://test/",
-        featurebyte_catalog="spark_catalog",
-        featurebyte_schema="featurebyte",
+        storage_path="s3://test/",
+        catalog_name="spark_catalog",
+        schema_name="featurebyte",
     )
 
     # S3 Storage requires a credential
@@ -61,9 +61,9 @@ def test_gcs_storage(config):
         http_path="cliservice",
         storage_type=StorageType.GCS,
         storage_url="gs://test/",
-        storage_spark_url="gs://test/",
-        featurebyte_catalog="spark_catalog",
-        featurebyte_schema="featurebyte",
+        storage_path="gs://test/",
+        catalog_name="spark_catalog",
+        schema_name="featurebyte",
     )
 
     # GCS Storage requires a credential
