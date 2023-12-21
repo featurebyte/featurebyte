@@ -102,7 +102,7 @@ def test_feast_registry_construction__with_post_processing_features(
 
         # patch version of getsource() contains the import statements
         udf = feast_registry_proto.on_demand_feature_views[0].spec.user_defined_function
-        assert udf.body_text.startswith("import numpy as np\nimport pandas as pd")
+        assert udf.body_text.startswith("import json\nimport numpy as np\nimport pandas as pd\n")
 
 
 def test_feast_registry_construction(feast_registry_proto):

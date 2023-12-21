@@ -161,8 +161,10 @@ def test_code_generator__on_demand_view():
         codes.strip()
         == textwrap.dedent(
             """
+        import json
         import numpy as np
         import pandas as pd
+        import scipy as sp
 
 
         def on_demand_feature_view_func(input_df: pd.DataFrame) -> pd.DataFrame:

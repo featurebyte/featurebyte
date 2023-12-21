@@ -44,7 +44,10 @@ NODE_PARAMS = {"name": "node_name", "parameters": {"value": None}}
         (DivideNode(**NODE_PARAMS), "feat1 / feat2"),
         (ModuloNode(**NODE_PARAMS), "feat1 % feat2"),
         (PowerNode(**NODE_PARAMS), "feat1.pow(feat2)"),
-        (IsInNode(**NODE_PARAMS), "feat1.isin(feat2)"),
+        (
+            IsInNode(**NODE_PARAMS),
+            "feat1.combine(feat2, lambda x, y: False if not x or not y else x in y)",
+        ),
     ],
 )
 def test_derive_on_demand_view_code(node, expected_expr):
@@ -57,11 +60,19 @@ def test_derive_on_demand_view_code(node, expected_expr):
         var_name_generator=VariableNameGenerator(),
         config=config,
     )
-    assert statements == []
-    feat1 = pd.Series([1, 2, 3])
-    feat2 = pd.Series([1, 2, 3])
-    _ = feat1, feat2
+    if isinstance(node, IsInNode):
+        assert statements == [("feat", expected_expr)]
+        feat1 = pd.Series([1, 2, 3])
+        feat2 = pd.Series([[1], [1, 2], [1]])
+        _ = feat1, feat2
+        eval(expected_expr)
 
-    # check the expression can be evaluated & matches expected
-    eval(expr)
-    assert expr == expected_expr
+    else:
+        assert statements == []
+        feat1 = pd.Series([1, 2, 3])
+        feat2 = pd.Series([1, 2, 3])
+        _ = feat1, feat2
+
+        # check the expression can be evaluated & matches expected
+        eval(expr)
+        assert expr == expected_expr
