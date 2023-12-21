@@ -103,6 +103,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         feature_table_model: OfflineStoreFeatureTableModel,
         selected_columns: Optional[List[str]] = None,
         session: Optional[BaseSession] = None,
+        use_last_materialized_timestamp: bool = True,
     ) -> AsyncIterator[MaterializedFeatures]:
         """
         Materialise features for the provided offline store feature table.
@@ -115,6 +116,10 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
             Selected columns to materialize
         session: Optional[BaseSession]
             Session object
+        use_last_materialized_timestamp: bool
+            Whether to specify the last materialized timestamp of feature_table_model when creating
+            the entity universe. This is set to True on scheduled task, and False on initialization
+            of new columns.
 
         Yields
         ------
@@ -124,6 +129,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         # Create temporary batch request table with the universe of entities
         if session is None:
             session = await self._get_session(feature_table_model)
+
         unique_id = ObjectId()
         batch_request_table = TemporaryBatchRequestTable(
             table_details=TableDetails(
@@ -134,17 +140,22 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
             column_names=feature_table_model.serving_names,
         )
         adapter = get_sql_adapter(session.source_type)
+        feature_timestamp = datetime.utcnow()
         create_batch_request_table_query = sql_to_string(
             adapter.create_table_as(
                 table_details=batch_request_table.table_details,
-                select_expr=feature_table_model.entity_universe.get_entity_universe_expr(),
+                select_expr=feature_table_model.entity_universe.get_entity_universe_expr(
+                    current_feature_timestamp=feature_timestamp,
+                    last_materialized_timestamp=feature_table_model.last_materialized_at
+                    if use_last_materialized_timestamp
+                    else None,
+                ),
             ),
             source_type=session.source_type,
         )
         await session.execute_query_long_running(create_batch_request_table_query)
 
         # Materialize features
-        feature_timestamp = datetime.utcnow()
         output_table_details = TableDetails(
             database_name=session.database_name,
             schema_name=session.schema_name,
@@ -209,7 +220,9 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
             OfflineStoreFeatureTableModel object
         """
         session = await self._get_session(feature_table_model)
-        async with self.materialize_features(feature_table_model) as materialized_features:
+        async with self.materialize_features(
+            feature_table_model, use_last_materialized_timestamp=True
+        ) as materialized_features:
             await self._insert_into_feature_table(
                 session,
                 feature_table_model,
@@ -261,6 +274,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
             session=session,
             feature_table_model=feature_table_model,
             selected_columns=selected_columns,
+            use_last_materialized_timestamp=False,
         ) as materialized_features:
             if not has_existing_table:
                 # Create feature table is it doesn't exist yet

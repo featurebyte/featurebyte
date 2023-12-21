@@ -190,6 +190,9 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                 await self.offline_store_feature_table_service.create_document(feature_table_model)
 
             if feature_table_model is not None:
+                # Note: might need to defer updating feast registry till initialization is done to
+                # prevent concurrency issues (scheduled job started while new column's
+                # initialization is still in progress)
                 await self._create_or_update_feast_registry()
                 await self.feature_materialize_service.initialize_new_columns(feature_table_model)
                 await self.feature_materialize_scheduler_service.start_job_if_not_exist(

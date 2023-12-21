@@ -925,6 +925,17 @@ def transaction_entity_fixture(transaction_entity_id, catalog):
     yield entity
 
 
+@pytest.fixture(name="gender_entity")
+def gender_entity_fixture(catalog):
+    """
+    Gender entity fixture
+    """
+    _ = catalog
+    entity = Entity(name="gender", serving_names=["gender"])
+    entity.save()
+    yield entity
+
+
 @pytest.fixture(name="snowflake_event_table_with_entity")
 def snowflake_event_table_with_entity_fixture(
     snowflake_event_table,
@@ -1572,6 +1583,31 @@ def feature_without_entity_fixture(snowflake_event_table):
         feature_names=["count_1d"],
     )
     yield feature_group["count_1d"]
+
+
+@pytest.fixture(name="scd_lookup_feature")
+def scd_lookup_feature_fixture(snowflake_scd_table_with_entity):
+    """
+    Fixture to get a lookup feature from SCD table
+    """
+    scd_view = snowflake_scd_table_with_entity.get_view()
+    feature = scd_view["col_boolean"].as_feature("some_lookup_feature")
+    return feature
+
+
+@pytest.fixture(name="aggregate_asat_feature")
+def aggregate_asat_feature_fixture(snowflake_scd_table_with_entity, gender_entity):
+    """
+    Fixture to get a lookup feature from SCD table
+    """
+    snowflake_scd_table_with_entity["col_boolean"].as_entity(gender_entity.name)
+    scd_view = snowflake_scd_table_with_entity.get_view()
+    feature = scd_view.groupby("col_boolean").aggregate_asat(
+        value_column=None,
+        method="count",
+        feature_name="asat_gender_count",
+    )
+    return feature
 
 
 @pytest.fixture(name="session_manager")

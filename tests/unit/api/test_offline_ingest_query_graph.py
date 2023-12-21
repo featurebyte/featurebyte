@@ -224,7 +224,9 @@ def test_feature__multiple_non_ttl_components(
     ingest_query_graphs = offline_store_info.extract_offline_store_ingest_query_graphs()
     assert len(ingest_query_graphs) == 1
     non_ttl_component_graph = ingest_query_graphs[0]
-    assert non_ttl_component_graph.feature_job_setting is None
+    assert non_ttl_component_graph.feature_job_setting == FeatureJobSetting(
+        blind_spot="0s", frequency="1d", time_modulo_frequency="0s"
+    )
     assert non_ttl_component_graph.node_name == "alias_1"
     assert non_ttl_component_graph.has_ttl is False
     assert non_ttl_component_graph.aggregation_nodes_info == [
