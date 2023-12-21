@@ -14,6 +14,7 @@ from unittest.mock import Mock
 
 import numpy as np
 import pandas as pd
+import pytest
 from bson import ObjectId, json_util
 from pandas.core.dtypes.common import is_numeric_dtype
 from sqlglot import expressions
@@ -687,3 +688,19 @@ def tz_localize_if_needed(df, source_type):
         return
 
     df["POINT_IN_TIME"] = df["POINT_IN_TIME"].dt.tz_localize(None)
+
+
+def assert_dict_approx_equal(actual, expected):
+    """Assert two dicts are approximately equal"""
+    if isinstance(expected, dict):
+        assert actual.keys() == expected.keys()
+        for key in expected:
+            assert_dict_approx_equal(actual[key], expected[key])
+    elif isinstance(expected, list):
+        assert len(actual) == len(expected)
+        for act_item, exp_item in zip(actual, expected):
+            assert_dict_approx_equal(act_item, exp_item)
+    elif isinstance(expected, float):
+        assert actual == pytest.approx(expected)
+    else:
+        assert actual == expected

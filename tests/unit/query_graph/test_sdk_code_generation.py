@@ -9,7 +9,7 @@ from bson import ObjectId
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType
-from featurebyte.query_graph.node.distance import Haversine
+from featurebyte.query_graph.node.distance import HaversineNode
 from featurebyte.query_graph.node.generic import (
     AliasNode,
     AssignNode,
@@ -218,7 +218,7 @@ def test_haversine_node():
     """
     Test haversine node
     """
-    node = Haversine(name="haversine_1", parameters={})
+    node = HaversineNode(name="haversine_1", parameters={})
     statements, info = node.derive_sdk_code(
         node_inputs=[
             VariableNameStr("col1"),

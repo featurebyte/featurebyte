@@ -11,9 +11,10 @@ from unittest.mock import patch
 import pandas as pd
 import pytest
 
-from featurebyte import FeatureList, RecordRetrievalException
+from featurebyte import FeatureList
 from featurebyte.common.date_util import get_next_job_datetime
 from featurebyte.enum import InternalName
+from featurebyte.exception import RecordRetrievalException
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.online_store import OnlineFeatureSpec
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
