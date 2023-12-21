@@ -59,6 +59,40 @@ def test_will_pivoted_column_name_be_quoted(column_name, will_be_quoted):
 
 
 @pytest.mark.parametrize(
+    "dtype, expected",
+    [
+        (DBVarType.FLOAT, '"VALUE"'),
+        (DBVarType.OBJECT, 'TO_JSON("VALUE") AS "VALUE"'),
+        (DBVarType.STRUCT, 'TO_JSON("VALUE") AS "VALUE"'),
+        (DBVarType.ARRAY, 'TO_JSON("VALUE") AS "VALUE"'),
+    ],
+)
+def test_online_store_pivot_prepare_value_column(dtype, expected):
+    """
+    Test online_store_pivot_prepare_value_column for SnowflakeAdapter
+    """
+    actual = SnowflakeAdapter.online_store_pivot_prepare_value_column(dtype).sql()
+    assert actual == expected
+
+
+@pytest.mark.parametrize(
+    "dtype, expected",
+    [
+        (DBVarType.FLOAT, "\"'result'\""),
+        (DBVarType.OBJECT, "PARSE_JSON(\"'result'\")"),
+        (DBVarType.STRUCT, "PARSE_JSON(\"'result'\")"),
+        (DBVarType.ARRAY, "PARSE_JSON(\"'result'\")"),
+    ],
+)
+def test_online_store_pivot_finalise_value_column(dtype, expected):
+    """
+    Test online_store_pivot_finalise_value_column for SnowflakeAdapter
+    """
+    actual = SnowflakeAdapter.online_store_pivot_finalise_value_column("result", dtype).sql()
+    assert actual == expected
+
+
+@pytest.mark.parametrize(
     "percent, expected_format",
     [
         (10.01, "10.01"),

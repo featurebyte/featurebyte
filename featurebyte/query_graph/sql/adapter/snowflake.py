@@ -195,7 +195,7 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
         # In Snowflake, we use the MAX aggregation function when pivoting the online store table
         # which doesn't support OBJECT type. Therefore, we need to convert the OBJECT type to a
         # string type.
-        if dtype == DBVarType.OBJECT:
+        if dtype in DBVarType.dictionary_types() or dtype == DBVarType.ARRAY:
             return cast(
                 Expression,
                 alias_(
@@ -220,7 +220,7 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
         agg_result_name_expr = quoted_identifier(f"'{agg_result_name}'")
 
         # Convert string type to OBJECT type if needed
-        if dtype == DBVarType.OBJECT:
+        if dtype in DBVarType.dictionary_types() or dtype == DBVarType.ARRAY:
             return expressions.Anonymous(
                 this="PARSE_JSON",
                 expressions=[agg_result_name_expr],
