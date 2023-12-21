@@ -643,7 +643,7 @@ class BaseGraphNode(BasePrunableNode):
             var_name = var_name_generator.convert_to_variable_name("feat", node_name=self.name)
             expression = get_object_class_from_function_call(
                 f"{expr}.apply",
-                ExpressionStr("lambda x: np.nan if pd.isna(x) else ast.literal_eval(x)"),
+                ExpressionStr("lambda x: np.nan if pd.isna(x) else json.loads(x)"),
             )
             return [(var_name, expression)], var_name
         return [], expr

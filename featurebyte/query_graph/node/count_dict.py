@@ -2,7 +2,7 @@
 This module contains datetime operation related node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Callable, ClassVar, List, Literal, Optional, Sequence, Set, Tuple, Union
+from typing import Callable, ClassVar, Dict, List, Literal, Optional, Sequence, Set, Tuple, Union
 from typing_extensions import Annotated
 
 import textwrap  # pylint: disable=wrong-import-order
@@ -262,29 +262,21 @@ class CountDictTransformNode(BaseCountDictOpNode):
         statements, cd_var_name, mask_var = self._get_count_dict_and_mask_variables(
             node_inputs, var_name_generator
         )
-        if self.parameters.transform_type == "entropy":
-            entropy_statements, entropy_var = self._get_entropy(cd_var_name, var_name_generator)
-            statements.extend(entropy_statements)
-            return statements, ExpressionStr(f"{entropy_var}.reindex({mask_var}.index)")
-        if self.parameters.transform_type in {"most_frequent", "key_with_highest_value"}:
-            most_freq_statements, most_freq_var = self._get_extreme_value_key(
-                cd_var_name, var_name_generator, operation="max"
-            )
-            statements.extend(most_freq_statements)
-            return statements, ExpressionStr(f"{most_freq_var}.reindex({mask_var}.index)")
-        if self.parameters.transform_type in {"key_with_lowest_value"}:
-            least_freq_statements, least_freq_var = self._get_extreme_value_key(
-                cd_var_name, var_name_generator, operation="min"
-            )
-            statements.extend(least_freq_statements)
-            return statements, ExpressionStr(f"{least_freq_var}.reindex({mask_var}.index)")
+        include_missing = False
         if isinstance(self.parameters, self.UniqueCountParameters):
-            unique_count_statements, unique_count_var = self._get_unique_count(
-                cd_var_name, var_name_generator, self.parameters.include_missing
-            )
-            statements.extend(unique_count_statements)
-            return statements, ExpressionStr(f"{unique_count_var}.reindex({mask_var}.index)")
-        raise NotImplementedError()
+            include_missing = self.parameters.include_missing
+        transform_type_to_func: Dict[str, Callable] = {
+            "entropy": self._get_entropy,
+            "most_frequent": lambda var, gen: self._get_extreme_value_key(var, gen, "max"),
+            "key_with_highest_value": lambda var, gen: self._get_extreme_value_key(var, gen, "max"),
+            "key_with_lowest_value": lambda var, gen: self._get_extreme_value_key(var, gen, "min"),
+            "unique_count": lambda var, gen: self._get_unique_count(var, gen, include_missing),
+        }
+        op_statements, var_name = transform_type_to_func[self.parameters.transform_type](
+            cd_var_name, var_name_generator
+        )
+        statements.extend(op_statements)
+        return statements, ExpressionStr(f"{var_name}.reindex({mask_var}.index)")
 
 
 class CosineSimilarityNode(BaseCountDictOpNode):
