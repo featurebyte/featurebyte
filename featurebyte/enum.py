@@ -229,6 +229,17 @@ class DBVarType(StrEnum):
         """
         return {cls.ARRAY, cls.EMBEDDING}
 
+    @classmethod
+    def json_conversion_types(cls) -> set[DBVarType]:
+        """
+        Types for json conversion
+
+        Returns
+        -------
+        set[DBVarType]
+        """
+        return cls.dictionary_types().union({cls.FLAT_DICT}).union(cls.array_types())
+
     def to_type_str(self) -> str | None:
         """
         Convert DBVarType to internal type string

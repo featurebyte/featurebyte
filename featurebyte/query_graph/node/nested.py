@@ -639,9 +639,8 @@ class BaseGraphNode(BasePrunableNode):
             var_name = var_name_generator.convert_to_variable_name("feat", node_name=self.name)
             expression = get_object_class_from_function_call("pd.to_datetime", expr)
             return [(var_name, expression)], var_name
-        if self.parameters.output_dtype in DBVarType.dictionary_types().union(
-            [DBVarType.FLAT_DICT]
-        ):
+
+        if self.parameters.output_dtype in DBVarType.json_conversion_types():
             var_name = var_name_generator.convert_to_variable_name("feat", node_name=self.name)
             expression = get_object_class_from_function_call(
                 f"{expr}.apply",

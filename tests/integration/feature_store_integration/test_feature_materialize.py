@@ -1,6 +1,7 @@
 """
 Tests for feature materialization service
 """
+import json
 import os
 import time
 from unittest.mock import patch
@@ -15,6 +16,7 @@ from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 from featurebyte.schema.worker.task.scheduled_feature_materialize import (
     ScheduledFeatureMaterializeTaskPayload,
 )
+from tests.util.helper import assert_dict_approx_equal
 
 logger = get_logger(__name__)
 
@@ -99,8 +101,35 @@ def features_fixture(event_table):
     feature_7 = feature_6.cd.cosine_similarity(cross_aggregate_feature2)
     feature_7.name = "EXTERNAL_FS_COSINE_SIMILARITY"
 
+    feature_8 = event_view.groupby("ÜSER ID").aggregate_over(
+        "EMBEDDING_ARRAY",
+        method="avg",
+        windows=["24h"],
+        feature_names=["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"],
+    )["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"]
+
+    vec_agg_feature2 = event_view.groupby("CUST_ID").aggregate_over(
+        "EMBEDDING_ARRAY",
+        method="avg",
+        windows=["48h"],
+        feature_names=["EXTERNAL_FS_ARRAY_AVG_BY_CUST_ID_48h"],
+    )["EXTERNAL_FS_ARRAY_AVG_BY_CUST_ID_48h"]
+
+    feature_9 = feature_8.vec.cosine_similarity(vec_agg_feature2)
+    feature_9.name = "EXTERNAL_FS_COSINE_SIMILARITY_VEC"
+
     # Save all features to be deployed
-    features = [feature_1, feature_2, feature_3, feature_4, feature_5, feature_6, feature_7]
+    features = [
+        feature_1,
+        feature_2,
+        feature_3,
+        feature_4,
+        feature_5,
+        feature_6,
+        feature_7,
+        feature_8,
+        feature_9,
+    ]
     for feature in features:
         feature.save()
         feature.update_readiness("PRODUCTION_READY")
@@ -183,7 +212,13 @@ async def check_feast_registry(app_container):
             }
         ],
     ).to_dict()
-    assert online_features == {
+    online_features["EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d"] = [
+        json.loads(online_features["EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d"][0])
+    ]
+    online_features["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"] = [
+        json.loads(online_features["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"][0])
+    ]
+    expected = {
         "üser id": ["1"],
         "cust_id": ["761"],
         "PRODUCT_ACTION": ["detail"],
@@ -193,12 +228,32 @@ async def check_feast_registry(app_container):
         "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100": [47538.0],
         "EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE": [519.2892974268257],
         "EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d": [
-            '{\n  "__MISSING__": 2.347700000000000e+02,\n  "detail": 2.352400000000000e+02,\n  '
-            '"purchase": 2.257800000000000e+02,\n  "rëmove": 1.139000000000000e+01,\n  '
-            '"àdd": 3.385100000000000e+02\n}'
+            {
+                "__MISSING__": 234.77,
+                "detail": 235.24,
+                "purchase": 225.78,
+                "rëmove": 11.39,
+                "àdd": 338.51,
+            }
         ],
         "EXTERNAL_FS_COSINE_SIMILARITY": [0],
+        "EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h": [
+            [
+                0.41825654595626777,
+                0.3459365542614712,
+                0.5725510296687925,
+                0.424307035963231,
+                0.4930920411475924,
+                0.4502761817462119,
+                0.3192654242159095,
+                0.40611594238301874,
+                0.649378423267523,
+                0.3857218591399362,
+            ]
+        ],
+        "EXTERNAL_FS_COSINE_SIMILARITY_VEC": [0.8593524820234559],
     }
+    assert_dict_approx_equal(online_features, expected)
 
 
 @freezegun.freeze_time("2001-01-02 12:00:00")
@@ -219,27 +274,45 @@ def check_online_features(deployment, config):
     assert res.status_code == 200
     elapsed = time.time() - tic
     logger.info("online_features elapsed: %fs", elapsed)
-    assert res.json() == {
-        "features": [
-            {
-                "üser id": "1",
-                "cust_id": "761",
-                "PRODUCT_ACTION": "detail",
-                "EXTERNAL_FS_COUNT_OVERALL_7d": 149.0,
-                "EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d": 43.0,
-                "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h": 475.38,
-                "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100": 47538.0,
-                "EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE": 519.2892974268257,
-                "EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d": (
-                    "{\n  "
-                    '"__MISSING__": 2.347700000000000e+02,\n  "detail": 2.352400000000000e+02,\n  '
-                    '"purchase": 2.257800000000000e+02,\n  "rëmove": 1.139000000000000e+01,\n  '
-                    '"àdd": 3.385100000000000e+02\n}'
-                ),
-                "EXTERNAL_FS_COSINE_SIMILARITY": 0,
-            }
-        ]
+    feat_dict = res.json()["features"][0]
+    feat_dict["EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d"] = json.loads(
+        feat_dict["EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d"]
+    )
+    feat_dict["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"] = json.loads(
+        feat_dict["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"]
+    )
+    expected = {
+        "üser id": "1",
+        "cust_id": "761",
+        "PRODUCT_ACTION": "detail",
+        "EXTERNAL_FS_COUNT_OVERALL_7d": 149.0,
+        "EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d": 43.0,
+        "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h": 475.38,
+        "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100": 47538.0,
+        "EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE": 519.2892974268257,
+        "EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d": {
+            "__MISSING__": 234.77,
+            "detail": 235.24,
+            "purchase": 225.78,
+            "rëmove": 11.39,
+            "àdd": 338.51,
+        },
+        "EXTERNAL_FS_COSINE_SIMILARITY": 0,
+        "EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h": [
+            0.41825654595626777,
+            0.3459365542614712,
+            0.5725510296687925,
+            0.424307035963231,
+            0.4930920411475924,
+            0.4502761817462119,
+            0.3192654242159095,
+            0.40611594238301874,
+            0.649378423267523,
+            0.3857218591399362,
+        ],
+        "EXTERNAL_FS_COSINE_SIMILARITY_VEC": 0.8593524820234559,
     }
+    assert_dict_approx_equal(feat_dict, expected)
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
@@ -287,10 +360,12 @@ async def test_feature_materialize_service(
     expected = [
         "__feature_timestamp",
         "üser id",
+        "EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d",
         "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100",
         "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h",
-        "EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d",
+        "EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h",
         "__EXTERNAL_FS_COSINE_SIMILARITY__part0",
+        "__EXTERNAL_FS_COSINE_SIMILARITY_VEC__part0",
         "__EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE__part0",
     ]
     assert set(df.columns.tolist()) == set(expected)
