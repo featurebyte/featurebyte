@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.0.0 (2023-12-21)
+
+### 💡 Enhancements
+
++ `session` Implement missing UDFs for DataBricks clusters that support Unity Catalog.
++ `storage` Support azure blob storage for file storage.
+
+### 🐛 Bug Fixes
+
++ `service` Fixes a bug where the feature saving would fail if the feature or colum name contains quotes.
++ `deployment` Fix an issue where periodic tasks were not disabled when reverting a failed deployment
+
 ## v0.6.2 (2023-12-01)
 
 ### 🛑 Breaking Changes
