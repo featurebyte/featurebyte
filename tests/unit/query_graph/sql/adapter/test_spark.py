@@ -1,7 +1,7 @@
 """
 Test spark adapter module
 """
-
+import pytest
 from sqlglot import expressions
 
 from featurebyte.query_graph.sql.adapter import SparkAdapter
@@ -35,3 +35,18 @@ class TestSparkAdapter(BaseAdapterTest):
         )
         expected = "(CAST(CAST(t2 AS TIMESTAMP) AS DOUBLE) * 1000000.0 - CAST(CAST(t1 AS TIMESTAMP) AS DOUBLE) * 1000000.0)"
         assert out.sql() == expected
+
+
+@pytest.mark.parametrize(
+    "query, expected",
+    [
+        ("SELECT abc as A", "SELECT abc as A"),
+        ("SELECT 'abc' as A", "SELECT \\'abc\\' as A"),
+        ("SELECT \\'abc\\' as A", "SELECT \\'abc\\' as A"),
+    ],
+)
+def test_escape_quote_char__spark(query, expected):
+    """
+    Test escape_quote_char for SparkAdapter
+    """
+    assert SparkAdapter.escape_quote_char(query) == expected
