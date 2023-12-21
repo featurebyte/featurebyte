@@ -177,7 +177,7 @@ class CountDictTransformNode(BaseCountDictOpNode):
     @staticmethod
     def _get_entropy(
         count_dict_var_name: str, var_name_generator: VariableNameGenerator
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> Tuple[List[StatementT], ExpressionStr]:
         count_expr = get_object_class_from_function_call(
             f"{count_dict_var_name}.apply",
             ExpressionStr("lambda x: np.array(list(x.values()))"),
@@ -190,18 +190,14 @@ class CountDictTransformNode(BaseCountDictOpNode):
             f"{count_var}.apply",
             ExpressionStr("sp.stats.entropy"),
         )
-        entropy_var = var_name_generator.convert_to_variable_name(
-            variable_name_prefix="feat_entropy", node_name=None
-        )
-        statements.append((entropy_var, entropy_expr))
-        return statements, entropy_var
+        return statements, ExpressionStr(entropy_expr)
 
     @staticmethod
     def _get_extreme_value_key(
         count_dict_var_name: str,
         var_name_generator: VariableNameGenerator,
         operation: Literal["max", "min"] = "max",
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> Tuple[List[StatementT], ExpressionStr]:
         statements: List[StatementT] = []
         func_name = "extract_extreme_value"
         if func_name not in var_name_generator.var_name_counter:
@@ -222,18 +218,15 @@ class CountDictTransformNode(BaseCountDictOpNode):
             f"{count_dict_var_name}.apply",
             ExpressionStr(func_name),
         )
-        extreme_value_key_var = var_name_generator.convert_to_variable_name(
-            variable_name_prefix=f"feat_key_with_{operation}", node_name=None
-        )
-        statements.append((extreme_value_key_var, extreme_value_key_expr))
-        return statements, extreme_value_key_var
+        return statements, ExpressionStr(extreme_value_key_expr)
 
     @staticmethod
     def _get_unique_count(
         count_dict_var_name: str,
         var_name_generator: VariableNameGenerator,
         include_missing: bool,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> Tuple[List[StatementT], ExpressionStr]:
+        _ = var_name_generator
         if include_missing:
             unique_count_expr = get_object_class_from_function_call(
                 f"{count_dict_var_name}.apply",
@@ -246,12 +239,7 @@ class CountDictTransformNode(BaseCountDictOpNode):
                     f"lambda x: len([key for key in x if key != '{MISSING_VALUE_REPLACEMENT}'])"
                 ),
             )
-
-        unique_count_var = var_name_generator.convert_to_variable_name(
-            variable_name_prefix="feat_uniq_cnt", node_name=None
-        )
-        statements: List[StatementT] = [(unique_count_var, unique_count_expr)]
-        return statements, unique_count_var
+        return [], ExpressionStr(unique_count_expr)
 
     def _derive_on_demand_view_code(
         self,
@@ -265,17 +253,22 @@ class CountDictTransformNode(BaseCountDictOpNode):
         include_missing = False
         if isinstance(self.parameters, self.UniqueCountParameters):
             include_missing = self.parameters.include_missing
-        transform_type_to_func: Dict[str, Callable] = {
+        transform_type_to_func: Dict[str, Callable[..., Tuple[List[StatementT], ExpressionStr]]] = {
             "entropy": self._get_entropy,
             "most_frequent": lambda var, gen: self._get_extreme_value_key(var, gen, "max"),
             "key_with_highest_value": lambda var, gen: self._get_extreme_value_key(var, gen, "max"),
             "key_with_lowest_value": lambda var, gen: self._get_extreme_value_key(var, gen, "min"),
             "unique_count": lambda var, gen: self._get_unique_count(var, gen, include_missing),
         }
-        op_statements, var_name = transform_type_to_func[self.parameters.transform_type](
+        transform_type = self.parameters.transform_type
+        op_statements, op_expr = transform_type_to_func[transform_type](
             cd_var_name, var_name_generator
         )
         statements.extend(op_statements)
+        var_name = var_name_generator.convert_to_variable_name(
+            variable_name_prefix=f"feat_{transform_type}", node_name=None
+        )
+        statements.append((var_name, op_expr))
         return statements, ExpressionStr(f"{var_name}.reindex({mask_var}.index)")
 
 
