@@ -13,8 +13,8 @@ import pytest_asyncio
 from bson import ObjectId
 from pandas.testing import assert_frame_equal
 
-from featurebyte import RecordRetrievalException
 from featurebyte.api.feature_job_setting_analysis import FeatureJobSettingAnalysis
+from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.feature_job_setting_analysis import FeatureJobSettingAnalysisModel
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from tests.util.helper import patch_import_package

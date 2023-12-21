@@ -5,9 +5,9 @@ from unittest.mock import Mock, call, patch
 
 import pytest
 
-from featurebyte import RecordRetrievalException
 from featurebyte.api.source_table import SourceTable
 from featurebyte.api.static_source_table import StaticSourceTable
+from featurebyte.exception import RecordRetrievalException
 
 
 def test_get(static_source_table_from_source):
