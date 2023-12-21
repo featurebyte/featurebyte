@@ -15,7 +15,6 @@ def _to_utc_no_offset(date):
     return pd.to_datetime(date, utc=True).tz_localize(None)
 
 
-@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS, indirect=True)
 def test_event_view_describe(event_table):
     """
     Test describe for EventView
@@ -70,7 +69,6 @@ def test_event_view_describe(event_table):
     assert _to_utc_no_offset(describe_df["ËVENT_TIMESTAMP"]["max"]) == expected_max_timestamp
 
 
-@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS, indirect=True)
 def test_event_view_describe_with_date_range(event_table):
     """
     Test describe for EventView with date range
@@ -125,7 +123,6 @@ def test_event_view_describe_with_date_range(event_table):
     )
 
 
-@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS, indirect=True)
 def test_item_view_describe(item_table):
     """
     Test describe for ItemView
@@ -174,7 +171,6 @@ def test_item_view_describe(item_table):
     assert _to_utc_no_offset(describe_df["ËVENT_TIMESTAMP"]["max"]) == expected_max_timestamp
 
 
-@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS, indirect=True)
 def test_dimension_view_describe(dimension_table):
     """
     Test sample for DimensionView
@@ -245,7 +241,6 @@ def test_scd_view_describe(scd_table):
     assert _to_utc_no_offset(describe_df["Effective Timestamp"]["max"]) == expected_max_timestamp
 
 
-@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS, indirect=True)
 def test_describe_empty_view(event_table):
     """
     Test describe for an empty view

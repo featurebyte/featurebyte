@@ -4,10 +4,7 @@ Tests for snowflake cosine similarity UDF
 import numpy as np
 import pytest
 
-from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_AND_UNITY
 
-
-@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_AND_UNITY, indirect=True)
 @pytest.mark.parametrize(
     "counts1, counts2, expected",
     [

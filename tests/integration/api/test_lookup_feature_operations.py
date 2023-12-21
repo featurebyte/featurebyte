@@ -12,7 +12,6 @@ from tests.integration.api.lookup_operations_utils import (
 )
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_lookup_features_same_column_name(dimension_view, item_table):
     """
     Test lookup features with same column name
@@ -37,7 +36,6 @@ def test_lookup_features_same_column_name(dimension_view, item_table):
     }
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_event_view_lookup_features(event_table, transaction_data_upper_case):
     """
     Test lookup features from EventView are time based
@@ -58,7 +56,6 @@ def test_event_view_lookup_features(event_table, transaction_data_upper_case):
     )
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_item_view_lookup_features(item_table, expected_joined_event_item_dataframe):
     """
     Test lookup features from ItemView are time based

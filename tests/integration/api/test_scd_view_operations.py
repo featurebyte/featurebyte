@@ -61,7 +61,6 @@ def expected_dataframe_scd_join(transaction_data_upper_case, scd_dataframe):
     return df
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 def test_scd_view_preview(scd_table):
     """
     Test preview of SCDView
@@ -77,7 +76,6 @@ def test_scd_view_preview(scd_table):
     _check_result_exclude_current_flag_column(view.describe())
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 @pytest.mark.asyncio
 async def test_scd_join_small(session, data_source, source_type):
     """
@@ -149,7 +147,6 @@ async def test_scd_join_small(session, data_source, source_type):
     pd.testing.assert_frame_equal(df_actual, df_expected, check_dtype=False)
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_feature_derived_from_multiple_scd_joins(session, data_source, source_type):
     """
@@ -249,7 +246,6 @@ async def test_feature_derived_from_multiple_scd_joins(session, data_source, sou
     pd.testing.assert_frame_equal(df, expected)
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 def test_event_view_join_scd_view__preview_view(
     event_table, scd_table, expected_dataframe_scd_join
 ):
@@ -276,7 +272,6 @@ def test_event_view_join_scd_view__preview_view(
     )
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 def test_event_view_join_scd_view__preview_feature(event_table, scd_table):
     """
     Test joining an EventView with and SCDView
@@ -301,7 +296,6 @@ def test_event_view_join_scd_view__preview_feature(event_table, scd_table):
     assert_preview_result_equal(df, expected, dict_like_columns=["count_7d"])
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 def test_scd_lookup_feature(config, event_table, dimension_table, scd_table, scd_dataframe):
     """
     Test creating lookup feature from a SCDView
@@ -380,7 +374,6 @@ def test_scd_lookup_feature(config, event_table, dimension_table, scd_table, scd
             deployment.disable()
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 def test_scd_lookup_feature_with_offset(config, scd_table, scd_dataframe):
     """
     Test creating lookup feature from a SCDView with offset
@@ -428,7 +421,6 @@ def test_scd_lookup_feature_with_offset(config, scd_table, scd_dataframe):
         deployment.disable()
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 def test_aggregate_asat(scd_table, scd_dataframe, source_type):
     """
     Test aggregate_asat aggregation on SCDView
@@ -497,7 +489,6 @@ def test_aggregate_asat(scd_table, scd_dataframe, source_type):
     pd.testing.assert_frame_equal(df, expected, check_dtype=False)
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 def test_aggregate_asat__no_entity(scd_table, scd_dataframe, config, source_type):
     """
     Test aggregate_asat aggregation on SCDView without entity
@@ -559,7 +550,6 @@ def test_aggregate_asat__no_entity(scd_table, scd_dataframe, config, source_type
         deployment.disable()
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
 def test_columns_joined_from_scd_view_as_groupby_keys(event_table, scd_table, source_type):
     """
     Test aggregate_over using a key column joined from another view

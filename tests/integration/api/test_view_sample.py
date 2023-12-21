@@ -7,7 +7,6 @@ from pandas.testing import assert_series_equal
 from pydantic.error_wrappers import ValidationError
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_event_table_sample(event_table):
     """
     Test event table sample & event table column sample
@@ -27,7 +26,6 @@ def test_event_table_sample(event_table):
     )
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_event_view_sample(event_table):
     """
     Test sample for EventView
@@ -61,7 +59,6 @@ def test_event_view_sample(event_table):
     pd.testing.assert_frame_equal(sample_df[[ts_col]], ev_ts)
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_event_view_sample_seed(event_table):
     """
     Test sample for EventView using a different seed
@@ -73,7 +70,6 @@ def test_event_view_sample_seed(event_table):
     assert sample_df["ËVENT_TIMESTAMP"].max() == pd.Timestamp("2001-10-05 14:34:01.000068+10:00")
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_event_view_sample_with_date_range(event_table):
     """
     Test sample for EventView with date range
@@ -94,7 +90,6 @@ def test_event_view_sample_with_date_range(event_table):
     assert_series_equal(col_sample_df["TRANSACTION_ID"], sample_df["TRANSACTION_ID"])
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_item_view_sample(item_table):
     """
     Test sample for ItemView
@@ -117,7 +112,6 @@ def test_item_view_sample(item_table):
     assert sample_df["ËVENT_TIMESTAMP"].max() == pd.Timestamp("2001-12-27 14:51:49.000824+1300")
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_item_view_sample_with_date_range(item_table):
     """
     Test sample for ItemView with date range
@@ -138,7 +132,6 @@ def test_item_view_sample_with_date_range(item_table):
     assert_series_equal(col_sample_df["item_id"], sample_df["item_id"])
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_dimension_view_sample(dimension_table):
     """
     Test sample for DimensionView
@@ -155,7 +148,6 @@ def test_dimension_view_sample(dimension_table):
     assert sample_df.shape == (10, 4)
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_dimension_view_sample_with_date_range(dimension_table):
     """
     Test sample for DimensionView with date range

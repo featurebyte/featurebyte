@@ -160,7 +160,6 @@ def get_expected_target_values(
     return df_expected
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_forward_aggregate(
     event_table, target_parameters, transaction_data_upper_case, observation_set, user_entity
 ):
@@ -223,7 +222,6 @@ def test_forward_aggregate(
         fb_assert_frame_equal(dataframe, expected_values, sort_by_columns=["POINT_IN_TIME"])
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_forward_aggregate_with_count_and_value_column_none(event_table):
     """
     Test forward aggregate with count and value column None.

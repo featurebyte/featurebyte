@@ -9,7 +9,6 @@ from pandas._testing import assert_frame_equal
 from featurebyte import FeatureList
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_features_without_entity(event_table):
     """
     Test working with purely time based features without any entity

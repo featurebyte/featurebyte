@@ -15,7 +15,6 @@ from tests.integration.api.lookup_operations_utils import (
 )
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_lookup_features_dimension_view(dimension_view):
     """
     Test lookup targets with same column name
@@ -30,7 +29,6 @@ def test_lookup_features_dimension_view(dimension_view):
     }
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_event_view_lookup_features(event_table, transaction_data_upper_case):
     """
     Test lookup features from EventView are time based
@@ -51,7 +49,6 @@ def test_event_view_lookup_features(event_table, transaction_data_upper_case):
     )
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_item_view_lookup_features(item_table, expected_joined_event_item_dataframe):
     """
     Test lookup features from ItemView are time based
@@ -100,7 +97,6 @@ def _target_with_offset_test_helper(
     assert preview_output[target_name] == expected_row[lookup_column_name]
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_scd_lookup_target_with_offset(config, scd_table, scd_dataframe):
     """
     Test creating lookup target from a SCDView with offset
@@ -122,7 +118,6 @@ def test_scd_lookup_target_with_offset(config, scd_table, scd_dataframe):
     )
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_event_lookup_target_with_offset(config, event_table, transaction_data_upper_case):
     """
     Test creating event target from a event view with offset

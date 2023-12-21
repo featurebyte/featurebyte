@@ -319,7 +319,6 @@ def feature_parameters_fixture(source_type):
     return parameters
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_feature_with_target(event_table, observation_set, transaction_data_upper_case):
     """
     Test that feature with target works
@@ -406,7 +405,6 @@ def test_feature_with_target(event_table, observation_set, transaction_data_uppe
     )
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_aggregate_over(
     transaction_data_upper_case,
     observation_set,
@@ -548,7 +546,6 @@ def check_aggregate_over(
     fb_assert_frame_equal(df_historical_features, df_expected, dict_like_columns)
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_aggregate_asat(
     scd_dataframe,
     scd_observation_set,
