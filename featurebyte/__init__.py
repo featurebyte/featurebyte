@@ -31,6 +31,7 @@ from featurebyte.api.historical_feature_table import HistoricalFeatureTable
 from featurebyte.api.item_table import ItemTable
 from featurebyte.api.item_view import ItemView
 from featurebyte.api.observation_table import ObservationTable
+from featurebyte.api.online_store import OnlineStore
 from featurebyte.api.periodic_task import PeriodicTask
 from featurebyte.api.relationship import Relationship
 from featurebyte.api.request_column import RequestColumn
@@ -69,6 +70,7 @@ from featurebyte.models.feature_list import FeatureListStatus
 from featurebyte.models.feature_namespace import DefaultVersionMode
 from featurebyte.models.feature_store import TableStatus
 from featurebyte.models.observation_table import Purpose
+from featurebyte.models.online_store import MySQLOnlineStoreDetails, RedisOnlineStoreDetails
 from featurebyte.models.user_defined_function import FunctionParameter
 from featurebyte.query_graph.model.feature_job_setting import (
     FeatureJobSetting,
@@ -448,6 +450,7 @@ __all__ = [
     "ItemTable",
     "ItemView",
     "ObservationTable",
+    "OnlineStore",
     "Relationship",
     "RequestColumn",
     "SCDTable",
@@ -500,6 +503,9 @@ __all__ = [
     "list_deployments",
     "list_unsaved_features",
     "UDF",
+    # online store config
+    "RedisOnlineStoreDetails",
+    "MySQLOnlineStoreDetails",
 ]
 
 

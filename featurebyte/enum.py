@@ -485,5 +485,23 @@ class UploadFileFormat(StrEnum):
     PARQUET = "parquet"
 
 
+class OnlineStoreType(StrEnum):
+    """
+    Online store type
+    """
+
+    REDIS = "redis"
+    MYSQL = "mysql"
+
+
+class RedisType(str, Enum):
+    """
+    Redis type
+    """
+
+    REDIS = "redis"
+    REDIS_CLUSTER = "redis_cluster"
+
+
 # enum used for handle conflict when saving object to persistent storage
 ConflictResolution = Literal["raise", "retrieve"]

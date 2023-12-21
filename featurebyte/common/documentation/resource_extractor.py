@@ -443,7 +443,8 @@ def get_resource_details(resource_descriptor: str) -> ResourceDetails:
                 continue
             resource_details = get_resource_details(resource_to_import)
             if param_name not in parameters_desc or not parameters_desc[param_name]:
-                parameters_desc[param_name] = resource_details.description_string
+                if resource_details.short_description:
+                    parameters_desc[param_name] = resource_details.description_string
 
     enum_desc = {}
     enum_possible_values: List[RawParameterDetails] = []

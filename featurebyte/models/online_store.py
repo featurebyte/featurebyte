@@ -1,13 +1,21 @@
 """
 This module contains Tile related models
 """
-from typing import Any, Dict, List, cast
+from typing import Any, Dict, List, Literal, Optional, Union, cast
+from typing_extensions import Annotated
 
-from pydantic import validator
+import pymongo
+from pydantic import Field, StrictStr, validator
 
-from featurebyte.enum import TableDataType
+from featurebyte.common.doc_util import FBAutoDoc
+from featurebyte.enum import OnlineStoreType, RedisType, TableDataType
 from featurebyte.feature_manager.model import ExtendedFeatureModel
-from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.models.base import (
+    FeatureByteBaseDocumentModel,
+    FeatureByteBaseModel,
+    UniqueConstraintResolutionSignature,
+    UniqueValuesConstraint,
+)
 from featurebyte.models.online_store_compute_query import OnlineStoreComputeQueryModel
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.input import InputNode
@@ -127,3 +135,113 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
         """
         adapter = get_sql_adapter(self.feature.feature_store_type)
         return adapter.get_physical_type_from_dtype(self.feature.dtype)
+
+
+class RedisOnlineStoreDetails(FeatureByteBaseModel):
+    """
+    Configuration details for Redis online store.
+
+    Examples
+    --------
+    >>> details = fb.RedisOnlineStoreDetails(
+    ...   redis_type="redis",
+    ...   connection_string="localhost:6379",
+    ...   key_ttl_seconds=3600
+    ... )
+    """
+
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.RedisOnlineStoreDetails")
+
+    # Online store type selector
+    type: Literal[OnlineStoreType.REDIS] = OnlineStoreType.REDIS
+
+    redis_type: RedisType = Field(
+        default=RedisType.REDIS, description="Redis type: redis or redis_cluster."
+    )
+    #  format: host:port,parameter1,parameter2 eg. redis:6379,db=0
+    connection_string: StrictStr = Field(
+        default="localhost:6379",
+        description="Connection string with format 'host:port,parameter1,parameter2' eg. redis:6379,db=0",
+    )
+
+    key_ttl_seconds: Optional[int] = Field(
+        default=None, description="Redis key bin ttl (in seconds) for expiring entities."
+    )
+
+
+class MySQLOnlineStoreDetails(FeatureByteBaseModel):
+    """
+    Configuration details for MySQL online store.
+
+    Examples
+    --------
+    >>> details = fb.MySQLOnlineStoreDetails(
+    ...   host="localhost",
+    ...   user="user",
+    ...   password="password",
+    ...   database="database",
+    ...   port=3306
+    ... )
+    """
+
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.MySQLOnlineStoreDetails")
+
+    # Online store type selector
+    type: Literal[OnlineStoreType.MYSQL] = OnlineStoreType.MYSQL
+
+    host: StrictStr = Field(default="localhost", description="MySQL connection host.")
+
+    user: StrictStr = Field(description="MySQL connection user.")
+
+    password: StrictStr = Field(description="MySQL connection password.")
+
+    database: StrictStr = Field(description="MySQL connection database.")
+
+    port: int = Field(default=3306, description="MySQL connection port.")
+
+
+OnlineStoreDetails = Annotated[
+    Union[RedisOnlineStoreDetails, MySQLOnlineStoreDetails],
+    Field(discriminator="type"),
+]
+
+
+class OnlineStoreModel(FeatureByteBaseDocumentModel):
+    """
+    Model for Online Store
+    """
+
+    details: OnlineStoreDetails
+
+    class Settings(FeatureByteBaseDocumentModel.Settings):
+        """
+        MongoDB settings
+        """
+
+        collection_name: str = "online_store"
+        unique_constraints: List[UniqueValuesConstraint] = [
+            UniqueValuesConstraint(
+                fields=("_id",),
+                conflict_fields_signature={"id": ["_id"]},
+                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
+            ),
+            UniqueValuesConstraint(
+                fields=("name",),
+                conflict_fields_signature={"name": ["name"]},
+                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
+            ),
+            UniqueValuesConstraint(
+                fields=("details",),
+                conflict_fields_signature={"details": ["details"]},
+                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
+            ),
+        ]
+
+        indexes = FeatureByteBaseDocumentModel.Settings.indexes + [
+            pymongo.operations.IndexModel("details.type"),
+            pymongo.operations.IndexModel("details"),
+            [
+                ("name", pymongo.TEXT),
+                ("details.type", pymongo.TEXT),
+            ],
+        ]

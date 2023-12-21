@@ -32,6 +32,7 @@ from featurebyte.routes.historical_feature_table.api import HistoricalFeatureTab
 from featurebyte.routes.item_table.api import ItemTableRouter
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.observation_table.api import ObservationTableRouter
+from featurebyte.routes.online_store.api import OnlineStoreRouter
 from featurebyte.routes.periodic_tasks.api import PeriodicTaskRouter
 from featurebyte.routes.registry import app_container_config
 from featurebyte.routes.relationship_info.api import RelationshipInfoRouter
@@ -136,6 +137,7 @@ def get_app() -> FastAPI:
         SemanticRouter(),
         TaskRouter(),
         TempDataRouter(),
+        OnlineStoreRouter(),
     ]
     dependencies = _get_api_deps()
     for resource_api in non_catalog_specific_routers:

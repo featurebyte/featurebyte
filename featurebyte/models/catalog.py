@@ -3,7 +3,7 @@ This module contains Catalog related models
 """
 from __future__ import annotations
 
-from typing import List
+from typing import List, Optional
 
 from datetime import datetime
 
@@ -51,6 +51,10 @@ class CatalogModel(FeatureByteBaseDocumentModel):
     default_feature_store_ids: List[PydanticObjectId] = Field(
         default_factory=list,
         description="List of default feature store IDs that are associated with the catalog.",
+    )
+    online_store_id: Optional[PydanticObjectId] = Field(
+        default=None,
+        description="Online store ID that is associated with the catalog.",
     )
     is_deleted: bool = Field(
         default=False,

@@ -19,6 +19,7 @@ from featurebyte.models.feature_list import (
 )
 from featurebyte.models.feature_namespace import DefaultVersionMode
 from featurebyte.models.feature_store import TableStatus
+from featurebyte.models.online_store import OnlineStoreDetails
 from featurebyte.models.request_input import RequestInputType
 from featurebyte.models.user_defined_function import FunctionParameter
 from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
@@ -44,6 +45,14 @@ class FeatureStoreInfo(BaseInfo):
 
     source: SourceType
     database_details: DatabaseDetails
+
+
+class OnlineStoreInfo(BaseInfo):
+    """
+    OnlineStore in schema
+    """
+
+    details: OnlineStoreDetails
 
 
 class EntityBriefInfo(BaseBriefInfo):

@@ -49,6 +49,7 @@ from featurebyte.routes.feature_store.controller import FeatureStoreController
 from featurebyte.routes.historical_feature_table.controller import HistoricalFeatureTableController
 from featurebyte.routes.item_table.controller import ItemTableController
 from featurebyte.routes.observation_table.controller import ObservationTableController
+from featurebyte.routes.online_store.controller import OnlineStoreController
 from featurebyte.routes.periodic_tasks.controller import PeriodicTaskController
 from featurebyte.routes.relationship_info.controller import RelationshipInfoController
 from featurebyte.routes.scd_table.controller import SCDTableController
@@ -104,6 +105,7 @@ from featurebyte.service.offline_store_feature_table_manager import (
 )
 from featurebyte.service.online_enable import OnlineEnableService
 from featurebyte.service.online_serving import OnlineServingService
+from featurebyte.service.online_store import OnlineStoreService
 from featurebyte.service.online_store_cleanup import OnlineStoreCleanupService
 from featurebyte.service.online_store_cleanup_scheduler import OnlineStoreCleanupSchedulerService
 from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
@@ -260,6 +262,8 @@ app_container_config.register_class(OfflineStoreFeatureTableService)
 app_container_config.register_class(OfflineStoreFeatureTableManagerService)
 app_container_config.register_class(OnlineEnableService)
 app_container_config.register_class(OnlineServingService)
+app_container_config.register_class(OnlineStoreService)
+app_container_config.register_class(OnlineStoreController)
 app_container_config.register_class(OnlineStoreCleanupService)
 app_container_config.register_class(OnlineStoreCleanupSchedulerService)
 app_container_config.register_class(OnlineStoreComputeQueryService)
