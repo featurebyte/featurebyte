@@ -67,6 +67,8 @@ from featurebyte.worker import get_celery
 from featurebyte.worker.registry import TASK_REGISTRY_MAP
 
 # Static testing mongodb connection from docker/test/docker-compose.yml
+from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_UNITY
+
 MONGO_CONNECTION = "mongodb://localhost:27021,localhost:27022/?replicaSet=rs0"
 
 
@@ -312,7 +314,7 @@ def get_noop_validate_feature_store_id_not_used_in_warehouse_fixture():
         yield
 
 
-@pytest.fixture(name="source_type", scope="session", params=["snowflake", "spark"])
+@pytest.fixture(name="source_type", scope="session", params=SNOWFLAKE_SPARK_DATABRICKS_UNITY)
 def source_type_fixture(request):
     """
     Fixture for the source_type parameter used to create all the other fixtures

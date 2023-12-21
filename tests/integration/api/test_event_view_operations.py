@@ -543,7 +543,7 @@ def new_user_id_entity_fixture():
         ("table", "table"),
     ],
 )
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks_unity"], indirect=True)
 @pytest.mark.usefixtures("patched_num_features_per_query")
 @pytest.mark.asyncio
 async def test_get_historical_features(
