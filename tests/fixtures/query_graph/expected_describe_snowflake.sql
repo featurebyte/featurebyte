@@ -23,7 +23,7 @@ WITH data AS (
     F_COUNT_DICT_MOST_FREQUENT_VALUE(count_dict."COUNT_DICT") AS "freq__0"
   FROM (
     SELECT
-      OBJECT_AGG("ts", "__FB_COUNTS") AS "COUNT_DICT"
+      OBJECT_AGG(CASE WHEN "ts" IS NULL THEN '__MISSING__' ELSE "ts" END, TO_VARIANT("__FB_COUNTS")) AS "COUNT_DICT"
     FROM (
       SELECT
         "ts",
@@ -43,7 +43,10 @@ WITH data AS (
     F_COUNT_DICT_MOST_FREQUENT_VALUE(count_dict."COUNT_DICT") AS "freq__1"
   FROM (
     SELECT
-      OBJECT_AGG("cust_id", "__FB_COUNTS") AS "COUNT_DICT"
+      OBJECT_AGG(
+        CASE WHEN "cust_id" IS NULL THEN '__MISSING__' ELSE "cust_id" END,
+        TO_VARIANT("__FB_COUNTS")
+      ) AS "COUNT_DICT"
     FROM (
       SELECT
         "cust_id",
@@ -62,7 +65,7 @@ WITH data AS (
     F_COUNT_DICT_MOST_FREQUENT_VALUE(count_dict."COUNT_DICT") AS "freq__2"
   FROM (
     SELECT
-      OBJECT_AGG("a", "__FB_COUNTS") AS "COUNT_DICT"
+      OBJECT_AGG(CASE WHEN "a" IS NULL THEN '__MISSING__' ELSE "a" END, TO_VARIANT("__FB_COUNTS")) AS "COUNT_DICT"
     FROM (
       SELECT
         "a",
@@ -81,7 +84,7 @@ WITH data AS (
     F_COUNT_DICT_MOST_FREQUENT_VALUE(count_dict."COUNT_DICT") AS "freq__3"
   FROM (
     SELECT
-      OBJECT_AGG("b", "__FB_COUNTS") AS "COUNT_DICT"
+      OBJECT_AGG(CASE WHEN "b" IS NULL THEN '__MISSING__' ELSE "b" END, TO_VARIANT("__FB_COUNTS")) AS "COUNT_DICT"
     FROM (
       SELECT
         "b",
@@ -100,7 +103,10 @@ WITH data AS (
     F_COUNT_DICT_MOST_FREQUENT_VALUE(count_dict."COUNT_DICT") AS "freq__4"
   FROM (
     SELECT
-      OBJECT_AGG("a_copy", "__FB_COUNTS") AS "COUNT_DICT"
+      OBJECT_AGG(
+        CASE WHEN "a_copy" IS NULL THEN '__MISSING__' ELSE "a_copy" END,
+        TO_VARIANT("__FB_COUNTS")
+      ) AS "COUNT_DICT"
     FROM (
       SELECT
         "a_copy",

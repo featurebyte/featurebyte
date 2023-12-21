@@ -177,8 +177,9 @@ def test_get_groupby_expr__multiple_groupby_columns__non_snowflake_vector_aggrs(
 
     result_0 = _maybe_wrap_in_variant(source_type, 'INNER_."result_0_inner"')
     result_1 = _maybe_wrap_in_variant(source_type, 'INNER_."result_1_inner"')
-    expected = textwrap.dedent(
-        f"""
+    if source_type == "snowflake":
+        expected = textwrap.dedent(
+            f"""
             SELECT
               INNER_."serving_name",
               INNER_."POINT_IN_TIME",
@@ -215,7 +216,55 @@ def test_get_groupby_expr__multiple_groupby_columns__non_snowflake_vector_aggrs(
               INNER_."serving_name",
               INNER_."POINT_IN_TIME"
             """
-    ).strip()
+        ).strip()
+    else:
+        expected = textwrap.dedent(
+            f"""
+            SELECT
+              INNER_."serving_name",
+              INNER_."POINT_IN_TIME",
+              MAP_FROM_ENTRIES(
+                COLLECT_LIST(
+                  STRUCT(
+                    CASE
+                      WHEN INNER_."value_by" IS NULL
+                      THEN '__MISSING__'
+                      ELSE CAST(INNER_."value_by" AS TEXT)
+                    END,
+                    {result_0}
+                  )
+                )
+              ) AS "result_0",
+              MAP_FROM_ENTRIES(
+                COLLECT_LIST(
+                  STRUCT(
+                    CASE
+                      WHEN INNER_."value_by" IS NULL
+                      THEN '__MISSING__'
+                      ELSE CAST(INNER_."value_by" AS TEXT)
+                    END,
+                    {result_1}
+                  )
+                )
+              ) AS "result_1"
+            FROM (
+              SELECT
+                REQ."serving_name" AS "serving_name",
+                REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
+                REQ."value_by" AS "value_by",
+                {methods[0]}(TABLE."parent") AS "result_0_inner",
+                {methods[1]}(TABLE."parent") AS "result_1_inner"
+              FROM REQ
+              GROUP BY
+                REQ."serving_name",
+                REQ."POINT_IN_TIME",
+                REQ."value_by"
+            ) AS INNER_
+            GROUP BY
+              INNER_."serving_name",
+              INNER_."POINT_IN_TIME"
+            """
+        ).strip()
     assert groupby_expr.sql(pretty=True) == expected
 
 
@@ -311,13 +360,17 @@ def test_get_groupby_expr(agg_func, parent_dtype, method, common_params):
         SELECT
           INNER_."serving_name",
           INNER_."POINT_IN_TIME",
-          OBJECT_AGG(
-            CASE
-              WHEN INNER_."value_by" IS NULL
-              THEN '__MISSING__'
-              ELSE CAST(INNER_."value_by" AS TEXT)
-            END,
-            INNER_."result_inner"
+          MAP_FROM_ENTRIES(
+            COLLECT_LIST(
+              STRUCT(
+                CASE
+                  WHEN INNER_."value_by" IS NULL
+                  THEN '__MISSING__'
+                  ELSE CAST(INNER_."value_by" AS TEXT)
+                END,
+                INNER_."result_inner"
+              )
+            )
           ) AS "result"
         FROM (
           SELECT

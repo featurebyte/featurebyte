@@ -7,6 +7,7 @@ import pytest
 
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
+from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS
 from tests.util.helper import assert_equal_with_expected_fixture
 
 
@@ -19,7 +20,7 @@ def patch_num_tables_per_join():
         yield
 
 
-@pytest.mark.parametrize("source_type", [SourceType.SNOWFLAKE, SourceType.SPARK])
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS)
 def test_graph_interpreter_describe(simple_graph, source_type, update_fixtures):
     """Test graph sample"""
     graph, node = simple_graph

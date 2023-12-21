@@ -37,7 +37,11 @@ class DatabricksAdapter(BaseAdapter):
 
     @classmethod
     def object_agg(cls, key_column: str | Expression, value_column: str | Expression) -> Expression:
-        return expressions.Anonymous(this="OBJECT_AGG", expressions=[key_column, value_column])
+        struct_expr = expressions.Anonymous(this="struct", expressions=[key_column, value_column])
+        return expressions.Anonymous(
+            this="map_from_entries",
+            expressions=[expressions.Anonymous(this="collect_list", expressions=[struct_expr])],
+        )
 
     @classmethod
     def to_epoch_seconds(cls, timestamp_expr: Expression) -> Expression:
