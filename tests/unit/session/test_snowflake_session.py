@@ -126,7 +126,7 @@ def mock_snowflake_cursor_fixture(is_fetch_pandas_all_available):
     """
     Fixture for a mocked connection cursor for Snowflake
     """
-    with patch("featurebyte.session.snowflake.connector", autospec=True) as mock_connector:
+    with patch("featurebyte.session.snowflake.connector") as mock_connector:
         mock_cursor = Mock(name="MockCursor", description=[["col_a"], ["col_b"], ["col_c"]])
         if not is_fetch_pandas_all_available:
             mock_cursor.fetch_pandas_all.side_effect = NotSupportedError
