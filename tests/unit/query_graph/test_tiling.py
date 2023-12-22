@@ -264,39 +264,39 @@ def run_groupby_and_get_tile_table_identifier(
     [
         (
             {},
-            "TILE_F1800_M300_B600_B5CAF33CCFEDA76C257EC2CB7F66C4AD22009B0F",
-            "sum_aed233b0e8a6e1c1e0d5427b126b03c949609481",
+            "TILE_F1800_M300_B600_8A209743FE8C9AD59ED6A9FE5E98977AB9A040DB",
+            "sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295",
         ),
         # Features with different windows can share the same tile table
         (
             {"windows": ["2d"], "feature_names": ["sum_2d"]},
-            "TILE_F1800_M300_B600_B5CAF33CCFEDA76C257EC2CB7F66C4AD22009B0F",
-            "sum_aed233b0e8a6e1c1e0d5427b126b03c949609481",
+            "TILE_F1800_M300_B600_8A209743FE8C9AD59ED6A9FE5E98977AB9A040DB",
+            "sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295",
         ),
         (
             {"method": "max"},
-            "TILE_F1800_M300_B600_B5CAF33CCFEDA76C257EC2CB7F66C4AD22009B0F",
-            "max_a0e8d39bef4c791f22bdc5f264234c12dc4e81d4",
+            "TILE_F1800_M300_B600_8A209743FE8C9AD59ED6A9FE5E98977AB9A040DB",
+            "max_8386bc5866b03e1c3bc2de69717e050b965edd31",
         ),
         (
             {"value_column": "col_int"},
-            "TILE_F1800_M300_B600_B5CAF33CCFEDA76C257EC2CB7F66C4AD22009B0F",
-            "sum_34b69528f90906fc849330a206bad14c842a81ad",
+            "TILE_F1800_M300_B600_8A209743FE8C9AD59ED6A9FE5E98977AB9A040DB",
+            "sum_976e8aefa273a14a2998f4148bb19377387408fa",
         ),
         (
             {"frequency": "10m"},
-            "TILE_F600_M300_B600_9EF598EF844B1DED25B255CCCBC231FBBF81A349",
-            "sum_b75c6308ff1d3fe574de6f87625f1cacfc2bc755",
+            "TILE_F600_M300_B600_97D8C386C80C5D2330DCCD7185877E3E115B4B90",
+            "sum_2458ad1e0bbdc71e25e4f6ad60c405a66db1c2f0",
         ),
         (
             {"time_modulo_frequency": "10m"},
-            "TILE_F1800_M600_B600_53A8F52711C0A5FB7DCB256CC1435E96398AB5ED",
-            "sum_e5c2e1cab0c5934b3dd8a1e1db5e4650081a224b",
+            "TILE_F1800_M600_B600_C25381B17CF6D08AA2A08371849FB30D8156234D",
+            "sum_8ca0f4baa7250e0cb73a9e297b136f3f02df36a4",
         ),
         (
             {"blind_spot": "20m"},
-            "TILE_F1800_M300_B1200_CD464F2279CC9EBCD5B34AEB46A5DBF48776374B",
-            "sum_c46e99bd6792f59467ad18c61a32dd286909180d",
+            "TILE_F1800_M300_B1200_99F9071A3B1F57B70293B49E9D2B31690E60E7ED",
+            "sum_522ac2033d65c09a17ce29df387ea7f54b3138fd",
         ),
     ],
 )
@@ -325,26 +325,26 @@ def test_tile_table_id__agg_parameters(
     [
         (
             {"by_keys": "cust_id"},
-            "TILE_F1800_M300_B600_B5CAF33CCFEDA76C257EC2CB7F66C4AD22009B0F",
-            "sum_aed233b0e8a6e1c1e0d5427b126b03c949609481",
+            "TILE_F1800_M300_B600_8A209743FE8C9AD59ED6A9FE5E98977AB9A040DB",
+            "sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295",
         ),
         # Single groupby key specified as a list should give the same result
         (
             {"by_keys": ["cust_id"]},
-            "TILE_F1800_M300_B600_B5CAF33CCFEDA76C257EC2CB7F66C4AD22009B0F",
-            "sum_aed233b0e8a6e1c1e0d5427b126b03c949609481",
+            "TILE_F1800_M300_B600_8A209743FE8C9AD59ED6A9FE5E98977AB9A040DB",
+            "sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295",
         ),
         # Changing the by_keys changes the tile ID
         (
             {"by_keys": "col_text"},
-            "TILE_F1800_M300_B600_09DB912713A7048A99527D8F90A96C1742B82F5E",
-            "sum_3100fb55213ecb67d4c3a6c4c48b51fbc6f4d97c",
+            "TILE_F1800_M300_B600_C5EC30A38F5FBC03A29457E6EA9D476B9349BB93",
+            "sum_3a8ea84a0b340d67855c98b583fd4542185b78a8",
         ),
         # Changing the category changes the tile ID
         (
             {"by_keys": "col_text", "category": "col_int"},
-            "TILE_F1800_M300_B600_5C355EF19FB7E4FE215A4B03282CC32B08378767",
-            "sum_9c8476f50e4ad24dad295d6ed08801d41e0a1ddd",
+            "TILE_F1800_M300_B600_41ADC157A55DB443D156DD5062D3151C360EF564",
+            "sum_d831e1d1ba75e56e80304fee68cb700e80b1898a",
         ),
     ],
 )
@@ -374,8 +374,8 @@ def test_tile_table_id__transformations(snowflake_event_view_with_entity, aggreg
         snowflake_event_view_with_entity, kwargs, create_entity=False
     )
     assert (tile_id, agg_id) == (
-        "TILE_F1800_M300_B600_B5CAF33CCFEDA76C257EC2CB7F66C4AD22009B0F",
-        "sum_7cd1383596f323a16611e5922ad909368829f7c0",
+        "TILE_F1800_M300_B600_8A209743FE8C9AD59ED6A9FE5E98977AB9A040DB",
+        "sum_97e3469a34d3677123a6b2790bc4ef1e884103d6",
     )
 
     # Note that this is different from above
@@ -385,8 +385,8 @@ def test_tile_table_id__transformations(snowflake_event_view_with_entity, aggreg
         snowflake_event_view_with_entity, kwargs, create_entity=False
     )
     assert (tile_id, agg_id) == (
-        "TILE_F1800_M300_B600_B5CAF33CCFEDA76C257EC2CB7F66C4AD22009B0F",
-        "sum_51686dcbef617f0f3102702d0b23db80b2d836df",
+        "TILE_F1800_M300_B600_8A209743FE8C9AD59ED6A9FE5E98977AB9A040DB",
+        "sum_a18a81569b0a6165960e6567ecdb26b882031fc3",
     )
 
 

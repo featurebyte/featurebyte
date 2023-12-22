@@ -46,6 +46,7 @@ class FeatureStorePreview(FeatureByteBaseModel):
 
     graph: QueryGraph
     node_name: str
+    feature_store_id: Optional[PydanticObjectId] = Field(default=None)
 
 
 class FeatureStoreSample(FeatureStorePreview):
@@ -57,6 +58,7 @@ class FeatureStoreSample(FeatureStorePreview):
     to_timestamp: Optional[datetime] = Field(default=None)
     timestamp_column: Optional[str] = Field(default=None)
     stats_names: Optional[List[str]] = Field(default=None)
+    feature_store_id: Optional[PydanticObjectId] = Field(default=None)
 
     @root_validator()
     @classmethod

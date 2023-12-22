@@ -1,7 +1,7 @@
 SELECT
   index,
   "cust_id",
-  SUM("lag_col") AS value_sum_23fef7e510b53d16fcdcebb208add139a307f458
+  SUM("lag_col") AS value_sum_2005a2fb58d595f8177ab790020f757a340d9725
 FROM (
   SELECT
     *,

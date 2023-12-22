@@ -130,6 +130,7 @@ async def test_preview_feature__non_time_based_feature_without_point_in_time_doe
         ],
         graph=non_time_based_feature.graph,
         node_name=non_time_based_feature.node_name,
+        feature_store_id=non_time_based_feature.tabular_source.feature_store_id,
     )
     await feature_preview_service.preview_target_or_feature(feature_preview)
 

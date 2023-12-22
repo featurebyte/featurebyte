@@ -3,12 +3,13 @@ Code generation config is used to control the code generating style.
 """
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from bson import ObjectId
 from pydantic import BaseModel, Field
 
 from featurebyte.models.base import PydanticObjectId
+from featurebyte.query_graph.node.schema import DatabaseDetails
 
 
 class BaseCodeGenConfig(BaseModel):
@@ -58,6 +59,7 @@ class SDKCodeGenConfig(BaseCodeGenConfig):
     # feature store ID & name
     feature_store_id: PydanticObjectId = Field(default_factory=ObjectId)
     feature_store_name: str = Field(default="feature_store")
+    database_details: Optional[DatabaseDetails] = Field(default=None)
 
     # table ID to table info (name, record_creation_timestamp_column, etc)
     table_id_to_info: Dict[PydanticObjectId, Dict[str, Any]] = Field(default_factory=dict)

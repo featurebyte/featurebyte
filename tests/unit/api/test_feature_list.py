@@ -912,16 +912,16 @@ def test_get_sql(feature_list):
         """
         SELECT
           (
-            "_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481" + 123
+            "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" + 123
           ) AS "production_ready_feature",
           (
             (
-              "_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481" + 123
+              "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" + 123
             ) + 123
           ) AS "draft_feature",
           (
             (
-              "_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481" + 123
+              "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" + 123
             ) + 123
           ) AS "deprecated_feature"
         FROM _FB_AGGREGATED AS AGG
@@ -1055,7 +1055,7 @@ def test_get_feature_jobs_status(saved_feature_list, feature_job_logs, update_fi
     # check feature_job_summary content
     expected_feature_job_summary = pd.DataFrame(
         {
-            "aggregation_hash": {0: "aed233b0"},
+            "aggregation_hash": {0: "e8c51d7d"},
             "frequency(min)": {0: 30},
             "completed_jobs": {0: 23},
             "max_duration(s)": {0: 1582.072},

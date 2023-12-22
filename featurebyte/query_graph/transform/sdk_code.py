@@ -22,6 +22,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     VarNameExpressionInfo,
     get_object_class_from_function_call,
 )
+from featurebyte.query_graph.node.schema import DatabaseDetails
 from featurebyte.query_graph.transform.base import BaseGraphExtractor
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 
@@ -261,6 +262,7 @@ class SDKCodeExtractor(BaseGraphExtractor[SDKCodeGlobalState, BaseModel, SDKCode
         to_use_saved_data: bool = False,
         feature_store_name: Optional[str] = None,
         feature_store_id: Optional[ObjectId] = None,
+        database_details: Optional[DatabaseDetails] = None,
         table_id_to_info: Optional[Dict[ObjectId, Dict[str, Any]]] = None,
         output_id: Optional[ObjectId] = None,
         last_statement_callback: Optional[Any] = None,
@@ -273,6 +275,8 @@ class SDKCodeExtractor(BaseGraphExtractor[SDKCodeGlobalState, BaseModel, SDKCode
             code_generation_config["feature_store_name"] = feature_store_name
         if feature_store_id:
             code_generation_config["feature_store_id"] = feature_store_id
+        if database_details:
+            code_generation_config["database_details"] = database_details
         if table_id_to_info:
             code_generation_config["table_id_to_info"] = table_id_to_info
 

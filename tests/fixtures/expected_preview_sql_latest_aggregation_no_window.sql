@@ -4,23 +4,23 @@ WITH REQUEST_TABLE AS (
     'C1' AS "CUSTOMER_ID"
 ), TILE_F3600_M1800_B900_AF1FD0AEE34EC80A96A6D5A486CE40F5A2267B4E AS (
   SELECT
-    latest_3b3c2a8389d7720826731fefb7060b6578050e04.INDEX,
-    latest_3b3c2a8389d7720826731fefb7060b6578050e04."cust_id",
-    latest_3b3c2a8389d7720826731fefb7060b6578050e04."biz_id",
-    value_latest_3b3c2a8389d7720826731fefb7060b6578050e04
+    latest_b4a6546e024f3a059bd67f454028e56c5a37826e.INDEX,
+    latest_b4a6546e024f3a059bd67f454028e56c5a37826e."cust_id",
+    latest_b4a6546e024f3a059bd67f454028e56c5a37826e."biz_id",
+    value_latest_b4a6546e024f3a059bd67f454028e56c5a37826e
   FROM (
     SELECT
       index,
       "cust_id",
       "biz_id",
-      value_latest_3b3c2a8389d7720826731fefb7060b6578050e04
+      value_latest_b4a6546e024f3a059bd67f454028e56c5a37826e
     FROM (
       SELECT
         index,
         "cust_id",
         "biz_id",
         ROW_NUMBER() OVER (PARTITION BY index, "cust_id", "biz_id" ORDER BY "ts" DESC NULLS LAST) AS "__FB_ROW_NUMBER",
-        FIRST_VALUE("a") OVER (PARTITION BY index, "cust_id", "biz_id" ORDER BY "ts" DESC NULLS LAST) AS value_latest_3b3c2a8389d7720826731fefb7060b6578050e04
+        FIRST_VALUE("a") OVER (PARTITION BY index, "cust_id", "biz_id" ORDER BY "ts" DESC NULLS LAST) AS value_latest_b4a6546e024f3a059bd67f454028e56c5a37826e
       FROM (
         SELECT
           *,
@@ -71,17 +71,17 @@ WITH REQUEST_TABLE AS (
     )
     WHERE
       "__FB_ROW_NUMBER" = 1
-  ) AS latest_3b3c2a8389d7720826731fefb7060b6578050e04
+  ) AS latest_b4a6546e024f3a059bd67f454028e56c5a37826e
 ), _FB_AGGREGATED AS (
   SELECT
     REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
     REQ."CUSTOMER_ID" AS "CUSTOMER_ID",
-    REQ."_fb_internal_latest_3b3c2a8389d7720826731fefb7060b6578050e04" AS "_fb_internal_latest_3b3c2a8389d7720826731fefb7060b6578050e04"
+    REQ."_fb_internal_latest_b4a6546e024f3a059bd67f454028e56c5a37826e" AS "_fb_internal_latest_b4a6546e024f3a059bd67f454028e56c5a37826e"
   FROM (
     SELECT
       L."POINT_IN_TIME" AS "POINT_IN_TIME",
       L."CUSTOMER_ID" AS "CUSTOMER_ID",
-      R.value_latest_3b3c2a8389d7720826731fefb7060b6578050e04 AS "_fb_internal_latest_3b3c2a8389d7720826731fefb7060b6578050e04"
+      R.value_latest_b4a6546e024f3a059bd67f454028e56c5a37826e AS "_fb_internal_latest_b4a6546e024f3a059bd67f454028e56c5a37826e"
     FROM (
       SELECT
         "__FB_KEY_COL_0",
@@ -138,5 +138,5 @@ WITH REQUEST_TABLE AS (
 SELECT
   AGG."POINT_IN_TIME",
   AGG."CUSTOMER_ID",
-  "_fb_internal_latest_3b3c2a8389d7720826731fefb7060b6578050e04" AS "a_latest_value"
+  "_fb_internal_latest_b4a6546e024f3a059bd67f454028e56c5a37826e" AS "a_latest_value"
 FROM _FB_AGGREGATED AS AGG

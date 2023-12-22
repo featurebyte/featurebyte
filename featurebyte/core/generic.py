@@ -200,6 +200,7 @@ class QueryObject(FeatureByteBaseModel):
             "to_use_saved_data": to_use_saved_data,
             "feature_store_name": self.feature_store.name,
             "feature_store_id": self.feature_store.id,
+            "database_details": self.feature_store.get_feature_store_details().details,
             "table_id_to_info": table_id_to_info or {},
         }
         state = SDKCodeExtractor(graph=pruned_graph).extract(node=node, **extract_kwargs)

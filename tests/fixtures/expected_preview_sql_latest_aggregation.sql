@@ -4,20 +4,20 @@ WITH REQUEST_TABLE AS (
     'C1' AS "CUSTOMER_ID"
 ), TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
   SELECT
-    latest_2a1145d57c972a1eace23efb905e5f1e25ba5e73.INDEX,
-    latest_2a1145d57c972a1eace23efb905e5f1e25ba5e73."cust_id",
-    value_latest_2a1145d57c972a1eace23efb905e5f1e25ba5e73
+    latest_414e1c5ab2e329a43aabe6dc95bd30d1d9c311b0.INDEX,
+    latest_414e1c5ab2e329a43aabe6dc95bd30d1d9c311b0."cust_id",
+    value_latest_414e1c5ab2e329a43aabe6dc95bd30d1d9c311b0
   FROM (
     SELECT
       index,
       "cust_id",
-      value_latest_2a1145d57c972a1eace23efb905e5f1e25ba5e73
+      value_latest_414e1c5ab2e329a43aabe6dc95bd30d1d9c311b0
     FROM (
       SELECT
         index,
         "cust_id",
         ROW_NUMBER() OVER (PARTITION BY index, "cust_id" ORDER BY "ts" DESC NULLS LAST) AS "__FB_ROW_NUMBER",
-        FIRST_VALUE("a") OVER (PARTITION BY index, "cust_id" ORDER BY "ts" DESC NULLS LAST) AS value_latest_2a1145d57c972a1eace23efb905e5f1e25ba5e73
+        FIRST_VALUE("a") OVER (PARTITION BY index, "cust_id" ORDER BY "ts" DESC NULLS LAST) AS value_latest_414e1c5ab2e329a43aabe6dc95bd30d1d9c311b0
       FROM (
         SELECT
           *,
@@ -67,7 +67,7 @@ WITH REQUEST_TABLE AS (
     )
     WHERE
       "__FB_ROW_NUMBER" = 1
-  ) AS latest_2a1145d57c972a1eace23efb905e5f1e25ba5e73
+  ) AS latest_414e1c5ab2e329a43aabe6dc95bd30d1d9c311b0
 ), "REQUEST_TABLE_W7776000_F3600_BS900_M1800_CUSTOMER_ID" AS (
   SELECT
     "POINT_IN_TIME",
@@ -88,7 +88,7 @@ WITH REQUEST_TABLE AS (
   SELECT
     REQ."POINT_IN_TIME",
     REQ."CUSTOMER_ID",
-    "T0"."_fb_internal_window_w7776000_latest_2a1145d57c972a1eace23efb905e5f1e25ba5e73" AS "_fb_internal_window_w7776000_latest_2a1145d57c972a1eace23efb905e5f1e25ba5e73"
+    "T0"."_fb_internal_window_w7776000_latest_414e1c5ab2e329a43aabe6dc95bd30d1d9c311b0" AS "_fb_internal_window_w7776000_latest_414e1c5ab2e329a43aabe6dc95bd30d1d9c311b0"
   FROM REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
@@ -98,13 +98,13 @@ WITH REQUEST_TABLE AS (
         "POINT_IN_TIME",
         "CUSTOMER_ID",
         ROW_NUMBER() OVER (PARTITION BY "POINT_IN_TIME", "CUSTOMER_ID" ORDER BY INDEX DESC NULLS LAST) AS "__FB_ROW_NUMBER",
-        FIRST_VALUE(value_latest_2a1145d57c972a1eace23efb905e5f1e25ba5e73) OVER (PARTITION BY "POINT_IN_TIME", "CUSTOMER_ID" ORDER BY INDEX DESC NULLS LAST) AS "_fb_internal_window_w7776000_latest_2a1145d57c972a1eace23efb905e5f1e25ba5e73"
+        FIRST_VALUE(value_latest_414e1c5ab2e329a43aabe6dc95bd30d1d9c311b0) OVER (PARTITION BY "POINT_IN_TIME", "CUSTOMER_ID" ORDER BY INDEX DESC NULLS LAST) AS "_fb_internal_window_w7776000_latest_414e1c5ab2e329a43aabe6dc95bd30d1d9c311b0"
       FROM (
         SELECT
           REQ."POINT_IN_TIME",
           REQ."CUSTOMER_ID",
           TILE.INDEX,
-          TILE.value_latest_2a1145d57c972a1eace23efb905e5f1e25ba5e73
+          TILE.value_latest_414e1c5ab2e329a43aabe6dc95bd30d1d9c311b0
         FROM "REQUEST_TABLE_W7776000_F3600_BS900_M1800_CUSTOMER_ID" AS REQ
         INNER JOIN TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS TILE
           ON FLOOR(REQ.__FB_LAST_TILE_INDEX / 2160) = FLOOR(TILE.INDEX / 2160)
@@ -116,7 +116,7 @@ WITH REQUEST_TABLE AS (
           REQ."POINT_IN_TIME",
           REQ."CUSTOMER_ID",
           TILE.INDEX,
-          TILE.value_latest_2a1145d57c972a1eace23efb905e5f1e25ba5e73
+          TILE.value_latest_414e1c5ab2e329a43aabe6dc95bd30d1d9c311b0
         FROM "REQUEST_TABLE_W7776000_F3600_BS900_M1800_CUSTOMER_ID" AS REQ
         INNER JOIN TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS TILE
           ON FLOOR(REQ.__FB_LAST_TILE_INDEX / 2160) - 1 = FLOOR(TILE.INDEX / 2160)
@@ -133,5 +133,5 @@ WITH REQUEST_TABLE AS (
 SELECT
   AGG."POINT_IN_TIME",
   AGG."CUSTOMER_ID",
-  "_fb_internal_window_w7776000_latest_2a1145d57c972a1eace23efb905e5f1e25ba5e73" AS "a_latest_value_past_90d"
+  "_fb_internal_window_w7776000_latest_414e1c5ab2e329a43aabe6dc95bd30d1d9c311b0" AS "a_latest_value_past_90d"
 FROM _FB_AGGREGATED AS AGG

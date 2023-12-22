@@ -18,10 +18,10 @@ event_view = event_table.get_view(
         )
     ],
 )
-col = event_view["event_timestamp"]
-col_1 = event_view["tz_offset"]
+col = event_view["tz_offset"]
+col_1 = event_view["event_timestamp"]
 view = event_view.copy()
-view["timestamp_hour"] = col.dt.tz_offset(col_1).hour
+view["timestamp_hour"] = col_1.dt.tz_offset(col).hour
 grouped = view.groupby(
     by_keys=["cust_id"], category="timestamp_hour"
 ).aggregate_over(

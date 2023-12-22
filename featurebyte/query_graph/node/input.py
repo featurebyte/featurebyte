@@ -31,7 +31,12 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     VariableNameGenerator,
     VarNameExpressionInfo,
 )
-from featurebyte.query_graph.node.schema import ColumnSpec, FeatureStoreDetails, TableDetails
+from featurebyte.query_graph.node.schema import (
+    ColumnSpec,
+    DatabaseDetails,
+    InputNodeFeatureStoreDetails,
+    TableDetails,
+)
 
 
 class BaseInputNodeParameters(BaseModel):
@@ -39,7 +44,7 @@ class BaseInputNodeParameters(BaseModel):
 
     columns: List[ColumnSpec]
     table_details: TableDetails
-    feature_store_details: FeatureStoreDetails
+    feature_store_details: InputNodeFeatureStoreDetails
 
     # class variable
     _source_type_to_import: ClassVar[Dict[SourceType, ClassEnum]] = {
@@ -60,7 +65,11 @@ class BaseInputNodeParameters(BaseModel):
             values["columns"] = [{"name": col, "dtype": DBVarType.UNKNOWN} for col in columns]
         return values
 
-    def extract_feature_store_object(self, feature_store_name: str) -> ObjectClass:
+    def extract_feature_store_object(
+        self,
+        feature_store_name: str,
+        database_details: DatabaseDetails,
+    ) -> ObjectClass:
         """
         Construct feature store object for SDK code generation
 
@@ -68,6 +77,8 @@ class BaseInputNodeParameters(BaseModel):
         ----------
         feature_store_name: str
             Feature store name
+        database_details: DatabaseDetails
+            Database details
 
         Returns
         -------
@@ -78,7 +89,7 @@ class BaseInputNodeParameters(BaseModel):
         return ClassEnum.FEATURE_STORE(
             name=feature_store_name,
             type=self.feature_store_details.type,
-            details=source_details(**self.feature_store_details.details.dict()),
+            details=source_details(**database_details.dict()),
         )
 
     def extract_tabular_source_object(self, feature_store_id: ObjectId) -> ObjectClass:
@@ -441,7 +452,8 @@ class InputNode(BaseNode):
             right_op = table_class_enum(
                 name=table_name or str(table_var_name),
                 feature_store=self.parameters.extract_feature_store_object(
-                    feature_store_name=config.feature_store_name
+                    feature_store_name=config.feature_store_name,
+                    database_details=config.database_details,
                 ),
                 tabular_source=self.parameters.extract_tabular_source_object(
                     feature_store_id=config.feature_store_id

@@ -163,6 +163,13 @@ class FeatureStoreDetails(FeatureByteBaseModel):
     )
 
 
+class InputNodeFeatureStoreDetails(FeatureByteBaseModel):
+    """FeatureStoreDetails for input node"""
+
+    type: SourceType
+    details: Optional[DatabaseDetails]
+
+
 class TableDetails(FeatureByteBaseModel):
     """Table details"""
 

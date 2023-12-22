@@ -282,6 +282,7 @@ class SampleMixin:
         payload = FeatureStorePreview(
             graph=pruned_graph,
             node_name=mapped_node.name,
+            feature_store_id=self.feature_store.id,
         )
         client = Configurations().get_client()
         response = client.post(
@@ -351,6 +352,7 @@ class SampleMixin:
         payload = FeatureStorePreview(
             graph=pruned_graph,
             node_name=mapped_node.name,
+            feature_store_id=self.feature_store.id,
         )
         client = Configurations().get_client()
         response = client.post(url="/feature_store/shape", json=payload.json_dict())

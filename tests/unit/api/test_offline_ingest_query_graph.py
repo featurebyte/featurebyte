@@ -189,10 +189,10 @@ def test_feature__request_column_ttl_and_non_ttl_components(
 
     def on_demand_feature_view(inputs: pd.DataFrame) -> pd.DataFrame:
         df = pd.DataFrame()
-        feat = pd.to_datetime(inputs["__feature__part0"])
         request_col = pd.to_datetime(inputs["POINT_IN_TIME"])
-        feat_1 = request_col + (request_col - request_col)
-        feat_2 = ((feat_1 - feat).dt.seconds // 86400) + inputs["__feature__part1"]
+        feat = request_col + (request_col - request_col)
+        feat_1 = pd.to_datetime(inputs["__feature__part0"])
+        feat_2 = ((feat - feat_1).dt.seconds // 86400) + inputs["__feature__part1"]
         df["feature"] = feat_2
         return df
     """
@@ -225,10 +225,10 @@ def test_feature__multiple_non_ttl_components(
     assert non_ttl_component_graph.has_ttl is False
     assert non_ttl_component_graph.aggregation_nodes_info == [
         AggregationNodeInfo(
-            node_type=NodeType.LOOKUP, node_name="lookup_2", input_node_name="graph_2"
+            node_type=NodeType.LOOKUP, node_name="lookup_1", input_node_name="graph_1"
         ),
         AggregationNodeInfo(
-            node_type=NodeType.LOOKUP, node_name="lookup_1", input_node_name="graph_1"
+            node_type=NodeType.LOOKUP, node_name="lookup_2", input_node_name="graph_2"
         ),
     ]
     check_ingest_query_graph(non_ttl_component_graph)
@@ -269,11 +269,11 @@ def test_feature__ttl_item_aggregate_request_column(
     def on_demand_feature_view(inputs: pd.DataFrame) -> pd.DataFrame:
         df = pd.DataFrame()
         feat = (
-            inputs["__composite_feature__part1"]
-            + inputs["__composite_feature__part2"]
+            inputs["__composite_feature__part0"]
+            + inputs["__composite_feature__part1"]
         )
-        feat_1 = pd.to_datetime(inputs["__composite_feature__part0"])
         request_col = pd.to_datetime(inputs["POINT_IN_TIME"])
+        feat_1 = pd.to_datetime(inputs["__composite_feature__part2"])
         feat_2 = (request_col - feat_1).dt.seconds // 86400
         df["composite_feature"] = feat + feat_2
         return df
