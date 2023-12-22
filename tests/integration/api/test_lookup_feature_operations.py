@@ -2,7 +2,6 @@
 Lookup feature operations
 """
 import pandas as pd
-import pytest
 
 from tests.integration.api.feature_preview_utils import (
     convert_preview_param_dict_to_feature_preview_resp,
@@ -10,9 +9,10 @@ from tests.integration.api.feature_preview_utils import (
 from tests.integration.api.lookup_operations_utils import (
     check_lookup_feature_or_target_is_time_aware,
 )
+from tests.util.helper import tz_localize_if_needed
 
 
-def test_lookup_features_same_column_name(dimension_view, item_table):
+def test_lookup_features_same_column_name(dimension_view, item_table, source_type):
     """
     Test lookup features with same column name
     """
@@ -30,13 +30,14 @@ def test_lookup_features_same_column_name(dimension_view, item_table):
     # assert
     preview_params = {"POINT_IN_TIME": "2001-11-15 10:00:00", "item_id": "item_42"}
     new_feature_preview = new_feature.preview(pd.DataFrame([preview_params]))
+    tz_localize_if_needed(new_feature_preview, source_type)
     assert new_feature_preview.iloc[0].to_dict() == {
         new_feature.name: False,
         **convert_preview_param_dict_to_feature_preview_resp(preview_params),
     }
 
 
-def test_event_view_lookup_features(event_table, transaction_data_upper_case):
+def test_event_view_lookup_features(event_table, transaction_data_upper_case, source_type):
     """
     Test lookup features from EventView are time based
     """
@@ -53,10 +54,11 @@ def test_event_view_lookup_features(event_table, transaction_data_upper_case):
         primary_key_serving_name="order_id",
         lookup_column_name=lookup_column_name,
         event_timestamp_column="ËVENT_TIMESTAMP",
+        source_type=source_type,
     )
 
 
-def test_item_view_lookup_features(item_table, expected_joined_event_item_dataframe):
+def test_item_view_lookup_features(item_table, expected_joined_event_item_dataframe, source_type):
     """
     Test lookup features from ItemView are time based
     """
@@ -73,4 +75,5 @@ def test_item_view_lookup_features(item_table, expected_joined_event_item_datafr
         primary_key_serving_name="item_id",
         lookup_column_name=lookup_column_name,
         event_timestamp_column="ËVENT_TIMESTAMP",
+        source_type=source_type,
     )

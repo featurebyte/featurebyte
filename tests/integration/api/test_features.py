@@ -7,6 +7,7 @@ import pytest
 from pandas._testing import assert_frame_equal
 
 from featurebyte import FeatureList
+from tests.util.helper import tz_localize_if_needed
 
 
 def test_features_without_entity(event_table):
@@ -71,7 +72,7 @@ def test_features_without_entity(event_table):
     pd.testing.assert_frame_equal(df_features_2, df_features_deployed_2)
 
 
-def test_combined_simple_aggregate_and_window_aggregate(event_table, item_table):
+def test_combined_simple_aggregate_and_window_aggregate(event_table, item_table, source_type):
     """
     Test combining simple aggregate and window aggregate
     """
@@ -98,6 +99,7 @@ def test_combined_simple_aggregate_and_window_aggregate(event_table, item_table)
         }
     )
     df_preview = feature.preview(df_observation)
+    tz_localize_if_needed(df_preview, source_type)
     expected = [
         {
             "POINT_IN_TIME": pd.Timestamp("2001-11-15 10:00:00"),
@@ -115,15 +117,17 @@ def test_combined_simple_aggregate_and_window_aggregate(event_table, item_table)
         columns_rename_mapping={event_view.timestamp_column: "POINT_IN_TIME"},
     )
     df_feature_preview = feature.preview(observation_table)
+    tz_localize_if_needed(df_feature_preview, source_type)
     assert df_feature_preview.shape[0] <= 5
     assert df_feature_preview.shape[1] == 3
 
     feature_list = FeatureList([feature], name="my_feature_list")
     df_feature_list_preview = feature_list.preview(observation_table)
+    tz_localize_if_needed(df_feature_list_preview, source_type)
     assert_frame_equal(df_feature_preview, df_feature_list_preview)
 
 
-def test_preview_with_numpy_array(item_table):
+def test_preview_with_numpy_array(item_table, source_type):
     item_view = item_table.get_view()
     item_feature = item_view.groupby("order_id").aggregate(
         method="count", feature_name="my_item_feature"
@@ -136,6 +140,7 @@ def test_preview_with_numpy_array(item_table):
         }
     )
     df_preview = item_feature.preview(df_observation)
+    tz_localize_if_needed(df_preview, source_type)
 
     expected = [
         {

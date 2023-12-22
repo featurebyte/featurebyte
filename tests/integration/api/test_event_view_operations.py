@@ -922,7 +922,7 @@ def test_datetime_comparison__fixed_timestamp_non_tz(event_view, source_type):
 
     df = event_view.preview(limit=100)
 
-    if source_type == "snowflake":
+    if source_type != SourceType.SPARK:
         # Convert to UTC and remove timezone to allow comparison with the fixed timestamp
         timestamp_series = df[timestamp_column].apply(
             lambda x: x.tz_convert("UTC").tz_localize(None)
@@ -946,7 +946,7 @@ def test_datetime_comparison__fixed_timestamp_tz(event_view, source_type):
 
     df = event_view.preview(limit=100)
 
-    if source_type == "snowflake":
+    if source_type != SourceType.SPARK:
         fixed_timestamp = fixed_timestamp_with_tz
     else:
         # Spark returns timestamp converted to UTC and without timezone. To allow comparison,

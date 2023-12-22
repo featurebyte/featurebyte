@@ -16,7 +16,7 @@ from tests.integration.api.feature_preview_utils import (
     convert_preview_param_dict_to_feature_preview_resp,
 )
 from tests.integration.api.test_feature_correctness import sum_func
-from tests.util.helper import fb_assert_frame_equal
+from tests.util.helper import fb_assert_frame_equal, tz_localize_if_needed
 
 
 @dataclass
@@ -222,7 +222,7 @@ def test_forward_aggregate(
         fb_assert_frame_equal(dataframe, expected_values, sort_by_columns=["POINT_IN_TIME"])
 
 
-def test_forward_aggregate_with_count_and_value_column_none(event_table):
+def test_forward_aggregate_with_count_and_value_column_none(event_table, source_type):
     """
     Test forward aggregate with count and value column None.
     """
@@ -235,6 +235,7 @@ def test_forward_aggregate_with_count_and_value_column_none(event_table):
     )
     preview_params = {"POINT_IN_TIME": "2001-11-15 10:00:00", "üser id": 1}
     target_preview = count_target.preview(pd.DataFrame([preview_params]))
+    tz_localize_if_needed(target_preview, source_type)
     assert target_preview.iloc[0].to_dict() == {
         "count_target": 12,
         **convert_preview_param_dict_to_feature_preview_resp(preview_params),

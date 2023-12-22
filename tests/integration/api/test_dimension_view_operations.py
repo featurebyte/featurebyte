@@ -10,6 +10,7 @@ from featurebyte.common.typing import is_scalar_nan
 from tests.integration.api.feature_preview_utils import (
     convert_preview_param_dict_to_feature_preview_resp,
 )
+from tests.util.helper import tz_localize_if_needed
 
 
 @pytest.fixture(name="item_type_dimension_lookup_feature")
@@ -78,7 +79,7 @@ def test_is_in_view_column__target_is_array(event_table):
 
 
 def test_is_in_dictionary__target_is_dictionary_feature(
-    item_type_dimension_lookup_feature, event_table
+    item_type_dimension_lookup_feature, event_table, source_type
 ):
     """
     Test is in dictionary
@@ -100,6 +101,7 @@ def test_is_in_dictionary__target_is_dictionary_feature(
     # assert
     preview_params = {"POINT_IN_TIME": "2001-01-13 12:00:00", "cust_id": "1", "item_id": "item_0"}
     isin_feature_preview = isin_feature.preview(pd.DataFrame([preview_params]))
+    tz_localize_if_needed(isin_feature_preview, source_type)
     assert isin_feature_preview.shape[0] == 1
     assert isin_feature_preview.iloc[0].to_dict() == {
         "lookup_is_in_dictionary": False,
@@ -107,7 +109,7 @@ def test_is_in_dictionary__target_is_dictionary_feature(
     }
 
 
-def test_is_in_dictionary__target_is_array(item_type_dimension_lookup_feature):
+def test_is_in_dictionary__target_is_array(item_type_dimension_lookup_feature, source_type):
     """
     Test is in array
     """
@@ -118,6 +120,7 @@ def test_is_in_dictionary__target_is_array(item_type_dimension_lookup_feature):
     # try to get preview and assert
     preview_params = {"POINT_IN_TIME": "2001-01-13 12:00:00", "item_id": "item_0"}
     isin_feature_preview = isin_feature.preview(pd.DataFrame([preview_params]))
+    tz_localize_if_needed(isin_feature_preview, source_type)
     assert isin_feature_preview.shape[0] == 1
     assert isin_feature_preview.iloc[0].to_dict() == {
         "lookup_is_in_dictionary": True,
@@ -126,7 +129,7 @@ def test_is_in_dictionary__target_is_array(item_type_dimension_lookup_feature):
 
 
 def test_get_value_from_dictionary__target_is_lookup_feature(
-    item_type_dimension_lookup_feature, count_item_type_dictionary_feature
+    item_type_dimension_lookup_feature, count_item_type_dictionary_feature, source_type
 ):
     """
     Test get value from dictionary.
@@ -153,6 +156,7 @@ def test_get_value_from_dictionary__target_is_lookup_feature(
     # fix Snowflake to return the correct type when looking up values from a dictionary.
     get_value_feature_preview[feature_name] = get_value_feature_preview[feature_name].astype(int)
 
+    tz_localize_if_needed(get_value_feature_preview, source_type)
     assert get_value_feature_preview.shape[0] == 1
     assert get_value_feature_preview.iloc[0].to_dict() == {
         feature_name: 1,
@@ -160,7 +164,7 @@ def test_get_value_from_dictionary__target_is_lookup_feature(
     }
 
 
-def test_get_value_in_dictionary__target_is_scalar(event_table):
+def test_get_value_in_dictionary__target_is_scalar(event_table, source_type):
     """
     Test is in dictionary
     """
@@ -189,6 +193,7 @@ def test_get_value_in_dictionary__target_is_scalar(event_table):
     # casting is needed.
     get_value_feature_preview[feature_name] = get_value_feature_preview[feature_name].astype(float)
 
+    tz_localize_if_needed(get_value_feature_preview, source_type)
     assert get_value_feature_preview.shape[0] == 1
     assert get_value_feature_preview.iloc[0].to_dict() == {
         feature_name: 44.21,
@@ -197,7 +202,7 @@ def test_get_value_in_dictionary__target_is_scalar(event_table):
 
 
 def test_get_relative_frequency_from_dictionary__target_is_lookup_feature(
-    item_type_dimension_lookup_feature, count_item_type_dictionary_feature
+    item_type_dimension_lookup_feature, count_item_type_dictionary_feature, source_type
 ):
     """
     Test get relative frequency from dictionary.
@@ -216,6 +221,7 @@ def test_get_relative_frequency_from_dictionary__target_is_lookup_feature(
         "order_id": "T2",
     }
     get_value_feature_preview = get_value_feature.preview(pd.DataFrame([preview_params]))
+    tz_localize_if_needed(get_value_feature_preview, source_type)
     assert get_value_feature_preview.shape[0] == 1
     assert get_value_feature_preview.iloc[0].to_dict() == {
         get_value_feature.name: 0.11111111111111101,
@@ -223,7 +229,9 @@ def test_get_relative_frequency_from_dictionary__target_is_lookup_feature(
     }
 
 
-def test_get_relative_frequency_in_dictionary__target_is_scalar(count_item_type_dictionary_feature):
+def test_get_relative_frequency_in_dictionary__target_is_scalar(
+    count_item_type_dictionary_feature, source_type
+):
     """
     Test get relative frequency
     """
@@ -235,6 +243,7 @@ def test_get_relative_frequency_in_dictionary__target_is_scalar(count_item_type_
     # assert
     preview_params = {"POINT_IN_TIME": "2001-01-13 12:00:00", "order_id": "T2"}
     get_value_feature_preview = get_value_feature.preview(pd.DataFrame([preview_params]))
+    tz_localize_if_needed(get_value_feature_preview, source_type)
     assert get_value_feature_preview.shape[0] == 1
     assert get_value_feature_preview.iloc[0].to_dict() == {
         get_value_feature.name: 0.11111111111111101,
@@ -243,7 +252,7 @@ def test_get_relative_frequency_in_dictionary__target_is_scalar(count_item_type_
 
 
 def test_get_rank_from_dictionary__target_is_lookup_feature(
-    item_type_dimension_lookup_feature, count_item_type_dictionary_feature
+    item_type_dimension_lookup_feature, count_item_type_dictionary_feature, source_type
 ):
     """
     Test get rank from dictionary.
@@ -262,6 +271,7 @@ def test_get_rank_from_dictionary__target_is_lookup_feature(
         "order_id": "T2",
     }
     get_value_feature_preview = get_value_feature.preview(pd.DataFrame([preview_params]))
+    tz_localize_if_needed(get_value_feature_preview, source_type)
     assert get_value_feature_preview.shape[0] == 1
     assert get_value_feature_preview.iloc[0].to_dict() == {
         get_value_feature.name: 1.0,
@@ -269,7 +279,7 @@ def test_get_rank_from_dictionary__target_is_lookup_feature(
     }
 
 
-def test_get_rank_in_dictionary__target_is_scalar(count_item_type_dictionary_feature):
+def test_get_rank_in_dictionary__target_is_scalar(count_item_type_dictionary_feature, source_type):
     """
     Test get rank in dictionary
     """
@@ -281,6 +291,7 @@ def test_get_rank_in_dictionary__target_is_scalar(count_item_type_dictionary_fea
     # assert
     preview_params = {"POINT_IN_TIME": "2001-01-13 12:00:00", "order_id": "T2"}
     get_value_feature_preview = get_value_feature.preview(pd.DataFrame([preview_params]))
+    tz_localize_if_needed(get_value_feature_preview, source_type)
     assert get_value_feature_preview.shape[0] == 1
     assert get_value_feature_preview.iloc[0].to_dict() == {
         get_value_feature.name: 1.0,
