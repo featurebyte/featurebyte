@@ -2,10 +2,7 @@
 Test API View objects describe function
 """
 import pandas as pd
-import pytest
 from pandas.testing import assert_series_equal
-
-from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS
 
 
 def _to_utc_no_offset(date):
@@ -197,7 +194,6 @@ def test_dimension_view_describe(dimension_table):
     assert describe_df.shape == (9, 4)
 
 
-@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS, indirect=True)
 def test_scd_view_describe(scd_table):
     """
     Test sample for DimensionView

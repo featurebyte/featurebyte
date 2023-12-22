@@ -10,7 +10,11 @@ from bson import ObjectId
 
 from featurebyte import Entity, FeatureJobSetting, FeatureList
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
-from tests.util.helper import assert_preview_result_equal, make_online_request
+from tests.util.helper import (
+    assert_preview_result_equal,
+    fb_assert_frame_equal,
+    make_online_request,
+)
 
 
 def get_expected_scd_join_result(
@@ -243,7 +247,7 @@ async def test_feature_derived_from_multiple_scd_joins(session, data_source, sou
     expected = df_observations.copy()
     expected["POINT_IN_TIME"] = pd.to_datetime(expected["POINT_IN_TIME"])
     expected["state_code_counts_30d"] = '{\n  "A": 1\n}'
-    pd.testing.assert_frame_equal(df, expected)
+    fb_assert_frame_equal(df, expected, dict_like_columns=["state_code_counts_30d"])
 
 
 def test_event_view_join_scd_view__preview_view(
