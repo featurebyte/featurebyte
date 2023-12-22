@@ -261,8 +261,8 @@ def test_graph_interpreter_on_demand_tile_gen(
         SELECT
           index,
           "cust_id",
-          SUM("a") AS sum_value_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb,
-          COUNT("a") AS count_value_avg_30d0e03bfdc9aa70e3001f8c32a5f82e6f793cbb
+          SUM("a") AS sum_value_avg_f37862722c21105449ad882409cf62a1ff7f5b35,
+          COUNT("a") AS count_value_avg_f37862722c21105449ad882409cf62a1ff7f5b35
         FROM (
           SELECT
             *,
@@ -333,7 +333,7 @@ def test_graph_interpreter_tile_gen_with_category(query_graph_with_category_grou
     info = tile_gen_sqls[0]
     info_dict = asdict(info)
 
-    aggregation_id = "828be81883198b473c3a5ac214dd4112d7559427"
+    aggregation_id = "4478d266b052ffb6b332e2ec9c2e486fca6c23c6"
     expected_sql = textwrap.dedent(
         f"""
         SELECT
@@ -479,7 +479,7 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
     assert sql == expected
 
     # Check required tile 2 (groupby keys: biz_id)
-    aggregation_id = "ea3e51f28222785a9bc856e4f09a8ce4642bc6c8"
+    aggregation_id = "d5ebb5711120ac12cb84f6136654c6dba7e21774"
     info = tile_gen_sqls[1]
     info_dict = asdict(info)
     sql = info.sql
@@ -1001,13 +1001,13 @@ def test_tile_sql_order_dependent_aggregation(global_graph, latest_value_aggrega
         SELECT
           index,
           "cust_id",
-          value_latest_2a1145d57c972a1eace23efb905e5f1e25ba5e73
+          value_latest_414e1c5ab2e329a43aabe6dc95bd30d1d9c311b0
         FROM (
           SELECT
             index,
             "cust_id",
             ROW_NUMBER() OVER (PARTITION BY index, "cust_id" ORDER BY "ts" DESC NULLS LAST) AS "__FB_ROW_NUMBER",
-            FIRST_VALUE("a") OVER (PARTITION BY index, "cust_id" ORDER BY "ts" DESC NULLS LAST) AS value_latest_2a1145d57c972a1eace23efb905e5f1e25ba5e73
+            FIRST_VALUE("a") OVER (PARTITION BY index, "cust_id" ORDER BY "ts" DESC NULLS LAST) AS value_latest_414e1c5ab2e329a43aabe6dc95bd30d1d9c311b0
           FROM (
             SELECT
               *,

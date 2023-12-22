@@ -129,7 +129,7 @@ async def test_feature_document_contains_raw_graph(feature_service, feature, api
         "output_type": "frame",
         "parameters": {
             "agg_func": "sum",
-            "aggregation_id": "sum_aed233b0e8a6e1c1e0d5427b126b03c949609481",
+            "aggregation_id": "sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295",
             "blind_spot": 600,
             "entity_ids": [ObjectId(api_object_to_id["entity"])],
             "frequency": 1800,
@@ -137,7 +137,7 @@ async def test_feature_document_contains_raw_graph(feature_service, feature, api
             "names": ["sum_30m"],
             "parent": "col_float",
             "serving_names": ["cust_id"],
-            "tile_id": "TILE_F1800_M300_B600_B5CAF33CCFEDA76C257EC2CB7F66C4AD22009B0F",
+            "tile_id": "TILE_F1800_M300_B600_8A209743FE8C9AD59ED6A9FE5E98977AB9A040DB",
             "time_modulo_frequency": 300,
             "timestamp": "event_timestamp",
             "value_by": None,
@@ -149,6 +149,7 @@ async def test_feature_document_contains_raw_graph(feature_service, feature, api
     expected_raw_groupby_params = expected_groupby_node["parameters"].copy()
     expected_raw_groupby_params["names"] = ["sum_30m", "sum_2h", "sum_1d"]
     expected_raw_groupby_params["windows"] = ["30m", "2h", "1d"]
+    expected_raw_groupby_params["aggregation_id"] = "sum_aed233b0e8a6e1c1e0d5427b126b03c949609481"
     expected_raw_groupby_params[
         "tile_id"
     ] = "TILE_F1800_M300_B600_B5CAF33CCFEDA76C257EC2CB7F66C4AD22009B0F"

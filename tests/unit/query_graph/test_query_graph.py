@@ -207,7 +207,7 @@ def test_query_graph__reconstruct_edge_case(query_graph_with_groupby):
     assert output.nodes_map["groupby_1"].parameters.tile_id == expected_tile_id
 
     # check that tile id is different if regenerate_groupby_hash=True
-    expected_tile_id = "TILE_F3600_M1800_B900_44F5A6D9500FD740581C63DBB87A6770DE6AB633"
+    expected_tile_id = "TILE_F3600_M1800_B900_514EE37FCE3041A788AE511395751132A2B50839"
     output, _ = query_graph_with_groupby.reconstruct(
         node_name_to_replacement_node={}, regenerate_groupby_hash=True
     )
@@ -275,8 +275,8 @@ def test_query_graph__add_groupby_operation(graph_single_node, groupby_node_para
     groupby_node = add_pruning_sensitive_operation(
         graph=graph, node_cls=GroupByNode, node_params=groupby_node_params, input_node=node_input
     )
-    tile_id = "TILE_F3600_M1800_B900_89C17DAA4D06AB13E3BFCAEB0AF236CE0CCA713F"
-    aggregation_id = "sum_35a40dbf3534a4c4fc204b5101187cf81556efc4"
+    tile_id = "TILE_F3600_M1800_B900_4CB5D54DBBC13045F93ADD1FC4B877AA72B22953"
+    aggregation_id = "sum_2e6611ffcc5cca12bec34685afb8f08be1748709"
     assert groupby_node.parameters.tile_id == tile_id
     assert groupby_node.parameters.aggregation_id == aggregation_id
 
@@ -291,8 +291,8 @@ def test_query_graph__add_groupby_operation_with_graph_node(
     groupby_node = add_pruning_sensitive_operation(
         graph=graph, node_cls=GroupByNode, node_params=groupby_node_params, input_node=graph_node
     )
-    tile_id = "TILE_F3600_M1800_B900_44F5A6D9500FD740581C63DBB87A6770DE6AB633"
-    aggregation_id = "sum_8a508c0abe8012b3650ed6e7e125b01ff70a8930"
+    tile_id = "TILE_F3600_M1800_B900_514EE37FCE3041A788AE511395751132A2B50839"
+    aggregation_id = "sum_b9313a97cdb2747e20a0da6e5a1c1536a2c73195"
     assert groupby_node.parameters.tile_id == tile_id
     assert groupby_node.parameters.aggregation_id == aggregation_id
 
@@ -554,3 +554,27 @@ def test_get_table_ids(
     )
     table_ids = query_graph.get_table_ids(node_name=add_node.name)
     assert table_ids == [table_id]
+
+
+def test_input_node_hash_calculation_ignores_feature_store_details(
+    event_table_details, snowflake_feature_store_details_dict
+):
+    """Test that input node hash calculation ignores feature store details"""
+    graph = QueryGraph()
+    input_node_params = {
+        "type": "event_table",
+        "columns": [{"name": "column", "dtype": "FLOAT"}],
+        "table_details": event_table_details.dict(),
+        "feature_store_details": snowflake_feature_store_details_dict,
+        "id": ObjectId(),
+    }
+    input_node = insert_input_node(graph, input_node_params)
+    assert snowflake_feature_store_details_dict["details"] is not None
+
+    # insert another input node with different feature store details
+    input_node_params["feature_store_details"] = {
+        "type": snowflake_feature_store_details_dict["type"],
+        "details": None,
+    }
+    second_input_node = insert_input_node(graph, input_node_params)
+    assert input_node == second_input_node

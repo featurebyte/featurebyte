@@ -87,6 +87,7 @@ class FeatureOrTargetMixin(QueryObject, PrimaryEntityMixin, ABC):
         preview_params = {
             "graph": pruned_graph,
             "node_name": mapped_node.name,
+            "feature_store_id": self.feature_store.id,
         }
         if isinstance(observation_set, ObservationTable):
             preview_params["observation_table_id"] = observation_set.id

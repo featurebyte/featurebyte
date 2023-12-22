@@ -188,6 +188,7 @@ class FeaturePreviewService(PreviewService):
         feature_store, session = await self._get_feature_store_session(
             graph=graph,
             node_name=node_name,
+            feature_store_id=feature_or_target_preview.feature_store_id,
         )
         parent_serving_preparation = (
             await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
@@ -231,6 +232,7 @@ class FeaturePreviewService(PreviewService):
             document = await self.feature_service.get_document(feature_preview.feature_id)
             params["graph"] = document.graph
             params["node_name"] = document.node_name
+            params["feature_store_id"] = document.tabular_source.feature_store_id
         return await self.preview_target_or_feature(FeatureOrTargetPreview(**params))
 
     async def preview_target(self, target_preview: TargetPreview) -> dict[str, Any]:
@@ -252,6 +254,7 @@ class FeaturePreviewService(PreviewService):
             document = await self.target_service.get_document(target_preview.target_id)
             params["graph"] = document.graph
             params["node_name"] = document.node_name
+            params["feature_store_id"] = document.tabular_source.feature_store_id
         return await self.preview_target_or_feature(FeatureOrTargetPreview(**params))
 
     async def preview_featurelist(self, featurelist_preview: FeatureListPreview) -> dict[str, Any]:

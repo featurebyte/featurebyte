@@ -407,7 +407,7 @@ def test_aggregate_over_feature_tile_sql(feature_from_change_view):
         SELECT
           index,
           "col_text",
-          COUNT(*) AS value_count_4286197032f980d554bc6f6564ea53f42532d702
+          COUNT(*) AS value_{expected_aggregation_id}
         FROM (
           SELECT
             *,
@@ -474,6 +474,7 @@ def test_get_change_view__keep_record_creation_timestamp_column(
     """
     Test create ChangeView using record creation timestamp column as track changes column
     """
+    _ = mock_api_object_cache
     snowflake_scd_table.update_record_creation_timestamp_column("created_at")
     assert snowflake_scd_table.record_creation_timestamp_column == "created_at"
     change_view = snowflake_scd_table.get_change_view(

@@ -282,6 +282,7 @@ class SampleMixin:
         payload = FeatureStorePreview(
             graph=pruned_graph,
             node_name=mapped_node.name,
+            feature_store_id=self.feature_store.id,
         )
         client = Configurations().get_client()
         response = client.post(
@@ -319,6 +320,7 @@ class SampleMixin:
             from_timestamp=from_timestamp,
             to_timestamp=to_timestamp,
             timestamp_column=self.timestamp_column,
+            feature_store_id=self.feature_store.id,
         )
 
     @perf_logging
@@ -351,6 +353,7 @@ class SampleMixin:
         payload = FeatureStorePreview(
             graph=pruned_graph,
             node_name=mapped_node.name,
+            feature_store_id=self.feature_store.id,
         )
         client = Configurations().get_client()
         response = client.post(url="/feature_store/shape", json=payload.json_dict())
@@ -504,6 +507,7 @@ class SampleMixin:
             from_timestamp=from_timestamp,
             to_timestamp=to_timestamp,
             timestamp_column=self.timestamp_column,
+            feature_store_id=self.feature_store.id,
         )
         client = Configurations().get_client()
         response = client.post(

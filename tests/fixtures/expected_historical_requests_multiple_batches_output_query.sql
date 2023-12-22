@@ -5,8 +5,8 @@ SELECT
   T2."a_2h_average",
   T2."a_48h_average",
   T0."order_size",
-  T2."MY FEATURE",
-  T1."Current Membership Status",
+  T1."MY FEATURE",
+  T2."Current Membership Status",
   T3."a_latest_value_past_90d",
   T1."a_latest_value",
   T0."asat_feature"

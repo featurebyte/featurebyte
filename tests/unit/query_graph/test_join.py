@@ -164,7 +164,7 @@ def test_item_table_join_event_table_attributes_on_demand_tile_gen(
           index,
           "cust_id",
           "item_type",
-          COUNT(*) AS value_count_bac600740926fd108d0945c41b34484acf70adad
+          COUNT(*) AS value_count_d445f47d1ab8d2fa742190a9d0e595f23da0c25d
         FROM (
           SELECT
             *,
@@ -320,8 +320,8 @@ def test_double_aggregation(global_graph, order_size_agg_by_cust_id_graph):
         SELECT
           index,
           "cust_id",
-          SUM("ord_size") AS sum_value_avg_9f23dee9ad91063f4d7ac913cdb563037b0099ff,
-          COUNT("ord_size") AS count_value_avg_9f23dee9ad91063f4d7ac913cdb563037b0099ff
+          SUM("ord_size") AS sum_value_avg_5b9baeccc6b74c1d85cd9bb42307af39c7f53cec,
+          COUNT("ord_size") AS count_value_avg_5b9baeccc6b74c1d85cd9bb42307af39c7f53cec
         FROM (
           SELECT
             *,
