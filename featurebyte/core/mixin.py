@@ -320,6 +320,7 @@ class SampleMixin:
             from_timestamp=from_timestamp,
             to_timestamp=to_timestamp,
             timestamp_column=self.timestamp_column,
+            feature_store_id=self.feature_store.id,
         )
 
     @perf_logging
@@ -506,6 +507,7 @@ class SampleMixin:
             from_timestamp=from_timestamp,
             to_timestamp=to_timestamp,
             timestamp_column=self.timestamp_column,
+            feature_store_id=self.feature_store.id,
         )
         client = Configurations().get_client()
         response = client.post(

@@ -413,6 +413,7 @@ class ObservationTableService(
             graph=graph,
             node_name=node.name,
             stats_names=["unique", "max", "min"],
+            feature_store_id=feature_store.id,
         )
         describe_stats_json = await self.preview_service.describe(sample, 0, 1234)
         describe_stats_dataframe = dataframe_from_json(describe_stats_json)
