@@ -254,6 +254,7 @@ class FeaturePreviewService(PreviewService):
             document = await self.target_service.get_document(target_preview.target_id)
             params["graph"] = document.graph
             params["node_name"] = document.node_name
+            params["feature_store_id"] = document.tabular_source.feature_store_id
         return await self.preview_target_or_feature(FeatureOrTargetPreview(**params))
 
     async def preview_featurelist(self, featurelist_preview: FeatureListPreview) -> dict[str, Any]:

@@ -38,3 +38,4 @@ class TargetPreview(ComputeRequest, PreviewObservationSet):
     graph: Optional[QueryGraph]
     node_name: Optional[str]
     target_id: Optional[PydanticObjectId]
+    feature_store_id: Optional[PydanticObjectId]
