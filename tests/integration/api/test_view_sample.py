@@ -198,8 +198,8 @@ def test_item_view_sample(item_table, expected_min, expected_max):
     [
         (
             "snowflake",
-            pd.Timestamp("2001-10-10 18:12:15.000088+1400"),
-            pd.Timestamp("2001-10-10 18:12:15.000088+1400"),
+            pd.Timestamp("2001-10-09 22:12:15.000088-0600"),
+            pd.Timestamp("2001-10-14 04:08:02.000346+1000"),
         ),
         (
             "spark",
