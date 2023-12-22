@@ -446,6 +446,7 @@ class InputNode(BaseNode):
             #     columns_info=[ColumnInfo(...), ...],
             #     ...
             # )` statement
+            assert config.database_details is not None, "database_details should not be None"
             columns_info = table_info.get(
                 "columns_info", self.parameters.extract_columns_info_objects()
             )
