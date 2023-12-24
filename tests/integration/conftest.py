@@ -427,7 +427,7 @@ def data_warehouse_initialization_fixture(
     """
     Data warehouse initialization fixture
     """
-    if source_type == "databricks":
+    if source_type in {SourceType.DATABRICKS, SourceType.DATABRICKS_UNITY}:
         # wait for databricks compute cluster to be ready
         databricks_details = cast(DatabricksDetails, feature_store_details)
         databricks_sql.connect(

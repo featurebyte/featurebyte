@@ -26,6 +26,7 @@ from tests.util.helper import (
     fb_assert_frame_equal,
     get_lagged_series_pandas,
     iet_entropy,
+    tz_localize_if_needed,
 )
 
 
@@ -1146,8 +1147,7 @@ def test_add_feature(event_view, non_time_based_feature, scd_table, source_type)
 
     def _check_first_row_matches(df, expected_dict):
         # databricks return POINT_IN_TIME with "Etc/UTC" timezone
-        if source_type == "databricks":
-            df["POINT_IN_TIME"] = pd.to_datetime(df["POINT_IN_TIME"]).dt.tz_localize(None)
+        tz_localize_if_needed(df, source_type)
         assert df.iloc[0].to_dict() == expected_dict
 
     _check_first_row_matches(
