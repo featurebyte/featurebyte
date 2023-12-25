@@ -1,6 +1,8 @@
 """
 Tests for least frequent UDF
 """
+import json
+
 import numpy as np
 import pytest
 
@@ -16,6 +18,12 @@ import pytest
         ({"a": 1, "b": np.nan, "c": 3}, "a"),
         ({"a": np.nan}, None),
         ({"a": -1, "b": np.nan, "c": -3}, "c"),
+        (
+            json.loads(
+                '{"\\u00e0dd": 338.51, "r\\u00ebmove": 11.39, "__MISSING__": 234.77, "purchase": 225.78, "detail": 194.16000000000003}'
+            ),
+            "rëmove",
+        ),
     ],
 )
 @pytest.mark.asyncio

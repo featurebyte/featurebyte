@@ -17,7 +17,7 @@ class DatabricksUnitySchemaInitializer(BaseSparkSchemaInitializer):
 
     @property
     def current_working_schema_version(self) -> int:
-        return 11
+        return 12
 
     @property
     def sql_directory_name(self) -> str:
