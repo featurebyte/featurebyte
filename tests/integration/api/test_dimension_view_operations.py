@@ -10,7 +10,7 @@ from featurebyte.common.typing import is_scalar_nan
 from tests.integration.api.feature_preview_utils import (
     convert_preview_param_dict_to_feature_preview_resp,
 )
-from tests.util.helper import tz_localize_if_needed
+from tests.util.helper import fb_assert_frame_equal, tz_localize_if_needed
 
 
 @pytest.fixture(name="item_type_dimension_lookup_feature")
@@ -222,11 +222,15 @@ def test_get_relative_frequency_from_dictionary__target_is_lookup_feature(
     }
     get_value_feature_preview = get_value_feature.preview(pd.DataFrame([preview_params]))
     tz_localize_if_needed(get_value_feature_preview, source_type)
-    assert get_value_feature_preview.shape[0] == 1
-    assert get_value_feature_preview.iloc[0].to_dict() == {
-        get_value_feature.name: 0.11111111111111101,
-        **convert_preview_param_dict_to_feature_preview_resp(preview_params),
-    }
+    expected = pd.DataFrame(
+        [
+            {
+                get_value_feature.name: 0.11111111111111101,
+                **convert_preview_param_dict_to_feature_preview_resp(preview_params),
+            }
+        ]
+    )[get_value_feature_preview.columns]
+    fb_assert_frame_equal(get_value_feature_preview, expected)
 
 
 def test_get_relative_frequency_in_dictionary__target_is_scalar(
@@ -244,11 +248,15 @@ def test_get_relative_frequency_in_dictionary__target_is_scalar(
     preview_params = {"POINT_IN_TIME": "2001-01-13 12:00:00", "order_id": "T2"}
     get_value_feature_preview = get_value_feature.preview(pd.DataFrame([preview_params]))
     tz_localize_if_needed(get_value_feature_preview, source_type)
-    assert get_value_feature_preview.shape[0] == 1
-    assert get_value_feature_preview.iloc[0].to_dict() == {
-        get_value_feature.name: 0.11111111111111101,
-        **convert_preview_param_dict_to_feature_preview_resp(preview_params),
-    }
+    expected = pd.DataFrame(
+        [
+            {
+                get_value_feature.name: 0.11111111111111101,
+                **convert_preview_param_dict_to_feature_preview_resp(preview_params),
+            }
+        ]
+    )[get_value_feature_preview.columns]
+    fb_assert_frame_equal(get_value_feature_preview, expected)
 
 
 def test_get_rank_from_dictionary__target_is_lookup_feature(
