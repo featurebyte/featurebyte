@@ -111,6 +111,7 @@ class OnDemandFeatureViewExtractor(
         input_column_expr: str,
         ttl_seconds: int,
         var_name_generator: VariableNameGenerator,
+        comment: str = "",
     ) -> StatementStr:
         """
         Generate time-to-live (TTL) handling statements for the feature or target query graph
@@ -129,6 +130,8 @@ class OnDemandFeatureViewExtractor(
             Time-to-live (TTL) in seconds
         var_name_generator: VariableNameGenerator
             Variable name generator
+        comment: str
+            Comment
 
         Returns
         -------
@@ -160,6 +163,7 @@ class OnDemandFeatureViewExtractor(
         return StatementStr(
             textwrap.dedent(
                 f"""
+            {comment}
             {req_time_var_name} = pd.to_datetime({subset_pit_expr}, utc=True)
             {cutoff_var_name} = {req_time_var_name} - pd.Timedelta(seconds={ttl_seconds})
             {ingested_var_name} = pd.to_datetime({subset_feat_time_col_expr}, utc=True)
@@ -202,6 +206,7 @@ class OnDemandFeatureViewExtractor(
                 input_column_expr=input_var_name,
                 ttl_seconds=has_ttl,
                 var_name_generator=global_state.var_name_generator,
+                comment=f"# TTL handling for {output_column_name}",
             )
             global_state.code_generator.add_statements(statements=[ttl_statements])
         else:

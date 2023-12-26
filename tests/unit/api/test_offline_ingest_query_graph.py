@@ -319,7 +319,9 @@ def test_feature__input_has_mixed_ingest_graph_node_flags(
 
     # check on-demand view code
     offline_store_info = feature_model.offline_store_info
-    codes = offline_store_info.generate_on_demand_feature_view_code(feature_name=feature_model.name)
+    codes = offline_store_info.generate_on_demand_feature_view_code(
+        feature_name=feature_model.name, ttl_seconds=7200
+    )
     expected = """
     import json
     import numpy as np
@@ -330,7 +332,14 @@ def test_feature__input_has_mixed_ingest_graph_node_flags(
     def on_demand_feature_view(inputs: pd.DataFrame) -> pd.DataFrame:
         df = pd.DataFrame()
         feat = inputs['__feature_zscore__part0'] - inputs['__feature_zscore__part1']
-        df['feature_zscore'] = feat / inputs['__feature_zscore__part2']
+        feat_1 = feat / inputs['__feature_zscore__part2']
+        # TTL handling for feature_zscore
+        request_time = pd.to_datetime(inputs['POINT_IN_TIME'], utc=True)
+        cutoff = request_time - pd.Timedelta(seconds=7200)
+        ingested_time = pd.to_datetime(inputs['__feature_timestamp'], utc=True)
+        mask = (ingested_time >= cutoff) & (ingested_time <= request_time)
+        feat_1[~mask] = np.nan
+        df['feature_zscore'] = feat_1
         return df
     """
     assert codes.strip() == textwrap.dedent(expected).strip()
@@ -380,3 +389,30 @@ def test_feature__input_has_ingest_query_graph_node(test_dir):
 
     feature_model = FeatureModel(**feature_dict)
     check_decomposed_graph_output_node_hash(feature_model=feature_model)
+
+
+def test_feature__with_ttl_handling(float_feature):
+    """Test a feature with ttl handling."""
+    float_feature.save()
+    offline_store_info = float_feature.cached_model.offline_store_info
+    codes = offline_store_info.generate_on_demand_feature_view_code(
+        feature_name=float_feature.name, ttl_seconds=7200
+    )
+    expected = """
+    import json
+    import numpy as np
+    import pandas as pd
+    import scipy as sp
+
+
+    def on_demand_feature_view(inputs: pd.DataFrame) -> pd.DataFrame:
+        df = pd.DataFrame()
+        request_time = pd.to_datetime(inputs['POINT_IN_TIME'], utc=True)
+        cutoff = request_time - pd.Timedelta(seconds=7200)
+        ingested_time = pd.to_datetime(inputs['__feature_timestamp'], utc=True)
+        mask = (ingested_time >= cutoff) & (ingested_time <= request_time)
+        inputs['sum_1d'][~mask] = np.nan
+        df['sum_1d'] = inputs['sum_1d']
+        return df
+    """
+    assert codes.strip() == textwrap.dedent(expected).strip()
