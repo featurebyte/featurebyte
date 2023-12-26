@@ -31,7 +31,7 @@ def always_enable_feast_integration_fixture():
 
 
 @pytest.fixture(name="features", scope="module")
-def features_fixture(event_table, scd_table):
+def features_fixture(event_table, scd_table):  # pylint: disable=too-many-locals
     """
     Fixture for feature
     """
