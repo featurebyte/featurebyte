@@ -9,7 +9,12 @@ from bson import ObjectId
 
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
-from tests.util.helper import assert_equal_json_fixture, deploy_feature, undeploy_feature
+from tests.util.helper import (
+    assert_equal_json_fixture,
+    assert_equal_with_expected_fixture,
+    deploy_feature,
+    undeploy_feature,
+)
 
 
 @pytest.fixture(name="always_enable_feast_integration", autouse=True)
@@ -66,6 +71,51 @@ async def deployed_feature_without_entity(
     _ = mock_update_data_warehouse
     _ = mock_feature_materialize_service
     return await deploy_feature(app_container, feature_without_entity)
+
+
+@pytest_asyncio.fixture
+async def deployed_scd_lookup_feature(
+    app_container,
+    scd_lookup_feature,
+    mock_update_data_warehouse,
+    mock_feature_materialize_service,
+):
+    """
+    Fixture for deployed scd lookup feature
+    """
+    _ = mock_update_data_warehouse
+    _ = mock_feature_materialize_service
+    return await deploy_feature(app_container, scd_lookup_feature)
+
+
+@pytest_asyncio.fixture
+async def deployed_aggregate_asat_feature(
+    app_container,
+    aggregate_asat_feature,
+    mock_update_data_warehouse,
+    mock_feature_materialize_service,
+):
+    """
+    Fixture for deployed aggregate asat feature
+    """
+    _ = mock_update_data_warehouse
+    _ = mock_feature_materialize_service
+    return await deploy_feature(app_container, aggregate_asat_feature)
+
+
+@pytest_asyncio.fixture
+async def deployed_item_aggregate_feature(
+    app_container,
+    non_time_based_feature,
+    mock_update_data_warehouse,
+    mock_feature_materialize_service,
+):
+    """
+    Fixture for deployed item aggregate feature
+    """
+    _ = mock_update_data_warehouse
+    _ = mock_feature_materialize_service
+    return await deploy_feature(app_container, non_time_based_feature)
 
 
 @pytest.fixture
@@ -136,11 +186,13 @@ async def test_feature_table_one_feature_deployed(
         "catalog_id": ObjectId("646f6c1c0ed28a5271fb02db"),
         "description": None,
         "entity_universe": {
-            "aggregate_result_table_names": [
+            "query_template": {
+                "formatted_expression": "SELECT "
+                "DISTINCT\n"
+                '  "cust_id"\n'
+                "FROM "
                 "online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c"
-            ],
-            "serving_names": ["cust_id"],
-            "type": "window_aggregate",
+            }
         },
         "feature_ids": [deployed_float_feature.id],
         "feature_job_setting": {
@@ -197,11 +249,13 @@ async def test_feature_table_two_features_deployed(
         "catalog_id": ObjectId("646f6c1c0ed28a5271fb02db"),
         "description": None,
         "entity_universe": {
-            "aggregate_result_table_names": [
+            "query_template": {
+                "formatted_expression": "SELECT "
+                "DISTINCT\n"
+                '  "cust_id"\n'
+                "FROM "
                 "online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c"
-            ],
-            "serving_names": ["cust_id"],
-            "type": "window_aggregate",
+            }
         },
         "feature_ids": [deployed_float_feature.id, deployed_float_feature_post_processed.id],
         "feature_job_setting": {
@@ -262,11 +316,13 @@ async def test_feature_table_undeploy(
         "catalog_id": ObjectId("646f6c1c0ed28a5271fb02db"),
         "description": None,
         "entity_universe": {
-            "aggregate_result_table_names": [
+            "query_template": {
+                "formatted_expression": "SELECT "
+                "DISTINCT\n"
+                '  "cust_id"\n'
+                "FROM "
                 "online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c"
-            ],
-            "serving_names": ["cust_id"],
-            "type": "window_aggregate",
+            }
         },
         "feature_ids": [deployed_float_feature_post_processed.id],
         "feature_job_setting": {
@@ -334,11 +390,13 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
         "catalog_id": ObjectId("646f6c1c0ed28a5271fb02db"),
         "description": None,
         "entity_universe": {
-            "aggregate_result_table_names": [
+            "query_template": {
+                "formatted_expression": "SELECT "
+                "DISTINCT\n"
+                '  "cust_id"\n'
+                "FROM "
                 "online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c"
-            ],
-            "serving_names": ["cust_id"],
-            "type": "window_aggregate",
+            }
         },
         "feature_ids": [deployed_float_feature.id],
         "feature_job_setting": {
@@ -368,11 +426,13 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
         "catalog_id": ObjectId("646f6c1c0ed28a5271fb02db"),
         "description": None,
         "entity_universe": {
-            "aggregate_result_table_names": [
+            "query_template": {
+                "formatted_expression": "SELECT "
+                "DISTINCT\n"
+                '  "cust_id"\n'
+                "FROM "
                 "online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c"
-            ],
-            "serving_names": ["cust_id"],
-            "type": "window_aggregate",
+            }
         },
         "feature_ids": [deployed_float_feature_different_job_setting.id],
         "feature_job_setting": {
@@ -424,11 +484,7 @@ async def test_feature_table_without_entity(
         "catalog_id": ObjectId("646f6c1c0ed28a5271fb02db"),
         "description": None,
         "entity_universe": {
-            "aggregate_result_table_names": [
-                "online_store_e4d5f4dff76dea2d344a4cc284d7881e0b183981"
-            ],
-            "serving_names": [],
-            "type": "window_aggregate",
+            "query_template": {"formatted_expression": "SELECT\n" "  1 AS " '"dummy_entity"'}
         },
         "feature_ids": [deployed_feature_without_entity.id],
         "feature_job_setting": {
@@ -450,4 +506,109 @@ async def test_feature_table_without_entity(
         app_container,
         expected_feature_views={"fb_entity_overall_fjs_86400_3600_7200_ttl"},
         expected_feature_services={"count_1d_list"},
+    )
+
+
+@pytest.mark.asyncio
+async def test_lookup_feature(
+    app_container,
+    document_service,
+    periodic_task_service,
+    deployed_scd_lookup_feature,
+    update_fixtures,
+):
+    """
+    Test feature table creation with lookup feature
+    """
+    feature_tables = await get_all_feature_tables(document_service)
+    assert len(feature_tables) == 1
+    feature_table = feature_tables["fb_entity_cust_id_fjs_86400_0_0"]
+
+    feature_table_dict = feature_table.dict(
+        by_alias=True, exclude={"created_at", "updated_at", "id"}
+    )
+    _ = feature_table_dict.pop("feature_cluster")
+    entity_universe = feature_table_dict.pop("entity_universe")
+    assert_equal_with_expected_fixture(
+        entity_universe["query_template"]["formatted_expression"],
+        "tests/fixtures/offline_store_feature_table/lookup_feature_universe.sql",
+        update_fixtures,
+    )
+    assert feature_table_dict == {
+        "block_modification_by": [],
+        "catalog_id": ObjectId("646f6c1c0ed28a5271fb02db"),
+        "description": None,
+        "feature_ids": [deployed_scd_lookup_feature.id],
+        "feature_job_setting": {
+            "blind_spot": "0s",
+            "frequency": "1d",
+            "time_modulo_frequency": "0s",
+        },
+        "has_ttl": False,
+        "last_materialized_at": None,
+        "name": "fb_entity_cust_id_fjs_86400_0_0",
+        "output_column_names": ["some_lookup_feature"],
+        "output_dtypes": ["BOOL"],
+        "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
+        "serving_names": ["cust_id"],
+        "user_id": ObjectId("63f9506dd478b94127123456"),
+    }
+    assert await has_scheduled_task(periodic_task_service, feature_table)
+    await check_feast_registry(
+        app_container,
+        expected_feature_views={"fb_entity_cust_id_fjs_86400_0_0"},
+        expected_feature_services={"some_lookup_feature_list"},
+    )
+
+
+@pytest.mark.asyncio
+async def test_aggregate_asat_feature(
+    app_container,
+    document_service,
+    periodic_task_service,
+    deployed_aggregate_asat_feature,
+    update_fixtures,
+):
+    """
+    Test feature table creation with aggregate asat feature
+    """
+    feature_tables = await get_all_feature_tables(document_service)
+    assert len(feature_tables) == 1
+    feature_table = feature_tables["fb_entity_gender_fjs_86400_0_0"]
+
+    feature_table_dict = feature_table.dict(
+        by_alias=True, exclude={"created_at", "updated_at", "id"}
+    )
+    _ = feature_table_dict.pop("feature_cluster")
+    entity_universe = feature_table_dict.pop("entity_universe")
+    assert_equal_with_expected_fixture(
+        entity_universe["query_template"]["formatted_expression"],
+        "tests/fixtures/offline_store_feature_table/aggregate_asat_feature_universe.sql",
+        update_fixtures,
+    )
+
+    assert feature_table_dict == {
+        "block_modification_by": [],
+        "catalog_id": ObjectId("646f6c1c0ed28a5271fb02db"),
+        "description": None,
+        "feature_ids": [deployed_aggregate_asat_feature.id],
+        "feature_job_setting": {
+            "blind_spot": "0s",
+            "frequency": "1d",
+            "time_modulo_frequency": "0s",
+        },
+        "has_ttl": False,
+        "last_materialized_at": None,
+        "name": "fb_entity_gender_fjs_86400_0_0",
+        "output_column_names": ["asat_gender_count"],
+        "output_dtypes": ["FLOAT"],
+        "primary_entity_ids": deployed_aggregate_asat_feature.primary_entity_ids,
+        "serving_names": ["gender"],
+        "user_id": ObjectId("63f9506dd478b94127123456"),
+    }
+    assert await has_scheduled_task(periodic_task_service, feature_table)
+    await check_feast_registry(
+        app_container,
+        expected_feature_views={"fb_entity_gender_fjs_86400_0_0"},
+        expected_feature_services={"asat_gender_count_list"},
     )

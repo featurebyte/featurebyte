@@ -127,12 +127,12 @@ def test_feast_registry_construction(feast_registry_proto):
             },
             {
                 "dataSourceClassType": "feast.infra.offline_stores.snowflake_source.SnowflakeSource",
-                "name": "fb_entity_transaction_id",
+                "name": "fb_entity_transaction_id_fjs_86400_0_0",
                 "project": "featurebyte_project",
                 "snowflakeOptions": {
                     "database": "sf_database",
                     "schema": "sf_schema",
-                    "table": "fb_entity_transaction_id",
+                    "table": "fb_entity_transaction_id_fjs_86400_0_0",
                 },
                 "timestampField": "__feature_timestamp",
                 "type": "BATCH_SNOWFLAKE",
@@ -180,7 +180,7 @@ def test_feast_registry_construction(feast_registry_proto):
                             "featureColumns": [
                                 {"name": "non_time_time_sum_amount_feature", "valueType": "DOUBLE"}
                             ],
-                            "featureViewName": "fb_entity_transaction_id",
+                            "featureViewName": "fb_entity_transaction_id_fjs_86400_0_0",
                         },
                     ],
                     "name": "test_feature_list",
@@ -223,11 +223,11 @@ def test_feast_registry_construction(feast_registry_proto):
                 "spec": {
                     "batchSource": {
                         "dataSourceClassType": "feast.infra.offline_stores.snowflake_source.SnowflakeSource",
-                        "name": "fb_entity_transaction_id",
+                        "name": "fb_entity_transaction_id_fjs_86400_0_0",
                         "snowflakeOptions": {
                             "database": "sf_database",
                             "schema": "sf_schema",
-                            "table": "fb_entity_transaction_id",
+                            "table": "fb_entity_transaction_id_fjs_86400_0_0",
                         },
                         "timestampField": "__feature_timestamp",
                         "type": "BATCH_SNOWFLAKE",
@@ -237,7 +237,7 @@ def test_feast_registry_construction(feast_registry_proto):
                     "features": [
                         {"name": "non_time_time_sum_amount_feature", "valueType": "DOUBLE"}
                     ],
-                    "name": "fb_entity_transaction_id",
+                    "name": "fb_entity_transaction_id_fjs_86400_0_0",
                     "online": True,
                     "project": "featurebyte_project",
                 },
