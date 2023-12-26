@@ -38,15 +38,13 @@ class BaseEntityUniverseConstructor:
     node.
     """
 
-    def __init__(self, graph: QueryGraphModel, node: Node):
+    def __init__(self, graph: QueryGraphModel, node: Node, source_type: SourceType):
         flat_graph, node_name_map = GraphFlatteningTransformer(graph=graph).transform()
         flat_node = flat_graph.get_node_by_name(node_name_map[node.name])
         self.graph = flat_graph
         self.node = flat_node
 
-        sql_graph = SQLOperationGraph(
-            self.graph, SQLType.AGGREGATION, source_type=SourceType.SNOWFLAKE
-        )
+        sql_graph = SQLOperationGraph(self.graph, SQLType.AGGREGATION, source_type=source_type)
         sql_node = sql_graph.build(self.node)
         self.aggregate_input_expr = sql_node.sql
 
@@ -139,7 +137,7 @@ class AggregateAsAtNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
 
 
 def get_entity_universe_constructor(
-    graph: QueryGraphModel, node: Node
+    graph: QueryGraphModel, node: Node, source_type: SourceType
 ) -> BaseEntityUniverseConstructor:
     """
     Returns the entity universe constructor for the given node
@@ -150,6 +148,8 @@ def get_entity_universe_constructor(
         The query graph
     node: Node
         The node for which the entity universe constructor is to be returned
+    source_type: SourceType
+        Source type information
 
     Returns
     -------
@@ -161,13 +161,15 @@ def get_entity_universe_constructor(
         If the node type is not supported
     """
     if node.type == NodeType.LOOKUP:
-        return LookupNodeEntityUniverseConstructor(graph, node)
+        return LookupNodeEntityUniverseConstructor(graph, node, source_type)
     if node.type == NodeType.AGGREGATE_AS_AT:
-        return AggregateAsAtNodeEntityUniverseConstructor(graph, node)
+        return AggregateAsAtNodeEntityUniverseConstructor(graph, node, source_type)
     raise NotImplementedError(f"Unsupported node type: {node.type}")
 
 
-def get_combined_universe(graph_and_node_pairs: List[Tuple[QueryGraphModel, Node]]) -> Expression:
+def get_combined_universe(
+    graph_and_node_pairs: List[Tuple[QueryGraphModel, Node]], source_type: SourceType
+) -> Expression:
     """
     Returns the combined entity universe expression
 
@@ -175,6 +177,8 @@ def get_combined_universe(graph_and_node_pairs: List[Tuple[QueryGraphModel, Node
     ----------
     graph_and_node_pairs: List[Tuple[QueryGraphModel, Node]]
         List of (graph, node) pairs for which the entity universe is to be constructed
+    source_type: SourceType
+        Source type information
 
     Returns
     -------
@@ -184,7 +188,7 @@ def get_combined_universe(graph_and_node_pairs: List[Tuple[QueryGraphModel, Node
     processed_universe_exprs = set()
 
     for graph, node in graph_and_node_pairs:
-        entity_universe_constructor = get_entity_universe_constructor(graph, node)
+        entity_universe_constructor = get_entity_universe_constructor(graph, node, source_type)
         current_universe_expr = entity_universe_constructor.get_entity_universe_template()
         if combined_universe_expr is None:
             combined_universe_expr = current_universe_expr
@@ -256,6 +260,7 @@ class EntityUniverseModel(FeatureByteBaseModel):
         serving_names: List[str],
         aggregate_result_table_names: List[str],
         offline_ingest_graphs: List[OfflineStoreIngestQueryGraph],
+        source_type: SourceType,
     ) -> EntityUniverseModel:
         """
         Create a new EntityUniverseModel object
@@ -268,6 +273,8 @@ class EntityUniverseModel(FeatureByteBaseModel):
             The names of the aggregate result tables for window aggregates
         offline_ingest_graphs: List[OfflineStoreIngestQueryGraph]
             The offline ingest graphs that the entity universe is to be constructed from
+        source_type: SourceType
+            Source type information
 
         Returns
         -------
@@ -284,7 +291,7 @@ class EntityUniverseModel(FeatureByteBaseModel):
                 for info in offline_ingest_graph.aggregation_nodes_info:
                     node = offline_ingest_graph.graph.get_node_by_name(info.node_name)
                     graph_and_node_pairs.append((offline_ingest_graph.graph, node))
-            universe_expr = get_combined_universe(graph_and_node_pairs)
+            universe_expr = get_combined_universe(graph_and_node_pairs, source_type)
 
         return EntityUniverseModel(query_template=SqlglotExpressionModel.create(universe_expr))
 

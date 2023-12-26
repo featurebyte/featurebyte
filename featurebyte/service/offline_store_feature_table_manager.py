@@ -22,11 +22,13 @@ from featurebyte.models.offline_store_feature_table import (
     get_offline_store_feature_table_model,
 )
 from featurebyte.models.offline_store_ingest_query import OfflineStoreIngestQueryGraph
+from featurebyte.service.catalog import CatalogService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_materialize import FeatureMaterializeService
 from featurebyte.service.feature_materialize_scheduler import FeatureMaterializeSchedulerService
+from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
 from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
 
@@ -115,7 +117,7 @@ class OfflineIngestGraphContainer:
             yield table_name, features
 
 
-class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instance-attributes
+class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instance-attributes,too-many-arguments
     """
     OfflineStoreFeatureTableManagerService class
     """
@@ -123,6 +125,8 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
     def __init__(
         self,
         catalog_id: ObjectId,
+        catalog_service: CatalogService,
+        feature_store_service: FeatureStoreService,
         offline_store_feature_table_service: OfflineStoreFeatureTableService,
         feature_service: FeatureService,
         online_store_compute_query_service: OnlineStoreComputeQueryService,
@@ -133,6 +137,8 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         feature_list_service: FeatureListService,
     ):
         self.catalog_id = catalog_id
+        self.catalog_service = catalog_service
+        self.feature_store_service = feature_store_service
         self.offline_store_feature_table_service = offline_store_feature_table_service
         self.feature_service = feature_service
         self.online_store_compute_query_service = online_store_compute_query_service
@@ -304,6 +310,11 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
             primary_entity_serving_names=[entity.serving_names[0] for entity in primary_entities],
         )
 
+        catalog_model = await self.catalog_service.get_document(self.catalog_id)
+        feature_store_model = await self.feature_store_service.get_document(
+            catalog_model.default_feature_store_ids[0]
+        )
+
         return get_offline_store_feature_table_model(
             feature_table_name=feature_table_name,
             features=[feature_ids_to_model[feature_id] for feature_id in feature_ids],
@@ -311,6 +322,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
             primary_entities=primary_entities,
             has_ttl=has_ttl,
             feature_job_setting=feature_job_setting,
+            source_type=feature_store_model.type,
         )
 
     async def _get_required_aggregate_result_tables(

@@ -10,7 +10,7 @@ from datetime import datetime
 
 import pymongo
 
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, SourceType
 from featurebyte.models.base import (
     FeatureByteCatalogBaseDocumentModel,
     PydanticObjectId,
@@ -177,6 +177,7 @@ def get_offline_store_feature_table_model(
     primary_entities: List[EntityModel],
     has_ttl: bool,
     feature_job_setting: Optional[FeatureJobSetting],
+    source_type: SourceType,
 ) -> OfflineStoreFeatureTableModel:
     """
     Returns a OfflineStoreFeatureTableModel for a feature table
@@ -195,6 +196,8 @@ def get_offline_store_feature_table_model(
         Whether the feature table has TTL
     feature_job_setting : Optional[FeatureJobSetting]
         Feature job setting of the feature table
+    source_type : SourceType
+        Source type information
 
     Returns
     -------
@@ -211,6 +214,7 @@ def get_offline_store_feature_table_model(
         serving_names=[entity.serving_names[0] for entity in primary_entities],
         aggregate_result_table_names=aggregate_result_table_names,
         offline_ingest_graphs=ingest_graph_metadata.offline_ingest_graphs,
+        source_type=source_type,
     )
 
     return OfflineStoreFeatureTableModel(

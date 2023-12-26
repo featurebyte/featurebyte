@@ -6,6 +6,7 @@ from datetime import datetime
 
 import pytest
 
+from featurebyte import SourceType
 from featurebyte.models.entity_universe import (
     EntityUniverseModel,
     get_combined_universe,
@@ -60,7 +61,7 @@ def test_lookup_feature(catalog, lookup_graph_and_node):
     """
     _ = catalog
     graph, node = lookup_graph_and_node
-    constructor = get_entity_universe_constructor(graph, node)
+    constructor = get_entity_universe_constructor(graph, node, SourceType.SNOWFLAKE)
     expected = textwrap.dedent(
         """
         SELECT DISTINCT
@@ -93,7 +94,7 @@ def test_aggregate_asat_universe(catalog, aggregate_asat_graph_and_node):
     """
     _ = catalog
     graph, node = aggregate_asat_graph_and_node
-    constructor = get_entity_universe_constructor(graph, node)
+    constructor = get_entity_universe_constructor(graph, node, SourceType.SNOWFLAKE)
     expected = textwrap.dedent(
         """
         SELECT DISTINCT
@@ -128,7 +129,7 @@ def test_combined_universe(catalog, lookup_graph_and_node, aggregate_asat_graph_
     # Note: in practice the two universes should have the same serving name, though that is not the
     # case in this test.
     universe = get_combined_universe(
-        [lookup_graph_and_node, aggregate_asat_graph_and_node],
+        [lookup_graph_and_node, aggregate_asat_graph_and_node], SourceType.SNOWFLAKE
     )
     expected = textwrap.dedent(
         """
@@ -184,7 +185,7 @@ def test_combined_universe_deduplicate(
     """
     _ = catalog
     universe = get_combined_universe(
-        [lookup_graph_and_node, lookup_graph_and_node_same_input],
+        [lookup_graph_and_node, lookup_graph_and_node_same_input], SourceType.SNOWFLAKE
     )
     expected = textwrap.dedent(
         """
@@ -218,7 +219,7 @@ def test_entity_universe_model_get_entity_universe_expr(catalog, lookup_graph_an
     """
     _ = catalog
     graph, node = lookup_graph_and_node
-    constructor = get_entity_universe_constructor(graph, node)
+    constructor = get_entity_universe_constructor(graph, node, SourceType.SNOWFLAKE)
     query_template = constructor.get_entity_universe_template()
     entity_universe_model = EntityUniverseModel(
         query_template=SqlglotExpressionModel.create(query_template)
