@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional, cast
 
 from fastapi import Query, Request
 
+from featurebyte.exception import DocumentNotFoundError
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.persistent import AuditDocumentList
@@ -156,6 +157,18 @@ class FeatureStoreRouter(
         return cast(FeatureStoreInfo, info)
 
     @staticmethod
+    async def try_retrieve_feature_store(
+        controller: FeatureStoreController, feature_store: FeatureStoreModel
+    ) -> FeatureStoreModel:
+        """
+        Try to retrieve FeatureStore from database
+        """
+        try:
+            return await controller.get(document_id=feature_store.id)
+        except DocumentNotFoundError:
+            return feature_store
+
+    @staticmethod
     async def list_databases_in_feature_store(
         request: Request,
         feature_store: FeatureStoreModel,
@@ -164,6 +177,9 @@ class FeatureStoreRouter(
         List databases
         """
         controller = request.state.app_container.feature_store_controller
+        feature_store = await FeatureStoreRouter.try_retrieve_feature_store(
+            controller, feature_store
+        )
         result: List[str] = await controller.list_databases(
             feature_store=feature_store,
         )
@@ -179,6 +195,9 @@ class FeatureStoreRouter(
         List schemas
         """
         controller = request.state.app_container.feature_store_controller
+        feature_store = await FeatureStoreRouter.try_retrieve_feature_store(
+            controller, feature_store
+        )
         result: List[str] = await controller.list_schemas(
             feature_store=feature_store,
             database_name=database_name,
@@ -196,6 +215,9 @@ class FeatureStoreRouter(
         List schemas
         """
         controller = request.state.app_container.feature_store_controller
+        feature_store = await FeatureStoreRouter.try_retrieve_feature_store(
+            controller, feature_store
+        )
         result: List[str] = await controller.list_tables(
             feature_store=feature_store,
             database_name=database_name,
@@ -215,6 +237,9 @@ class FeatureStoreRouter(
         List columns
         """
         controller = request.state.app_container.feature_store_controller
+        feature_store = await FeatureStoreRouter.try_retrieve_feature_store(
+            controller, feature_store
+        )
         result: List[ColumnSpecWithDescription] = await controller.list_columns(
             feature_store=feature_store,
             database_name=database_name,
