@@ -253,7 +253,7 @@ def test_event_view_groupby__prune(
     pruned_graph, mappped_node = feature.extract_pruned_graph_and_node()
     # assign 1 & assign 2 dependency are kept
     assert pruned_graph.edges_map == {
-        "add_1": ["assign_1", "add_2"],
+        "add_1": ["add_2", "assign_1"],
         "add_2": ["assign_2"],
         "assign_1": ["assign_2"],
         "assign_2": ["groupby_1", "groupby_2"],
@@ -560,8 +560,9 @@ def get_generic_input_node_params_fixture():
             "details": {
                 "account": "sf_account",
                 "warehouse": "sf_warehouse",
-                "database": "db",
-                "sf_schema": "public",
+                "database_name": "db",
+                "schema_name": "public",
+                "role_name": "role",
             },
         },
     }

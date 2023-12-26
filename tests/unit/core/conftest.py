@@ -50,8 +50,9 @@ def dataframe_fixture(global_graph, snowflake_feature_store):
                 "details": {
                     "account": "sf_account",
                     "warehouse": "sf_warehouse",
-                    "database": "db",
-                    "sf_schema": "public",
+                    "database_name": "db",
+                    "scheme_name": "public",
+                    "role_name": "TESTING",
                 },
             },
         },

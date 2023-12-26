@@ -15,6 +15,12 @@ class DatabricksUnitySchemaInitializer(BaseSparkSchemaInitializer):
     Databricks unity schema initializer
     """
 
+    async def initialize(self) -> None:
+        await super().initialize()
+        assert isinstance(self.session, DatabricksUnitySession)
+        grant_permissions_query = f"GRANT ALL PRIVILEGES ON SCHEMA `{self.session.schema_name}` TO `{self.session.group_name}`"
+        await self.session.execute_query(grant_permissions_query)
+
     @property
     def current_working_schema_version(self) -> int:
         return 12
@@ -40,6 +46,7 @@ class DatabricksUnitySession(DatabricksSession):
     """
 
     source_type: SourceType = Field(SourceType.DATABRICKS_UNITY, const=True)
+    group_name: str
 
     def initializer(self) -> BaseSchemaInitializer:
         return DatabricksUnitySchemaInitializer(self)

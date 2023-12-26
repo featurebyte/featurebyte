@@ -29,8 +29,9 @@ def snowflake_session_dict_without_credentials_fixture():
     return {
         "account": "some_account",
         "warehouse": "some_warehouse",
-        "database": "sf_database",
-        "sf_schema": "FEATUREBYTE",
+        "database_name": "sf_database",
+        "schema_name": "FEATUREBYTE",
+        "role_name": "TESTING",
     }
 
 
@@ -126,7 +127,7 @@ def mock_snowflake_cursor_fixture(is_fetch_pandas_all_available):
     """
     Fixture for a mocked connection cursor for Snowflake
     """
-    with patch("featurebyte.session.snowflake.connector", autospec=True) as mock_connector:
+    with patch("featurebyte.session.snowflake.connector") as mock_connector:
         mock_cursor = Mock(name="MockCursor", description=[["col_a"], ["col_b"], ["col_c"]])
         if not is_fetch_pandas_all_available:
             mock_cursor.fetch_pandas_all.side_effect = NotSupportedError
@@ -279,8 +280,8 @@ def patched_snowflake_session_cls_fixture(
         mock_session_obj.list_schemas.side_effect = mock_list_schemas
         mock_session_obj.list_tables.side_effect = mock_list_tables
         mock_session_obj.get_working_schema_metadata.side_effect = mock_get_working_schema_metadata
-        mock_session_obj.database_name = snowflake_session_dict_without_credentials["database"]
-        mock_session_obj.schema_name = snowflake_session_dict_without_credentials["sf_schema"]
+        mock_session_obj.database_name = snowflake_session_dict_without_credentials["database_name"]
+        mock_session_obj.schema_name = snowflake_session_dict_without_credentials["schema_name"]
         yield patched_class
 
 

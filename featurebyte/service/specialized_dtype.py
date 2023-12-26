@@ -80,6 +80,7 @@ class SpecializedDtypeDetectionService:
                 FeatureStoreSample(
                     graph=graph,
                     node_name=node.name,
+                    feature_store_id=feature_store.id,
                 ),
                 size=SAMPLE_SIZE,
                 seed=RANDOM_SEED,

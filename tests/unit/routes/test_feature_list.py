@@ -81,8 +81,9 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         mock_get_session.return_value = SnowflakeSession(
             account="test_account",
             warehouse="test_warehouse",
-            database="test_database",
-            sf_schema="test_schema",
+            database_name="test_database",
+            schema_name="test_schema",
+            role_name="TESTING",
             database_credential={
                 "type": "USERNAME_PASSWORD",
                 "username": "test_username",
@@ -775,7 +776,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         response = test_api_client.post(f"{self.base_route}/sql", json=featurelist_preview_payload)
         assert response.status_code == HTTPStatus.OK
         assert response.json().endswith(
-            'SELECT\n  "_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481" AS "sum_30m"\n'
+            'SELECT\n  "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "sum_30m"\n'
             "FROM _FB_AGGREGATED AS AGG"
         )
 
@@ -805,12 +806,10 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         feature_list_id = featurelist["_id"]
 
         # use the feature payload to get the aggregation id
-        feature_ids = featurelist["feature_ids"]
-        feature_payload = self.load_payload("tests/fixtures/request_payloads/feature_sum_30m.json")
-        assert (
-            feature_payload["_id"] in feature_ids
-        ), "Feature payload not matched with feature list"
-        graph = QueryGraphModel(**feature_payload["graph"])
+        feature_id = featurelist["feature_ids"][0]
+        res = test_api_client.get(f"/feature/{feature_id}")
+        assert res.status_code == HTTPStatus.OK
+        graph = QueryGraphModel(**res.json()["graph"])
         groupby_node = graph.get_node_by_name("groupby_1")
         aggregation_id = groupby_node.parameters.aggregation_id
 

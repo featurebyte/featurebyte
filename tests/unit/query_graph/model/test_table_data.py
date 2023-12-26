@@ -55,8 +55,9 @@ def feature_store_details_fixture():
         details=SnowflakeDetails(
             account="sf_account",
             warehouse="sf_warehouse",
-            database="sf_database",
-            sf_schema="sf_schema",
+            database_name="sf_database",
+            schema_name="sf_schema",
+            role_name="TESTING",
         ),
     )
 
@@ -166,7 +167,7 @@ def source_table_input_node_fixture(feature_store_details, source_table_data):
                 {"name": "col_int", "dtype": "INT"},
                 {"name": "col_float", "dtype": "FLOAT"},
             ],
-            "feature_store_details": feature_store_details,
+            "feature_store_details": {"type": feature_store_details.type, "details": None},
             "id": None,
             "table_details": source_table_data.tabular_source.table_details,
             "type": "source_table",
@@ -189,7 +190,7 @@ def event_input_node_fixture(feature_store_details, event_table_data):
                 {"name": "event_id", "dtype": "INT"},
                 {"name": "amount", "dtype": "FLOAT"},
             ],
-            "feature_store_details": feature_store_details,
+            "feature_store_details": {"type": feature_store_details.type, "details": None},
             "id": event_table_data.id,
             "table_details": event_table_data.tabular_source.table_details,
             "id_column": "event_id",
@@ -225,7 +226,7 @@ def dimension_input_node_fixture(feature_store_details, dimension_table_data):
                 {"name": "gender", "dtype": "VARCHAR"},
                 {"name": "age", "dtype": "INT"},
             ],
-            "feature_store_details": feature_store_details,
+            "feature_store_details": {"type": feature_store_details.type, "details": None},
             "id": dimension_table_data.id,
             "table_details": dimension_table_data.tabular_source.table_details,
             "id_column": "user_id",

@@ -317,7 +317,7 @@ def saved_feature_fixture(
     assert float_feature.id == feature_id_before
     assert float_feature.readiness == FeatureReadiness.DRAFT
     assert float_feature.saved is True
-    assert float_feature.cached_model.definition_hash == "83cebcee6c7f34bfe4bb4289441c2ee70361e3a3"
+    assert float_feature.cached_model.definition_hash == "e2778a5f89053e279269b5b177e33f3ac51c18b8"
 
     # check the groupby node after feature is saved (node parameters should get pruned)
     graph = QueryGraphModel(**float_feature.dict()["graph"])
@@ -326,9 +326,9 @@ def saved_feature_fixture(
     assert groupby_node.parameters.windows == ["1d"]
     assert (
         groupby_node.parameters.tile_id
-        == "TILE_F1800_M300_B600_B5CAF33CCFEDA76C257EC2CB7F66C4AD22009B0F"
+        == "TILE_F1800_M300_B600_8A209743FE8C9AD59ED6A9FE5E98977AB9A040DB"
     )
-    assert groupby_node.parameters.aggregation_id == "sum_aed233b0e8a6e1c1e0d5427b126b03c949609481"
+    assert groupby_node.parameters.aggregation_id == "sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
 
     assert float_feature.name == "sum_1d"
     return float_feature
@@ -412,6 +412,10 @@ def test_info(saved_feature):
         "readiness",
         "created_at",
     }, verbose_info_dict
+
+    # check database details at input node are not included
+    node = saved_feature.cached_model.graph.get_node_by_name("input_1")
+    assert node.parameters.feature_store_details.details is None
 
 
 def test_feature_save__exception_due_to_feature_saved_before(float_feature, saved_feature):
@@ -1078,7 +1082,7 @@ def test_update_readiness_and_default_version_mode__unsaved_feature(float_featur
 def test_get_sql(float_feature):
     """Test get sql for feature"""
     assert float_feature.sql.endswith(
-        'SELECT\n  "_fb_internal_window_w86400_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481" AS "sum_1d"\n'
+        'SELECT\n  "_fb_internal_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "sum_1d"\n'
         "FROM _FB_AGGREGATED AS AGG"
     )
 
@@ -1246,7 +1250,7 @@ def test_get_feature_jobs_status_incomplete_logs(saved_feature, feature_job_logs
     assert job_status_result.job_session_logs.shape == (1, 12)
     expected_feature_job_summary = pd.DataFrame(
         {
-            "aggregation_hash": {0: "aed233b0"},
+            "aggregation_hash": {0: "e8c51d7d"},
             "frequency(min)": {0: 30},
             "completed_jobs": {0: 0},
             "max_duration(s)": {0: np.nan},
@@ -1276,7 +1280,7 @@ def test_get_feature_jobs_status_empty_logs(saved_feature, feature_job_logs):
     assert job_status_result.job_session_logs.shape == (0, 12)
     expected_feature_job_summary = pd.DataFrame(
         {
-            "aggregation_hash": {0: "aed233b0"},
+            "aggregation_hash": {0: "e8c51d7d"},
             "frequency(min)": {0: 30},
             "completed_jobs": {0: 0},
             "max_duration(s)": {0: np.nan},

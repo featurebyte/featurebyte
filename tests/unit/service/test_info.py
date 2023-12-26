@@ -55,8 +55,9 @@ async def test_get_feature_store_info(feature_store_service, feature_store):
         database_details=SnowflakeDetails(
             account="sf_account",
             warehouse="sf_warehouse",
-            database="sf_database",
-            sf_schema="sf_schema",
+            database_name="sf_database",
+            schema_name="sf_schema",
+            role_name="TESTING",
         ),
         created_at=info.created_at,
         updated_at=None,

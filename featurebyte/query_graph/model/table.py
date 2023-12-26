@@ -51,7 +51,7 @@ class SourceTableData(BaseTableData):
             name="temp",
             parameters={
                 "id": None,
-                "feature_store_details": feature_store_details,
+                "feature_store_details": {"type": feature_store_details.type},
                 **self._get_common_input_node_parameters(),
             },
         )
@@ -80,7 +80,7 @@ class EventTableData(BaseTableData):
                 "id": self.id,
                 "timestamp_column": self.event_timestamp_column,
                 "id_column": self.event_id_column,
-                "feature_store_details": feature_store_details,
+                "feature_store_details": {"type": feature_store_details.type},
                 "event_timestamp_timezone_offset": self.event_timestamp_timezone_offset,
                 "event_timestamp_timezone_offset_column": self.event_timestamp_timezone_offset_column,
                 **self._get_common_input_node_parameters(),
@@ -141,7 +141,7 @@ class ItemTableData(BaseTableData):
                 "id_column": self.item_id_column,
                 "event_table_id": self.event_table_id,
                 "event_id_column": self.event_id_column,
-                "feature_store_details": feature_store_details,
+                "feature_store_details": {"type": feature_store_details.type},
                 **self._get_common_input_node_parameters(),
             },
         )
@@ -345,7 +345,7 @@ class DimensionTableData(BaseTableData):
             parameters={
                 "id": self.id,
                 "id_column": self.dimension_id_column,
-                "feature_store_details": feature_store_details,
+                "feature_store_details": {"type": feature_store_details.type},
                 **self._get_common_input_node_parameters(),
             },
         )
@@ -420,7 +420,7 @@ class SCDTableData(BaseTableData):
                 "surrogate_key_column": self.surrogate_key_column,
                 "end_timestamp_column": self.end_timestamp_column,
                 "current_flag_column": self.current_flag_column,
-                "feature_store_details": feature_store_details,
+                "feature_store_details": {"type": feature_store_details.type},
                 **self._get_common_input_node_parameters(),
             },
         )

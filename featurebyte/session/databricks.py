@@ -92,13 +92,13 @@ class DatabricksSession(BaseSparkSession):
             server_hostname=data["host"],
             http_path=data["http_path"],
             access_token=self.database_credential.access_token,
-            catalog=self.featurebyte_catalog,
-            schema=self.featurebyte_schema,
+            catalog=self.catalog_name,
+            schema=self.schema_name,
         )
 
     def _initialize_storage(self) -> None:
-        self.storage_spark_url = self.storage_spark_url.rstrip("/")
-        self._storage_base_path = self.storage_spark_url.lstrip("dbfs:")
+        self.storage_path = self.storage_path.rstrip("/")
+        self._storage_base_path = self.storage_path.lstrip("dbfs:")
         # ensure google credentials not in environment variables to avoid conflict
         os.environ.pop("GOOGLE_CREDENTIALS", None)
         workspace_client = WorkspaceClient(

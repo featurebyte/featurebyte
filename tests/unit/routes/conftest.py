@@ -73,8 +73,9 @@ def get_mock_get_session_fixture(session_manager, snowflake_execute_query):
             source_type=SourceType.SNOWFLAKE,
             account="sf_account",
             warehouse="sf_warehouse",
-            database="sf_database",
-            sf_schema="sf_schema",
+            database_name="sf_database",
+            schema_name="sf_schema",
+            role_name="TESTING",
             database_credential=UsernamePasswordCredential(
                 username="username",
                 password="password",

@@ -9,7 +9,11 @@ event_view = event_table.get_view(
     drop_column_names=["created_at"],
     column_cleaning_operations=[],
 )
-grouped = event_view.groupby(
+grouped = event_view.as_features(
+    column_names=["cust_id"], feature_names=["cust_id_feature"], offset=None
+)
+feat = grouped["cust_id_feature"]
+grouped_1 = event_view.groupby(
     by_keys=["cust_id"], category="col_int"
 ).aggregate_over(
     value_column=None,
@@ -21,11 +25,7 @@ grouped = event_view.groupby(
     ),
     skip_fill_na=True,
 )
-feat = grouped["count_a_24h_per_col_int"]
-grouped_1 = event_view.as_features(
-    column_names=["cust_id"], feature_names=["cust_id_feature"], offset=None
-)
-feat_1 = grouped_1["cust_id_feature"]
-feat_2 = feat_1.isin(feat)
+feat_1 = grouped_1["count_a_24h_per_col_int"]
+feat_2 = feat.isin(feat_1)
 feat_2.name = "lookup_feature_isin_count_per_category_feature"
 output = feat_2

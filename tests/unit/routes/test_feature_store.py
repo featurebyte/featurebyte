@@ -90,8 +90,9 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
                 "source": "snowflake",
                 "database_details": {
                     "account": "sf_account",
-                    "database": "sf_database",
-                    "sf_schema": "sf_schema",
+                    "database_name": "sf_database",
+                    "schema_name": "sf_schema",
+                    "role_name": "TESTING",
                     "warehouse": "sf_warehouse",
                 },
             }.items()

@@ -98,8 +98,9 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         mock_get_session.return_value = SnowflakeSession(
             account="test_account",
             warehouse="test_warehouse",
-            database="test_database",
-            sf_schema="test_schema",
+            database_name="test_database",
+            schema_name="test_schema",
+            role_name="TESTING",
             database_credential={
                 "type": "USERNAME_PASSWORD",
                 "username": "test_username",
@@ -764,7 +765,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         response = test_api_client.post(f"{self.base_route}/sql", json=feature_preview_payload)
         assert response.status_code == HTTPStatus.OK
         assert response.json().endswith(
-            'SELECT\n  "_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481" AS "sum_30m"\nFROM _FB_AGGREGATED AS AGG'
+            'SELECT\n  "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "sum_30m"\nFROM _FB_AGGREGATED AS AGG'
         )
 
     @freeze_time("2022-01-02 10:00:00")
@@ -929,7 +930,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         multiple items in aggregation_result_names which is wrong for this feature.
         """
         assert create_success_response.json()["aggregation_result_names"] == [
-            "_fb_internal_window_w1800_sum_aed233b0e8a6e1c1e0d5427b126b03c949609481"
+            "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
         ]
 
     def test_request_sample_entity_serving_names(

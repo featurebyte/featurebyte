@@ -82,6 +82,8 @@ class BaseSession(BaseModel):
     # pylint: disable=too-many-public-methods
 
     source_type: SourceType
+    database_name: str = ""
+    schema_name: str = ""
     _connection: Any = PrivateAttr(default=None)
     _unique_id: int = PrivateAttr(default=0)
     _no_schema_error: ClassVar[Type[Exception]] = Exception
@@ -524,28 +526,6 @@ class BaseSession(BaseModel):
             source_type=self.source_type,
         )
         await self.execute_query(query)
-
-    @property
-    @abstractmethod
-    def schema_name(self) -> str:
-        """
-        Returns the name of the working schema that stores featurebyte assets
-
-        Returns
-        -------
-        str
-        """
-
-    @property
-    @abstractmethod
-    def database_name(self) -> str:
-        """
-        Returns the name of the working database that stores featurebyte assets
-
-        Returns
-        -------
-        str
-        """
 
     @classmethod
     @abstractmethod

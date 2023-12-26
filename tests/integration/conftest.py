@@ -355,8 +355,9 @@ def feature_store_details_fixture(source_type, sqlite_filename):
         return SnowflakeDetails(
             account=os.getenv("SNOWFLAKE_ACCOUNT"),
             warehouse=os.getenv("SNOWFLAKE_WAREHOUSE"),
-            sf_schema=temp_schema_name,
-            database=os.getenv("SNOWFLAKE_DATABASE"),
+            schema_name=temp_schema_name,
+            database_name=os.getenv("SNOWFLAKE_DATABASE"),
+            role_name="TESTING",
         )
 
     if source_type == "databricks":
@@ -365,9 +366,10 @@ def feature_store_details_fixture(source_type, sqlite_filename):
         return DatabricksDetails(
             host=os.getenv("DATABRICKS_SERVER_HOSTNAME"),
             http_path=os.getenv("DATABRICKS_HTTP_PATH"),
-            featurebyte_catalog=os.getenv("DATABRICKS_CATALOG"),
-            featurebyte_schema=temp_schema_name,
-            storage_spark_url=f"dbfs:/FileStore/{temp_schema_name}",
+            catalog_name=os.getenv("DATABRICKS_CATALOG"),
+            schema_name=temp_schema_name,
+            group_name="testing",
+            storage_path=f"dbfs:/FileStore/{temp_schema_name}",
         )
 
     if source_type == "databricks_unity":
@@ -376,9 +378,10 @@ def feature_store_details_fixture(source_type, sqlite_filename):
         return DatabricksDetails(
             host=os.getenv("DATABRICKS_SERVER_HOSTNAME"),
             http_path=os.getenv("DATABRICKS_UNITY_HTTP_PATH"),
-            featurebyte_catalog=os.getenv("DATABRICKS_UNITY_CATALOG"),
-            featurebyte_schema=temp_schema_name,
-            storage_spark_url=f"dbfs:/FileStore/{temp_schema_name}",
+            catalog_name=os.getenv("DATABRICKS_UNITY_CATALOG"),
+            schema_name=temp_schema_name,
+            group_name="developers",
+            storage_path=f"dbfs:/FileStore/{temp_schema_name}",
         )
 
     if source_type == "spark":
@@ -391,9 +394,9 @@ def feature_store_details_fixture(source_type, sqlite_filename):
             use_http_transport=False,
             storage_type=StorageType.FILE,
             storage_url=f"~/.spark/data/staging/{temp_schema_name}",
-            storage_spark_url=f"file:///opt/spark/data/derby/staging/{temp_schema_name}",
-            featurebyte_catalog="spark_catalog",
-            featurebyte_schema=temp_schema_name,
+            storage_path=f"file:///opt/spark/data/derby/staging/{temp_schema_name}",
+            catalog_name="spark_catalog",
+            schema_name=temp_schema_name,
         )
 
     if source_type == "sqlite":
@@ -434,8 +437,8 @@ def data_warehouse_initialization_fixture(
             server_hostname=databricks_details.host,
             http_path=databricks_details.http_path,
             access_token=feature_store_credential.database_credential.access_token,
-            catalog=databricks_details.featurebyte_catalog,
-            schema=databricks_details.featurebyte_schema,
+            catalog=databricks_details.catalog_name,
+            schema=databricks_details.schema_name,
         )
 
 

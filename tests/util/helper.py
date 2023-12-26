@@ -220,7 +220,9 @@ def check_sdk_code_generation(  # pylint: disable=too-many-locals
     # execute SDK code & generate output object
     local_vars = {}
     sdk_code = query_object._generate_code(
-        to_format=to_format, to_use_saved_data=to_use_saved_data, table_id_to_info=table_id_to_info
+        to_format=to_format,
+        to_use_saved_data=to_use_saved_data,
+        table_id_to_info=table_id_to_info,
     )
     exec(sdk_code, {}, local_vars)  # pylint: disable=exec-used
     output = local_vars["output"]

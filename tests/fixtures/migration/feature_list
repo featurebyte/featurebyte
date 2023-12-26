@@ -114,8 +114,9 @@
                   "details": {
                     "account": "fm54506.us-central1.gcp",
                     "warehouse": "DEMO",
-                    "database": "DEMO",
-                    "sf_schema": "FEATUREBYTE_PROD_V2"
+                    "database_name": "DEMO",
+                    "schema_name": "FEATUREBYTE_PROD_V2",
+                    "role_name": "TESTING"
                   }
                 },
                 "type": "item_table",
@@ -170,8 +171,9 @@
                   "details": {
                     "account": "fm54506.us-central1.gcp",
                     "warehouse": "DEMO",
-                    "database": "DEMO",
-                    "sf_schema": "FEATUREBYTE_PROD_V2"
+                    "database_name": "DEMO",
+                    "schema_name": "FEATUREBYTE_PROD_V2",
+                    "role_name": "TESTING"
                   }
                 },
                 "type": "event_table",

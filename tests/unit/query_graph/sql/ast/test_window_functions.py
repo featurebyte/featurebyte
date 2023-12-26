@@ -181,7 +181,7 @@ def test_window_function(global_graph, input_node):
         SELECT
           index,
           "cust_id",
-          COUNT(*) AS value_count_6f5d8a3722c7f61988e8518cfbd485e1b7e4ef87
+          COUNT(*) AS value_count_e2199e4018415026611a08411ff11e9ec48e0ca5
         FROM (
           SELECT
             *,
