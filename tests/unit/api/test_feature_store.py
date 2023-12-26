@@ -35,8 +35,9 @@ async def test_get_session(
         "source_type": "snowflake",
         "account": "sf_account",
         "warehouse": "sf_warehouse",
-        "sf_schema": "sf_schema",
-        "database": "sf_database",
+        "schema_name": "sf_schema",
+        "database_name": "sf_database",
+        "role_name": "TESTING",
         "database_credential": {
             "type": "USERNAME_PASSWORD",
             "username": "sf_user",
@@ -113,8 +114,9 @@ def test_info(saved_snowflake_feature_store):
         "source": "snowflake",
         "database_details": {
             "account": "sf_account",
-            "database": "sf_database",
-            "sf_schema": "sf_schema",
+            "database_name": "sf_database",
+            "schema_name": "sf_schema",
+            "role_name": "TESTING",
             "warehouse": "sf_warehouse",
         },
     }
@@ -146,8 +148,9 @@ async def saved_snowflake_feature_store_fixture(
             "details": {
                 "account": "sf_account",
                 "warehouse": "sf_warehouse",
-                "database": "sf_database",
-                "sf_schema": "sf_schema",
+                "database_name": "sf_database",
+                "schema_name": "sf_schema",
+                "role_name": "TESTING",
             },
             "updated_at": None,
         }.items()
@@ -207,8 +210,9 @@ def test_get(saved_snowflake_feature_store):
             ("created_at", loaded_feature_store.created_at.isoformat()),
             ("description", None),
             ("details.account", "sf_account"),
-            ("details.database", "sf_database"),
-            ("details.sf_schema", "sf_schema"),
+            ("details.database_name", "sf_database"),
+            ("details.role_name", "TESTING"),
+            ("details.schema_name", "sf_schema"),
             ("details.warehouse", "sf_warehouse"),
             ("name", "sf_featurestore"),
             ("type", "snowflake"),
@@ -263,8 +267,9 @@ async def test_feature_store_create(
         details=SnowflakeDetails(
             account="sf_account",
             warehouse="sf_warehouse",
-            sf_schema="sf_schema",
-            database="sf_database",
+            schema_name="sf_schema",
+            database_name="sf_database",
+            role_name="TESTING",
         ),
         database_credential=UsernamePasswordCredential(
             username="sf_username", password="sf_password"
@@ -287,8 +292,9 @@ async def test_feature_store_create(
             "details": {
                 "account": "sf_account",
                 "warehouse": "sf_warehouse",
-                "database": "sf_database",
-                "sf_schema": "sf_schema",
+                "database_name": "sf_database",
+                "schema_name": "sf_schema",
+                "role_name": "TESTING",
             },
             "updated_at": None,
         }.items()

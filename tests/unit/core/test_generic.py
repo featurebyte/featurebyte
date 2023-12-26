@@ -38,8 +38,9 @@ def feature_store_tabular_source_fixture():
         details=SnowflakeDetails(
             account="sf_account",
             warehouse="sf_warehouse",
-            sf_schema="sf_schema",
-            database="sf_database",
+            schema_name="sf_schema",
+            database_name="sf_database",
+            role_name="TESTING",
         ),
     )
     tabular_source = {

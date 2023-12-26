@@ -30,26 +30,19 @@ class BaseSparkSession(BaseSession, ABC):
 
     host: str
     http_path: str
-    featurebyte_catalog: str
-    featurebyte_schema: str
-    storage_spark_url: str
+    storage_path: str
+    catalog_name: str
+    schema_name: str
 
     region_name: Optional[str]
 
     def __init__(self, **data: Any) -> None:
         super().__init__(**data)
+        self.database_name = self.catalog_name
         self._initialize_storage()
 
     def initializer(self) -> BaseSchemaInitializer:
         return BaseSparkSchemaInitializer(self)
-
-    @property
-    def schema_name(self) -> str:
-        return self.featurebyte_schema
-
-    @property
-    def database_name(self) -> str:
-        return self.featurebyte_catalog
 
     @abstractmethod
     def _initialize_storage(self) -> None:
@@ -172,7 +165,7 @@ class BaseSparkSession(BaseSession, ABC):
                 # create cached temp view
                 await self.execute_query(
                     f"CREATE OR REPLACE TEMPORARY VIEW `{table_name}` USING parquet OPTIONS "
-                    f"(path '{self.storage_spark_url}/{temp_filename}')"
+                    f"(path '{self.storage_path}/{temp_filename}')"
                 )
                 # cache table so we can remove the temp file
                 await self.execute_query(f"CACHE TABLE `{table_name}`")
@@ -182,7 +175,7 @@ class BaseSparkSession(BaseSession, ABC):
                 temp_view_name = f"__TEMP_TABLE_{request_id}"
                 await self.execute_query(
                     f"CREATE OR REPLACE TEMPORARY VIEW `{temp_view_name}` USING parquet OPTIONS "
-                    f"(path '{self.storage_spark_url}/{temp_filename}')"
+                    f"(path '{self.storage_path}/{temp_filename}')"
                 )
 
                 await self.execute_query(
@@ -377,10 +370,10 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
         str
         """
         udf_jar_file_name = os.path.basename(self.udf_jar_local_path)
-        return f"{self.session.storage_spark_url}/{udf_jar_file_name}"  # type: ignore[attr-defined]
+        return f"{self.session.storage_path}/{udf_jar_file_name}"  # type: ignore[attr-defined]
 
     async def create_schema(self) -> None:
-        create_schema_query = f"CREATE SCHEMA {self.session.schema_name}"
+        create_schema_query = f"CREATE SCHEMA `{self.session.schema_name}`"
         await self.session.execute_query(create_schema_query)
 
     async def drop_object(self, object_type: str, name: str) -> None:

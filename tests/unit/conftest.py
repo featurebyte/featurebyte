@@ -507,8 +507,9 @@ def snowflake_feature_store_params_fixture():
         "details": SnowflakeDetails(
             account="sf_account",
             warehouse="sf_warehouse",
-            sf_schema="sf_schema",
-            database="sf_database",
+            schema_name="sf_schema",
+            database_name="sf_database",
+            role_name="TESTING",
         ),
         "database_credential": UsernamePasswordCredential(
             username="sf_user",
@@ -971,9 +972,10 @@ def snowflake_feature_store_details_dict_fixture():
         "type": "snowflake",
         "details": {
             "account": "sf_account",
-            "database": "sf_database",
-            "sf_schema": "sf_schema",
+            "database_name": "sf_database",
+            "schema_name": "sf_schema",
             "warehouse": "sf_warehouse",
+            "role_name": "TESTING",
         },
     }
 

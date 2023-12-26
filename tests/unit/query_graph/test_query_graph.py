@@ -316,8 +316,9 @@ def test_query_graph__representation():
                 "details": {
                     "account": "sf_account",
                     "warehouse": "sf_warehouse",
-                    "database": "db",
-                    "sf_schema": "public",
+                    "database_name": "db",
+                    "schema_name": "public",
+                    "role_name": "TESTING",
                 },
             },
         },
@@ -350,8 +351,9 @@ def test_query_graph__representation():
                             "details": {
                                 "account": "sf_account",
                                 "warehouse": "sf_warehouse",
-                                "database": "db",
-                                "sf_schema": "public"
+                                "database_name": "db",
+                                "schema_name": "public",
+                                "role_name": "TESTING"
                             }
                         },
                         "type": "event_table",

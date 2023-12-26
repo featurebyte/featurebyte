@@ -92,8 +92,9 @@ def feature_store_fixture():
         details=SnowflakeDetails(
             account="account",
             warehouse="COMPUTE_WH",
-            database="DATABASE",
-            sf_schema="PUBLIC",
+            database_name="DATABASE",
+            schema_name="PUBLIC",
+            role_name="TESTING",
         ),
     )
 

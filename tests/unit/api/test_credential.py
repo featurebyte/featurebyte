@@ -228,8 +228,9 @@ def test_info(credential):
         "database_details": {
             "account": "sf_account",
             "warehouse": "sf_warehouse",
-            "database": "sf_database",
-            "sf_schema": "sf_schema",
+            "database_name": "sf_database",
+            "schema_name": "sf_schema",
+            "role_name": "TESTING",
         },
     }
     assert info_dict["feature_store_info"].items() > expected_feature_store_info.items()

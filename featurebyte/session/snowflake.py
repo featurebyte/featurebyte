@@ -54,8 +54,9 @@ class SnowflakeSession(BaseSession):
 
     account: str
     warehouse: str
-    database: str
-    sf_schema: str
+    database_name: str
+    schema_name: str
+    role_name: str
     source_type: SourceType = Field(SourceType.SNOWFLAKE, const=True)
     database_credential: UsernamePasswordCredential
 
@@ -65,10 +66,11 @@ class SnowflakeSession(BaseSession):
             self._connection = connector.connect(
                 user=self.database_credential.username,
                 password=self.database_credential.password,
-                account=data["account"],
-                warehouse=data["warehouse"],
-                database=data["database"],
-                schema=data["sf_schema"],
+                account=self.account,
+                warehouse=self.warehouse,
+                database=self.database_name,
+                schema=self.schema_name,
+                role_name=self.role_name,
             )
         except (OperationalError, DatabaseError) as exc:
             raise CredentialsError("Invalid credentials provided.") from exc
@@ -85,14 +87,6 @@ class SnowflakeSession(BaseSession):
 
     def initializer(self) -> BaseSchemaInitializer:
         return SnowflakeSchemaInitializer(self)
-
-    @property
-    def schema_name(self) -> str:
-        return self.sf_schema
-
-    @property
-    def database_name(self) -> str:
-        return self.database
 
     @classmethod
     def is_threadsafe(cls) -> bool:
