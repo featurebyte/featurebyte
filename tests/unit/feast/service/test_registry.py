@@ -70,7 +70,7 @@ async def test_update_feast_registry(feast_registry_service, feast_registry, fea
     assert len(registry_proto.feature_services) == 1
     assert registry_proto.feature_services[0].spec.name == "test_feature_list"
     assert len(registry_proto.feature_views) == 2
-    assert len(registry_proto.data_sources) == 2
+    assert len(registry_proto.data_sources) == 3
     assert len(registry_proto.entities) == 2
 
 
@@ -84,6 +84,7 @@ async def test_get_feast_feature_store(feast_feature_store_service, feast_regist
     # check that assets in the registry can be retrieved
     data_src_names = [data_source.name for data_source in feast_fs.list_data_sources()]
     assert set(data_src_names) == {
+        "POINT_IN_TIME",
         "fb_entity_cust_id_fjs_1800_300_600_ttl",
         "fb_entity_transaction_id",
     }

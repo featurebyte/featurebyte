@@ -3,7 +3,7 @@ OfflineStoreIngestQuery object stores the offline store ingest query for a featu
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from pydantic import validator
 
@@ -15,15 +15,14 @@ from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.node.metadata.sdk_code import CodeGenerator, VariableNameGenerator
 from featurebyte.query_graph.node.nested import (
     AggregationNodeInfo,
     OfflineStoreIngestQueryGraphNodeParameters,
     OfflineStoreMetadata,
 )
-from featurebyte.query_graph.transform.on_demand_view import (
-    OnDemandFeatureViewExtractor,
-    OnDemandFeatureViewGlobalState,
-)
+from featurebyte.query_graph.node.utils import subset_frame_column_expr
+from featurebyte.query_graph.transform.on_demand_view import OnDemandFeatureViewExtractor
 from featurebyte.query_graph.transform.quick_pruning import QuickGraphStructurePruningTransformer
 
 
@@ -220,45 +219,64 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
             )
         return output
 
-    def extract_on_demand_feature_view_code_generation(
+    def generate_on_demand_feature_view_code(
         self,
+        feature_name: str,
         input_df_name: str = "inputs",
         output_df_name: str = "df",
         function_name: str = "on_demand_feature_view",
-        **kwargs: Any,
-    ) -> OnDemandFeatureViewGlobalState:
+        ttl_seconds: Optional[int] = None,
+    ) -> str:
         """
         Extract on demand view graphs from the feature or target query graph
 
         Parameters
         ----------
+        feature_name: str
+            Feature name
         input_df_name: str
             Input dataframe name
         output_df_name: str
             Output dataframe name
         function_name: str
             Function name
-        kwargs: Any
-            Other code generation config kwargs
+        ttl_seconds: Optional[int]
+            Time-to-live (TTL) in seconds
 
         Returns
         -------
-        OnDemandFeatureViewGlobalState
-            OnDemandFeatureViewGlobalState
-
-        Raises
-        ------
-        ValueError
-            If the feature or target query graph is not decomposed
+        str
+            Generated code
         """
-        if not self.is_decomposed:
-            raise ValueError("On demand view can only be extracted from decomposed query graph")
+        if self.is_decomposed:
+            node = self.graph.get_node_by_name(self.node_name)
+            codegen_state = OnDemandFeatureViewExtractor(graph=self.graph).extract(
+                node=node,
+                input_df_name=input_df_name,
+                output_df_name=output_df_name,
+                on_demand_function_name=function_name,
+                ttl_seconds=ttl_seconds,
+            )
+            code_generator = codegen_state.code_generator
+        else:
+            assert ttl_seconds is not None, "TTL is not set"
+            code_generator = CodeGenerator(template="on_demand_view.tpl")
+            statements = OnDemandFeatureViewExtractor.generate_ttl_handling_statements(
+                feature_name=feature_name,
+                input_df_name=input_df_name,
+                output_df_name=output_df_name,
+                input_column_expr=subset_frame_column_expr(
+                    input_df_name,
+                    feature_name,
+                ),
+                ttl_seconds=ttl_seconds,
+                var_name_generator=VariableNameGenerator(),
+            )
+            code_generator.add_statements(statements=[statements])
 
-        node = self.graph.get_node_by_name(self.node_name)
-        return OnDemandFeatureViewExtractor(graph=self.graph).extract(
-            node=node,
+        codes = code_generator.generate(
             input_df_name=input_df_name,
             output_df_name=output_df_name,
-            on_demand_function_name=function_name,
-            **kwargs,
+            function_name=function_name,
         )
+        return codes

@@ -289,7 +289,10 @@ async def test_initialize_new_columns__table_does_not_exist(
     _ = kwargs.pop("feature_store")
     feature_view = kwargs.pop("feature_view")
     assert feature_view.name == "fb_entity_cust_id_fjs_1800_300_600_ttl"
-    assert kwargs == {"columns": ["sum_30m"], "end_date": datetime(2022, 1, 1, 0, 0)}
+    assert kwargs == {
+        "columns": ["sum_30m", "__feature_timestamp"],
+        "end_date": datetime(2022, 1, 1, 0, 0),
+    }
 
 
 @pytest.mark.usefixtures("mock_get_feature_store_session")
@@ -329,7 +332,10 @@ async def test_initialize_new_columns__table_exists(
     _ = kwargs.pop("feature_store")
     feature_view = kwargs.pop("feature_view")
     assert feature_view.name == "fb_entity_cust_id_fjs_1800_300_600_ttl"
-    assert kwargs == {"columns": ["sum_30m"], "end_date": datetime(2022, 10, 15, 10, 0, 0)}
+    assert kwargs == {
+        "columns": ["sum_30m", "__feature_timestamp"],
+        "end_date": datetime(2022, 10, 15, 10, 0, 0),
+    }
 
 
 @pytest.mark.usefixtures("mock_get_feature_store_session")

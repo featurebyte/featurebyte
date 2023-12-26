@@ -109,8 +109,7 @@ def test_feature__ttl_and_non_ttl_components(float_feature, non_time_based_featu
     check_on_demand_feature_view_code_generation(feature_model=feature_model)
 
     # check on-demand view code
-    fv_global_state = offline_store_info.extract_on_demand_feature_view_code_generation()
-    on_demand_feature_view_codes = fv_global_state.generate_code()
+    codes = offline_store_info.generate_on_demand_feature_view_code(feature_name=feature_model.name)
     expected = """
     import json
     import numpy as np
@@ -120,11 +119,11 @@ def test_feature__ttl_and_non_ttl_components(float_feature, non_time_based_featu
 
     def on_demand_feature_view(inputs: pd.DataFrame) -> pd.DataFrame:
         df = pd.DataFrame()
-        feat = inputs["__feature__part0"] + inputs["__feature__part1"]
-        df["feature"] = feat
+        feat = inputs['__feature__part0'] + inputs['__feature__part1']
+        df['feature'] = feat
         return df
     """
-    assert on_demand_feature_view_codes.strip() == textwrap.dedent(expected).strip()
+    assert codes.strip() == textwrap.dedent(expected).strip()
 
 
 def test_feature__request_column_ttl_and_non_ttl_components(
@@ -182,8 +181,7 @@ def test_feature__request_column_ttl_and_non_ttl_components(
     check_on_demand_feature_view_code_generation(feature_model=feature_model)
 
     # check on-demand view code
-    fv_global_state = offline_store_info.extract_on_demand_feature_view_code_generation()
-    on_demand_feature_view_codes = fv_global_state.generate_code()
+    codes = offline_store_info.generate_on_demand_feature_view_code(feature_name=feature_model.name)
     expected = """
     import json
     import numpy as np
@@ -193,14 +191,14 @@ def test_feature__request_column_ttl_and_non_ttl_components(
 
     def on_demand_feature_view(inputs: pd.DataFrame) -> pd.DataFrame:
         df = pd.DataFrame()
-        request_col = pd.to_datetime(inputs["POINT_IN_TIME"])
+        request_col = pd.to_datetime(inputs['POINT_IN_TIME'])
         feat = request_col + (request_col - request_col)
-        feat_1 = pd.to_datetime(inputs["__feature__part0"])
-        feat_2 = ((feat - feat_1).dt.seconds // 86400) + inputs["__feature__part1"]
-        df["feature"] = feat_2
+        feat_1 = pd.to_datetime(inputs['__feature__part0'])
+        feat_2 = ((feat - feat_1).dt.seconds // 86400) + inputs['__feature__part1']
+        df['feature'] = feat_2
         return df
     """
-    assert on_demand_feature_view_codes.strip() == textwrap.dedent(expected).strip()
+    assert codes.strip() == textwrap.dedent(expected).strip()
 
 
 def test_feature__multiple_non_ttl_components(
@@ -242,9 +240,9 @@ def test_feature__multiple_non_ttl_components(
 
     # check on-demand view code
     assert offline_store_info.is_decomposed is False
-    expected_error = "On demand view can only be extracted from decomposed query graph"
-    with pytest.raises(ValueError, match=expected_error):
-        offline_store_info.extract_on_demand_feature_view_code_generation()
+    expected_error = "TTL is not set"
+    with pytest.raises(AssertionError, match=expected_error):
+        offline_store_info.generate_on_demand_feature_view_code(feature_name=feature_model.name)
 
 
 def test_feature__ttl_item_aggregate_request_column(
@@ -263,8 +261,7 @@ def test_feature__ttl_item_aggregate_request_column(
 
     # check on-demand view code
     offline_store_info = feature_model.offline_store_info
-    fv_global_state = offline_store_info.extract_on_demand_feature_view_code_generation()
-    on_demand_feature_view_codes = fv_global_state.generate_code()
+    codes = offline_store_info.generate_on_demand_feature_view_code(feature_name=feature_model.name)
     expected = """
     import json
     import numpy as np
@@ -274,17 +271,14 @@ def test_feature__ttl_item_aggregate_request_column(
 
     def on_demand_feature_view(inputs: pd.DataFrame) -> pd.DataFrame:
         df = pd.DataFrame()
-        feat = (
-            inputs["__composite_feature__part0"]
-            + inputs["__composite_feature__part1"]
-        )
-        request_col = pd.to_datetime(inputs["POINT_IN_TIME"])
-        feat_1 = pd.to_datetime(inputs["__composite_feature__part2"])
+        feat = inputs['__composite_feature__part0'] + inputs['__composite_feature__part1']
+        request_col = pd.to_datetime(inputs['POINT_IN_TIME'])
+        feat_1 = pd.to_datetime(inputs['__composite_feature__part2'])
         feat_2 = (request_col - feat_1).dt.seconds // 86400
-        df["composite_feature"] = feat + feat_2
+        df['composite_feature'] = feat + feat_2
         return df
     """
-    assert on_demand_feature_view_codes.strip() == textwrap.dedent(expected).strip()
+    assert codes.strip() == textwrap.dedent(expected).strip()
 
 
 def test_feature__input_has_mixed_ingest_graph_node_flags(
@@ -325,8 +319,7 @@ def test_feature__input_has_mixed_ingest_graph_node_flags(
 
     # check on-demand view code
     offline_store_info = feature_model.offline_store_info
-    fv_global_state = offline_store_info.extract_on_demand_feature_view_code_generation()
-    on_demand_feature_view_codes = fv_global_state.generate_code()
+    codes = offline_store_info.generate_on_demand_feature_view_code(feature_name=feature_model.name)
     expected = """
     import json
     import numpy as np
@@ -336,11 +329,11 @@ def test_feature__input_has_mixed_ingest_graph_node_flags(
 
     def on_demand_feature_view(inputs: pd.DataFrame) -> pd.DataFrame:
         df = pd.DataFrame()
-        feat = inputs["__feature_zscore__part0"] - inputs["__feature_zscore__part1"]
-        df["feature_zscore"] = feat / inputs["__feature_zscore__part2"]
+        feat = inputs['__feature_zscore__part0'] - inputs['__feature_zscore__part1']
+        df['feature_zscore'] = feat / inputs['__feature_zscore__part2']
         return df
     """
-    assert on_demand_feature_view_codes.strip() == textwrap.dedent(expected).strip()
+    assert codes.strip() == textwrap.dedent(expected).strip()
 
 
 def test_feature__composite_count_dict(

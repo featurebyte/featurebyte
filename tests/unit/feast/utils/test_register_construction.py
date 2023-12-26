@@ -1,6 +1,7 @@
 """
 Test the construction of the feast register.
 """
+import textwrap
 from unittest.mock import patch
 
 import pytest
@@ -111,6 +112,25 @@ def test_feast_registry_construction(feast_registry_proto):
     entities = feast_registry_dict["entities"]
     feat_services = feast_registry_dict["featureServices"]
     feat_views = feast_registry_dict["featureViews"]
+    on_demand_feature_views = feast_registry_dict["onDemandFeatureViews"]
+    feat_view_name = feat_services[0]["spec"]["features"][0]["featureViewName"]
+    assert feat_view_name.startswith("compute_feature_sum_1d_")
+
+    assert len(on_demand_feature_views) == 1
+    udf_definition = on_demand_feature_views[0]["spec"]["userDefinedFunction"]["bodyText"]
+    expected = f"""
+    def {feat_view_name}(inputs: pd.DataFrame) -> pd.DataFrame:
+        df = pd.DataFrame()
+        request_time = pd.to_datetime(inputs['POINT_IN_TIME'], utc=True)
+        cutoff = request_time - pd.Timedelta(seconds=3600)
+        ingested_time = pd.to_datetime(inputs['__feature_timestamp'], utc=True)
+        mask = (ingested_time >= cutoff) & (ingested_time <= request_time)
+        inputs['sum_1d'][~mask] = np.nan
+        df['sum_1d'] = inputs['sum_1d']
+        return df
+    """
+    assert udf_definition.strip() == textwrap.dedent(expected).strip()
+
     assert feast_registry_dict == {
         "dataSources": [
             {
@@ -136,6 +156,15 @@ def test_feast_registry_construction(feast_registry_proto):
                 },
                 "timestampField": "__feature_timestamp",
                 "type": "BATCH_SNOWFLAKE",
+            },
+            {
+                "dataSourceClassType": "feast.data_source.RequestSource",
+                "name": "POINT_IN_TIME",
+                "project": "featurebyte_project",
+                "requestDataOptions": {
+                    "schema": [{"name": "POINT_IN_TIME", "valueType": "UNIX_TIMESTAMP"}]
+                },
+                "type": "REQUEST_SOURCE",
             },
         ],
         "entities": [
@@ -174,7 +203,7 @@ def test_feast_registry_construction(feast_registry_proto):
                     "features": [
                         {
                             "featureColumns": [{"name": "sum_1d", "valueType": "DOUBLE"}],
-                            "featureViewName": "fb_entity_cust_id_fjs_1800_300_600_ttl",
+                            "featureViewName": feat_view_name,
                         },
                         {
                             "featureColumns": [
@@ -208,7 +237,10 @@ def test_feast_registry_construction(feast_registry_proto):
                     },
                     "entities": ["cust_id"],
                     "entityColumns": [{"name": "cust_id", "valueType": "STRING"}],
-                    "features": [{"name": "sum_1d", "valueType": "DOUBLE"}],
+                    "features": [
+                        {"name": "__feature_timestamp", "valueType": "UNIX_TIMESTAMP"},
+                        {"name": "sum_1d", "valueType": "DOUBLE"},
+                    ],
                     "name": "fb_entity_cust_id_fjs_1800_300_600_ttl",
                     "online": True,
                     "project": "featurebyte_project",
@@ -243,6 +275,7 @@ def test_feast_registry_construction(feast_registry_proto):
                 },
             },
         ],
+        "onDemandFeatureViews": on_demand_feature_views,
         "lastUpdated": feast_registry_dict["lastUpdated"],
         "projectMetadata": [
             {

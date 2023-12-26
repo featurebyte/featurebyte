@@ -288,7 +288,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         materialize_partial(
             feature_store=feature_store,
             feature_view=feature_store.get_feature_view(feature_table_model.name),
-            columns=materialized_features.column_names,
+            columns=materialized_features.column_names + [InternalName.FEATURE_TIMESTAMP_COLUMN],
             end_date=materialize_end_date,
         )
 

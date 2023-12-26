@@ -4,6 +4,7 @@ Tests for feature materialization service
 import json
 import os
 import time
+from datetime import datetime
 from unittest.mock import patch
 
 import freezegun
@@ -11,6 +12,7 @@ import pandas as pd
 import pytest
 
 import featurebyte as fb
+from featurebyte.enum import InternalName
 from featurebyte.logging import get_logger
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 from featurebyte.schema.worker.task.scheduled_feature_materialize import (
@@ -149,7 +151,12 @@ def deployed_features_list_fixture(features):
         return_value=pd.Timestamp("2001-01-02 12:00:00").to_pydatetime(),
     ):
         deployment = feature_list.deploy()
-        deployment.enable()
+        with patch(
+            "featurebyte.service.feature_materialize.datetime", autospec=True
+        ) as mock_datetime:
+            mock_datetime.utcnow.return_value = datetime(2001, 1, 2, 12)
+            deployment.enable()
+
     yield deployment
     deployment.disable()
 
@@ -174,7 +181,7 @@ async def check_feature_tables_populated(session, feature_tables):
 
         # Should have all the serving names and output columns tracked in OfflineStoreFeatureTable
         assert set(df.columns.tolist()) == set(
-            ["__feature_timestamp"]
+            [InternalName.FEATURE_TIMESTAMP_COLUMN.value]
             + feature_table.serving_names
             + feature_table.output_column_names
         )
@@ -201,22 +208,25 @@ async def check_feast_registry(app_container):
 
     # Check feast materialize and get_online_features
     feature_service = feature_store.get_feature_service("EXTERNAL_FS_FEATURE_LIST")
+    entity_row = {
+        "üser id": 1,
+        "cust_id": 761,
+        "PRODUCT_ACTION": "detail",
+        "POINT_IN_TIME": pd.Timestamp("2001-01-02 12:00:00"),
+    }
     online_features = feature_store.get_online_features(
         features=feature_service,
-        entity_rows=[
-            {
-                "üser id": 1,
-                "cust_id": 761,
-                "PRODUCT_ACTION": "detail",
-                "POINT_IN_TIME": pd.Timestamp("2001-01-02 12:00:00"),
-            }
-        ],
+        entity_rows=[entity_row],
     ).to_dict()
     online_features["EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d"] = [
         json.loads(online_features["EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d"][0])
+        if online_features["EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d"][0]
+        else None
     ]
     online_features["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"] = [
         json.loads(online_features["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"][0])
+        if online_features["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"][0]
+        else None
     ]
     expected = {
         "üser id": ["1"],
@@ -253,6 +263,38 @@ async def check_feast_registry(app_container):
         ],
         "EXTERNAL_FS_COSINE_SIMILARITY_VEC": [0.8593524820234559],
     }
+    assert_dict_approx_equal(online_features, expected)
+
+    # set point in time > 2001-01-02 12:00:00 +  2 hours (frequency is 1 hour) &
+    # expect all ttl features to be null
+    entity_row["POINT_IN_TIME"] = pd.Timestamp("2001-01-02 14:00:01")
+    online_features = feature_store.get_online_features(
+        features=feature_service,
+        entity_rows=[entity_row],
+    ).to_dict()
+    expected = {
+        "üser id": ["1"],
+        "cust_id": ["761"],
+        "PRODUCT_ACTION": ["detail"],
+        "EXTERNAL_FS_COUNT_OVERALL_7d": [None],
+        "EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d": [None],
+        "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h": [None],
+        "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100": [None],
+        "EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE": [None],
+        "EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d": [None],
+        "EXTERNAL_FS_COSINE_SIMILARITY": [None],
+        "EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h": [None],
+        "EXTERNAL_FS_COSINE_SIMILARITY_VEC": [None],
+    }
+    assert_dict_approx_equal(online_features, expected)
+
+    # set the point in time earlier than the 2001-01-02 12:00:00
+    # expect all ttl features to be null
+    entity_row["POINT_IN_TIME"] = pd.Timestamp("2001-01-02 11:59:59")
+    online_features = feature_store.get_online_features(
+        features=feature_service,
+        entity_rows=[entity_row],
+    ).to_dict()
     assert_dict_approx_equal(online_features, expected)
 
 
