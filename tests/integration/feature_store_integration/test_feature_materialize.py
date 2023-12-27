@@ -35,7 +35,7 @@ def always_enable_feast_integration_fixture():
 
 
 @pytest.fixture(name="features", scope="module")
-def features_fixture(event_table, scd_table):  # pylint: disable=too-many-locals
+def features_fixture(event_table, scd_table, source_type):  # pylint: disable=too-many-locals
     """
     Fixture for feature
     """
@@ -105,22 +105,25 @@ def features_fixture(event_table, scd_table):  # pylint: disable=too-many-locals
     feature_7 = feature_6.cd.cosine_similarity(cross_aggregate_feature2)
     feature_7.name = "EXTERNAL_FS_COSINE_SIMILARITY"
 
-    feature_8 = event_view.groupby("ÜSER ID").aggregate_over(
-        "EMBEDDING_ARRAY",
-        method="avg",
-        windows=["24h"],
-        feature_names=["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"],
-    )["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"]
+    if source_type != SourceType.DATABRICKS_UNITY:
+        feature_8 = event_view.groupby("ÜSER ID").aggregate_over(
+            "EMBEDDING_ARRAY",
+            method="avg",
+            windows=["24h"],
+            feature_names=["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"],
+        )["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"]
+        vec_agg_feature2 = event_view.groupby("CUST_ID").aggregate_over(
+            "EMBEDDING_ARRAY",
+            method="avg",
+            windows=["48h"],
+            feature_names=["EXTERNAL_FS_ARRAY_AVG_BY_CUST_ID_48h"],
+        )["EXTERNAL_FS_ARRAY_AVG_BY_CUST_ID_48h"]
 
-    vec_agg_feature2 = event_view.groupby("CUST_ID").aggregate_over(
-        "EMBEDDING_ARRAY",
-        method="avg",
-        windows=["48h"],
-        feature_names=["EXTERNAL_FS_ARRAY_AVG_BY_CUST_ID_48h"],
-    )["EXTERNAL_FS_ARRAY_AVG_BY_CUST_ID_48h"]
-
-    feature_9 = feature_8.vec.cosine_similarity(vec_agg_feature2)
-    feature_9.name = "EXTERNAL_FS_COSINE_SIMILARITY_VEC"
+        feature_9 = feature_8.vec.cosine_similarity(vec_agg_feature2)
+        feature_9.name = "EXTERNAL_FS_COSINE_SIMILARITY_VEC"
+    else:
+        feature_8 = None
+        feature_9 = None
 
     scd_view = scd_table.get_view()
     feature_10 = scd_view["User Status"].as_feature("User Status Feature")
@@ -133,17 +136,21 @@ def features_fixture(event_table, scd_table):  # pylint: disable=too-many-locals
 
     # Save all features to be deployed
     features = [
-        feature_1,
-        feature_2,
-        feature_3,
-        feature_4,
-        feature_5,
-        feature_6,
-        feature_7,
-        feature_8,
-        feature_9,
-        feature_10,
-        feature_11,
+        feature
+        for feature in [
+            feature_1,
+            feature_2,
+            feature_3,
+            feature_4,
+            feature_5,
+            feature_6,
+            feature_7,
+            feature_8,
+            feature_9,
+            feature_10,
+            feature_11,
+        ]
+        if feature is not None
     ]
     for feature in features:
         feature.save()
@@ -172,14 +179,6 @@ def deployed_features_list_fixture(features):
 
     yield deployment
     deployment.disable()
-
-
-@pytest.fixture(name="default_feature_job_setting")
-def default_feature_job_setting_fixture(event_table):
-    """
-    Fixture for default feature job setting
-    """
-    return event_table.default_feature_job_setting
 
 
 async def check_feature_tables_populated(session, feature_tables):
