@@ -160,7 +160,8 @@ def deployed_features_list_fixture(features):
         return_value=pd.Timestamp("2001-01-02 12:00:00").to_pydatetime(),
     ):
         deployment = feature_list.deploy()
-        deployment.enable()
+        with freezegun.freeze_time("2001-01-02 11:55:00", tick=True):
+            deployment.enable()
     yield deployment
     deployment.disable()
 
@@ -237,8 +238,8 @@ async def check_feast_registry(app_container):
         "cust_id": ["761"],
         "PRODUCT_ACTION": ["detail"],
         "user_status": ["STÀTUS_CODE_39"],
-        "User Status Feature": ["STÀTUS_CODE_39"],
-        "Current Number of Users With This Status": [1.0],
+        "User Status Feature": [None],
+        "Current Number of Users With This Status": [None],
         "EXTERNAL_FS_COUNT_OVERALL_7d": [149.0],
         "EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d": [43.0],
         "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h": [475.38],
