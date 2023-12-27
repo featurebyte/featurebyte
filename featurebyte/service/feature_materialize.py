@@ -302,8 +302,6 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
                 )
                 materialize_end_date = pd.Timestamp(last_feature_timestamp).to_pydatetime()
 
-        await self._add_primary_key_constraint_if_necessary(session, feature_table_model)
-
         # Feast online materialize. Start date is not set because these are new columns.
         feature_store = await self._get_feast_feature_store()
         if feature_store is not None:
@@ -314,34 +312,6 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
                 end_date=materialize_end_date,
                 with_feature_timestamp=feature_table_model.has_ttl,
             )
-
-    @classmethod
-    async def _add_primary_key_constraint_if_necessary(
-        cls, session: BaseSession, feature_table_model: OfflineStoreFeatureTableModel
-    ) -> None:
-        # Only needed for Databricks with Unity catalog for now
-        if session.source_type != SourceType.DATABRICKS_UNITY:
-            return
-
-        # Table constraint syntax is only supported in newer versions of sqlglot, so the queries are
-        # formatted manually here
-        quoted_primary_key_columns = [
-            "`{}`".format(column_name)
-            for column_name in [InternalName.FEATURE_TIMESTAMP_COLUMN.value]
-            + feature_table_model.serving_names
-        ]
-        for quoted_col in quoted_primary_key_columns:
-            await session.execute_query(
-                f"ALTER TABLE `{feature_table_model.name}` ALTER COLUMN {quoted_col} SET NOT NULL"
-            )
-        await session.execute_query(
-            textwrap.dedent(
-                f"""
-                ALTER TABLE `{feature_table_model.name}` ADD CONSTRAINT `pk_{feature_table_model.name}`
-                PRIMARY KEY({', '.join(quoted_primary_key_columns)})
-                """
-            ).strip()
-        )
 
     async def drop_columns(
         self, feature_table_model: OfflineStoreFeatureTableModel, column_names: List[str]
@@ -406,8 +376,9 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         session = await self.session_manager_service.get_feature_store_session(feature_store)
         return session
 
-    @staticmethod
+    @classmethod
     async def _create_feature_table(
+        cls,
         session: BaseSession,
         feature_table_model: OfflineStoreFeatureTableModel,
         materialized_features: MaterializedFeatures,
@@ -441,6 +412,35 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
             source_type=session.source_type,
         )
         await session.execute_query(query)
+        await cls._add_primary_key_constraint_if_necessary(session, feature_table_model)
+
+    @classmethod
+    async def _add_primary_key_constraint_if_necessary(
+        cls, session: BaseSession, feature_table_model: OfflineStoreFeatureTableModel
+    ) -> None:
+        # Only needed for Databricks with Unity catalog for now
+        if session.source_type != SourceType.DATABRICKS_UNITY:
+            return
+
+        # Table constraint syntax is only supported in newer versions of sqlglot, so the queries are
+        # formatted manually here
+        quoted_primary_key_columns = [
+            "`{}`".format(column_name)
+            for column_name in [InternalName.FEATURE_TIMESTAMP_COLUMN.value]
+            + feature_table_model.serving_names
+        ]
+        for quoted_col in quoted_primary_key_columns:
+            await session.execute_query(
+                f"ALTER TABLE `{feature_table_model.name}` ALTER COLUMN {quoted_col} SET NOT NULL"
+            )
+        await session.execute_query(
+            textwrap.dedent(
+                f"""
+                ALTER TABLE `{feature_table_model.name}` ADD CONSTRAINT `pk_{feature_table_model.name}`
+                PRIMARY KEY({', '.join(quoted_primary_key_columns)})
+                """
+            ).strip()
+        )
 
     @staticmethod
     async def _insert_into_feature_table(
