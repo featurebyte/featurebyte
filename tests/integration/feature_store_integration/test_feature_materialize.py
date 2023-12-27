@@ -10,6 +10,7 @@ from unittest.mock import patch
 import freezegun
 import pandas as pd
 import pytest
+import pytest_asyncio
 from sqlglot import parse_one
 
 import featurebyte as fb
@@ -181,11 +182,48 @@ def deployed_features_list_fixture(features):
     deployment.disable()
 
 
-async def check_feature_tables_populated(session, feature_tables):
+@pytest_asyncio.fixture(name="offline_store_feature_tables", scope="module")
+async def offline_store_feature_tables_fixture(app_container, deployed_feature_list):
+    """
+    Fixture for offline store feature tables based on the deployed features
+    """
+    primary_entity_to_feature_table = {}
+    async for feature_table in app_container.offline_store_feature_table_service.list_documents_iterator(
+        query_filter={},
+    ):
+        primary_entity_to_feature_table[
+            tuple(sorted(feature_table.primary_entity_ids))
+        ] = feature_table
+    return primary_entity_to_feature_table
+
+
+@pytest.mark.parametrize("source_type", ["snowflake", "databricks_unity"], indirect=True)
+def test_feature_tables_expected(
+    offline_store_feature_tables,
+    user_entity,
+    customer_entity,
+    product_action_entity,
+    status_entity,
+):
+    """
+    Test offline store feature tables are created as expected
+    """
+    assert set(offline_store_feature_tables.keys()) == {
+        (),
+        (user_entity.id,),
+        (customer_entity.id,),
+        (product_action_entity.id,),
+        (status_entity.id,),
+    }
+
+
+@pytest.mark.parametrize("source_type", ["snowflake", "databricks_unity"], indirect=True)
+@pytest.mark.asyncio
+async def test_feature_tables_populated(session, offline_store_feature_tables):
     """
     Check feature tables are populated correctly
     """
-    for feature_table in feature_tables:
+    for feature_table in offline_store_feature_tables.values():
         df = await session.execute_query(
             sql_to_string(
                 parse_one(f'SELECT * FROM "{feature_table.name}"'),
@@ -204,7 +242,9 @@ async def check_feature_tables_populated(session, feature_tables):
         )
 
 
-async def check_feast_registry(app_container):
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.asyncio
+async def test_feast_registry(source_type, app_container):
     """
     Check feast registry is populated correctly
     """
@@ -219,8 +259,8 @@ async def check_feast_registry(app_container):
         "fb_entity_overall_fjs_3600_1800_1800_ttl",
         "fb_entity_product_action_fjs_3600_1800_1800_ttl",
         "fb_entity_cust_id_fjs_3600_1800_1800_ttl",
-        "fb_entity_üserid_fjs_3600_1800_1800_ttl",
-        "fb_entity_üserid_fjs_86400_0_0",
+        "fb_entity_userid_fjs_3600_1800_1800_ttl",
+        "fb_entity_userid_fjs_86400_0_0",
         "fb_entity_user_status_fjs_86400_0_0",
     }
     assert {fs.name for fs in feature_store.list_feature_services()} == {"EXTERNAL_FS_FEATURE_LIST"}
@@ -324,12 +364,14 @@ async def check_feast_registry(app_container):
     assert_dict_approx_equal(online_features, expected)
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @freezegun.freeze_time("2001-01-02 12:00:00")
-def check_online_features(deployment, config):
+def test_online_features(config, source_type, deployed_feature_list):
     """
     Check online features are populated correctly
     """
     client = config.get_client()
+    deployment = deployed_feature_list
 
     entity_serving_names = [
         {
@@ -395,69 +437,50 @@ def check_online_features(deployment, config):
     assert_dict_approx_equal(feat_dict, expected)
 
 
-@pytest.mark.parametrize("source_type", ["databricks_unity"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "databricks_unity"], indirect=True)
 @pytest.mark.asyncio
-async def test_feature_materialize_service(
+async def test_simulated_materialize(
     app_container,
     session,
     user_entity,
-    customer_entity,
-    product_action_entity,
-    status_entity,
-    deployed_feature_list,
-    config,
+    offline_store_feature_tables,
+    source_type,
 ):
     """
-    Test FeatureMaterializeService
+    Test simulating scheduled feature materialization
     """
-    _ = deployed_feature_list
-
-    primary_entity_to_feature_table = {}
-    async for feature_table in app_container.offline_store_feature_table_service.list_documents_iterator(
-        query_filter={},
-    ):
-        primary_entity_to_feature_table[
-            tuple(sorted(feature_table.primary_entity_ids))
-        ] = feature_table
-
-    assert set(primary_entity_to_feature_table.keys()) == {
-        (),
-        (user_entity.id,),
-        (customer_entity.id,),
-        (product_action_entity.id,),
-        (status_entity.id,),
-    }
-
-    await check_feature_tables_populated(session, primary_entity_to_feature_table.values())
-
-    # Note: Skipping the rest of the checks for now since Databricks source is not yet supported
-    if session.source_type == SourceType.DATABRICKS_UNITY:
-        # TODO: check primary key constraint set
-        return
-    else:
-        await check_feast_registry(app_container)
-        check_online_features(deployed_feature_list, config)
-
     # Check calling scheduled_materialize_features()
     service = app_container.feature_materialize_service
-    feature_table_model = primary_entity_to_feature_table[(user_entity.id,)]
+    feature_table_model = offline_store_feature_tables[(user_entity.id,)]
     await service.scheduled_materialize_features(feature_table_model=feature_table_model)
     df = await session.execute_query(
         sql_to_string(
             parse_one(f'SELECT * FROM "{feature_table_model.name}"'), session.source_type
         ),
     )
-    expected = [
-        "__feature_timestamp",
-        "üser id",
-        "EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d",
-        "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100",
-        "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h",
-        "EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h",
-        "__EXTERNAL_FS_COSINE_SIMILARITY__part0",
-        "__EXTERNAL_FS_COSINE_SIMILARITY_VEC__part0",
-        "__EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE__part0",
-    ]
+    if source_type == SourceType.SNOWFLAKE:
+        expected = [
+            "__feature_timestamp",
+            "üser id",
+            "EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d",
+            "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100",
+            "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h",
+            "EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h",
+            "__EXTERNAL_FS_COSINE_SIMILARITY__part0",
+            "__EXTERNAL_FS_COSINE_SIMILARITY_VEC__part0",
+            "__EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE__part0",
+        ]
+    else:
+        expected = [
+            "__feature_timestamp",
+            "üser id",
+            "EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d",
+            "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100",
+            "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h",
+            "__EXTERNAL_FS_COSINE_SIMILARITY__part0",
+            "__EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE__part0",
+        ]
+
     assert set(df.columns.tolist()) == set(expected)
     assert df.shape[0] == 18
     assert df["__feature_timestamp"].nunique() == 2
