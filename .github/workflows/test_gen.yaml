@@ -333,7 +333,7 @@ jobs:
     needs:
     - build-jar
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 135
     strategy:
       matrix:
         python-version:

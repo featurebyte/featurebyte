@@ -9,6 +9,7 @@ import pandas as pd
 import pytest
 
 from featurebyte import AggFunc, FeatureList
+from tests.util.helper import tz_localize_if_needed
 
 
 @pytest.fixture
@@ -23,7 +24,7 @@ def freeze_time_for_change_view():
 
 
 @pytest.mark.usefixtures("freeze_time_for_change_view")
-def test_change_view(scd_table):
+def test_change_view(scd_table, source_type):
     """
     Test change view operations
     """
@@ -56,6 +57,7 @@ def test_change_view(scd_table):
     df = count_1w_feature.preview(
         pd.DataFrame([{"POINT_IN_TIME": "2001-11-15 10:00:00", "üser id": 1}])
     )
+    tz_localize_if_needed(df, source_type)
     assert df.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-11-15 10:00:00"),
         "üser id": 1,
@@ -64,7 +66,7 @@ def test_change_view(scd_table):
 
 
 @pytest.mark.usefixtures("freeze_time_for_change_view")
-def test_change_view__feature_no_entity(scd_table):
+def test_change_view__feature_no_entity(scd_table, source_type):
     """
     Test change view operations
     """
@@ -81,6 +83,7 @@ def test_change_view__feature_no_entity(scd_table):
         feature_names=["count_1w"],
     )["count_1w"]
     df = count_1w_feature.preview(pd.DataFrame([{"POINT_IN_TIME": "2001-11-15 10:00:00"}]))
+    tz_localize_if_needed(df, source_type)
     assert df.iloc[0].to_dict() == expected
 
     # check historical features
@@ -88,6 +91,7 @@ def test_change_view__feature_no_entity(scd_table):
     df = FeatureList([count_1w_feature], name="mylist").compute_historical_features(
         observations_set
     )
+    tz_localize_if_needed(df, source_type)
     assert df.iloc[0].to_dict() == expected
 
     # run again with different time to trigger entity tracker update, and it should work
@@ -96,6 +100,7 @@ def test_change_view__feature_no_entity(scd_table):
     df = FeatureList([count_1w_feature], name="mylist").compute_historical_features(
         observations_set
     )
+    tz_localize_if_needed(df, source_type)
     assert df.iloc[0].to_dict() == expected
 
 

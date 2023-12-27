@@ -4,7 +4,6 @@ Lookup target operations
 from typing import Any
 
 import pandas as pd
-import pytest
 
 from featurebyte.api.target import Target
 from tests.integration.api.feature_preview_utils import (
@@ -13,10 +12,10 @@ from tests.integration.api.feature_preview_utils import (
 from tests.integration.api.lookup_operations_utils import (
     check_lookup_feature_or_target_is_time_aware,
 )
+from tests.util.helper import tz_localize_if_needed
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-def test_lookup_features_dimension_view(dimension_view):
+def test_lookup_features_dimension_view(dimension_view, source_type):
     """
     Test lookup targets with same column name
     """
@@ -24,14 +23,14 @@ def test_lookup_features_dimension_view(dimension_view):
     dimension_target = dimension_view["item_type"].as_target(target_name)
     preview_params = {"POINT_IN_TIME": "2001-11-15 10:00:00", "item_id": "item_42"}
     target_preview_df = dimension_target.preview(pd.DataFrame([preview_params]))
+    tz_localize_if_needed(target_preview_df, source_type)
     assert target_preview_df.iloc[0].to_dict() == {
         target_name: "type_42",
         **convert_preview_param_dict_to_feature_preview_resp(preview_params),
     }
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-def test_event_view_lookup_features(event_table, transaction_data_upper_case):
+def test_event_view_lookup_features(event_table, transaction_data_upper_case, source_type):
     """
     Test lookup features from EventView are time based
     """
@@ -48,11 +47,11 @@ def test_event_view_lookup_features(event_table, transaction_data_upper_case):
         primary_key_serving_name="order_id",
         lookup_column_name=lookup_column_name,
         event_timestamp_column="ËVENT_TIMESTAMP",
+        source_type=source_type,
     )
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-def test_item_view_lookup_features(item_table, expected_joined_event_item_dataframe):
+def test_item_view_lookup_features(item_table, expected_joined_event_item_dataframe, source_type):
     """
     Test lookup features from ItemView are time based
     """
@@ -69,6 +68,7 @@ def test_item_view_lookup_features(item_table, expected_joined_event_item_datafr
         primary_key_serving_name="item_id",
         lookup_column_name=lookup_column_name,
         event_timestamp_column="ËVENT_TIMESTAMP",
+        source_type=source_type,
     )
 
 
@@ -82,6 +82,7 @@ def _target_with_offset_test_helper(
     primary_key_value: Any,
     primary_key_column: str,
     offset_duration: str,
+    source_type,
 ):
     # Preview
     point_in_time = "2001-11-15 10:00:00"
@@ -89,7 +90,9 @@ def _target_with_offset_test_helper(
         "POINT_IN_TIME": point_in_time,
         primary_key_serving_name: primary_key_value,
     }
-    preview_output = target.preview(pd.DataFrame([preview_params])).iloc[0].to_dict()
+    df_preview_output = target.preview(pd.DataFrame([preview_params]))
+    tz_localize_if_needed(df_preview_output, source_type)
+    preview_output = df_preview_output.iloc[0].to_dict()
 
     # Compare with expected result
     mask = (
@@ -100,8 +103,7 @@ def _target_with_offset_test_helper(
     assert preview_output[target_name] == expected_row[lookup_column_name]
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
-def test_scd_lookup_target_with_offset(config, scd_table, scd_dataframe):
+def test_scd_lookup_target_with_offset(config, scd_table, scd_dataframe, source_type):
     """
     Test creating lookup target from a SCDView with offset
     """
@@ -119,11 +121,13 @@ def test_scd_lookup_target_with_offset(config, scd_table, scd_dataframe):
         1,
         "User ID",
         offset,
+        source_type=source_type,
     )
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
-def test_event_lookup_target_with_offset(config, event_table, transaction_data_upper_case):
+def test_event_lookup_target_with_offset(
+    config, event_table, transaction_data_upper_case, source_type
+):
     """
     Test creating event target from a event view with offset
     """
@@ -144,4 +148,5 @@ def test_event_lookup_target_with_offset(config, event_table, transaction_data_u
         "T42",
         "TRANSACTION_ID",
         offset,
+        source_type=source_type,
     )

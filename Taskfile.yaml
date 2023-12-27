@@ -283,7 +283,7 @@ tasks:
       - task: install
     cmds:
       - task: test-setup
-      - poetry run pytest --timeout=240 --junitxml=pytest.xml.2 --cov=featurebyte tests/integration --source-types spark --maxfail=1
+      - poetry run pytest --timeout=240 --junitxml=pytest.xml.2 --cov=featurebyte tests/integration --source-types spark
       - task: test-teardown
 
   test-integration-databricks:
@@ -292,7 +292,7 @@ tasks:
       - task: install
     cmds:
       - task: test-setup
-      - poetry run pytest --timeout=900 --junitxml=pytest.xml.3 --cov=featurebyte tests/integration --source-types databricks --maxfail=1
+      - poetry run pytest --timeout=900 --junitxml=pytest.xml.3 --cov=featurebyte tests/integration --source-types databricks
       - task: test-teardown
 
   test-integration-databricks-unity:
@@ -301,7 +301,7 @@ tasks:
       - task: install
     cmds:
       - task: test-setup
-      - poetry run pytest --timeout=900 --junitxml=pytest.xml.4 --cov=featurebyte tests/integration --source-types databricks_unity --maxfail=1
+      - poetry run pytest --timeout=900 --junitxml=pytest.xml.4 --cov=featurebyte tests/integration --source-types databricks_unity
       - task: test-teardown
 
   test-docs:

@@ -1,5 +1,5 @@
-CREATE OR REPLACE FUNCTION F_COUNT_DICT_MOST_FREQUENT_KEY_VALUE(counts MAP<STRING, INT>, reversed BOOLEAN)
-  RETURNS STRUCT<most_frequent_key:STRING, most_frequent_count:INT>
+CREATE OR REPLACE FUNCTION F_COUNT_DICT_MOST_FREQUENT_KEY_VALUE(counts MAP<STRING, DOUBLE>, reversed BOOLEAN)
+  RETURNS STRUCT<most_frequent_key:STRING, most_frequent_count:DOUBLE>
   LANGUAGE PYTHON
 AS
 $$
@@ -18,7 +18,7 @@ $$
       v = -1 * v
 
     if v > most_frequent_count:
-      most_frequent_count = counts[k]
+      most_frequent_count = v
       most_frequent_key = k
     elif v == most_frequent_count and k < most_frequent_key:
       most_frequent_key = k
