@@ -237,6 +237,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
             columns=feature_table_model.output_column_names,
             start_date=feature_table_model.last_materialized_at,
             end_date=materialized_features.feature_timestamp,
+            with_feature_timestamp=feature_table_model.has_ttl,
         )
 
         # Update last materialized timestamp
@@ -304,6 +305,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
             feature_view=feature_store.get_feature_view(feature_table_model.name),
             columns=materialized_features.column_names,
             end_date=materialize_end_date,
+            with_feature_timestamp=feature_table_model.has_ttl,
         )
 
     async def drop_columns(

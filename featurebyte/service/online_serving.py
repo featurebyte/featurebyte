@@ -3,7 +3,7 @@ OnlineServingService class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Union, cast
+from typing import Any, Dict, List, Optional, Union
 
 import json
 import os
@@ -21,7 +21,7 @@ from featurebyte.feast.service.feature_store import FeastFeatureStoreService
 from featurebyte.models.batch_request_table import BatchRequestTableModel
 from featurebyte.models.deployment import DeploymentModel
 from featurebyte.models.feature_list import FeatureCluster, FeatureListModel
-from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.node.generic import GroupByNode
 from featurebyte.query_graph.node.request import RequestColumnNode
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.online_serving import get_online_features
@@ -185,8 +185,10 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
         )
 
         # Include point in time column if it is required
-        has_point_in_time_column = self._has_point_in_time_request_column(feature_cluster)
-        if has_point_in_time_column:
+        is_point_in_time_column_required = self._require_point_in_time_request_column(
+            feature_cluster
+        )
+        if is_point_in_time_column_required:
             point_in_time_value = datetime.utcnow().isoformat()
             for row in entity_rows:
                 row[SpecialColumnName.POINT_IN_TIME] = point_in_time_value
@@ -198,13 +200,15 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
         )
 
     @staticmethod
-    def _has_point_in_time_request_column(feature_cluster: FeatureCluster) -> bool:
+    def _require_point_in_time_request_column(feature_cluster: FeatureCluster) -> bool:
         for node in feature_cluster.nodes:
-            for request_column_node in feature_cluster.graph.iterate_nodes(
-                node, NodeType.REQUEST_COLUMN
-            ):
-                request_column_node = cast(RequestColumnNode, request_column_node)
-                if request_column_node.parameters.column_name == SpecialColumnName.POINT_IN_TIME:
+            for node in feature_cluster.graph.iterate_nodes(node, node_type=None):
+                if isinstance(node, RequestColumnNode):
+                    if node.parameters.column_name == SpecialColumnName.POINT_IN_TIME:
+                        return True
+
+                if isinstance(node, GroupByNode):
+                    # TTL handling requires point in time column
                     return True
         return False
 

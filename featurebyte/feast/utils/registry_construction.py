@@ -22,7 +22,7 @@ from feast.protos.feast.core.Registry_pb2 import Registry as RegistryProto
 from feast.repo_config import RegistryConfig, RepoConfig
 
 from featurebyte.common.env_util import add_sys_path
-from featurebyte.enum import DBVarType, InternalName
+from featurebyte.enum import DBVarType, InternalName, SpecialColumnName
 from featurebyte.feast.enum import to_feast_primitive_type
 from featurebyte.feast.model.feature_store import (
     FeastDatabaseDetails,
@@ -121,11 +121,17 @@ class OfflineStoreTable(FeatureByteBaseModel):
         FeastFeatureView
         """
         time_to_live = None
+        schema = []
         if self.has_ttl:
             assert self.feature_job_setting is not None
             time_to_live = timedelta(seconds=2 * self.feature_job_setting.frequency_seconds)
+            schema.append(
+                FeastField(
+                    name=InternalName.FEATURE_TIMESTAMP_COLUMN,
+                    dtype=to_feast_primitive_type(DBVarType.TIMESTAMP),
+                )
+            )
 
-        schema = []
         for ingest_query_graph in self.ingest_query_graphs:
             schema.append(
                 FeastField(
@@ -280,6 +286,33 @@ class FeastRegistryConstructor:
                             )
                         ],
                     )
+
+            offline_store_info = feature.offline_store_info
+            if offline_store_info.is_decomposed:
+                has_ttl = any(
+                    ingest_query_graph.has_ttl
+                    for ingest_query_graph in offline_store_info.extract_offline_store_ingest_query_graphs()
+                )
+            else:
+                assert offline_store_info.metadata is not None, "Missing offline store metadata"
+                has_ttl = offline_store_info.metadata.has_ttl
+
+            if (
+                has_ttl
+                and SpecialColumnName.POINT_IN_TIME.value not in name_to_feast_request_source
+            ):
+                name_to_feast_request_source[
+                    SpecialColumnName.POINT_IN_TIME.value
+                ] = FeastRequestSource(
+                    name=SpecialColumnName.POINT_IN_TIME.value,
+                    schema=[
+                        FeastField(
+                            name=SpecialColumnName.POINT_IN_TIME.value,
+                            dtype=to_feast_primitive_type(DBVarType.TIMESTAMP),
+                        )
+                    ],
+                )
+
         return name_to_feast_request_source
 
     @classmethod
@@ -311,8 +344,10 @@ class FeastRegistryConstructor:
         """
         on_demand_feature_views: List[FeastOnDemandFeatureView] = []
         for feature in features:
-            if feature.offline_store_info is None or not feature.offline_store_info.is_decomposed:
-                continue
+            if not feature.offline_store_info.is_decomposed:
+                assert feature.offline_store_info.metadata is not None
+                if not feature.offline_store_info.metadata.has_ttl:
+                    continue
 
             on_demand_feature_view = OnDemandFeatureViewConstructor.create(
                 feature_model=feature,
@@ -365,9 +400,11 @@ class FeastRegistryConstructor:
             # construct input for feature service
             input_feature_views = []
             found_feature_names = set()
-            for feature_view in feast_feature_views + feast_on_demand_feature_views:
+            for feature_view in feast_on_demand_feature_views + feast_feature_views:
                 feast_feat_names = [
-                    feat.name for feat in feature_view.features if feat.name in feature_names
+                    feat.name
+                    for feat in feature_view.features
+                    if feat.name in feature_names and feat.name not in found_feature_names
                 ]
                 if feast_feat_names:
                     input_feature_views.append(feature_view[feast_feat_names])

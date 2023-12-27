@@ -627,8 +627,9 @@ def check_on_demand_feature_view_code_generation(feature_model):
         df[node.parameters.column_name] = generate_column_data(node.parameters.dtype)
 
     # generate on demand feature view code
-    fv_global_state = offline_store_info.extract_on_demand_feature_view_code_generation()
-    odfv_codes = fv_global_state.generate_code()
+    odfv_codes = offline_store_info.generate_on_demand_feature_view_code(
+        feature_name=feature_model.name
+    )
 
     # check the generated code can be executed successfully
     output = check_on_demand_feature_view_code_execution(odfv_codes, df)

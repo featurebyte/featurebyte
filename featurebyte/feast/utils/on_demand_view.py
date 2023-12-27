@@ -1,7 +1,7 @@
 """
 On demand feature view related classes and functions.
 """
-from typing import Dict, List, Union, cast
+from typing import Dict, List, Optional, Union, cast
 
 import importlib
 import os
@@ -13,7 +13,7 @@ from feast.feature_view_projection import FeatureViewProjection
 from feast.on_demand_feature_view import OnDemandFeatureView, on_demand_feature_view
 
 from featurebyte.common.string import sanitize_identifier
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, SpecialColumnName
 from featurebyte.feast.enum import to_feast_primitive_type
 from featurebyte.models.feature import FeatureModel
 
@@ -99,29 +99,55 @@ class OnDemandFeatureViewConstructor:
             OnDemandFeatureView
         """
         offline_store_info = feature_model.offline_store_info
-        assert offline_store_info is not None, "FeatureModel does not have offline store info"
-        assert offline_store_info.is_decomposed, "FeatureModel is not decomposed"
         assert feature_model.name is not None, "FeatureModel does not have a name"
+
+        sources: List[Union[FeatureView, RequestSource, FeatureViewProjection]] = []
+        has_point_in_time = False
+        ttl_seconds: Optional[int] = None
+        if offline_store_info.is_decomposed:
+            for (
+                ingest_query_graph
+            ) in offline_store_info.extract_offline_store_ingest_query_graphs():
+                fv_source = name_to_feast_feature_view[ingest_query_graph.offline_store_table_name]
+                sources.append(fv_source)
+                if fv_source.ttl is not None:
+                    if ttl_seconds is None:
+                        ttl_seconds = fv_source.ttl.seconds
+                    elif fv_source.ttl.seconds < ttl_seconds:
+                        ttl_seconds = fv_source.ttl.seconds
+
+            for request_node in feature_model.extract_request_column_nodes():
+                req_source = name_to_feast_request_source[request_node.parameters.column_name]
+                sources.append(req_source)
+                if request_node.parameters.column_name == SpecialColumnName.POINT_IN_TIME.value:
+                    has_point_in_time = True
+        else:
+            assert (
+                offline_store_info.metadata is not None
+            ), "OfflineStoreInfo does not have metadata"
+            assert offline_store_info.metadata.has_ttl, "FeatureModel does not have TTL"
+            fv_source = name_to_feast_feature_view[
+                offline_store_info.metadata.offline_store_table_name
+            ]
+            if fv_source.ttl is not None:
+                ttl_seconds = fv_source.ttl.seconds
+            sources.append(fv_source)
+
+        if not has_point_in_time and ttl_seconds:
+            # add point in time request source if the feature has TTL
+            req_source = name_to_feast_request_source[SpecialColumnName.POINT_IN_TIME.value]
+            sources.append(req_source)
 
         function_name = (
             f"compute_feature_{sanitize_identifier(feature_model.name)}_{feature_model.id}"
         )
-        code_gen_state = offline_store_info.extract_on_demand_feature_view_code_generation(
+        codes = offline_store_info.generate_on_demand_feature_view_code(
+            feature_name=feature_model.name,
             input_df_name="inputs",
             output_df_name="df",
             function_name=function_name,
+            ttl_seconds=ttl_seconds,
         )
-        codes = code_gen_state.generate_code()
-
-        sources: List[Union[FeatureView, RequestSource, FeatureViewProjection]] = []
-        for ingest_query_graph in offline_store_info.extract_offline_store_ingest_query_graphs():
-            fv_source = name_to_feast_feature_view[ingest_query_graph.offline_store_table_name]
-            sources.append(fv_source)
-
-        for request_node in feature_model.extract_request_column_nodes():
-            req_source = name_to_feast_request_source[request_node.parameters.column_name]
-            sources.append(req_source)
-
         feature_view = create_feast_on_demand_feature_view(
             definition=codes,
             function_name=function_name,
