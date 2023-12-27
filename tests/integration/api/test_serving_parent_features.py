@@ -7,6 +7,7 @@ import pytest_asyncio
 
 from featurebyte import Entity, FeatureList, Table
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
+from tests.util.helper import tz_localize_if_needed
 
 table_prefix = "TEST_SERVING_PARENT_FEATURES"
 
@@ -190,7 +191,6 @@ def feature_list_with_parent_child_features_fixture(
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 @pytest.mark.parametrize(
     "point_in_time, provided_entity, expected",
     [
@@ -203,7 +203,11 @@ def feature_list_with_parent_child_features_fixture(
     ],
 )
 def test_preview(
-    feature_list_deployment_with_child_entities, point_in_time, provided_entity, expected
+    feature_list_deployment_with_child_entities,
+    point_in_time,
+    provided_entity,
+    expected,
+    source_type,
 ):
     """
     Test serving parent features requiring multiple joins with different types of table
@@ -221,10 +225,12 @@ def test_preview(
     feature_list, deployment = feature_list_deployment_with_child_entities
     feature = feature_list["Country Name"]
     df = feature.preview(pd.DataFrame([preview_params]))
+    tz_localize_if_needed(df, source_type)
     pd.testing.assert_series_equal(df[expected.index].iloc[0], expected, check_names=False)
 
     # Preview feature list
     df = feature_list.preview(pd.DataFrame([preview_params]))
+    tz_localize_if_needed(df, source_type)
     pd.testing.assert_series_equal(df[expected.index].iloc[0], expected, check_names=False)
 
 
@@ -254,7 +260,6 @@ def observations_set_with_expected_features_fixture():
     return observations_set_with_expected_features
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_historical_features(
     feature_list_deployment_with_child_entities,
     observations_set_with_expected_features,
@@ -271,7 +276,6 @@ def test_historical_features(
     pd.testing.assert_frame_equal(df, observations_set_with_expected_features, check_dtype=False)
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_historical_features_with_serving_names_mapping(
     feature_list_deployment_with_child_entities,
     observations_set_with_expected_features,
@@ -294,7 +298,6 @@ def test_historical_features_with_serving_names_mapping(
     pd.testing.assert_frame_equal(df, observations_set_with_expected_features, check_dtype=False)
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_online_features(config, feature_list_deployment_with_child_entities):
     """
     Test requesting online features

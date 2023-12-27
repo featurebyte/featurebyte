@@ -25,7 +25,7 @@ from featurebyte.api.source_table import AbstractTableData
 from featurebyte.common.env_util import add_sys_path
 from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import SampleMixin
-from featurebyte.enum import AggFunc, DBVarType
+from featurebyte.enum import AggFunc, DBVarType, SourceType
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalGraphState, GlobalQueryGraph, QueryGraph
 from featurebyte.query_graph.node.nested import OfflineStoreIngestQueryGraphNodeParameters
@@ -673,6 +673,24 @@ def undeploy_feature(feature):
     """
     deployment: Deployment = Deployment.get(f"{feature.name}_list")
     deployment.disable()  # pylint: disable=no-member
+
+
+def tz_localize_if_needed(df, source_type):
+    """
+    Helper function to localize datetime columns for easier comparison.
+
+    Parameters
+    ----------
+    df: DataFrame
+        Result of feature requests (preview / historical)
+    source_type: SourceType
+        Source type
+    """
+    if source_type not in {SourceType.DATABRICKS, SourceType.DATABRICKS_UNITY}:
+        # Only databricks needs timezone localization
+        return
+
+    df["POINT_IN_TIME"] = df["POINT_IN_TIME"].dt.tz_localize(None)
 
 
 def assert_dict_approx_equal(actual, expected):
