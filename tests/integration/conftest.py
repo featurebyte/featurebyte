@@ -786,6 +786,14 @@ def scd_data_table_name_fixture():
     return "SCD_DATA_TABLE"
 
 
+@pytest.fixture(name="scd_data_no_current_flag_table_name", scope="session")
+def scd_data_no_current_flag_table_name_fixture():
+    """
+    Get the scd table name used in integration tests.
+    """
+    return "SCD_DATA_TABLE_NO_CURRENT_FLAG"
+
+
 @pytest_asyncio.fixture(name="dataset_registration_helper", scope="session")
 async def datasets_registration_helper_fixture(
     transaction_data_upper_case,
@@ -794,6 +802,7 @@ async def datasets_registration_helper_fixture(
     dimension_data_table_name,
     scd_dataframe,
     scd_data_table_name,
+    scd_data_no_current_flag_table_name,
     observation_table_dataframe,
 ):
     """
@@ -857,6 +866,11 @@ async def datasets_registration_helper_fixture(
 
     # SCD table
     helper.add_table(scd_data_table_name, scd_dataframe)
+
+    # SCD table without current flag
+    helper.add_table(
+        scd_data_no_current_flag_table_name, scd_dataframe.drop(columns=["Current Flag"])
+    )
 
     # Observation table
     helper.add_table("ORIGINAL_OBSERVATION_TABLE", observation_table_dataframe)
@@ -1288,6 +1302,23 @@ def scd_data_tabular_source_fixture(
     return database_table
 
 
+@pytest.fixture(name="scd_data_no_current_flag_tabular_source", scope="session")
+def scd_data_no_current_flag_tabular_source_fixture(
+    session,
+    data_source,
+    scd_data_no_current_flag_table_name,
+):
+    """
+    Fixture for scd table tabular source
+    """
+    database_table = data_source.get_source_table(
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+        table_name=scd_data_no_current_flag_table_name,
+    )
+    return database_table
+
+
 @pytest.fixture(name="scd_table_name", scope="session")
 def scd_table_name_fixture(source_type):
     """
@@ -1313,6 +1344,29 @@ def scd_table_fixture(
         natural_key_column="User ID",
         effective_timestamp_column="Effective Timestamp",
         current_flag_column="Current Flag",
+        surrogate_key_column="ID",
+    )
+    scd_table["User ID"].as_entity(user_entity.name)
+    scd_table["User Status"].as_entity(status_entity.name)
+    return scd_table
+
+
+@pytest.fixture(name="scd_table_no_current_flag", scope="session")
+def scd_table_no_current_flag_fixture(
+    scd_data_no_current_flag_tabular_source,
+    scd_table_name,
+    user_entity,
+    status_entity,
+    catalog,
+):
+    """
+    Fixture for a SCDTable in integration tests
+    """
+    _ = catalog
+    scd_table = scd_data_no_current_flag_tabular_source.create_scd_table(
+        name=scd_table_name + "_NO_CURRENT_FLAG",
+        natural_key_column="User ID",
+        effective_timestamp_column="Effective Timestamp",
         surrogate_key_column="ID",
     )
     scd_table["User ID"].as_entity(user_entity.name)
