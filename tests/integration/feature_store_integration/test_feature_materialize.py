@@ -33,7 +33,7 @@ def always_enable_feast_integration_fixture():
 
 
 @pytest.fixture(name="features", scope="module")
-def features_fixture(event_table, scd_table_no_current_flag):  # pylint: disable=too-many-locals
+def features_fixture(event_table, scd_table):  # pylint: disable=too-many-locals
     """
     Fixture for feature
     """
@@ -120,7 +120,7 @@ def features_fixture(event_table, scd_table_no_current_flag):  # pylint: disable
     feature_9 = feature_8.vec.cosine_similarity(vec_agg_feature2)
     feature_9.name = "EXTERNAL_FS_COSINE_SIMILARITY_VEC"
 
-    scd_view = scd_table_no_current_flag.get_view()
+    scd_view = scd_table.get_view()
     feature_10 = scd_view["User Status"].as_feature("User Status Feature")
     feature_11 = (
         scd_view.groupby("User Status")
