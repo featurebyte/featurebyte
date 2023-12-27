@@ -154,8 +154,8 @@ class OnDemandFeatureViewExtractor(
         cutoff_var_name = var_name_generator.convert_to_variable_name(
             variable_name_prefix="cutoff", node_name=None
         )
-        ingested_var_name = var_name_generator.convert_to_variable_name(
-            variable_name_prefix="ingested_time", node_name=None
+        feat_time_name = var_name_generator.convert_to_variable_name(
+            variable_name_prefix="feature_timestamp", node_name=None
         )
         mask_var_name = var_name_generator.convert_to_variable_name(
             variable_name_prefix="mask", node_name=None
@@ -166,8 +166,8 @@ class OnDemandFeatureViewExtractor(
             {comment}
             {req_time_var_name} = pd.to_datetime({subset_pit_expr}, utc=True)
             {cutoff_var_name} = {req_time_var_name} - pd.Timedelta(seconds={ttl_seconds})
-            {ingested_var_name} = pd.to_datetime({subset_feat_time_col_expr}, utc=True)
-            {mask_var_name} = ({ingested_var_name} >= {cutoff_var_name}) & ({ingested_var_name} <= {req_time_var_name})
+            {feat_time_name} = pd.to_datetime({subset_feat_time_col_expr}, utc=True)
+            {mask_var_name} = ({feat_time_name} >= {cutoff_var_name}) & ({feat_time_name} <= {req_time_var_name})
             {input_column_expr}[~{mask_var_name}] = np.nan
             {subset_output_column_expr} = {input_column_expr}
             """
