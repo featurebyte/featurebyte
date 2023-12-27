@@ -344,6 +344,35 @@ async def test_initialize_new_columns__table_exists(
 
 @pytest.mark.usefixtures("mock_get_feature_store_session")
 @pytest.mark.asyncio
+async def test_initialize_new_columns__databricks_unity(
+    feature_materialize_service,
+    mock_snowflake_session,
+    offline_store_feature_table,
+    update_fixtures,
+):
+    """
+    Test initialize_new_columns when session is databricks_unity
+    """
+
+    def mock_execute_query(query):
+        if "LIMIT 1" in query:
+            raise ValueError()
+
+    mock_snowflake_session.source_type = "databricks_unity"
+    mock_snowflake_session.execute_query.side_effect = mock_execute_query
+    mock_snowflake_session._no_schema_error = ValueError
+
+    await feature_materialize_service.initialize_new_columns(offline_store_feature_table)
+    queries = extract_session_executed_queries(mock_snowflake_session, "execute_query")
+    assert_equal_with_expected_fixture(
+        queries,
+        "tests/fixtures/feature_materialize/initialize_new_columns_new_table_databricks.sql",
+        update_fixtures,
+    )
+
+
+@pytest.mark.usefixtures("mock_get_feature_store_session")
+@pytest.mark.asyncio
 async def test_drop_columns(
     feature_materialize_service,
     mock_snowflake_session,
