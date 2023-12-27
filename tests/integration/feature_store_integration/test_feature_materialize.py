@@ -3,6 +3,7 @@ Tests for feature materialization service
 """
 import json
 import os
+import textwrap
 import time
 from datetime import datetime
 from unittest.mock import patch
@@ -514,3 +515,23 @@ async def test_simulated_materialize(
     assert df.shape[0] == 36
     assert df["__feature_timestamp"].nunique() == 4
     assert df["üser id"].isnull().sum() == 0
+
+
+@pytest.mark.parametrize("source_type", ["databricks_unity"], indirect=True)
+@pytest.mark.asyncio
+async def test_feature_tables_have_primary_key_constraints(session, offline_store_feature_tables):
+    """
+    Check feature tables have primary key constraints in Databricks
+    """
+    for feature_table in offline_store_feature_tables.values():
+        df = await session.execute_query(
+            textwrap.dedent(
+                f"""
+                SELECT *
+                FROM information_schema.constraint_table_usage
+                WHERE table_schema ILIKE '{session.schema_name}'
+                AND table_name = '{feature_table.name}'
+                """
+            ).strip()
+        )
+        assert df.shape[0] == 1

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import AsyncIterator, List, Optional
 
+import textwrap
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from datetime import datetime
@@ -14,7 +15,7 @@ from bson import ObjectId
 from feast import FeatureStore as FeastFeatureStore
 from sqlglot import expressions
 
-from featurebyte.enum import InternalName
+from featurebyte.enum import InternalName, SourceType
 from featurebyte.feast.service.feature_store import FeastFeatureStoreService
 from featurebyte.feast.service.registry import FeastRegistryService
 from featurebyte.feast.utils.materialize_helper import materialize_partial
@@ -301,6 +302,8 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
                 )
                 materialize_end_date = pd.Timestamp(last_feature_timestamp).to_pydatetime()
 
+        await self._add_primary_key_constraint_if_necessary(session, feature_table_model)
+
         # Feast online materialize. Start date is not set because these are new columns.
         feature_store = await self._get_feast_feature_store()
         if feature_store is not None:
@@ -311,6 +314,34 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
                 end_date=materialize_end_date,
                 with_feature_timestamp=feature_table_model.has_ttl,
             )
+
+    @classmethod
+    async def _add_primary_key_constraint_if_necessary(
+        cls, session: BaseSession, feature_table_model: OfflineStoreFeatureTableModel
+    ) -> None:
+        # Only needed for Databricks with Unity catalog for now
+        if session.source_type != SourceType.DATABRICKS_UNITY:
+            return
+
+        # Table constraint syntax is only supported in newer versions of sqlglot, so the queries are
+        # formatted manually here
+        quoted_primary_key_columns = [
+            "`{}`".format(column_name)
+            for column_name in [InternalName.FEATURE_TIMESTAMP_COLUMN.value]
+            + feature_table_model.serving_names
+        ]
+        for quoted_col in quoted_primary_key_columns:
+            await session.execute_query(
+                f"ALTER TABLE `{feature_table_model.name}` ALTER COLUMN {quoted_col} SET NOT NULL"
+            )
+        await session.execute_query(
+            textwrap.dedent(
+                f"""
+                ALTER TABLE `{feature_table_model.name}` ADD CONSTRAINT `pk_{feature_table_model.name}`
+                PRIMARY KEY({', '.join(quoted_primary_key_columns)})
+                """
+            ).strip()
+        )
 
     async def drop_columns(
         self, feature_table_model: OfflineStoreFeatureTableModel, column_names: List[str]
