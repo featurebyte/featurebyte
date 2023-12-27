@@ -123,8 +123,8 @@ def test_feast_registry_construction(feast_registry_proto):
         df = pd.DataFrame()
         request_time = pd.to_datetime(inputs['POINT_IN_TIME'], utc=True)
         cutoff = request_time - pd.Timedelta(seconds=3600)
-        ingested_time = pd.to_datetime(inputs['__feature_timestamp'], utc=True)
-        mask = (ingested_time >= cutoff) & (ingested_time <= request_time)
+        feature_timestamp = pd.to_datetime(inputs['__feature_timestamp'], utc=True)
+        mask = (feature_timestamp >= cutoff) & (feature_timestamp <= request_time)
         inputs['sum_1d'][~mask] = np.nan
         df['sum_1d'] = inputs['sum_1d']
         return df

@@ -210,6 +210,7 @@ async def test_scheduled_materialize_features(
         "columns": ["sum_30m"],
         "start_date": None,
         "end_date": datetime(2022, 1, 1, 0, 0),
+        "with_feature_timestamp": True,
     }
 
     # Check last materialization timestamp updated
@@ -248,6 +249,7 @@ async def test_scheduled_materialize_features_if_materialized_before(
         "columns": ["sum_30m"],
         "start_date": datetime(2022, 1, 1, 0, 0),
         "end_date": datetime(2022, 1, 2, 0, 0),
+        "with_feature_timestamp": True,
     }
 
     # Check last materialization timestamp updated
@@ -290,8 +292,9 @@ async def test_initialize_new_columns__table_does_not_exist(
     feature_view = kwargs.pop("feature_view")
     assert feature_view.name == "fb_entity_cust_id_fjs_1800_300_600_ttl"
     assert kwargs == {
-        "columns": ["sum_30m", "__feature_timestamp"],
+        "columns": ["sum_30m"],
         "end_date": datetime(2022, 1, 1, 0, 0),
+        "with_feature_timestamp": True,
     }
 
 
@@ -333,8 +336,9 @@ async def test_initialize_new_columns__table_exists(
     feature_view = kwargs.pop("feature_view")
     assert feature_view.name == "fb_entity_cust_id_fjs_1800_300_600_ttl"
     assert kwargs == {
-        "columns": ["sum_30m", "__feature_timestamp"],
+        "columns": ["sum_30m"],
         "end_date": datetime(2022, 10, 15, 10, 0, 0),
+        "with_feature_timestamp": True,
     }
 
 
