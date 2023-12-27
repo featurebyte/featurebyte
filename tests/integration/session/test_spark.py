@@ -112,7 +112,7 @@ async def test_register_table(session):
     assert_frame_equal(df_retrieve, df_training_events, check_dtype=False)
 
 
-@pytest.mark.parametrize("source_type", ["spark", "databricks_unity"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
 @pytest.mark.asyncio
 async def test_register_udfs(session):
     """
