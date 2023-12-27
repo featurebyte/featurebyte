@@ -109,8 +109,10 @@ def test_feature__ttl_and_non_ttl_components(float_feature, non_time_based_featu
     check_on_demand_feature_view_code_generation(feature_model=feature_model)
 
     # check on-demand view code
-    codes = offline_store_info.generate_on_demand_feature_view_code(feature_name=feature_model.name)
-    expected = """
+    codes = offline_store_info.generate_on_demand_feature_view_code(
+        feature_name_version=feature_model.name_version
+    )
+    expected = f"""
     import json
     import numpy as np
     import pandas as pd
@@ -119,8 +121,8 @@ def test_feature__ttl_and_non_ttl_components(float_feature, non_time_based_featu
 
     def on_demand_feature_view(inputs: pd.DataFrame) -> pd.DataFrame:
         df = pd.DataFrame()
-        feat = inputs['__feature__part0'] + inputs['__feature__part1']
-        df['feature'] = feat
+        feat = inputs['__{feature_model.name_version}__part0'] + inputs['__{feature_model.name_version}__part1']
+        df['feature_V231227'] = feat
         return df
     """
     assert codes.strip() == textwrap.dedent(expected).strip()
@@ -181,8 +183,11 @@ def test_feature__request_column_ttl_and_non_ttl_components(
     check_on_demand_feature_view_code_generation(feature_model=feature_model)
 
     # check on-demand view code
-    codes = offline_store_info.generate_on_demand_feature_view_code(feature_name=feature_model.name)
-    expected = """
+    name_version = feature_model.name_version
+    codes = offline_store_info.generate_on_demand_feature_view_code(
+        feature_name_version=name_version
+    )
+    expected = f"""
     import json
     import numpy as np
     import pandas as pd
@@ -191,11 +196,11 @@ def test_feature__request_column_ttl_and_non_ttl_components(
 
     def on_demand_feature_view(inputs: pd.DataFrame) -> pd.DataFrame:
         df = pd.DataFrame()
+        feat = pd.to_datetime(inputs['__{name_version}__part0'])
         request_col = pd.to_datetime(inputs['POINT_IN_TIME'])
-        feat = request_col + (request_col - request_col)
-        feat_1 = pd.to_datetime(inputs['__feature__part0'])
-        feat_2 = ((feat - feat_1).dt.seconds // 86400) + inputs['__feature__part1']
-        df['feature'] = feat_2
+        feat_1 = request_col + (request_col - request_col)
+        feat_2 = ((feat_1 - feat).dt.seconds // 86400) + inputs['__{name_version}__part1']
+        df['{name_version}'] = feat_2
         return df
     """
     assert codes.strip() == textwrap.dedent(expected).strip()
@@ -244,7 +249,9 @@ def test_feature__multiple_non_ttl_components(
     assert offline_store_info.is_decomposed is False
     expected_error = "TTL is not set"
     with pytest.raises(AssertionError, match=expected_error):
-        offline_store_info.generate_on_demand_feature_view_code(feature_name=feature_model.name)
+        offline_store_info.generate_on_demand_feature_view_code(
+            feature_name_version=feature_model.name_version
+        )
 
 
 def test_feature__ttl_item_aggregate_request_column(
@@ -263,8 +270,11 @@ def test_feature__ttl_item_aggregate_request_column(
 
     # check on-demand view code
     offline_store_info = feature_model.offline_store_info
-    codes = offline_store_info.generate_on_demand_feature_view_code(feature_name=feature_model.name)
-    expected = """
+    name_version = feature_model.name_version
+    codes = offline_store_info.generate_on_demand_feature_view_code(
+        feature_name_version=name_version
+    )
+    expected = f"""
     import json
     import numpy as np
     import pandas as pd
@@ -273,11 +283,11 @@ def test_feature__ttl_item_aggregate_request_column(
 
     def on_demand_feature_view(inputs: pd.DataFrame) -> pd.DataFrame:
         df = pd.DataFrame()
-        feat = inputs['__composite_feature__part0'] + inputs['__composite_feature__part1']
+        feat = inputs['__{name_version}__part0'] + inputs['__{name_version}__part1']
         request_col = pd.to_datetime(inputs['POINT_IN_TIME'])
-        feat_1 = pd.to_datetime(inputs['__composite_feature__part2'])
+        feat_1 = pd.to_datetime(inputs['__{name_version}__part2'])
         feat_2 = (request_col - feat_1).dt.seconds // 86400
-        df['composite_feature'] = feat + feat_2
+        df['{name_version}'] = feat + feat_2
         return df
     """
     assert codes.strip() == textwrap.dedent(expected).strip()
@@ -321,10 +331,11 @@ def test_feature__input_has_mixed_ingest_graph_node_flags(
 
     # check on-demand view code
     offline_store_info = feature_model.offline_store_info
+    name_version = feature_model.name_version
     codes = offline_store_info.generate_on_demand_feature_view_code(
-        feature_name=feature_model.name, ttl_seconds=7200
+        feature_name_version=name_version, ttl_seconds=7200
     )
-    expected = """
+    expected = f"""
     import json
     import numpy as np
     import pandas as pd
@@ -333,15 +344,15 @@ def test_feature__input_has_mixed_ingest_graph_node_flags(
 
     def on_demand_feature_view(inputs: pd.DataFrame) -> pd.DataFrame:
         df = pd.DataFrame()
-        feat = inputs['__feature_zscore__part0'] - inputs['__feature_zscore__part1']
-        feat_1 = feat / inputs['__feature_zscore__part2']
-        # TTL handling for feature_zscore
+        feat = inputs['__{name_version}__part0'] - inputs['__{name_version}__part1']
+        feat_1 = feat / inputs['__{name_version}__part2']
+        # TTL handling for feature_zscore_V231227
         request_time = pd.to_datetime(inputs['POINT_IN_TIME'], utc=True)
         cutoff = request_time - pd.Timedelta(seconds=7200)
         feature_timestamp = pd.to_datetime(inputs['__feature_timestamp'], utc=True)
         mask = (feature_timestamp >= cutoff) & (feature_timestamp <= request_time)
         feat_1[~mask] = np.nan
-        df['feature_zscore'] = feat_1
+        df['{name_version}'] = feat_1
         return df
     """
     assert codes.strip() == textwrap.dedent(expected).strip()
@@ -397,10 +408,11 @@ def test_feature__with_ttl_handling(float_feature):
     """Test a feature with ttl handling."""
     float_feature.save()
     offline_store_info = float_feature.cached_model.offline_store_info
+    name_version = float_feature.cached_model.name_version
     codes = offline_store_info.generate_on_demand_feature_view_code(
-        feature_name=float_feature.name, ttl_seconds=7200
+        feature_name_version=name_version, ttl_seconds=7200
     )
-    expected = """
+    expected = f"""
     import json
     import numpy as np
     import pandas as pd
@@ -413,8 +425,8 @@ def test_feature__with_ttl_handling(float_feature):
         cutoff = request_time - pd.Timedelta(seconds=7200)
         feature_timestamp = pd.to_datetime(inputs['__feature_timestamp'], utc=True)
         mask = (feature_timestamp >= cutoff) & (feature_timestamp <= request_time)
-        inputs['sum_1d'][~mask] = np.nan
-        df['sum_1d'] = inputs['sum_1d']
+        inputs['{name_version}'][~mask] = np.nan
+        df['{name_version}'] = inputs['{name_version}']
         return df
     """
     assert codes.strip() == textwrap.dedent(expected).strip()

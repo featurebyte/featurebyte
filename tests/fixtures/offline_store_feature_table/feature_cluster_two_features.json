@@ -18,11 +18,15 @@
             },
             {
                 "source": "project_1",
+                "target": "alias_1"
+            },
+            {
+                "source": "project_1",
                 "target": "add_1"
             },
             {
                 "source": "add_1",
-                "target": "alias_1"
+                "target": "alias_2"
             }
         ],
         "nodes": [
@@ -186,6 +190,14 @@
                 "type": "project"
             },
             {
+                "name": "alias_1",
+                "output_type": "series",
+                "parameters": {
+                    "name": "sum_1d_V231227"
+                },
+                "type": "alias"
+            },
+            {
                 "name": "add_1",
                 "output_type": "series",
                 "parameters": {
@@ -195,17 +207,17 @@
                 "type": "add"
             },
             {
-                "name": "alias_1",
+                "name": "alias_2",
                 "output_type": "series",
                 "parameters": {
-                    "name": "sum_1d_plus_123"
+                    "name": "sum_1d_plus_123_V231227"
                 },
                 "type": "alias"
             }
         ]
     },
     "node_names": [
-        "project_1",
-        "alias_1"
+        "alias_1",
+        "alias_2"
     ]
 }

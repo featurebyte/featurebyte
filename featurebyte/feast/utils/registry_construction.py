@@ -390,32 +390,35 @@ class FeastRegistryConstructor:
         ValueError
             If missing features
         """
-        feature_id_to_name = {feature.id: feature.name for feature in features}
+        feature_id_to_name_version = {feature.id: feature.name_version for feature in features}
         feature_services = []
         for feature_list in feature_lists:
-            feature_names = set(
-                feature_id_to_name[feature_id] for feature_id in feature_list.feature_ids
+            feature_name_versions = set(
+                feature_id_to_name_version[feature_id] for feature_id in feature_list.feature_ids
             )
 
             # construct input for feature service
             input_feature_views = []
-            found_feature_names = set()
+            found_feature_name_versions = set()
             for feature_view in feast_on_demand_feature_views + feast_feature_views:
                 feast_feat_names = [
                     feat.name
                     for feat in feature_view.features
-                    if feat.name in feature_names and feat.name not in found_feature_names
+                    if feat.name in feature_name_versions
+                    and feat.name not in found_feature_name_versions
                 ]
                 if feast_feat_names:
                     input_feature_views.append(feature_view[feast_feat_names])
-                    found_feature_names.update(feast_feat_names)
+                    found_feature_name_versions.update(feast_feat_names)
 
             # check if all feature names are found
-            if found_feature_names != feature_names:
+            if found_feature_name_versions != feature_name_versions:
                 # If the feature list contains features that require post-processing or request column,
                 # the feature name will not be found in the feature view. This will be fixed once we support
                 # ondemand feature view.
-                raise ValueError(f"Missing features: {feature_names - found_feature_names}")
+                raise ValueError(
+                    f"Missing features: {feature_name_versions - found_feature_name_versions}"
+                )
 
             # construct feature service
             feature_service = FeastFeatureService(

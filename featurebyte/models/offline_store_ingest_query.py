@@ -143,9 +143,6 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
             Ingest graph and node
         """
         output_node = self.graph.get_node_by_name(self.node_name)
-        if self.ref_node_name is None:
-            # if the query graph is not decomposed, return the original graph & node
-            return self.graph, output_node
 
         # if the query graph is decomposed, update the graph output column name to match output_column_name
         if output_node.type != NodeType.ALIAS:
@@ -221,7 +218,7 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
 
     def generate_on_demand_feature_view_code(
         self,
-        feature_name: str,
+        feature_name_version: str,
         input_df_name: str = "inputs",
         output_df_name: str = "df",
         function_name: str = "on_demand_feature_view",
@@ -232,7 +229,7 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
 
         Parameters
         ----------
-        feature_name: str
+        feature_name_version: str
             Feature name
         input_df_name: str
             Input dataframe name
@@ -256,18 +253,19 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
                 output_df_name=output_df_name,
                 on_demand_function_name=function_name,
                 ttl_seconds=ttl_seconds,
+                feature_name_version=feature_name_version,
             )
             code_generator = codegen_state.code_generator
         else:
             assert ttl_seconds is not None, "TTL is not set"
             code_generator = CodeGenerator(template="on_demand_view.tpl")
             statements = OnDemandFeatureViewExtractor.generate_ttl_handling_statements(
-                feature_name=feature_name,
+                feature_name_version=feature_name_version,
                 input_df_name=input_df_name,
                 output_df_name=output_df_name,
                 input_column_expr=subset_frame_column_expr(
                     input_df_name,
-                    feature_name,
+                    feature_name_version,
                 ),
                 ttl_seconds=ttl_seconds,
                 var_name_generator=VariableNameGenerator(),

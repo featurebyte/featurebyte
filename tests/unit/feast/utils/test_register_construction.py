@@ -8,6 +8,7 @@ import pytest
 from google.protobuf.json_format import MessageToDict
 
 from featurebyte import FeatureList, RequestColumn
+from featurebyte.common.model_util import get_version
 from featurebyte.feast.utils.registry_construction import FeastRegistryConstructor
 
 
@@ -67,7 +68,7 @@ def test_feast_registry_construction__with_post_processing_features(
     odfv_spec = on_demand_feature_views[0]["spec"]
     assert odfv_spec["name"].startswith("compute_feature_feature_")
     assert odfv_spec["project"] == "featurebyte_project"
-    assert odfv_spec["features"] == [{"name": "feature", "valueType": "DOUBLE"}]
+    assert odfv_spec["features"] == [{"name": f"feature_{get_version()}", "valueType": "DOUBLE"}]
     assert odfv_spec["sources"].keys() == {
         "POINT_IN_TIME",
         "fb_entity_cust_id_fjs_1800_300_600_ttl",
@@ -125,8 +126,8 @@ def test_feast_registry_construction(feast_registry_proto):
         cutoff = request_time - pd.Timedelta(seconds=3600)
         feature_timestamp = pd.to_datetime(inputs['__feature_timestamp'], utc=True)
         mask = (feature_timestamp >= cutoff) & (feature_timestamp <= request_time)
-        inputs['sum_1d'][~mask] = np.nan
-        df['sum_1d'] = inputs['sum_1d']
+        inputs['sum_1d_{get_version()}'][~mask] = np.nan
+        df['sum_1d_{get_version()}'] = inputs['sum_1d_{get_version()}']
         return df
     """
     assert udf_definition.strip() == textwrap.dedent(expected).strip()
@@ -202,12 +203,17 @@ def test_feast_registry_construction(feast_registry_proto):
                 "spec": {
                     "features": [
                         {
-                            "featureColumns": [{"name": "sum_1d", "valueType": "DOUBLE"}],
+                            "featureColumns": [
+                                {"name": f"sum_1d_{get_version()}", "valueType": "DOUBLE"}
+                            ],
                             "featureViewName": feat_view_name,
                         },
                         {
                             "featureColumns": [
-                                {"name": "non_time_time_sum_amount_feature", "valueType": "DOUBLE"}
+                                {
+                                    "name": f"non_time_time_sum_amount_feature_{get_version()}",
+                                    "valueType": "DOUBLE",
+                                }
                             ],
                             "featureViewName": "fb_entity_transaction_id_fjs_86400_0_0",
                         },
@@ -239,7 +245,7 @@ def test_feast_registry_construction(feast_registry_proto):
                     "entityColumns": [{"name": "cust_id", "valueType": "STRING"}],
                     "features": [
                         {"name": "__feature_timestamp", "valueType": "UNIX_TIMESTAMP"},
-                        {"name": "sum_1d", "valueType": "DOUBLE"},
+                        {"name": f"sum_1d_{get_version()}", "valueType": "DOUBLE"},
                     ],
                     "name": "fb_entity_cust_id_fjs_1800_300_600_ttl",
                     "online": True,
@@ -267,7 +273,10 @@ def test_feast_registry_construction(feast_registry_proto):
                     "entities": ["transaction_id"],
                     "entityColumns": [{"name": "transaction_id", "valueType": "STRING"}],
                     "features": [
-                        {"name": "non_time_time_sum_amount_feature", "valueType": "DOUBLE"}
+                        {
+                            "name": f"non_time_time_sum_amount_feature_{get_version()}",
+                            "valueType": "DOUBLE",
+                        }
                     ],
                     "name": "fb_entity_transaction_id_fjs_86400_0_0",
                     "online": True,

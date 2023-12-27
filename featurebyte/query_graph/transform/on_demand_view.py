@@ -105,7 +105,7 @@ class OnDemandFeatureViewExtractor(
 
     @staticmethod
     def generate_ttl_handling_statements(
-        feature_name: str,
+        feature_name_version: str,
         input_df_name: str,
         output_df_name: str,
         input_column_expr: str,
@@ -118,8 +118,8 @@ class OnDemandFeatureViewExtractor(
 
         Parameters
         ----------
-        feature_name: str
-            Feature name
+        feature_name_version: str
+            Feature name version
         input_df_name: str
             Input dataframe name
         output_df_name: str
@@ -145,7 +145,7 @@ class OnDemandFeatureViewExtractor(
         subset_feat_time_col_expr = subset_frame_column_expr(
             input_df_name, InternalName.FEATURE_TIMESTAMP_COLUMN.value
         )
-        subset_output_column_expr = subset_frame_column_expr(output_df_name, feature_name)
+        subset_output_column_expr = subset_frame_column_expr(output_df_name, feature_name_version)
 
         # variable names
         req_time_var_name = var_name_generator.convert_to_variable_name(
@@ -176,6 +176,8 @@ class OnDemandFeatureViewExtractor(
 
     def extract(self, node: Node, **kwargs: Any) -> OnDemandFeatureViewGlobalState:
         has_ttl = kwargs.get("ttl_seconds", 0)
+        feature_name_version = kwargs.get("feature_name_version", None)
+        assert feature_name_version is not None, "feature_name_version must be provided"
         global_state = OnDemandFeatureViewGlobalState(
             code_generation_config=OnDemandViewCodeGenConfig(**kwargs),
         )
@@ -186,8 +188,6 @@ class OnDemandFeatureViewExtractor(
             topological_order_map=self.graph.node_topological_order_map,
         )
         output_df_name = global_state.code_generation_config.output_df_name
-        output_column_name = self.graph.get_node_output_column_name(node_name=node.name)
-        assert isinstance(output_column_name, str), "Output column name must be a string"
         if has_ttl:
             if isinstance(var_name_or_expr, ExpressionStr):
                 input_var_name = global_state.var_name_generator.convert_to_variable_name(
@@ -200,18 +200,18 @@ class OnDemandFeatureViewExtractor(
                 input_var_name = var_name_or_expr
 
             ttl_statements = self.generate_ttl_handling_statements(
-                feature_name=output_column_name,
+                feature_name_version=feature_name_version,
                 input_df_name=global_state.code_generation_config.input_df_name,
                 output_df_name=global_state.code_generation_config.output_df_name,
                 input_column_expr=input_var_name,
                 ttl_seconds=has_ttl,
                 var_name_generator=global_state.var_name_generator,
-                comment=f"# TTL handling for {output_column_name}",
+                comment=f"# TTL handling for {feature_name_version}",
             )
             global_state.code_generator.add_statements(statements=[ttl_statements])
         else:
             output_var = VariableNameStr(
-                subset_frame_column_expr(output_df_name, output_column_name)
+                subset_frame_column_expr(output_df_name, feature_name_version)
             )
             global_state.code_generator.add_statements(statements=[(output_var, var_name_or_expr)])
 

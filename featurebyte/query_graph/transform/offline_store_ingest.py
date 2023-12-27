@@ -118,6 +118,7 @@ class OfflineStoreIngestQueryGraphGlobalState:  # pylint: disable=too-many-insta
 
     # variables used to construct offline store table name
     feature_name: str
+    feature_version: str
     entity_id_to_serving_name: Dict[PydanticObjectId, str]
     ingest_graph_node_counter: int
 
@@ -125,6 +126,7 @@ class OfflineStoreIngestQueryGraphGlobalState:  # pylint: disable=too-many-insta
     def create(
         cls,
         feature_name: str,
+        feature_version: str,
         target_node_name: str,
         entity_id_to_serving_name: Dict[PydanticObjectId, str],
         decompose_point_info: DecomposePointGlobalState,
@@ -136,6 +138,8 @@ class OfflineStoreIngestQueryGraphGlobalState:  # pylint: disable=too-many-insta
         ----------
         feature_name: str
             Feature name
+        feature_version: str
+            Feature version
         target_node_name: str
             Target node name
         entity_id_to_serving_name: Dict[PydanticObjectId, str]
@@ -149,6 +153,7 @@ class OfflineStoreIngestQueryGraphGlobalState:  # pylint: disable=too-many-insta
         """
         return OfflineStoreIngestQueryGraphGlobalState(
             feature_name=feature_name,
+            feature_version=feature_version,
             graph=QueryGraphModel(),
             node_name_map={},
             target_node_name=target_node_name,
@@ -304,7 +309,9 @@ class OfflineStoreIngestQueryGraphTransformer(
             entity_id_to_serving_name=global_state.entity_id_to_serving_name,
         )
         part_num = global_state.ingest_graph_node_counter
-        column_name = f"__{global_state.feature_name}__part{part_num}"
+        column_name = (
+            f"__{global_state.feature_name}_{global_state.feature_version}__part{part_num}"
+        )
         graph_node = GraphNode(
             name="graph",
             output_type=subgraph_output_node.output_type,
@@ -383,6 +390,7 @@ class OfflineStoreIngestQueryGraphTransformer(
         entity_id_to_serving_name: Dict[PydanticObjectId, str],
         relationships_info: List[EntityRelationshipInfo],
         feature_name: str,
+        feature_version: str,
     ) -> OfflineStoreIngestQueryGraphOutput:
         """
         Transform the given node into a decomposed graph with offline store ingest query nodes
@@ -396,7 +404,9 @@ class OfflineStoreIngestQueryGraphTransformer(
         relationships_info: List[EntityRelationshipInfo]
             Relationships info (used to get the primary entity ids & create the offline store table name)
         feature_name: str
-            Feature name (used to create the offline store table name)
+            Feature name (used to create the offline store table column name)
+        feature_version: str
+            Feature version (used to create the offline store table column name)
 
         Returns
         -------
@@ -410,6 +420,7 @@ class OfflineStoreIngestQueryGraphTransformer(
         # create global state
         global_state = OfflineStoreIngestQueryGraphGlobalState.create(
             feature_name=feature_name,
+            feature_version=feature_version,
             target_node_name=target_node.name,
             entity_id_to_serving_name=entity_id_to_serving_name,
             decompose_point_info=decompose_point_info,
