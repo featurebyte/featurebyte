@@ -29,6 +29,7 @@ from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.query_graph.model.feature_job_setting import (
+    FeatureJobSetting,
     TableFeatureJobSetting,
     TableIdFeatureJobSetting,
 )
@@ -462,9 +463,15 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
         else:
             decomposed_graph = self.graph
             output_node_name = self.node.name
-            feature_job_setting = None
             if self.table_id_feature_job_settings:
                 feature_job_setting = self.table_id_feature_job_settings[0].feature_job_setting
+            else:
+                # TODO: Remove this once the default are specified in the graph
+                feature_job_setting = FeatureJobSetting(
+                    frequency="1d",
+                    time_modulo_frequency="0s",
+                    blind_spot="0s",
+                )
 
             has_ttl = bool(
                 next(

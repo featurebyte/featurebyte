@@ -268,9 +268,9 @@ def start_playground(datasets: Optional[List[str]] = None,
             port=10000,
             storage_type="file",
             storage_url="/data/staging/playground",
-            storage_spark_url="file:///opt/spark/data/staging/playground",
-            featurebyte_catalog="spark_catalog",
-            featurebyte_schema="playground",
+            storage_path="file:///opt/spark/data/staging/playground",
+            catalog_name="spark_catalog",
+            schema_name="playground",
         ),
     )
     step += 1

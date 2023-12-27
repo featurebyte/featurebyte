@@ -154,8 +154,9 @@ async def test_post_migration_sanity_check(app_container):
                 details=SnowflakeDetails(
                     account=f"<account>_{i}",
                     warehouse="snowflake",
-                    database="<database_name>",
-                    sf_schema="<schema_name>",
+                    database_name="<database_name>",
+                    schema_name="<schema_name>",
+                    role_name="TESTING",
                 ),
             ),
         )

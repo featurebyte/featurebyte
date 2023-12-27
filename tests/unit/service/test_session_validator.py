@@ -92,7 +92,7 @@ async def test_validate_feature_store_exists(session_validator_service, snowflak
     """
     with pytest.raises(NoFeatureStorePresentError):
         details = copy.deepcopy(snowflake_feature_store.details)
-        details.database = "not_a_real_database"
+        details.database_name = "not_a_real_database"
         await session_validator_service.validate_feature_store_exists(details)
 
     # Write details to persistent layer

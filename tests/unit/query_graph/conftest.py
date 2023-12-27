@@ -52,8 +52,9 @@ def input_details_fixture(request):
             "feature_store_details": {
                 "type": "snowflake",
                 "details": {
-                    "database": "db",
-                    "sf_schema": "public",
+                    "database_name": "db",
+                    "schema_name": "public",
+                    "role_name": "role",
                     "account": "account",
                     "warehouse": "warehouse",
                 },
@@ -71,8 +72,8 @@ def input_details_fixture(request):
                 "details": {
                     "host": "databricks-hostname",
                     "http_path": "databricks-http-path",
-                    "featurebyte_schema": "public",
-                    "featurebyte_catalog": "hive_metastore",
+                    "schema_name": "public",
+                    "catalog_name": "hive_metastore",
                 },
             },
         }
@@ -1323,8 +1324,9 @@ def dataframe_fixture(global_graph, snowflake_feature_store):
             "feature_store_details": {
                 "type": "snowflake",
                 "details": {
-                    "database": "db",
-                    "sf_schema": "public",
+                    "database_name": "db",
+                    "schema_name": "public",
+                    "role_name": "role",
                     "account": "account",
                     "warehouse": "warehouse",
                 },
@@ -1466,8 +1468,9 @@ def expected_pruned_graph_and_node_1(groupby_node_aggregation_id):
                             "details": {
                                 "account": "account",
                                 "warehouse": "warehouse",
-                                "database": "db",
-                                "sf_schema": "public",
+                                "database_name": "db",
+                                "schema_name": "public",
+                                "role_name": "role",
                             },
                         },
                         "type": "event_table",
@@ -1552,8 +1555,9 @@ def expected_pruned_graph_and_node_2(groupby_node_aggregation_id):
                             "details": {
                                 "account": "account",
                                 "warehouse": "warehouse",
-                                "database": "db",
-                                "sf_schema": "public",
+                                "database_name": "db",
+                                "schema_name": "public",
+                                "role_name": "role",
                             },
                         },
                         "type": "event_table",
