@@ -176,6 +176,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
                 source_type=session.source_type,
                 online_store_table_version_service=self.online_store_table_version_service,
                 output_table_details=output_table_details,
+                request_timestamp=feature_timestamp,
             )
 
             column_names = []

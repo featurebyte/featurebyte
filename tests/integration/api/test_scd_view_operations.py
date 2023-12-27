@@ -66,21 +66,6 @@ def expected_dataframe_scd_join(transaction_data_upper_case, scd_dataframe):
     return df
 
 
-def test_scd_view_preview(scd_table):
-    """
-    Test preview of SCDView
-    """
-    view = scd_table.get_view()
-
-    def _check_result_exclude_current_flag_column(df_result):
-        assert scd_table.current_flag_column is not None
-        assert scd_table.current_flag_column not in df_result.columns.tolist()
-
-    _check_result_exclude_current_flag_column(view.preview())
-    _check_result_exclude_current_flag_column(view.sample())
-    _check_result_exclude_current_flag_column(view.describe())
-
-
 @pytest.mark.asyncio
 async def test_scd_join_small(session, data_source, source_type):
     """

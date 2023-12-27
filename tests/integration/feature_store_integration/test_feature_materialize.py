@@ -222,9 +222,9 @@ async def check_feast_registry(app_container):
     # Check feast materialize and get_online_features
     feature_service = feature_store.get_feature_service("EXTERNAL_FS_FEATURE_LIST")
     entity_row = {
-        "üser id": 1,
+        "üser id": 5,
         "cust_id": 761,
-        "user_status": "STÀTUS_CODE_39",
+        "user_status": "STÀTUS_CODE_37",
         "PRODUCT_ACTION": "detail",
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 12:00:00"),
     }
@@ -243,42 +243,42 @@ async def check_feast_registry(app_container):
         else None
     ]
     expected = {
-        "üser id": ["1"],
-        "cust_id": ["761"],
-        "PRODUCT_ACTION": ["detail"],
-        "user_status": ["STÀTUS_CODE_39"],
-        "User Status Feature": [None],
-        "Current Number of Users With This Status": [None],
-        "EXTERNAL_FS_COUNT_OVERALL_7d": [149.0],
-        "EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d": [43.0],
-        "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h": [475.38],
-        "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100": [47538.0],
-        "EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE": [519.2892974268257],
+        "Current Number of Users With This Status": [1.0],
         "EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d": [
             {
-                "__MISSING__": 234.77,
-                "detail": 235.24,
-                "purchase": 225.78,
-                "rëmove": 11.39,
-                "àdd": 338.51,
+                "__MISSING__": 240.76,
+                "detail": 254.23,
+                "purchase": 216.87,
+                "rëmove": 98.34,
+                "àdd": 146.22,
             }
         ],
-        "EXTERNAL_FS_COSINE_SIMILARITY": [0],
+        "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h": [683.55],
+        "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100": [68355.0],
         "EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h": [
             [
-                0.41825654595626777,
-                0.3459365542614712,
-                0.5725510296687925,
-                0.424307035963231,
-                0.4930920411475924,
-                0.4502761817462119,
-                0.3192654242159095,
-                0.40611594238301874,
-                0.649378423267523,
-                0.3857218591399362,
+                0.6807108071969569,
+                0.41463276624595335,
+                0.4432548634609973,
+                0.6828628340472915,
+                0.5967769997569004,
+                0.5210525989755145,
+                0.4687023396052305,
+                0.35638918237609585,
+                0.42879787416376725,
+                0.548615163058392,
             ]
         ],
-        "EXTERNAL_FS_COSINE_SIMILARITY_VEC": [0.8593524820234559],
+        "EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE": [727.4592974268256],
+        "EXTERNAL_FS_COSINE_SIMILARITY": [0.0],
+        "EXTERNAL_FS_COSINE_SIMILARITY_VEC": [0.8578220571057548],
+        "EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d": [43.0],
+        "EXTERNAL_FS_COUNT_OVERALL_7d": [149.0],
+        "PRODUCT_ACTION": ["detail"],
+        "User Status Feature": ["STÀTUS_CODE_37"],
+        "cust_id": ["761"],
+        "user_status": ["STÀTUS_CODE_37"],
+        "üser id": ["5"],
     }
     assert_dict_approx_equal(online_features, expected)
 
@@ -290,12 +290,12 @@ async def check_feast_registry(app_container):
         entity_rows=[entity_row],
     ).to_dict()
     expected = {
-        "üser id": ["1"],
+        "üser id": ["5"],
         "cust_id": ["761"],
         "PRODUCT_ACTION": ["detail"],
-        "user_status": ["STÀTUS_CODE_39"],
-        "User Status Feature": [None],
-        "Current Number of Users With This Status": [None],
+        "user_status": ["STÀTUS_CODE_37"],
+        "User Status Feature": ["STÀTUS_CODE_37"],
+        "Current Number of Users With This Status": [1],
         "EXTERNAL_FS_COUNT_OVERALL_7d": [None],
         "EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d": [None],
         "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h": [None],
@@ -327,12 +327,12 @@ def check_online_features(deployment, config):
 
     entity_serving_names = [
         {
-            "üser id": 1,
+            "üser id": 5,
             "cust_id": 761,
             "PRODUCT_ACTION": "detail",
             # Note: shouldn't have to provide this once parent entity lookup is supported (via child
             # entity üser id)
-            "user_status": "STÀTUS_CODE_39",
+            "user_status": "STÀTUS_CODE_37",
         }
     ]
     data = OnlineFeaturesRequestPayload(entity_serving_names=entity_serving_names)
@@ -353,38 +353,38 @@ def check_online_features(deployment, config):
         feat_dict["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"]
     )
     expected = {
-        "üser id": "1",
-        "cust_id": "761",
-        "PRODUCT_ACTION": "detail",
-        "user_status": "STÀTUS_CODE_39",
-        "User Status Feature": None,
-        "Current Number of Users With This Status": None,
-        "EXTERNAL_FS_COUNT_OVERALL_7d": 149.0,
-        "EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d": 43.0,
-        "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h": 475.38,
-        "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100": 47538.0,
-        "EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE": 519.2892974268257,
+        "Current Number of Users With This Status": 1.0,
         "EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d": {
-            "__MISSING__": 234.77,
-            "detail": 235.24,
-            "purchase": 225.78,
-            "rëmove": 11.39,
-            "àdd": 338.51,
+            "__MISSING__": 240.76,
+            "detail": 254.23,
+            "purchase": 216.87,
+            "rëmove": 98.34,
+            "àdd": 146.22,
         },
-        "EXTERNAL_FS_COSINE_SIMILARITY": 0,
+        "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h": 683.55,
+        "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100": 68355.0,
         "EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h": [
-            0.41825654595626777,
-            0.3459365542614712,
-            0.5725510296687925,
-            0.424307035963231,
-            0.4930920411475924,
-            0.4502761817462119,
-            0.3192654242159095,
-            0.40611594238301874,
-            0.649378423267523,
-            0.3857218591399362,
+            0.6807108071969569,
+            0.41463276624595335,
+            0.4432548634609973,
+            0.6828628340472915,
+            0.5967769997569004,
+            0.5210525989755145,
+            0.4687023396052305,
+            0.35638918237609585,
+            0.42879787416376725,
+            0.548615163058392,
         ],
-        "EXTERNAL_FS_COSINE_SIMILARITY_VEC": 0.8593524820234559,
+        "EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE": 727.4592974268256,
+        "EXTERNAL_FS_COSINE_SIMILARITY": 0.0,
+        "EXTERNAL_FS_COSINE_SIMILARITY_VEC": 0.8578220571057548,
+        "EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d": 43.0,
+        "EXTERNAL_FS_COUNT_OVERALL_7d": 149.0,
+        "PRODUCT_ACTION": "detail",
+        "User Status Feature": "STÀTUS_CODE_37",
+        "cust_id": "761",
+        "user_status": "STÀTUS_CODE_37",
+        "üser id": "5",
     }
     assert_dict_approx_equal(feat_dict, expected)
 
