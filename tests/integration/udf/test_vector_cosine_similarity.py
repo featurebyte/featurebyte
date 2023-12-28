@@ -4,11 +4,11 @@ Test vector cosine similarity
 import numpy as np
 import pytest
 
-from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS
+from tests.source_types import SNOWFLAKE_AND_SPARK
 
 
 # Note: Currently not applicable to databricks_unity
-@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS, indirect=True)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_AND_SPARK, indirect=True)
 @pytest.mark.parametrize(
     "array1, array2, expected",
     [
