@@ -188,6 +188,7 @@ async def offline_store_feature_tables_fixture(app_container, deployed_feature_l
     """
     Fixture for offline store feature tables based on the deployed features
     """
+    _ = deployed_feature_list
     primary_entity_to_feature_table = {}
     async for feature_table in app_container.offline_store_feature_table_service.list_documents_iterator(
         query_filter={},
@@ -245,7 +246,7 @@ async def test_feature_tables_populated(session, offline_store_feature_tables):
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_feast_registry(source_type, app_container):
+async def test_feast_registry(app_container):
     """
     Check feast registry is populated correctly
     """
@@ -367,7 +368,7 @@ async def test_feast_registry(source_type, app_container):
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @freezegun.freeze_time("2001-01-02 12:00:00")
-def test_online_features(config, source_type, deployed_feature_list):
+def test_online_features(config, deployed_feature_list):
     """
     Check online features are populated correctly
     """

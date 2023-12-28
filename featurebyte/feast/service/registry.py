@@ -167,6 +167,7 @@ class FeastRegistryService(
         -------
         bool
         """
+        assert self.catalog_id is not None
         catalog = await self.catalog_service.get_document(document_id=self.catalog_id)
         assert len(catalog.default_feature_store_ids) > 0
         feature_store_id = catalog.default_feature_store_ids[0]

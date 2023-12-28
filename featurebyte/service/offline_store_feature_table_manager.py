@@ -357,7 +357,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
 
         return sorted(set(filtered_table_names))
 
-    async def _create_or_update_feast_registry(self):
+    async def _create_or_update_feast_registry(self) -> None:
         if not await self.feast_registry_service.is_source_type_supported():
             return
 

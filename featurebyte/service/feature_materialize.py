@@ -425,7 +425,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         # Table constraint syntax is only supported in newer versions of sqlglot, so the queries are
         # formatted manually here
         quoted_primary_key_columns = [
-            "`{}`".format(column_name)
+            f"`{column_name}`"
             for column_name in [InternalName.FEATURE_TIMESTAMP_COLUMN.value]
             + feature_table_model.serving_names
         ]
