@@ -474,7 +474,7 @@ def test_online_features(config, deployed_feature_list):
         "EXTERNAL_FS_COSINE_SIMILARITY_VEC": 0.8578220571057548,
         "EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d": 43.0,
         "EXTERNAL_FS_COUNT_OVERALL_7d": 149.0,
-        f"Most Frequent Item Type by Order": "type_12",
+        "Most Frequent Item Type by Order": "type_12",
         "PRODUCT_ACTION": "detail",
         "User Status Feature": "STÀTUS_CODE_37",
         "cust_id": "761",

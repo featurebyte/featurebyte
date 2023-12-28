@@ -145,6 +145,7 @@ class ItemAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
         node = cast(ItemGroupbyNode, self.node)
 
         ts_col = node.parameters.event_timestamp_column_name
+        assert ts_col is not None
         filtered_aggregate_input_expr = self.aggregate_input_expr.where(
             expressions.and_(
                 expressions.GTE(
@@ -201,7 +202,7 @@ def get_entity_universe_constructor(
         NodeType.ITEM_GROUPBY: ItemAggregateNodeEntityUniverseConstructor,
     }
     if node.type in node_type_to_constructor:
-        return node_type_to_constructor[node.type](graph, node, source_type)
+        return node_type_to_constructor[node.type](graph, node, source_type)  # type: ignore
     raise NotImplementedError(f"Unsupported node type: {node.type}")
 
 
