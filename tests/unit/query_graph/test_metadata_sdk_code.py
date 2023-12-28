@@ -175,3 +175,37 @@ def test_code_generator__on_demand_view():
         """
         ).strip()
     )
+
+
+def test_code_generator__on_demand_function():
+    """Test CodeGenerator for on-demand function template"""
+    code_gen = CodeGenerator(template="on_demand_function.tpl")
+    code_gen.add_statements(
+        statements=[
+            (VariableNameStr("feat"), ExpressionStr("input1 + 1")),
+            (VariableNameStr("output"), ExpressionStr("feat")),
+        ],
+    )
+    codes = code_gen.generate(
+        function_name="on_demand_feature_func",
+        input_arguments="input1: float",
+        output_type="float",
+        output_var_name="output",
+    )
+    assert (
+        codes.strip()
+        == textwrap.dedent(
+            """
+        import json
+        import numpy as np
+        import pandas as pd
+        import scipy as sp
+
+
+        def on_demand_feature_func(input1: float) -> float:
+            feat = input1 + 1
+            output = feat
+            return output
+        """
+        ).strip()
+    )

@@ -28,6 +28,7 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.metadata.column import InColumnStr, OutColumnStr
 from featurebyte.query_graph.node.metadata.config import (
     BaseCodeGenConfig,
+    OnDemandFunctionCodeGenConfig,
     OnDemandViewCodeGenConfig,
     SDKCodeGenConfig,
 )
@@ -408,6 +409,29 @@ class BaseNode(BaseModel):
             operation_structure=None,
             variable_name_prefix="feat",
         )
+
+    def derive_on_demand_function_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandFunctionCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        """
+        Derive DataBricks on demand function code based on the graph traversal from starting node(s) to this node
+
+        Parameters
+        ----------
+        node_inputs: List[VarNameExpressionStr]
+            Node inputs to derive on demand function code
+        var_name_generator: VariableNameGenerator
+            Variable name generator
+        config: OnDemandFunctionCodeGenConfig
+            Code generation configuration
+
+        Returns
+        -------
+        Tuple[List[StatementT], VarNameExpressionStr]
+        """
 
     def clone(self: NodeT, **kwargs: Any) -> NodeT:
         """

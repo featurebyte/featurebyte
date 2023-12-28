@@ -26,7 +26,7 @@ class BaseCodeGenConfig(BaseModel):
 
 class OnDemandViewCodeGenConfig(BaseCodeGenConfig):
     """
-    OnDemandViewCodeGenConfig is used to control the code generating style.
+    OnDemandViewCodeGenConfig is used to control the code generating style for Feast on demand feature view.
 
     input_df_name: str
         Input dataframe name
@@ -34,6 +34,21 @@ class OnDemandViewCodeGenConfig(BaseCodeGenConfig):
 
     input_df_name: str
     output_df_name: str
+    on_demand_function_name: str
+
+
+class OnDemandFunctionCodeGenConfig(BaseCodeGenConfig):
+    """
+    OnDemandFunctionCodeGenConfig is used to control the code generating style for DataBricks on demand function.
+
+    input_var_prefix: str
+        Input variable prefix
+    output_var_name: str
+        Output variable name
+    """
+
+    input_var_prefix: str
+    output_var_name: str
     on_demand_function_name: str
 
 

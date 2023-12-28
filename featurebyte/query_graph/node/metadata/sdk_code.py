@@ -13,7 +13,7 @@ from enum import Enum
 
 from black import FileMode, format_str
 from bson import ObjectId
-from jinja2 import Template
+from jinja2 import Environment, FileSystemLoader, Template
 from pydantic import BaseModel, Field
 
 from featurebyte.models.base import PydanticObjectId
@@ -465,9 +465,10 @@ class CodeGenerator(BaseModel):
     template: str = Field(default="sdk_code.tpl")
 
     def _get_template(self) -> Template:
-        template_path = os.path.join(os.path.dirname(__file__), f"templates/{self.template}")
-        with open(template_path, mode="r", encoding="utf-8") as file_handle:
-            return Template(file_handle.read())
+        template_path = os.path.join(os.path.dirname(__file__), f"templates")
+        env = Environment(loader=FileSystemLoader(template_path))
+        template = env.get_template(self.template)
+        return template
 
     def add_statements(self, statements: List[StatementT]) -> None:
         """
@@ -550,6 +551,7 @@ class CodeGenerator(BaseModel):
         code = self._get_template().render(
             imports=imports,
             statements=statements,
+            output_var_name=output_var_name or "output",
             **kwargs,
         )
         if to_format:
