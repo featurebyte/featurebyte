@@ -188,7 +188,7 @@ def test_feature__request_column_ttl_and_non_ttl_components(
     codes = offline_store_info.generate_on_demand_feature_view_code(
         feature_name_version=feature_model.name_version
     )
-    expected = f"""
+    expected = """
     import json
     import numpy as np
     import pandas as pd
@@ -276,7 +276,7 @@ def test_feature__ttl_item_aggregate_request_column(
     codes = offline_store_info.generate_on_demand_feature_view_code(
         feature_name_version=name_version
     )
-    expected = f"""
+    expected = """
     import json
     import numpy as np
     import pandas as pd
@@ -338,7 +338,7 @@ def test_feature__input_has_mixed_ingest_graph_node_flags(
     codes = offline_store_info.generate_on_demand_feature_view_code(
         feature_name_version=name_version, ttl_seconds=7200
     )
-    expected = f"""
+    expected = """
     import json
     import numpy as np
     import pandas as pd
@@ -407,6 +407,7 @@ def test_feature__input_has_ingest_query_graph_node(test_dir):
     check_decomposed_graph_output_node_hash(feature_model=feature_model)
 
 
+@freezegun.freeze_time("2023-12-27")
 def test_feature__with_ttl_handling(float_feature):
     """Test a feature with ttl handling."""
     float_feature.save()
@@ -415,7 +416,7 @@ def test_feature__with_ttl_handling(float_feature):
     codes = offline_store_info.generate_on_demand_feature_view_code(
         feature_name_version=name_version, ttl_seconds=7200
     )
-    expected = f"""
+    expected = """
     import json
     import numpy as np
     import pandas as pd
@@ -428,8 +429,8 @@ def test_feature__with_ttl_handling(float_feature):
         cutoff = request_time - pd.Timedelta(seconds=7200)
         feature_timestamp = pd.to_datetime(inputs['__feature_timestamp'], utc=True)
         mask = (feature_timestamp >= cutoff) & (feature_timestamp <= request_time)
-        inputs['{name_version}'][~mask] = np.nan
-        df['{name_version}'] = inputs['{name_version}']
+        inputs['sum_1d_V231227'][~mask] = np.nan
+        df['sum_1d_V231227'] = inputs['sum_1d_V231227']
         return df
     """
     assert codes.strip() == textwrap.dedent(expected).strip()
