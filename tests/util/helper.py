@@ -501,6 +501,7 @@ def check_decomposed_graph_output_node_hash(feature_model, output=None):
             entity_id_to_serving_name={},
             relationships_info=feature_model.relationships_info,
             feature_name=feature_model.name,
+            feature_version=feature_model.version.to_str(),
         )
 
     if output.is_decomposed is False:
@@ -628,7 +629,7 @@ def check_on_demand_feature_view_code_generation(feature_model):
 
     # generate on demand feature view code
     odfv_codes = offline_store_info.generate_on_demand_feature_view_code(
-        feature_name=feature_model.name
+        feature_name_version=feature_model.name
     )
 
     # check the generated code can be executed successfully

@@ -198,7 +198,7 @@
                 "name": "alias_1",
                 "output_type": "series",
                 "parameters": {
-                    "name": "sum_1d_plus_123"
+                    "name": "sum_1d_plus_123_V231227"
                 },
                 "type": "alias"
             }

@@ -15,6 +15,10 @@
             {
                 "source": "groupby_1",
                 "target": "project_1"
+            },
+            {
+                "source": "project_1",
+                "target": "alias_1"
             }
         ],
         "nodes": [
@@ -176,10 +180,18 @@
                     ]
                 },
                 "type": "project"
+            },
+            {
+                "name": "alias_1",
+                "output_type": "series",
+                "parameters": {
+                    "name": "sum_1d_V231227"
+                },
+                "type": "alias"
             }
         ]
     },
     "node_names": [
-        "project_1"
+        "alias_1"
     ]
 }
