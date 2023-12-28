@@ -325,7 +325,6 @@ class EntityUniverseModel(FeatureByteBaseModel):
                 aggregate_result_table_names=aggregate_result_table_names,
             )
         else:
-            assert aggregate_result_table_names is None
             graph_and_node_pairs = []
             for offline_ingest_graph in offline_ingest_graphs:
                 for info in offline_ingest_graph.aggregation_nodes_info:
