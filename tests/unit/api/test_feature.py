@@ -838,7 +838,7 @@ def check_offline_store_ingest_graph_on_composite_feature(
         ingest_query_graph2 = ingest_query_graphs[0]
 
     assert ingest_query_graph1.output_column_name.startswith(
-        f"__{feature_model.name_version}__part"
+        f"__{feature_model.versioned_name}__part"
     )
     assert ingest_query_graph1.primary_entity_ids == [transaction_entity_id]
     assert ingest_query_graph1.graph.edges_map == {
@@ -852,7 +852,7 @@ def check_offline_store_ingest_graph_on_composite_feature(
 
     # check the second offline store ingest query graph
     assert ingest_query_graph2.output_column_name.startswith(
-        f"__{feature_model.name_version}__part"
+        f"__{feature_model.versioned_name}__part"
     )
     assert ingest_query_graph2.node_name == "add_1"
     assert ingest_query_graph2.primary_entity_ids == [cust_entity_id]
@@ -915,7 +915,7 @@ def check_offline_store_ingest_graph_on_composite_feature(
     assert ingest_query_graph.graph == new_feature_model.graph
     assert ingest_query_graph.ref_node_name is None
     assert ingest_query_graph.primary_entity_ids == new_feature_model.primary_entity_ids
-    assert ingest_query_graph.output_column_name == feature_model.name_version
+    assert ingest_query_graph.output_column_name == feature_model.versioned_name
 
 
 def test_composite_features(

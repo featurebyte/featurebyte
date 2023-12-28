@@ -224,7 +224,7 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
         return self.graph.get_node_by_name(self.node_name)
 
     @property
-    def name_version(self) -> str:
+    def versioned_name(self) -> str:
         """
         Retrieve feature name with version info
 
@@ -504,7 +504,7 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
                 feature_job_setting=feature_job_setting,
                 has_ttl=has_ttl,
                 offline_store_table_name=table_name,
-                output_column_name=self.name_version,
+                output_column_name=self.versioned_name,
                 output_dtype=self.dtype,
                 primary_entity_ids=self.primary_entity_ids,
             )

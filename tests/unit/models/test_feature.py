@@ -214,7 +214,7 @@ def test_ingest_graph_and_node(feature_model_dict):
     assert ingest_query_graph.ref_node_name is None
     _, ingest_node = ingest_query_graph.ingest_graph_and_node()
     assert ingest_node.type == "alias"
-    assert ingest_node.parameters.name == feature.name_version
+    assert ingest_node.parameters.name == feature.versioned_name
 
     # case 2: set ref_node_name to make it likes a decomposed graph (output is non-alias node)
     assert feature.node.type != "alias"
@@ -222,7 +222,7 @@ def test_ingest_graph_and_node(feature_model_dict):
     _, ingest_node = ingest_query_graph.ingest_graph_and_node()
     assert ingest_node.name == "alias_1"  # check there is only one alias node
     assert ingest_node.type == "alias"
-    assert ingest_node.parameters.name == feature.name_version
+    assert ingest_node.parameters.name == feature.versioned_name
 
     # case 3: set ref_node_name to make it likes a decomposed graph (output is alias node)
     input_node = ingest_query_graph.graph.get_node_by_name(ingest_query_graph.node_name)
@@ -238,4 +238,4 @@ def test_ingest_graph_and_node(feature_model_dict):
     assert ingest_node.name == "alias_1"  # check there is only one alias node
     assert ingest_node.type == "alias"
     # check the alias node name is the feature name
-    assert ingest_node.parameters.name == feature.name_version
+    assert ingest_node.parameters.name == feature.versioned_name

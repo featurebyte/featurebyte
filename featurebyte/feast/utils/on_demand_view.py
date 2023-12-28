@@ -142,7 +142,7 @@ class OnDemandFeatureViewConstructor:
             f"compute_feature_{sanitize_identifier(feature_model.name)}_{feature_model.id}"
         )
         codes = offline_store_info.generate_on_demand_feature_view_code(
-            feature_name_version=feature_model.name_version,
+            feature_name_version=feature_model.versioned_name,
             input_df_name="inputs",
             output_df_name="df",
             function_name=function_name,
@@ -154,7 +154,7 @@ class OnDemandFeatureViewConstructor:
             sources=sources,
             schema=[
                 Field(
-                    name=feature_model.name_version,
+                    name=feature_model.versioned_name,
                     dtype=to_feast_primitive_type(DBVarType(feature_model.dtype)),
                 )
             ],

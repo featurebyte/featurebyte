@@ -384,13 +384,8 @@ class FeastRegistryConstructor:
         -------
         List[FeastFeatureService]
             List of feast feature services
-
-        Raises
-        ------
-        ValueError
-            If missing features
         """
-        feature_id_to_name_version = {feature.id: feature.name_version for feature in features}
+        feature_id_to_name_version = {feature.id: feature.versioned_name for feature in features}
         feature_services = []
         for feature_list in feature_lists:
             feature_name_versions = set(
@@ -410,15 +405,6 @@ class FeastRegistryConstructor:
                 if feast_feat_names:
                     input_feature_views.append(feature_view[feast_feat_names])
                     found_feature_name_versions.update(feast_feat_names)
-
-            # check if all feature names are found
-            if found_feature_name_versions != feature_name_versions:
-                # If the feature list contains features that require post-processing or request column,
-                # the feature name will not be found in the feature view. This will be fixed once we support
-                # ondemand feature view.
-                raise ValueError(
-                    f"Missing features: {feature_name_versions - found_feature_name_versions}"
-                )
 
             # construct feature service
             feature_service = FeastFeatureService(

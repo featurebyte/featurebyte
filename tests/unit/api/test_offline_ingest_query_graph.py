@@ -111,7 +111,7 @@ def test_feature__ttl_and_non_ttl_components(float_feature, non_time_based_featu
 
     # check on-demand view code
     codes = offline_store_info.generate_on_demand_feature_view_code(
-        feature_name_version=feature_model.name_version
+        feature_name_version=feature_model.versioned_name
     )
     expected = f"""
     import json
@@ -122,8 +122,8 @@ def test_feature__ttl_and_non_ttl_components(float_feature, non_time_based_featu
 
     def on_demand_feature_view(inputs: pd.DataFrame) -> pd.DataFrame:
         df = pd.DataFrame()
-        feat = inputs['__{feature_model.name_version}__part0'] + inputs['__{feature_model.name_version}__part1']
-        df['{feature_model.name_version}'] = feat
+        feat = inputs['__{feature_model.versioned_name}__part0'] + inputs['__{feature_model.versioned_name}__part1']
+        df['{feature_model.versioned_name}'] = feat
         return df
     """
     assert codes.strip() == textwrap.dedent(expected).strip()
@@ -186,7 +186,7 @@ def test_feature__request_column_ttl_and_non_ttl_components(
 
     # check on-demand view code
     codes = offline_store_info.generate_on_demand_feature_view_code(
-        feature_name_version=feature_model.name_version
+        feature_name_version=feature_model.versioned_name
     )
     expected = """
     import json
@@ -251,7 +251,7 @@ def test_feature__multiple_non_ttl_components(
     expected_error = "TTL is not set"
     with pytest.raises(AssertionError, match=expected_error):
         offline_store_info.generate_on_demand_feature_view_code(
-            feature_name_version=feature_model.name_version
+            feature_name_version=feature_model.versioned_name
         )
 
 
@@ -272,7 +272,7 @@ def test_feature__ttl_item_aggregate_request_column(
 
     # check on-demand view code
     offline_store_info = feature_model.offline_store_info
-    name_version = feature_model.name_version
+    name_version = feature_model.versioned_name
     codes = offline_store_info.generate_on_demand_feature_view_code(
         feature_name_version=name_version
     )
@@ -334,7 +334,7 @@ def test_feature__input_has_mixed_ingest_graph_node_flags(
 
     # check on-demand view code
     offline_store_info = feature_model.offline_store_info
-    name_version = feature_model.name_version
+    name_version = feature_model.versioned_name
     codes = offline_store_info.generate_on_demand_feature_view_code(
         feature_name_version=name_version, ttl_seconds=7200
     )
@@ -412,7 +412,7 @@ def test_feature__with_ttl_handling(float_feature):
     """Test a feature with ttl handling."""
     float_feature.save()
     offline_store_info = float_feature.cached_model.offline_store_info
-    name_version = float_feature.cached_model.name_version
+    name_version = float_feature.cached_model.versioned_name
     codes = offline_store_info.generate_on_demand_feature_view_code(
         feature_name_version=name_version, ttl_seconds=7200
     )
