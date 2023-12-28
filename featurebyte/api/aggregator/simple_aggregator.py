@@ -74,6 +74,7 @@ class SimpleAggregator(BaseAggregator):
             "name": feature_name,
             "serving_names": self.serving_names,
             "entity_ids": self.entity_ids,
+            "event_timestamp_column_name": self.view.timestamp_column_name,
         }
         groupby_node = add_pruning_sensitive_operation(
             graph=self.view.graph,

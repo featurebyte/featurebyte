@@ -8,7 +8,6 @@ import time
 from datetime import datetime
 from unittest.mock import patch
 
-import freezegun
 import pandas as pd
 import pytest
 import pytest_asyncio
@@ -57,7 +56,9 @@ def app_container_fixture(persistent, user, catalog):
 
 
 @pytest.fixture(name="features", scope="module")
-def features_fixture(event_table, scd_table, source_type):  # pylint: disable=too-many-locals
+def features_fixture(
+    event_table, scd_table, source_type, item_table
+):  # pylint: disable=too-many-locals
     """
     Fixture for feature
     """
@@ -156,6 +157,13 @@ def features_fixture(event_table, scd_table, source_type):  # pylint: disable=to
     )
     feature_11.name = "Current Number of Users With This Status"
 
+    item_view = item_table.get_view()
+    item_type_counts = item_view.groupby("order_id", category="item_type").aggregate(
+        method="count", feature_name="my_item_feature"
+    )
+    feature_12 = item_type_counts.cd.most_frequent()
+    feature_12.name = "Most Frequent Item Type by Order"
+
     # Save all features to be deployed
     features = [
         feature
@@ -171,6 +179,7 @@ def features_fixture(event_table, scd_table, source_type):  # pylint: disable=to
             feature_9,
             feature_10,
             feature_11,
+            feature_12,
         ]
         if feature is not None
     ]
@@ -226,6 +235,7 @@ def test_feature_tables_expected(
     customer_entity,
     product_action_entity,
     status_entity,
+    order_entity,
 ):
     """
     Test offline store feature tables are created as expected
@@ -236,6 +246,7 @@ def test_feature_tables_expected(
         (customer_entity.id,),
         (product_action_entity.id,),
         (status_entity.id,),
+        (order_entity.id,),
     }
 
 
@@ -266,6 +277,7 @@ async def test_feature_tables_populated(session, offline_store_feature_tables):
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
+@pytest.mark.usefixtures("deployed_feature_list")
 async def test_feast_registry(app_container):
     """
     Check feast registry is populated correctly
@@ -284,6 +296,7 @@ async def test_feast_registry(app_container):
         "fb_entity_userid_fjs_3600_1800_1800_ttl",
         "fb_entity_userid_fjs_86400_0_0",
         "fb_entity_user_status_fjs_86400_0_0",
+        "fb_entity_order_id_fjs_86400_0_0",
     }
     assert {fs.name for fs in feature_store.list_feature_services()} == {"EXTERNAL_FS_FEATURE_LIST"}
 
@@ -295,6 +308,7 @@ async def test_feast_registry(app_container):
         "cust_id": 761,
         "user_status": "STÀTUS_CODE_37",
         "PRODUCT_ACTION": "detail",
+        "order_id": "T1230",
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 12:00:00"),
     }
     online_features = feature_store.get_online_features(
@@ -343,9 +357,11 @@ async def test_feast_registry(app_container):
         f"EXTERNAL_FS_COSINE_SIMILARITY_VEC_{version}": [0.8578220571057548],
         f"EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d_{version}": [43.0],
         f"EXTERNAL_FS_COUNT_OVERALL_7d_{version}": [149.0],
+        f"Most Frequent Item Type by Order_{version}": ["type_12"],
         "PRODUCT_ACTION": ["detail"],
         f"User Status Feature_{version}": ["STÀTUS_CODE_37"],
         "cust_id": ["761"],
+        "order_id": ["T1230"],
         "user_status": ["STÀTUS_CODE_37"],
         "üser id": ["5"],
     }
@@ -363,8 +379,10 @@ async def test_feast_registry(app_container):
         "cust_id": ["761"],
         "PRODUCT_ACTION": ["detail"],
         "user_status": ["STÀTUS_CODE_37"],
+        "order_id": ["T1230"],
         f"User Status Feature_{version}": ["STÀTUS_CODE_37"],
         f"Current Number of Users With This Status_{version}": [1],
+        f"Most Frequent Item Type by Order_{version}": ["type_12"],
         f"EXTERNAL_FS_COUNT_OVERALL_7d_{version}": [None],
         f"EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d_{version}": [None],
         f"EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_{version}": [None],
@@ -388,7 +406,6 @@ async def test_feast_registry(app_container):
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-@freezegun.freeze_time("2001-01-02 12:00:00")
 def test_online_features(config, deployed_feature_list):
     """
     Check online features are populated correctly
@@ -404,18 +421,24 @@ def test_online_features(config, deployed_feature_list):
             # Note: shouldn't have to provide this once parent entity lookup is supported (via child
             # entity üser id)
             "user_status": "STÀTUS_CODE_37",
+            "order_id": "T1230",
         }
     ]
     data = OnlineFeaturesRequestPayload(entity_serving_names=entity_serving_names)
 
     tic = time.time()
-    res = client.post(
-        f"/deployment/{deployment.id}/online_features",
-        json=data.json_dict(),
-    )
+    # Note: don't mock with freezegun since it also freezes elapsed time tracking for logging
+    # purpose within OnlineServingService
+    with patch("featurebyte.service.online_serving.datetime", autospec=True) as mock_datetime:
+        mock_datetime.utcnow.return_value = datetime(2001, 1, 2, 12)
+        res = client.post(
+            f"/deployment/{deployment.id}/online_features",
+            json=data.json_dict(),
+        )
     assert res.status_code == 200
     elapsed = time.time() - tic
     logger.info("online_features elapsed: %fs", elapsed)
+
     feat_dict = res.json()["features"][0]
     feat_dict["EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d"] = json.loads(
         feat_dict["EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d"]
@@ -451,9 +474,11 @@ def test_online_features(config, deployed_feature_list):
         "EXTERNAL_FS_COSINE_SIMILARITY_VEC": 0.8578220571057548,
         "EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d": 43.0,
         "EXTERNAL_FS_COUNT_OVERALL_7d": 149.0,
+        f"Most Frequent Item Type by Order": "type_12",
         "PRODUCT_ACTION": "detail",
         "User Status Feature": "STÀTUS_CODE_37",
         "cust_id": "761",
+        "order_id": "T1230",
         "user_status": "STÀTUS_CODE_37",
         "üser id": "5",
     }

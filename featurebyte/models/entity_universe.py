@@ -18,7 +18,7 @@ from featurebyte.models.sqlglot_expression import SqlglotExpressionModel
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.generic import AggregateAsAtNode, LookupNode
+from featurebyte.query_graph.node.generic import AggregateAsAtNode, ItemGroupbyNode, LookupNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import SQLType, quoted_identifier
@@ -136,6 +136,41 @@ class AggregateAsAtNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
         return universe_expr
 
 
+class ItemAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
+    """
+    Construct the entity universe expression for item aggregate node
+    """
+
+    def get_entity_universe_template(self) -> Expression:
+        node = cast(ItemGroupbyNode, self.node)
+
+        ts_col = node.parameters.event_timestamp_column_name
+        filtered_aggregate_input_expr = self.aggregate_input_expr.where(
+            expressions.and_(
+                expressions.GTE(
+                    this=quoted_identifier(ts_col),
+                    expression=LAST_MATERIALIZED_TIMESTAMP_PLACEHOLDER,
+                ),
+                expressions.LT(
+                    this=quoted_identifier(ts_col), expression=CURRENT_FEATURE_TIMESTAMP_PLACEHOLDER
+                ),
+            )
+        )
+        universe_expr = (
+            select(
+                *[
+                    expressions.alias_(quoted_identifier(key), alias=serving_name, quoted=True)
+                    for key, serving_name in zip(
+                        node.parameters.keys, node.parameters.serving_names
+                    )
+                ]
+            )
+            .distinct()
+            .from_(filtered_aggregate_input_expr.subquery())
+        )
+        return universe_expr
+
+
 def get_entity_universe_constructor(
     graph: QueryGraphModel, node: Node, source_type: SourceType
 ) -> BaseEntityUniverseConstructor:
@@ -160,10 +195,13 @@ def get_entity_universe_constructor(
     NotImplementedError
         If the node type is not supported
     """
-    if node.type == NodeType.LOOKUP:
-        return LookupNodeEntityUniverseConstructor(graph, node, source_type)
-    if node.type == NodeType.AGGREGATE_AS_AT:
-        return AggregateAsAtNodeEntityUniverseConstructor(graph, node, source_type)
+    node_type_to_constructor = {
+        NodeType.LOOKUP: LookupNodeEntityUniverseConstructor,
+        NodeType.AGGREGATE_AS_AT: AggregateAsAtNodeEntityUniverseConstructor,
+        NodeType.ITEM_GROUPBY: ItemAggregateNodeEntityUniverseConstructor,
+    }
+    if node.type in node_type_to_constructor:
+        return node_type_to_constructor[node.type](graph, node, source_type)
     raise NotImplementedError(f"Unsupported node type: {node.type}")
 
 

@@ -798,6 +798,7 @@ class ItemGroupbyParameters(BaseGroupbyParameters):
     """ItemGroupbyNode parameters"""
 
     name: OutColumnStr
+    event_timestamp_column_name: Optional[InColumnStr] = None
 
 
 class ItemGroupbyNode(AggregationOpStructMixin, BaseNode):
