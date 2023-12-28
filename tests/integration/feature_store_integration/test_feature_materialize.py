@@ -18,10 +18,14 @@ import featurebyte as fb
 from featurebyte.enum import InternalName, SourceType
 from featurebyte.logging import get_logger
 from featurebyte.query_graph.sql.common import sql_to_string
+from featurebyte.routes.lazy_app_container import LazyAppContainer
+from featurebyte.routes.registry import app_container_config
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 from featurebyte.schema.worker.task.scheduled_feature_materialize import (
     ScheduledFeatureMaterializeTaskPayload,
 )
+from featurebyte.storage import LocalTempStorage
+from featurebyte.worker import get_celery
 from tests.util.helper import assert_dict_approx_equal
 
 logger = get_logger(__name__)
@@ -34,6 +38,21 @@ def always_enable_feast_integration_fixture():
     """
     with patch.dict(os.environ, {"FEATUREBYTE_FEAST_INTEGRATION_ENABLED": "True"}):
         yield
+
+
+@pytest.fixture(name="app_container", scope="module")
+def app_container_fixture(persistent, user, catalog):
+    """
+    Return an app container used in tests
+    """
+    instance_map = {
+        "user": user,
+        "persistent": persistent,
+        "celery": get_celery(),
+        "storage": LocalTempStorage(),
+        "catalog_id": catalog.id,
+    }
+    return LazyAppContainer(app_container_config=app_container_config, instance_map=instance_map)
 
 
 @pytest.fixture(name="features", scope="module")

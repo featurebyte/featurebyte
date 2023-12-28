@@ -1471,7 +1471,7 @@ def task_manager_fixture(persistent, user, catalog):
     return task_manager
 
 
-@pytest.fixture(name="app_container", scope="session")
+@pytest.fixture(name="app_container")
 def app_container_fixture(persistent, user, catalog):
     """
     Return an app container used in tests. This will allow us to easily retrieve instances of the right type.
