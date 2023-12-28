@@ -121,6 +121,37 @@ def test_variable_name_generator():
     assert var_gen.convert_to_variable_name("feat", node_name=None) == "feat_2"
 
 
+@pytest.mark.parametrize(
+    "one_based,inputs,expected_var_name,expected_count",
+    [
+        (False, [], None, None),
+        (True, [], None, None),
+        (False, ["col"], "col", 1),
+        (True, ["col"], "col_1", 1),
+        (False, ["col", "col", "col", "foo", "bar"], "col_2", 3),
+        (True, ["col", "col", "col", "foo", "bar"], "col_3", 3),
+    ],
+)
+def test_variable_name_generator__get_latest_variable_name(
+    one_based, inputs, expected_var_name, expected_count
+):
+    """Test VariableNameGenerator.get_latest_variable_name()"""
+    var_gen = VariableNameGenerator(one_based=one_based)
+    for var_name_prefix in inputs:
+        _ = var_gen.convert_to_variable_name(
+            variable_name_prefix=var_name_prefix,
+            node_name=None,
+        )
+
+    if expected_var_name:
+        latest_var_name = var_gen.get_latest_variable_name(variable_name_prefix="col")
+        assert latest_var_name == expected_var_name
+        assert var_gen.var_name_counter["col"] == expected_count
+    else:
+        with pytest.raises(ValueError, match="Variable name prefix col does not exist"):
+            var_gen.get_latest_variable_name(variable_name_prefix="col")
+
+
 def test_code_generator():
     """Test CodeGenerator"""
     code_gen = CodeGenerator()
@@ -188,6 +219,7 @@ def test_code_generator__on_demand_function():
     )
     codes = code_gen.generate(
         function_name="on_demand_feature_func",
+        comments="# This is a comment",
         input_arguments="input1: float",
         output_type="float",
         output_var_name="output",
@@ -203,6 +235,7 @@ def test_code_generator__on_demand_function():
 
 
         def on_demand_feature_func(input1: float) -> float:
+            # This is a comment
             feat = input1 + 1
             output = feat
             return output

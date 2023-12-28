@@ -20,7 +20,11 @@ from featurebyte.query_graph.node.base import (
     NodeT,
 )
 from featurebyte.query_graph.node.metadata.column import InColumnStr, OutColumnStr
-from featurebyte.query_graph.node.metadata.config import OnDemandViewCodeGenConfig, SDKCodeGenConfig
+from featurebyte.query_graph.node.metadata.config import (
+    OnDemandFunctionCodeGenConfig,
+    OnDemandViewCodeGenConfig,
+    SDKCodeGenConfig,
+)
 from featurebyte.query_graph.node.metadata.operation import (
     AggregationColumn,
     DerivedDataColumn,
@@ -37,6 +41,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     InfoDict,
     ObjectClass,
     RightHandSide,
+    StatementStr,
     StatementT,
     ValueStr,
     VariableNameGenerator,
@@ -1879,6 +1884,15 @@ class AliasNode(BaseNode):
         # this is a no-op node for on-demand view, it should appear on the last node of the graph
         return [], node_inputs[0]
 
+    def _derive_on_demand_function_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandFunctionCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        # this is a no-op node for on-demand function, it should appear on the last node of the graph
+        return [], node_inputs[0]
+
 
 class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
     """ConditionalNode class"""
@@ -1906,6 +1920,7 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         node_output_category: NodeOutputCategory,
+        mask_var_name_prefix: str = "mask",
     ) -> Tuple[List[StatementT], VariableNameStr, VariableNameStr]:
         var_name_expressions = self._assert_no_info_dict(node_inputs)
         statements, var_name = self._convert_expression_to_variable(
@@ -1921,7 +1936,7 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
             node_output_type=NodeOutputType.SERIES,
             node_output_category=node_output_category,
             to_associate_with_node_name=False,
-            variable_name_prefix="mask",
+            variable_name_prefix=mask_var_name_prefix,
         )
         statements.extend(mask_statements)
         return statements, var_name, mask_var_name
@@ -1999,4 +2014,25 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
             series_or_frame_name=var_name, filter_expression=mask_var_name
         )
         statements.append((VariableNameStr(var_expr), value))
+        return statements, var_name
+
+    def _derive_on_demand_function_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandFunctionCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        statements, var_name, flag_var_name = self._prepare_var_name_and_mask_var_name(
+            node_inputs=node_inputs,
+            var_name_generator=var_name_generator,
+            node_output_category=NodeOutputCategory.VIEW,
+            mask_var_name_prefix="flag",
+        )
+        value: RightHandSide = ValueStr.create(self.parameters.value)
+        if len(node_inputs) == 3:
+            assert not isinstance(node_inputs[2], InfoDict)
+            value = node_inputs[2]
+
+        statement = StatementStr(f"{var_name} = {value} if {flag_var_name} else {var_name}")
+        statements.append(statement)
         return statements, var_name

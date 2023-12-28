@@ -5,6 +5,7 @@ This module contains nested graph related node classes
 from typing import (
     TYPE_CHECKING,
     Any,
+    Callable,
     Dict,
     List,
     Literal,
@@ -27,7 +28,11 @@ from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node.base import BaseNode, BasePrunableNode, NodeT
 from featurebyte.query_graph.node.cleaning_operation import ColumnCleaningOperation
-from featurebyte.query_graph.node.metadata.config import OnDemandViewCodeGenConfig, SDKCodeGenConfig
+from featurebyte.query_graph.node.metadata.config import (
+    OnDemandFunctionCodeGenConfig,
+    OnDemandViewCodeGenConfig,
+    SDKCodeGenConfig,
+)
 from featurebyte.query_graph.node.metadata.operation import (
     OperationStructure,
     OperationStructureInfo,
@@ -35,6 +40,7 @@ from featurebyte.query_graph.node.metadata.operation import (
 from featurebyte.query_graph.node.metadata.sdk_code import (
     ClassEnum,
     CodeGenerationContext,
+    CommentStr,
     ExpressionStr,
     ObjectClass,
     StatementT,
@@ -620,31 +626,78 @@ class BaseGraphNode(BasePrunableNode):
             node_name=self.name,
         )
 
+    def _derive_on_demand_view_or_function_code_helper(
+        self,
+        var_name_generator: VariableNameGenerator,
+        input_var_name_expr: VarNameExpressionInfo,
+        json_conversion_func: Callable[[VarNameExpressionInfo], ExpressionStr],
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        if self.parameters.type != GraphNodeType.OFFLINE_STORE_INGEST_QUERY:
+            raise RuntimeError("BaseGroupNode._derive_on_demand_view_code should not be called!")
+
+        node_params = self.parameters
+        assert isinstance(node_params, OfflineStoreIngestQueryGraphNodeParameters)
+        if node_params.output_dtype in DBVarType.supported_timestamp_types():
+            var_name = var_name_generator.convert_to_variable_name("feat", node_name=self.name)
+            expression = get_object_class_from_function_call("pd.to_datetime", input_var_name_expr)
+            return [(var_name, expression)], var_name
+
+        if node_params.output_dtype in DBVarType.json_conversion_types():
+            var_name = var_name_generator.convert_to_variable_name("feat", node_name=self.name)
+            expression = json_conversion_func(input_var_name_expr)
+            return [(var_name, expression)], var_name
+        return [], input_var_name_expr
+
     def _derive_on_demand_view_code(
         self,
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        if self.parameters.type != GraphNodeType.OFFLINE_STORE_INGEST_QUERY:
-            raise RuntimeError("BaseGroupNode._derive_on_demand_view_code should not be called!")
-
-        assert isinstance(self.parameters, OfflineStoreIngestQueryGraphNodeParameters)
-        input_df_name = config.input_df_name
-        column_name = self.parameters.output_column_name
-        expr = VariableNameStr(
-            subset_frame_column_expr(frame_name=input_df_name, column_name=column_name)
-        )
-        if self.parameters.output_dtype in DBVarType.supported_timestamp_types():
-            var_name = var_name_generator.convert_to_variable_name("feat", node_name=self.name)
-            expression = get_object_class_from_function_call("pd.to_datetime", expr)
-            return [(var_name, expression)], var_name
-
-        if self.parameters.output_dtype in DBVarType.json_conversion_types():
-            var_name = var_name_generator.convert_to_variable_name("feat", node_name=self.name)
-            expression = get_object_class_from_function_call(
+        def _json_conversion_func(expr: VarNameExpressionInfo) -> ExpressionStr:
+            out_expr = get_object_class_from_function_call(
                 f"{expr}.apply",
                 ExpressionStr("lambda x: np.nan if pd.isna(x) else json.loads(x)"),
             )
-            return [(var_name, expression)], var_name
-        return [], expr
+            return ExpressionStr(out_expr)
+
+        input_df_name = config.input_df_name
+        column_name = cast(
+            OfflineStoreIngestQueryGraphNodeParameters, self.parameters
+        ).output_column_name
+        input_var_name_expr = VariableNameStr(
+            subset_frame_column_expr(frame_name=input_df_name, column_name=column_name)
+        )
+        return self._derive_on_demand_view_or_function_code_helper(
+            var_name_generator=var_name_generator,
+            input_var_name_expr=input_var_name_expr,
+            json_conversion_func=_json_conversion_func,
+        )
+
+    def _derive_on_demand_function_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandFunctionCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        output_dtype = cast(
+            OfflineStoreIngestQueryGraphNodeParameters, self.parameters
+        ).output_dtype
+        associated_node_name = None
+        if (
+            output_dtype not in DBVarType.supported_timestamp_types()
+            and output_dtype not in DBVarType.json_conversion_types()
+        ):
+            # if the condition satisfies, it means the following input_var_name is the output of the node
+            associated_node_name = self.name
+
+        input_var_name = var_name_generator.convert_to_variable_name(
+            variable_name_prefix=config.input_var_prefix, node_name=associated_node_name
+        )
+        return self._derive_on_demand_view_or_function_code_helper(
+            var_name_generator=var_name_generator,
+            input_var_name_expr=input_var_name,
+            json_conversion_func=lambda expr: ExpressionStr(
+                f"np.nan if pd.isna({expr}) else json.loads({expr})"
+            ),
+        )

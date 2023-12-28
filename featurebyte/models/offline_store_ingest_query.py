@@ -22,6 +22,7 @@ from featurebyte.query_graph.node.nested import (
     OfflineStoreMetadata,
 )
 from featurebyte.query_graph.node.utils import subset_frame_column_expr
+from featurebyte.query_graph.transform.on_demand_function import OnDemandFeatureFunctionExtractor
 from featurebyte.query_graph.transform.on_demand_view import OnDemandFeatureViewExtractor
 from featurebyte.query_graph.transform.quick_pruning import QuickGraphStructurePruningTransformer
 
@@ -280,3 +281,27 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
             function_name=function_name,
         )
         return codes
+
+    def generate_on_demand_feature_function_code(
+        self,
+        output_dtype,
+        output_var_name: str = "output",
+        input_var_prefix: str = "col",
+        request_input_var_prefix: str = "request_col",
+        function_name: str = "on_demand_feature_function",
+    ) -> str:
+        if not self.is_decomposed:
+            raise ValueError(
+                "Cannot generate on demand feature function code for non-decomposed query graph"
+            )
+
+        node = self.graph.get_node_by_name(self.node_name)
+        codegen_state = OnDemandFeatureFunctionExtractor(graph=self.graph).extract(
+            node=node,
+            output_dtype=output_dtype,
+            output_var_name=output_var_name,
+            input_var_prefix=input_var_prefix,
+            request_input_var_prefix=request_input_var_prefix,
+            on_demand_function_name=function_name,
+        )
+        return codegen_state.generate_code()

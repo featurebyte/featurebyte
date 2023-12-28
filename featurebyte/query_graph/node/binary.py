@@ -170,6 +170,9 @@ class PowerNode(BaseSeriesOutputWithAScalarParamNode):
     def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand}.pow({right_operand})"
 
+    def generate_odf_expression(self, left_operand: str, right_operand: str) -> str:
+        return f"np.power({left_operand}, {right_operand})"
+
 
 class IsInNode(BaseSeriesOutputWithAScalarParamNode):
     """IsInNode class"""
@@ -190,6 +193,9 @@ class IsInNode(BaseSeriesOutputWithAScalarParamNode):
 
     def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand}.isin({right_operand})"
+
+    def generate_odf_expression(self, left_operand: str, right_operand: str) -> str:
+        return f"False if not {left_operand} or not {right_operand} else {left_operand} in {right_operand}"
 
     def _derive_on_demand_view_code(
         self,

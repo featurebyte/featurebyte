@@ -36,22 +36,6 @@ class OnDemandFeatureViewGlobalState(BaseModel):
         default_factory=lambda: CodeGenerator(template="on_demand_view.tpl")
     )
 
-    def generate_code(self) -> str:
-        """
-        Generate code
-
-        Returns
-        -------
-        str
-            Generated code
-        """
-        return self.code_generator.generate(
-            to_format=True,
-            function_name=self.code_generation_config.on_demand_function_name,
-            input_df_name=self.code_generation_config.input_df_name,
-            output_df_name=self.code_generation_config.output_df_name,
-        )
-
 
 class OnDemandFeatureViewExtractor(
     BaseGraphExtractor[OnDemandFeatureViewGlobalState, BaseModel, OnDemandFeatureViewGlobalState]

@@ -29,6 +29,9 @@ class NotNode(BaseSeriesOutputWithSingleOperandNode):
     def generate_expression(self, operand: str) -> str:
         return f"~{operand}"
 
+    def generate_odf_expression(self, operand: str) -> str:
+        return f"not {operand}"
+
 
 class AbsoluteNode(BaseSeriesOutputWithSingleOperandNode):
     """AbsoluteNode class"""
@@ -40,6 +43,9 @@ class AbsoluteNode(BaseSeriesOutputWithSingleOperandNode):
 
     def generate_expression(self, operand: str) -> str:
         return f"{operand}.abs()"
+
+    def generate_odf_expression(self, operand: str) -> str:
+        return f"abs({operand})"
 
 
 class SquareRootNode(BaseSeriesOutputWithSingleOperandNode):
@@ -54,6 +60,9 @@ class SquareRootNode(BaseSeriesOutputWithSingleOperandNode):
         return f"{operand}.sqrt()"
 
     def generate_odfv_expression(self, operand: str) -> str:
+        return f"np.sqrt({operand})"
+
+    def generate_odf_expression(self, operand: str) -> str:
         return f"np.sqrt({operand})"
 
 
@@ -71,6 +80,9 @@ class FloorNode(BaseSeriesOutputWithSingleOperandNode):
     def generate_odfv_expression(self, operand: str) -> str:
         return f"np.floor({operand})"
 
+    def generate_odf_expression(self, operand: str) -> str:
+        return f"np.floor({operand})"
+
 
 class CeilNode(BaseSeriesOutputWithSingleOperandNode):
     """CeilNode class"""
@@ -84,6 +96,9 @@ class CeilNode(BaseSeriesOutputWithSingleOperandNode):
         return f"{operand}.ceil()"
 
     def generate_odfv_expression(self, operand: str) -> str:
+        return f"np.ceil({operand})"
+
+    def generate_odf_expression(self, operand: str) -> str:
         return f"np.ceil({operand})"
 
 
@@ -101,6 +116,9 @@ class CosNode(BaseSeriesOutputWithSingleOperandNode):
     def generate_odfv_expression(self, operand: str) -> str:
         return f"np.cos({operand})"
 
+    def generate_odf_expression(self, operand: str) -> str:
+        return f"np.cos({operand})"
+
 
 class SinNode(BaseSeriesOutputWithSingleOperandNode):
     """SinNode class"""
@@ -114,6 +132,9 @@ class SinNode(BaseSeriesOutputWithSingleOperandNode):
         return f"{operand}.sin()"
 
     def generate_odfv_expression(self, operand: str) -> str:
+        return f"np.sin({operand})"
+
+    def generate_odf_expression(self, operand: str) -> str:
         return f"np.sin({operand})"
 
 
@@ -131,6 +152,9 @@ class TanNode(BaseSeriesOutputWithSingleOperandNode):
     def generate_odfv_expression(self, operand: str) -> str:
         return f"np.tan({operand})"
 
+    def generate_odf_expression(self, operand: str) -> str:
+        return f"np.tan({operand})"
+
 
 class AcosNode(BaseSeriesOutputWithSingleOperandNode):
     """AcosNode class"""
@@ -144,6 +168,9 @@ class AcosNode(BaseSeriesOutputWithSingleOperandNode):
         return f"{operand}.acos()"
 
     def generate_odfv_expression(self, operand: str) -> str:
+        return f"np.arccos({operand})"
+
+    def generate_odf_expression(self, operand: str) -> str:
         return f"np.arccos({operand})"
 
 
@@ -161,6 +188,9 @@ class AsinNode(BaseSeriesOutputWithSingleOperandNode):
     def generate_odfv_expression(self, operand: str) -> str:
         return f"np.arcsin({operand})"
 
+    def generate_odf_expression(self, operand: str) -> str:
+        return f"np.arcsin({operand})"
+
 
 class AtanNode(BaseSeriesOutputWithSingleOperandNode):
     """CeilNode class"""
@@ -174,6 +204,9 @@ class AtanNode(BaseSeriesOutputWithSingleOperandNode):
         return f"{operand}.atan()"
 
     def generate_odfv_expression(self, operand: str) -> str:
+        return f"np.arctan({operand})"
+
+    def generate_odf_expression(self, operand: str) -> str:
         return f"np.arctan({operand})"
 
 
@@ -191,6 +224,9 @@ class LogNode(BaseSeriesOutputWithSingleOperandNode):
     def generate_odfv_expression(self, operand: str) -> str:
         return f"np.log({operand})"
 
+    def generate_odf_expression(self, operand: str) -> str:
+        return f"np.log({operand})"
+
 
 class ExponentialNode(BaseSeriesOutputWithSingleOperandNode):
     """ExponentialNode class"""
@@ -206,6 +242,9 @@ class ExponentialNode(BaseSeriesOutputWithSingleOperandNode):
     def generate_odfv_expression(self, operand: str) -> str:
         return f"np.exp({operand})"
 
+    def generate_odf_expression(self, operand: str) -> str:
+        return f"np.exp({operand})"
+
 
 class IsNullNode(BaseSeriesOutputWithSingleOperandNode):
     """IsNullNode class"""
@@ -217,6 +256,9 @@ class IsNullNode(BaseSeriesOutputWithSingleOperandNode):
 
     def generate_expression(self, operand: str) -> str:
         return f"{operand}.isnull()"
+
+    def generate_odf_expression(self, operand: str) -> str:
+        return f"pd.isna({operand})"
 
 
 class CastNode(BaseSeriesOutputWithSingleOperandNode):
@@ -242,6 +284,9 @@ class CastNode(BaseSeriesOutputWithSingleOperandNode):
 
     def generate_expression(self, operand: str) -> str:
         return f"{operand}.astype({self.parameters.type})"
+
+    def generate_odf_expression(self, operand: str) -> str:
+        return f"{self.parameters.type}({operand})"
 
 
 class IsStringNode(BaseSeriesOutputWithSingleOperandNode):

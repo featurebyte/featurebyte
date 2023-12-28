@@ -8,6 +8,7 @@ from typing import Any, Dict, Optional
 from bson import ObjectId
 from pydantic import BaseModel, Field
 
+from featurebyte.enum import DBVarType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.node.schema import DatabaseDetails
 
@@ -48,7 +49,9 @@ class OnDemandFunctionCodeGenConfig(BaseCodeGenConfig):
     """
 
     input_var_prefix: str
+    request_input_var_prefix: str
     output_var_name: str
+    output_dtype: DBVarType
     on_demand_function_name: str
 
 
