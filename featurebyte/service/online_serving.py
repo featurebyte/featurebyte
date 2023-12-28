@@ -18,6 +18,7 @@ from featurebyte.exception import (
     UnsupportedRequestCodeTemplateLanguage,
 )
 from featurebyte.feast.service.feature_store import FeastFeatureStoreService
+from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.batch_request_table import BatchRequestTableModel
 from featurebyte.models.deployment import DeploymentModel
 from featurebyte.models.feature_list import FeatureCluster, FeatureListModel
@@ -29,6 +30,7 @@ from featurebyte.schema.deployment import OnlineFeaturesResponseModel
 from featurebyte.schema.info import DeploymentRequestCodeTemplate
 from featurebyte.service.entity import EntityService
 from featurebyte.service.entity_validation import EntityValidationService
+from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_store import FeatureStoreService
@@ -42,7 +44,7 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
     OnlineServingService is responsible for retrieving features from online store
     """
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         session_manager_service: SessionManagerService,
         entity_validation_service: EntityValidationService,
@@ -50,6 +52,7 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
         feature_store_service: FeatureStoreService,
         feature_list_namespace_service: FeatureListNamespaceService,
         feature_list_service: FeatureListService,
+        feature_service: FeatureService,
         entity_service: EntityService,
         table_service: TableService,
         feast_feature_store_service: FeastFeatureStoreService,
@@ -60,6 +63,7 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
         self.online_store_table_version_service = online_store_table_version_service
         self.feature_list_namespace_service = feature_list_namespace_service
         self.feature_list_service = feature_list_service
+        self.feature_service = feature_service
         self.entity_service = entity_service
         self.table_service = table_service
         self.feast_feature_store_service = feast_feature_store_service
@@ -195,9 +199,21 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
 
         feast_online_features = feast_store.get_online_features(feature_service, request_data)
 
-        return OnlineFeaturesResponseModel(
-            features=feast_online_features.to_df().to_dict(orient="records")
+        # Map feature names to the original names
+        feature_docs = await self.feature_service.list_documents_as_dict(
+            query_filter={"_id": {"$in": feature_list.feature_ids}},
+            projection={"name": 1, "version": 1},
         )
+        feature_name_map = {}
+        for feature_doc in feature_docs["data"]:
+            feature_name = feature_doc["name"]
+            feature_version = VersionIdentifier(**feature_doc["version"]).to_str()
+            feature_name_map[f"{feature_name}_{feature_version}"] = feature_name
+
+        features = (
+            feast_online_features.to_df().rename(columns=feature_name_map).to_dict(orient="records")
+        )
+        return OnlineFeaturesResponseModel(features=features)
 
     @staticmethod
     def _require_point_in_time_request_column(feature_cluster: FeatureCluster) -> bool:

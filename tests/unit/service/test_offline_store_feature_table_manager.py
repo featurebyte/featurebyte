@@ -3,6 +3,8 @@ Tests for OfflineStoreFeatureTableManagerService
 """
 from typing import Dict
 
+from unittest.mock import patch
+
 import pytest
 import pytest_asyncio
 from bson import ObjectId
@@ -15,6 +17,15 @@ from tests.util.helper import (
     deploy_feature,
     undeploy_feature,
 )
+
+
+@pytest.fixture(autouse=True)
+def mock_service_get_version():
+    """
+    Mock get version
+    """
+    with patch("featurebyte.service.base_feature_service.get_version", return_value="V231227"):
+        yield
 
 
 @pytest.fixture(name="always_enable_feast_integration", autouse=True)
@@ -203,7 +214,7 @@ async def test_feature_table_one_feature_deployed(
         "has_ttl": True,
         "last_materialized_at": None,
         "name": "fb_entity_cust_id_fjs_1800_300_600_ttl",
-        "output_column_names": ["sum_1d"],
+        "output_column_names": ["sum_1d_V231227"],
         "output_dtypes": ["FLOAT"],
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
         "serving_names": ["cust_id"],
@@ -266,7 +277,7 @@ async def test_feature_table_two_features_deployed(
         "has_ttl": True,
         "last_materialized_at": None,
         "name": "fb_entity_cust_id_fjs_1800_300_600_ttl",
-        "output_column_names": ["sum_1d", "sum_1d_plus_123"],
+        "output_column_names": ["sum_1d_V231227", "sum_1d_plus_123_V231227"],
         "output_dtypes": ["FLOAT", "FLOAT"],
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
         "serving_names": ["cust_id"],
@@ -333,7 +344,7 @@ async def test_feature_table_undeploy(
         "has_ttl": True,
         "last_materialized_at": None,
         "name": "fb_entity_cust_id_fjs_1800_300_600_ttl",
-        "output_column_names": ["sum_1d_plus_123"],
+        "output_column_names": ["sum_1d_plus_123_V231227"],
         "output_dtypes": ["FLOAT"],
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
         "serving_names": ["cust_id"],
@@ -348,7 +359,7 @@ async def test_feature_table_undeploy(
     # Check drop_columns called
     args, _ = mock_feature_materialize_service["drop_columns"].call_args
     assert args[0].name == "fb_entity_cust_id_fjs_1800_300_600_ttl"
-    assert args[1] == ["sum_1d"]
+    assert args[1] == ["sum_1d_V231227"]
 
     # Check online disabling the last feature deletes the feature table
     undeploy_feature(deployed_float_feature_post_processed)
@@ -407,7 +418,7 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
         "has_ttl": True,
         "last_materialized_at": None,
         "name": "fb_entity_cust_id_fjs_1800_300_600_ttl",
-        "output_column_names": ["sum_1d"],
+        "output_column_names": ["sum_1d_V231227"],
         "output_dtypes": ["FLOAT"],
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
         "serving_names": ["cust_id"],
@@ -443,7 +454,7 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
         "has_ttl": True,
         "last_materialized_at": None,
         "name": "fb_entity_cust_id_fjs_10800_5_900_ttl",
-        "output_column_names": ["sum_24h_every_3h"],
+        "output_column_names": ["sum_24h_every_3h_V231227"],
         "output_dtypes": ["FLOAT"],
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
         "serving_names": ["cust_id"],
@@ -495,7 +506,7 @@ async def test_feature_table_without_entity(
         "has_ttl": True,
         "last_materialized_at": None,
         "name": "fb_entity_overall_fjs_86400_3600_7200_ttl",
-        "output_column_names": ["count_1d"],
+        "output_column_names": ["count_1d_V231227"],
         "output_dtypes": ["FLOAT"],
         "primary_entity_ids": [],
         "serving_names": [],
@@ -547,7 +558,7 @@ async def test_lookup_feature(
         "has_ttl": False,
         "last_materialized_at": None,
         "name": "fb_entity_cust_id_fjs_86400_0_0",
-        "output_column_names": ["some_lookup_feature"],
+        "output_column_names": ["some_lookup_feature_V231227"],
         "output_dtypes": ["BOOL"],
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
         "serving_names": ["cust_id"],
@@ -600,7 +611,7 @@ async def test_aggregate_asat_feature(
         "has_ttl": False,
         "last_materialized_at": None,
         "name": "fb_entity_gender_fjs_86400_0_0",
-        "output_column_names": ["asat_gender_count"],
+        "output_column_names": ["asat_gender_count_V231227"],
         "output_dtypes": ["FLOAT"],
         "primary_entity_ids": deployed_aggregate_asat_feature.primary_entity_ids,
         "serving_names": ["gender"],

@@ -5,6 +5,7 @@ import pytest
 
 from featurebyte.api.feature import Feature
 from featurebyte.api.request_column import RequestColumn
+from featurebyte.common.model_util import get_version
 from featurebyte.enum import DBVarType
 from featurebyte.models import FeatureModel
 from featurebyte.query_graph.enum import GraphNodeType
@@ -67,6 +68,7 @@ def test_point_in_time_minus_timestamp_feature(
         relationships_info=new_feature_model.relationships_info,
         entity_id_to_serving_name={},
         feature_name=new_feature_model.name,
+        feature_version=new_feature_model.version.to_str(),
     )
 
     # check decomposed graph structure
@@ -78,7 +80,10 @@ def test_point_in_time_minus_timestamp_feature(
     }
     graph_node_param = output.graph.nodes_map["graph_1"].parameters
     assert graph_node_param.type == GraphNodeType.OFFLINE_STORE_INGEST_QUERY
-    assert graph_node_param.output_column_name == "__Time Since Last Event (days)__part0"
+    assert (
+        graph_node_param.output_column_name
+        == f"__Time Since Last Event (days)_{get_version()}__part0"
+    )
 
     # check output node hash
     check_decomposed_graph_output_node_hash(
@@ -116,6 +121,7 @@ def test_request_column_offline_store_query_extraction(latest_event_timestamp_fe
         relationships_info=new_feature_model.relationships_info,
         entity_id_to_serving_name={},
         feature_name=new_feature_model.name,
+        feature_version=new_feature_model.version.to_str(),
     )
 
     # check decomposed graph structure

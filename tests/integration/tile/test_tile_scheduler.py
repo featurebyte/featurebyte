@@ -27,7 +27,6 @@ async def mock_scheduler_fixture(feature, tile_spec, tile_scheduler_service):
     await tile_scheduler_service.stop_job(job_id=job_id)
 
 
-@pytest.mark.parametrize("source_type", ["spark", "snowflake", "databricks"], indirect=True)
 @pytest.mark.asyncio
 async def test_generate_tiles_with_scheduler__verify_scheduling_and_execution(
     feature_store, session, tile_manager_service, scheduler_fixture, app_container
@@ -66,7 +65,6 @@ async def test_generate_tiles_with_scheduler__verify_scheduling_and_execution(
     assert result["TILE_COUNT"].iloc[0] == 100
 
 
-@pytest.mark.parametrize("source_type", ["spark", "snowflake", "databricks"], indirect=True)
 @pytest.mark.asyncio
 async def test_generate_tiles_with_scheduler__avoid_duplicate_tile(
     feature_store, session, tile_manager_service, scheduler_fixture
@@ -82,7 +80,6 @@ async def test_generate_tiles_with_scheduler__avoid_duplicate_tile(
     assert sql is None
 
 
-@pytest.mark.parametrize("source_type", ["spark", "snowflake", "databricks"], indirect=True)
 @pytest.mark.asyncio
 async def test_generate_tiles_with_scheduler__tile_job_exists(
     feature_store, session, tile_manager_service, scheduler_fixture

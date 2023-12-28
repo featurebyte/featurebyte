@@ -14,7 +14,7 @@ from featurebyte.session.base_spark import BaseSparkSession
 from featurebyte.session.manager import SessionManager
 
 
-@pytest.mark.parametrize("source_type", ["spark", "databricks"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
 @pytest.mark.asyncio
 async def test_schema_initializer(config, feature_store, credentials_mapping, session):
     """
@@ -83,7 +83,7 @@ async def test_schema_initializer(config, feature_store, credentials_mapping, se
     )
 
 
-@pytest.mark.parametrize("source_type", ["spark", "databricks"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "databricks_unity"], indirect=True)
 @pytest.mark.asyncio
 async def test_session_timezone(session):
     """
@@ -93,7 +93,7 @@ async def test_session_timezone(session):
     assert result["timezone"].iloc[0] in ["UTC", "Etc/UTC"]
 
 
-@pytest.mark.parametrize("source_type", ["spark", "databricks"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "databricks_unity"], indirect=True)
 @pytest.mark.asyncio
 async def test_register_table(session):
     """
@@ -112,7 +112,7 @@ async def test_register_table(session):
     assert_frame_equal(df_retrieve, df_training_events, check_dtype=False)
 
 
-@pytest.mark.parametrize("source_type", ["spark", "databricks"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
 @pytest.mark.asyncio
 async def test_register_udfs(session):
     """

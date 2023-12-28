@@ -11,6 +11,7 @@ import pytest_asyncio
 from bson import ObjectId
 from freezegun import freeze_time
 
+from featurebyte.common.model_util import get_version
 from tests.util.helper import assert_equal_with_expected_fixture
 
 
@@ -161,7 +162,7 @@ async def test_materialize_features(
     assert suffix != ""
     assert materialized_features_dict == {
         "materialized_table_name": "TEMP_FEATURE_TABLE",
-        "column_names": ["sum_30m"],
+        "column_names": [f"sum_30m_{get_version()}"],
         "data_types": ["FLOAT"],
         "feature_timestamp": datetime(2022, 1, 1, 0, 0),
         "serving_names": ["cust_id"],
@@ -220,7 +221,7 @@ async def test_scheduled_materialize_features(
     feature_view = kwargs.pop("feature_view")
     assert feature_view.name == "fb_entity_cust_id_fjs_1800_300_600_ttl"
     assert kwargs == {
-        "columns": ["sum_30m"],
+        "columns": [f"sum_30m_{get_version()}"],
         "start_date": None,
         "end_date": datetime(2022, 1, 1, 0, 0),
         "with_feature_timestamp": True,
@@ -259,7 +260,7 @@ async def test_scheduled_materialize_features_if_materialized_before(
     feature_view = kwargs.pop("feature_view")
     assert feature_view.name == "fb_entity_cust_id_fjs_1800_300_600_ttl"
     assert kwargs == {
-        "columns": ["sum_30m"],
+        "columns": [f"sum_30m_{get_version()}"],
         "start_date": datetime(2022, 1, 1, 0, 0),
         "end_date": datetime(2022, 1, 2, 0, 0),
         "with_feature_timestamp": True,
@@ -305,7 +306,7 @@ async def test_initialize_new_columns__table_does_not_exist(
     feature_view = kwargs.pop("feature_view")
     assert feature_view.name == "fb_entity_cust_id_fjs_1800_300_600_ttl"
     assert kwargs == {
-        "columns": ["sum_30m"],
+        "columns": [f"sum_30m_{get_version()}"],
         "end_date": datetime(2022, 1, 1, 0, 0),
         "with_feature_timestamp": True,
     }
@@ -349,7 +350,7 @@ async def test_initialize_new_columns__table_exists(
     feature_view = kwargs.pop("feature_view")
     assert feature_view.name == "fb_entity_cust_id_fjs_1800_300_600_ttl"
     assert kwargs == {
-        "columns": ["sum_30m"],
+        "columns": [f"sum_30m_{get_version()}"],
         "end_date": datetime(2022, 10, 15, 10, 0, 0),
         "with_feature_timestamp": True,
     }

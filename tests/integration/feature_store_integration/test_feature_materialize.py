@@ -15,6 +15,7 @@ import pytest_asyncio
 from sqlglot import parse_one
 
 import featurebyte as fb
+from featurebyte.common.model_util import get_version
 from featurebyte.enum import InternalName, SourceType
 from featurebyte.logging import get_logger
 from featurebyte.query_graph.sql.common import sql_to_string
@@ -288,6 +289,7 @@ async def test_feast_registry(app_container):
 
     # Check feast materialize and get_online_features
     feature_service = feature_store.get_feature_service("EXTERNAL_FS_FEATURE_LIST")
+    version = get_version()
     entity_row = {
         "üser id": 5,
         "cust_id": 761,
@@ -299,19 +301,19 @@ async def test_feast_registry(app_container):
         features=feature_service,
         entity_rows=[entity_row],
     ).to_dict()
-    online_features["EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d"] = [
-        json.loads(online_features["EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d"][0])
-        if online_features["EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d"][0]
+    online_features[f"EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d_{version}"] = [
+        json.loads(online_features[f"EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d_{version}"][0])
+        if online_features[f"EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d_{version}"][0]
         else None
     ]
-    online_features["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"] = [
-        json.loads(online_features["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"][0])
-        if online_features["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"][0]
+    online_features[f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}"] = [
+        json.loads(online_features[f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}"][0])
+        if online_features[f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}"][0]
         else None
     ]
     expected = {
-        "Current Number of Users With This Status": [1.0],
-        "EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d": [
+        f"Current Number of Users With This Status_{version}": [1.0],
+        f"EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d_{version}": [
             {
                 "__MISSING__": 240.76,
                 "detail": 254.23,
@@ -320,9 +322,9 @@ async def test_feast_registry(app_container):
                 "àdd": 146.22,
             }
         ],
-        "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h": [683.55],
-        "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100": [68355.0],
-        "EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h": [
+        f"EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_{version}": [683.55],
+        f"EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100_{version}": [68355.0],
+        f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}": [
             [
                 0.6807108071969569,
                 0.41463276624595335,
@@ -336,13 +338,13 @@ async def test_feast_registry(app_container):
                 0.548615163058392,
             ]
         ],
-        "EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE": [727.4592974268256],
-        "EXTERNAL_FS_COSINE_SIMILARITY": [0.0],
-        "EXTERNAL_FS_COSINE_SIMILARITY_VEC": [0.8578220571057548],
-        "EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d": [43.0],
-        "EXTERNAL_FS_COUNT_OVERALL_7d": [149.0],
+        f"EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE_{version}": [727.4592974268256],
+        f"EXTERNAL_FS_COSINE_SIMILARITY_{version}": [0.0],
+        f"EXTERNAL_FS_COSINE_SIMILARITY_VEC_{version}": [0.8578220571057548],
+        f"EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d_{version}": [43.0],
+        f"EXTERNAL_FS_COUNT_OVERALL_7d_{version}": [149.0],
         "PRODUCT_ACTION": ["detail"],
-        "User Status Feature": ["STÀTUS_CODE_37"],
+        f"User Status Feature_{version}": ["STÀTUS_CODE_37"],
         "cust_id": ["761"],
         "user_status": ["STÀTUS_CODE_37"],
         "üser id": ["5"],
@@ -361,17 +363,17 @@ async def test_feast_registry(app_container):
         "cust_id": ["761"],
         "PRODUCT_ACTION": ["detail"],
         "user_status": ["STÀTUS_CODE_37"],
-        "User Status Feature": ["STÀTUS_CODE_37"],
-        "Current Number of Users With This Status": [1],
-        "EXTERNAL_FS_COUNT_OVERALL_7d": [None],
-        "EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d": [None],
-        "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h": [None],
-        "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100": [None],
-        "EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE": [None],
-        "EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d": [None],
-        "EXTERNAL_FS_COSINE_SIMILARITY": [None],
-        "EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h": [None],
-        "EXTERNAL_FS_COSINE_SIMILARITY_VEC": [None],
+        f"User Status Feature_{version}": ["STÀTUS_CODE_37"],
+        f"Current Number of Users With This Status_{version}": [1],
+        f"EXTERNAL_FS_COUNT_OVERALL_7d_{version}": [None],
+        f"EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d_{version}": [None],
+        f"EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_{version}": [None],
+        f"EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100_{version}": [None],
+        f"EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE_{version}": [None],
+        f"EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d_{version}": [None],
+        f"EXTERNAL_FS_COSINE_SIMILARITY_{version}": [None],
+        f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}": [None],
+        f"EXTERNAL_FS_COSINE_SIMILARITY_VEC_{version}": [None],
     }
     assert_dict_approx_equal(online_features, expected)
 
@@ -479,27 +481,28 @@ async def test_simulated_materialize(
             parse_one(f'SELECT * FROM "{feature_table_model.name}"'), session.source_type
         ),
     )
+    version = get_version()
     if source_type == SourceType.SNOWFLAKE:
         expected = [
             "__feature_timestamp",
             "üser id",
-            "EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d",
-            "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100",
-            "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h",
-            "EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h",
-            "__EXTERNAL_FS_COSINE_SIMILARITY__part0",
-            "__EXTERNAL_FS_COSINE_SIMILARITY_VEC__part0",
-            "__EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE__part0",
+            f"EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d_{version}",
+            f"EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100_{version}",
+            f"EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_{version}",
+            f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}",
+            f"__EXTERNAL_FS_COSINE_SIMILARITY_{version}__part0",
+            f"__EXTERNAL_FS_COSINE_SIMILARITY_VEC_{version}__part0",
+            f"__EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE_{version}__part0",
         ]
     else:
         expected = [
             "__feature_timestamp",
             "üser id",
-            "EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d",
-            "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100",
-            "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h",
-            "__EXTERNAL_FS_COSINE_SIMILARITY__part0",
-            "__EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE__part0",
+            f"EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d_{version}",
+            f"EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100_{version}",
+            f"EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_{version}",
+            f"__EXTERNAL_FS_COSINE_SIMILARITY_{version}__part0",
+            f"__EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE_{version}__part0",
         ]
 
     assert set(df.columns.tolist()) == set(expected)

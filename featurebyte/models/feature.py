@@ -224,6 +224,17 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
         return self.graph.get_node_by_name(self.node_name)
 
     @property
+    def versioned_name(self) -> str:
+        """
+        Retrieve feature name with version info
+
+        Returns
+        -------
+        str
+        """
+        return f"{self.name}_{self.version.to_str()}"
+
+    @property
     def offline_store_info(self) -> OfflineStoreInfo:
         """
         Retrieve offline store info
@@ -454,6 +465,7 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
             entity_id_to_serving_name=entity_id_to_serving_name,
             relationships_info=self.relationships_info or [],
             feature_name=self.name,
+            feature_version=self.version.to_str(),
         )
 
         if result.is_decomposed:
@@ -492,7 +504,7 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
                 feature_job_setting=feature_job_setting,
                 has_ttl=has_ttl,
                 offline_store_table_name=table_name,
-                output_column_name=self.name,
+                output_column_name=self.versioned_name,
                 output_dtype=self.dtype,
                 primary_entity_ids=self.primary_entity_ids,
             )
