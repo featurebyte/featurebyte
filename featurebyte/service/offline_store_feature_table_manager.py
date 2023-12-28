@@ -358,6 +358,9 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         return sorted(set(filtered_table_names))
 
     async def _create_or_update_feast_registry(self) -> None:
+        if not await self.feast_registry_service.is_source_type_supported():
+            return
+
         feature_lists = []
         async for feature_list_dict in self.feature_list_service.iterate_online_enabled_feature_lists_as_dict():
             feature_lists.append(FeatureListModel(**feature_list_dict))

@@ -3,6 +3,7 @@ Tests for feature materialization service
 """
 import json
 import os
+import textwrap
 import time
 from datetime import datetime
 from unittest.mock import patch
@@ -10,15 +11,22 @@ from unittest.mock import patch
 import freezegun
 import pandas as pd
 import pytest
+import pytest_asyncio
+from sqlglot import parse_one
 
 import featurebyte as fb
 from featurebyte.common.model_util import get_version
-from featurebyte.enum import InternalName
+from featurebyte.enum import InternalName, SourceType
 from featurebyte.logging import get_logger
+from featurebyte.query_graph.sql.common import sql_to_string
+from featurebyte.routes.lazy_app_container import LazyAppContainer
+from featurebyte.routes.registry import app_container_config
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 from featurebyte.schema.worker.task.scheduled_feature_materialize import (
     ScheduledFeatureMaterializeTaskPayload,
 )
+from featurebyte.storage import LocalTempStorage
+from featurebyte.worker import get_celery
 from tests.util.helper import assert_dict_approx_equal
 
 logger = get_logger(__name__)
@@ -33,8 +41,23 @@ def always_enable_feast_integration_fixture():
         yield
 
 
+@pytest.fixture(name="app_container", scope="module")
+def app_container_fixture(persistent, user, catalog):
+    """
+    Return an app container used in tests
+    """
+    instance_map = {
+        "user": user,
+        "persistent": persistent,
+        "celery": get_celery(),
+        "storage": LocalTempStorage(),
+        "catalog_id": catalog.id,
+    }
+    return LazyAppContainer(app_container_config=app_container_config, instance_map=instance_map)
+
+
 @pytest.fixture(name="features", scope="module")
-def features_fixture(event_table, scd_table):  # pylint: disable=too-many-locals
+def features_fixture(event_table, scd_table, source_type):  # pylint: disable=too-many-locals
     """
     Fixture for feature
     """
@@ -104,22 +127,25 @@ def features_fixture(event_table, scd_table):  # pylint: disable=too-many-locals
     feature_7 = feature_6.cd.cosine_similarity(cross_aggregate_feature2)
     feature_7.name = "EXTERNAL_FS_COSINE_SIMILARITY"
 
-    feature_8 = event_view.groupby("ÜSER ID").aggregate_over(
-        "EMBEDDING_ARRAY",
-        method="avg",
-        windows=["24h"],
-        feature_names=["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"],
-    )["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"]
+    if source_type != SourceType.DATABRICKS_UNITY:
+        feature_8 = event_view.groupby("ÜSER ID").aggregate_over(
+            "EMBEDDING_ARRAY",
+            method="avg",
+            windows=["24h"],
+            feature_names=["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"],
+        )["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"]
+        vec_agg_feature2 = event_view.groupby("CUST_ID").aggregate_over(
+            "EMBEDDING_ARRAY",
+            method="avg",
+            windows=["48h"],
+            feature_names=["EXTERNAL_FS_ARRAY_AVG_BY_CUST_ID_48h"],
+        )["EXTERNAL_FS_ARRAY_AVG_BY_CUST_ID_48h"]
 
-    vec_agg_feature2 = event_view.groupby("CUST_ID").aggregate_over(
-        "EMBEDDING_ARRAY",
-        method="avg",
-        windows=["48h"],
-        feature_names=["EXTERNAL_FS_ARRAY_AVG_BY_CUST_ID_48h"],
-    )["EXTERNAL_FS_ARRAY_AVG_BY_CUST_ID_48h"]
-
-    feature_9 = feature_8.vec.cosine_similarity(vec_agg_feature2)
-    feature_9.name = "EXTERNAL_FS_COSINE_SIMILARITY_VEC"
+        feature_9 = feature_8.vec.cosine_similarity(vec_agg_feature2)
+        feature_9.name = "EXTERNAL_FS_COSINE_SIMILARITY_VEC"
+    else:
+        feature_8 = None
+        feature_9 = None
 
     scd_view = scd_table.get_view()
     feature_10 = scd_view["User Status"].as_feature("User Status Feature")
@@ -132,17 +158,21 @@ def features_fixture(event_table, scd_table):  # pylint: disable=too-many-locals
 
     # Save all features to be deployed
     features = [
-        feature_1,
-        feature_2,
-        feature_3,
-        feature_4,
-        feature_5,
-        feature_6,
-        feature_7,
-        feature_8,
-        feature_9,
-        feature_10,
-        feature_11,
+        feature
+        for feature in [
+            feature_1,
+            feature_2,
+            feature_3,
+            feature_4,
+            feature_5,
+            feature_6,
+            feature_7,
+            feature_8,
+            feature_9,
+            feature_10,
+            feature_11,
+        ]
+        if feature is not None
     ]
     for feature in features:
         feature.save()
@@ -173,20 +203,55 @@ def deployed_features_list_fixture(features):
     deployment.disable()
 
 
-@pytest.fixture(name="default_feature_job_setting")
-def default_feature_job_setting_fixture(event_table):
+@pytest_asyncio.fixture(name="offline_store_feature_tables", scope="module")
+async def offline_store_feature_tables_fixture(app_container, deployed_feature_list):
     """
-    Fixture for default feature job setting
+    Fixture for offline store feature tables based on the deployed features
     """
-    return event_table.default_feature_job_setting
+    _ = deployed_feature_list
+    primary_entity_to_feature_table = {}
+    async for feature_table in app_container.offline_store_feature_table_service.list_documents_iterator(
+        query_filter={},
+    ):
+        primary_entity_to_feature_table[
+            tuple(sorted(feature_table.primary_entity_ids))
+        ] = feature_table
+    return primary_entity_to_feature_table
 
 
-async def check_feature_tables_populated(session, feature_tables):
+@pytest.mark.parametrize("source_type", ["snowflake", "databricks_unity"], indirect=True)
+def test_feature_tables_expected(
+    offline_store_feature_tables,
+    user_entity,
+    customer_entity,
+    product_action_entity,
+    status_entity,
+):
+    """
+    Test offline store feature tables are created as expected
+    """
+    assert set(offline_store_feature_tables.keys()) == {
+        (),
+        (user_entity.id,),
+        (customer_entity.id,),
+        (product_action_entity.id,),
+        (status_entity.id,),
+    }
+
+
+@pytest.mark.parametrize("source_type", ["snowflake", "databricks_unity"], indirect=True)
+@pytest.mark.asyncio
+async def test_feature_tables_populated(session, offline_store_feature_tables):
     """
     Check feature tables are populated correctly
     """
-    for feature_table in feature_tables:
-        df = await session.execute_query(f'SELECT * FROM "{feature_table.name}"')
+    for feature_table in offline_store_feature_tables.values():
+        df = await session.execute_query(
+            sql_to_string(
+                parse_one(f'SELECT * FROM "{feature_table.name}"'),
+                session.source_type,
+            )
+        )
 
         # Should not be empty
         assert df.shape[0] > 0
@@ -199,7 +264,9 @@ async def check_feature_tables_populated(session, feature_tables):
         )
 
 
-async def check_feast_registry(app_container):
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.asyncio
+async def test_feast_registry(app_container):
     """
     Check feast registry is populated correctly
     """
@@ -214,8 +281,8 @@ async def check_feast_registry(app_container):
         "fb_entity_overall_fjs_3600_1800_1800_ttl",
         "fb_entity_product_action_fjs_3600_1800_1800_ttl",
         "fb_entity_cust_id_fjs_3600_1800_1800_ttl",
-        "fb_entity_üserid_fjs_3600_1800_1800_ttl",
-        "fb_entity_üserid_fjs_86400_0_0",
+        "fb_entity_userid_fjs_3600_1800_1800_ttl",
+        "fb_entity_userid_fjs_86400_0_0",
         "fb_entity_user_status_fjs_86400_0_0",
     }
     assert {fs.name for fs in feature_store.list_feature_services()} == {"EXTERNAL_FS_FEATURE_LIST"}
@@ -320,12 +387,14 @@ async def check_feast_registry(app_container):
     assert_dict_approx_equal(online_features, expected)
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @freezegun.freeze_time("2001-01-02 12:00:00")
-def check_online_features(deployment, config):
+def test_online_features(config, deployed_feature_list):
     """
     Check online features are populated correctly
     """
     client = config.get_client()
+    deployment = deployed_feature_list
 
     entity_serving_names = [
         {
@@ -391,62 +460,51 @@ def check_online_features(deployment, config):
     assert_dict_approx_equal(feat_dict, expected)
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "databricks_unity"], indirect=True)
 @pytest.mark.asyncio
-async def test_feature_materialize_service(
+async def test_simulated_materialize(
     app_container,
     session,
     user_entity,
-    customer_entity,
-    product_action_entity,
-    status_entity,
-    deployed_feature_list,
-    config,
+    offline_store_feature_tables,
+    source_type,
 ):
     """
-    Test FeatureMaterializeService
+    Test simulating scheduled feature materialization
     """
-    _ = deployed_feature_list
-
-    primary_entity_to_feature_table = {}
-    async for feature_table in app_container.offline_store_feature_table_service.list_documents_iterator(
-        query_filter={},
-    ):
-        primary_entity_to_feature_table[
-            tuple(sorted(feature_table.primary_entity_ids))
-        ] = feature_table
-
-    assert set(primary_entity_to_feature_table.keys()) == {
-        (),
-        (user_entity.id,),
-        (customer_entity.id,),
-        (product_action_entity.id,),
-        (status_entity.id,),
-    }
-
-    await check_feature_tables_populated(session, primary_entity_to_feature_table.values())
-
-    await check_feast_registry(app_container)
-
-    check_online_features(deployed_feature_list, config)
-
-    # Check offline store table for user entity
+    # Check calling scheduled_materialize_features()
     service = app_container.feature_materialize_service
-    feature_table_model = primary_entity_to_feature_table[(user_entity.id,)]
+    feature_table_model = offline_store_feature_tables[(user_entity.id,)]
     await service.scheduled_materialize_features(feature_table_model=feature_table_model)
-    df = await session.execute_query(f'SELECT * FROM "{feature_table_model.name}"')
+    df = await session.execute_query(
+        sql_to_string(
+            parse_one(f'SELECT * FROM "{feature_table_model.name}"'), session.source_type
+        ),
+    )
     version = get_version()
-    expected = [
-        "__feature_timestamp",
-        "üser id",
-        f"EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d_{version}",
-        f"EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100_{version}",
-        f"EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_{version}",
-        f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}",
-        f"__EXTERNAL_FS_COSINE_SIMILARITY_{version}__part0",
-        f"__EXTERNAL_FS_COSINE_SIMILARITY_VEC_{version}__part0",
-        f"__EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE_{version}__part0",
-    ]
+    if source_type == SourceType.SNOWFLAKE:
+        expected = [
+            "__feature_timestamp",
+            "üser id",
+            f"EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d_{version}",
+            f"EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100_{version}",
+            f"EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_{version}",
+            f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}",
+            f"__EXTERNAL_FS_COSINE_SIMILARITY_{version}__part0",
+            f"__EXTERNAL_FS_COSINE_SIMILARITY_VEC_{version}__part0",
+            f"__EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE_{version}__part0",
+        ]
+    else:
+        expected = [
+            "__feature_timestamp",
+            "üser id",
+            f"EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d_{version}",
+            f"EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100_{version}",
+            f"EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_{version}",
+            f"__EXTERNAL_FS_COSINE_SIMILARITY_{version}__part0",
+            f"__EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE_{version}__part0",
+        ]
+
     assert set(df.columns.tolist()) == set(expected)
     assert df.shape[0] == 18
     assert df["__feature_timestamp"].nunique() == 2
@@ -454,7 +512,12 @@ async def test_feature_materialize_service(
 
     # Materialize one more time
     await service.scheduled_materialize_features(feature_table_model=feature_table_model)
-    df = await session.execute_query(f'SELECT * FROM "{feature_table_model.name}"')
+    df = await session.execute_query(
+        sql_to_string(
+            parse_one(f'SELECT * FROM "{feature_table_model.name}"'),
+            session.source_type,
+        )
+    )
     assert df.shape[0] == 27
     assert df["__feature_timestamp"].nunique() == 3
     assert df["üser id"].isnull().sum() == 0
@@ -466,7 +529,32 @@ async def test_feature_materialize_service(
         offline_store_feature_table_id=feature_table_model.id,
     )
     await app_container.task_manager.submit(task_payload)
-    df = await session.execute_query(f'SELECT * FROM "{feature_table_model.name}"')
+    df = await session.execute_query(
+        sql_to_string(
+            parse_one(f'SELECT * FROM "{feature_table_model.name}"'),
+            session.source_type,
+        )
+    )
     assert df.shape[0] == 36
     assert df["__feature_timestamp"].nunique() == 4
     assert df["üser id"].isnull().sum() == 0
+
+
+@pytest.mark.parametrize("source_type", ["databricks_unity"], indirect=True)
+@pytest.mark.asyncio
+async def test_feature_tables_have_primary_key_constraints(session, offline_store_feature_tables):
+    """
+    Check feature tables have primary key constraints in Databricks
+    """
+    for feature_table in offline_store_feature_tables.values():
+        df = await session.execute_query(
+            textwrap.dedent(
+                f"""
+                SELECT *
+                FROM information_schema.constraint_table_usage
+                WHERE table_schema ILIKE '{session.schema_name}'
+                AND table_name = '{feature_table.name}'
+                """
+            ).strip()
+        )
+        assert df.shape[0] == 1

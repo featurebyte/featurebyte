@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import AsyncIterator, List, Optional
 
+import textwrap
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from datetime import datetime
@@ -14,7 +15,7 @@ from bson import ObjectId
 from feast import FeatureStore as FeastFeatureStore
 from sqlglot import expressions
 
-from featurebyte.enum import InternalName
+from featurebyte.enum import InternalName, SourceType
 from featurebyte.feast.service.feature_store import FeastFeatureStoreService
 from featurebyte.feast.service.registry import FeastRegistryService
 from featurebyte.feast.utils.materialize_helper import materialize_partial
@@ -232,6 +233,8 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
 
         # Feast online materialize
         feature_store = await self._get_feast_feature_store()
+        if feature_store is None:
+            return
         materialize_partial(
             feature_store=feature_store,
             feature_view=feature_store.get_feature_view(feature_table_model.name),
@@ -301,13 +304,14 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
 
         # Feast online materialize. Start date is not set because these are new columns.
         feature_store = await self._get_feast_feature_store()
-        materialize_partial(
-            feature_store=feature_store,
-            feature_view=feature_store.get_feature_view(feature_table_model.name),
-            columns=materialized_features.column_names,
-            end_date=materialize_end_date,
-            with_feature_timestamp=feature_table_model.has_ttl,
-        )
+        if feature_store is not None:
+            materialize_partial(
+                feature_store=feature_store,
+                feature_view=feature_store.get_feature_view(feature_table_model.name),
+                columns=materialized_features.column_names,
+                end_date=materialize_end_date,
+                with_feature_timestamp=feature_table_model.has_ttl,
+            )
 
     async def drop_columns(
         self, feature_table_model: OfflineStoreFeatureTableModel, column_names: List[str]
@@ -351,17 +355,18 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
             if_exists=True,
         )
 
-    async def _get_feast_feature_store(self) -> FeastFeatureStore:
+    async def _get_feast_feature_store(self) -> Optional[FeastFeatureStore]:
         """
         Get the FeastFeatureStore object
 
         Returns
         -------
-        FeastFeatureStore
+        Optional[FeastFeatureStore]
             FeastFeatureStore object
         """
         feast_registry = await self.feast_registry_service.get_feast_registry_for_catalog()
-        assert feast_registry is not None
+        if feast_registry is None:
+            return None
         return await self.feast_feature_store_service.get_feast_feature_store(feast_registry.id)
 
     async def _get_session(self, feature_table_model: OfflineStoreFeatureTableModel) -> BaseSession:
@@ -371,8 +376,9 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         session = await self.session_manager_service.get_feature_store_session(feature_store)
         return session
 
-    @staticmethod
+    @classmethod
     async def _create_feature_table(
+        cls,
         session: BaseSession,
         feature_table_model: OfflineStoreFeatureTableModel,
         materialized_features: MaterializedFeatures,
@@ -406,6 +412,35 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
             source_type=session.source_type,
         )
         await session.execute_query(query)
+        await cls._add_primary_key_constraint_if_necessary(session, feature_table_model)
+
+    @classmethod
+    async def _add_primary_key_constraint_if_necessary(
+        cls, session: BaseSession, feature_table_model: OfflineStoreFeatureTableModel
+    ) -> None:
+        # Only needed for Databricks with Unity catalog for now
+        if session.source_type != SourceType.DATABRICKS_UNITY:
+            return
+
+        # Table constraint syntax is only supported in newer versions of sqlglot, so the queries are
+        # formatted manually here
+        quoted_primary_key_columns = [
+            f"`{column_name}`"
+            for column_name in [InternalName.FEATURE_TIMESTAMP_COLUMN.value]
+            + feature_table_model.serving_names
+        ]
+        for quoted_col in quoted_primary_key_columns:
+            await session.execute_query(
+                f"ALTER TABLE `{feature_table_model.name}` ALTER COLUMN {quoted_col} SET NOT NULL"
+            )
+        await session.execute_query(
+            textwrap.dedent(
+                f"""
+                ALTER TABLE `{feature_table_model.name}` ADD CONSTRAINT `pk_{feature_table_model.name}`
+                PRIMARY KEY({', '.join(quoted_primary_key_columns)})
+                """
+            ).strip()
+        )
 
     @staticmethod
     async def _insert_into_feature_table(
