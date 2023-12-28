@@ -5,7 +5,6 @@ import pytest
 import pytest_asyncio
 
 import featurebyte as fb
-from featurebyte.common.model_util import get_version
 from featurebyte.exception import RequiredEntityNotProvidedError
 from tests.util.helper import deploy_feature
 
@@ -58,7 +57,7 @@ async def test_feature_no_point_in_time(
     result = await online_serving_service.get_online_features_by_feast(
         deployed_feature_list_with_float_feature, request_data
     )
-    assert result.dict() == {"features": [{"cust_id": "a", f"sum_1d_{get_version()}": None}]}
+    assert result.dict() == {"features": [{"cust_id": "a", f"sum_1d": None}]}
 
 
 @pytest.mark.asyncio
@@ -74,9 +73,7 @@ async def test_feature_with_point_in_time(
         deployed_feature_list_with_point_in_time_request_column_feature, request_data
     )
     assert result.dict() == {
-        "features": [
-            {"cust_id": "a", f"feature_with_point_in_time_request_column_{get_version()}": None}
-        ]
+        "features": [{"cust_id": "a", f"feature_with_point_in_time_request_column": None}]
     }
 
 
