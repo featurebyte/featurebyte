@@ -152,6 +152,30 @@ class TestCatalogApi(BaseApiTestSuite):
         results = response.json()
         assert [doc["name"] for doc in results] == ["french grocery", "grocery"]
 
+    def test_update_online_store_200(
+        self, create_success_response, test_api_client_persistent, mysql_online_store
+    ):
+        """
+        Test catalog online store update (success)
+        """
+        test_api_client, _ = test_api_client_persistent
+        response_dict = create_success_response.json()
+        catalog_id = response_dict["_id"]
+        response = test_api_client.patch(
+            f"{self.base_route}/{catalog_id}/online_store",
+            json={"online_store_id": str(mysql_online_store.id)},
+        )
+        assert response.status_code == HTTPStatus.OK
+        result = response.json()
+        assert result["online_store_id"] == str(mysql_online_store.id)
+
+        response = test_api_client.patch(
+            f"{self.base_route}/{catalog_id}/online_store", json={"online_store_id": None}
+        )
+        assert response.status_code == HTTPStatus.OK
+        result = response.json()
+        assert result["online_store_id"] is None
+
     def test_update_404(self, test_api_client_persistent):
         """
         Test catalog update (not found)

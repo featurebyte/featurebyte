@@ -17,8 +17,8 @@ from featurebyte.schema.online_store import OnlineStoreCreate
 
 class OnlineStore(OnlineStoreModel, SavableApiObject, DeletableApiObject):
     """
-    OnlineStore class to represent a online store in FeatureByte.
-    This class is used to manage a online store in FeatureByte.
+    OnlineStore class to represent an online store in FeatureByte.
+    This class is used to manage an online store in FeatureByte.
 
     The purpose of an Online Store is to host the most recent feature values for low latency serving.
     """

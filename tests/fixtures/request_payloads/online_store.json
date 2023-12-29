@@ -8,10 +8,13 @@
     "details": {
         "database": "mysql_database",
         "host": "mysql_host",
-        "password": "mysql_password",
         "port": 3306,
         "type": "mysql",
-        "user": "mysql_user"
+        "credential": {
+            "type": "USERNAME_PASSWORD",
+            "username": "mysql_user",
+            "password": "mysql_password"
+        }
     },
     "name": "mysql_online_store"
 }

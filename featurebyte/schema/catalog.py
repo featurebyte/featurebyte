@@ -43,6 +43,13 @@ class CatalogUpdate(FeatureByteBaseModel):
     """
 
     name: Optional[StrictStr]
+
+
+class CatalogOnlineStoreUpdate(BaseDocumentServiceUpdateSchema):
+    """
+    Catalog update online store schema
+    """
+
     online_store_id: Optional[PydanticObjectId]
 
 
@@ -52,7 +59,6 @@ class CatalogServiceUpdate(BaseDocumentServiceUpdateSchema):
     """
 
     name: Optional[StrictStr]
-    online_store_id: Optional[PydanticObjectId]
     is_deleted: Optional[bool]
 
     class Settings(BaseDocumentServiceUpdateSchema.Settings):

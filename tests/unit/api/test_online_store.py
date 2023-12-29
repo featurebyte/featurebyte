@@ -11,19 +11,15 @@ from pandas.testing import assert_frame_equal
 
 from featurebyte import MySQLOnlineStoreDetails, UsernamePasswordCredential
 from featurebyte.api.online_store import OnlineStore
-from featurebyte.enum import SourceType
-from featurebyte.exception import (
-    ObjectHasBeenSavedError,
-    RecordCreationException,
-    RecordRetrievalException,
-)
-from featurebyte.query_graph.node.schema import SnowflakeDetails
+from featurebyte.exception import ObjectHasBeenSavedError, RecordRetrievalException
 
 
-def test_info(saved_mysql_online_store):
+def test_info(saved_mysql_online_store, catalog):
     """
     Test info
     """
+
+    catalog.update_online_store(saved_mysql_online_store.name)
     info_dict = saved_mysql_online_store.info()
     expected_info = {
         "name": "mysql_online_store",
@@ -32,13 +28,28 @@ def test_info(saved_mysql_online_store):
             "type": "mysql",
             "host": "mysql_host",
             "database": "mysql_database",
-            "user": "mysql_user",
-            "password": "mysql_password",
             "port": 3306,
+            "credential": {
+                "type": "USERNAME_PASSWORD",
+                "username": "mysql_user",
+                "password": "mysql_password",
+            },
         },
+        "catalogs": [{"name": "catalog"}],
     }
     assert info_dict.items() > expected_info.items(), info_dict
     assert "created_at" in info_dict, info_dict
+
+
+def decrypt_credential(docs):
+    """
+    Decrypt credential in online store documents
+    """
+    for doc in docs:
+        # decrypt credential
+        credential = UsernamePasswordCredential(**doc["details"]["credential"])
+        credential.decrypt()
+        doc["details"]["credential"] = credential.dict()
 
 
 @pytest_asyncio.fixture(name="saved_mysql_online_store")
@@ -50,6 +61,9 @@ async def saved_mysql_online_store_fixture(mysql_online_store, mock_get_persiste
     assert mysql_online_store.saved is True
     assert mysql_online_store.created_at is not None
     docs, cnt = await persistent.find(collection_name="online_store", query_filter={})
+    # decrypt credential
+    decrypt_credential(docs)
+
     assert cnt == 1
     assert (
         docs[0].items()
@@ -61,9 +75,12 @@ async def saved_mysql_online_store_fixture(mysql_online_store, mock_get_persiste
                 "type": "mysql",
                 "host": "mysql_host",
                 "database": "mysql_database",
-                "user": "mysql_user",
-                "password": "mysql_password",
                 "port": 3306,
+                "credential": {
+                    "type": "USERNAME_PASSWORD",
+                    "username": "mysql_user",
+                    "password": "mysql_password",
+                },
             },
             "updated_at": None,
         }.items()
@@ -96,7 +113,8 @@ def test_save__duplicate_record_exception(saved_mysql_online_store):
     assert expected_msg in str(exc.value)
 
 
-def test_get(saved_mysql_online_store):
+@pytest.mark.asyncio
+async def test_get(saved_mysql_online_store, persistent):
     """
     Test online store retrieval
     """
@@ -105,6 +123,11 @@ def test_get(saved_mysql_online_store):
     assert loaded_online_store == saved_mysql_online_store
     assert OnlineStore.get_by_id(saved_mysql_online_store.id) == saved_mysql_online_store
 
+    # get from database to access encrypted credential
+    doc = await persistent.find_one(
+        collection_name="online_store", query_filter={"_id": saved_mysql_online_store.id}
+    )
+
     # check audit history
     audit_history = loaded_online_store.audit()
     expected_audit_history = pd.DataFrame(
@@ -112,12 +135,13 @@ def test_get(saved_mysql_online_store):
             ("block_modification_by", []),
             ("created_at", loaded_online_store.created_at.isoformat()),
             ("description", None),
+            ("details.credential.password", doc["details"]["credential"]["password"]),
+            ("details.credential.type", "USERNAME_PASSWORD"),
+            ("details.credential.username", doc["details"]["credential"]["username"]),
             ("details.database", "mysql_database"),
             ("details.host", "mysql_host"),
-            ("details.password", "mysql_password"),
             ("details.port", 3306),
             ("details.type", "mysql"),
-            ("details.user", "mysql_user"),
             ("name", "mysql_online_store"),
             ("updated_at", None),
             ("user_id", None),
@@ -167,9 +191,11 @@ async def test_online_store_create(
         details=MySQLOnlineStoreDetails(
             host="mysql_host",
             database="mysql_database",
-            user="mysql_user",
-            password="mysql_password",
             port=3306,
+            credential=UsernamePasswordCredential(
+                username="mysql_user",
+                password="mysql_password",
+            ),
         ),
     )
     # assert that we have a correct instance returned
@@ -180,6 +206,9 @@ async def test_online_store_create(
     assert mysql_online_store.created_at is not None
     docs, cnt = await persistent.find(collection_name="online_store", query_filter={})
     assert cnt == 1
+    # decrypt credential
+    decrypt_credential(docs)
+
     assert (
         docs[0].items()
         >= {
@@ -189,9 +218,12 @@ async def test_online_store_create(
                 "type": "mysql",
                 "host": "mysql_host",
                 "database": "mysql_database",
-                "user": "mysql_user",
-                "password": "mysql_password",
                 "port": 3306,
+                "credential": {
+                    "type": "USERNAME_PASSWORD",
+                    "username": "mysql_user",
+                    "password": "mysql_password",
+                },
             },
             "updated_at": None,
         }.items()

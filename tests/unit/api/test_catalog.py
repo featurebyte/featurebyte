@@ -19,7 +19,7 @@ from bson import ObjectId
 from pandas.testing import assert_frame_equal
 from pydantic import ValidationError
 
-from featurebyte import MySQLOnlineStoreDetails, OnlineStore
+from featurebyte import MySQLOnlineStoreDetails, OnlineStore, UsernamePasswordCredential
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.base_table import TableApiObject, TableListMixin
 from featurebyte.api.batch_feature_table import BatchFeatureTable
@@ -413,18 +413,24 @@ def test_catalog__update_online_store(new_catalog):
     Test update_online_store in Catalog class
     """
     # test update online store (saved object)
-    assert new_catalog.online_store_id == None
+    assert new_catalog.online_store_id is None
     online_store = OnlineStore.create(
         name="test_online_store",
         details=MySQLOnlineStoreDetails(
             host="localhost",
             database="test",
-            user="mysql_user",
-            password="mysql_password",
+            credential=UsernamePasswordCredential(
+                username="mysql_user",
+                password="mysql_password",
+            ),
         ),
     )
     new_catalog.update_online_store("test_online_store")
     assert new_catalog.online_store_id == online_store.id
+    assert new_catalog.saved is True
+
+    new_catalog.update_online_store(None)
+    assert new_catalog.online_store_id is None
     assert new_catalog.saved is True
 
     # test update online store (non-saved object)
@@ -448,6 +454,8 @@ def test_info(new_catalog):
     expected_info = {
         "name": "grocery",
         "updated_at": None,
+        "feature_store_name": None,
+        "online_store_name": None,
     }
     assert info_dict.items() > expected_info.items(), info_dict
     assert "created_at" in info_dict, info_dict

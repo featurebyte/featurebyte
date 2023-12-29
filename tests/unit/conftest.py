@@ -1941,9 +1941,11 @@ def mysql_online_store_config_fixture():
         "details": MySQLOnlineStoreDetails(
             host="mysql_host",
             database="mysql_database",
-            user="mysql_user",
-            password="mysql_password",
             port=3306,
+            credential=UsernamePasswordCredential(
+                username="mysql_user",
+                password="mysql_password",
+            ),
         ).dict(),
     }
 

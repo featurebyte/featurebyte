@@ -47,14 +47,6 @@ class FeatureStoreInfo(BaseInfo):
     database_details: DatabaseDetails
 
 
-class OnlineStoreInfo(BaseInfo):
-    """
-    OnlineStore in schema
-    """
-
-    details: OnlineStoreDetails
-
-
 class EntityBriefInfo(BaseBriefInfo):
     """
     Entity brief info schema
@@ -383,6 +375,9 @@ class CatalogInfo(CatalogBriefInfo, BaseInfo):
     Catalog info schema
     """
 
+    feature_store_name: Optional[str]
+    online_store_name: Optional[str]
+
 
 class CredentialBriefInfo(BaseBriefInfo):
     """
@@ -534,3 +529,12 @@ class ContextInfo(BaseInfo):
     default_eda_table: Optional[str] = None
     default_preview_table: Optional[str] = None
     associated_use_cases: Optional[List[str]] = None
+
+
+class OnlineStoreInfo(BaseInfo):
+    """
+    OnlineStore in schema
+    """
+
+    details: OnlineStoreDetails
+    catalogs: List[CatalogBriefInfo]

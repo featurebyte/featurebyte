@@ -50,7 +50,7 @@ class TestOnlineStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
             payload["_id"] = str(ObjectId())
             payload["name"] = f'{self.payload["name"]}_{i}'
             payload["details"] = {
-                key: f"{value}_{i}" if key != "type" else value
+                key: f"{value}_{i}" if key not in ["type", "credential"] else value
                 for key, value in self.payload["details"].items()
             }
             yield payload
@@ -64,7 +64,6 @@ class TestOnlineStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
         response = test_api_client.get(f"{self.base_route}/{doc_id}/info")
         assert response.status_code == HTTPStatus.OK, response.text
         response_dict = response.json()
-        print(response_dict)
         assert (
             response_dict.items()
             > {
@@ -74,9 +73,12 @@ class TestOnlineStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
                     "type": "mysql",
                     "host": "mysql_host",
                     "database": "mysql_database",
-                    "user": "mysql_user",
-                    "password": "mysql_password",
                     "port": 3306,
+                    "credential": {
+                        "type": "USERNAME_PASSWORD",
+                        "username": "mysql_user",
+                        "password": "mysql_password",
+                    },
                 },
             }.items()
         )
@@ -94,9 +96,12 @@ class TestOnlineStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
             "type": "mysql",
             "host": "mysql_host",
             "database": "mysql_database",
-            "user": "mysql_user",
-            "password": "mysql_password_new",
             "port": 3307,
+            "credential": {
+                "type": "USERNAME_PASSWORD",
+                "username": "mysql_user",
+                "password": "mysql_password",
+            },
         }
 
         response = test_api_client.patch(
@@ -139,7 +144,7 @@ class TestOnlineStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
         assert response.status_code == HTTPStatus.CREATED, response.json()
         catalog_id = response.json()["_id"]
         response = test_api_client.patch(
-            f"/catalog/{catalog_id}", json={"online_store_id": online_store_id}
+            f"/catalog/{catalog_id}/online_store", json={"online_store_id": online_store_id}
         )
         assert response.status_code == HTTPStatus.OK, response.json()
 

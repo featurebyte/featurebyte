@@ -347,14 +347,14 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         self.update(update_payload={"name": name}, allow_update_local=True)
 
     @typechecked
-    def update_online_store(self, online_store_name: str) -> None:
+    def update_online_store(self, online_store_name: Optional[str]) -> None:
         """
-        Updates the catalog online store.
+        Updates online store for the catalog.
 
         Parameters
         ----------
-        online_store_name: str
-            New catalog online store name.
+        online_store_name: Optional[str]
+            Name of online store to use, or None to disable online serving for the catalog.
 
         Examples
         --------
@@ -364,9 +364,16 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         'mysql_online_store'
         """
         assert self.saved, "Catalog must be saved before updating online store"
-        online_store = OnlineStore.get(online_store_name)
+        if not online_store_name:
+            online_store_id = None
+        else:
+            online_store = OnlineStore.get(online_store_name)
+            online_store_id = str(online_store.id)
         self.update(
-            update_payload={"online_store_id": str(online_store.id)}, allow_update_local=True
+            update_payload={"online_store_id": online_store_id},
+            url=f"{self._route}/{self.id}/online_store",
+            allow_update_local=True,
+            skip_update_schema_check=True,
         )
 
     @property

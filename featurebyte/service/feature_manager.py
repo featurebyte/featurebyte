@@ -15,8 +15,8 @@ from featurebyte.common.date_util import get_next_job_datetime
 from featurebyte.exception import DocumentNotFoundError
 from featurebyte.feature_manager.sql_template import tm_feature_tile_monitor
 from featurebyte.logging import get_logger
-from featurebyte.models.online_store import OnlineFeatureSpec
 from featurebyte.models.online_store_compute_query import OnlineStoreComputeQueryModel
+from featurebyte.models.online_store_spec import OnlineFeatureSpec
 from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.online_store_cleanup_scheduler import OnlineStoreCleanupSchedulerService
