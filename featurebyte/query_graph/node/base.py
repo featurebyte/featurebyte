@@ -1057,6 +1057,20 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
             node_inputs, var_name_generator, ClassEnum.PD_TIMESTAMP, self.generate_expression
         )
 
+    def _generate_odfv_expression_with_null_value_handling_for_single_input(
+        self, left_operand: str, right_operand: str
+    ) -> str:
+        expr = self.generate_odfv_expression(left_operand, right_operand)
+        where_expr = f"np.where(pd.isna({left_operand}), np.nan, {expr})"
+        return f"pd.Series({where_expr}, index={left_operand}.index)"
+
+    def _generate_odfv_expression_with_null_value_handling(
+        self, left_operand: str, right_operand: str
+    ) -> str:
+        expr = self.generate_odfv_expression(left_operand, right_operand)
+        where_expr = f"np.where(pd.isna({left_operand}) | pd.isna({right_operand}), np.nan, {expr})"
+        return f"pd.Series({where_expr}, index={left_operand}.index)"
+
     def _derive_on_demand_view_code(
         self,
         node_inputs: List[VarNameExpressionInfo],
@@ -1064,12 +1078,23 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         _ = config
+        generate_expression_func = self._generate_odfv_expression_with_null_value_handling
+        if len(node_inputs) == 1:
+            generate_expression_func = (
+                self._generate_odfv_expression_with_null_value_handling_for_single_input
+            )
         return self._derive_python_code(
             node_inputs=node_inputs,
             var_name_generator=var_name_generator,
             to_timestamp_func="pd.Timestamp",
-            generate_expression_func=self.generate_odfv_expression,
+            generate_expression_func=generate_expression_func,
         )
+
+    def _generate_odf_expression_with_null_value_handling_for_single_input(
+        self, left_operand: str, right_operand: str
+    ) -> str:
+        expr = self.generate_odf_expression(left_operand, right_operand)
+        return f"np.nan if pd.isna({left_operand}) else {expr}"
 
     def _generate_odf_expression_with_null_value_handling(
         self, left_operand: str, right_operand: str
@@ -1084,26 +1109,42 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
         config: OnDemandFunctionCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         _ = config
+        generate_expression_func = self._generate_odf_expression_with_null_value_handling
+        if len(node_inputs) == 1:
+            generate_expression_func = (
+                self._generate_odf_expression_with_null_value_handling_for_single_input
+            )
         return self._derive_python_code(
             node_inputs=node_inputs,
             var_name_generator=var_name_generator,
             to_timestamp_func="pd.Timestamp",
-            generate_expression_func=self._generate_odf_expression_with_null_value_handling,
+            generate_expression_func=generate_expression_func,
         )
 
 
-class BinaryLogicalOpNode(BaseSeriesOutputWithAScalarParamNode):
+class BinaryOpWithBoolOutputNode(BaseSeriesOutputWithAScalarParamNode):
     """BinaryLogicalOpNode class"""
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.BOOL
 
+    def _generate_odfv_expression_with_null_value_handling_for_single_input(
+        self, left_operand: str, right_operand: str
+    ) -> str:
+        # explicitly convert the result to bool type
+        expr = super()._generate_odfv_expression_with_null_value_handling_for_single_input(
+            left_operand, right_operand
+        )
+        return f"{expr}.apply(lambda x: np.nan if pd.isna(x) else bool(x))"
 
-class BinaryRelationalOpNode(BaseSeriesOutputWithAScalarParamNode):
-    """BinaryRelationalOpNode class"""
-
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.BOOL
+    def _generate_odfv_expression_with_null_value_handling(
+        self, left_operand: str, right_operand: str
+    ) -> str:
+        # explicitly convert the result to bool type
+        expr = super()._generate_odfv_expression_with_null_value_handling(
+            left_operand, right_operand
+        )
+        return f"{expr}.apply(lambda x: np.nan if pd.isna(x) else bool(x))"
 
 
 class BinaryArithmeticOpNode(BaseSeriesOutputWithAScalarParamNode):

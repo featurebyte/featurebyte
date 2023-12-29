@@ -277,6 +277,7 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
             code_generator.add_statements(statements=[statements])
 
         codes = code_generator.generate(
+            to_format=True,
             input_df_name=input_df_name,
             output_df_name=output_df_name,
             function_name=function_name,
@@ -286,7 +287,6 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
     def _generate_on_demand_feature_function_code_state(
         self,
         output_dtype: DBVarType,
-        generate_full_code: bool = False,
         sql_function_name: str = "odf_func",
         sql_input_var_prefix: str = "x",
         sql_request_input_var_prefix: str = "r",
@@ -303,7 +303,6 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
         node = self.graph.get_node_by_name(self.node_name)
         codegen_state = OnDemandFeatureFunctionExtractor(graph=self.graph).extract(
             node=node,
-            generate_full_code=generate_full_code,
             sql_function_name=sql_function_name,
             sql_input_var_prefix=sql_input_var_prefix,
             sql_request_input_var_prefix=sql_request_input_var_prefix,
@@ -318,7 +317,7 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
     def generate_on_demand_feature_function_code(
         self,
         output_dtype: DBVarType,
-        generate_full_code: bool = False,
+        to_sql: bool = False,
         sql_function_name: str = "odf_func",
         sql_input_var_prefix: str = "x",
         sql_request_input_var_prefix: str = "r",
@@ -334,8 +333,8 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
         ----------
         output_dtype: DBVarType
             Output dtype of the on demand feature
-        generate_full_code: bool
-            Whether to generate full code, full code includes the SQL function code used to register the UDF
+        to_sql: bool
+            Whether to generate SQL code (True) or Python code (False)
         sql_function_name: str
             SQL function name (only used when generate_full_code is True)
         sql_input_var_prefix: str
@@ -357,7 +356,6 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
         """
         codegen_state = self._generate_on_demand_feature_function_code_state(
             output_dtype=output_dtype,
-            generate_full_code=generate_full_code,
             sql_function_name=sql_function_name,
             sql_input_var_prefix=sql_input_var_prefix,
             sql_request_input_var_prefix=sql_request_input_var_prefix,
@@ -366,4 +364,4 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
             input_var_prefix=input_var_prefix,
             request_input_var_prefix=request_input_var_prefix,
         )
-        return codegen_state.generate_code()
+        return codegen_state.generate_code(to_sql=to_sql)

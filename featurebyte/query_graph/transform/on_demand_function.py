@@ -69,9 +69,14 @@ class OnDemandFeatureFunctionGlobalState(BaseModel):
             py_type=py_type, column_name=column_name
         )
 
-    def generate_code(self) -> str:
+    def generate_code(self, to_sql: bool = False) -> str:
         """
         Generate code
+
+        Parameters
+        ----------
+        to_sql: bool
+            Whether to generate SQL code (True) or Python code (False)
 
         Returns
         -------
@@ -95,17 +100,27 @@ class OnDemandFeatureFunctionGlobalState(BaseModel):
             py_comments.append(f"# {input_arg_name}: {input_info.column_name}")
             input_arg_names.append(sql_param)
 
-        return self.code_generator.generate(
+        function_codes = self.code_generator.generate(
+            to_format=True,
             py_function_name=codegen_config.function_name,
             py_function_params=", ".join(py_func_params),
             py_return_type=codegen_config.return_type,
             py_comment="\n".join(py_comments),
-            sql_function_name=codegen_config.sql_function_name,
-            sql_function_params=", ".join(sql_func_params),
-            sql_return_type=codegen_config.sql_return_type,
-            sql_comment=codegen_config.sql_comment,
-            input_arguments=", ".join(input_arg_names),
         )
+
+        if to_sql:
+            code_generator = CodeGenerator(template="on_demand_function_sql.tpl")
+            return code_generator.generate(
+                sql_function_name=codegen_config.sql_function_name,
+                sql_function_params=", ".join(sql_func_params),
+                sql_return_type=codegen_config.sql_return_type,
+                sql_comment=codegen_config.sql_comment,
+                input_arguments=", ".join(input_arg_names),
+                py_function_name=codegen_config.function_name,
+                py_function_body=function_codes.strip(),
+            )
+
+        return function_codes
 
 
 class OnDemandFeatureFunctionExtractor(
@@ -201,15 +216,10 @@ class OnDemandFeatureFunctionExtractor(
         OnDemandFeatureFunctionGlobalState
             On demand function global state
         """
-        generate_full_code = kwargs.pop("generate_full_code", False)
-        code_template = (
-            "on_demand_function_full.tpl" if generate_full_code else "on_demand_function.tpl"
-        )
         code_generation_config = OnDemandFunctionCodeGenConfig(**kwargs)
         global_state = OnDemandFeatureFunctionGlobalState(
             code_generation_config=code_generation_config,
             var_name_generator=VariableNameGenerator(one_based=True),
-            code_generator=CodeGenerator(template=code_template),
         )
         output_expr = self._extract(
             node=node,

@@ -13,7 +13,7 @@ from enum import Enum
 
 from black import FileMode, format_str
 from bson import ObjectId
-from jinja2 import Environment, FileSystemLoader, Template
+from jinja2 import Environment, FileSystemLoader, Template, select_autoescape
 from pydantic import BaseModel, Field
 
 from featurebyte.models.base import PydanticObjectId
@@ -499,7 +499,10 @@ class CodeGenerator(BaseModel):
 
     def _get_template(self) -> Template:
         template_path = os.path.join(os.path.dirname(__file__), "templates")
-        env = Environment(loader=FileSystemLoader(template_path), autoescape=True)
+        env = Environment(
+            loader=FileSystemLoader(template_path),
+            autoescape=select_autoescape(enabled_extensions=("html", "xml")),
+        )
         template = env.get_template(self.template)
         return template
 

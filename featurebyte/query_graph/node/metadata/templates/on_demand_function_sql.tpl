@@ -3,7 +3,7 @@ RETURNS {{sql_return_type}}
 LANGUAGE PYTHON
 COMMENT '{{sql_comment}}'
 AS $$
-{% include 'on_demand_function.tpl' %}
+{{ py_function_body }}
 
 return {{py_function_name}}({{input_arguments}})
 $$

@@ -209,26 +209,7 @@ def test_code_generator__on_demand_view():
     )
 
 
-@pytest.fixture(name="on_demand_function_generate_kwargs")
-def fixture_on_demand_function_generate_kwargs():
-    """Fixture for on_demand_function_generate_kwargs"""
-    return dict(
-        py_function_name="on_demand_feature_func",
-        py_function_params="input1: float",
-        py_return_type="float",
-        py_comment="# This is a comment",
-        output_var_name="output",
-        # external function parameters
-        sql_function_name="ml.feature_engineering.on_demand_func",
-        sql_function_params="x1 FLOAT",
-        sql_return_type="FLOAT",
-        sql_comment="On demand function used for feature engineering",
-        # input arguments from external function to call function
-        input_arguments="x1",
-    )
-
-
-def test_code_generator__on_demand_function(on_demand_function_generate_kwargs):
+def test_code_generator__on_demand_function():
     """Test CodeGenerator for on-demand function template"""
     code_gen = CodeGenerator(template="on_demand_function.tpl")
     code_gen.add_statements(
@@ -237,9 +218,15 @@ def test_code_generator__on_demand_function(on_demand_function_generate_kwargs):
             (StatementStr("return feat")),
         ],
     )
-    codes = code_gen.generate(**on_demand_function_generate_kwargs)
+    py_codes = code_gen.generate(
+        py_function_name="on_demand_feature_func",
+        py_function_params="input1: float",
+        py_return_type="float",
+        py_comment="# This is a comment",
+        output_var_name="output",
+    ).strip()
     assert (
-        codes.strip()
+        py_codes.strip()
         == textwrap.dedent(
             """
         import json
@@ -256,19 +243,18 @@ def test_code_generator__on_demand_function(on_demand_function_generate_kwargs):
         ).strip()
     )
 
-
-def test_code_generator__on_demand_function_full(on_demand_function_generate_kwargs):
-    """Test CodeGenerator for on-demand function template"""
-    code_gen = CodeGenerator(template="on_demand_function_full.tpl")
-    code_gen.add_statements(
-        statements=[
-            (VariableNameStr("feat"), ExpressionStr("input1 + 1")),
-            (StatementStr("return feat")),
-        ],
+    code_gen = CodeGenerator(template="on_demand_function_sql.tpl")
+    sql_codes = code_gen.generate(
+        sql_function_name="ml.feature_engineering.on_demand_func",
+        sql_function_params="x1 FLOAT",
+        sql_return_type="FLOAT",
+        sql_comment="On demand function used for feature engineering",
+        py_function_name="on_demand_feature_func",
+        input_arguments="x1",
+        py_function_body=py_codes,
     )
-    codes = code_gen.generate(**on_demand_function_generate_kwargs)
     assert (
-        codes.strip()
+        sql_codes.strip()
         == textwrap.dedent(
             """
             CREATE FUNCTION ml.feature_engineering.on_demand_func(x1 FLOAT)

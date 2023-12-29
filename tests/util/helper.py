@@ -675,7 +675,6 @@ def check_on_demand_feature_code_generation(feature_model, skip_odf_check=False)
 
     odff_code_state = offline_store_info._generate_on_demand_feature_function_code_state(
         output_dtype=feature_model.dtype,
-        generate_full_code=False,
     )
 
     # check the generated code can be executed successfully
