@@ -637,7 +637,9 @@ def check_on_demand_feature_function_code_execution(odff_code_state, df):
         raise e
 
 
-def check_on_demand_feature_code_generation(feature_model, skip_odf_check=False):
+def check_on_demand_feature_code_generation(
+    feature_model, skip_odf_check=False, sql_fixture_path=None, update_fixtures=False
+):
     """Check on demand feature view code generation"""
     offline_store_info = feature_model.offline_store_info
     assert offline_store_info.is_decomposed, "OfflineStoreInfo is not decomposed"
@@ -682,6 +684,19 @@ def check_on_demand_feature_code_generation(feature_model, skip_odf_check=False)
 
     # check the consistency between on demand feature view & on demand feature function
     pd.testing.assert_series_equal(odfv_output[exp_col_name], odff_output, check_names=False)
+
+    # check generated sql code
+    if sql_fixture_path:
+        odff_codes = offline_store_info.generate_on_demand_feature_function_code(
+            output_dtype=feature_model.dtype, to_sql=True
+        )
+        if update_fixtures:
+            with open(sql_fixture_path, mode="w", encoding="utf-8") as file_handle:
+                file_handle.write(odff_codes)
+        else:
+            with open(sql_fixture_path, mode="r", encoding="utf-8") as file_handle:
+                expected = file_handle.read()
+                assert expected.strip() == odff_codes.strip(), odff_codes
 
 
 async def deploy_feature(app_container, feature, return_type="feature"):

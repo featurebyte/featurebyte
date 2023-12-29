@@ -72,18 +72,16 @@ def test_derive_on_demand_function(node, expected_odfv_expr, expected_odff_expr)
     """Test derive_on_demand_view_code"""
     node_inputs = [VariableNameStr("feat1"), VariableNameStr("feat2")]
 
-    odfv_config = OnDemandViewCodeGenConfig()
     odfv_stats, odfv_out_var = node.derive_on_demand_view_code(
         node_inputs=node_inputs,
         var_name_generator=VariableNameGenerator(),
-        config=odfv_config,
+        config=OnDemandViewCodeGenConfig(),
     )
 
-    odff_config = OnDemandFunctionCodeGenConfig(output_dtype=DBVarType.FLOAT)
     odff_stats, odff_out_var = node.derive_on_demand_function_code(
         node_inputs=[VariableNameStr("feat1"), VariableNameStr("feat2")],
         var_name_generator=VariableNameGenerator(),
-        config=odff_config,
+        config=OnDemandFunctionCodeGenConfig(output_dtype=DBVarType.FLOAT),
     )
 
     assert odfv_out_var == "feat"
@@ -117,21 +115,19 @@ def test_derive_on_demand_function__isin_node():
     node = IsInNode(**NODE_PARAMS)
     node_inputs = [VariableNameStr("feat1"), VariableNameStr("feat2")]
 
-    odfv_config = OnDemandViewCodeGenConfig()
     odfv_stats, odfv_out_var = node.derive_on_demand_view_code(
         node_inputs=node_inputs,
         var_name_generator=VariableNameGenerator(),
-        config=odfv_config,
+        config=OnDemandViewCodeGenConfig(),
     )
     expected_odfv_expr = "feat1.combine(feat2, lambda x, y: False if pd.isna(x) or not isinstance(y, list) else x in y)"
     assert odfv_out_var == "feat"
     assert odfv_stats == [("feat", expected_odfv_expr)]
 
-    odff_config = OnDemandFunctionCodeGenConfig(output_dtype=DBVarType.FLOAT)
     odff_stats, odff_out_var = node.derive_on_demand_function_code(
         node_inputs=[VariableNameStr("feat1"), VariableNameStr("feat2")],
         var_name_generator=VariableNameGenerator(),
-        config=odff_config,
+        config=OnDemandFunctionCodeGenConfig(output_dtype=DBVarType.FLOAT),
     )
     expected_odff_expr = (
         "False if pd.isna(feat1) or not isinstance(feat2, list) else feat1 in feat2"
@@ -153,7 +149,7 @@ def test_derive_on_demand_function__isin_node():
     odfv_stats, odfv_out_var = node.derive_on_demand_view_code(
         node_inputs=node_inputs[:1],
         var_name_generator=VariableNameGenerator(),
-        config=odfv_config,
+        config=OnDemandViewCodeGenConfig(),
     )
     expected_odfv_expr = (
         "pd.Series(np.where(pd.isna(feat1), np.nan, feat1.isin([1, 3])), index=feat1.index)"
@@ -165,7 +161,7 @@ def test_derive_on_demand_function__isin_node():
     odff_stats, odff_out_var = node.derive_on_demand_function_code(
         node_inputs=node_inputs[:1],
         var_name_generator=VariableNameGenerator(),
-        config=odff_config,
+        config=OnDemandFunctionCodeGenConfig(output_dtype=DBVarType.FLOAT),
     )
     expected_odff_expr = "np.nan if pd.isna(feat1) else feat1 in [1, 3]"
     assert odff_out_var == "feat"

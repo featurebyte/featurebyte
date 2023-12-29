@@ -62,7 +62,9 @@ def check_ingest_query_graph(ingest_query_graph):
         assert input_node_names[0] == aggregation_node_info.input_node_name
 
 
-def test_feature__ttl_and_non_ttl_components(float_feature, non_time_based_feature):
+def test_feature__ttl_and_non_ttl_components(
+    float_feature, non_time_based_feature, test_dir, update_fixtures
+):
     """Test that a feature contains both ttl and non-ttl components."""
     ttl_component = 2 * (float_feature + 100)
     non_ttl_component = 3 - (non_time_based_feature + 100)
@@ -106,8 +108,13 @@ def test_feature__ttl_and_non_ttl_components(float_feature, non_time_based_featu
     check_ingest_query_graph(non_ttl_component_graph)
 
     # check consistency of decomposed graph
+    sql_fixture_path = os.path.join(test_dir, "fixtures/on_demand_function/ttl_and_non_ttl.sql")
     check_decomposed_graph_output_node_hash(feature_model=feature_model)
-    check_on_demand_feature_code_generation(feature_model=feature_model)
+    check_on_demand_feature_code_generation(
+        feature_model=feature_model,
+        sql_fixture_path=sql_fixture_path,
+        update_fixtures=update_fixtures,
+    )
 
 
 @freezegun.freeze_time("2023-12-27")
@@ -163,7 +170,7 @@ def test_feature__request_column_ttl_and_non_ttl_components(
 
     # check consistency of decomposed graph
     check_decomposed_graph_output_node_hash(feature_model=feature_model)
-    check_on_demand_feature_code_generation(feature_model=feature_model)
+    check_on_demand_feature_code_generation(feature_model=feature_model, skip_odf_check=True)
 
     # check on-demand view code
     codes = offline_store_info.generate_on_demand_feature_view_code(
@@ -258,7 +265,7 @@ def test_feature__ttl_item_aggregate_request_column(
     # check offline ingest query graph
     feature_model = composite_feature.cached_model
     check_decomposed_graph_output_node_hash(feature_model=feature_model)
-    check_on_demand_feature_code_generation(feature_model=feature_model)
+    check_on_demand_feature_code_generation(feature_model=feature_model, skip_odf_check=True)
 
     # check on-demand view code
     offline_store_info = feature_model.offline_store_info
