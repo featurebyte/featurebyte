@@ -55,6 +55,18 @@ def lookup_graph_and_node_same_input(scd_lookup_feature):
     return graph, lookup_node
 
 
+@pytest.fixture
+def item_aggregate_graph_and_node(filtered_non_time_based_feature):
+    """
+    Fixture for an item aggregate node
+    """
+    graph = filtered_non_time_based_feature.graph
+    item_aggregate_node = get_node_from_feature(
+        filtered_non_time_based_feature, NodeType.ITEM_GROUPBY
+    )
+    return graph, item_aggregate_node
+
+
 def test_lookup_feature(catalog, lookup_graph_and_node):
     """
     Test lookup feature's universe
@@ -90,7 +102,7 @@ def test_lookup_feature(catalog, lookup_graph_and_node):
 
 def test_aggregate_asat_universe(catalog, aggregate_asat_graph_and_node):
     """
-    Test lookup feature's universe
+    Test aggregate as-at feature's universe
     """
     _ = catalog
     graph, node = aggregate_asat_graph_and_node
@@ -115,6 +127,62 @@ def test_aggregate_asat_universe(catalog, aggregate_asat_graph_and_node):
           WHERE
             "effective_timestamp" >= __fb_last_materialized_timestamp
             AND "effective_timestamp" < __fb_current_feature_timestamp
+        )
+        """
+    ).strip()
+    assert constructor.get_entity_universe_template().sql(pretty=True) == expected
+
+
+def test_item_aggregate_universe(catalog, item_aggregate_graph_and_node):
+    """
+    Test item aggregate feature's universe
+    """
+    _ = catalog
+    graph, node = item_aggregate_graph_and_node
+    constructor = get_entity_universe_constructor(graph, node, SourceType.SNOWFLAKE)
+    expected = textwrap.dedent(
+        """
+        SELECT DISTINCT
+          "event_id_col" AS "transaction_id"
+        FROM (
+          SELECT
+            L."event_id_col" AS "event_id_col",
+            L."item_id_col" AS "item_id_col",
+            L."item_type" AS "item_type",
+            L."item_amount" AS "item_amount",
+            L."created_at" AS "created_at",
+            L."event_timestamp" AS "event_timestamp",
+            R."event_timestamp" AS "event_timestamp_event_table"
+          FROM (
+            SELECT
+              "event_id_col" AS "event_id_col",
+              "item_id_col" AS "item_id_col",
+              "item_type" AS "item_type",
+              "item_amount" AS "item_amount",
+              "created_at" AS "created_at",
+              "event_timestamp" AS "event_timestamp"
+            FROM "sf_database"."sf_schema"."items_table"
+          ) AS L
+          INNER JOIN (
+            SELECT
+              "col_int" AS "col_int",
+              "col_float" AS "col_float",
+              "col_char" AS "col_char",
+              "col_text" AS "col_text",
+              "col_binary" AS "col_binary",
+              "col_boolean" AS "col_boolean",
+              "event_timestamp" AS "event_timestamp",
+              "cust_id" AS "cust_id"
+            FROM "sf_database"."sf_schema"."sf_table"
+            WHERE
+              "event_timestamp" >= __fb_last_materialized_timestamp
+              AND "event_timestamp" < __fb_current_feature_timestamp
+          ) AS R
+            ON L."event_id_col" = R."col_int"
+          WHERE
+            (
+              L."item_amount" > 10
+            )
         )
         """
     ).strip()

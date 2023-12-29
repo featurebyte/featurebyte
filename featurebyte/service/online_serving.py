@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional, Union
 
 import json
 import os
+import time
 from datetime import datetime
 
 import pandas as pd
@@ -18,6 +19,7 @@ from featurebyte.exception import (
     UnsupportedRequestCodeTemplateLanguage,
 )
 from featurebyte.feast.service.feature_store import FeastFeatureStoreService
+from featurebyte.logging import get_logger
 from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.batch_request_table import BatchRequestTableModel
 from featurebyte.models.deployment import DeploymentModel
@@ -37,6 +39,8 @@ from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.table import TableService
+
+logger = get_logger(__name__)
 
 
 class OnlineServingService:  # pylint: disable=too-many-instance-attributes
@@ -197,7 +201,9 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
             for row in entity_rows:
                 row[SpecialColumnName.POINT_IN_TIME] = point_in_time_value
 
+        tic = time.time()
         feast_online_features = feast_store.get_online_features(feature_service, request_data)
+        logger.debug("Feast get_online_features took %f seconds", time.time() - tic)
 
         # Map feature names to the original names
         feature_docs = await self.feature_service.list_documents_as_dict(
