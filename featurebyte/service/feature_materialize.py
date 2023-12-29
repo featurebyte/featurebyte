@@ -233,23 +233,19 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
 
         # Feast online materialize
         feature_store = await self._get_feast_feature_store()
-        if feature_store is None:
-            return
-        materialize_partial(
-            feature_store=feature_store,
-            feature_view=feature_store.get_feature_view(feature_table_model.name),
-            columns=feature_table_model.output_column_names,
-            start_date=feature_table_model.last_materialized_at,
-            end_date=materialized_features.feature_timestamp,
-            with_feature_timestamp=feature_table_model.has_ttl,
-        )
+        if feature_store is not None:
+            materialize_partial(
+                feature_store=feature_store,
+                feature_view=feature_store.get_feature_view(feature_table_model.name),
+                columns=feature_table_model.output_column_names,
+                start_date=feature_table_model.last_materialized_at,
+                end_date=materialized_features.feature_timestamp,
+                with_feature_timestamp=feature_table_model.has_ttl,
+            )
 
         # Update last materialized timestamp
-        update_schema = LastMaterializedAtUpdate(
-            last_materialized_at=materialized_features.feature_timestamp
-        )
-        await self.offline_store_feature_table_service.update_document(
-            document_id=feature_table_model.id, data=update_schema
+        await self._update_feature_table_last_materialized_at(
+            feature_table_model, materialized_features
         )
 
     async def initialize_new_columns(
@@ -287,6 +283,9 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
                     session,
                     feature_table_model,
                     materialized_features,
+                )
+                await self._update_feature_table_last_materialized_at(
+                    feature_table_model, materialized_features
                 )
                 materialize_end_date = materialized_features.feature_timestamp
             else:
@@ -353,6 +352,18 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
             schema_name=session.schema_name,
             database_name=session.database_name,
             if_exists=True,
+        )
+
+    async def _update_feature_table_last_materialized_at(
+        self,
+        feature_table_model: OfflineStoreFeatureTableModel,
+        materialized_features: MaterializedFeatures,
+    ) -> None:
+        update_schema = LastMaterializedAtUpdate(
+            last_materialized_at=materialized_features.feature_timestamp
+        )
+        await self.offline_store_feature_table_service.update_document(
+            document_id=feature_table_model.id, data=update_schema
         )
 
     async def _get_feast_feature_store(self) -> Optional[FeastFeatureStore]:

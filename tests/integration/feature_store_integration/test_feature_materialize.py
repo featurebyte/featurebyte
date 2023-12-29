@@ -222,32 +222,51 @@ async def offline_store_feature_tables_fixture(app_container, deployed_feature_l
     async for feature_table in app_container.offline_store_feature_table_service.list_documents_iterator(
         query_filter={},
     ):
-        primary_entity_to_feature_table[
-            tuple(sorted(feature_table.primary_entity_ids))
-        ] = feature_table
+        primary_entity_to_feature_table[feature_table.name] = feature_table
     return primary_entity_to_feature_table
+
+
+@pytest.fixture(name="user_entity_ttl_feature_table")
+def user_entity_ttl_feature_table_fixture(offline_store_feature_tables):
+    """
+    Return the user entity feature table
+    """
+    return offline_store_feature_tables["fb_entity_userid_fjs_3600_1800_1800_ttl"]
+
+
+@pytest.fixture(name="user_entity_non_ttl_feature_table")
+def user_entity_non_ttl_feature_table_fixture(offline_store_feature_tables):
+    """
+    Return the user entity feature table
+    """
+    return offline_store_feature_tables["fb_entity_userid_fjs_86400_0_0"]
+
+
+@pytest.fixture(name="expected_feature_table_names")
+def expected_feature_table_names_fixture():
+    """
+    Fixture for expected feature table names
+    """
+    return {
+        "fb_entity_overall_fjs_3600_1800_1800_ttl",
+        "fb_entity_product_action_fjs_3600_1800_1800_ttl",
+        "fb_entity_cust_id_fjs_3600_1800_1800_ttl",
+        "fb_entity_userid_fjs_3600_1800_1800_ttl",
+        "fb_entity_userid_fjs_86400_0_0",
+        "fb_entity_user_status_fjs_86400_0_0",
+        "fb_entity_order_id_fjs_86400_0_0",
+    }
 
 
 @pytest.mark.parametrize("source_type", ["snowflake", "databricks_unity"], indirect=True)
 def test_feature_tables_expected(
     offline_store_feature_tables,
-    user_entity,
-    customer_entity,
-    product_action_entity,
-    status_entity,
-    order_entity,
+    expected_feature_table_names,
 ):
     """
     Test offline store feature tables are created as expected
     """
-    assert set(offline_store_feature_tables.keys()) == {
-        (),
-        (user_entity.id,),
-        (customer_entity.id,),
-        (product_action_entity.id,),
-        (status_entity.id,),
-        (order_entity.id,),
-    }
+    assert set(offline_store_feature_tables.keys()) == expected_feature_table_names
 
 
 @pytest.mark.parametrize("source_type", ["snowflake", "databricks_unity"], indirect=True)
@@ -278,7 +297,7 @@ async def test_feature_tables_populated(session, offline_store_feature_tables):
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("deployed_feature_list")
-async def test_feast_registry(app_container):
+async def test_feast_registry(app_container, expected_feature_table_names):
     """
     Check feast registry is populated correctly
     """
@@ -289,15 +308,7 @@ async def test_feast_registry(app_container):
     )
 
     # Check feature views and feature services
-    assert {fv.name for fv in feature_store.list_feature_views()} == {
-        "fb_entity_overall_fjs_3600_1800_1800_ttl",
-        "fb_entity_product_action_fjs_3600_1800_1800_ttl",
-        "fb_entity_cust_id_fjs_3600_1800_1800_ttl",
-        "fb_entity_userid_fjs_3600_1800_1800_ttl",
-        "fb_entity_userid_fjs_86400_0_0",
-        "fb_entity_user_status_fjs_86400_0_0",
-        "fb_entity_order_id_fjs_86400_0_0",
-    }
+    assert {fv.name for fv in feature_store.list_feature_views()} == expected_feature_table_names
     assert {fs.name for fs in feature_store.list_feature_services()} == {"EXTERNAL_FS_FEATURE_LIST"}
 
     # Check feast materialize and get_online_features
@@ -487,19 +498,18 @@ def test_online_features(config, deployed_feature_list):
 
 @pytest.mark.parametrize("source_type", ["snowflake", "databricks_unity"], indirect=True)
 @pytest.mark.asyncio
-async def test_simulated_materialize(
+async def test_simulated_materialize__ttl_feature_table(
     app_container,
     session,
-    user_entity,
-    offline_store_feature_tables,
+    user_entity_ttl_feature_table,
     source_type,
 ):
     """
-    Test simulating scheduled feature materialization
+    Test simulating scheduled feature materialization for a feature table with TTL
     """
     # Check calling scheduled_materialize_features()
     service = app_container.feature_materialize_service
-    feature_table_model = offline_store_feature_tables[(user_entity.id,)]
+    feature_table_model = user_entity_ttl_feature_table
     await service.scheduled_materialize_features(feature_table_model=feature_table_model)
     df = await session.execute_query(
         sql_to_string(
@@ -563,6 +573,69 @@ async def test_simulated_materialize(
     assert df.shape[0] == 36
     assert df["__feature_timestamp"].nunique() == 4
     assert df["üser id"].isnull().sum() == 0
+
+
+async def reload_feature_table_model(app_container, feature_table_model):
+    """
+    Reload feature table model from persistent
+    """
+    feature_table_service = app_container.offline_store_feature_table_service
+    feature_table_model = await feature_table_service.get_document(feature_table_model.id)
+    return feature_table_model
+
+
+@pytest.mark.parametrize("source_type", ["snowflake", "databricks_unity"], indirect=True)
+@pytest.mark.asyncio
+async def test_simulated_materialize__non_ttl_feature_table(
+    app_container,
+    session,
+    user_entity_non_ttl_feature_table,
+):
+    """
+    Test simulating scheduled feature materialization for a feature table without TTL
+    """
+    feature_table_model = user_entity_non_ttl_feature_table
+    service = app_container.feature_materialize_service
+
+    df_0 = await session.execute_query(
+        sql_to_string(
+            parse_one(f'SELECT * FROM "{feature_table_model.name}"'), session.source_type
+        ),
+    )
+    version = get_version()
+    assert df_0.columns.tolist() == [
+        "__feature_timestamp",
+        "üser id",
+        f"User Status Feature_{version}",
+    ]
+    assert df_0.shape[0] == 4
+    assert df_0["__feature_timestamp"].nunique() == 1
+
+    # Trigger a materialization task after the feature table is created. This should materialize
+    # features for the entities that appear since deployment time (mocked above) till now.
+    feature_table_model = await reload_feature_table_model(app_container, feature_table_model)
+    await service.scheduled_materialize_features(feature_table_model=feature_table_model)
+    df_1 = await session.execute_query(
+        sql_to_string(
+            parse_one(f'SELECT * FROM "{feature_table_model.name}"'), session.source_type
+        ),
+    )
+    assert df_1.shape[0] == 13
+    assert df_1["__feature_timestamp"].nunique() == 2
+
+    # Materialize one more time. Since there is no new data that appears since the last
+    # materialization, the entity universe is empty. This shouldn't insert any new rows into the
+    # feature table.
+    feature_table_model = await reload_feature_table_model(app_container, feature_table_model)
+    await service.scheduled_materialize_features(feature_table_model=feature_table_model)
+    df_2 = await session.execute_query(
+        sql_to_string(
+            parse_one(f'SELECT * FROM "{feature_table_model.name}"'),
+            session.source_type,
+        )
+    )
+    assert df_2.shape[0] == df_1.shape[0]
+    assert df_2["__feature_timestamp"].nunique() == df_1["__feature_timestamp"].nunique()
 
 
 @pytest.mark.parametrize("source_type", ["databricks_unity"], indirect=True)
