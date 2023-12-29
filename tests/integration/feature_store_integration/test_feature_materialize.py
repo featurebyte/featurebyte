@@ -266,7 +266,7 @@ def test_feature_tables_expected(
     """
     Test offline store feature tables are created as expected
     """
-    assert set(offline_store_feature_tables.keys()) == expected_feature_table_names
+    assert set(offline_store_feature_tables.keys()) == set(expected_feature_table_names)
 
 
 @pytest.mark.parametrize("source_type", ["snowflake", "databricks_unity"], indirect=True)
@@ -590,7 +590,6 @@ async def test_simulated_materialize__non_ttl_feature_table(
     app_container,
     session,
     user_entity_non_ttl_feature_table,
-    source_type,
 ):
     """
     Test simulating scheduled feature materialization for a feature table without TTL
