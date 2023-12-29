@@ -50,25 +50,33 @@ class InputNode(TableNode):
             push_down_filter is not None
             and self.context.parameters["id"] == push_down_filter.event_table_id
         ):
+            if push_down_filter.start_timestamp_placeholder_name is None:
+                start_date_placeholder = InternalName.TILE_START_DATE_SQL_PLACEHOLDER.value
+            else:
+                start_date_placeholder = push_down_filter.start_timestamp_placeholder_name
+            if push_down_filter.end_timestamp_placeholder_name is None:
+                end_date_placeholder = InternalName.TILE_END_DATE_SQL_PLACEHOLDER.value
+            else:
+                end_date_placeholder = push_down_filter.end_timestamp_placeholder_name
+
+            def _maybe_cast(identifier_name: str) -> Expression:
+                assert push_down_filter is not None
+                if push_down_filter.to_cast_placeholders:
+                    return expressions.Cast(
+                        this=expressions.Identifier(this=identifier_name),
+                        to=expressions.DataType.build("TIMESTAMP"),
+                    )
+                return expressions.Identifier(this=identifier_name)
+
             select_expr = select_expr.where(
                 expressions.and_(
                     expressions.GTE(
                         this=quoted_identifier(push_down_filter.timestamp_column_name),
-                        expression=expressions.Cast(
-                            this=expressions.Identifier(
-                                this=InternalName.TILE_START_DATE_SQL_PLACEHOLDER
-                            ),
-                            to=expressions.DataType.build("TIMESTAMP"),
-                        ),
+                        expression=_maybe_cast(start_date_placeholder),
                     ),
                     expressions.LT(
                         this=quoted_identifier(push_down_filter.timestamp_column_name),
-                        expression=expressions.Cast(
-                            this=expressions.Identifier(
-                                this=InternalName.TILE_END_DATE_SQL_PLACEHOLDER
-                            ),
-                            to=expressions.DataType.build("TIMESTAMP"),
-                        ),
+                        expression=_maybe_cast(end_date_placeholder),
                     ),
                 )
             )

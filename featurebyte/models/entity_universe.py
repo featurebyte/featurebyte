@@ -19,6 +19,9 @@ from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import AggregateAsAtNode, ItemGroupbyNode, LookupNode
+from featurebyte.query_graph.node.input import EventTableInputNodeParameters
+from featurebyte.query_graph.node.nested import ItemViewGraphNodeParameters
+from featurebyte.query_graph.sql.ast.base import EventTableTimestampFilter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import SQLType, quoted_identifier
@@ -44,7 +47,15 @@ class BaseEntityUniverseConstructor:
         self.graph = flat_graph
         self.node = flat_node
 
-        sql_graph = SQLOperationGraph(self.graph, SQLType.AGGREGATION, source_type=source_type)
+        sql_graph = SQLOperationGraph(
+            self.graph,
+            SQLType.AGGREGATION,
+            source_type=source_type,
+            event_table_timestamp_filter=self.get_event_table_timestamp_filter(
+                graph=graph,
+                node=node,
+            ),
+        )
         sql_node = sql_graph.build(self.node)
         self.aggregate_input_expr = sql_node.sql
 
@@ -54,6 +65,29 @@ class BaseEntityUniverseConstructor:
         Returns a SQL expression for the universe of the entity with placeholders for current
         feature timestamp and last materialization timestamp
         """
+
+    @classmethod
+    def get_event_table_timestamp_filter(  # pylint: disable=useless-return
+        cls, graph: QueryGraphModel, node: Node
+    ) -> Optional[EventTableTimestampFilter]:
+        """
+        Construct an instance of EventTableTimestampFilter used to filter input EventTable when
+        applicable. To be passed to SQLOperationGraph when constructing aggregate input expression
+
+        Parameters
+        ----------
+        graph: QueryGraphModel
+            Query graph before flattening
+        node: Node
+            Node corresponding to the aggregation node
+
+        Returns
+        -------
+        Optional[EventTableTimestampFilter]
+        """
+        _ = graph
+        _ = node
+        return None
 
 
 class LookupNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
@@ -141,22 +175,44 @@ class ItemAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
     Construct the entity universe expression for item aggregate node
     """
 
+    @classmethod
+    def get_event_table_timestamp_filter(
+        cls, graph: QueryGraphModel, node: Node
+    ) -> Optional[EventTableTimestampFilter]:
+        # Find the graph node corresponding to the ItemView. From that graph node's parameters we
+        # can get the EventTable's id corresponding to this ItemView.
+        graph_node = None
+        event_table_id = None
+        for graph_node in graph.iterate_nodes(node, NodeType.GRAPH):
+            if isinstance(graph_node.parameters, ItemViewGraphNodeParameters):
+                event_table_id = graph_node.parameters.metadata.event_table_id
+                break
+        assert graph_node is not None
+        assert event_table_id is not None
+
+        # Get the EventTable's event timestamp column
+        event_timestamp_column = None
+        for input_node in graph.iterate_nodes(graph_node, NodeType.INPUT):
+            if (
+                isinstance(input_node.parameters, EventTableInputNodeParameters)
+                and input_node.parameters.id == event_table_id
+            ):
+                event_timestamp_column = input_node.parameters.timestamp_column
+                break
+        assert event_timestamp_column is not None
+
+        # Construct a filter to be applied to the EventTable
+        event_table_timestamp_filter = EventTableTimestampFilter(
+            timestamp_column_name=event_timestamp_column,
+            event_table_id=event_table_id,
+            start_timestamp_placeholder_name=LAST_MATERIALIZED_TIMESTAMP_PLACEHOLDER,
+            end_timestamp_placeholder_name=CURRENT_FEATURE_TIMESTAMP_PLACEHOLDER,
+            to_cast_placeholders=False,
+        )
+        return event_table_timestamp_filter
+
     def get_entity_universe_template(self) -> Expression:
         node = cast(ItemGroupbyNode, self.node)
-
-        ts_col = node.parameters.event_timestamp_column_name
-        assert ts_col is not None
-        filtered_aggregate_input_expr = self.aggregate_input_expr.where(
-            expressions.and_(
-                expressions.GTE(
-                    this=quoted_identifier(ts_col),
-                    expression=LAST_MATERIALIZED_TIMESTAMP_PLACEHOLDER,
-                ),
-                expressions.LT(
-                    this=quoted_identifier(ts_col), expression=CURRENT_FEATURE_TIMESTAMP_PLACEHOLDER
-                ),
-            )
-        )
         universe_expr = (
             select(
                 *[
@@ -167,7 +223,7 @@ class ItemAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
                 ]
             )
             .distinct()
-            .from_(filtered_aggregate_input_expr.subquery())
+            .from_(self.aggregate_input_expr.subquery())
         )
         return universe_expr
 

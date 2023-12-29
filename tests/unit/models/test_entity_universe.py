@@ -56,12 +56,14 @@ def lookup_graph_and_node_same_input(scd_lookup_feature):
 
 
 @pytest.fixture
-def item_aggregate_graph_and_node(non_time_based_feature):
+def item_aggregate_graph_and_node(filtered_non_time_based_feature):
     """
     Fixture for an item aggregate node
     """
-    graph = non_time_based_feature.graph
-    item_aggregate_node = get_node_from_feature(non_time_based_feature, NodeType.ITEM_GROUPBY)
+    graph = filtered_non_time_based_feature.graph
+    item_aggregate_node = get_node_from_feature(
+        filtered_non_time_based_feature, NodeType.ITEM_GROUPBY
+    )
     return graph, item_aggregate_node
 
 
@@ -172,11 +174,15 @@ def test_item_aggregate_universe(catalog, item_aggregate_graph_and_node):
               "event_timestamp" AS "event_timestamp",
               "cust_id" AS "cust_id"
             FROM "sf_database"."sf_schema"."sf_table"
+            WHERE
+              "event_timestamp" >= __fb_last_materialized_timestamp
+              AND "event_timestamp" < __fb_current_feature_timestamp
           ) AS R
             ON L."event_id_col" = R."col_int"
           WHERE
-            "event_timestamp_event_table" >= __fb_last_materialized_timestamp
-            AND "event_timestamp_event_table" < __fb_current_feature_timestamp
+            (
+              L."item_amount" > 10
+            )
         )
         """
     ).strip()
