@@ -247,7 +247,7 @@ def expected_feature_table_names_fixture():
     """
     Fixture for expected feature table names
     """
-    return [
+    return {
         "fb_entity_overall_fjs_3600_1800_1800_ttl",
         "fb_entity_product_action_fjs_3600_1800_1800_ttl",
         "fb_entity_cust_id_fjs_3600_1800_1800_ttl",
@@ -255,7 +255,7 @@ def expected_feature_table_names_fixture():
         "fb_entity_userid_fjs_86400_0_0",
         "fb_entity_user_status_fjs_86400_0_0",
         "fb_entity_order_id_fjs_86400_0_0",
-    ]
+    }
 
 
 @pytest.mark.parametrize("source_type", ["snowflake", "databricks_unity"], indirect=True)
@@ -266,7 +266,7 @@ def test_feature_tables_expected(
     """
     Test offline store feature tables are created as expected
     """
-    assert set(offline_store_feature_tables.keys()) == set(expected_feature_table_names)
+    assert set(offline_store_feature_tables.keys()) == expected_feature_table_names
 
 
 @pytest.mark.parametrize("source_type", ["snowflake", "databricks_unity"], indirect=True)
