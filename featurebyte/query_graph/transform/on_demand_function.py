@@ -102,6 +102,7 @@ class OnDemandFeatureFunctionGlobalState(BaseModel):
 
         function_codes = self.code_generator.generate(
             to_format=True,
+            to_remove_unused_variables=True,
             py_function_name=codegen_config.function_name,
             py_function_params=", ".join(py_func_params),
             py_return_type=codegen_config.return_type,
@@ -110,7 +111,10 @@ class OnDemandFeatureFunctionGlobalState(BaseModel):
 
         if to_sql:
             code_generator = CodeGenerator(template="on_demand_function_sql.tpl")
+            # since the final code is SQL, do not use python formatter or remove unused variables
             return code_generator.generate(
+                to_format=False,
+                to_remove_unused_variables=False,
                 sql_function_name=codegen_config.sql_function_name,
                 sql_function_params=", ".join(sql_func_params),
                 sql_return_type=codegen_config.sql_return_type,
