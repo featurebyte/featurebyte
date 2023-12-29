@@ -55,6 +55,18 @@ class TestCatalogApi(BaseApiTestSuite):
         )
     ]
 
+    def setup_creation_route(self, api_client):
+        """
+        Setup for post route
+        """
+        api_object_filename_pairs = [
+            ("feature_store", "feature_store"),
+        ]
+        for api_object, filename in api_object_filename_pairs:
+            payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
+            response = api_client.post(f"/{api_object}", json=payload)
+            assert response.status_code == HTTPStatus.CREATED
+
     @pytest.fixture(name="create_multiple_entries")
     def create_multiple_entries_fixture(self, test_api_client_persistent):
         """
