@@ -154,4 +154,4 @@ def test_time_delta(config, unit):
     )
     code_gen = CodeGenerator(statements=statements + [(VariableNameStr("output"), expr)])
     codes = code_gen.generate().strip()
-    assert codes == (f'feat = pd.to_timedelta(val, unit="{unit}")\n' "output = feat")
+    assert codes == f'feat = pd.to_timedelta(val, unit="{unit}")\n' "output = feat"

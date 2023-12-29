@@ -13,7 +13,7 @@ from enum import Enum
 
 from black import FileMode, format_str
 from bson import ObjectId
-from jinja2 import Template
+from jinja2 import Environment, FileSystemLoader, Template
 from pydantic import BaseModel, Field
 
 from featurebyte.models.base import PydanticObjectId
@@ -331,6 +331,7 @@ class VariableNameGenerator(BaseModel):
     var_name_counter: DefaultDict[str, int] = Field(default_factory=lambda: defaultdict(int))
     node_name_to_var_name: Dict[str, VariableNameStr] = Field(default_factory=dict)
     func_id_to_var_name: Dict[PydanticObjectId, VariableNameStr] = Field(default_factory=dict)
+    one_based: bool = Field(default=False)
 
     def generate_variable_name(
         self,
@@ -404,6 +405,10 @@ class VariableNameGenerator(BaseModel):
             return self.func_id_to_var_name[function_id]
 
         count = self.var_name_counter[variable_name_prefix]
+        if self.one_based:
+            # if variable name is one-based, then the first variable name will be `variable_name_prefix_1`
+            count += 1
+
         self.var_name_counter[variable_name_prefix] += 1
         var_name = VariableNameStr(variable_name_prefix)
         if count:
@@ -414,6 +419,34 @@ class VariableNameGenerator(BaseModel):
         if function_id is not None:
             self.func_id_to_var_name[function_id] = var_name
         return var_name
+
+    def get_latest_variable_name(self, variable_name_prefix: str) -> str:
+        """
+        Get the latest variable name with the given prefix
+
+        Parameters
+        ----------
+        variable_name_prefix: str
+            Variable name prefix
+
+        Returns
+        -------
+        str
+
+        Raises
+        ------
+        ValueError
+            If the variable name prefix does not exist
+        """
+        if variable_name_prefix not in self.var_name_counter:
+            raise ValueError(f"Variable name prefix {variable_name_prefix} does not exist")
+
+        count = self.var_name_counter[variable_name_prefix]
+        if not self.one_based:
+            count -= 1
+        if count:
+            return f"{variable_name_prefix}_{count}"
+        return variable_name_prefix
 
 
 class UnusedVariableFinder(ast.NodeVisitor):
@@ -465,9 +498,10 @@ class CodeGenerator(BaseModel):
     template: str = Field(default="sdk_code.tpl")
 
     def _get_template(self) -> Template:
-        template_path = os.path.join(os.path.dirname(__file__), f"templates/{self.template}")
-        with open(template_path, mode="r", encoding="utf-8") as file_handle:
-            return Template(file_handle.read())
+        template_path = os.path.join(os.path.dirname(__file__), "templates")
+        env = Environment(loader=FileSystemLoader(template_path), autoescape=True)
+        template = env.get_template(self.template)
+        return template
 
     def add_statements(self, statements: List[StatementT]) -> None:
         """
@@ -550,6 +584,7 @@ class CodeGenerator(BaseModel):
         code = self._get_template().render(
             imports=imports,
             statements=statements,
+            output_var_name=output_var_name or "output",
             **kwargs,
         )
         if to_format:

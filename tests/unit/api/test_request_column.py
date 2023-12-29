@@ -14,7 +14,7 @@ from featurebyte.query_graph.transform.offline_store_ingest import (
 )
 from tests.util.helper import (
     check_decomposed_graph_output_node_hash,
-    check_on_demand_feature_view_code_generation,
+    check_on_demand_feature_code_generation,
     check_sdk_code_generation,
 )
 
@@ -90,7 +90,7 @@ def test_point_in_time_minus_timestamp_feature(
         feature_model=new_feature_model,
         output=output,
     )
-    check_on_demand_feature_view_code_generation(feature_model=new_feature_model)
+    check_on_demand_feature_code_generation(feature_model=new_feature_model)
 
 
 def test_request_column_non_point_in_time_blocked():

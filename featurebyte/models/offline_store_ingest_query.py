@@ -22,6 +22,10 @@ from featurebyte.query_graph.node.nested import (
     OfflineStoreMetadata,
 )
 from featurebyte.query_graph.node.utils import subset_frame_column_expr
+from featurebyte.query_graph.transform.on_demand_function import (
+    OnDemandFeatureFunctionExtractor,
+    OnDemandFeatureFunctionGlobalState,
+)
 from featurebyte.query_graph.transform.on_demand_view import OnDemandFeatureViewExtractor
 from featurebyte.query_graph.transform.quick_pruning import QuickGraphStructurePruningTransformer
 
@@ -278,3 +282,88 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
             function_name=function_name,
         )
         return codes
+
+    def _generate_on_demand_feature_function_code_state(
+        self,
+        output_dtype: DBVarType,
+        generate_full_code: bool = False,
+        sql_function_name: str = "odf_func",
+        sql_input_var_prefix: str = "x",
+        sql_request_input_var_prefix: str = "r",
+        sql_comment: str = "",
+        function_name: str = "on_demand_feature_function",
+        input_var_prefix: str = "col",
+        request_input_var_prefix: str = "request_col",
+    ) -> OnDemandFeatureFunctionGlobalState:
+        if not self.is_decomposed:
+            raise ValueError(
+                "Cannot generate on demand feature function code for non-decomposed query graph"
+            )
+
+        node = self.graph.get_node_by_name(self.node_name)
+        codegen_state = OnDemandFeatureFunctionExtractor(graph=self.graph).extract(
+            node=node,
+            generate_full_code=generate_full_code,
+            sql_function_name=sql_function_name,
+            sql_input_var_prefix=sql_input_var_prefix,
+            sql_request_input_var_prefix=sql_request_input_var_prefix,
+            sql_comment=sql_comment,
+            function_name=function_name,
+            input_var_prefix=input_var_prefix,
+            request_input_var_prefix=request_input_var_prefix,
+            output_dtype=output_dtype,
+        )
+        return codegen_state
+
+    def generate_on_demand_feature_function_code(
+        self,
+        output_dtype: DBVarType,
+        generate_full_code: bool = False,
+        sql_function_name: str = "odf_func",
+        sql_input_var_prefix: str = "x",
+        sql_request_input_var_prefix: str = "r",
+        sql_comment: str = "",
+        function_name: str = "on_demand_feature_function",
+        input_var_prefix: str = "col",
+        request_input_var_prefix: str = "request_col",
+    ) -> str:
+        """
+        Generate on demand feature function code
+
+        Parameters
+        ----------
+        output_dtype: DBVarType
+            Output dtype of the on demand feature
+        generate_full_code: bool
+            Whether to generate full code, full code includes the SQL function code used to register the UDF
+        sql_function_name: str
+            SQL function name (only used when generate_full_code is True)
+        sql_input_var_prefix: str
+            SQL input variable prefix (only used when generate_full_code is True)
+        sql_request_input_var_prefix: str
+            SQL request input variable prefix (only used when generate_full_code is True)
+        sql_comment: str
+            SQL comment (only used when generate_full_code is True)
+        function_name: str
+            Python function name
+        input_var_prefix: str
+            Python input variable prefix
+        request_input_var_prefix: str
+            Python request input variable prefix
+
+        Returns
+        -------
+        str
+        """
+        codegen_state = self._generate_on_demand_feature_function_code_state(
+            output_dtype=output_dtype,
+            generate_full_code=generate_full_code,
+            sql_function_name=sql_function_name,
+            sql_input_var_prefix=sql_input_var_prefix,
+            sql_request_input_var_prefix=sql_request_input_var_prefix,
+            sql_comment=sql_comment,
+            function_name=function_name,
+            input_var_prefix=input_var_prefix,
+            request_input_var_prefix=request_input_var_prefix,
+        )
+        return codegen_state.generate_code()

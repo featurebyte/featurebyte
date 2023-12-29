@@ -59,7 +59,7 @@ from tests.unit.api.base_feature_or_target_test import FeatureOrTargetBaseTestSu
 from tests.util.helper import (
     check_aggressively_pruned_graph,
     check_decomposed_graph_output_node_hash,
-    check_on_demand_feature_view_code_generation,
+    check_on_demand_feature_code_generation,
     check_sdk_code_generation,
     get_node,
 )
@@ -880,7 +880,7 @@ def check_offline_store_ingest_graph_on_composite_feature(
 
     # check the output node hash before and after decomposition
     check_decomposed_graph_output_node_hash(feature_model=feature_model, output=output)
-    check_on_demand_feature_view_code_generation(feature_model=feature_model)
+    check_on_demand_feature_code_generation(feature_model=feature_model)
 
     # case 2: with entity relationship between the two entities (expect no query graph decomposition)
     entity_ids = feature_model.entity_ids

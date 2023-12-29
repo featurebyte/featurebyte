@@ -14,7 +14,7 @@ from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.transform.offline_store_ingest import AggregationNodeInfo
 from tests.util.helper import (
     check_decomposed_graph_output_node_hash,
-    check_on_demand_feature_view_code_generation,
+    check_on_demand_feature_code_generation,
 )
 
 
@@ -107,26 +107,7 @@ def test_feature__ttl_and_non_ttl_components(float_feature, non_time_based_featu
 
     # check consistency of decomposed graph
     check_decomposed_graph_output_node_hash(feature_model=feature_model)
-    check_on_demand_feature_view_code_generation(feature_model=feature_model)
-
-    # check on-demand view code
-    codes = offline_store_info.generate_on_demand_feature_view_code(
-        feature_name_version=feature_model.versioned_name
-    )
-    expected = f"""
-    import json
-    import numpy as np
-    import pandas as pd
-    import scipy as sp
-
-
-    def on_demand_feature_view(inputs: pd.DataFrame) -> pd.DataFrame:
-        df = pd.DataFrame()
-        feat = inputs['__{feature_model.versioned_name}__part0'] + inputs['__{feature_model.versioned_name}__part1']
-        df['{feature_model.versioned_name}'] = feat
-        return df
-    """
-    assert codes.strip() == textwrap.dedent(expected).strip()
+    check_on_demand_feature_code_generation(feature_model=feature_model)
 
 
 @freezegun.freeze_time("2023-12-27")
@@ -182,7 +163,7 @@ def test_feature__request_column_ttl_and_non_ttl_components(
 
     # check consistency of decomposed graph
     check_decomposed_graph_output_node_hash(feature_model=feature_model)
-    check_on_demand_feature_view_code_generation(feature_model=feature_model)
+    check_on_demand_feature_code_generation(feature_model=feature_model)
 
     # check on-demand view code
     codes = offline_store_info.generate_on_demand_feature_view_code(
@@ -268,7 +249,7 @@ def test_feature__ttl_item_aggregate_request_column(
     # check offline ingest query graph
     feature_model = composite_feature.cached_model
     check_decomposed_graph_output_node_hash(feature_model=feature_model)
-    check_on_demand_feature_view_code_generation(feature_model=feature_model)
+    check_on_demand_feature_code_generation(feature_model=feature_model)
 
     # check on-demand view code
     offline_store_info = feature_model.offline_store_info
@@ -330,7 +311,7 @@ def test_feature__input_has_mixed_ingest_graph_node_flags(
     # check offline ingest query graph
     feature_model = feature_zscore.cached_model
     check_decomposed_graph_output_node_hash(feature_model=feature_model)
-    check_on_demand_feature_view_code_generation(feature_model=feature_model)
+    check_on_demand_feature_code_generation(feature_model=feature_model)
 
     # check on-demand view code
     offline_store_info = feature_model.offline_store_info
@@ -388,7 +369,7 @@ def test_feature__composite_count_dict(
     feature_model = feature.cached_model
     assert feature_model.offline_store_info.is_decomposed is True
     check_decomposed_graph_output_node_hash(feature_model=feature_model)
-    check_on_demand_feature_view_code_generation(feature_model=feature_model)
+    check_on_demand_feature_code_generation(feature_model=feature_model, skip_odf_check=True)
 
 
 def test_feature__input_has_ingest_query_graph_node(test_dir):
