@@ -150,10 +150,8 @@ def features_fixture(
 
     scd_view = scd_table.get_view()
     feature_10 = scd_view["User Status"].as_feature("User Status Feature")
-    feature_11 = (
-        scd_view.groupby("User Status")
-        .aggregate_asat(method="count", feature_name="Current Number of Users With This Status")
-        .astype(float)
+    feature_11 = scd_view.groupby("User Status").aggregate_asat(
+        method="count", feature_name="Current Number of Users With This Status"
     )
     feature_11.name = "Current Number of Users With This Status"
 
