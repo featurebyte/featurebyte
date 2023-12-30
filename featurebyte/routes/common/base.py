@@ -29,6 +29,7 @@ from featurebyte.service.historical_feature_table import HistoricalFeatureTableS
 from featurebyte.service.item_table import ItemTableService
 from featurebyte.service.mixin import DEFAULT_PAGE_SIZE, Document
 from featurebyte.service.observation_table import ObservationTableService
+from featurebyte.service.online_store import OnlineStoreService
 from featurebyte.service.periodic_task import PeriodicTaskService
 from featurebyte.service.relationship import ParentT, RelationshipService
 from featurebyte.service.relationship_info import RelationshipInfoService
@@ -64,6 +65,7 @@ DocumentServiceT = TypeVar(
     RelationshipInfoService,
     PeriodicTaskService,
     ObservationTableService,
+    OnlineStoreService,
     HistoricalFeatureTableService,
     BatchRequestTableService,
     StaticSourceTableService,

@@ -70,6 +70,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
     non_time_based_feature,
     cust_id_entity,
     transaction_entity,
+    mysql_online_store,
 ):
     """
     Write request payload for testing api route
@@ -231,6 +232,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
             (feature_list, "feature_list_single"),
             (feature_list_multiple, "feature_list_multi"),
             (float_target, "target"),
+            (mysql_online_store, "mysql_online_store"),
         ]
         output_filenames = []
         for api_object, name in api_object_name_pairs:

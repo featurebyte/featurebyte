@@ -8,10 +8,17 @@ from bson.objectid import ObjectId
 from featurebyte.exception import DocumentDeletionError
 from featurebyte.models.catalog import CatalogModel
 from featurebyte.routes.common.base import BaseDocumentController
-from featurebyte.schema.catalog import CatalogList, CatalogServiceUpdate, CatalogUpdate
+from featurebyte.schema.catalog import (
+    CatalogList,
+    CatalogOnlineStoreUpdate,
+    CatalogServiceUpdate,
+    CatalogUpdate,
+)
 from featurebyte.schema.info import CatalogInfo
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.deployment import AllDeploymentService
+from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.online_store import OnlineStoreService
 
 
 class CatalogController(
@@ -27,9 +34,13 @@ class CatalogController(
         self,
         service: CatalogService,
         all_deployment_service: AllDeploymentService,
+        feature_store_service: FeatureStoreService,
+        online_store_service: OnlineStoreService,
     ):
         super().__init__(service=service)
         self.all_deployment_service = all_deployment_service
+        self.feature_store_service = feature_store_service
+        self.online_store_service = online_store_service
 
     async def update_catalog(
         self,
@@ -55,6 +66,32 @@ class CatalogController(
             document_id=catalog_id,
             data=CatalogServiceUpdate(**data.dict()),
             return_document=False,
+        )
+        return await self.get(document_id=catalog_id)
+
+    async def update_catalog_online_store(
+        self,
+        catalog_id: ObjectId,
+        data: CatalogOnlineStoreUpdate,
+    ) -> CatalogModel:
+        """
+        Update Catalog online store stored at persistent
+
+        Parameters
+        ----------
+        catalog_id: ObjectId
+            Catalog ID
+        data: CatalogOnlineStoreUpdate
+            Catalog online store update payload
+
+        Returns
+        -------
+        CatalogModel
+            Catalog object with updated attribute(s)
+        """
+        await self.service.update_online_store(
+            document_id=catalog_id,
+            data=data,
         )
         return await self.get(document_id=catalog_id)
 
@@ -109,9 +146,30 @@ class CatalogController(
         """
         _ = verbose
         catalog = await self.service.get_document(document_id=document_id)
+
+        # retrieve feature store name
+        if catalog.default_feature_store_ids:
+            feature_store = await self.feature_store_service.get_document(
+                document_id=catalog.default_feature_store_ids[0]
+            )
+            feature_store_name = feature_store.name
+        else:
+            feature_store_name = None
+
+        # retrieve online store name
+        if catalog.online_store_id:
+            online_store = await self.online_store_service.get_document(
+                document_id=catalog.online_store_id
+            )
+            online_store_name = online_store.name
+        else:
+            online_store_name = None
+
         return CatalogInfo(
             name=catalog.name,
             created_at=catalog.created_at,
             updated_at=catalog.updated_at,
             description=catalog.description,
+            feature_store_name=feature_store_name,
+            online_store_name=online_store_name,
         )

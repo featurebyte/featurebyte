@@ -12,7 +12,7 @@ from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.feature_namespace import FeatureNamespaceModel
-from featurebyte.models.online_store import OnlineFeatureSpec
+from featurebyte.models.online_store_spec import OnlineFeatureSpec
 from featurebyte.persistent import Persistent
 from featurebyte.schema.feature import FeatureServiceUpdate
 from featurebyte.schema.feature_list import FeatureListServiceUpdate

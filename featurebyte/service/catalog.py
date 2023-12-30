@@ -9,7 +9,7 @@ from bson import ObjectId
 
 from featurebyte.models.catalog import CatalogModel
 from featurebyte.models.persistent import QueryFilter
-from featurebyte.schema.catalog import CatalogCreate, CatalogServiceUpdate
+from featurebyte.schema.catalog import CatalogCreate, CatalogOnlineStoreUpdate, CatalogServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService
 
 
@@ -59,6 +59,30 @@ class CatalogService(BaseDocumentService[CatalogModel, CatalogCreate, CatalogSer
             document_id=document_id,
             data=CatalogServiceUpdate(is_deleted=True),
             return_document=False,
+        )
+
+    async def update_online_store(
+        self,
+        document_id: ObjectId,
+        data: CatalogOnlineStoreUpdate,
+    ) -> None:
+        """
+        Update catalog online store at persistent
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+        data: CatalogOnlineStoreUpdate
+            Catalog online store update payload object
+        """
+        document = await self.get_document(document_id=document_id)
+
+        # update document to persistent
+        await self._update_document(
+            document=document,
+            update_dict=data.dict(),
+            update_document_class=None,
         )
 
 

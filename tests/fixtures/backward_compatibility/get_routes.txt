@@ -18,6 +18,7 @@
 /historical_feature_table
 /item_table
 /observation_table
+/online_store
 /periodic_task
 /relationship_info
 /scd_table

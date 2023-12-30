@@ -36,12 +36,14 @@ from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.groupby import GroupBy
 from featurebyte.api.item_table import ItemTable
+from featurebyte.api.online_store import OnlineStore
 from featurebyte.app import User, app, get_celery
 from featurebyte.enum import AggFunc, InternalName, SourceType
 from featurebyte.exception import DuplicatedRecordException, ObjectHasBeenSavedError
 from featurebyte.logging import CONSOLE_LOG_FORMATTER
 from featurebyte.models.credential import CredentialModel
 from featurebyte.models.feature_namespace import FeatureReadiness
+from featurebyte.models.online_store import MySQLOnlineStoreDetails
 from featurebyte.models.task import Task as TaskModel
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.graph import GlobalQueryGraph
@@ -1981,3 +1983,42 @@ def mock_detect_and_update_column_dtypes_fixture():
         "featurebyte.service.specialized_dtype.SpecializedDtypeDetectionService.detect_and_update_column_dtypes"
     ):
         yield
+
+
+@pytest.fixture(name="mysql_online_store_config")
+def mysql_online_store_config_fixture():
+    """
+    MySQL online store config fixture
+    """
+    return {
+        "name": "mysql_online_store",
+        "details": MySQLOnlineStoreDetails(
+            host="mysql_host",
+            database="mysql_database",
+            port=3306,
+            credential=UsernamePasswordCredential(
+                username="mysql_user",
+                password="mysql_password",
+            ),
+        ).dict(),
+    }
+
+
+@pytest.fixture(name="mysql_online_store_id")
+def mysql_online_store_id_fixture():
+    """MySQL online store id"""
+    return ObjectId("646f6c190ed28a5271fb02b9")
+
+
+@pytest.fixture(name="mysql_online_store")
+def mysql_online_store_fixture(mysql_online_store_config, mysql_online_store_id):
+    """
+    Snowflake database source fixture
+    """
+    try:
+        mysql_online_store_config["_id"] = mysql_online_store_id
+        online_store = OnlineStore(**mysql_online_store_config)
+        online_store.save()
+        return online_store
+    except (DuplicatedRecordException, ObjectHasBeenSavedError):
+        return OnlineStore.get(mysql_online_store_config["name"])

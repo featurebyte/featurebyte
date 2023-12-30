@@ -26,6 +26,7 @@ class CatalogCreate(FeatureByteBaseModel):
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
     default_feature_store_ids: List[PydanticObjectId]
+    online_store_id: Optional[PydanticObjectId] = Field(default=None)
 
 
 class CatalogList(PaginationMixin):
@@ -41,7 +42,15 @@ class CatalogUpdate(FeatureByteBaseModel):
     Catalog update schema
     """
 
-    name: StrictStr
+    name: Optional[StrictStr]
+
+
+class CatalogOnlineStoreUpdate(BaseDocumentServiceUpdateSchema):
+    """
+    Catalog update online store schema
+    """
+
+    online_store_id: Optional[PydanticObjectId]
 
 
 class CatalogServiceUpdate(BaseDocumentServiceUpdateSchema):
