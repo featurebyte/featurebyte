@@ -2,7 +2,7 @@
 This module contains datetime operation related node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import List, Literal, Optional, Sequence, Tuple, Union
+from typing import Callable, Dict, List, Literal, Optional, Sequence, Tuple, Union
 
 from pydantic import BaseModel, Field
 
@@ -13,7 +13,11 @@ from featurebyte.query_graph.node.base import (
     BaseSeriesOutputNode,
     BaseSeriesOutputWithSingleOperandNode,
 )
-from featurebyte.query_graph.node.metadata.config import OnDemandViewCodeGenConfig, SDKCodeGenConfig
+from featurebyte.query_graph.node.metadata.config import (
+    OnDemandFunctionCodeGenConfig,
+    OnDemandViewCodeGenConfig,
+    SDKCodeGenConfig,
+)
 from featurebyte.query_graph.node.metadata.operation import NodeOutputCategory, OperationStructure
 from featurebyte.query_graph.node.metadata.sdk_code import (
     ClassEnum,
@@ -83,11 +87,12 @@ class DatetimeExtractNode(BaseSeriesOutputNode):
 
         return [], output
 
-    def _derive_on_demand_view_code(
+    def _derive_on_demand_view_or_user_defined_function_helper(
         self,
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
-        config: OnDemandViewCodeGenConfig,
+        offset_adj_var_name_prefix: str,
+        expr_func: Callable[[str, str], str],
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_dict(node_inputs)
         ts_operand: str = var_name_expressions[0].as_input()
@@ -109,15 +114,41 @@ class DatetimeExtractNode(BaseSeriesOutputNode):
         dt_var_name: Union[str, VariableNameStr]
         if offset_operand:
             dt_var_name = var_name_generator.convert_to_variable_name(
-                variable_name_prefix="feat_dt", node_name=None
+                variable_name_prefix=offset_adj_var_name_prefix, node_name=None
             )
             expr = ExpressionStr(f"{ts_operand} + {offset_operand}")
             statements.append((dt_var_name, expr))
         else:
             dt_var_name = ts_operand
 
-        output = ExpressionStr(f"{dt_var_name}.dt.{self.parameters.property}")
+        output = ExpressionStr(expr_func(dt_var_name, self.parameters.property))
         return statements, output
+
+    def _derive_on_demand_view_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandViewCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        return self._derive_on_demand_view_or_user_defined_function_helper(
+            node_inputs,
+            var_name_generator,
+            offset_adj_var_name_prefix="feat_dt",
+            expr_func=lambda dt_var_name, prop: f"{dt_var_name}.dt.{prop}",
+        )
+
+    def _derive_user_defined_function_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandFunctionCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        return self._derive_on_demand_view_or_user_defined_function_helper(
+            node_inputs,
+            var_name_generator,
+            offset_adj_var_name_prefix="feat",
+            expr_func=lambda dt_var_name, prop: f"{dt_var_name}.{prop}",
+        )
 
 
 class TimeDeltaExtractNode(BaseSeriesOutputWithSingleOperandNode):
@@ -130,6 +161,22 @@ class TimeDeltaExtractNode(BaseSeriesOutputWithSingleOperandNode):
 
     type: Literal[NodeType.TIMEDELTA_EXTRACT] = Field(NodeType.TIMEDELTA_EXTRACT, const=True)
     parameters: Parameters
+
+    @property
+    def unit_to_seconds(self) -> Dict[str, int]:
+        """
+        Mapping from unit to seconds
+
+        Returns
+        -------
+        Dict[str, int]
+            mapping from unit to seconds
+        """
+        return {
+            "day": 24 * 60 * 60,
+            "hour": 60 * 60,
+            "minute": 60,
+        }
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.FLOAT
@@ -145,12 +192,17 @@ class TimeDeltaExtractNode(BaseSeriesOutputWithSingleOperandNode):
         if self.parameters.property == "second":
             return f"{operand}.dt.seconds"
 
-        unit_to_seconds = {
-            "day": 24 * 60 * 60,
-            "hour": 60 * 60,
-            "minute": 60,
-        }
-        return f"{operand}.dt.seconds // {unit_to_seconds[self.parameters.property]}"
+        return f"{operand}.dt.seconds // {self.unit_to_seconds[self.parameters.property]}"
+
+    def generate_udf_expression(self, operand: str) -> str:
+        if self.parameters.property == "millisecond":
+            return f"{operand}.microseconds // 1000"
+        if self.parameters.property == "microsecond":
+            return f"{operand}.microseconds"
+        if self.parameters.property == "second":
+            return f"{operand}.seconds"
+
+        return f"{operand}.seconds // {self.unit_to_seconds[self.parameters.property]}"
 
 
 class DateDifferenceNode(BaseSeriesOutputNode):
@@ -199,6 +251,15 @@ class DateDifferenceNode(BaseSeriesOutputNode):
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        _ = var_name_generator, config
+        return self._derive_python_code(node_inputs)
+
+    def _derive_user_defined_function_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandFunctionCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         _ = var_name_generator, config
         return self._derive_python_code(node_inputs)
@@ -284,6 +345,21 @@ class TimeDeltaNode(BaseSeriesOutputNode):
             "pd.to_timedelta",
         )
 
+    def _derive_user_defined_function_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandFunctionCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        _ = config
+        return self._derive_python_code(
+            node_inputs,
+            var_name_generator,
+            NodeOutputType.SERIES,
+            NodeOutputCategory.FEATURE,
+            "pd.to_timedelta",
+        )
+
 
 class DateAddNode(BaseSeriesOutputNode):
     """DateAddNode class"""
@@ -341,6 +417,15 @@ class DateAddNode(BaseSeriesOutputNode):
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        _ = var_name_generator, config
+        return self._derive_python_code(node_inputs)
+
+    def _derive_user_defined_function_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandFunctionCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         _ = var_name_generator, config
         return self._derive_python_code(node_inputs)

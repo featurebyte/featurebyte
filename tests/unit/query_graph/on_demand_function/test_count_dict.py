@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from featurebyte.query_graph.node.binary import IsInNode
 from featurebyte.query_graph.node.count_dict import (
     CosineSimilarityNode,
     CountDictTransformNode,
@@ -14,12 +13,8 @@ from featurebyte.query_graph.node.count_dict import (
     GetRelativeFrequencyFromDictionaryNode,
     GetValueFromDictionaryNode,
 )
-from featurebyte.query_graph.node.metadata.config import OnDemandViewCodeGenConfig
-from featurebyte.query_graph.node.metadata.sdk_code import (
-    CodeGenerator,
-    VariableNameGenerator,
-    VariableNameStr,
-)
+from featurebyte.query_graph.node.metadata.sdk_code import VariableNameGenerator, VariableNameStr
+from tests.unit.query_graph.util import evaluate_and_compare_odfv_and_udf_results
 
 NODE_PARAMS = {"name": "node_name"}
 
@@ -128,186 +123,144 @@ def fixture_rank_key_feat():
     ],
 )
 def test_derive_on_demand_view_code__count_dict_transform(
-    node_params, expected_values, count_dict_feature1
+    node_params, odfv_config, udf_config, expected_values, count_dict_feature1
 ):
     """Test derive_on_demand_view_code"""
     node = CountDictTransformNode(**NODE_PARAMS, **node_params)
-    config = OnDemandViewCodeGenConfig(
-        input_df_name="input_df",
-        output_df_name="output_df",
-        on_demand_function_name="on_demand_func",
-    )
-    statements, expr = node.derive_on_demand_view_code(
-        node_inputs=[VariableNameStr('df["feat"]')],
+    node_inputs = [VariableNameStr("feat")]
+
+    odfv_stats, odfv_expr = node.derive_on_demand_view_code(
+        node_inputs=node_inputs,
         var_name_generator=VariableNameGenerator(),
-        config=config,
+        config=odfv_config,
     )
-    code_gen = CodeGenerator(
-        statements=statements + [(VariableNameStr('output_df["feature"]'), expr)],
-        template="on_demand_view.tpl",
+
+    udf_stats, udf_expr = node.derive_user_defined_function_code(
+        node_inputs=node_inputs,
+        var_name_generator=VariableNameGenerator(),
+        config=udf_config,
     )
-    codes = code_gen.generate(
-        input_df_name=config.input_df_name,
-        output_df_name=config.output_df_name,
-        function_name=config.on_demand_function_name,
-    ).strip()
 
-    local_vars = {"df": pd.DataFrame({"feat": count_dict_feature1})}
-    exec_codes = codes + "\n\nout_df = on_demand_func(df)"
-    exec(exec_codes, local_vars)
-    out_df = local_vars["out_df"]
-    expected_values.name = "feature"
-    pd.testing.assert_series_equal(out_df["feature"], expected_values)
+    evaluate_and_compare_odfv_and_udf_results(
+        input_map={"feat": count_dict_feature1},
+        odfv_expr=odfv_expr,
+        udf_expr=udf_expr,
+        odfv_stats=odfv_stats,
+        udf_stats=udf_stats,
+        expected_output=expected_values,
+    )
 
 
-def test_derive_on_demand_view_code__cosine_similarity(count_dict_feature1, count_dict_feature2):
+def test_derive_on_demand_view_code__cosine_similarity(
+    count_dict_feature1, count_dict_feature2, odfv_config, udf_config
+):
     """Test derive_on_demand_view_code"""
     node = CosineSimilarityNode(**NODE_PARAMS)
-    config = OnDemandViewCodeGenConfig(
-        input_df_name="input_df",
-        output_df_name="output_df",
-        on_demand_function_name="on_demand_func",
-    )
-    statements, expr = node.derive_on_demand_view_code(
-        node_inputs=[
-            VariableNameStr('df["feat1"]'),
-            VariableNameStr('df["feat2"]'),
-        ],
+    node_inputs = [VariableNameStr("feat1"), VariableNameStr("feat2")]
+
+    odfv_stats, odfv_expr = node.derive_on_demand_view_code(
+        node_inputs=node_inputs,
         var_name_generator=VariableNameGenerator(),
-        config=config,
+        config=odfv_config,
     )
-    code_gen = CodeGenerator(
-        statements=statements + [(VariableNameStr('output_df["feature"]'), expr)],
-        template="on_demand_view.tpl",
+
+    udf_stats, udf_expr = node.derive_user_defined_function_code(
+        node_inputs=node_inputs,
+        var_name_generator=VariableNameGenerator(),
+        config=udf_config,
     )
-    codes = code_gen.generate(
-        input_df_name=config.input_df_name,
-        output_df_name=config.output_df_name,
-        function_name=config.on_demand_function_name,
-    ).strip()
 
-    local_vars = {
-        "df": pd.DataFrame(
-            {
-                "feat1": count_dict_feature1,
-                "feat2": count_dict_feature2,
-            }
-        )
-    }
-    exec_codes = codes + "\n\nout_df = on_demand_func(df)"
-    exec(exec_codes, local_vars)
-    out_df = local_vars["out_df"]
-    expected_values = pd.Series([np.nan, np.nan, 0.0, 1.0, 0.408248], name="feature")
-    pd.testing.assert_series_equal(out_df["feature"], expected_values)
+    evaluate_and_compare_odfv_and_udf_results(
+        input_map={"feat1": count_dict_feature1, "feat2": count_dict_feature2},
+        odfv_expr=odfv_expr,
+        udf_expr=udf_expr,
+        odfv_stats=odfv_stats,
+        udf_stats=udf_stats,
+        expected_output=pd.Series([np.nan, np.nan, 0.0, 1.0, 0.408248]),
+    )
 
 
-def test_derive_on_demand_view_code__dictionary_keys(count_dict_feature1, item_feature):
+def test_derive_on_demand_view_code__dictionary_keys(count_dict_feature1, odfv_config, udf_config):
     """Test derive_on_demand_view_code"""
-    dict_keys_node = DictionaryKeysNode(**NODE_PARAMS)
-    is_in_node = IsInNode(**NODE_PARAMS, parameters={})
-    config = OnDemandViewCodeGenConfig(
-        input_df_name="input_df",
-        output_df_name="output_df",
-        on_demand_function_name="on_demand_func",
-    )
-    var_name_generator = VariableNameGenerator()
-    statements = []
-    stats, expr = dict_keys_node.derive_on_demand_view_code(
-        node_inputs=[VariableNameStr('df["feat1"]')],
-        var_name_generator=var_name_generator,
-        config=config,
-    )
-    statements += stats
-    stats, expr = is_in_node.derive_on_demand_view_code(
-        node_inputs=[VariableNameStr('df["feat2"]'), expr],
-        var_name_generator=var_name_generator,
-        config=config,
-    )
-    statements += stats
-    code_gen = CodeGenerator(
-        statements=statements + [(VariableNameStr('output_df["feature"]'), expr)],
-        template="on_demand_view.tpl",
-    )
-    codes = code_gen.generate(
-        input_df_name=config.input_df_name,
-        output_df_name=config.output_df_name,
-        function_name=config.on_demand_function_name,
-    ).strip()
+    node = DictionaryKeysNode(**NODE_PARAMS)
+    node_inputs = [VariableNameStr(f"feat")]
 
-    local_vars = {
-        "df": pd.DataFrame(
-            {
-                "feat1": count_dict_feature1,
-                "feat2": item_feature,
-            }
-        )
-    }
-    exec_codes = codes + "\n\nout_df = on_demand_func(df)"
-    exec(exec_codes, local_vars)
-    out_df = local_vars["out_df"]
-    expected_values = pd.Series([False, False, False, True, False], name="feature")
-    pd.testing.assert_series_equal(out_df["feature"], expected_values)
+    odfv_stats, odfv_expr = node.derive_on_demand_view_code(
+        node_inputs=node_inputs,
+        var_name_generator=VariableNameGenerator(),
+        config=odfv_config,
+    )
+
+    udf_stats, udf_expr = node.derive_user_defined_function_code(
+        node_inputs=node_inputs,
+        var_name_generator=VariableNameGenerator(),
+        config=udf_config,
+    )
+
+    evaluate_and_compare_odfv_and_udf_results(
+        input_map={"feat": count_dict_feature1},
+        odfv_expr=odfv_expr,
+        udf_expr=udf_expr,
+        odfv_stats=odfv_stats,
+        udf_stats=udf_stats,
+        expected_output=pd.Series(
+            [np.nan, ["a"], [], ["a", "b", "c"], ["a", "b", "c", "__MISSING__"]]
+        ),
+    )
 
 
-def test_derive_on_demand_view_code__dictionary_get_value(count_dict_feature1, item_feature):
+def test_derive_on_demand_view_code__dictionary_get_value(
+    count_dict_feature1, item_feature, odfv_config, udf_config
+):
     """Test derive_on_demand_view_code"""
     # test on two operands
-    dict_value_node = GetValueFromDictionaryNode(**NODE_PARAMS, parameters={})
-    config = OnDemandViewCodeGenConfig(
-        input_df_name="input_df",
-        output_df_name="output_df",
-        on_demand_function_name="on_demand_func",
-    )
-    statements, expr = dict_value_node.derive_on_demand_view_code(
-        node_inputs=[VariableNameStr('df["feat1"]'), VariableNameStr('df["feat2"]')],
-        var_name_generator=VariableNameGenerator(),
-        config=config,
-    )
-    code_gen = CodeGenerator(
-        statements=statements + [(VariableNameStr('output_df["feature"]'), expr)],
-        template="on_demand_view.tpl",
-    )
-    codes = code_gen.generate(
-        input_df_name=config.input_df_name,
-        output_df_name=config.output_df_name,
-        function_name=config.on_demand_function_name,
-    ).strip()
+    node = GetValueFromDictionaryNode(**NODE_PARAMS, parameters={})
+    node_inputs = [VariableNameStr("feat1"), VariableNameStr("feat2")]
 
-    local_vars = {
-        "df": pd.DataFrame(
-            {
-                "feat1": count_dict_feature1,
-                "feat2": item_feature,
-            }
-        )
-    }
-    exec_codes = codes + "\n\nout_df = on_demand_func(df)"
-    exec(exec_codes, local_vars)
-    out_df = local_vars["out_df"]
-    expected_values = pd.Series([None, None, None, 1.0, None], name="feature")
-    pd.testing.assert_series_equal(out_df["feature"], expected_values)
+    odfv_stats, odfv_expr = node.derive_on_demand_view_code(
+        node_inputs=node_inputs,
+        var_name_generator=VariableNameGenerator(),
+        config=odfv_config,
+    )
+
+    udf_stats, udf_expr = node.derive_user_defined_function_code(
+        node_inputs=node_inputs,
+        var_name_generator=VariableNameGenerator(),
+        config=udf_config,
+    )
+
+    evaluate_and_compare_odfv_and_udf_results(
+        input_map={"feat1": count_dict_feature1, "feat2": item_feature},
+        odfv_expr=odfv_expr,
+        udf_expr=udf_expr,
+        odfv_stats=odfv_stats,
+        udf_stats=udf_stats,
+        expected_output=pd.Series([np.nan, np.nan, np.nan, 1.0, np.nan]),
+    )
 
     # test on one operand & one scalar value
-    dict_value_node = GetValueFromDictionaryNode(**NODE_PARAMS, parameters={"value": "b"})
-    statements, expr = dict_value_node.derive_on_demand_view_code(
-        node_inputs=[VariableNameStr('df["feat1"]')],
+    node = GetValueFromDictionaryNode(**NODE_PARAMS, parameters={"value": "b"})
+
+    odfv_stats, odfv_expr = node.derive_on_demand_view_code(
+        node_inputs=node_inputs[:1],  # single input only
         var_name_generator=VariableNameGenerator(),
-        config=config,
+        config=odfv_config,
     )
-    code_gen = CodeGenerator(
-        statements=statements + [(VariableNameStr('output_df["feature"]'), expr)],
-        template="on_demand_view.tpl",
+
+    udf_stats, udf_expr = node.derive_user_defined_function_code(
+        node_inputs=node_inputs[:1],  # single input only
+        var_name_generator=VariableNameGenerator(),
+        config=udf_config,
     )
-    codes = code_gen.generate(
-        input_df_name=config.input_df_name,
-        output_df_name=config.output_df_name,
-        function_name=config.on_demand_function_name,
-    ).strip()
-    exec_codes = codes + "\n\nout_df = on_demand_func(df)"
-    exec(exec_codes, local_vars)
-    out_df = local_vars["out_df"]
-    expected_values = pd.Series([None, None, None, 1.0, 2.0], name="feature")
-    pd.testing.assert_series_equal(out_df["feature"], expected_values)
+
+    evaluate_and_compare_odfv_and_udf_results(
+        input_map={"feat1": count_dict_feature1, "feat2": item_feature},
+        odfv_expr=odfv_expr,
+        udf_expr=udf_expr,
+        odfv_stats=odfv_stats,
+        udf_stats=udf_stats,
+        expected_output=pd.Series([np.nan, np.nan, np.nan, 1.0, 2.0]),
+    )
 
 
 @pytest.mark.parametrize(
@@ -316,22 +269,20 @@ def test_derive_on_demand_view_code__dictionary_get_value(count_dict_feature1, i
         (
             GetRankFromDictionaryNode,
             {"descending": False},
-            pd.Series([None, None, None, 1, 1, 1, 2], name="feature"),
-            pd.Series([None, None, 1, 1, 1, 2, 2], name="feature"),
+            pd.Series([np.nan, np.nan, np.nan, 1, 1, 1, 2]),
+            pd.Series([np.nan, np.nan, 1, 1, 1, 2, 2]),
         ),
         (
             GetRankFromDictionaryNode,
             {"descending": True},
-            pd.Series([None, None, None, 1, 1, 2, 1], name="feature"),
-            pd.Series([None, None, 1, 1, 1, 1, 1], name="feature"),
+            pd.Series([np.nan, np.nan, np.nan, 1, 1, 2, 1]),
+            pd.Series([np.nan, np.nan, 1, 1, 1, 1, 1]),
         ),
         (
             GetRelativeFrequencyFromDictionaryNode,
             {},
-            pd.Series([np.nan, np.nan, np.nan, 1.0 / 3, 1.0 / 3, 1.0 / 3, 2.0 / 3], name="feature"),
-            pd.Series(
-                [np.nan, np.nan, 1.0 / 3, 1.0 / 3, 1.0 / 3, 2.0 / 3, 2.0 / 3], name="feature"
-            ),
+            pd.Series([np.nan, np.nan, np.nan, 1.0 / 3, 1.0 / 3, 1.0 / 3, 2.0 / 3]),
+            pd.Series([np.nan, np.nan, 1.0 / 3, 1.0 / 3, 1.0 / 3, 2.0 / 3, 2.0 / 3]),
         ),
     ],
 )
@@ -340,62 +291,57 @@ def test_derive_on_demand_view_code__dictionary_get_rank(
     rank_key_feat,
     node_class,
     node_params,
+    odfv_config,
+    udf_config,
     series_param_expected_values,
     scalar_param_expected_values,
 ):
     """Test derive_on_demand_view_code"""
     # test on two operands
-    dict_value_node = node_class(**NODE_PARAMS, parameters=node_params)
-    config = OnDemandViewCodeGenConfig(
-        input_df_name="input_df",
-        output_df_name="output_df",
-        on_demand_function_name="on_demand_func",
-    )
-    statements, expr = dict_value_node.derive_on_demand_view_code(
-        node_inputs=[VariableNameStr('df["feat1"]'), VariableNameStr('df["feat2"]')],
-        var_name_generator=VariableNameGenerator(),
-        config=config,
-    )
-    code_gen = CodeGenerator(
-        statements=statements + [(VariableNameStr('output_df["feature"]'), expr)],
-        template="on_demand_view.tpl",
-    )
-    codes = code_gen.generate(
-        input_df_name=config.input_df_name,
-        output_df_name=config.output_df_name,
-        function_name=config.on_demand_function_name,
-    ).strip()
+    node = node_class(**NODE_PARAMS, parameters=node_params)
+    node_inputs = [VariableNameStr("feat1"), VariableNameStr("feat2")]
 
-    local_vars = {
-        "df": pd.DataFrame(
-            {
-                "feat1": rank_feat,
-                "feat2": rank_key_feat,
-            }
-        )
-    }
-    exec_codes = codes + "\n\nout_df = on_demand_func(df)"
-    exec(exec_codes, local_vars)
-    out_df = local_vars["out_df"]
-    pd.testing.assert_series_equal(out_df["feature"], series_param_expected_values)
+    odfv_stats, odfv_expr = node.derive_on_demand_view_code(
+        node_inputs=node_inputs,
+        var_name_generator=VariableNameGenerator(),
+        config=odfv_config,
+    )
+
+    udf_stats, udf_expr = node.derive_user_defined_function_code(
+        node_inputs=node_inputs,
+        var_name_generator=VariableNameGenerator(),
+        config=udf_config,
+    )
+
+    evaluate_and_compare_odfv_and_udf_results(
+        input_map={"feat1": rank_feat, "feat2": rank_key_feat},
+        odfv_expr=odfv_expr,
+        udf_expr=udf_expr,
+        odfv_stats=odfv_stats,
+        udf_stats=udf_stats,
+        expected_output=series_param_expected_values,
+    )
 
     # test on one operand & one scalar value
-    dict_value_node = node_class(**NODE_PARAMS, parameters={**node_params, "value": "b"})
-    statements, expr = dict_value_node.derive_on_demand_view_code(
-        node_inputs=[VariableNameStr('df["feat1"]')],
+    node = node_class(**NODE_PARAMS, parameters={**node_params, "value": "b"})
+
+    odfv_stats, odfv_expr = node.derive_on_demand_view_code(
+        node_inputs=node_inputs[:1],  # single input only
         var_name_generator=VariableNameGenerator(),
-        config=config,
+        config=odfv_config,
     )
-    code_gen = CodeGenerator(
-        statements=statements + [(VariableNameStr('output_df["feature"]'), expr)],
-        template="on_demand_view.tpl",
+
+    udf_stats, udf_expr = node.derive_user_defined_function_code(
+        node_inputs=node_inputs[:1],  # single input only
+        var_name_generator=VariableNameGenerator(),
+        config=udf_config,
     )
-    codes = code_gen.generate(
-        input_df_name=config.input_df_name,
-        output_df_name=config.output_df_name,
-        function_name=config.on_demand_function_name,
-    ).strip()
-    exec_codes = codes + "\n\nout_df = on_demand_func(df)"
-    exec(exec_codes, local_vars)
-    out_df = local_vars["out_df"]
-    pd.testing.assert_series_equal(out_df["feature"], scalar_param_expected_values)
+
+    evaluate_and_compare_odfv_and_udf_results(
+        input_map={"feat1": rank_feat, "feat2": rank_key_feat},
+        odfv_expr=odfv_expr,
+        udf_expr=udf_expr,
+        odfv_stats=odfv_stats,
+        udf_stats=udf_stats,
+        expected_output=scalar_param_expected_values,
+    )

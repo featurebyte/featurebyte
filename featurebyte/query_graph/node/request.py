@@ -101,7 +101,7 @@ class RequestColumnNode(BaseNode):
         statements.append((var_name, obj))
         return statements, var_name
 
-    def _derive_on_demand_view_or_function_code_helper(
+    def _derive_on_demand_view_or_user_defined_function_helper(
         self,
         var_name_generator: VariableNameGenerator,
         input_var_name_expr: VarNameExpressionInfo,
@@ -124,7 +124,7 @@ class RequestColumnNode(BaseNode):
         input_df_name = config.input_df_name
         column_name = self.parameters.column_name
         expr = VariableNameStr(subset_frame_column_expr(input_df_name, column_name))
-        return self._derive_on_demand_view_or_function_code_helper(
+        return self._derive_on_demand_view_or_user_defined_function_helper(
             var_name_generator=var_name_generator,
             input_var_name_expr=expr,
             var_name_prefix="request_col",
@@ -143,7 +143,7 @@ class RequestColumnNode(BaseNode):
         request_input_var_name = var_name_generator.convert_to_variable_name(
             variable_name_prefix=config.request_input_var_prefix, node_name=associated_node_name
         )
-        return self._derive_on_demand_view_or_function_code_helper(
+        return self._derive_on_demand_view_or_user_defined_function_helper(
             var_name_generator=var_name_generator,
             input_var_name_expr=request_input_var_name,
             var_name_prefix="feat",

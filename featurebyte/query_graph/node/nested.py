@@ -625,7 +625,7 @@ class BaseGraphNode(BasePrunableNode):
             node_name=self.name,
         )
 
-    def _derive_on_demand_view_or_function_code_helper(
+    def _derive_on_demand_view_or_user_defined_function_helper(
         self,
         var_name_generator: VariableNameGenerator,
         input_var_name_expr: VarNameExpressionInfo,
@@ -667,7 +667,7 @@ class BaseGraphNode(BasePrunableNode):
         input_var_name_expr = VariableNameStr(
             subset_frame_column_expr(frame_name=input_df_name, column_name=column_name)
         )
-        return self._derive_on_demand_view_or_function_code_helper(
+        return self._derive_on_demand_view_or_user_defined_function_helper(
             var_name_generator=var_name_generator,
             input_var_name_expr=input_var_name_expr,
             json_conversion_func=_json_conversion_func,
@@ -693,7 +693,7 @@ class BaseGraphNode(BasePrunableNode):
         input_var_name = var_name_generator.convert_to_variable_name(
             variable_name_prefix=config.input_var_prefix, node_name=associated_node_name
         )
-        return self._derive_on_demand_view_or_function_code_helper(
+        return self._derive_on_demand_view_or_user_defined_function_helper(
             var_name_generator=var_name_generator,
             input_var_name_expr=input_var_name,
             json_conversion_func=lambda expr: ExpressionStr(

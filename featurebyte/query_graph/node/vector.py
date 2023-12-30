@@ -10,7 +10,11 @@ from pydantic import Field
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.base import BaseSeriesOutputNode
-from featurebyte.query_graph.node.metadata.config import OnDemandViewCodeGenConfig, SDKCodeGenConfig
+from featurebyte.query_graph.node.metadata.config import (
+    OnDemandFunctionCodeGenConfig,
+    OnDemandViewCodeGenConfig,
+    SDKCodeGenConfig,
+)
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.node.metadata.sdk_code import (
     CodeGenerationContext,
@@ -57,14 +61,11 @@ class VectorCosineSimilarityNode(BaseSeriesOutputNode):
         )
         return [], expression
 
-    def _derive_on_demand_view_code(
-        self,
-        node_inputs: List[VarNameExpressionInfo],
+    @staticmethod
+    def _get_vector_cosine_similarity_function_name(
         var_name_generator: VariableNameGenerator,
-        config: OnDemandViewCodeGenConfig,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> Tuple[List[StatementT], str]:
         statements: List[StatementT] = []
-        input_var_name_expressions = self._assert_no_info_dict(node_inputs)
         func_name = "vector_cosine_similarity"
         if func_name not in var_name_generator.var_name_counter:
             # add custom function if it doesn't exist
@@ -87,8 +88,34 @@ class VectorCosineSimilarityNode(BaseSeriesOutputNode):
                 return dot_product / magnitude if magnitude != 0 else np.nan
             """
             statements.append(StatementStr(textwrap.dedent(func_string)))
+        return statements, func_name
 
+    def _derive_on_demand_view_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandViewCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        statements, func_name = self._get_vector_cosine_similarity_function_name(
+            var_name_generator=var_name_generator
+        )
+        input_var_name_expressions = self._assert_no_info_dict(node_inputs)
         left_operand = input_var_name_expressions[0].as_input()
         right_operand = input_var_name_expressions[1].as_input()
         expr = ExpressionStr(f"{left_operand}.combine({right_operand}, {func_name})")
+        return statements, expr
+
+    def _derive_user_defined_function_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandFunctionCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        statements, func_name = self._get_vector_cosine_similarity_function_name(
+            var_name_generator=var_name_generator
+        )
+        input_var_name_expressions = self._assert_no_info_dict(node_inputs)
+        left_operand = input_var_name_expressions[0].as_input()
+        right_operand = input_var_name_expressions[1].as_input()
+        expr = ExpressionStr(f"{func_name}({left_operand}, {right_operand})")
         return statements, expr
