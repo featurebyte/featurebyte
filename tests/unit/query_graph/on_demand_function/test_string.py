@@ -1,6 +1,7 @@
 """
 Test the string nodes in the on-demand view code generation.
 """
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -61,7 +62,11 @@ NODE_PARAMS = {"name": "node_name"}
             "feat.str.slice(start=1, stop=3)",
             [],
         ),
-        (ConcatNode(**NODE_PARAMS, parameters={"value": "foo"}), 'feat + "foo"', []),
+        (
+            ConcatNode(**NODE_PARAMS, parameters={"value": "foo"}),
+            'pd.Series(np.where(pd.isna(feat), np.nan, feat + "foo"), index=feat.index)',
+            [],
+        ),
     ],
 )
 def test_derive_on_demand_view_code(node, expected_expr, expected_statements):
@@ -74,10 +79,16 @@ def test_derive_on_demand_view_code(node, expected_expr, expected_statements):
         var_name_generator=VariableNameGenerator(),
         config=config,
     )
-    assert statements == expected_statements
     feat = pd.Series(["foo", "bar", "baz"])
     _ = feat
 
     # check the expression can be evaluated & matches expected
-    eval(expr)
-    assert expr == expected_expr
+    if isinstance(node, ConcatNode):
+        assert expr == "feat"
+        assert statements == [("feat", expected_expr)]
+        _ = np  # numpy is used in the expected_expr
+        eval(expected_expr)
+    else:
+        assert expr == expected_expr
+        assert statements == expected_statements
+        eval(expr)

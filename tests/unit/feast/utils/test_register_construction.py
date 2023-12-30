@@ -120,14 +120,16 @@ def test_feast_registry_construction(feast_registry_proto):
     assert len(on_demand_feature_views) == 1
     udf_definition = on_demand_feature_views[0]["spec"]["userDefinedFunction"]["bodyText"]
     expected = f"""
-    def {feat_view_name}(inputs: pd.DataFrame) -> pd.DataFrame:
+    def {feat_view_name}(
+        inputs: pd.DataFrame,
+    ) -> pd.DataFrame:
         df = pd.DataFrame()
-        request_time = pd.to_datetime(inputs['POINT_IN_TIME'], utc=True)
+        request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         cutoff = request_time - pd.Timedelta(seconds=3600)
-        feature_timestamp = pd.to_datetime(inputs['__feature_timestamp'], utc=True)
+        feature_timestamp = pd.to_datetime(inputs["__feature_timestamp"], utc=True)
         mask = (feature_timestamp >= cutoff) & (feature_timestamp <= request_time)
-        inputs['sum_1d_{get_version()}'][~mask] = np.nan
-        df['sum_1d_{get_version()}'] = inputs['sum_1d_{get_version()}']
+        inputs["sum_1d_{get_version()}"][~mask] = np.nan
+        df["sum_1d_{get_version()}"] = inputs["sum_1d_{get_version()}"]
         return df
     """
     assert udf_definition.strip() == textwrap.dedent(expected).strip()

@@ -583,28 +583,61 @@ def generate_column_data(var_type, row_number=10):
     raise ValueError(f"Unsupported var_type: {var_type}")
 
 
-def check_on_demand_feature_view_code_execution(odfv_codes, df):
-    """Check on demand feature view code execution"""
+def get_on_demand_feature_function(codes, function_name):
+    """Construct on demand feature function based on the input codes"""
     # create a temporary directory to write the generated code
     with tempfile.TemporaryDirectory() as temp_dir:
         with add_sys_path(temp_dir):
             # write the generated code to a file
-            module_name = f"odfv_{ObjectId()}"  # use a random module name to avoid conflict
+            module_name = f"mod_{ObjectId()}"  # use a random module name to avoid conflict
             with open(os.path.join(temp_dir, f"{module_name}.py"), "w") as file_handle:
-                file_handle.write(odfv_codes)
+                file_handle.write(codes)
 
             # import the function & execute it on the input dataframe, check output column name
             module = importlib.import_module(module_name)
-            try:
-                output = module.on_demand_feature_view(df)
-                return output
-            except Exception as e:
-                print("Error: ", e)
-                print("Generated code: ", odfv_codes)
-                raise e
+            return getattr(module, function_name)
 
 
-def check_on_demand_feature_view_code_generation(feature_model):
+def check_on_demand_feature_view_code_execution(odfv_codes, df):
+    """Check on demand feature view code execution"""
+    on_demand_feature_func = get_on_demand_feature_function(odfv_codes, "on_demand_feature_view")
+    try:
+        output = on_demand_feature_func(df)
+        return output
+    except Exception as e:
+        print("Error: ", e)
+        print("Generated code: ", odfv_codes)
+        raise e
+
+
+def check_on_demand_feature_function_code_execution(udf_code_state, df):
+    """Check on demand feature function code execution"""
+    udf_codes = udf_code_state.generate_code()
+
+    # get input parameters
+    input_args = []
+    for _, row in df.iterrows():
+        input_kwargs = {
+            input_arg_name: row[input_info.column_name]
+            for input_arg_name, input_info in sorted(udf_code_state.input_var_name_to_info.items())
+        }
+        input_args.append(input_kwargs)
+
+    on_demand_feature_func = get_on_demand_feature_function(udf_codes, "on_demand_feature_function")
+    try:
+        output = []
+        for input_arg in input_args:
+            output.append(on_demand_feature_func(**input_arg))
+        return pd.Series(output)
+    except Exception as e:
+        print("Error: ", e)
+        print("Generated code: ", udf_codes)
+        raise e
+
+
+def check_on_demand_feature_code_generation(
+    feature_model, skip_udf_check=False, sql_fixture_path=None, update_fixtures=False
+):
     """Check on demand feature view code generation"""
     offline_store_info = feature_model.offline_store_info
     assert offline_store_info.is_decomposed, "OfflineStoreInfo is not decomposed"
@@ -629,12 +662,39 @@ def check_on_demand_feature_view_code_generation(feature_model):
 
     # generate on demand feature view code
     odfv_codes = offline_store_info.generate_on_demand_feature_view_code(
-        feature_name_version=feature_model.name
+        feature_name_version=feature_model.versioned_name,
     )
 
     # check the generated code can be executed successfully
-    output = check_on_demand_feature_view_code_execution(odfv_codes, df)
-    assert output.columns == [feature_model.name]
+    odfv_output = check_on_demand_feature_view_code_execution(odfv_codes, df)
+    exp_col_name = feature_model.versioned_name
+    assert odfv_output.columns == [exp_col_name]
+
+    if skip_udf_check:
+        return
+
+    udf_code_state = offline_store_info._generate_on_demand_feature_function_code_state(
+        output_dtype=feature_model.dtype,
+    )
+
+    # check the generated code can be executed successfully
+    udf_output = check_on_demand_feature_function_code_execution(udf_code_state, df)
+
+    # check the consistency between on demand feature view & on demand feature function
+    pd.testing.assert_series_equal(odfv_output[exp_col_name], udf_output, check_names=False)
+
+    # check generated sql code
+    if sql_fixture_path:
+        udf_codes = offline_store_info.generate_on_demand_feature_function_code(
+            output_dtype=feature_model.dtype, to_sql=True
+        )
+        if update_fixtures:
+            with open(sql_fixture_path, mode="w", encoding="utf-8") as file_handle:
+                file_handle.write(udf_codes)
+        else:
+            with open(sql_fixture_path, mode="r", encoding="utf-8") as file_handle:
+                expected = file_handle.read()
+                assert expected.strip() == udf_codes.strip(), udf_codes
 
 
 async def deploy_feature(app_container, feature, return_type="feature"):

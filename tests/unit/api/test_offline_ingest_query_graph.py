@@ -14,7 +14,7 @@ from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.transform.offline_store_ingest import AggregationNodeInfo
 from tests.util.helper import (
     check_decomposed_graph_output_node_hash,
-    check_on_demand_feature_view_code_generation,
+    check_on_demand_feature_code_generation,
 )
 
 
@@ -62,7 +62,10 @@ def check_ingest_query_graph(ingest_query_graph):
         assert input_node_names[0] == aggregation_node_info.input_node_name
 
 
-def test_feature__ttl_and_non_ttl_components(float_feature, non_time_based_feature):
+@freezegun.freeze_time("2023-12-29")
+def test_feature__ttl_and_non_ttl_components(
+    float_feature, non_time_based_feature, test_dir, update_fixtures
+):
     """Test that a feature contains both ttl and non-ttl components."""
     ttl_component = 2 * (float_feature + 100)
     non_ttl_component = 3 - (non_time_based_feature + 100)
@@ -106,27 +109,13 @@ def test_feature__ttl_and_non_ttl_components(float_feature, non_time_based_featu
     check_ingest_query_graph(non_ttl_component_graph)
 
     # check consistency of decomposed graph
+    sql_fixture_path = os.path.join(test_dir, "fixtures/on_demand_function/ttl_and_non_ttl.sql")
     check_decomposed_graph_output_node_hash(feature_model=feature_model)
-    check_on_demand_feature_view_code_generation(feature_model=feature_model)
-
-    # check on-demand view code
-    codes = offline_store_info.generate_on_demand_feature_view_code(
-        feature_name_version=feature_model.versioned_name
+    check_on_demand_feature_code_generation(
+        feature_model=feature_model,
+        sql_fixture_path=sql_fixture_path,
+        update_fixtures=update_fixtures,
     )
-    expected = f"""
-    import json
-    import numpy as np
-    import pandas as pd
-    import scipy as sp
-
-
-    def on_demand_feature_view(inputs: pd.DataFrame) -> pd.DataFrame:
-        df = pd.DataFrame()
-        feat = inputs['__{feature_model.versioned_name}__part0'] + inputs['__{feature_model.versioned_name}__part1']
-        df['{feature_model.versioned_name}'] = feat
-        return df
-    """
-    assert codes.strip() == textwrap.dedent(expected).strip()
 
 
 @freezegun.freeze_time("2023-12-27")
@@ -182,7 +171,7 @@ def test_feature__request_column_ttl_and_non_ttl_components(
 
     # check consistency of decomposed graph
     check_decomposed_graph_output_node_hash(feature_model=feature_model)
-    check_on_demand_feature_view_code_generation(feature_model=feature_model)
+    check_on_demand_feature_code_generation(feature_model=feature_model, skip_udf_check=True)
 
     # check on-demand view code
     codes = offline_store_info.generate_on_demand_feature_view_code(
@@ -197,11 +186,20 @@ def test_feature__request_column_ttl_and_non_ttl_components(
 
     def on_demand_feature_view(inputs: pd.DataFrame) -> pd.DataFrame:
         df = pd.DataFrame()
-        feat = pd.to_datetime(inputs['__feature_V231227__part0'])
-        request_col = pd.to_datetime(inputs['POINT_IN_TIME'])
+        feat = pd.to_datetime(inputs["__feature_V231227__part0"])
+        request_col = pd.to_datetime(inputs["POINT_IN_TIME"])
         feat_1 = request_col + (request_col - request_col)
-        feat_2 = ((feat_1 - feat).dt.seconds // 86400) + inputs['__feature_V231227__part1']
-        df['feature_V231227'] = feat_2
+        feat_2 = pd.Series(
+            np.where(
+                pd.isna(((feat_1 - feat).dt.seconds // 86400))
+                | pd.isna(inputs["__feature_V231227__part1"]),
+                np.nan,
+                ((feat_1 - feat).dt.seconds // 86400)
+                + inputs["__feature_V231227__part1"],
+            ),
+            index=((feat_1 - feat).dt.seconds // 86400).index,
+        )
+        df["feature_V231227"] = feat_2
         return df
     """
     assert codes.strip() == textwrap.dedent(expected).strip()
@@ -268,7 +266,7 @@ def test_feature__ttl_item_aggregate_request_column(
     # check offline ingest query graph
     feature_model = composite_feature.cached_model
     check_decomposed_graph_output_node_hash(feature_model=feature_model)
-    check_on_demand_feature_view_code_generation(feature_model=feature_model)
+    check_on_demand_feature_code_generation(feature_model=feature_model, skip_udf_check=True)
 
     # check on-demand view code
     offline_store_info = feature_model.offline_store_info
@@ -285,11 +283,24 @@ def test_feature__ttl_item_aggregate_request_column(
 
     def on_demand_feature_view(inputs: pd.DataFrame) -> pd.DataFrame:
         df = pd.DataFrame()
-        feat = inputs['__composite_feature_V231227__part0'] + inputs['__composite_feature_V231227__part1']
-        request_col = pd.to_datetime(inputs['POINT_IN_TIME'])
-        feat_1 = pd.to_datetime(inputs['__composite_feature_V231227__part2'])
+        feat = pd.Series(
+            np.where(
+                pd.isna(inputs["__composite_feature_V231227__part0"])
+                | pd.isna(inputs["__composite_feature_V231227__part1"]),
+                np.nan,
+                inputs["__composite_feature_V231227__part0"]
+                + inputs["__composite_feature_V231227__part1"],
+            ),
+            index=inputs["__composite_feature_V231227__part0"].index,
+        )
+        request_col = pd.to_datetime(inputs["POINT_IN_TIME"])
+        feat_1 = pd.to_datetime(inputs["__composite_feature_V231227__part2"])
         feat_2 = (request_col - feat_1).dt.seconds // 86400
-        df['composite_feature_V231227'] = feat + feat_2
+        feat_3 = pd.Series(
+            np.where(pd.isna(feat) | pd.isna(feat_2), np.nan, feat + feat_2),
+            index=feat.index,
+        )
+        df["composite_feature_V231227"] = feat_3
         return df
     """
     assert codes.strip() == textwrap.dedent(expected).strip()
@@ -330,7 +341,7 @@ def test_feature__input_has_mixed_ingest_graph_node_flags(
     # check offline ingest query graph
     feature_model = feature_zscore.cached_model
     check_decomposed_graph_output_node_hash(feature_model=feature_model)
-    check_on_demand_feature_view_code_generation(feature_model=feature_model)
+    check_on_demand_feature_code_generation(feature_model=feature_model)
 
     # check on-demand view code
     offline_store_info = feature_model.offline_store_info
@@ -347,15 +358,31 @@ def test_feature__input_has_mixed_ingest_graph_node_flags(
 
     def on_demand_feature_view(inputs: pd.DataFrame) -> pd.DataFrame:
         df = pd.DataFrame()
-        feat = inputs['__feature_zscore_V231227__part0'] - inputs['__feature_zscore_V231227__part1']
-        feat_1 = feat / inputs['__feature_zscore_V231227__part2']
+        feat = pd.Series(
+            np.where(
+                pd.isna(inputs["__feature_zscore_V231227__part0"])
+                | pd.isna(inputs["__feature_zscore_V231227__part1"]),
+                np.nan,
+                inputs["__feature_zscore_V231227__part0"]
+                - inputs["__feature_zscore_V231227__part1"],
+            ),
+            index=inputs["__feature_zscore_V231227__part0"].index,
+        )
+        feat_1 = pd.Series(
+            np.where(
+                pd.isna(feat) | pd.isna(inputs["__feature_zscore_V231227__part2"]),
+                np.nan,
+                feat / inputs["__feature_zscore_V231227__part2"],
+            ),
+            index=feat.index,
+        )
         # TTL handling for feature_zscore_V231227
-        request_time = pd.to_datetime(inputs['POINT_IN_TIME'], utc=True)
+        request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         cutoff = request_time - pd.Timedelta(seconds=7200)
-        feature_timestamp = pd.to_datetime(inputs['__feature_timestamp'], utc=True)
+        feature_timestamp = pd.to_datetime(inputs["__feature_timestamp"], utc=True)
         mask = (feature_timestamp >= cutoff) & (feature_timestamp <= request_time)
         feat_1[~mask] = np.nan
-        df['feature_zscore_V231227'] = feat_1
+        df["feature_zscore_V231227"] = feat_1
         return df
     """
     assert codes.strip() == textwrap.dedent(expected).strip()
@@ -388,7 +415,7 @@ def test_feature__composite_count_dict(
     feature_model = feature.cached_model
     assert feature_model.offline_store_info.is_decomposed is True
     check_decomposed_graph_output_node_hash(feature_model=feature_model)
-    check_on_demand_feature_view_code_generation(feature_model=feature_model)
+    check_on_demand_feature_code_generation(feature_model=feature_model, skip_udf_check=True)
 
 
 def test_feature__input_has_ingest_query_graph_node(test_dir):
@@ -425,12 +452,12 @@ def test_feature__with_ttl_handling(float_feature):
 
     def on_demand_feature_view(inputs: pd.DataFrame) -> pd.DataFrame:
         df = pd.DataFrame()
-        request_time = pd.to_datetime(inputs['POINT_IN_TIME'], utc=True)
+        request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         cutoff = request_time - pd.Timedelta(seconds=7200)
-        feature_timestamp = pd.to_datetime(inputs['__feature_timestamp'], utc=True)
+        feature_timestamp = pd.to_datetime(inputs["__feature_timestamp"], utc=True)
         mask = (feature_timestamp >= cutoff) & (feature_timestamp <= request_time)
-        inputs['sum_1d_V231227'][~mask] = np.nan
-        df['sum_1d_V231227'] = inputs['sum_1d_V231227']
+        inputs["sum_1d_V231227"][~mask] = np.nan
+        df["sum_1d_V231227"] = inputs["sum_1d_V231227"]
         return df
     """
     assert codes.strip() == textwrap.dedent(expected).strip()

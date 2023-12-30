@@ -8,7 +8,11 @@ from pydantic import BaseModel, Field, StrictStr
 from featurebyte.enum import DBVarType, SpecialColumnName
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.base import BaseNode
-from featurebyte.query_graph.node.metadata.config import OnDemandViewCodeGenConfig, SDKCodeGenConfig
+from featurebyte.query_graph.node.metadata.config import (
+    OnDemandFunctionCodeGenConfig,
+    OnDemandViewCodeGenConfig,
+    SDKCodeGenConfig,
+)
 from featurebyte.query_graph.node.metadata.operation import (
     AggregationColumn,
     FeatureDataColumnType,
@@ -97,6 +101,20 @@ class RequestColumnNode(BaseNode):
         statements.append((var_name, obj))
         return statements, var_name
 
+    def _derive_on_demand_view_or_function_code_helper(
+        self,
+        var_name_generator: VariableNameGenerator,
+        input_var_name_expr: VarNameExpressionInfo,
+        var_name_prefix: str,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        if self.parameters.dtype in DBVarType.supported_timestamp_types():
+            var_name = var_name_generator.convert_to_variable_name(
+                variable_name_prefix=var_name_prefix, node_name=self.name
+            )
+            expression = get_object_class_from_function_call("pd.to_datetime", input_var_name_expr)
+            return [(var_name, expression)], var_name
+        return [], input_var_name_expr
+
     def _derive_on_demand_view_code(
         self,
         node_inputs: List[VarNameExpressionInfo],
@@ -106,10 +124,27 @@ class RequestColumnNode(BaseNode):
         input_df_name = config.input_df_name
         column_name = self.parameters.column_name
         expr = VariableNameStr(subset_frame_column_expr(input_df_name, column_name))
-        if self.parameters.dtype in DBVarType.supported_timestamp_types():
-            var_name = var_name_generator.convert_to_variable_name(
-                "request_col", node_name=self.name
-            )
-            expression = get_object_class_from_function_call("pd.to_datetime", expr)
-            return [(var_name, expression)], var_name
-        return [], expr
+        return self._derive_on_demand_view_or_function_code_helper(
+            var_name_generator=var_name_generator,
+            input_var_name_expr=expr,
+            var_name_prefix="request_col",
+        )
+
+    def _derive_user_defined_function_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandFunctionCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        associated_node_name = None
+        if self.parameters.dtype not in DBVarType.supported_timestamp_types():
+            associated_node_name = self.name
+
+        request_input_var_name = var_name_generator.convert_to_variable_name(
+            variable_name_prefix=config.request_input_var_prefix, node_name=associated_node_name
+        )
+        return self._derive_on_demand_view_or_function_code_helper(
+            var_name_generator=var_name_generator,
+            input_var_name_expr=request_input_var_name,
+            var_name_prefix="feat",
+        )
