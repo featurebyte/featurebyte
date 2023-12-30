@@ -23,13 +23,13 @@ def test_alias_node():
     assert odfv_stats == []
     assert odfv_expr == "feat"
 
-    odff_stats, odff_expr = node.derive_on_demand_function_code(
+    udf_stats, udf_expr = node.derive_user_defined_function_code(
         node_inputs=node_inputs,
         var_name_generator=VariableNameGenerator(),
         config=OnDemandFunctionCodeGenConfig(output_dtype=DBVarType.FLOAT),
     )
-    assert odff_stats == []
-    assert odff_expr == "feat"
+    assert udf_stats == []
+    assert udf_expr == "feat"
 
 
 def test_conditional_node():
@@ -48,13 +48,13 @@ def test_conditional_node():
     assert odfv_stats == [("feat1[mask]", "feat2[mask]")]
     assert odfv_out_var == "feat1"
 
-    odff_stats, odff_out_var = node.derive_on_demand_function_code(
+    udf_stats, udf_out_var = node.derive_user_defined_function_code(
         node_inputs=three_node_inputs,
         var_name_generator=VariableNameGenerator(),
         config=OnDemandFunctionCodeGenConfig(output_dtype=DBVarType.FLOAT),
     )
-    assert odff_stats == ["feat1 = feat2 if mask else feat1"]
-    assert odff_out_var == "feat1"
+    assert udf_stats == ["feat1 = feat2 if mask else feat1"]
+    assert udf_out_var == "feat1"
 
     # check on 2 inputs
     two_node_inputs = [VariableNameStr("feat1"), VariableNameStr("mask")]
@@ -66,10 +66,10 @@ def test_conditional_node():
     assert odfv_stats == [("feat1[mask]", "1")]
     assert odfv_out_var == "feat1"
 
-    odff_stats, odff_out_var = node.derive_on_demand_function_code(
+    udf_stats, udf_out_var = node.derive_user_defined_function_code(
         node_inputs=two_node_inputs,
         var_name_generator=VariableNameGenerator(),
         config=OnDemandFunctionCodeGenConfig(output_dtype=DBVarType.FLOAT),
     )
-    assert odff_stats == ["feat1 = 1 if mask else feat1"]
-    assert odff_out_var == "feat1"
+    assert udf_stats == ["feat1 = 1 if mask else feat1"]
+    assert udf_out_var == "feat1"

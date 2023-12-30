@@ -410,7 +410,7 @@ class BaseNode(BaseModel):
             variable_name_prefix="feat",
         )
 
-    def derive_on_demand_function_code(
+    def derive_user_defined_function_code(
         self,
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
@@ -432,7 +432,7 @@ class BaseNode(BaseModel):
         -------
         Tuple[List[StatementT], VarNameExpressionStr]
         """
-        statements, var_name_expression_info = self._derive_on_demand_function_code(
+        statements, var_name_expression_info = self._derive_user_defined_function_code(
             node_inputs=node_inputs,
             var_name_generator=var_name_generator,
             config=config,
@@ -666,7 +666,7 @@ class BaseNode(BaseModel):
         """
         raise RuntimeError("This method should not be called")
 
-    def _derive_on_demand_function_code(
+    def _derive_user_defined_function_code(
         self,
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
@@ -994,9 +994,9 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
         """
         return self.generate_expression(left_operand, right_operand)
 
-    def generate_odf_expression(self, left_operand: str, right_operand: str) -> str:
+    def generate_udf_expression(self, left_operand: str, right_operand: str) -> str:
         """
-        Generate expression for the on demand feature function
+        Generate expression for the DataBricks user defined function (UDF) for on demand feature
 
         Parameters
         ----------
@@ -1090,29 +1090,29 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
             generate_expression_func=generate_expression_func,
         )
 
-    def _generate_odf_expression_with_null_value_handling_for_single_input(
+    def _generate_udf_expression_with_null_value_handling_for_single_input(
         self, left_operand: str, right_operand: str
     ) -> str:
-        expr = self.generate_odf_expression(left_operand, right_operand)
+        expr = self.generate_udf_expression(left_operand, right_operand)
         return f"np.nan if pd.isna({left_operand}) else {expr}"
 
-    def _generate_odf_expression_with_null_value_handling(
+    def _generate_udf_expression_with_null_value_handling(
         self, left_operand: str, right_operand: str
     ) -> str:
-        expr = self.generate_odf_expression(left_operand, right_operand)
+        expr = self.generate_udf_expression(left_operand, right_operand)
         return f"np.nan if pd.isna({left_operand}) or pd.isna({right_operand}) else {expr}"
 
-    def _derive_on_demand_function_code(
+    def _derive_user_defined_function_code(
         self,
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         config: OnDemandFunctionCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         _ = config
-        generate_expression_func = self._generate_odf_expression_with_null_value_handling
+        generate_expression_func = self._generate_udf_expression_with_null_value_handling
         if len(node_inputs) == 1:
             generate_expression_func = (
-                self._generate_odf_expression_with_null_value_handling_for_single_input
+                self._generate_udf_expression_with_null_value_handling_for_single_input
             )
         return self._derive_python_code(
             node_inputs=node_inputs,
@@ -1211,9 +1211,9 @@ class BaseSeriesOutputWithSingleOperandNode(BaseSeriesOutputNode, ABC):
         """
         return self.generate_expression(operand)
 
-    def generate_odf_expression(self, operand: str) -> str:
+    def generate_udf_expression(self, operand: str) -> str:
         """
-        Generate expression for the on demand feature function
+        Generate expression for the DataBricks user defined function (UDF) for on demand feature
 
         Parameters
         ----------
@@ -1250,11 +1250,11 @@ class BaseSeriesOutputWithSingleOperandNode(BaseSeriesOutputNode, ABC):
         var_name_expression = input_var_name_expressions[0]
         return [], ExpressionStr(self.generate_odfv_expression(var_name_expression.as_input()))
 
-    def _generate_odf_expression_with_null_value_handling(self, operand: str) -> str:
-        expr = self.generate_odf_expression(operand)
+    def _generate_udf_expression_with_null_value_handling(self, operand: str) -> str:
+        expr = self.generate_udf_expression(operand)
         return f"np.nan if pd.isna({operand}) else {expr}"
 
-    def _derive_on_demand_function_code(
+    def _derive_user_defined_function_code(
         self,
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
@@ -1262,7 +1262,7 @@ class BaseSeriesOutputWithSingleOperandNode(BaseSeriesOutputNode, ABC):
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         input_var_name_expressions = self._assert_no_info_dict(node_inputs)
         var_name_expression = input_var_name_expressions[0]
-        expr = self._generate_odf_expression_with_null_value_handling(
+        expr = self._generate_udf_expression_with_null_value_handling(
             var_name_expression.as_input()
         )
         return [], ExpressionStr(expr)

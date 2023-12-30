@@ -189,7 +189,7 @@ class OnDemandFeatureFunctionExtractor(
         if node.name in global_state.node_name_to_post_compute_output:
             return global_state.node_name_to_post_compute_output[node.name]
 
-        statements, var_name_or_expr = node.derive_on_demand_function_code(
+        statements, var_name_or_expr = node.derive_user_defined_function_code(
             node_inputs=inputs,
             var_name_generator=global_state.var_name_generator,
             config=global_state.code_generation_config,

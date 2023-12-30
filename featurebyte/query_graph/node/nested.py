@@ -673,7 +673,7 @@ class BaseGraphNode(BasePrunableNode):
             json_conversion_func=_json_conversion_func,
         )
 
-    def _derive_on_demand_function_code(
+    def _derive_user_defined_function_code(
         self,
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,

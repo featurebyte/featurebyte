@@ -172,7 +172,7 @@ class PowerNode(BaseSeriesOutputWithAScalarParamNode):
     def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand}.pow({right_operand})"
 
-    def generate_odf_expression(self, left_operand: str, right_operand: str) -> str:
+    def generate_udf_expression(self, left_operand: str, right_operand: str) -> str:
         return f"np.power({left_operand}, {right_operand})"
 
 
@@ -196,7 +196,7 @@ class IsInNode(BaseSeriesOutputWithAScalarParamNode):
     def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand}.isin({right_operand})"
 
-    def generate_odf_expression(self, left_operand: str, right_operand: str) -> str:
+    def generate_udf_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand} in {right_operand}"
 
     def _derive_on_demand_view_code(
@@ -222,14 +222,16 @@ class IsInNode(BaseSeriesOutputWithAScalarParamNode):
         )
         return [], expr
 
-    def _derive_on_demand_function_code(
+    def _derive_user_defined_function_code(
         self,
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         config: OnDemandFunctionCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         if len(node_inputs) == 1:
-            return super()._derive_on_demand_function_code(node_inputs, var_name_generator, config)
+            return super()._derive_user_defined_function_code(
+                node_inputs, var_name_generator, config
+            )
 
         # handle case when right_operand is an array feature (constructed from count dictionary feature)
         input_var_name_expressions = self._assert_no_info_dict(node_inputs)

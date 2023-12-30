@@ -1884,7 +1884,7 @@ class AliasNode(BaseNode):
         # this is a no-op node for on-demand view, it should appear on the last node of the graph
         return [], node_inputs[0]
 
-    def _derive_on_demand_function_code(
+    def _derive_user_defined_function_code(
         self,
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
@@ -2016,7 +2016,7 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
         statements.append((VariableNameStr(var_expr), value))
         return statements, var_name
 
-    def _derive_on_demand_function_code(
+    def _derive_user_defined_function_code(
         self,
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,

@@ -130,7 +130,7 @@ class RequestColumnNode(BaseNode):
             var_name_prefix="request_col",
         )
 
-    def _derive_on_demand_function_code(
+    def _derive_user_defined_function_code(
         self,
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,

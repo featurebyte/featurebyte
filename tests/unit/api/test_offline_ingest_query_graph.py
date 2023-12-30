@@ -62,6 +62,7 @@ def check_ingest_query_graph(ingest_query_graph):
         assert input_node_names[0] == aggregation_node_info.input_node_name
 
 
+@freezegun.freeze_time("2023-12-29")
 def test_feature__ttl_and_non_ttl_components(
     float_feature, non_time_based_feature, test_dir, update_fixtures
 ):
@@ -170,7 +171,7 @@ def test_feature__request_column_ttl_and_non_ttl_components(
 
     # check consistency of decomposed graph
     check_decomposed_graph_output_node_hash(feature_model=feature_model)
-    check_on_demand_feature_code_generation(feature_model=feature_model, skip_odf_check=True)
+    check_on_demand_feature_code_generation(feature_model=feature_model, skip_udf_check=True)
 
     # check on-demand view code
     codes = offline_store_info.generate_on_demand_feature_view_code(
@@ -265,7 +266,7 @@ def test_feature__ttl_item_aggregate_request_column(
     # check offline ingest query graph
     feature_model = composite_feature.cached_model
     check_decomposed_graph_output_node_hash(feature_model=feature_model)
-    check_on_demand_feature_code_generation(feature_model=feature_model, skip_odf_check=True)
+    check_on_demand_feature_code_generation(feature_model=feature_model, skip_udf_check=True)
 
     # check on-demand view code
     offline_store_info = feature_model.offline_store_info
@@ -414,7 +415,7 @@ def test_feature__composite_count_dict(
     feature_model = feature.cached_model
     assert feature_model.offline_store_info.is_decomposed is True
     check_decomposed_graph_output_node_hash(feature_model=feature_model)
-    check_on_demand_feature_code_generation(feature_model=feature_model, skip_odf_check=True)
+    check_on_demand_feature_code_generation(feature_model=feature_model, skip_udf_check=True)
 
 
 def test_feature__input_has_ingest_query_graph_node(test_dir):
