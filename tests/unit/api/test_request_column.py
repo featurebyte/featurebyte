@@ -90,7 +90,7 @@ def test_point_in_time_minus_timestamp_feature(
         feature_model=new_feature_model,
         output=output,
     )
-    check_on_demand_feature_code_generation(feature_model=new_feature_model, skip_udf_check=True)
+    check_on_demand_feature_code_generation(feature_model=new_feature_model)
 
 
 def test_request_column_non_point_in_time_blocked():

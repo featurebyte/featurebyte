@@ -636,7 +636,7 @@ def check_on_demand_feature_function_code_execution(udf_code_state, df):
 
 
 def check_on_demand_feature_code_generation(
-    feature_model, skip_udf_check=False, sql_fixture_path=None, update_fixtures=False
+    feature_model, sql_fixture_path=None, update_fixtures=False
 ):
     """Check on demand feature view code generation"""
     offline_store_info = feature_model.offline_store_info
@@ -669,9 +669,6 @@ def check_on_demand_feature_code_generation(
     odfv_output = check_on_demand_feature_view_code_execution(odfv_codes, df)
     exp_col_name = feature_model.versioned_name
     assert odfv_output.columns == [exp_col_name]
-
-    if skip_udf_check:
-        return
 
     udf_code_state = offline_store_info._generate_on_demand_feature_function_code_state(
         output_dtype=feature_model.dtype,
