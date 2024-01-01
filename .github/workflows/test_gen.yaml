@@ -64,7 +64,7 @@ jobs:
     - name: Building hive-udf
       run: task build-jar
     - name: Upload hive-udf
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: hive-udf
         path: hive-udf/lib/build/libs/*
@@ -119,12 +119,12 @@ jobs:
     - name: Moving coverage file by appending 0
       run: mv .coverage .coverage.0
     - name: Upload test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-pytest.xml.0
         path: pytest.xml.0
     - name: Upload coverage results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-.coverage.0
         path: .coverage.0
@@ -177,12 +177,12 @@ jobs:
     - name: Moving coverage file by appending 1
       run: mv .coverage .coverage.1
     - name: Upload test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-pytest.xml.1
         path: pytest.xml.1
     - name: Upload coverage results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-.coverage.1
         path: .coverage.1
@@ -250,7 +250,7 @@ jobs:
         task test-teardown
         mv .coverage .coverage.2
     - name: Upload spark-thrift log file
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: spark-thrift-logs
         path: spark-thrift.log
@@ -262,12 +262,12 @@ jobs:
           exit $EXIT_CODE
         fi
     - name: Upload test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-pytest.xml.2
         path: pytest.xml.2
     - name: Upload coverage results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-.coverage.2
         path: .coverage.2
@@ -321,12 +321,12 @@ jobs:
     - name: Moving coverage file by appending 3
       run: mv .coverage .coverage.3
     - name: Upload test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-pytest.xml.3
         path: pytest.xml.3
     - name: Upload coverage results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-.coverage.3
         path: .coverage.3
@@ -374,12 +374,12 @@ jobs:
     - name: Moving coverage file by appending 4
       run: mv .coverage .coverage.4
     - name: Upload test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-pytest.xml.4
         path: pytest.xml.4
     - name: Upload coverage results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-.coverage.4
         path: .coverage.4
