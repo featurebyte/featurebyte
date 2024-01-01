@@ -82,7 +82,7 @@ jobs:
         fi
         echo "SHORT_HASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
     - name: Setup cache
