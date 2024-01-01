@@ -108,7 +108,7 @@ jobs:
         sudo apt-get update
         sudo apt-get install wkhtmltopdf
     - name: Download hive-udf
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: hive-udf
         path: featurebyte/sql/spark/
@@ -168,7 +168,7 @@ jobs:
         sudo apt-get update
         sudo apt-get install wkhtmltopdf
     - name: Download hive-udf
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: hive-udf
         path: featurebyte/sql/spark/
@@ -230,7 +230,7 @@ jobs:
         sudo apt-get update
         sudo apt-get install wkhtmltopdf
     - name: Download hive-udf
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: hive-udf
         path: featurebyte/sql/spark/
@@ -312,7 +312,7 @@ jobs:
         sudo apt-get update
         sudo apt-get install wkhtmltopdf
     - name: Download hive-udf
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: hive-udf
         path: featurebyte/sql/databricks/
@@ -423,7 +423,7 @@ jobs:
         sudo apt-get update
         sudo apt-get install wkhtmltopdf
     - name: Download hive-udf
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: hive-udf
         path: featurebyte/sql/spark/
@@ -470,43 +470,43 @@ jobs:
     - name: Install dependencies
       run: poetry install -n --sync
     - name: Download unit test results
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-pytest.xml.0
     - name: Download integration test results (snowflake)
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-pytest.xml.1
     - name: Download integration test results (spark)
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-pytest.xml.2
     - name: Download integration test results (databricks)
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-pytest.xml.3
     - name: Download integration test results (databricks-unity)
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-pytest.xml.4
     - name: Download unit coverage results
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-.coverage.0
     - name: Download integration coverage results (snowflake)
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-.coverage.1
     - name: Download integration coverage results (spark)
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-.coverage.2
     - name: Download integration coverage results (databricks)
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-.coverage.3
     - name: Download integration coverage results (databricks-unity)
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: python-${{ matrix.python-version }}-.coverage.4
     - name: Merge test results
