@@ -1389,8 +1389,8 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
 
         Examples
         --------
-        import featurebyte.models.feature_list_namespace        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
-                >>> feature_list.update_status(featurebyte.models.feature_list_namespace.FeatureListStatus.TEMPLATE)
+        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+        >>> feature_list.update_status(fb.FeatureListStatus.TEMPLATE)
         """
         self.feature_list_namespace.update(
             update_payload={"status": str(status)}, allow_update_local=False

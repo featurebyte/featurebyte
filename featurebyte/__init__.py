@@ -476,6 +476,7 @@ __all__ = [
     "UsernamePasswordCredential",
     # enums
     "AggFunc",
+    "FeatureListStatus",
     "Purpose",
     "SourceType",
     "StorageType",
