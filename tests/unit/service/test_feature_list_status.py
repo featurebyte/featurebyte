@@ -6,8 +6,8 @@ import pytest
 import pytest_asyncio
 from bson import ObjectId
 
+from featurebyte import FeatureListStatus
 from featurebyte.exception import DocumentUpdateError
-from featurebyte.models.feature_list import FeatureListStatus
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 
 

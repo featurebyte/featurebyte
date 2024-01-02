@@ -11,7 +11,7 @@ from bson import ObjectId
 from freezegun import freeze_time
 from pandas.testing import assert_frame_equal
 
-from featurebyte import list_deployments
+from featurebyte import FeatureListStatus, list_deployments
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_group import BaseFeatureGroup, FeatureGroup
@@ -23,7 +23,6 @@ from featurebyte.exception import (
     RecordRetrievalException,
     RecordUpdateException,
 )
-from featurebyte.models.feature_list import FeatureListStatus
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting

@@ -9,7 +9,7 @@ import copy
 
 from bson.objectid import ObjectId
 
-from featurebyte.models.feature_list import FeatureListNamespaceModel
+from featurebyte.models.feature_list_namespace import FeatureListNamespaceModel
 from featurebyte.routes.catalog.catalog_name_injector import CatalogNameInjector
 from featurebyte.routes.common.base import BaseDocumentController, PaginatedDocument
 from featurebyte.schema.feature_list_namespace import (

@@ -4,11 +4,8 @@ Feature List Facade Service which is responsible for handling high level feature
 from bson import ObjectId
 
 from featurebyte.exception import DocumentDeletionError, DocumentNotFoundError
-from featurebyte.models.feature_list import (
-    FeatureListModel,
-    FeatureListNamespaceModel,
-    FeatureListStatus,
-)
+from featurebyte.models.feature_list import FeatureListModel
+from featurebyte.models.feature_list_namespace import FeatureListNamespaceModel, FeatureListStatus
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.schema.feature_list import FeatureListNewVersionCreate, FeatureListServiceCreate
 from featurebyte.service.feature_list import FeatureListService

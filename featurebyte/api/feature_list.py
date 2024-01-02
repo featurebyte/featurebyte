@@ -53,11 +53,8 @@ from featurebyte.enum import ConflictResolution
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.base import PydanticObjectId, get_active_catalog_id
-from featurebyte.models.feature_list import (
-    FeatureListModel,
-    FeatureListStatus,
-    FeatureReadinessDistribution,
-)
+from featurebyte.models.feature_list import FeatureListModel, FeatureReadinessDistribution
+from featurebyte.models.feature_list_namespace import FeatureListStatus
 from featurebyte.models.tile import TileSpec
 from featurebyte.schema.deployment import DeploymentCreate
 from featurebyte.schema.feature_list import (
@@ -1392,8 +1389,8 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
 
         Examples
         --------
-        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
-        >>> feature_list.update_status(fb.FeatureListStatus.TEMPLATE)
+        import featurebyte.models.feature_list_namespace        >>> feature_list = catalog.get_feature_list("invoice_feature_list")
+                >>> feature_list.update_status(featurebyte.models.feature_list_namespace.FeatureListStatus.TEMPLATE)
         """
         self.feature_list_namespace.update(
             update_payload={"status": str(status)}, allow_update_local=False

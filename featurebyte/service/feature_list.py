@@ -16,9 +16,9 @@ from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import (
     FeatureCluster,
     FeatureListModel,
-    FeatureListNamespaceModel,
     FeatureReadinessDistribution,
 )
+from featurebyte.models.feature_list_namespace import FeatureListNamespaceModel
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo

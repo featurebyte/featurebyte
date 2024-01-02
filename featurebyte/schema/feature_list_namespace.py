@@ -4,12 +4,8 @@ FeatureListNamespace API payload scheme
 from typing import List, Optional
 
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
-from featurebyte.models.feature_list import (
-    FeatureListNamespaceModel,
-    FeatureListStatus,
-    FeatureReadinessDistribution,
-    FeatureTypeFeatureCount,
-)
+from featurebyte.models.feature_list import FeatureReadinessDistribution, FeatureTypeFeatureCount
+from featurebyte.models.feature_list_namespace import FeatureListNamespaceModel, FeatureListStatus
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 
 

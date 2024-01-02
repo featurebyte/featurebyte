@@ -11,11 +11,8 @@ from tenacity import retry, retry_if_exception_type, wait_chain, wait_random
 
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.feature import FeatureModel
-from featurebyte.models.feature_list import (
-    FeatureListNamespaceModel,
-    FeatureReadinessDistribution,
-    FeatureReadinessTransition,
-)
+from featurebyte.models.feature_list import FeatureReadinessDistribution, FeatureReadinessTransition
+from featurebyte.models.feature_list_namespace import FeatureListNamespaceModel
 from featurebyte.models.feature_namespace import (
     DefaultVersionMode,
     FeatureNamespaceModel,

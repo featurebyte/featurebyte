@@ -66,7 +66,7 @@ from featurebyte.models.credential import (
     S3StorageCredential,
     UsernamePasswordCredential,
 )
-from featurebyte.models.feature_list import FeatureListStatus
+from featurebyte.models.feature_list_namespace import FeatureListStatus
 from featurebyte.models.feature_namespace import DefaultVersionMode
 from featurebyte.models.feature_store import TableStatus
 from featurebyte.models.observation_table import Purpose
@@ -476,7 +476,6 @@ __all__ = [
     "UsernamePasswordCredential",
     # enums
     "AggFunc",
-    "FeatureListStatus",
     "Purpose",
     "SourceType",
     "StorageType",
