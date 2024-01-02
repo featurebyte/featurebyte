@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from featurebyte.query_graph.node.metadata.config import OnDemandViewCodeGenConfig
 from featurebyte.query_graph.node.metadata.sdk_code import VariableNameGenerator, VariableNameStr
 from featurebyte.query_graph.node.string import (
     ConcatNode,
@@ -17,78 +16,121 @@ from featurebyte.query_graph.node.string import (
     SubStringNode,
     TrimNode,
 )
+from tests.unit.query_graph.util import evaluate_and_compare_odfv_and_udf_results
 
 NODE_PARAMS = {"name": "node_name"}
 
 
 @pytest.mark.parametrize(
-    "node, expected_expr, expected_statements",
+    "node, expected_odfv_expr, expected_udf_expr, expected_values",
     [
-        (LengthNode(**NODE_PARAMS), "feat.str.len()", []),
+        (LengthNode(**NODE_PARAMS), "feat.str.len()", "len(feat)", [0, 3, 4, 3, np.nan]),
         (
-            TrimNode(**NODE_PARAMS, parameters={"side": "left", "character": "*"}),
-            'feat.str.lstrip(to_strip="*")',
-            [],
+            TrimNode(**NODE_PARAMS, parameters={"side": "left", "character": "f"}),
+            'feat.str.lstrip(to_strip="f")',
+            'feat.lstrip("f")',
+            ["", "oo", "bar ", "bAz", np.nan],
         ),
         (
             TrimNode(**NODE_PARAMS, parameters={"side": "right", "character": None}),
             "feat.str.rstrip(to_strip=None)",
-            [],
+            "feat.rstrip(None)",
+            ["", "foo", "bar", "bAz", np.nan],
         ),
         (
             TrimNode(**NODE_PARAMS, parameters={"side": "both", "character": None}),
             "feat.str.strip(to_strip=None)",
-            [],
+            "feat.strip(None)",
+            ["", "foo", "bar", "bAz", np.nan],
         ),
         (
             ReplaceNode(**NODE_PARAMS, parameters={"pattern": "a", "replacement": "b"}),
             'feat.str.replace(pat="a", repl="b")',
-            [],
+            'feat.replace("a", "b")',
+            ["", "foo", "bbr ", "bAz", np.nan],
         ),
         (
             PadNode(**NODE_PARAMS, parameters={"side": "left", "length": 3, "pad": "0"}),
-            "feat",
-            [("feat", 'feat.str.pad(width=3, side="left", fillchar="0")')],
+            'feat.str.pad(width=3, side="left", fillchar="0")',
+            'pad_string(input_string=feat, side="left", length=3, pad="0")',
+            ["000", "foo", "bar ", "bAz", np.nan],
         ),
-        (StringCaseNode(**NODE_PARAMS, parameters={"case": "upper"}), "feat.str.upper()", []),
-        (StringCaseNode(**NODE_PARAMS, parameters={"case": "lower"}), "feat.str.lower()", []),
         (
-            StringContainsNode(**NODE_PARAMS, parameters={"pattern": "foo", "case": True}),
-            'feat.str.contains(pat="foo", case=True)',
-            [],
+            StringCaseNode(**NODE_PARAMS, parameters={"case": "upper"}),
+            "feat.str.upper()",
+            "feat.upper()",
+            ["", "FOO", "BAR ", "BAZ", np.nan],
+        ),
+        (
+            StringCaseNode(**NODE_PARAMS, parameters={"case": "lower"}),
+            "feat.str.lower()",
+            "feat.lower()",
+            ["", "foo", "bar ", "baz", np.nan],
+        ),
+        (
+            StringContainsNode(**NODE_PARAMS, parameters={"pattern": "A", "case": True}),
+            'feat.str.contains(pat="A", case=True)',
+            '"A" in feat',
+            [False, False, False, True, np.nan],
+        ),
+        (
+            StringContainsNode(**NODE_PARAMS, parameters={"pattern": "A", "case": False}),
+            'feat.str.contains(pat="A", case=False)',
+            '"A".lower() in feat.lower()',
+            [False, False, True, True, np.nan],
         ),
         (
             SubStringNode(**NODE_PARAMS, parameters={"start": 1, "length": 2}),
             "feat.str.slice(start=1, stop=3)",
-            [],
+            "feat[1:3]",
+            ["", "oo", "ar", "Az", np.nan],
         ),
         (
             ConcatNode(**NODE_PARAMS, parameters={"value": "foo"}),
             'pd.Series(np.where(pd.isna(feat), np.nan, feat + "foo"), index=feat.index)',
-            [],
+            'feat + "foo"',
+            ["foo", "foofoo", "bar foo", "bAzfoo", np.nan],
         ),
     ],
 )
-def test_derive_on_demand_view_code(node, expected_expr, expected_statements):
+def test_derive_on_demand_view_code(
+    node, odfv_config, udf_config, expected_odfv_expr, expected_udf_expr, expected_values
+):
     """Test derive_on_demand_view_code"""
-    config = OnDemandViewCodeGenConfig(
-        input_df_name="df", output_df_name="df", on_demand_function_name="on_demand"
-    )
-    statements, expr = node.derive_on_demand_view_code(
-        node_inputs=[VariableNameStr("feat")],
+    node_inputs = [VariableNameStr("feat")]
+
+    odfv_stats, odfv_expr = node.derive_on_demand_view_code(
+        node_inputs=node_inputs,
         var_name_generator=VariableNameGenerator(),
-        config=config,
+        config=odfv_config,
     )
-    feat = pd.Series(["foo", "bar", "baz"])
-    _ = feat
+
+    udf_stats, udf_expr = node.derive_user_defined_function_code(
+        node_inputs=node_inputs,
+        var_name_generator=VariableNameGenerator(),
+        config=udf_config,
+    )
+
+    if not isinstance(node, ConcatNode):
+        expected_odfv_expr = (
+            f"pd.Series(np.where(pd.isna(feat), np.nan, {expected_odfv_expr}), index=feat.index)"
+        )
+    expected_udf_expr = f"np.nan if pd.isna(feat) else {expected_udf_expr}"
+
+    assert odfv_stats == []
+    assert odfv_expr == expected_odfv_expr
+
+    if not isinstance(node, PadNode):
+        assert udf_stats == []
+    assert udf_expr == expected_udf_expr
 
     # check the expression can be evaluated & matches expected
-    if isinstance(node, ConcatNode):
-        assert expr == "feat"
-        assert statements == [("feat", expected_expr)]
-        _ = np  # numpy is used in the expected_expr
-        eval(expected_expr)
-    else:
-        assert expr == expected_expr
-        assert statements == expected_statements
-        eval(expr)
+    feat = pd.Series(["", "foo", "bar ", "bAz", np.nan])
+    evaluate_and_compare_odfv_and_udf_results(
+        input_map={"feat": feat},
+        odfv_expr=odfv_expr,
+        udf_expr=udf_expr,
+        odfv_stats=odfv_stats,
+        udf_stats=udf_stats,
+        expected_output=pd.Series(expected_values),
+    )

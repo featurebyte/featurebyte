@@ -1240,6 +1240,9 @@ class BaseSeriesOutputWithSingleOperandNode(BaseSeriesOutputNode, ABC):
             self.generate_expression(var_name_expression.as_input())
         )
 
+    def _generate_odfv_expression_with_null_value_handling(self, operand: str) -> str:
+        return self.generate_odfv_expression(operand)
+
     def _derive_on_demand_view_code(
         self,
         node_inputs: List[VarNameExpressionInfo],
@@ -1248,7 +1251,10 @@ class BaseSeriesOutputWithSingleOperandNode(BaseSeriesOutputNode, ABC):
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         input_var_name_expressions = self._assert_no_info_dict(node_inputs)
         var_name_expression = input_var_name_expressions[0]
-        return [], ExpressionStr(self.generate_odfv_expression(var_name_expression.as_input()))
+        expr = self._generate_odfv_expression_with_null_value_handling(
+            var_name_expression.as_input()
+        )
+        return [], ExpressionStr(expr)
 
     def _generate_udf_expression_with_null_value_handling(self, operand: str) -> str:
         expr = self.generate_udf_expression(operand)

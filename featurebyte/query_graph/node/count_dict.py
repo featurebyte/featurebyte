@@ -15,11 +15,16 @@ from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.agg_func import construct_agg_func
 from featurebyte.query_graph.node.base import BaseSeriesOutputNode
-from featurebyte.query_graph.node.metadata.config import OnDemandViewCodeGenConfig, SDKCodeGenConfig
+from featurebyte.query_graph.node.metadata.config import (
+    OnDemandFunctionCodeGenConfig,
+    OnDemandViewCodeGenConfig,
+    SDKCodeGenConfig,
+)
 from featurebyte.query_graph.node.metadata.operation import AggregationColumn, OperationStructure
 from featurebyte.query_graph.node.metadata.sdk_code import (
     CodeGenerationContext,
     ExpressionStr,
+    ObjectClass,
     StatementStr,
     StatementT,
     ValueStr,
@@ -193,13 +198,12 @@ class CountDictTransformNode(BaseCountDictOpNode):
         return statements, ExpressionStr(entropy_expr)
 
     @staticmethod
-    def _get_extreme_value_key(
-        count_dict_var_name: str,
+    def _get_extreme_value_func_name(
         var_name_generator: VariableNameGenerator,
         operation: Literal["max", "min"] = "max",
-    ) -> Tuple[List[StatementT], ExpressionStr]:
+    ) -> Tuple[List[StatementT], str]:
         statements: List[StatementT] = []
-        func_name = "extract_extreme_value"
+        func_name = f"extract_extreme_value_{operation}"
         if func_name not in var_name_generator.var_name_counter:
             func_name = var_name_generator.convert_to_variable_name(
                 variable_name_prefix=func_name, node_name=None
@@ -213,7 +217,15 @@ class CountDictTransformNode(BaseCountDictOpNode):
                 )
             """
             statements.append(StatementStr(textwrap.dedent(func_string)))
+        return statements, func_name
 
+    def _get_extreme_value_key(
+        self,
+        count_dict_var_name: str,
+        var_name_generator: VariableNameGenerator,
+        operation: Literal["max", "min"] = "max",
+    ) -> Tuple[List[StatementT], ExpressionStr]:
+        statements, func_name = self._get_extreme_value_func_name(var_name_generator, operation)
         extreme_value_key_expr = get_object_class_from_function_call(
             f"{count_dict_var_name}.apply",
             ExpressionStr(func_name),
@@ -271,6 +283,42 @@ class CountDictTransformNode(BaseCountDictOpNode):
         statements.append((var_name, op_expr))
         return statements, ExpressionStr(f"{var_name}.reindex({mask_var}.index)")
 
+    def _derive_user_defined_function_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandFunctionCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        var_name_expressions = self._assert_no_info_dict(node_inputs)
+        operand = var_name_expressions[0].as_input()
+
+        include_missing = False
+        if isinstance(self.parameters, self.UniqueCountParameters):
+            include_missing = self.parameters.include_missing
+
+        transform_type = self.parameters.transform_type
+        statements: List[StatementT] = []
+        if transform_type == "entropy":
+            expr = ExpressionStr(
+                f"sp.stats.entropy(list(({operand}).values())) if not pd.isna({operand}) else np.nan"
+            )
+        elif transform_type in {"most_frequent", "key_with_highest_value"}:
+            statements, func_name = self._get_extreme_value_func_name(var_name_generator, "max")
+            expr = ExpressionStr(f"{func_name}({operand})")
+        elif transform_type == "key_with_lowest_value":
+            statements, func_name = self._get_extreme_value_func_name(var_name_generator, "min")
+            expr = ExpressionStr(f"{func_name}({operand})")
+        elif transform_type == "unique_count" and include_missing:
+            expr = ExpressionStr(f"len({operand}) if not pd.isna({operand}) else np.nan")
+        elif transform_type == "unique_count" and not include_missing:
+            expr = ExpressionStr(
+                f"len([key for key in {operand} if key != '{MISSING_VALUE_REPLACEMENT}']) "
+                f"if not pd.isna({operand}) else np.nan"
+            )
+        else:
+            raise ValueError(f"Unsupported transform type: {transform_type}")
+        return statements, expr
+
 
 class CosineSimilarityNode(BaseCountDictOpNode):
     """CosineSimilarityNode class"""
@@ -289,12 +337,10 @@ class CosineSimilarityNode(BaseCountDictOpNode):
         )
         return f"{operand}.combine({other_operands[0]}, {lambda_func})"
 
-    def _derive_on_demand_view_code(
-        self,
-        node_inputs: List[VarNameExpressionInfo],
+    @staticmethod
+    def _get_cosine_similarity_function_name(
         var_name_generator: VariableNameGenerator,
-        config: OnDemandViewCodeGenConfig,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> Tuple[List[StatementT], str]:
         statements: List[StatementT] = []
         func_name = "cosine_similarity"
         if func_name not in var_name_generator.var_name_counter:
@@ -304,6 +350,8 @@ class CosineSimilarityNode(BaseCountDictOpNode):
             )
             func_string = f"""
             def {func_name}(dict1, dict2):
+                if pd.isna(dict1) or pd.isna(dict2):
+                    return np.nan
                 if len(dict1) == 0 or len(dict2) == 0:
                     return 0.0
                 all_keys = set(dict1.keys()).union(dict2.keys())
@@ -312,6 +360,17 @@ class CosineSimilarityNode(BaseCountDictOpNode):
                 return 1 - sp.spatial.distance.cosine(series1, series2)
             """
             statements.append(StatementStr(textwrap.dedent(func_string)))
+        return statements, func_name
+
+    def _derive_on_demand_view_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandViewCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        statements, _ = self._get_cosine_similarity_function_name(
+            var_name_generator=var_name_generator
+        )
 
         # compute cosine similarity
         odfv_stats, output_var_name = super()._derive_on_demand_view_code(
@@ -319,6 +378,21 @@ class CosineSimilarityNode(BaseCountDictOpNode):
         )
         statements.extend(odfv_stats)
         return statements, output_var_name
+
+    def _derive_user_defined_function_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandFunctionCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        statements, func_name = self._get_cosine_similarity_function_name(
+            var_name_generator=var_name_generator
+        )
+        input_var_name_expressions = self._assert_no_info_dict(node_inputs)
+        left_operand = input_var_name_expressions[0].as_input()
+        right_operand = input_var_name_expressions[1].as_input()
+        expr = ExpressionStr(f"{func_name}({left_operand}, {right_operand})")
+        return statements, expr
 
 
 class DictionaryKeysNode(BaseSeriesOutputNode):
@@ -359,16 +433,21 @@ class DictionaryKeysNode(BaseSeriesOutputNode):
         statements: List[StatementT] = []
         input_var_name_expressions = self._assert_no_info_dict(node_inputs)
         var_name: str = input_var_name_expressions[0].as_input()
-        # make the missing value as empty list so that it can be handled by the IS_IN node
         keys_expr = get_object_class_from_function_call(
             f"{var_name}.apply",
-            ExpressionStr("lambda x: [] if pd.isna(x) else list(x.keys())"),
+            ExpressionStr("lambda x: np.nan if pd.isna(x) else list(x.keys())"),
         )
-        keys_var = var_name_generator.convert_to_variable_name(
-            variable_name_prefix="feat_keys", node_name=None
-        )
-        statements.append((keys_var, keys_expr))
-        return statements, keys_var
+        return statements, ExpressionStr(keys_expr)
+
+    def _derive_user_defined_function_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandFunctionCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        input_var_name_expressions = self._assert_no_info_dict(node_inputs)
+        var_name: str = input_var_name_expressions[0].as_input()
+        return [], ExpressionStr(f"np.nan if pd.isna({var_name}) else list({var_name}.keys())")
 
 
 class GetValueFromDictionaryNode(BaseCountDictOpNode):
@@ -409,18 +488,38 @@ class GetValueFromDictionaryNode(BaseCountDictOpNode):
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         input_var_name_expressions = self._assert_no_info_dict(node_inputs)
         var_name: str = input_var_name_expressions[0].as_input()
+        value_expr: Union[str, ObjectClass]
+        if len(node_inputs) == 1:
+            param = ValueStr.create(self.parameters.value)
+            value_expr = get_object_class_from_function_call(
+                f"{var_name}.apply",
+                ExpressionStr(f"lambda x: np.nan if pd.isna(x) else x.get({param})"),
+            )
+        else:
+            operand: str = input_var_name_expressions[1].as_input()
+            value_expr = (
+                f"{var_name}.combine({operand}, lambda x, y: np.nan if pd.isna(x) else x.get(y))"
+            )
+
+        return [], ExpressionStr(value_expr)
+
+    def _derive_user_defined_function_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandFunctionCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        input_var_name_expressions = self._assert_no_info_dict(node_inputs)
+        var_name: str = input_var_name_expressions[0].as_input()
         if len(node_inputs) == 1:
             param = ValueStr.create(self.parameters.value)
             value_expr = ExpressionStr(
-                get_object_class_from_function_call(
-                    f"{var_name}.apply",
-                    ExpressionStr(f"lambda x: None if pd.isna(x) else x.get({param})"),
-                )
+                f"np.nan if pd.isna({var_name}) else {var_name}.get({param})"
             )
         else:
             operand: str = input_var_name_expressions[1].as_input()
             value_expr = ExpressionStr(
-                f"{var_name}.combine({operand}, lambda x, y: None if pd.isna(x) else x.get(y))"
+                f"np.nan if pd.isna({var_name}) else {var_name}.get({operand})"
             )
 
         return [], value_expr
@@ -447,16 +546,11 @@ class GetRankFromDictionaryNode(BaseCountDictOpNode):
         params = f"key={key}, descending={descending}"
         return f"{operand}.cd.get_value(key={params})"
 
-    def _derive_on_demand_view_code(
-        self,
-        node_inputs: List[VarNameExpressionInfo],
+    @staticmethod
+    def _get_rank_func_name(
         var_name_generator: VariableNameGenerator,
-        config: OnDemandViewCodeGenConfig,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> Tuple[List[StatementT], str]:
         statements: List[StatementT] = []
-        input_var_name_expressions = self._assert_no_info_dict(node_inputs)
-        var_name: str = input_var_name_expressions[0].as_input()
-        descending = ValueStr.create(self.parameters.descending)
         func_name = "get_rank"
         if func_name not in var_name_generator.var_name_counter:
             # add custom function if it doesn't exist
@@ -471,7 +565,18 @@ class GetRankFromDictionaryNode(BaseCountDictOpNode):
                 return sorted_values.index(input_dict[key]) + 1
             """
             statements.append(StatementStr(textwrap.dedent(func_string)))
+        return statements, func_name
 
+    def _derive_on_demand_view_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandViewCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        input_var_name_expressions = self._assert_no_info_dict(node_inputs)
+        var_name: str = input_var_name_expressions[0].as_input()
+        descending = ValueStr.create(self.parameters.descending)
+        statements, func_name = self._get_rank_func_name(var_name_generator)
         if len(node_inputs) == 1:
             param = ValueStr.create(self.parameters.value)
             rank_expr = ExpressionStr(
@@ -486,6 +591,29 @@ class GetRankFromDictionaryNode(BaseCountDictOpNode):
             operand: str = input_var_name_expressions[1].as_input()
             rank_expr = ExpressionStr(
                 f"{var_name}.combine({operand}, lambda dct, key: {func_name}(dct, key=key, is_descending={descending}))"
+            )
+
+        return statements, rank_expr
+
+    def _derive_user_defined_function_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandFunctionCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        input_var_name_expressions = self._assert_no_info_dict(node_inputs)
+        var_name: str = input_var_name_expressions[0].as_input()
+        descending = ValueStr.create(self.parameters.descending)
+        statements, func_name = self._get_rank_func_name(var_name_generator)
+        if len(node_inputs) == 1:
+            param = ValueStr.create(self.parameters.value)
+            rank_expr = ExpressionStr(
+                f"{func_name}({var_name}, key={param}, is_descending={descending})"
+            )
+        else:
+            operand: str = input_var_name_expressions[1].as_input()
+            rank_expr = ExpressionStr(
+                f"{func_name}({var_name}, key={operand}, is_descending={descending})"
             )
 
         return statements, rank_expr
@@ -511,15 +639,11 @@ class GetRelativeFrequencyFromDictionaryNode(BaseCountDictOpNode):
         param = other_operands[0] if other_operands else ValueStr.create(self.parameters.value)
         return f"{operand}.cd.get_relative_frequency(key={param})"
 
-    def _derive_on_demand_view_code(
-        self,
-        node_inputs: List[VarNameExpressionInfo],
+    @staticmethod
+    def _get_relative_frequency_func_name(
         var_name_generator: VariableNameGenerator,
-        config: OnDemandViewCodeGenConfig,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> Tuple[List[StatementT], str]:
         statements: List[StatementT] = []
-        input_var_name_expressions = self._assert_no_info_dict(node_inputs)
-        var_name: str = input_var_name_expressions[0].as_input()
         func_name = "get_relative_frequency"
         if func_name not in var_name_generator.var_name_counter:
             # add custom function if it doesn't exist
@@ -537,7 +661,17 @@ class GetRelativeFrequencyFromDictionaryNode(BaseCountDictOpNode):
                 return key_frequency / total_count
             """
             statements.append(StatementStr(textwrap.dedent(func_string)))
+        return statements, func_name
 
+    def _derive_on_demand_view_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandViewCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        input_var_name_expressions = self._assert_no_info_dict(node_inputs)
+        var_name: str = input_var_name_expressions[0].as_input()
+        statements, func_name = self._get_relative_frequency_func_name(var_name_generator)
         if len(node_inputs) == 1:
             param = ValueStr.create(self.parameters.value)
             freq_expr = ExpressionStr(
@@ -551,5 +685,23 @@ class GetRelativeFrequencyFromDictionaryNode(BaseCountDictOpNode):
             freq_expr = ExpressionStr(
                 f"{var_name}.combine({operand}, lambda dct, key: {func_name}(dct, key=key))"
             )
+
+        return statements, freq_expr
+
+    def _derive_user_defined_function_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandFunctionCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        input_var_name_expressions = self._assert_no_info_dict(node_inputs)
+        var_name: str = input_var_name_expressions[0].as_input()
+        statements, func_name = self._get_relative_frequency_func_name(var_name_generator)
+        if len(node_inputs) == 1:
+            param = ValueStr.create(self.parameters.value)
+            freq_expr = ExpressionStr(f"{func_name}({var_name}, key={param})")
+        else:
+            operand: str = input_var_name_expressions[1].as_input()
+            freq_expr = ExpressionStr(f"{func_name}({var_name}, key={operand})")
 
         return statements, freq_expr

@@ -123,6 +123,8 @@ def test_feature__request_column_ttl_and_non_ttl_components(
     non_time_based_feature,
     latest_event_timestamp_feature,
     feature_group_feature_job_setting,
+    test_dir,
+    update_fixtures,
 ):
     """Test that a feature contains request column, ttl and non-ttl components."""
     request_and_ttl_component = (
@@ -170,8 +172,15 @@ def test_feature__request_column_ttl_and_non_ttl_components(
     check_ingest_query_graph(non_ttl_component_graph)
 
     # check consistency of decomposed graph
+    sql_fixture_path = os.path.join(
+        test_dir, "fixtures/on_demand_function/req_col_ttl_and_non_ttl.sql"
+    )
     check_decomposed_graph_output_node_hash(feature_model=feature_model)
-    check_on_demand_feature_code_generation(feature_model=feature_model, skip_udf_check=True)
+    check_on_demand_feature_code_generation(
+        feature_model=feature_model,
+        sql_fixture_path=sql_fixture_path,
+        update_fixtures=update_fixtures,
+    )
 
     # check on-demand view code
     codes = offline_store_info.generate_on_demand_feature_view_code(
@@ -266,7 +275,7 @@ def test_feature__ttl_item_aggregate_request_column(
     # check offline ingest query graph
     feature_model = composite_feature.cached_model
     check_decomposed_graph_output_node_hash(feature_model=feature_model)
-    check_on_demand_feature_code_generation(feature_model=feature_model, skip_udf_check=True)
+    check_on_demand_feature_code_generation(feature_model=feature_model)
 
     # check on-demand view code
     offline_store_info = feature_model.offline_store_info
@@ -415,7 +424,7 @@ def test_feature__composite_count_dict(
     feature_model = feature.cached_model
     assert feature_model.offline_store_info.is_decomposed is True
     check_decomposed_graph_output_node_hash(feature_model=feature_model)
-    check_on_demand_feature_code_generation(feature_model=feature_model, skip_udf_check=True)
+    check_on_demand_feature_code_generation(feature_model=feature_model)
 
 
 def test_feature__input_has_ingest_query_graph_node(test_dir):

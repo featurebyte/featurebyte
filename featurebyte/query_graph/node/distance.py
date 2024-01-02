@@ -10,7 +10,11 @@ from pydantic import BaseModel, Field
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.base import BaseSeriesOutputNode
-from featurebyte.query_graph.node.metadata.config import OnDemandViewCodeGenConfig, SDKCodeGenConfig
+from featurebyte.query_graph.node.metadata.config import (
+    OnDemandFunctionCodeGenConfig,
+    OnDemandViewCodeGenConfig,
+    SDKCodeGenConfig,
+)
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.node.metadata.sdk_code import (
     ClassEnum,
@@ -68,11 +72,10 @@ class HaversineNode(BaseSeriesOutputNode):
         statements.append((var_name, obj))
         return statements, var_name
 
-    def _derive_on_demand_view_code(
+    def _derive_on_demand_view_or_function_code_helper(
         self,
         node_inputs: List[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
-        config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         statements: List[StatementT] = []
         input_var_name_expressions = self._assert_no_info_dict(node_inputs)
@@ -100,5 +103,25 @@ class HaversineNode(BaseSeriesOutputNode):
         lon_1 = input_var_name_expressions[1]
         lat_2 = input_var_name_expressions[2]
         lon_2 = input_var_name_expressions[3]
-        dist_expr = ExpressionStr(f"haversine_distance({lat_1}, {lon_1}, {lat_2}, {lon_2})")
+        dist_expr = ExpressionStr(f"{func_name}({lat_1}, {lon_1}, {lat_2}, {lon_2})")
         return statements, dist_expr
+
+    def _derive_on_demand_view_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandViewCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        return self._derive_on_demand_view_or_function_code_helper(
+            node_inputs=node_inputs, var_name_generator=var_name_generator
+        )
+
+    def _derive_user_defined_function_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandFunctionCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        return self._derive_on_demand_view_or_function_code_helper(
+            node_inputs=node_inputs, var_name_generator=var_name_generator
+        )
