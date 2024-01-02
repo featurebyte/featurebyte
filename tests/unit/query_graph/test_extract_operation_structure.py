@@ -389,7 +389,7 @@ def test_extract_operation__item_groupby(
     assert to_dict(op_struct.aggregations) == [
         {
             "name": "order_size",
-            "dtype": "FLOAT",
+            "dtype": "INT",
             "category": None,
             "column": None,
             "keys": ["order_id"],
