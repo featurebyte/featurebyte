@@ -90,11 +90,15 @@ async def list_deployments(
     sort_dir: Optional[str] = SortDirQuery,
     search: Optional[str] = SearchQuery,
     name: Optional[str] = NameQuery,
+    feature_list_id: Optional[PydanticObjectId] = None,
 ) -> DeploymentList:
     """
     List Deployments
     """
     controller = request.state.app_container.deployment_controller
+    query_filter = None
+    if feature_list_id:
+        query_filter = {"feature_list_id": feature_list_id}
     deployment_list: DeploymentList = await controller.list(
         page=page,
         page_size=page_size,
@@ -102,6 +106,7 @@ async def list_deployments(
         sort_dir=sort_dir,
         search=search,
         name=name,
+        query_filter=query_filter,
     )
     return deployment_list
 
