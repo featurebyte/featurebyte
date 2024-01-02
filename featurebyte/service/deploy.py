@@ -11,11 +11,8 @@ from featurebyte.exception import DocumentCreationError, DocumentError, Document
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.deployment import DeploymentModel, FeastIntegrationSettings
 from featurebyte.models.feature import FeatureModel
-from featurebyte.models.feature_list import (
-    FeatureListModel,
-    FeatureListNamespaceModel,
-    FeatureListStatus,
-)
+from featurebyte.models.feature_list import FeatureListModel
+from featurebyte.models.feature_list_namespace import FeatureListNamespaceModel, FeatureListStatus
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.persistent import Persistent
 from featurebyte.schema.deployment import DeploymentUpdate

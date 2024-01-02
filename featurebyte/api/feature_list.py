@@ -53,11 +53,8 @@ from featurebyte.enum import ConflictResolution
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.base import PydanticObjectId, get_active_catalog_id
-from featurebyte.models.feature_list import (
-    FeatureListModel,
-    FeatureListStatus,
-    FeatureReadinessDistribution,
-)
+from featurebyte.models.feature_list import FeatureListModel, FeatureReadinessDistribution
+from featurebyte.models.feature_list_namespace import FeatureListStatus
 from featurebyte.models.tile import TileSpec
 from featurebyte.schema.deployment import DeploymentCreate
 from featurebyte.schema.feature_list import (

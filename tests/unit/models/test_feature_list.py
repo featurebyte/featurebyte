@@ -4,14 +4,14 @@ Tests for Feature list related models
 import pytest
 from bson.objectid import ObjectId
 
+from featurebyte import FeatureListStatus
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.feature_list import (
     FeatureListModel,
-    FeatureListNamespaceModel,
-    FeatureListStatus,
     FeatureReadinessDistribution,
     FeatureReadinessTransition,
 )
+from featurebyte.models.feature_list_namespace import FeatureListNamespaceModel
 
 
 @pytest.fixture(name="feature_list_model_dict")

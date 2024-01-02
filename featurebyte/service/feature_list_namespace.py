@@ -3,7 +3,7 @@ FeatureListNamespaceService class
 """
 from __future__ import annotations
 
-from featurebyte.models.feature_list import FeatureListNamespaceModel
+from featurebyte.models.feature_list_namespace import FeatureListNamespaceModel
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService
 

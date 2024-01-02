@@ -4,7 +4,7 @@ Test FeatureListNamespaceService
 import pytest
 from bson.objectid import ObjectId
 
-from featurebyte.models.feature_list import FeatureListStatus
+from featurebyte.models.feature_list_namespace import FeatureListStatus
 from featurebyte.schema.feature import FeatureServiceCreate
 from featurebyte.schema.feature_list import FeatureListServiceCreate
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
