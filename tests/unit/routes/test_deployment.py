@@ -140,6 +140,43 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
             "total": 3,
         }
 
+    def test_list_200__filter_by_feature_list_id(
+        self, test_api_client_persistent, create_multiple_success_responses
+    ):
+        """Test list by feature list id"""
+        _ = create_multiple_success_responses
+
+        test_api_client, _ = test_api_client_persistent
+        default_catalog_id = test_api_client.headers["active-catalog-id"]
+
+        response = test_api_client.get("/feature_list")
+        assert response.status_code == HTTPStatus.OK, response.text
+        fl_ids = [obj["_id"] for obj in response.json()["data"]]
+
+        response = test_api_client.get(self.base_route, params={"feature_list_id": fl_ids[0]})
+        response_dict = response.json()
+        assert response_dict == {
+            "data": [
+                {
+                    "_id": response_dict["data"][0]["_id"],
+                    "block_modification_by": [],
+                    "catalog_id": default_catalog_id,
+                    "context_id": None,
+                    "created_at": response_dict["data"][0]["created_at"],
+                    "description": None,
+                    "enabled": False,
+                    "feature_list_id": fl_ids[0],
+                    "name": "my_deployment_2",
+                    "updated_at": response_dict["data"][0]["updated_at"],
+                    "use_case_id": None,
+                    "user_id": response_dict["data"][0]["user_id"],
+                }
+            ],
+            "page": 1,
+            "page_size": 10,
+            "total": 1,
+        }
+
     def test_deployment_summary_200(
         self, test_api_client_persistent, create_success_response, default_catalog_id
     ):
