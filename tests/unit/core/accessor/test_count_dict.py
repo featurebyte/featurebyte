@@ -172,7 +172,11 @@ def test_get_value_from_dictionary__success(
 
         result = per_cat_feat.cd.get_value("key")
         result_dict = result.dict()
-        assert result.dtype == "FLOAT"
+        if per_cat_feat.name == count_per_category_feature.name:
+            expected_dtype = "INT"
+        else:
+            expected_dtype = "FLOAT"
+        assert result.dtype == expected_dtype
         assert result_dict["graph"]["edges"] == [
             {"source": "input_1", "target": "graph_1"},
             {"source": "graph_1", "target": "groupby_1"},
