@@ -8,5 +8,6 @@
     "default_feature_store_ids": [
         "646f6c190ed28a5271fb02a1"
     ],
-    "name": "grocery"
+    "name": "grocery",
+    "online_store_id": null
 }
