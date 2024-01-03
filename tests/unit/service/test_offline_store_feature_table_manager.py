@@ -129,6 +129,25 @@ async def deployed_item_aggregate_feature(
     return await deploy_feature(app_container, non_time_based_feature)
 
 
+@pytest_asyncio.fixture
+async def deployed_feature_list_when_all_features_already_deployed(
+    app_container,
+    float_feature,
+    deployed_float_feature,
+):
+    """
+    Fixture for a deployment created when all the underlying features are already deployed
+    """
+    _ = deployed_float_feature
+    out = await deploy_feature(
+        app_container,
+        float_feature,
+        feature_list_name_override="my_new_feature_list",
+        return_type="feature_list",
+    )
+    return out
+
+
 @pytest.fixture
 def document_service(app_container):
     """
@@ -622,4 +641,22 @@ async def test_aggregate_asat_feature(
         app_container,
         expected_feature_views={"fb_entity_gender_fjs_86400_0_0"},
         expected_feature_services={"asat_gender_count_list"},
+    )
+
+
+@pytest.mark.asyncio
+async def test_new_deployment_when_all_features_already_deployed(
+    app_container,
+    deployed_feature_list_when_all_features_already_deployed,
+):
+    """
+    Test enabling a new deployment when all the underlying features are already deployed
+    """
+    await check_feast_registry(
+        app_container,
+        expected_feature_views={"fb_entity_cust_id_fjs_1800_300_600_ttl"},
+        expected_feature_services={
+            "sum_1d_list",
+            deployed_feature_list_when_all_features_already_deployed.name,
+        },
     )
