@@ -74,13 +74,7 @@
                     "event_timestamp_timezone_offset": null,
                     "event_timestamp_timezone_offset_column": null,
                     "feature_store_details": {
-                        "details": {
-                            "account": "sf_account",
-                            "database_name": "sf_database",
-                            "schema_name": "sf_schema",
-                            "role_name": "TESTING",
-                            "warehouse": "sf_warehouse"
-                        },
+                        "details": null,
                         "type": "snowflake"
                     },
                     "id": "6337f9651050ee7d5980660d",
@@ -92,6 +86,53 @@
                     },
                     "timestamp_column": "event_timestamp",
                     "type": "event_table"
+                },
+                "type": "input"
+            },
+            {
+                "name": "input_2",
+                "output_type": "frame",
+                "parameters": {
+                    "columns": [
+                        {
+                            "dtype": "INT",
+                            "name": "event_id_col"
+                        },
+                        {
+                            "dtype": "VARCHAR",
+                            "name": "item_id_col"
+                        },
+                        {
+                            "dtype": "VARCHAR",
+                            "name": "item_type"
+                        },
+                        {
+                            "dtype": "FLOAT",
+                            "name": "item_amount"
+                        },
+                        {
+                            "dtype": "TIMESTAMP_TZ",
+                            "name": "created_at"
+                        },
+                        {
+                            "dtype": "TIMESTAMP_TZ",
+                            "name": "event_timestamp"
+                        }
+                    ],
+                    "event_id_column": "event_id_col",
+                    "event_table_id": "6337f9651050ee7d5980660d",
+                    "feature_store_details": {
+                        "details": null,
+                        "type": "snowflake"
+                    },
+                    "id": "6337f9651050ee7d5980662d",
+                    "id_column": "item_id_col",
+                    "table_details": {
+                        "database_name": "sf_database",
+                        "schema_name": "sf_schema",
+                        "table_name": "items_table"
+                    },
+                    "type": "item_table"
                 },
                 "type": "input"
             },
@@ -148,59 +189,6 @@
                 "type": "graph"
             },
             {
-                "name": "input_2",
-                "output_type": "frame",
-                "parameters": {
-                    "columns": [
-                        {
-                            "dtype": "INT",
-                            "name": "event_id_col"
-                        },
-                        {
-                            "dtype": "VARCHAR",
-                            "name": "item_id_col"
-                        },
-                        {
-                            "dtype": "VARCHAR",
-                            "name": "item_type"
-                        },
-                        {
-                            "dtype": "FLOAT",
-                            "name": "item_amount"
-                        },
-                        {
-                            "dtype": "TIMESTAMP_TZ",
-                            "name": "created_at"
-                        },
-                        {
-                            "dtype": "TIMESTAMP_TZ",
-                            "name": "event_timestamp"
-                        }
-                    ],
-                    "event_id_column": "event_id_col",
-                    "event_table_id": "6337f9651050ee7d5980660d",
-                    "feature_store_details": {
-                        "details": {
-                            "account": "sf_account",
-                            "database_name": "sf_database",
-                            "schema_name": "sf_schema",
-                            "role_name": "TESTING",
-                            "warehouse": "sf_warehouse"
-                        },
-                        "type": "snowflake"
-                    },
-                    "id": "6337f9651050ee7d5980662d",
-                    "id_column": "item_id_col",
-                    "table_details": {
-                        "database_name": "sf_database",
-                        "schema_name": "sf_schema",
-                        "table_name": "items_table"
-                    },
-                    "type": "item_table"
-                },
-                "type": "input"
-            },
-            {
                 "name": "graph_2",
                 "output_type": "frame",
                 "parameters": {
@@ -255,7 +243,7 @@
                                 "name": "join_1",
                                 "output_type": "frame",
                                 "parameters": {
-                                    "join_type": "left",
+                                    "join_type": "inner",
                                     "left_input_columns": [
                                         "event_id_col",
                                         "item_id_col",

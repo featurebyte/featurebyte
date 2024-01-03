@@ -9,8 +9,8 @@
     "details": {
         "account": "sf_account",
         "database_name": "sf_database",
-        "schema_name": "sf_schema",
         "role_name": "TESTING",
+        "schema_name": "sf_schema",
         "warehouse": "sf_warehouse"
     },
     "name": "sf_featurestore",
