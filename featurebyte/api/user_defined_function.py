@@ -28,12 +28,13 @@ from featurebyte.api.view import ViewColumn
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.config import Configurations
 from featurebyte.enum import DBVarType
-from featurebyte.exception import DocumentCreationError, InvalidSettingsError
+from featurebyte.exception import InvalidSettingsError
 from featurebyte.logging import get_logger
 from featurebyte.models.base import PydanticObjectId, get_active_catalog_id
 from featurebyte.models.user_defined_function import FunctionParameter, UserDefinedFunctionModel
 from featurebyte.schema.user_defined_function import (
     UserDefinedFunctionCreate,
+    UserDefinedFunctionResponse,
     UserDefinedFunctionUpdate,
 )
 
@@ -55,17 +56,14 @@ def _get_active_feature_store_id(catalog_id: Optional[ObjectId] = None) -> Optio
     return None
 
 
-def _synchronize_user_defined_function(
-    func_accessor: FunctionAccessor, route: str, feature_store_id: Optional[ObjectId]
-) -> None:
+def _synchronize_user_defined_function(func_accessor: FunctionAccessor, route: str) -> None:
     # synchronize all user-defined functions to the function accessor
     name_to_udf_dict: dict[str, UserDefinedFunctionModel] = {}
     try:
+        feature_store_id = _get_active_feature_store_id()
         if feature_store_id is None:
-            feature_store_id = _get_active_feature_store_id()
-            if feature_store_id is None:
-                # Cannot synchronize user-defined functions without specifying a feature store
-                return
+            # Cannot synchronize user-defined functions without specifying a feature store
+            return
 
         for udf_dict in iterate_api_object_using_paginated_routes(
             route, params={"feature_store_id": feature_store_id}
@@ -98,9 +96,7 @@ class FunctionDescriptor:
         # create a function accessor object as a user-defined function container and
         # register all user-defined functions to the function accessor
         accessor = FunctionAccessor()
-        _synchronize_user_defined_function(
-            func_accessor=accessor, route=self._route, feature_store_id=None
-        )
+        _synchronize_user_defined_function(func_accessor=accessor, route=self._route)
         return accessor
 
 
@@ -117,8 +113,8 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
     _route = "/user_defined_function"
     _create_schema_class = UserDefinedFunctionCreate
     _update_schema_class = UserDefinedFunctionUpdate
-    _get_schema = UserDefinedFunctionModel
-    _list_schema = UserDefinedFunctionModel
+    _get_schema = UserDefinedFunctionResponse
+    _list_schema = UserDefinedFunctionResponse
     _list_fields = [
         "signature",
         "sql_function_name",
@@ -130,8 +126,7 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
     ]
 
     # pydantic instance variable (internal use)
-    internal_catalog_id: Optional[PydanticObjectId] = Field(alias="catalog_id")
-    internal_feature_store_id: PydanticObjectId = Field(alias="feature_store_id")
+    internal_is_global: bool = Field(alias="is_global")
     internal_sql_function_name: str = Field(alias="sql_function_name")
     internal_function_parameters: List[FunctionParameter] = Field(alias="function_parameters")
     internal_output_dtype: DBVarType = Field(alias="output_dtype")
@@ -218,7 +213,7 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
         -------
         bool
         """
-        return self.catalog_id is None
+        return self.cached_model.is_global
 
     @classmethod
     def _list_handler(cls) -> ListHandler:
@@ -276,11 +271,6 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
         UserDefinedFunction
             The created user-defined function.
 
-        Raises
-        ------
-        DocumentCreationError
-            If the user-defined function cannot be created.
-
         Examples
         --------
         Create a local (catalog-specific) user-defined function that computes the cosine of a number:
@@ -324,22 +314,12 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
         >>> feature = catalog.get_feature("InvoiceCount_60days")
         >>> another_cos_feat = fb.UDF.cos(feature)
         """
-        active_catalog_id = get_active_catalog_id()
-        active_feature_store_id = _get_active_feature_store_id(catalog_id=active_catalog_id)
-        if not active_feature_store_id:
-            raise DocumentCreationError(
-                "Current active catalog does not have a default feature store. "
-                "Please activate a catalog with a default feature store first before "
-                "creating a user-defined function."
-            )
-
         user_defined_function = UserDefinedFunction(
             name=name,
             sql_function_name=sql_function_name,
             function_parameters=function_parameters,
             output_dtype=output_dtype,
-            catalog_id=None if is_global else active_catalog_id,
-            feature_store_id=active_feature_store_id,
+            is_global=is_global,
         )
         user_defined_function.save()
         return user_defined_function
