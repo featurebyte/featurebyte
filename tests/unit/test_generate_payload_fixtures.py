@@ -154,6 +154,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         ),
         context_id=context.id,
         primary_entity_ids=[cust_id_entity.id],
+        purpose="other",
     )
     historical_feature_table = HistoricalFeatureTableCreate(
         _id="646f6c1c0ed28a5271fb02d8",

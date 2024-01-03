@@ -182,7 +182,7 @@ class TestSCDTableApi(BaseTableApiTestSuite):
                 "scd_natural_key_id",
                 "scd_surrogate_key_id",
             ],
-            "column_count": 10,
+            "column_count": 11,
             "catalog_name": "grocery",
         }
         assert response.status_code == HTTPStatus.OK, response.text
@@ -267,6 +267,14 @@ class TestSCDTableApi(BaseTableApiTestSuite):
                 "dtype": "TIMESTAMP_TZ",
                 "entity": None,
                 "semantic": "scd_end_timestamp",
+                "critical_data_info": None,
+                "description": None,
+            },
+            {
+                "name": "date_of_birth",
+                "dtype": "TIMESTAMP",
+                "entity": None,
+                "semantic": None,
                 "critical_data_info": None,
                 "description": None,
             },
