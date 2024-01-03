@@ -195,8 +195,8 @@ def test_feature__request_column_ttl_and_non_ttl_components(
 
     def on_demand_feature_view(inputs: pd.DataFrame) -> pd.DataFrame:
         df = pd.DataFrame()
-        feat = pd.to_datetime(inputs["__feature_V231227__part0"])
-        request_col = pd.to_datetime(inputs["POINT_IN_TIME"])
+        feat = pd.to_datetime(inputs["__feature_V231227__part0"], utc=True)
+        request_col = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         feat_1 = request_col + (request_col - request_col)
         feat_2 = pd.Series(
             np.where(
@@ -302,8 +302,10 @@ def test_feature__ttl_item_aggregate_request_column(
             ),
             index=inputs["__composite_feature_V231227__part0"].index,
         )
-        request_col = pd.to_datetime(inputs["POINT_IN_TIME"])
-        feat_1 = pd.to_datetime(inputs["__composite_feature_V231227__part2"])
+        request_col = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
+        feat_1 = pd.to_datetime(
+            inputs["__composite_feature_V231227__part2"], utc=True
+        )
         feat_2 = (request_col - feat_1).dt.seconds // 86400
         feat_3 = pd.Series(
             np.where(pd.isna(feat) | pd.isna(feat_2), np.nan, feat + feat_2),

@@ -638,7 +638,9 @@ class BaseGraphNode(BasePrunableNode):
         assert isinstance(node_params, OfflineStoreIngestQueryGraphNodeParameters)
         if node_params.output_dtype in DBVarType.supported_timestamp_types():
             var_name = var_name_generator.convert_to_variable_name("feat", node_name=self.name)
-            to_dt_expr = get_object_class_from_function_call("pd.to_datetime", input_var_name_expr)
+            to_dt_expr = get_object_class_from_function_call(
+                "pd.to_datetime", input_var_name_expr, utc=True
+            )
             return [(var_name, to_dt_expr)], var_name
 
         if node_params.output_dtype in DBVarType.json_conversion_types():
