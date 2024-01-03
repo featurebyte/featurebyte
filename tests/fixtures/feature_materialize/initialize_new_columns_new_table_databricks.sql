@@ -21,4 +21,4 @@ ALTER TABLE `fb_entity_cust_id_fjs_1800_300_600_ttl` ALTER COLUMN `__feature_tim
 ALTER TABLE `fb_entity_cust_id_fjs_1800_300_600_ttl` ALTER COLUMN `cust_id` SET NOT NULL;
 
 ALTER TABLE `fb_entity_cust_id_fjs_1800_300_600_ttl` ADD CONSTRAINT `pk_fb_entity_cust_id_fjs_1800_300_600_ttl`
-PRIMARY KEY(`__feature_timestamp`, `cust_id`);
+PRIMARY KEY(`__feature_timestamp` TIMESERIES, `cust_id`);

@@ -435,20 +435,22 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
 
         # Table constraint syntax is only supported in newer versions of sqlglot, so the queries are
         # formatted manually here
+        quoted_timestamp_column = f"`{InternalName.FEATURE_TIMESTAMP_COLUMN}`"
         quoted_primary_key_columns = [
-            f"`{column_name}`"
-            for column_name in [InternalName.FEATURE_TIMESTAMP_COLUMN.value]
-            + feature_table_model.serving_names
+            f"`{column_name}`" for column_name in feature_table_model.serving_names
         ]
-        for quoted_col in quoted_primary_key_columns:
+        for quoted_col in [quoted_timestamp_column] + quoted_primary_key_columns:
             await session.execute_query(
                 f"ALTER TABLE `{feature_table_model.name}` ALTER COLUMN {quoted_col} SET NOT NULL"
             )
+        primary_key_args = ", ".join(
+            [f"{quoted_timestamp_column} TIMESERIES"] + quoted_primary_key_columns
+        )
         await session.execute_query(
             textwrap.dedent(
                 f"""
                 ALTER TABLE `{feature_table_model.name}` ADD CONSTRAINT `pk_{feature_table_model.name}`
-                PRIMARY KEY({', '.join(quoted_primary_key_columns)})
+                PRIMARY KEY({primary_key_args})
                 """
             ).strip()
         )
