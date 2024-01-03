@@ -205,6 +205,12 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                     feature_table_model
                 )
 
+        if not features:
+            # If all the features are already online enabled, i.e. the offline feature store tables
+            # are up-to-date. But registry still needs to be updated because there could be a new
+            # feature service that needs to be created.
+            await self._create_or_update_feast_registry()
+
     async def handle_online_disabled_features(self, features: List[FeatureModel]) -> None:
         """
         Handles the case where a feature is disabled for online serving by updating all affected
@@ -244,7 +250,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
                 await self.offline_store_feature_table_service.delete_document(
                     document_id=feature_table_dict["_id"],
                 )
-            await self._create_or_update_feast_registry()
+        await self._create_or_update_feast_registry()
 
     @staticmethod
     def _get_offline_store_feature_table_columns(features: List[FeatureModel]) -> List[str]:
