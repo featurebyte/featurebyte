@@ -85,10 +85,8 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
     snowflake_event_view_with_entity,
     float_target,
     feature_group,
-    non_time_based_feature,
     cust_id_entity,
     transaction_entity,
-    mysql_online_store,
 ):
     """
     Write request payload for testing api route
