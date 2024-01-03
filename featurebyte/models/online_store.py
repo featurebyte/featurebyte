@@ -1,8 +1,10 @@
 """
 This module contains Online Store related models
 """
-from typing import List, Literal, Optional, Union
+from typing import Any, List, Literal, Optional, Union
 from typing_extensions import Annotated
+
+from abc import abstractmethod
 
 import pymongo
 from pydantic import Field, StrictStr
@@ -26,6 +28,15 @@ class BaseOnlineStoreDetails(FeatureByteBaseModel):
     # Online store type selector
     type: OnlineStoreType
     credential: Optional[BaseDatabaseCredential]
+
+    @abstractmethod
+    def to_feast_online_store_config(self) -> Any:
+        """
+        Returns a corresponding online store configuration instance in feast
+
+        TODO: make sure to import inline since this model is imported by client at top level, or
+        don't implement this here.
+        """
 
 
 class RedisOnlineStoreDetails(BaseOnlineStoreDetails):
