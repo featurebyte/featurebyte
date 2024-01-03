@@ -232,27 +232,24 @@ class OnlineEnableService(OpsServiceMixin):
         FeatureModel
         """
         document = await self.feature_service.get_document(document_id=feature_id)
-        if document.online_enabled != online_enabled:
-            async with self.persistent.start_transaction():
-                feature = await self.feature_service.update_document(
-                    document_id=feature_id,
-                    data=FeatureServiceUpdate(online_enabled=online_enabled),
-                    document=document,
-                    return_document=True,
-                )
-                assert isinstance(feature, FeatureModel)
-                await self._update_feature_namespace(
-                    feature_namespace_id=feature.feature_namespace_id,
+        async with self.persistent.start_transaction():
+            feature = await self.feature_service.update_document(
+                document_id=feature_id,
+                data=FeatureServiceUpdate(online_enabled=online_enabled),
+                document=document,
+                return_document=True,
+            )
+            assert isinstance(feature, FeatureModel)
+            await self._update_feature_namespace(
+                feature_namespace_id=feature.feature_namespace_id,
+                feature=feature,
+                return_document=False,
+            )
+            for feature_list_id in feature.feature_list_ids:
+                await self._update_feature_list(
+                    feature_list_id=feature_list_id,
                     feature=feature,
                     return_document=False,
                 )
-                for feature_list_id in feature.feature_list_ids:
-                    await self._update_feature_list(
-                        feature_list_id=feature_list_id,
-                        feature=feature,
-                        return_document=False,
-                    )
 
-                return await self.feature_service.get_document(document_id=feature_id)
-
-        return document
+            return await self.feature_service.get_document(document_id=feature_id)

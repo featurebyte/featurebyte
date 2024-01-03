@@ -95,11 +95,10 @@ class DeployService(OpsServiceMixin):
             feature_list=feature_list, document=document
         )
         online_enabled = len(deployed_feature_list_ids) > 0
-        if document.online_enabled != online_enabled:
-            document = await self.online_enable_service.update_feature(
-                feature_id=feature_id,
-                online_enabled=online_enabled,
-            )
+        document = await self.online_enable_service.update_feature(
+            feature_id=feature_id,
+            online_enabled=online_enabled,
+        )
 
         await self.feature_service.update_document(
             document_id=feature_id,
