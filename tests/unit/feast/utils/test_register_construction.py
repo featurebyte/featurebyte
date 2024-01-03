@@ -66,7 +66,7 @@ def test_feast_registry_construction__with_post_processing_features(
     on_demand_feature_views = feast_registry_dict["onDemandFeatureViews"]
     assert len(on_demand_feature_views) == 1
     odfv_spec = on_demand_feature_views[0]["spec"]
-    assert odfv_spec["name"].startswith("compute_feature_feature_")
+    assert odfv_spec["name"].startswith("odfv_feature_")
     assert odfv_spec["project"] == "featurebyte_project"
     assert odfv_spec["features"] == [{"name": f"feature_{get_version()}", "valueType": "DOUBLE"}]
     assert odfv_spec["sources"].keys() == {
@@ -91,7 +91,7 @@ def test_feast_registry_construction__with_post_processing_features(
 
     # dill's getsource() does not include the import statements
     udf = feast_registry_proto.on_demand_feature_views[0].spec.user_defined_function
-    assert udf.body_text.startswith("def compute_feature_feature_")
+    assert udf.body_text.startswith("def odfv_feature_")
 
     with patch("dill.source.getsource") as getsource_mock:
         getsource_mock.side_effect = IOError
@@ -115,7 +115,7 @@ def test_feast_registry_construction(feast_registry_proto):
     feat_views = feast_registry_dict["featureViews"]
     on_demand_feature_views = feast_registry_dict["onDemandFeatureViews"]
     feat_view_name = feat_services[0]["spec"]["features"][0]["featureViewName"]
-    assert feat_view_name.startswith("compute_feature_sum_1d_")
+    assert feat_view_name.startswith("odfv_sum_1d_")
 
     assert len(on_demand_feature_views) == 1
     udf_definition = on_demand_feature_views[0]["spec"]["userDefinedFunction"]["bodyText"]

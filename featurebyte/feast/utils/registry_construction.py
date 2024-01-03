@@ -34,7 +34,10 @@ from featurebyte.models.entity import EntityModel
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.models.offline_store_ingest_query import OfflineStoreIngestQueryGraph
+from featurebyte.models.offline_store_ingest_query import (
+    OfflineStoreIngestQueryGraph,
+    get_feature_table_ttl_in_secs,
+)
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 
 
@@ -124,7 +127,9 @@ class OfflineStoreTable(FeatureByteBaseModel):
         schema = []
         if self.has_ttl:
             assert self.feature_job_setting is not None
-            time_to_live = timedelta(seconds=2 * self.feature_job_setting.frequency_seconds)
+            time_to_live = timedelta(
+                seconds=get_feature_table_ttl_in_secs(self.feature_job_setting)
+            )
             schema.append(
                 FeastField(
                     name=InternalName.FEATURE_TIMESTAMP_COLUMN,

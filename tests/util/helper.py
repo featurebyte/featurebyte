@@ -598,9 +598,9 @@ def get_on_demand_feature_function(codes, function_name):
             return getattr(module, function_name)
 
 
-def check_on_demand_feature_view_code_execution(odfv_codes, df):
+def check_on_demand_feature_view_code_execution(odfv_codes, df, function_name):
     """Check on demand feature view code execution"""
-    on_demand_feature_func = get_on_demand_feature_function(odfv_codes, "on_demand_feature_view")
+    on_demand_feature_func = get_on_demand_feature_function(odfv_codes, function_name)
     try:
         output = on_demand_feature_func(df)
         return output
@@ -623,11 +623,11 @@ def check_on_demand_feature_function_code_execution(udf_code_state, df):
         }
         input_args.append(input_kwargs)
 
-    on_demand_feature_func = get_on_demand_feature_function(udf_codes, "on_demand_feature_function")
+    user_defined_func = get_on_demand_feature_function(udf_codes, "user_defined_function")
     try:
         output = []
         for input_arg in input_args:
-            output.append(on_demand_feature_func(**input_arg))
+            output.append(user_defined_func(**input_arg))
         return pd.Series(output)
     except Exception as e:
         print("Error: ", e)
@@ -660,17 +660,22 @@ def check_on_demand_feature_code_generation(
         assert isinstance(node, RequestColumnNode)
         df[node.parameters.column_name] = generate_column_data(node.parameters.dtype)
 
+    # add a timestamp column & a feature timestamp column
+    if "POINT_IN_TIME" not in df.columns:
+        df["POINT_IN_TIME"] = pd.date_range("2020-01-01", freq="1h", periods=df.shape[0])
+    df["__feature_timestamp"] = pd.to_datetime(df["POINT_IN_TIME"]) - pd.Timedelta(seconds=10)
+
     # generate on demand feature view code
-    odfv_codes = offline_store_info.generate_on_demand_feature_view_code(
-        feature_name_version=feature_model.versioned_name,
-    )
+    odfv_codes = offline_store_info.odfv_info.codes
 
     # check the generated code can be executed successfully
-    odfv_output = check_on_demand_feature_view_code_execution(odfv_codes, df)
+    odfv_output = check_on_demand_feature_view_code_execution(
+        odfv_codes, df, function_name=offline_store_info.odfv_info.function_name
+    )
     exp_col_name = feature_model.versioned_name
     assert odfv_output.columns == [exp_col_name]
 
-    udf_code_state = offline_store_info._generate_on_demand_feature_function_code_state(
+    udf_code_state = offline_store_info._generate_databricks_user_defined_function_code(
         output_dtype=feature_model.dtype,
     )
 
@@ -682,7 +687,7 @@ def check_on_demand_feature_code_generation(
 
     # check generated sql code
     if sql_fixture_path:
-        udf_codes = offline_store_info.generate_on_demand_feature_function_code(
+        udf_codes = offline_store_info.generate_databricks_user_defined_function_code(
             output_dtype=feature_model.dtype, to_sql=True
         )
         if update_fixtures:
