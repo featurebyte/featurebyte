@@ -107,6 +107,9 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
     feature_list = FeatureList(
         [feature_sum_30m], name="sf_feature_list", _id="646f6c1c0ed28a5271fb02d2"
     )
+    feature_list_repeated = FeatureList(
+        [feature_sum_30m], name="sf_feature_list_repeated", _id="6594d7dd2cc1a1b9c7f6c037"
+    )
     feature_list_multiple = FeatureList(
         [feature_sum_30m, feature_sum_2h],
         name="sf_feature_list_multiple",
@@ -152,6 +155,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         ),
         context_id=context.id,
         primary_entity_ids=[cust_id_entity.id],
+        purpose="other",
     )
     historical_feature_table = HistoricalFeatureTableCreate(
         _id="646f6c1c0ed28a5271fb02d8",
@@ -230,6 +234,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
             (feature_item_event, "feature_item_event"),
             (feature_iet, "feature_iet"),
             (feature_list, "feature_list_single"),
+            (feature_list_repeated, "feature_list_single_repeated"),
             (feature_list_multiple, "feature_list_multi"),
             (float_target, "target"),
             (mysql_online_store, "mysql_online_store"),

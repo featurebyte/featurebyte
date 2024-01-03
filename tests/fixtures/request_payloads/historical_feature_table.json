@@ -71,13 +71,7 @@
                                 "event_timestamp_timezone_offset": null,
                                 "event_timestamp_timezone_offset_column": null,
                                 "feature_store_details": {
-                                    "details": {
-                                        "account": "sf_account",
-                                        "database_name": "sf_database",
-                                        "schema_name": "sf_schema",
-                                        "role_name": "TESTING",
-                                        "warehouse": "sf_warehouse"
-                                    },
+                                    "details": null,
                                     "type": "snowflake"
                                 },
                                 "id": "6337f9651050ee7d5980660d",
@@ -149,7 +143,7 @@
                             "output_type": "frame",
                             "parameters": {
                                 "agg_func": "sum",
-                                "aggregation_id": "sum_aed233b0e8a6e1c1e0d5427b126b03c949609481",
+                                "aggregation_id": "sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295",
                                 "blind_spot": 600,
                                 "entity_ids": [
                                     "63f94ed6ea1f050131379214"
@@ -159,18 +153,22 @@
                                     "cust_id"
                                 ],
                                 "names": [
-                                    "sum_30m"
+                                    "sum_30m",
+                                    "sum_2h",
+                                    "sum_1d"
                                 ],
                                 "parent": "col_float",
                                 "serving_names": [
                                     "cust_id"
                                 ],
-                                "tile_id": "TILE_F1800_M300_B600_B5CAF33CCFEDA76C257EC2CB7F66C4AD22009B0F",
+                                "tile_id": "TILE_F1800_M300_B600_8A209743FE8C9AD59ED6A9FE5E98977AB9A040DB",
                                 "time_modulo_frequency": 300,
                                 "timestamp": "event_timestamp",
                                 "value_by": null,
                                 "windows": [
-                                    "30m"
+                                    "30m",
+                                    "2h",
+                                    "1d"
                                 ]
                             },
                             "type": "groupby"

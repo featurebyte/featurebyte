@@ -151,6 +151,7 @@ async def test_preview_feature__missing_entity(feature_preview_service, producti
         ],
         graph=production_ready_feature.graph,
         node_name=production_ready_feature.node_name,
+        feature_store_id=production_ready_feature.tabular_source.feature_store_id,
     )
     with pytest.raises(RequiredEntityNotProvidedError) as exc:
         await feature_preview_service.preview_target_or_feature(feature_preview)

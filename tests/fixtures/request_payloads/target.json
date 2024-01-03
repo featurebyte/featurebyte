@@ -66,13 +66,7 @@
                     "event_timestamp_timezone_offset": null,
                     "event_timestamp_timezone_offset_column": null,
                     "feature_store_details": {
-                        "details": {
-                            "account": "sf_account",
-                            "database_name": "sf_database",
-                            "schema_name": "sf_schema",
-                            "role_name": "TESTING",
-                            "warehouse": "sf_warehouse"
-                        },
+                        "details": null,
                         "type": "snowflake"
                     },
                     "id": "6337f9651050ee7d5980660d",

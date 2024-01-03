@@ -219,6 +219,7 @@ class TestTargetApi(BaseCatalogApiTestSuite):
                     "POINT_IN_TIME": "2022-04-03",
                 },
             ],
+            "feature_store_id": self.payload["tabular_source"]["feature_store_id"],
         }
 
     def test_preview_200(

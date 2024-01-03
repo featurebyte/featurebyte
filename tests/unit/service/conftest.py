@@ -587,6 +587,21 @@ async def feature_list_fixture(test_dir, feature, feature_list_service):
         return feature_list
 
 
+@pytest_asyncio.fixture(name="feature_list_repeated")
+async def feature_list_repeated_fixture(test_dir, feature, feature_list_service):
+    """Feature list model that has the same underlying features as feature_list"""
+    _ = feature
+    fixture_path = os.path.join(
+        test_dir, "fixtures/request_payloads/feature_list_single_repeated.json"
+    )
+    with open(fixture_path, encoding="utf") as fhandle:
+        payload = json.loads(fhandle.read())
+        feature_list = await feature_list_service.create_document(
+            data=FeatureListServiceCreate(**payload)
+        )
+        return feature_list
+
+
 @pytest_asyncio.fixture(name="feature_list_namespace")
 async def feature_list_namespace_fixture(feature_list_namespace_service, feature_list):
     """FeatureListNamespace fixture"""

@@ -4,10 +4,9 @@
         "Instead, update the test tests/unit/test_generate_payload_fixtures.py#test_save_payload_fixtures.",
         "Run `pytest --update-fixtures` to update it."
     ],
-    "_id": "646f6c1c0ed28a5271fb02d5",
-    "description": null,
-    "name": "transaction_context",
-    "primary_entity_ids": [
-        "63f94ed6ea1f050131379214"
-    ]
+    "_id": "6594d7dd2cc1a1b9c7f6c037",
+    "feature_ids": [
+        "646f6c1b0ed28a5271fb02c4"
+    ],
+    "name": "sf_feature_list_repeated"
 }
