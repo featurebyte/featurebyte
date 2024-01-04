@@ -84,6 +84,8 @@ class SnowflakeSession(BaseSession):
         await self.execute_query(
             "ALTER SESSION SET TIMEZONE='UTC', TIMESTAMP_OUTPUT_FORMAT='YYYY-MM-DD HH24:MI:SS.FF9 TZHTZM'"
         )
+        # specify role to use
+        await self.execute_query(f'USE ROLE "{self.role_name}"')
 
     def initializer(self) -> BaseSchemaInitializer:
         return SnowflakeSchemaInitializer(self)

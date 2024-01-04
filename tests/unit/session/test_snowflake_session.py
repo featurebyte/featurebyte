@@ -50,11 +50,21 @@ def snowflake_session_dict_fixture(snowflake_session_dict_without_credentials):
 
 @pytest.mark.usefixtures("snowflake_connector", "snowflake_execute_query")
 @pytest.mark.asyncio
-async def test_snowflake_session__credential_from_config(snowflake_session_dict):
+async def test_snowflake_session__credential_from_config(
+    snowflake_session_dict, snowflake_execute_query
+):
     """
     Test snowflake session
     """
     session = SnowflakeSession(**snowflake_session_dict)
+    await session.initialize()
+
+    # check session initialization includes timezone and role specification
+    assert snowflake_execute_query.call_args_list[-2][0] == (
+        "ALTER SESSION SET TIMEZONE='UTC', TIMESTAMP_OUTPUT_FORMAT='YYYY-MM-DD HH24:MI:SS.FF9 TZHTZM'",
+    )
+    assert snowflake_execute_query.call_args_list[-1][0] == ('USE ROLE "TESTING"',)
+
     assert session.database_credential.username == "username"
     assert session.database_credential.password == "password"
     assert await session.list_databases() == ["sf_database"]
