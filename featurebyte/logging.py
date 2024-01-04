@@ -1,7 +1,9 @@
 """
 Logging formatting
 """
-from typing import Any, Optional
+from __future__ import annotations
+
+from typing import Any, Mapping
 
 import logging
 import os
@@ -16,24 +18,22 @@ class CustomLogger(logging.Logger):
     Custom logger to capture extra field
     """
 
-    def _log(self, level: int, msg: object, *args: Any, **kwargs: Any) -> None:
-        """
-        Log message
-
-        Parameters
-        ----------
-        level: int
-            Log level
-        msg: object
-            Message
-        args: Any
-            Arguments
-        kwargs: Any
-            Keyword arguments
-        """
-        extra = kwargs.pop("extra", None)
-        msg = f"{msg} | {extra}" if extra else msg
-        super()._log(level, msg, *args, **kwargs)
+    def makeRecord(  # pylint: disable=too-many-arguments
+        self,
+        name: str,
+        level: int,
+        fn: str,
+        lno: int,
+        msg: object,
+        args: Any,
+        exc_info: Any,
+        func: Any = None,
+        extra: Mapping[str, object] | None = None,
+        sinfo: Any = None,
+    ) -> logging.LogRecord:
+        record = logging.LogRecord(name, level, fn, lno, msg, args, exc_info, func, sinfo)
+        record.extra = extra or {}
+        return record
 
 
 logging.setLoggerClass(CustomLogger)
@@ -96,7 +96,7 @@ NOTEBOOK_LOG_FORMATTER = CustomFormatter(
     "%H:%M:%S",
 )
 CONSOLE_LOG_FORMATTER = logging.Formatter(
-    "%(asctime)s | %(levelname)-8s | %(name)s | %(funcName)s:%(lineno)d | %(message)s",
+    "%(asctime)s | %(levelname)-8s | %(name)s | %(funcName)s:%(lineno)d | %(message)s | %(extra)s",
     "%Y-%m-%d %H:%M:%S",
 )
 
@@ -118,7 +118,7 @@ def set_logger_level(logger: logging.Logger, configurations: Configurations) -> 
         logger.setLevel(configurations.logging.level)
 
 
-def get_logger(logger_name: str, configurations: Optional[Configurations] = None) -> logging.Logger:
+def get_logger(logger_name: str, configurations: Configurations | None = None) -> logging.Logger:
     """
     Get logger
 
