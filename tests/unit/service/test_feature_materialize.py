@@ -12,7 +12,6 @@ from bson import ObjectId
 from freezegun import freeze_time
 
 from featurebyte.common.model_util import get_version
-from featurebyte.models.online_store import OnlineStoreModel, RedisOnlineStoreDetails
 from featurebyte.schema.catalog import CatalogOnlineStoreUpdate
 from tests.util.helper import assert_equal_with_expected_fixture
 
@@ -57,6 +56,7 @@ def is_online_store_registered_for_catalog_fixture():
 async def deployed_feature_list_fixture(
     app_container,
     production_ready_feature_list,
+    online_store,
     mock_update_data_warehouse,
     is_source_type_supported_by_feast,
     is_online_store_registered_for_catalog,
@@ -67,15 +67,7 @@ async def deployed_feature_list_fixture(
     _ = mock_update_data_warehouse
 
     if is_online_store_registered_for_catalog:
-        online_store_model = await app_container.online_store_service.create_document(
-            OnlineStoreModel(
-                name="redis_online_store",
-                details=RedisOnlineStoreDetails(
-                    redis_type="redis",
-                ),
-            )
-        )
-        catalog_update = CatalogOnlineStoreUpdate(online_store_id=online_store_model.id)
+        catalog_update = CatalogOnlineStoreUpdate(online_store_id=online_store.id)
         await app_container.catalog_service.update_document(
             document_id=production_ready_feature_list.catalog_id, data=catalog_update
         )

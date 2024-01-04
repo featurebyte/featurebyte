@@ -21,11 +21,12 @@ from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.entity import ParentEntity
 from featurebyte.models.entity_validation import EntityInfo
+from featurebyte.models.online_store import OnlineStoreModel, RedisOnlineStoreDetails
 from featurebyte.models.online_store_spec import OnlineFeatureSpec
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
-from featurebyte.schema.catalog import CatalogCreate
+from featurebyte.schema.catalog import CatalogCreate, CatalogOnlineStoreUpdate
 from featurebyte.schema.context import ContextCreate
 from featurebyte.schema.dimension_table import DimensionTableCreate
 from featurebyte.schema.entity import EntityCreate, EntityServiceUpdate
@@ -1046,3 +1047,31 @@ def mock_feature_materialize_service_fixture():
     yield patched
     for patcher in patched.values():
         patcher.stop()
+
+
+@pytest_asyncio.fixture(name="online_store")
+async def online_store_fixture(app_container):
+    """
+    Fixture to return an online store model
+    """
+    online_store_model = await app_container.online_store_service.create_document(
+        OnlineStoreModel(
+            name="redis_online_store",
+            details=RedisOnlineStoreDetails(
+                redis_type="redis",
+            ),
+        )
+    )
+    return online_store_model
+
+
+@pytest_asyncio.fixture(name="catalog_with_online_store")
+async def catalog_with_online_store_fixture(app_container, catalog, online_store):
+    """
+    Fixture for a catalog with an online store
+    """
+    catalog_update = CatalogOnlineStoreUpdate(online_store_id=online_store.id)
+    catalog = await app_container.catalog_service.update_document(
+        document_id=catalog.id, data=catalog_update
+    )
+    return catalog

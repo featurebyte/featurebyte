@@ -218,9 +218,13 @@ class DeploymentController(
         document = await self.service.get_document(deployment_id)
 
         feature_list = await self.feature_list_service.get_document(document.feature_list_id)
+        catalog = await self.catalog_service.get_document(feature_list.catalog_id)
         try:
             result: Optional[OnlineFeaturesResponseModel]
-            if FeastIntegrationSettings().FEATUREBYTE_FEAST_INTEGRATION_ENABLED:
+            if (
+                FeastIntegrationSettings().FEATUREBYTE_FEAST_INTEGRATION_ENABLED
+                and catalog.online_store_id is not None
+            ):
                 result = await self.online_serving_service.get_online_features_by_feast(
                     feature_list=feature_list,
                     request_data=data.entity_serving_names,
