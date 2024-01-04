@@ -63,6 +63,9 @@ class VariableNameStr(str):
     indexed variable, for example: `event_table`, `event_table['timestamp']`.
     """
 
+    def __repr__(self) -> str:
+        return str(self)
+
     def as_input(self) -> str:
         """
         Used as an input in an expression

@@ -35,9 +35,9 @@ from featurebyte.query_graph.transform.on_demand_view import OnDemandFeatureView
 from featurebyte.query_graph.transform.quick_pruning import QuickGraphStructurePruningTransformer
 
 
-def get_feature_table_ttl_in_secs(feature_job_setting: FeatureJobSetting) -> int:
+def get_time_aggregate_ttl_in_secs(feature_job_setting: FeatureJobSetting) -> int:
     """
-    Get time-to-live (TTL) in seconds from feature job setting
+    Get time-to-live (TTL) in seconds for the time aggregate operation
 
     Parameters
     ----------
@@ -289,7 +289,7 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
         self.time_to_live_in_secs = None
         if feature_job_settings:
             self.time_to_live_in_secs = min(
-                get_feature_table_ttl_in_secs(feature_job_setting)
+                get_time_aggregate_ttl_in_secs(feature_job_setting)
                 for feature_job_setting in feature_job_settings
             )
 

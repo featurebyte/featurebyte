@@ -1,13 +1,13 @@
 """
 This module contains Feature list store info related models
 """
-from typing import Any, Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union
 
 from abc import abstractmethod  # pylint: disable=wrong-import-order
 
-from pydantic import Field, parse_obj_as
+from pydantic import Field
 
-from featurebyte.enum import SourceType, SpecialColumnName
+from featurebyte.enum import SourceType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_store import FeatureStoreModel
@@ -56,8 +56,18 @@ class DataBricksFeatureLookup(FeatureByteBaseModel):
     feature_names: List[str]
     rename_outputs: Dict[str, str]
 
-    def __repr_name__(self) -> str:
-        return "FeatureLookup"
+    def __repr__(self) -> str:
+        repr_str = (
+            f"FeatureLookup(\n"
+            f"    table_name={repr(self.table_name)},\n"
+            f"    lookup_key={repr(self.lookup_key)},\n"
+            f"    timestamp_lookup_key={self.timestamp_lookup_key},\n"
+            f"    lookback_window={repr(self.lookback_window)},\n"
+            f"    feature_names={repr(self.feature_names)},\n"
+            f"    rename_outputs={repr(self.rename_outputs)},\n"
+            f")"
+        )
+        return repr_str
 
 
 class DataBricksFeatureFunction(FeatureByteBaseModel):
@@ -82,6 +92,7 @@ class DataBricksStoreInfo(BaseStoreInfo):
     databricks_sdk_version: str = Field(default="0.16.3")
     feature_specs: List[Union[DataBricksFeatureLookup, DataBricksFeatureFunction]]
     exclude_columns: List[str]
+    require_timestamp_lookup_key: bool
 
     @property
     def feature_specs_definition(self) -> str:
@@ -94,16 +105,13 @@ class DataBricksStoreInfo(BaseStoreInfo):
         """
         code_gen = CodeGenerator(template="databricks_feature_spec.tpl")
         feature_specs = ExpressionStr(self.feature_specs)
-        code_gen.add_statements(
-            [
-                (VariableNameStr("features"), feature_specs),
-                (VariableNameStr("exclude_columns"), ExpressionStr(self.exclude_columns)),
-            ]
-        )
         codes = code_gen.generate(
             to_format=True,
             remove_unused_variables=False,
             databricks_sdk_version=self.databricks_sdk_version,
+            features=feature_specs,
+            exclude_columns=self.exclude_columns,
+            require_timestamp_lookup_key=self.require_timestamp_lookup_key,
         )
         return codes
 
@@ -114,6 +122,7 @@ class DataBricksStoreInfo(BaseStoreInfo):
         table_name_to_feature_lookup = {}
         feature_functions = []
         exclude_columns = set()
+        require_timestamp_lookup_key = False
         for feature in features:
             offline_store_info = feature.offline_store_info
             assert offline_store_info is not None, "Feature does not have offline store info"
@@ -135,17 +144,19 @@ class DataBricksStoreInfo(BaseStoreInfo):
             }
             for ingest_query in offline_store_info.extract_offline_store_ingest_query_graphs():
                 table_name = ingest_query.offline_store_table_name
-                if table_name not in table_name_to_feature_lookup:
-                    timestamp_lookup_key = None
-                    if ingest_query.has_ttl:
-                        timestamp_lookup_key = SpecialColumnName.POINT_IN_TIME.value
+                timestamp_lookup_key = None
+                if ingest_query.has_ttl:
+                    timestamp_lookup_key = VariableNameStr("timestamp_lookup_key")
+                    require_timestamp_lookup_key = True
 
+                if table_name not in table_name_to_feature_lookup:
+                    lookup_key = [
+                        entity_id_to_serving_name[entity_id]
+                        for entity_id in ingest_query.primary_entity_ids
+                    ]
                     table_name_to_feature_lookup[table_name] = DataBricksFeatureLookup(
                         table_name=ingest_query.offline_store_table_name,
-                        lookup_key=[
-                            entity_id_to_serving_name[entity_id]
-                            for entity_id in ingest_query.primary_entity_ids
-                        ],
+                        lookup_key=lookup_key,
                         timestamp_lookup_key=timestamp_lookup_key,
                         lookback_window=None,
                         feature_names=[],
@@ -167,24 +178,11 @@ class DataBricksStoreInfo(BaseStoreInfo):
 
         for feature_function in feature_functions:
             feature_specs.append(feature_function)
-        return cls(feature_specs=feature_specs, exclude_columns=sorted(exclude_columns))
+        return cls(
+            feature_specs=feature_specs,
+            exclude_columns=sorted(exclude_columns),
+            require_timestamp_lookup_key=require_timestamp_lookup_key,
+        )
 
 
 StoreInfo = DataBricksStoreInfo
-
-
-def construct_store_info(**kwargs: Any) -> StoreInfo:
-    """
-    Construct store info based on input keyword arguments
-
-    Parameters
-    ----------
-    **kwargs: Any
-        Keyword arguments used to construct the StoreInfo object
-
-    Returns
-    -------
-    StoreInfo
-    """
-    store_info = parse_obj_as(StoreInfo, kwargs)
-    return store_info
