@@ -6,7 +6,7 @@ import pytest_asyncio
 from bson import ObjectId
 
 from featurebyte.exception import DocumentConflictError, DocumentNotFoundError
-from featurebyte.schema.user_defined_function import UserDefinedFunctionCreate
+from featurebyte.schema.user_defined_function import UserDefinedFunctionServiceCreate
 from featurebyte.service.user_defined_function import UserDefinedFunctionService
 
 
@@ -52,7 +52,7 @@ async def global_user_defined_function_doc_fixture(
     payload = user_defined_function_dict.copy()
     payload["catalog_id"] = None
     doc = await user_defined_function_service.create_document(
-        data=UserDefinedFunctionCreate(**payload)
+        data=UserDefinedFunctionServiceCreate(**payload)
     )
     assert doc.catalog_id is None
     return doc
@@ -66,7 +66,7 @@ async def user_defined_function_doc_fixture(
     payload = user_defined_function_dict.copy()
     payload["catalog_id"] = catalog.id
     doc = await user_defined_function_service.create_document(
-        data=UserDefinedFunctionCreate(**payload)
+        data=UserDefinedFunctionServiceCreate(**payload)
     )
     assert doc.catalog_id == catalog.id
     return doc
@@ -86,7 +86,7 @@ async def test_user_defined_function_service__creation(
     user_defined_function_dict["catalog_id"] = catalog.id
     with pytest.raises(DocumentConflictError) as exc:
         await user_defined_function_service.create_document(
-            data=UserDefinedFunctionCreate(**user_defined_function_dict)
+            data=UserDefinedFunctionServiceCreate(**user_defined_function_dict)
         )
     expected_error_message = (
         'User defined function with name "method_name" already exists in catalog '
@@ -97,7 +97,7 @@ async def test_user_defined_function_service__creation(
     # create a user defined function conflicting with the global user defined function
     with pytest.raises(DocumentConflictError) as exc:
         await user_defined_function_service.create_document(
-            data=UserDefinedFunctionCreate(
+            data=UserDefinedFunctionServiceCreate(
                 **global_user_defined_function_doc.dict(exclude={"_id": True})
             )
         )
@@ -108,7 +108,7 @@ async def test_user_defined_function_service__creation(
     another_catalog_id = user_defined_function_service_with_different_catalog.catalog_id
     user_defined_function_dict["catalog_id"] = str(another_catalog_id)
     doc_with_same_name = await user_defined_function_service_with_different_catalog.create_document(
-        data=UserDefinedFunctionCreate(**user_defined_function_dict)
+        data=UserDefinedFunctionServiceCreate(**user_defined_function_dict)
     )
     assert doc_with_same_name.name == user_defined_function_doc.name
 
@@ -132,7 +132,7 @@ async def test_user_defined_function_service__retrieval(
     another_catalog_id = user_defined_function_service_with_different_catalog.catalog_id
     user_defined_function_dict["catalog_id"] = str(another_catalog_id)
     doc_with_same_name = await user_defined_function_service_with_different_catalog.create_document(
-        data=UserDefinedFunctionCreate(**user_defined_function_dict)
+        data=UserDefinedFunctionServiceCreate(**user_defined_function_dict)
     )
     assert doc_with_same_name.name == user_defined_function_doc.name
 
