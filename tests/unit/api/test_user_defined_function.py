@@ -7,11 +7,11 @@ import pytest
 from featurebyte.api.catalog import Catalog
 from featurebyte.api.user_defined_function import UDF, UserDefinedFunction
 from featurebyte.exception import (
-    DocumentCreationError,
     RecordCreationException,
     RecordDeletionException,
     RecordUpdateException,
 )
+from featurebyte.models.base import activate_catalog
 from featurebyte.models.user_defined_function import FunctionParameter
 from tests.util.helper import check_sdk_code_generation
 
@@ -84,6 +84,7 @@ def date_sub_udf_fixture(catalog):
 
 def test_create_user_defined_function__default_catalog():
     """Test create_user_defined_function (default catalog)"""
+    activate_catalog(None)
     with pytest.raises(RecordCreationException) as exc:
         UserDefinedFunction.create(
             name="udf_func",
