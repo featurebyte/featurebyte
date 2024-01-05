@@ -118,7 +118,7 @@ class FeastSnowflakeDetails(AbstractDatabaseDetailsForFeast, BaseSnowflakeDetail
             account=self.account,
             user=username,
             password=password,
-            role=None,
+            role=self.role_name,
             warehouse=self.warehouse,
             database=self.database_name,
             schema_=self.schema_name,
