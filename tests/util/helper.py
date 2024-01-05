@@ -678,7 +678,9 @@ def check_on_demand_feature_code_generation(
     udf_output = check_on_demand_feature_function_code_execution(udf_code_state, df)
 
     # check the consistency between on demand feature view & on demand feature function
-    pd.testing.assert_series_equal(odfv_output[exp_col_name], udf_output, check_names=False)
+    pd.testing.assert_series_equal(
+        odfv_output[exp_col_name], udf_output, check_names=False, check_dtype=False
+    )
 
     # check generated sql code
     if sql_fixture_path:

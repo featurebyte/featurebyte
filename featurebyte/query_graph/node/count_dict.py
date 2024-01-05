@@ -204,8 +204,9 @@ class CountDictTransformNode(BaseCountDictOpNode):
     ) -> Tuple[List[StatementT], str]:
         statements: List[StatementT] = []
         func_name = f"extract_extreme_value_{operation}"
-        if func_name not in var_name_generator.var_name_counter:
-            func_name = var_name_generator.convert_to_variable_name(
+        if not var_name_generator.var_name_counter[func_name]:
+            # add custom function if it doesn't exist, trigger convert_to_variable_name to increment counter
+            _ = var_name_generator.convert_to_variable_name(
                 variable_name_prefix=func_name, node_name=None
             )
             func_string = f"""
@@ -343,9 +344,9 @@ class CosineSimilarityNode(BaseCountDictOpNode):
     ) -> Tuple[List[StatementT], str]:
         statements: List[StatementT] = []
         func_name = "cosine_similarity"
-        if func_name not in var_name_generator.var_name_counter:
-            # add custom function if it doesn't exist
-            func_name = var_name_generator.convert_to_variable_name(
+        if not var_name_generator.var_name_counter[func_name]:
+            # add custom function if it doesn't exist, trigger convert_to_variable_name to increment counter
+            _ = var_name_generator.convert_to_variable_name(
                 variable_name_prefix=func_name, node_name=None
             )
             func_string = f"""
@@ -552,9 +553,9 @@ class GetRankFromDictionaryNode(BaseCountDictOpNode):
     ) -> Tuple[List[StatementT], str]:
         statements: List[StatementT] = []
         func_name = "get_rank"
-        if func_name not in var_name_generator.var_name_counter:
-            # add custom function if it doesn't exist
-            func_name = var_name_generator.convert_to_variable_name(
+        if not var_name_generator.var_name_counter[func_name]:
+            # add custom function if it doesn't exist, trigger convert_to_variable_name to increment counter
+            _ = var_name_generator.convert_to_variable_name(
                 variable_name_prefix=func_name, node_name=None
             )
             func_string = f"""
@@ -645,9 +646,9 @@ class GetRelativeFrequencyFromDictionaryNode(BaseCountDictOpNode):
     ) -> Tuple[List[StatementT], str]:
         statements: List[StatementT] = []
         func_name = "get_relative_frequency"
-        if func_name not in var_name_generator.var_name_counter:
-            # add custom function if it doesn't exist
-            func_name = var_name_generator.convert_to_variable_name(
+        if not var_name_generator.var_name_counter[func_name]:
+            # add custom function if it doesn't exist, trigger convert_to_variable_name to increment counter
+            _ = var_name_generator.convert_to_variable_name(
                 variable_name_prefix=func_name, node_name=None
             )
             func_string = f"""
