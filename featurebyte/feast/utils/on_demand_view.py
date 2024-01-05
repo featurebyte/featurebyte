@@ -3,11 +3,8 @@ On demand feature view related classes and functions.
 """
 from typing import Dict, List, Optional, Union, cast
 
-import importlib
-import os
 from unittest.mock import patch
 
-from bson import ObjectId
 from feast import FeatureView, Field, RequestSource
 from feast.feature_view_projection import FeatureViewProjection
 from feast.on_demand_feature_view import OnDemandFeatureView, on_demand_feature_view
@@ -45,21 +42,15 @@ def create_feast_on_demand_feature_view(
     OnDemandFeatureView
         The created OnDemandFeatureView
     """
-    module_name = f"on_demand_feature_view_{ObjectId()}"
-    with open(
-        os.path.join(on_demand_feature_view_dir, f"{module_name}.py"), "w", encoding="utf-8"
-    ) as file_handle:
-        file_handle.write(definition)
+    # get the function from the definition
+    locals_namespace = {}
+    exec(definition, locals_namespace)
+    func = locals_namespace[function_name]
 
-    module = importlib.import_module(module_name)
-    func = getattr(module, function_name)
-    try:
+    # dill.source.getsource fails to find the source code of the function
+    # since we already have the source code, we can just use that instead
+    with patch("dill.source.getsource", return_value=definition):
         output = on_demand_feature_view(sources=sources, schema=schema)(func)
-    except IOError:
-        # dill.source.getsource fails to find the source code of the function in some environments
-        # since we already have the source code, we can just use that instead
-        with patch("dill.source.getsource", return_value=definition):
-            output = on_demand_feature_view(sources=sources, schema=schema)(func)
 
     return cast(OnDemandFeatureView, output)
 
