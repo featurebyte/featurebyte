@@ -529,11 +529,11 @@ class ObservationTableService(
             alias=InternalName.TABLE_ROW_INDEX,
             quoted=True,
         )
+        adapter = get_sql_adapter(session.source_type)
         query = sql_to_string(
-            expressions.Create(
-                this=quoted_identifier(table_details.table_name),
-                kind="TABLE",
-                expression=expressions.select(
+            adapter.create_table_as(
+                table_details,
+                expressions.select(
                     row_number_expr,
                     expressions.Star(),
                 ).from_(quoted_identifier(table_details.table_name)),

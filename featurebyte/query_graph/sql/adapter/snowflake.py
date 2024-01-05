@@ -163,7 +163,9 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
         return re.sub("(?<!')'(?!')", "''", query)
 
     @classmethod
-    def create_table_as(cls, table_details: TableDetails, select_expr: Select) -> Expression:
+    def create_table_as(
+        cls, table_details: TableDetails, select_expr: Select, replace: bool = False
+    ) -> Expression:
         """
         Construct query to create a table using a select statement
 
@@ -183,6 +185,7 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
             this=expressions.Table(this=destination_expr),
             kind="TABLE",
             expression=select_expr,
+            replace=replace,
         )
 
     @classmethod
