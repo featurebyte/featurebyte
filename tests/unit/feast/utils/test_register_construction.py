@@ -2,7 +2,6 @@
 Test the construction of the feast register.
 """
 import textwrap
-from unittest.mock import patch
 
 import pytest
 from google.protobuf.json_format import MessageToDict
