@@ -80,11 +80,7 @@ class HaversineNode(BaseSeriesOutputNode):
         statements: List[StatementT] = []
         input_var_name_expressions = self._assert_no_info_dict(node_inputs)
         func_name = "haversine_distance"
-        if not var_name_generator.var_name_counter[func_name]:
-            # add custom function if it doesn't exist, trigger convert_to_variable_name to increment counter
-            _ = var_name_generator.convert_to_variable_name(
-                variable_name_prefix=func_name, node_name=None
-            )
+        if var_name_generator.should_insert_function(function_name=func_name):
             func_string = f"""
             def {func_name}(lat1, lon1, lat2, lon2):
                 R = 6371.0
