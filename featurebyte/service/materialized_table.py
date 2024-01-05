@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from bson import ObjectId
 
+from featurebyte.enum import InternalName
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.materialized_table import ColumnSpecWithEntityId
 from featurebyte.persistent import Persistent
@@ -177,5 +178,6 @@ class BaseMaterializedTableService(
                 entity_id=col_name_to_entity_ids.get(name, None),
             )
             for name, schema in table_schema.items()
+            if name != InternalName.TABLE_ROW_INDEX
         ]
         return columns_info, num_rows

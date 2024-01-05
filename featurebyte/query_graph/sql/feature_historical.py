@@ -135,7 +135,7 @@ class MaterializedTableObservationSet(ObservationSet):
     ) -> None:
         columns = ["*"]
 
-        if add_row_index:
+        if add_row_index and not self.observation_table.has_row_index:
             row_number = expressions.Window(
                 this=expressions.Anonymous(this="ROW_NUMBER"),
                 order=expressions.Order(expressions=[expressions.Literal.number(1)]),
