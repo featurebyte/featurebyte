@@ -60,10 +60,10 @@ async def test_snowflake_session__credential_from_config(
     await session.initialize()
 
     # check session initialization includes timezone and role specification
-    assert snowflake_execute_query.call_args_list[-2][0] == (
+    assert snowflake_execute_query.call_args_list[0][0] == ('USE ROLE "TESTING"',)
+    assert snowflake_execute_query.call_args_list[-1][0] == (
         "ALTER SESSION SET TIMEZONE='UTC', TIMESTAMP_OUTPUT_FORMAT='YYYY-MM-DD HH24:MI:SS.FF9 TZHTZM'",
     )
-    assert snowflake_execute_query.call_args_list[-1][0] == ('USE ROLE "TESTING"',)
 
     assert session.database_credential.username == "username"
     assert session.database_credential.password == "password"

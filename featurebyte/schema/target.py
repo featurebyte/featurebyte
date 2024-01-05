@@ -45,14 +45,6 @@ class TargetList(PaginationMixin):
     data: List[TargetModel]
 
 
-class TargetUpdate(FeatureByteBaseModel):
-    """
-    Target update schema
-    """
-
-    name: StrictStr
-
-
 class TargetInfo(FeatureByteBaseModel):
     """
     Target info

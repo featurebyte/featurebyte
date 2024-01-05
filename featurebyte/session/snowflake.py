@@ -79,13 +79,12 @@ class SnowflakeSession(BaseSession):
         # If the featurebyte schema does not exist, the self._connection can still be created
         # without errors. Below checks whether the schema actually exists. If not, it will be
         # created and initialized with custom functions and procedures.
+        await self.execute_query(f'USE ROLE "{self.role_name}"')
         await super().initialize()
         # set timezone to UTC
         await self.execute_query(
             "ALTER SESSION SET TIMEZONE='UTC', TIMESTAMP_OUTPUT_FORMAT='YYYY-MM-DD HH24:MI:SS.FF9 TZHTZM'"
         )
-        # specify role to use
-        await self.execute_query(f'USE ROLE "{self.role_name}"')
 
     def initializer(self) -> BaseSchemaInitializer:
         return SnowflakeSchemaInitializer(self)

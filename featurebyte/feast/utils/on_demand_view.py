@@ -41,7 +41,7 @@ def create_feast_on_demand_feature_view(
     """
     # get the function from the definition
     locals_namespace: Dict[str, Any] = {}
-    exec(definition, locals_namespace)  # pylint: disable=exec-used
+    exec(definition, locals_namespace)  # pylint: disable=exec-used  # nosec
     func = locals_namespace[function_name]
 
     # dill.source.getsource fails to find the source code of the function

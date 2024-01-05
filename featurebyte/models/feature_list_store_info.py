@@ -173,9 +173,6 @@ class DataBricksStoreInfo(BaseStoreInfo):
                         feature_names=[],
                         rename_outputs={},
                     )
-                import pdb
-
-                pdb.set_trace()
 
                 column_name = ingest_query.output_column_name
                 feature_lookup = table_name_to_feature_lookup[table_name]
