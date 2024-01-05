@@ -1,13 +1,15 @@
 """
 This module contains Feature list store info related models
 """
-from typing import Dict, List, Optional, Union
+from __future__ import annotations
+
+from typing import Dict, List, Optional, Tuple, Union
 
 from abc import abstractmethod  # pylint: disable=wrong-import-order
 
 from pydantic import Field
 
-from featurebyte.enum import SourceType
+from featurebyte.enum import DBVarType, SourceType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_store import FeatureStoreModel
@@ -27,7 +29,7 @@ class BaseStoreInfo(FeatureByteBaseModel):
 
     @classmethod
     @abstractmethod
-    def create(cls, features: List[FeatureModel], feature_store: FeatureStoreModel) -> "StoreInfo":
+    def create(cls, features: List[FeatureModel], feature_store: FeatureStoreModel) -> StoreInfo:
         """
         Create store info for a feature list
 
@@ -94,6 +96,9 @@ class DataBricksStoreInfo(BaseStoreInfo):
     exclude_columns: List[str]
     require_timestamp_lookup_key: bool
 
+    def _get_base_dataframe_schema_and_import_statement(self) -> Tuple[str, str]:
+        return "databricks", ""
+
     @property
     def feature_specs_definition(self) -> str:
         """
@@ -105,13 +110,19 @@ class DataBricksStoreInfo(BaseStoreInfo):
         """
         code_gen = CodeGenerator(template="databricks_feature_spec.tpl")
         feature_specs = ExpressionStr(self.feature_specs)
+        (
+            base_dataframe_schema,
+            pyspark_import_statement,
+        ) = self._get_base_dataframe_schema_and_import_statement()
         codes = code_gen.generate(
             to_format=True,
             remove_unused_variables=False,
             databricks_sdk_version=self.databricks_sdk_version,
+            pyspark_import_statement=pyspark_import_statement,
             features=feature_specs,
             exclude_columns=self.exclude_columns,
             require_timestamp_lookup_key=self.require_timestamp_lookup_key,
+            schema=base_dataframe_schema,
         )
         return codes
 
@@ -162,6 +173,9 @@ class DataBricksStoreInfo(BaseStoreInfo):
                         feature_names=[],
                         rename_outputs={},
                     )
+                import pdb
+
+                pdb.set_trace()
 
                 column_name = ingest_query.output_column_name
                 feature_lookup = table_name_to_feature_lookup[table_name]

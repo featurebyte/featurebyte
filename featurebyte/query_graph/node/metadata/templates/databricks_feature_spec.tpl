@@ -2,6 +2,7 @@
 # Import necessary modules for feature engineering and machine learning
 from databricks.feature_engineering import FeatureEngineeringClient
 from databricks.feature_engineering import FeatureFunction, FeatureLookup
+{{pyspark_import_statement}}
 from sklearn import linear_model
 
 # Initialize the Feature Engineering client to interact with Databricks Feature Store
@@ -27,8 +28,9 @@ exclude_columns = {{exclude_columns}}
 # 'features' is a list of feature lookups to be included in the training set
 # '[TARGET_COLUMN]' should be replaced with the actual name of the target column
 # 'exclude_columns' is a list of columns to be excluded from the training set
+schema = {{schema}}
 training_set = fe.create_training_set(
-    df=base_df,
+    df=spark.createDataFrame([], schema),
     feature_lookups=features,
     label="[TARGET_COLUMN]",
     exclude_columns=exclude_columns,
