@@ -37,6 +37,8 @@ from featurebyte import (
     Configurations,
     DatabricksDetails,
     FeatureJobSetting,
+    OnlineStore,
+    RedisOnlineStoreDetails,
     SnowflakeDetails,
 )
 from featurebyte.api.entity import Entity
@@ -63,6 +65,7 @@ from featurebyte.service.online_store_table_version import OnlineStoreTableVersi
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.manager import SessionManager
 from featurebyte.storage import LocalStorage, LocalTempStorage
+from featurebyte.utils.messaging import REDIS_URI
 from featurebyte.worker import get_celery
 from featurebyte.worker.registry import TASK_REGISTRY_MAP
 
@@ -475,11 +478,15 @@ def data_source_fixture(catalog):
 
 
 @pytest.fixture(name="catalog", scope="session")
-def catalog_fixture(feature_store):
+def catalog_fixture(feature_store, online_store):
     """
     Catalog fixture
     """
-    return Catalog.create(name="default", feature_store_name=feature_store.name)
+    return Catalog.create(
+        name="default",
+        feature_store_name=feature_store.name,
+        online_store_name=online_store.name,
+    )
 
 
 @pytest.fixture(name="mock_config_path_env", scope="session")
@@ -1516,3 +1523,17 @@ def online_store_compute_query_service_fixture(app_container) -> OnlineStoreComp
     Online store compute query service fixture
     """
     return app_container.online_store_compute_query_service
+
+
+@pytest.fixture(name="online_store", scope="session")
+def online_store_fixture():
+    """
+    Fixture for an OnlineStore
+    """
+    return OnlineStore.create(
+        name="My Online Store",
+        details=RedisOnlineStoreDetails(
+            redis_type="redis",
+            connection_string=REDIS_URI.replace("redis://", ""),
+        ),
+    )

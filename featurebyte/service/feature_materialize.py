@@ -233,7 +233,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
 
         # Feast online materialize
         feature_store = await self._get_feast_feature_store()
-        if feature_store is not None:
+        if feature_store is not None and feature_store.config.online_store is not None:
             materialize_partial(
                 feature_store=feature_store,
                 feature_view=feature_store.get_feature_view(feature_table_model.name),
@@ -303,7 +303,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
 
         # Feast online materialize. Start date is not set because these are new columns.
         feature_store = await self._get_feast_feature_store()
-        if feature_store is not None:
+        if feature_store is not None and feature_store.config.online_store is not None:
             materialize_partial(
                 feature_store=feature_store,
                 feature_view=feature_store.get_feature_view(feature_table_model.name),

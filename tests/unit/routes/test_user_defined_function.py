@@ -237,14 +237,18 @@ class TestUserDefinedFunctionApi(BaseCatalogApiTestSuite):
         assert response.json()["detail"] == "UserDefinedFunction is referenced by Feature: sum_30m"
 
     def test_list_200__filter_by_feature_store_id(
-        self, test_api_client_persistent, create_multiple_success_responses
+        self, test_api_client_persistent, create_multiple_success_responses, default_catalog_id
     ):
         """Test list route (200, filter by feature_store_id)"""
         test_api_client, _ = test_api_client_persistent
 
+        response = test_api_client.get(f"/catalog/{default_catalog_id}")
+        assert response.status_code == HTTPStatus.OK
+        feature_store_id = response.json()["default_feature_store_ids"][0]
+
         # test filter by feature_store_id
         response = test_api_client.get(
-            self.base_route, params={"feature_store_id": self.payload["feature_store_id"]}
+            self.base_route, params={"feature_store_id": feature_store_id}
         )
         assert response.status_code == HTTPStatus.OK
         response_dict = response.json()
@@ -257,7 +261,7 @@ class TestUserDefinedFunctionApi(BaseCatalogApiTestSuite):
             self.base_route,
             params={
                 "name": f'{self.payload["name"]}_0',
-                "feature_store_id": self.payload["feature_store_id"],
+                "feature_store_id": feature_store_id,
             },
         )
         assert response.status_code == HTTPStatus.OK
