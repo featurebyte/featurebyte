@@ -172,6 +172,12 @@ def feature_list_service_fixture(app_container):
     return app_container.feature_list_service
 
 
+@pytest.fixture(name="feature_table_cache_service")
+def feature_table_cache_service_fixture(app_container):
+    """FeatureTableCacheService fixture"""
+    return app_container.feature_table_cache_service
+
+
 @pytest.fixture(name="table_columns_info_service")
 def table_columns_info_service_fixture(app_container):
     """TableColumnsInfoService fixture"""
