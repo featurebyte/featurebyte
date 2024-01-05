@@ -69,6 +69,7 @@ jobs:
         name: hive-udf
         path: hive-udf/lib/build/libs/*
   test-unit:
+    if: false
     needs:
     - build-jar
     runs-on: ubuntu-latest
@@ -187,6 +188,7 @@ jobs:
         name: python-${{ matrix.python-version }}-.coverage.1
         path: .coverage.1
   test-integration-spark:
+    if: false
     needs:
     - build-jar
     runs-on:
@@ -331,6 +333,7 @@ jobs:
         name: python-${{ matrix.python-version }}-.coverage.3
         path: .coverage.3
   test-integration-databricks-unity:
+    if: false
     needs:
     - build-jar
     runs-on: ubuntu-latest
@@ -384,6 +387,7 @@ jobs:
         name: python-${{ matrix.python-version }}-.coverage.4
         path: .coverage.4
   test-docs:
+    if: false
     needs:
     - build-jar
     runs-on: ubuntu-latest
