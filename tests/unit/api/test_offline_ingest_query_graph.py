@@ -195,18 +195,18 @@ def test_feature__request_column_ttl_and_non_ttl_components(
 
     def on_demand_feature_view(inputs: pd.DataFrame) -> pd.DataFrame:
         df = pd.DataFrame()
-        feat = pd.to_datetime(inputs["__feature_V231227__part0"], utc=True)
         request_col = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
-        feat_1 = request_col + (request_col - request_col)
+        feat = request_col + (request_col - request_col)
+        feat_1 = pd.to_datetime(inputs["__feature_V231227__part0"], utc=True)
         feat_2 = pd.Series(
             np.where(
-                pd.isna(((feat_1 - feat).dt.seconds // 86400))
+                pd.isna(((feat - feat_1).dt.seconds // 86400))
                 | pd.isna(inputs["__feature_V231227__part1"]),
                 np.nan,
-                ((feat_1 - feat).dt.seconds // 86400)
+                ((feat - feat_1).dt.seconds // 86400)
                 + inputs["__feature_V231227__part1"],
             ),
-            index=((feat_1 - feat).dt.seconds // 86400).index,
+            index=((feat - feat_1).dt.seconds // 86400).index,
         )
         df["feature_V231227"] = feat_2
         return df
@@ -302,10 +302,10 @@ def test_feature__ttl_item_aggregate_request_column(
             ),
             index=inputs["__composite_feature_V231227__part0"].index,
         )
-        request_col = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         feat_1 = pd.to_datetime(
             inputs["__composite_feature_V231227__part2"], utc=True
         )
+        request_col = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         feat_2 = (request_col - feat_1).dt.seconds // 86400
         feat_3 = pd.Series(
             np.where(pd.isna(feat) | pd.isna(feat_2), np.nan, feat + feat_2),
@@ -472,3 +472,42 @@ def test_feature__with_ttl_handling(float_feature):
         return df
     """
     assert codes.strip() == textwrap.dedent(expected).strip()
+
+
+def test_feature_entity_dtypes(
+    snowflake_event_table, cust_id_entity, transaction_entity, arbitrary_default_feature_job_setting
+):
+    """Test that entity dtypes are correctly set."""
+    snowflake_event_table.col_int.as_entity(cust_id_entity.name)
+    snowflake_event_table.col_text.as_entity(transaction_entity.name)
+    snowflake_event_table.update_default_feature_job_setting(
+        feature_job_setting=arbitrary_default_feature_job_setting,
+    )
+    event_view = snowflake_event_table.get_view()
+
+    feat_sum1 = event_view.groupby("col_int").aggregate_over(
+        value_column="col_float",
+        method="sum",
+        windows=["24h"],
+        feature_names=["sum_a_24h"],
+    )["sum_a_24h"]
+
+    feat_sum2 = event_view.groupby("col_text").aggregate_over(
+        value_column="col_float",
+        method="sum",
+        windows=["24h"],
+        feature_names=["sum_b_24h"],
+    )["sum_b_24h"]
+
+    feat = feat_sum1 + feat_sum2
+    feat.name = "feature"
+    feat.save()
+
+    # check the entity dtypes are correctly set
+    expected_entity_id_to_dtype = {
+        cust_id_entity.id: snowflake_event_table.col_int.dtype,
+        transaction_entity.id: snowflake_event_table.col_text.dtype,
+    }
+    assert feat.cached_model.entity_dtypes == [
+        expected_entity_id_to_dtype[entity_id] for entity_id in feat.entity_ids
+    ]

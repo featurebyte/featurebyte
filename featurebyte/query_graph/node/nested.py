@@ -170,6 +170,7 @@ class OfflineStoreMetadata(FeatureByteBaseModel):
     has_ttl: bool
     offline_store_table_name: str
     output_dtype: DBVarType
+    primary_entity_dtypes: List[DBVarType]
 
 
 class OfflineStoreIngestQueryGraphNodeParameters(OfflineStoreMetadata, BaseGraphNodeParameters):

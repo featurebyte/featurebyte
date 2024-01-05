@@ -22,7 +22,7 @@ from featurebyte.query_graph.transform.base import BaseGraphTransformer
 from featurebyte.query_graph.transform.decompose_point import (
     AggregationInfo,
     DecomposePointExtractor,
-    DecomposePointGlobalState,
+    DecomposePointState,
 )
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 from featurebyte.query_graph.transform.quick_pruning import QuickGraphStructurePruningTransformer
@@ -114,7 +114,7 @@ class OfflineStoreIngestQueryGraphGlobalState:  # pylint: disable=too-many-insta
 
     # variables used to decompose the graph
     target_node_name: str
-    decompose_point_info: DecomposePointGlobalState
+    decompose_point_info: DecomposePointState
 
     # variables used to construct offline store table name
     feature_name: str
@@ -129,7 +129,7 @@ class OfflineStoreIngestQueryGraphGlobalState:  # pylint: disable=too-many-insta
         feature_version: str,
         target_node_name: str,
         entity_id_to_serving_name: Dict[PydanticObjectId, str],
-        decompose_point_info: DecomposePointGlobalState,
+        decompose_point_info: DecomposePointState,
     ) -> "OfflineStoreIngestQueryGraphGlobalState":
         """
         Create a new OfflineStoreIngestQueryGlobalState object from the given relationships info
@@ -144,7 +144,7 @@ class OfflineStoreIngestQueryGraphGlobalState:  # pylint: disable=too-many-insta
             Target node name
         entity_id_to_serving_name: Dict[PydanticObjectId, str]
             Entity id to serving name mapping
-        decompose_point_info: DecomposePointGlobalState
+        decompose_point_info: DecomposePointState
             Decompose point info
 
         Returns
@@ -320,6 +320,7 @@ class OfflineStoreIngestQueryGraphTransformer(
                 output_node_name=subgraph_output_node.name,
                 output_column_name=column_name,
                 primary_entity_ids=aggregation_info.primary_entity_ids,
+                primary_entity_dtypes=aggregation_info.primary_entity_dtypes,
                 **other_params,
             ),
         )

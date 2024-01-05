@@ -204,6 +204,15 @@ def test_sdk_code_generation__complex_feature(
     )["sum_a_24h"]
     assert feat_empty_keys.entity_ids == []
 
+    # check entity dtypes
+    feat_event_sum.save()
+    feat_item_sum.save()
+    comp.name = "feat_comp"
+    comp.save()
+    assert feat_event_sum.cached_model.entity_dtypes == ["INT"]
+    assert feat_item_sum.cached_model.entity_dtypes == ["INT"]
+    assert comp.cached_model.entity_dtypes == ["INT", "INT"]
+
 
 def test_sdk_code_generation__lookup_target(
     saved_event_table, cust_id_entity, transaction_entity, update_fixtures
