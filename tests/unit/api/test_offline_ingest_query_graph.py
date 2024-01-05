@@ -505,8 +505,8 @@ def test_feature_entity_dtypes(
 
     # check the entity dtypes are correctly set
     expected_entity_id_to_dtype = {
-        cust_id_entity.id: snowflake_event_table.col_int.dtype,
-        transaction_entity.id: snowflake_event_table.col_text.dtype,
+        cust_id_entity.id: snowflake_event_table.col_int.info.dtype,
+        transaction_entity.id: snowflake_event_table.col_text.info.dtype,
     }
     assert feat.cached_model.entity_dtypes == [
         expected_entity_id_to_dtype[entity_id] for entity_id in feat.entity_ids
