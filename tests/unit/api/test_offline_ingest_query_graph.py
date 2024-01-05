@@ -61,6 +61,11 @@ def check_ingest_query_graph(ingest_query_graph):
         assert len(input_node_names) == 1
         assert input_node_names[0] == aggregation_node_info.input_node_name
 
+    # check consistency of entity info
+    assert len(ingest_query_graph.primary_entity_ids) == len(
+        ingest_query_graph.primary_entity_dtypes
+    )
+
 
 @freezegun.freeze_time("2023-12-29")
 def test_feature__ttl_and_non_ttl_components(
@@ -510,4 +515,13 @@ def test_feature_entity_dtypes(
     }
     assert feat.cached_model.entity_dtypes == [
         expected_entity_id_to_dtype[entity_id] for entity_id in feat.entity_ids
+    ]
+
+    # check ingest query graph
+    offline_store_info = feat.cached_model.offline_store_info
+    ingest_query_graphs = offline_store_info.extract_offline_store_ingest_query_graphs()
+    assert len(ingest_query_graphs) == 1
+    assert ingest_query_graphs[0].primary_entity_ids == [cust_id_entity.id]
+    assert ingest_query_graphs[0].primary_entity_dtypes == [
+        expected_entity_id_to_dtype[cust_id_entity.id]
     ]
