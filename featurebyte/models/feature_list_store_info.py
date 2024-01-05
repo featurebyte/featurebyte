@@ -9,7 +9,7 @@ from abc import abstractmethod  # pylint: disable=wrong-import-order
 
 from pydantic import Field
 
-from featurebyte.enum import DBVarType, SourceType
+from featurebyte.enum import SourceType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_store import FeatureStoreModel

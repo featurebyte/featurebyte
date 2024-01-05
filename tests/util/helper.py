@@ -1,6 +1,10 @@
 """
 This module contains utility functions used in tests
 """
+from __future__ import annotations
+
+from typing import Generator
+
 import importlib
 import json
 import os
@@ -22,7 +26,6 @@ from sqlglot import expressions
 from featurebyte import get_version
 from featurebyte.api.deployment import Deployment
 from featurebyte.api.source_table import AbstractTableData
-from featurebyte.common.env_util import add_sys_path
 from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import SampleMixin
 from featurebyte.enum import AggFunc, DBVarType, SourceType
@@ -581,6 +584,29 @@ def generate_column_data(var_type, row_number=10):
         ]
         return np.random.choice(selections, size=row_number)
     raise ValueError(f"Unsupported var_type: {var_type}")
+
+
+@contextmanager
+def add_sys_path(path: str) -> Generator[None, None, None]:
+    """
+    Temporarily add the given path to `sys.path`.
+
+    Parameters
+    ----------
+    path: str
+        Path to add to `sys.path`
+
+    Yields
+    ------
+    None
+        This context manager yields nothing and is used for its side effects only.
+    """
+    path = os.fspath(path)
+    sys.path.insert(0, path)
+    try:
+        yield
+    finally:
+        sys.path.remove(path)
 
 
 def get_on_demand_feature_function(codes, function_name):
