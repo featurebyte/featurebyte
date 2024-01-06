@@ -388,7 +388,7 @@ def test_feature__input_has_mixed_ingest_graph_node_flags(
             np.where(
                 pd.isna(feat) | pd.isna(inputs["__feature_zscore_V231227__part2"]),
                 np.nan,
-                feat / inputs["__feature_zscore_V231227__part2"],
+                np.divide(feat, inputs["__feature_zscore_V231227__part2"]),
             ),
             index=feat.index,
         )
@@ -525,3 +525,115 @@ def test_feature_entity_dtypes(
     assert ingest_query_graphs[0].primary_entity_dtypes == [
         expected_entity_id_to_dtype[cust_id_entity.id]
     ]
+
+
+def test_on_demand_feature_view_code_generation__card_transaction_description_feature(test_dir):
+    """Test on-demand feature view code generation for card_transaction_description feature."""
+    fixture_path = os.path.join(
+        test_dir, "fixtures/feature/card_txn_description_representation.json"
+    )
+    with open(fixture_path, "r") as file_handle:
+        feature_dict = json_util.loads(file_handle.read())
+        feature = FeatureModel(**feature_dict)
+
+    # check on-demand view code
+    check_on_demand_feature_code_generation(feature_model=feature)
+
+    # check the actual code
+    udf_codes = feature.offline_store_info.generate_on_demand_feature_function_code(
+        output_dtype=feature.dtype
+    )
+    expected = """
+    import json
+    import numpy as np
+    import pandas as pd
+    import scipy as sp
+
+
+    def on_demand_feature_function(col_1: str, col_2: str, col_3: str) -> float:
+        # col_1: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part1
+        # col_2: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part0
+        # col_3: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part2
+        feat_1 = np.nan if pd.isna(col_2) else json.loads(col_2)
+
+        def get_relative_frequency(input_dict, key):
+            if pd.isna(input_dict) or key not in input_dict:
+                return np.nan
+            total_count = sum(input_dict.values())
+            if total_count == 0:
+                return 0
+            key_frequency = input_dict.get(key, 0)
+            return key_frequency / total_count
+
+        feat_2 = get_relative_frequency(feat_1, key=col_1)
+        flag_1 = pd.isna(feat_2)
+        feat_2 = 0 if flag_1 else feat_2
+        feat_3 = np.nan if pd.isna(col_3) else json.loads(col_3)
+        feat_4 = get_relative_frequency(feat_3, key=col_1)
+        flag_2 = pd.isna(feat_4)
+        feat_4 = 0 if flag_2 else feat_4
+        feat_5 = (
+            np.nan
+            if pd.isna(feat_2) or pd.isna(feat_4)
+            else np.divide(feat_2, feat_4)
+        )
+        return feat_5
+    """
+    assert udf_codes.strip() == textwrap.dedent(expected).strip()
+
+    odfv_codes = feature.offline_store_info.generate_on_demand_feature_view_code(
+        feature_name_version=feature.versioned_name
+    )
+    expected = """
+    import json
+    import numpy as np
+    import pandas as pd
+    import scipy as sp
+
+
+    def on_demand_feature_view(inputs: pd.DataFrame) -> pd.DataFrame:
+        df = pd.DataFrame()
+        feat = inputs[
+            "__TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part0"
+        ].apply(lambda x: np.nan if pd.isna(x) else json.loads(x))
+
+        def get_relative_frequency(input_dict, key):
+            if pd.isna(input_dict) or key not in input_dict:
+                return np.nan
+            total_count = sum(input_dict.values())
+            if total_count == 0:
+                return 0
+            key_frequency = input_dict.get(key, 0)
+            return key_frequency / total_count
+
+        feat_1 = feat.combine(
+            inputs[
+                "__TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part1"
+            ],
+            lambda dct, key: get_relative_frequency(dct, key=key),
+        )
+        mask = feat_1.isnull()
+        feat_1[mask] = 0
+        feat_2 = inputs[
+            "__TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part2"
+        ].apply(lambda x: np.nan if pd.isna(x) else json.loads(x))
+        feat_3 = feat_2.combine(
+            inputs[
+                "__TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part1"
+            ],
+            lambda dct, key: get_relative_frequency(dct, key=key),
+        )
+        mask_1 = feat_3.isnull()
+        feat_3[mask_1] = 0
+        feat_4 = pd.Series(
+            np.where(
+                pd.isna(feat_1) | pd.isna(feat_3), np.nan, np.divide(feat_1, feat_3)
+            ),
+            index=feat_1.index,
+        )
+        df[
+            "TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105"
+        ] = feat_4
+        return df
+    """
+    assert odfv_codes.strip() == textwrap.dedent(expected).strip()
