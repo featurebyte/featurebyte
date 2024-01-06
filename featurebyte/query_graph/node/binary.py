@@ -151,6 +151,12 @@ class DivideNode(BinaryArithmeticOpNode):
     def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand} / {right_operand}"
 
+    def generate_odfv_expression(self, left_operand: str, right_operand: str) -> str:
+        return f"np.divide({left_operand}, {right_operand})"
+
+    def generate_udf_expression(self, left_operand: str, right_operand: str) -> str:
+        return f"np.divide({left_operand}, {right_operand})"
+
 
 class ModuloNode(BinaryArithmeticOpNode):
     """ModuloNode class"""

@@ -204,10 +204,7 @@ class CountDictTransformNode(BaseCountDictOpNode):
     ) -> Tuple[List[StatementT], str]:
         statements: List[StatementT] = []
         func_name = f"extract_extreme_value_{operation}"
-        if func_name not in var_name_generator.var_name_counter:
-            func_name = var_name_generator.convert_to_variable_name(
-                variable_name_prefix=func_name, node_name=None
-            )
+        if var_name_generator.should_insert_function(function_name=func_name):
             func_string = f"""
             def {func_name}(input_dict):
                 if pd.isna(input_dict) or len(input_dict) == 0:
@@ -343,11 +340,7 @@ class CosineSimilarityNode(BaseCountDictOpNode):
     ) -> Tuple[List[StatementT], str]:
         statements: List[StatementT] = []
         func_name = "cosine_similarity"
-        if func_name not in var_name_generator.var_name_counter:
-            # add custom function if it doesn't exist
-            func_name = var_name_generator.convert_to_variable_name(
-                variable_name_prefix=func_name, node_name=None
-            )
+        if var_name_generator.should_insert_function(function_name=func_name):
             func_string = f"""
             def {func_name}(dict1, dict2):
                 if pd.isna(dict1) or pd.isna(dict2):
@@ -552,11 +545,7 @@ class GetRankFromDictionaryNode(BaseCountDictOpNode):
     ) -> Tuple[List[StatementT], str]:
         statements: List[StatementT] = []
         func_name = "get_rank"
-        if func_name not in var_name_generator.var_name_counter:
-            # add custom function if it doesn't exist
-            func_name = var_name_generator.convert_to_variable_name(
-                variable_name_prefix=func_name, node_name=None
-            )
+        if var_name_generator.should_insert_function(function_name=func_name):
             func_string = f"""
             def {func_name}(input_dict, key, is_descending):
                 if pd.isna(input_dict) or key not in input_dict:
@@ -645,11 +634,7 @@ class GetRelativeFrequencyFromDictionaryNode(BaseCountDictOpNode):
     ) -> Tuple[List[StatementT], str]:
         statements: List[StatementT] = []
         func_name = "get_relative_frequency"
-        if func_name not in var_name_generator.var_name_counter:
-            # add custom function if it doesn't exist
-            func_name = var_name_generator.convert_to_variable_name(
-                variable_name_prefix=func_name, node_name=None
-            )
+        if var_name_generator.should_insert_function(function_name=func_name):
             func_string = f"""
             def {func_name}(input_dict, key):
                 if pd.isna(input_dict) or key not in input_dict:
