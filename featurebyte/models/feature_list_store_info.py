@@ -106,9 +106,19 @@ class DataBricksStoreInfo(BaseStoreInfo):
         """
         Data type to spark data type
 
+        Parameters
+        ----------
+        dtype: DBVarType
+            Data type to convert
+
         Returns
         -------
         Dict[str, str]
+
+        Raises
+        ------
+        ValueError
+            If dtype is not supported
         """
         type_map = {
             DBVarType.INT: "LongType",
@@ -123,7 +133,7 @@ class DataBricksStoreInfo(BaseStoreInfo):
 
     def _get_base_dataframe_schema_and_import_statement(self) -> Tuple[str, str]:
         schemas = []
-        required_imports = {"StructType"}
+        required_imports = {"StructType", "StructField"}
         for column_spec in self.base_dataframe_specs:
             field_type = self.to_spark_dtype(column_spec.dtype)
             schemas.append(
@@ -167,19 +177,11 @@ class DataBricksStoreInfo(BaseStoreInfo):
         )
         return codes
 
-    @classmethod
-    def create(
-        cls, features: List[FeatureModel], feature_store: FeatureStoreModel
-    ) -> "DataBricksStoreInfo":
-        table_name_to_feature_lookup = {}
+    @staticmethod
+    def _create_feature_functions(features: List[FeatureModel]) -> List[DataBricksFeatureFunction]:
         feature_functions = []
-        exclude_columns = set()
-        require_timestamp_lookup_key = False
-        entity_id_to_column_spec = {}
-        request_column_name_to_dtype = {}
         for feature in features:
             offline_store_info = feature.offline_store_info
-            assert offline_store_info is not None, "Feature does not have offline store info"
             if offline_store_info.udf_info:
                 input_bindings = {
                     input_arg_name: input_info.column_name
@@ -192,7 +194,14 @@ class DataBricksStoreInfo(BaseStoreInfo):
                         output_name=feature.name,
                     )
                 )
+        return feature_functions
 
+    @staticmethod
+    def _create_feature_lookups(features: List[FeatureModel]) -> List[DataBricksFeatureLookup]:
+        feature_lookups = []
+        table_name_to_feature_lookup = {}
+        for feature in features:
+            offline_store_info = feature.offline_store_info
             entity_id_to_serving_name = {
                 info.entity_id: info.serving_name for info in offline_store_info.serving_names_info
             }
@@ -201,7 +210,6 @@ class DataBricksStoreInfo(BaseStoreInfo):
                 timestamp_lookup_key = None
                 if ingest_query.has_ttl:
                     timestamp_lookup_key = VariableNameStr("timestamp_lookup_key")
-                    require_timestamp_lookup_key = True
 
                 if table_name not in table_name_to_feature_lookup:
                     lookup_key = [
@@ -220,11 +228,33 @@ class DataBricksStoreInfo(BaseStoreInfo):
                 column_name = ingest_query.output_column_name
                 feature_lookup = table_name_to_feature_lookup[table_name]
                 feature_lookup.feature_names.append(column_name)
-                if offline_store_info.udf_info:
-                    exclude_columns.add(column_name)
-                else:
+                if not offline_store_info.udf_info:
                     assert feature.name is not None, "Feature does not have a name"
                     feature_lookup.rename_outputs[column_name] = feature.name
+
+        for feature_lookup in table_name_to_feature_lookup.values():
+            feature_lookups.append(feature_lookup)
+        return feature_lookups
+
+    @classmethod
+    def create(
+        cls, features: List[FeatureModel], feature_store: FeatureStoreModel
+    ) -> "DataBricksStoreInfo":
+        exclude_columns = set()
+        require_timestamp_lookup_key = False
+        entity_id_to_column_spec = {}
+        request_column_name_to_dtype = {}
+        for feature in features:
+            offline_store_info = feature.offline_store_info
+            entity_id_to_serving_name = {
+                info.entity_id: info.serving_name for info in offline_store_info.serving_names_info
+            }
+            for ingest_query in offline_store_info.extract_offline_store_ingest_query_graphs():
+                if ingest_query.has_ttl:
+                    require_timestamp_lookup_key = True
+
+                if offline_store_info.udf_info:
+                    exclude_columns.add(ingest_query.output_column_name)
 
                 for i, entity_id in enumerate(ingest_query.primary_entity_ids):
                     if entity_id not in entity_id_to_column_spec:
@@ -245,12 +275,9 @@ class DataBricksStoreInfo(BaseStoreInfo):
                     if node_params.column_name not in request_column_name_to_dtype:
                         request_column_name_to_dtype[node_params.column_name] = node_params.dtype
 
-        feature_specs: List[Union[DataBricksFeatureLookup, DataBricksFeatureFunction]] = []
-        for feature_lookup in table_name_to_feature_lookup.values():
-            feature_specs.append(feature_lookup)
-
-        for feature_function in feature_functions:
-            feature_specs.append(feature_function)
+        feature_specs: List[
+            Union[DataBricksFeatureLookup, DataBricksFeatureFunction]
+        ] = cls._create_feature_lookups(features) + cls._create_feature_functions(features)
 
         base_dataframe_specs = []
         for entity_id in sorted(entity_id_to_column_spec.keys()):

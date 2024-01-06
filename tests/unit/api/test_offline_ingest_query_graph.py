@@ -683,7 +683,7 @@ def test_databricks_specs(
     # Import necessary modules for feature engineering and machine learning
     from databricks.feature_engineering import FeatureEngineeringClient
     from databricks.feature_engineering import FeatureFunction, FeatureLookup
-    from pyspark.sql.types import LongType, StructType, TimestampType
+    from pyspark.sql.types import LongType, StructField, StructType, TimestampType
     from sklearn import linear_model
 
     # Initialize the Feature Engineering client to interact with Databricks Feature Store
