@@ -15,6 +15,7 @@ from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.source_table import SourceTable
 from featurebyte.common.utils import parquet_from_arrow_stream
 from featurebyte.config import Configurations
+from featurebyte.enum import InternalName
 from featurebyte.exception import RecordDeletionException, RecordRetrievalException
 from featurebyte.models.materialized_table import MaterializedTableModel
 
@@ -73,7 +74,7 @@ class MaterializedTableMixin(MaterializedTableModel):
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = os.path.join(temp_dir, "temp.parquet")
             self.download(output_path=output_path)
-            return pd.read_parquet(output_path)
+            return self._remove_row_index(pd.read_parquet(output_path))
 
     def delete(self) -> None:
         """
@@ -90,6 +91,12 @@ class MaterializedTableMixin(MaterializedTableModel):
             raise RecordDeletionException(response)
         self._poll_async_task(task_response=response, retrieve_result=False, has_output_url=False)
 
+    @staticmethod
+    def _remove_row_index(dataframe: pd.DataFrame) -> pd.DataFrame:
+        if InternalName.TABLE_ROW_INDEX in dataframe:
+            dataframe.drop(InternalName.TABLE_ROW_INDEX, axis=1, inplace=True)
+        return dataframe
+
     @typechecked
     def preview(self, limit: int = 10) -> pd.DataFrame:
         """
@@ -105,7 +112,7 @@ class MaterializedTableMixin(MaterializedTableModel):
         pd.DataFrame
             Preview rows of the table.
         """
-        return self._source_table.preview(limit=limit)
+        return self._remove_row_index(self._source_table.preview(limit=limit))
 
     @typechecked
     def sample(self, size: int = 10, seed: int = 1234) -> pd.DataFrame:
@@ -125,7 +132,7 @@ class MaterializedTableMixin(MaterializedTableModel):
         pd.DataFrame
             Sampled rows from the table.
         """
-        return self._source_table.sample(size=size, seed=seed)
+        return self._remove_row_index(self._source_table.sample(size=size, seed=seed))
 
     @typechecked
     def describe(self, size: int = 0, seed: int = 1234) -> pd.DataFrame:
@@ -144,7 +151,7 @@ class MaterializedTableMixin(MaterializedTableModel):
         pd.DataFrame
             Summary of the table.
         """
-        return self._source_table.describe(size=size, seed=seed)
+        return self._remove_row_index(self._source_table.describe(size=size, seed=seed))
 
     def shape(self) -> Tuple[int, int]:
         """
