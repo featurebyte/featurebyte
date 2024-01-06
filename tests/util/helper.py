@@ -19,6 +19,7 @@ from bson import ObjectId, json_util
 from pandas.core.dtypes.common import is_numeric_dtype
 from sqlglot import expressions
 
+import featurebyte as fb
 from featurebyte import get_version
 from featurebyte.api.deployment import Deployment
 from featurebyte.api.source_table import AbstractTableData
@@ -443,6 +444,17 @@ async def get_dataframe_from_materialized_table(session, materialized_table):
     return await session.execute_query(query)
 
 
+def create_observation_table_by_upload(df):
+    """
+    Create an Observation Table using the upload SDK method
+    """
+    with tempfile.NamedTemporaryFile() as temp_file:
+        filename = temp_file.name + ".parquet"
+        df.to_parquet(filename, index=False)
+        observation_table = fb.ObservationTable.upload(filename, name=str(ObjectId()))
+    return observation_table
+
+
 async def compute_historical_feature_table_dataframe_helper(
     feature_list, df_observation_set, session, data_source, input_format, **kwargs
 ):
@@ -457,7 +469,10 @@ async def compute_historical_feature_table_dataframe_helper(
             data_source,
             serving_names_mapping=kwargs.get("serving_names_mapping"),
         )
+    elif input_format == "uploaded_table":
+        observation_table = create_observation_table_by_upload(df_observation_set)
     else:
+        assert input_format == "dataframe"
         observation_table = df_observation_set
 
     historical_feature_table_name = f"historical_feature_table_{ObjectId()}"
