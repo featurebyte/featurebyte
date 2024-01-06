@@ -85,6 +85,7 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
     # feature job setting of the offline store ingest query graph
     # whether the offline store ingest query graph has time-to-live (TTL) component
     primary_entity_ids: List[PydanticObjectId]
+    primary_entity_dtypes: List[DBVarType]
     feature_job_setting: Optional[FeatureJobSetting]
     has_ttl: bool
 
@@ -121,6 +122,7 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
             output_column_name=graph_node_param.output_column_name,
             output_dtype=graph_node_param.output_dtype,
             primary_entity_ids=graph_node_param.primary_entity_ids,
+            primary_entity_dtypes=graph_node_param.primary_entity_dtypes,
             feature_job_setting=graph_node_param.feature_job_setting,
             has_ttl=graph_node_param.has_ttl,
         )
@@ -155,6 +157,7 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
             output_column_name=metadata.output_column_name,
             output_dtype=metadata.output_dtype,
             primary_entity_ids=metadata.primary_entity_ids,
+            primary_entity_dtypes=metadata.primary_entity_dtypes,
             feature_job_setting=metadata.feature_job_setting,
             has_ttl=metadata.has_ttl,
         )

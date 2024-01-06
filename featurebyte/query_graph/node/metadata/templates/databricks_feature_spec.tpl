@@ -24,7 +24,6 @@ features = {{features}}
 exclude_columns = {{exclude_columns}}
 
 # Prepare the training set
-# 'base_df' should include primary entity columns, any request columns used in the feature, and the target column
 # 'features' is a list of feature lookups to be included in the training set
 # '[TARGET_COLUMN]' should be replaced with the actual name of the target column
 # 'exclude_columns' is a list of columns to be excluded from the training set

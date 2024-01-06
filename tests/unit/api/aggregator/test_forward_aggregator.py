@@ -9,20 +9,21 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
 
 @pytest.fixture(name="forward_aggregator")
-def forward_aggregator_fixture(snowflake_event_view):
+def forward_aggregator_fixture(snowflake_event_view_with_entity):
     """
     Fixture for forward aggregator
     """
-    columns_info = snowflake_event_view.columns_info
+    columns_info = snowflake_event_view_with_entity.columns_info
+    keys = ["col_int"]
     entity_ids = []
     for col in columns_info:
-        if col.entity_id:
+        if col.name in keys:
             entity_ids.append(col.entity_id)
     return ForwardAggregator(
-        view=snowflake_event_view,
+        view=snowflake_event_view_with_entity,
         category=None,
         entity_ids=entity_ids,
-        keys=["col_int"],
+        keys=keys,
         serving_names=["serving_name"],
     )
 

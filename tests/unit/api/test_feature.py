@@ -521,6 +521,7 @@ def test_get_feature(saved_feature):
         "feature_namespace_id",
         "online_enabled",
         "created_at",
+        "entity_dtypes",
         "entity_ids",
         "version.name",
         "feature_list_ids",

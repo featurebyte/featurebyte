@@ -423,6 +423,24 @@ class VariableNameGenerator(BaseModel):
             self.func_id_to_var_name[function_id] = var_name
         return var_name
 
+    def should_insert_function(self, function_name: str) -> bool:
+        """
+        Check whether to insert the function name in the SDK code. Once this function returns True, the function name
+        will be inserted into the SDK code, and the function name will be marked as inserted.
+
+        Parameters
+        ----------
+        function_name: str
+            Function name
+
+        Returns
+        -------
+        bool
+        """
+        should_insert = self.var_name_counter[function_name] == 0
+        self.var_name_counter[function_name] += 1
+        return should_insert
+
     def get_latest_variable_name(self, variable_name_prefix: str) -> str:
         """
         Get the latest variable name with the given prefix

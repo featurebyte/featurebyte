@@ -147,11 +147,7 @@ class PadNode(BaseStringAccessorOpNode):
     ) -> Tuple[List[StatementT], str]:
         statements: List[StatementT] = []
         func_name = "pad_string"
-        if func_name not in var_name_generator.var_name_counter:
-            # add custom function if it doesn't exist
-            func_name = var_name_generator.convert_to_variable_name(
-                variable_name_prefix=func_name, node_name=None
-            )
+        if var_name_generator.should_insert_function(function_name=func_name):
             func_string = """
             def pad_string(input_string: str, side: str, length: int, pad: str) -> str:
                 pad_length = length - len(input_string)

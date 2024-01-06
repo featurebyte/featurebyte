@@ -9,15 +9,19 @@ from abc import abstractmethod  # pylint: disable=wrong-import-order
 
 from pydantic import Field
 
-from featurebyte.enum import SourceType
+from featurebyte.enum import DBVarType, SourceType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_store import FeatureStoreModel
+from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.metadata.sdk_code import (
     CodeGenerator,
     ExpressionStr,
     VariableNameStr,
+    get_object_class_from_function_call,
 )
+from featurebyte.query_graph.node.request import RequestColumnNode
+from featurebyte.query_graph.node.schema import ColumnSpec
 
 
 class BaseStoreInfo(FeatureByteBaseModel):
@@ -93,11 +97,48 @@ class DataBricksStoreInfo(BaseStoreInfo):
     type: SourceType = Field(default=SourceType.DATABRICKS, const=True)
     databricks_sdk_version: str = Field(default="0.16.3")
     feature_specs: List[Union[DataBricksFeatureLookup, DataBricksFeatureFunction]]
+    base_dataframe_specs: List[ColumnSpec]
     exclude_columns: List[str]
     require_timestamp_lookup_key: bool
 
+    @classmethod
+    def to_spark_dtype(cls, dtype: DBVarType) -> str:
+        """
+        Data type to spark data type
+
+        Returns
+        -------
+        Dict[str, str]
+        """
+        type_map = {
+            DBVarType.INT: "LongType",
+            DBVarType.FLOAT: "DoubleType",
+            DBVarType.VARCHAR: "StringType",
+            DBVarType.BOOL: "BooleanType",
+            DBVarType.TIMESTAMP: "TimestampType",
+        }
+        if dtype not in type_map:
+            raise ValueError(f"Unsupported dtype: {dtype}")
+        return type_map[dtype]
+
     def _get_base_dataframe_schema_and_import_statement(self) -> Tuple[str, str]:
-        return "databricks", ""
+        schemas = []
+        required_imports = {"StructType"}
+        for column_spec in self.base_dataframe_specs:
+            field_type = self.to_spark_dtype(column_spec.dtype)
+            schemas.append(
+                get_object_class_from_function_call(
+                    "StructField",
+                    column_spec.name,
+                    ExpressionStr(f"{field_type}()"),
+                )
+            )
+            required_imports.add(field_type)
+
+        schema_statement = f"StructType({repr(schemas)})"
+        import_classes = ", ".join(sorted(required_imports))
+        pyspark_import_statement = f"from pyspark.sql.types import {import_classes}"
+        return schema_statement, pyspark_import_statement
 
     @property
     def feature_specs_definition(self) -> str:
@@ -134,6 +175,8 @@ class DataBricksStoreInfo(BaseStoreInfo):
         feature_functions = []
         exclude_columns = set()
         require_timestamp_lookup_key = False
+        entity_id_to_column_spec = {}
+        request_column_name_to_dtype = {}
         for feature in features:
             offline_store_info = feature.offline_store_info
             assert offline_store_info is not None, "Feature does not have offline store info"
@@ -183,14 +226,43 @@ class DataBricksStoreInfo(BaseStoreInfo):
                     assert feature.name is not None, "Feature does not have a name"
                     feature_lookup.rename_outputs[column_name] = feature.name
 
+                for i, entity_id in enumerate(ingest_query.primary_entity_ids):
+                    if entity_id not in entity_id_to_column_spec:
+                        entity_id_to_column_spec[entity_id] = ColumnSpec(
+                            name=entity_id_to_serving_name[entity_id],
+                            dtype=ingest_query.primary_entity_dtypes[i],
+                        )
+
+            if offline_store_info.is_decomposed:
+                for node in offline_store_info.graph.iterate_nodes(
+                    target_node=offline_store_info.graph.get_node_by_name(
+                        offline_store_info.node_name
+                    ),
+                    node_type=NodeType.REQUEST_COLUMN,
+                ):
+                    assert isinstance(node, RequestColumnNode)
+                    node_params = node.parameters
+                    if node_params.column_name not in request_column_name_to_dtype:
+                        request_column_name_to_dtype[node_params.column_name] = node_params.dtype
+
         feature_specs: List[Union[DataBricksFeatureLookup, DataBricksFeatureFunction]] = []
         for feature_lookup in table_name_to_feature_lookup.values():
             feature_specs.append(feature_lookup)
 
         for feature_function in feature_functions:
             feature_specs.append(feature_function)
+
+        base_dataframe_specs = []
+        for entity_id in sorted(entity_id_to_column_spec.keys()):
+            base_dataframe_specs.append(entity_id_to_column_spec[entity_id])
+        for column_name in sorted(request_column_name_to_dtype.keys()):
+            base_dataframe_specs.append(
+                ColumnSpec(name=column_name, dtype=request_column_name_to_dtype[column_name])
+            )
+
         return cls(
             feature_specs=feature_specs,
+            base_dataframe_specs=base_dataframe_specs,
             exclude_columns=sorted(exclude_columns),
             require_timestamp_lookup_key=require_timestamp_lookup_key,
         )
