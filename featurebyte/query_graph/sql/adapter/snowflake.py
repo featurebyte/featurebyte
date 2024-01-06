@@ -175,6 +175,8 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
             TableDetails of the table to be created
         select_expr: Select
             Select expression
+        replace: bool
+            Whether to replace the table if exists
 
         Returns
         -------

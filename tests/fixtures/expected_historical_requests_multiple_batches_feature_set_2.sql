@@ -33,7 +33,7 @@ WITH "REQUEST_TABLE_W7200_F3600_BS900_M1800_CUSTOMER_ID" AS (
   )
 ), _FB_AGGREGATED AS (
   SELECT
-    REQ."__FB_ROW_INDEX_FOR_JOIN" AS "__FB_ROW_INDEX_FOR_JOIN",
+    REQ."__FB_TABLE_ROW_INDEX" AS "__FB_TABLE_ROW_INDEX",
     REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
     REQ."CUSTOMER_ID" AS "CUSTOMER_ID",
     REQ."_fb_internal_lookup_membership_status_input_3" AS "_fb_internal_lookup_membership_status_input_3",
@@ -41,7 +41,7 @@ WITH "REQUEST_TABLE_W7200_F3600_BS900_M1800_CUSTOMER_ID" AS (
     "T1"."_fb_internal_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS "_fb_internal_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35"
   FROM (
     SELECT
-      L."__FB_ROW_INDEX_FOR_JOIN" AS "__FB_ROW_INDEX_FOR_JOIN",
+      L."__FB_TABLE_ROW_INDEX" AS "__FB_TABLE_ROW_INDEX",
       L."POINT_IN_TIME" AS "POINT_IN_TIME",
       L."CUSTOMER_ID" AS "CUSTOMER_ID",
       R."membership_status" AS "_fb_internal_lookup_membership_status_input_3"
@@ -49,14 +49,14 @@ WITH "REQUEST_TABLE_W7200_F3600_BS900_M1800_CUSTOMER_ID" AS (
       SELECT
         "__FB_KEY_COL_0",
         "__FB_LAST_TS",
-        "__FB_ROW_INDEX_FOR_JOIN",
+        "__FB_TABLE_ROW_INDEX",
         "POINT_IN_TIME",
         "CUSTOMER_ID"
       FROM (
         SELECT
           "__FB_KEY_COL_0",
           LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL_0" ORDER BY "__FB_TS_COL", "__FB_TS_TIE_BREAKER_COL") AS "__FB_LAST_TS",
-          "__FB_ROW_INDEX_FOR_JOIN",
+          "__FB_TABLE_ROW_INDEX",
           "POINT_IN_TIME",
           "CUSTOMER_ID",
           "__FB_EFFECTIVE_TS_COL"
@@ -66,12 +66,12 @@ WITH "REQUEST_TABLE_W7200_F3600_BS900_M1800_CUSTOMER_ID" AS (
             "CUSTOMER_ID" AS "__FB_KEY_COL_0",
             NULL AS "__FB_EFFECTIVE_TS_COL",
             2 AS "__FB_TS_TIE_BREAKER_COL",
-            "__FB_ROW_INDEX_FOR_JOIN" AS "__FB_ROW_INDEX_FOR_JOIN",
+            "__FB_TABLE_ROW_INDEX" AS "__FB_TABLE_ROW_INDEX",
             "POINT_IN_TIME" AS "POINT_IN_TIME",
             "CUSTOMER_ID" AS "CUSTOMER_ID"
           FROM (
             SELECT
-              REQ."__FB_ROW_INDEX_FOR_JOIN",
+              REQ."__FB_TABLE_ROW_INDEX",
               REQ."POINT_IN_TIME",
               REQ."CUSTOMER_ID"
             FROM REQUEST_TABLE AS REQ
@@ -82,7 +82,7 @@ WITH "REQUEST_TABLE_W7200_F3600_BS900_M1800_CUSTOMER_ID" AS (
             "cust_id" AS "__FB_KEY_COL_0",
             "event_timestamp" AS "__FB_EFFECTIVE_TS_COL",
             1 AS "__FB_TS_TIE_BREAKER_COL",
-            NULL AS "__FB_ROW_INDEX_FOR_JOIN",
+            NULL AS "__FB_TABLE_ROW_INDEX",
             NULL AS "POINT_IN_TIME",
             NULL AS "CUSTOMER_ID"
           FROM (
@@ -182,7 +182,7 @@ WITH "REQUEST_TABLE_W7200_F3600_BS900_M1800_CUSTOMER_ID" AS (
     ON REQ."POINT_IN_TIME" = T1."POINT_IN_TIME" AND REQ."CUSTOMER_ID" = T1."CUSTOMER_ID"
 )
 SELECT
-  AGG."__FB_ROW_INDEX_FOR_JOIN",
+  AGG."__FB_TABLE_ROW_INDEX",
   AGG."POINT_IN_TIME",
   AGG."CUSTOMER_ID",
   "_fb_internal_lookup_membership_status_input_3" AS "Current Membership Status",

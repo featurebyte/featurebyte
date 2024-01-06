@@ -65,7 +65,9 @@ def mock_session_for_online_serving_fixture():
 
     async def mock_execute_query(query):
         _ = query
-        return pd.DataFrame({"cust_id": [1], "feature_value": [123.0], "__FB_ROW_INDEX": [0]})
+        return pd.DataFrame(
+            {"cust_id": [1], "feature_value": [123.0], "__FB_DATAFRAME_ROW_INDEX": [0]}
+        )
 
     return Mock(
         name="mock_session_for_online_serving",
@@ -84,17 +86,17 @@ def expected_online_feature_query_fixture():
         WITH ONLINE_REQUEST_TABLE AS (
           SELECT
             REQ."cust_id",
-            REQ."__FB_ROW_INDEX",
+            REQ."__FB_DATAFRAME_ROW_INDEX",
             SYSDATE() AS POINT_IN_TIME
           FROM (
             SELECT
               1 AS "cust_id",
-              0 AS "__FB_ROW_INDEX"
+              0 AS "__FB_DATAFRAME_ROW_INDEX"
           ) AS REQ
         ), _FB_AGGREGATED AS (
           SELECT
             REQ."cust_id",
-            REQ."__FB_ROW_INDEX",
+            REQ."__FB_DATAFRAME_ROW_INDEX",
             REQ."POINT_IN_TIME",
             "T0"."_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
           FROM ONLINE_REQUEST_TABLE AS REQ
@@ -134,7 +136,7 @@ def expected_online_feature_query_fixture():
         )
         SELECT
           AGG."cust_id",
-          AGG."__FB_ROW_INDEX",
+          AGG."__FB_DATAFRAME_ROW_INDEX",
           "_fb_internal_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "sum_30m"
         FROM _FB_AGGREGATED AS AGG
         '''
