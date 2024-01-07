@@ -3,6 +3,7 @@ Unit tests for StaticSourceTable class
 """
 from unittest.mock import Mock, call, patch
 
+import pandas as pd
 import pytest
 
 from featurebyte.api.source_table import SourceTable
@@ -96,27 +97,6 @@ def test_data_source(static_source_table_from_source):
     source_table = static_source_table._source_table
     assert source_table.feature_store.id == static_source_table.location.feature_store_id
     assert source_table.tabular_source.table_details == static_source_table.location.table_details
-
-
-@pytest.fixture(name="mock_source_table")
-def mock_source_table_fixture():
-    """
-    Patches the underlying SourceTable in MaterializedTableMixin
-    """
-    mock_source_table = Mock(name="mock_source_table", spec=SourceTable)
-    mock_feature_store = Mock(
-        name="mock_feature_store",
-        get_data_source=Mock(
-            return_value=Mock(
-                name="mock_data_source",
-                get_source_table=Mock(return_value=mock_source_table),
-            )
-        ),
-    )
-    with patch(
-        "featurebyte.api.materialized_table.FeatureStore.get_by_id", return_value=mock_feature_store
-    ):
-        yield mock_source_table
 
 
 def test_preview(static_source_table_from_source, mock_source_table):
