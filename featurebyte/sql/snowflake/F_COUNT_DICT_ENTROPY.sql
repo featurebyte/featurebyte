@@ -11,6 +11,9 @@ $$
   var entropy = 0.0;
   var count_length = counts_arr.length;
   for (var i = 0; i < count_length; i++) {
+    if (counts_arr[i] == 0) {
+      continue;
+    }
     var p = counts_arr[i] / total;
     entropy += p * Math.log(p);
   }
