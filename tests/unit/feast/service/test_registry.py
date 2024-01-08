@@ -7,6 +7,14 @@ import pytest_asyncio
 from featurebyte.feast.schema.registry import FeastRegistryCreate, FeastRegistryUpdate
 
 
+@pytest.fixture(autouse=True)
+def always_configure_online_store(catalog, mysql_online_store):
+    """Configure online store for all tests in this directory"""
+    catalog.update_online_store(mysql_online_store.name)
+    yield
+    catalog.update_online_store(None)
+
+
 @pytest.fixture(name="feast_registry_service")
 def feast_registry_service_fixture(app_container):
     """Feast registry service fixture"""

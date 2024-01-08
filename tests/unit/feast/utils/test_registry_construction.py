@@ -8,27 +8,30 @@ from google.protobuf.json_format import MessageToDict
 
 from featurebyte import FeatureList, RequestColumn
 from featurebyte.common.model_util import get_version
-from featurebyte.feast.utils.registry_construction import FeastRegistryConstructor
+from featurebyte.feast.utils.registry_construction import FeastRegistryBuilder
 
 
 def test_feast_registry_construction__missing_asset(
     snowflake_feature_store,
+    mysql_online_store,
     cust_id_entity,
     float_feature,
     feature_list,
 ):
     """Test the construction of the feast register (missing asset)"""
     with pytest.raises(ValueError, match="Missing entities: "):
-        FeastRegistryConstructor.create(
+        FeastRegistryBuilder.create(
             feature_store=snowflake_feature_store.cached_model,
+            online_store=mysql_online_store.cached_model,
             entities=[],
             features=[float_feature.cached_model],
             feature_lists=[],
         )
 
     with pytest.raises(ValueError, match="Missing features: "):
-        FeastRegistryConstructor.create(
+        FeastRegistryBuilder.create(
             feature_store=snowflake_feature_store.cached_model,
+            online_store=mysql_online_store.cached_model,
             entities=[cust_id_entity.cached_model],
             features=[],
             feature_lists=[feature_list],
@@ -37,6 +40,7 @@ def test_feast_registry_construction__missing_asset(
 
 def test_feast_registry_construction__with_post_processing_features(
     snowflake_feature_store,
+    mysql_online_store,
     cust_id_entity,
     transaction_entity,
     float_feature,
@@ -56,8 +60,9 @@ def test_feast_registry_construction__with_post_processing_features(
     feature_list = FeatureList([feature_requires_post_processing], name="test_feature_list")
     feature_list.save()
 
-    feast_registry_proto = FeastRegistryConstructor.create(
+    feast_registry_proto = FeastRegistryBuilder.create(
         feature_store=snowflake_feature_store.cached_model,
+        online_store=mysql_online_store.cached_model,
         entities=[cust_id_entity.cached_model, transaction_entity.cached_model],
         features=[feature_requires_post_processing.cached_model],
         feature_lists=[feature_list.cached_model],  # type: ignore

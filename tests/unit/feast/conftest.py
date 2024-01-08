@@ -4,7 +4,7 @@ This module contains common fixtures for unit tests
 import pytest
 
 from featurebyte import FeatureList, RequestColumn
-from featurebyte.feast.utils.registry_construction import FeastRegistryConstructor
+from featurebyte.feast.utils.registry_construction import FeastRegistryBuilder
 
 
 @pytest.fixture(name="always_enable_feast_integration", autouse=True)
@@ -28,6 +28,7 @@ def feature_list_fixture(float_feature, non_time_based_feature):
 @pytest.fixture(name="feast_registry_proto")
 def feast_registry_proto_fixture(
     snowflake_feature_store,
+    mysql_online_store,
     cust_id_entity,
     transaction_entity,
     float_feature,
@@ -35,8 +36,9 @@ def feast_registry_proto_fixture(
     feature_list,
 ):
     """Fixture for the feast registry proto"""
-    feast_registry_proto = FeastRegistryConstructor.create(
+    feast_registry_proto = FeastRegistryBuilder.create(
         feature_store=snowflake_feature_store.cached_model,
+        online_store=mysql_online_store.cached_model,
         entities=[cust_id_entity.cached_model, transaction_entity.cached_model],
         features=[float_feature.cached_model, non_time_based_feature.cached_model],
         feature_lists=[feature_list.cached_model],  # type: ignore

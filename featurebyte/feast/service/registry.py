@@ -9,7 +9,7 @@ from pydantic import ValidationError
 from featurebyte.feast.model.feature_store import FeatureStoreDetailsWithFeastConfiguration
 from featurebyte.feast.model.registry import FeastRegistryModel
 from featurebyte.feast.schema.registry import FeastRegistryCreate, FeastRegistryUpdate
-from featurebyte.feast.utils.registry_construction import FeastRegistryConstructor
+from featurebyte.feast.utils.registry_construction import FeastRegistryBuilder
 from featurebyte.persistent import Persistent
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.service.base_document import BaseDocumentService
@@ -17,6 +17,7 @@ from featurebyte.service.catalog import CatalogService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.online_store import OnlineStoreService
 
 
 class FeastRegistryService(
@@ -35,6 +36,7 @@ class FeastRegistryService(
         feature_service: FeatureService,
         entity_service: EntityService,
         feature_store_service: FeatureStoreService,
+        online_store_service: OnlineStoreService,
         catalog_service: CatalogService,
     ):
         super().__init__(
@@ -46,6 +48,7 @@ class FeastRegistryService(
         self.feature_service = feature_service
         self.entity_service = entity_service
         self.feature_store_service = feature_store_service
+        self.online_store_service = online_store_service
         self.catalog_service = catalog_service
 
     async def _construct_feast_registry_model(
@@ -73,17 +76,25 @@ class FeastRegistryService(
 
         if len(feature_store_ids) > 1:
             raise ValueError("Feature store IDs must be the same for all features")
+
+        assert self.catalog_id is not None
+        catalog = await self.catalog_service.get_document(document_id=self.catalog_id)
         if not feature_store_ids:
-            assert self.catalog_id is not None
-            catalog = await self.catalog_service.get_document(document_id=self.catalog_id)
             assert len(catalog.default_feature_store_ids) > 0
             feature_store_ids.add(catalog.default_feature_store_ids[0])
 
         feature_store_id = feature_store_ids.pop()
         feature_store = await self.feature_store_service.get_document(document_id=feature_store_id)
 
-        feast_registry_proto = FeastRegistryConstructor.create(
+        online_store = None
+        if catalog.online_store_id:
+            online_store = await self.online_store_service.get_document(
+                document_id=catalog.online_store_id
+            )
+
+        feast_registry_proto = FeastRegistryBuilder.create(
             feature_store=feature_store,
+            online_store=online_store,
             entities=entities,
             features=features,
             feature_lists=data.feature_lists,

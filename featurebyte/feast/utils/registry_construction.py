@@ -2,7 +2,9 @@
 This module contains classes for constructing feast registry
 """
 # pylint: disable=no-name-in-module
-from typing import Dict, List, Optional, Tuple, cast
+from __future__ import annotations
+
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 import tempfile
 from collections import defaultdict
@@ -18,10 +20,12 @@ from feast import RequestSource as FeastRequestSource
 from feast.data_source import DataSource as FeastDataSource
 from feast.feature_view import DUMMY_ENTITY
 from feast.inference import update_feature_views_with_inferred_features_and_entities
+from feast.infra.online_stores.contrib.mysql_online_store.mysql import MySQLOnlineStoreConfig
+from feast.infra.online_stores.redis import RedisOnlineStoreConfig
 from feast.protos.feast.core.Registry_pb2 import Registry as RegistryProto
 from feast.repo_config import RegistryConfig, RepoConfig
 
-from featurebyte.enum import DBVarType, InternalName, SpecialColumnName
+from featurebyte.enum import DBVarType, InternalName, OnlineStoreType, SpecialColumnName
 from featurebyte.feast.enum import to_feast_primitive_type
 from featurebyte.feast.model.feature_store import (
     FeastDatabaseDetails,
@@ -38,7 +42,66 @@ from featurebyte.models.offline_store_ingest_query import (
     OfflineStoreIngestQueryGraph,
     get_time_aggregate_ttl_in_secs,
 )
+from featurebyte.models.online_store import OnlineStoreModel
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+
+
+class EntityFeatureChecker:
+    """
+    Class for checking the consistency and completeness of entities and features.
+    """
+
+    @staticmethod
+    def check_missing_entities(entities: List[EntityModel], features: List[FeatureModel]) -> None:
+        """
+        Checks if all entities have been provided
+
+        Parameters
+        ----------
+        entities: List[EntityModel]
+            List of featurebyte entity models
+        features: List[FeatureModel]
+            List of featurebyte feature models
+
+        Raises
+        ------
+        ValueError
+            If missing entities
+        """
+        primary_entity_ids = set()
+        for feature in features:
+            primary_entity_ids.update(feature.primary_entity_ids)
+
+        provided_entity_ids = set(entity.id for entity in entities)
+        if not primary_entity_ids.issubset(provided_entity_ids):
+            raise ValueError(f"Missing entities: {primary_entity_ids - provided_entity_ids}")
+
+    @staticmethod
+    def check_missing_features(
+        features: List[FeatureModel], feature_lists: List[FeatureListModel]
+    ) -> None:
+        """
+        Checks if all features have been provided
+
+        Parameters
+        ----------
+        features: List[FeatureModel]
+            List of featurebyte feature models
+        feature_lists: List[FeatureListModel]
+            List of featurebyte feature list models
+
+        Raises
+        ------
+        ValueError
+            If missing features
+        """
+        feature_ids = set()
+        for feature_list in feature_lists:
+            feature_ids.update(feature_list.feature_ids)
+
+        provided_feature_ids = set(feature.id for feature in features)
+        if not feature_ids.issubset(provided_feature_ids):
+            raise ValueError(f"Missing features: {feature_ids - provided_feature_ids}")
 
 
 class OfflineStoreTable(FeatureByteBaseModel):
@@ -66,6 +129,42 @@ class OfflineStoreTable(FeatureByteBaseModel):
             Primary entity ids
         """
         return tuple(entity_info.id for entity_info in self.primary_entity_info)
+
+    @classmethod
+    def create(
+        cls,
+        table_name: str,
+        ingest_query_graphs: List[OfflineStoreIngestQueryGraph],
+        entity_id_to_serving_name: Dict[PydanticObjectId, str],
+    ) -> OfflineStoreTable:
+        """
+        Create offline store table
+
+        Parameters
+        ----------
+        table_name: str
+            Table name
+        ingest_query_graphs: List[OfflineStoreIngestQueryGraph]
+            List of offline store ingest query graphs
+        entity_id_to_serving_name: Dict[PydanticObjectId, str]
+            Mapping from entity id to serving name
+
+        Returns
+        -------
+        OfflineStoreTable
+            Offline store table
+        """
+        assert len(ingest_query_graphs) > 0
+        first_ingest_query_graph = ingest_query_graphs[0]
+        return cls(
+            table_name=table_name,
+            feature_job_setting=first_ingest_query_graph.feature_job_setting,
+            has_ttl=first_ingest_query_graph.has_ttl,
+            ingest_query_graphs=ingest_query_graphs,
+            primary_entity_info=first_ingest_query_graph.get_primary_entity_info(
+                entity_id_to_serving_name=entity_id_to_serving_name
+            ),
+        )
 
     def create_feast_entity(self) -> FeastEntity:
         """
@@ -168,60 +267,10 @@ class OfflineStoreTable(FeatureByteBaseModel):
         return feature_view  # type: ignore[no-any-return]
 
 
-class FeastRegistryConstructor:
-    """Generates a feast RegistryProto from featurebyte asset models"""
-
-    @staticmethod
-    def _check_missing_entities(entities: List[EntityModel], features: List[FeatureModel]) -> None:
-        """
-        Checks if all entities have been provided
-
-        Parameters
-        ----------
-        entities: List[EntityModel]
-            List of featurebyte entity models
-        features: List[FeatureModel]
-            List of featurebyte feature models
-
-        Raises
-        ------
-        ValueError
-            If missing entities
-        """
-        primary_entity_ids = set()
-        for feature in features:
-            primary_entity_ids.update(feature.primary_entity_ids)
-
-        provided_entity_ids = set(entity.id for entity in entities)
-        if not primary_entity_ids.issubset(provided_entity_ids):
-            raise ValueError(f"Missing entities: {primary_entity_ids - provided_entity_ids}")
-
-    @staticmethod
-    def _check_missing_features(
-        features: List[FeatureModel], feature_lists: List[FeatureListModel]
-    ) -> None:
-        """
-        Checks if all features have been provided
-
-        Parameters
-        ----------
-        features: List[FeatureModel]
-            List of featurebyte feature models
-        feature_lists: List[FeatureListModel]
-            List of featurebyte feature list models
-
-        Raises
-        ------
-        ValueError
-            If missing features
-        """
-        feature_ids = set()
-        for feature_list in feature_lists:
-            feature_ids.update(feature_list.feature_ids)
-
-        provided_feature_ids = set(feature.id for feature in features)
-        if not feature_ids.issubset(provided_feature_ids):
-            raise ValueError(f"Missing features: {feature_ids - provided_feature_ids}")
+class OfflineStoreTableBuilder:
+    """
+    Class for building Offline Store Tables.
+    """
 
     @staticmethod
     def create_offline_store_tables(
@@ -253,23 +302,23 @@ class FeastRegistryConstructor:
 
         offline_store_tables = []
         for table_name, ingest_query_graphs in offline_table_key_to_ingest_query_graphs.items():
-            assert len(ingest_query_graphs) > 0
-            first_ingest_query_graph = ingest_query_graphs[0]
-            offline_store_table = OfflineStoreTable(
+            offline_store_table = OfflineStoreTable.create(
                 table_name=table_name,
-                feature_job_setting=first_ingest_query_graph.feature_job_setting,
                 ingest_query_graphs=ingest_query_graphs,
-                has_ttl=first_ingest_query_graph.has_ttl,
-                primary_entity_info=first_ingest_query_graph.get_primary_entity_info(
-                    entity_id_to_serving_name=entity_id_to_serving_name
-                ),
+                entity_id_to_serving_name=entity_id_to_serving_name,
             )
             offline_store_tables.append(offline_store_table)
         return offline_store_tables
 
-    @classmethod
+
+class FeastAssetCreator:
+    """
+    Class for creating various Feast assets like Data Source, Feature View, etc.
+    """
+
+    @staticmethod
     def create_feast_name_to_request_source(
-        cls, features: List[FeatureModel]
+        features: List[FeatureModel],
     ) -> Dict[str, FeastRequestSource]:
         """
         Create feast request source based on the features
@@ -329,9 +378,8 @@ class FeastRegistryConstructor:
 
         return name_to_feast_request_source
 
-    @classmethod
+    @staticmethod
     def create_feast_on_demand_feature_views(
-        cls,
         features: List[FeatureModel],
         name_to_feast_feature_view: Dict[str, FeastFeatureView],
         name_to_feast_request_source: Dict[str, FeastRequestSource],
@@ -368,9 +416,8 @@ class FeastRegistryConstructor:
             on_demand_feature_views.append(on_demand_feature_view)
         return on_demand_feature_views
 
-    @classmethod
+    @staticmethod
     def create_feast_feature_services(
-        cls,
         feature_lists: List[FeatureListModel],
         features: List[FeatureModel],
         feast_feature_views: List[FeastFeatureView],
@@ -424,10 +471,42 @@ class FeastRegistryConstructor:
             feature_services.append(feature_service)
         return feature_services
 
+
+class FeastRegistryBuilder:
+    """
+    Class for constructing the Feast Registry.
+    """
+
+    @staticmethod
+    def _create_repo_config(
+        project_name: str, online_store: Optional[OnlineStoreModel], registry_file_path: str
+    ) -> RepoConfig:
+        online_store_config: Optional[Dict[str, Any]] = None
+        if online_store:
+            online_store_for_type = {
+                OnlineStoreType.REDIS: RedisOnlineStoreConfig,
+                OnlineStoreType.MYSQL: MySQLOnlineStoreConfig,
+            }
+            online_store_config_class = online_store_for_type[online_store.details.type]
+            online_store_config = online_store_config_class(
+                **online_store.details.dict(by_alias=True, exclude={"credential": True})
+            ).dict(by_alias=True)
+        return RepoConfig(
+            project=project_name,
+            provider="local",
+            registry=RegistryConfig(
+                registry_type="file",
+                path=registry_file_path,
+                cache_ttl_seconds=0,
+            ),
+            online_store=online_store_config,
+        )
+
     @classmethod
     def _create_feast_registry_proto(
         cls,
         project_name: Optional[str],
+        online_store: Optional[OnlineStoreModel],
         feast_data_sources: List[FeastDataSource],
         primary_entity_ids_to_feast_entity: Dict[Tuple[PydanticObjectId, ...], FeastEntity],
         feast_request_sources: List[FeastRequestSource],
@@ -437,14 +516,10 @@ class FeastRegistryConstructor:
     ) -> RegistryProto:
         project_name = project_name or "featurebyte_project"
         with tempfile.NamedTemporaryFile() as temp_file:
-            repo_config = RepoConfig(
-                project=project_name,
-                provider="local",
-                registry=RegistryConfig(
-                    registry_type="file",
-                    path=temp_file.name,
-                    cache_ttl_seconds=0,
-                ),
+            repo_config = cls._create_repo_config(
+                project_name=project_name,
+                online_store=online_store,
+                registry_file_path=temp_file.name,
             )
 
             # FIXME: Temporarily calling this inference function here to populate the entity_columns
@@ -472,6 +547,7 @@ class FeastRegistryConstructor:
     def create(
         cls,
         feature_store: FeatureStoreModel,
+        online_store: Optional[OnlineStoreModel],
         entities: List[EntityModel],
         features: List[FeatureModel],
         feature_lists: List[FeatureListModel],
@@ -484,6 +560,8 @@ class FeastRegistryConstructor:
         ----------
         feature_store: FeatureStoreModel
             Feature store model
+        online_store: Optional[OnlineStoreModel]
+            Online store model
         entities: List[EntityModel]
             List of featurebyte entity models
         features: List[FeatureModel]
@@ -497,10 +575,9 @@ class FeastRegistryConstructor:
         -------
         RegistryProto
         """
-        cls._check_missing_entities(entities, features)
-        cls._check_missing_features(features, feature_lists)
-
-        offline_store_tables = cls.create_offline_store_tables(
+        EntityFeatureChecker.check_missing_entities(entities, features)
+        EntityFeatureChecker.check_missing_features(features, feature_lists)
+        offline_store_tables = OfflineStoreTableBuilder.create_offline_store_tables(
             features=features,
             entity_id_to_serving_name={entity.id: entity.serving_names[0] for entity in entities},
         )
@@ -535,13 +612,15 @@ class FeastRegistryConstructor:
             )
             name_to_feast_feature_view[offline_store_table.table_name] = feast_feature_view
 
-        name_to_feast_request_source = cls.create_feast_name_to_request_source(features)
-        on_demand_feature_views = cls.create_feast_on_demand_feature_views(
+        name_to_feast_request_source = FeastAssetCreator.create_feast_name_to_request_source(
+            features
+        )
+        on_demand_feature_views = FeastAssetCreator.create_feast_on_demand_feature_views(
             features=features,
             name_to_feast_feature_view=name_to_feast_feature_view,
             name_to_feast_request_source=name_to_feast_request_source,
         )
-        feast_feature_services = cls.create_feast_feature_services(
+        feast_feature_services = FeastAssetCreator.create_feast_feature_services(
             feature_lists=feature_lists,
             features=features,
             feast_feature_views=list(name_to_feast_feature_view.values()),
@@ -551,6 +630,7 @@ class FeastRegistryConstructor:
         # construct feast registry by constructing a feast feature store and extracting the registry
         return cls._create_feast_registry_proto(
             project_name=project_name,
+            online_store=online_store,
             feast_data_sources=feast_data_sources,
             primary_entity_ids_to_feast_entity=primary_entity_ids_to_feast_entity,
             feast_request_sources=list(name_to_feast_request_source.values()),
