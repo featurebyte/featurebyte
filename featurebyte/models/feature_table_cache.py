@@ -6,11 +6,21 @@ from typing import List
 import pymongo
 
 from featurebyte.models.base import (
+    FeatureByteBaseModel,
     FeatureByteCatalogBaseDocumentModel,
     PydanticObjectId,
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
 )
+
+
+class CachedFeatureDefinition(FeatureByteBaseModel):
+    """
+    Definition of the feature cached in Feature Table Cache
+    """
+
+    feature_id: PydanticObjectId
+    definition_hash: str
 
 
 class FeatureTableCacheModel(FeatureByteCatalogBaseDocumentModel):
@@ -21,15 +31,15 @@ class FeatureTableCacheModel(FeatureByteCatalogBaseDocumentModel):
         FeatureTableCache id of the object
     observation_table_id: PydanticObjectId
         Observation Table Id
-    name: str
-        Name of the Feature Table Cache. Also used as name of the table in DWH
-    features: List[str]
-        List of feature names which are stored in this feature table cache
+    table_name: str
+        Name of the Feature Table Cache in DWH (SQL table name).
+    feature_definition_hashes: List[str]
+        List of feature definition hashes which are stored in this feature table cache
     """
 
     observation_table_id: PydanticObjectId
-    name: str
-    features: List[str]
+    table_name: str
+    feature_definitions: List[CachedFeatureDefinition]
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
@@ -44,8 +54,8 @@ class FeatureTableCacheModel(FeatureByteCatalogBaseDocumentModel):
                 resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
             ),
             UniqueValuesConstraint(
-                fields=("name",),
-                conflict_fields_signature={"name": ["name"]},
+                fields=("table_name",),
+                conflict_fields_signature={"table_name": ["table_name"]},
                 resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
             ),
         ]

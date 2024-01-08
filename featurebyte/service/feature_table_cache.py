@@ -3,19 +3,13 @@ Feature Table Cache service
 """
 from typing import Any, List, Optional
 
-import hashlib
-
 from bson import ObjectId
 
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.feature_table_cache import FeatureTableCacheModel
+from featurebyte.models.feature_table_cache import CachedFeatureDefinition, FeatureTableCacheModel
 from featurebyte.persistent.base import Persistent
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
-from featurebyte.schema.feature_table_cache import (
-    CachedFeatureDefinition,
-    FeatureTableCacheInfo,
-    FeatureTableCacheUpdate,
-)
+from featurebyte.schema.feature_table_cache import FeatureTableCacheUpdate
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.observation_table import ObservationTableService
 
@@ -72,31 +66,6 @@ class FeatureTableCacheService(
 
         return documents[0]
 
-    async def get_feature_table_cache_info(
-        self,
-        observation_table_id: PydanticObjectId,
-    ) -> Optional[FeatureTableCacheInfo]:
-        """Get document for observation table.
-
-        Parameters
-        ----------
-        observation_table_id: PydanticObjectId
-            Observation table id
-
-        Returns
-        -------
-        Optional[FeatureTableCacheInfo]
-            Feature Table Cache Info
-        """
-        document = await self.get_document_for_observation_table(observation_table_id)
-        if not document:
-            return None
-
-        return FeatureTableCacheInfo(
-            cache_table_name=document.name,
-            cached_feature_names=document.features,
-        )
-
     async def update_feature_table_cache(
         self,
         observation_table_id: PydanticObjectId,
@@ -112,42 +81,26 @@ class FeatureTableCacheService(
         feature_definitions: List[CachedFeatureDefinition]
             Feature definitions
         """
-        features = []
-        for feature_def in feature_definitions:
-            feature_name = feature_def.name
-            if feature_def.definition_hash:
-                feature_name = f"{feature_name}_{feature_def.definition_hash}"
-            features.append(feature_name)
-
         document = await self.get_document_for_observation_table(observation_table_id)
         if document:
-            updated_features = document.features.copy()
-            for feature in features:
-                if feature not in updated_features:
+            updated_features = document.feature_definitions.copy()
+            existing_feature_hashes = {feat.definition_hash for feat in updated_features}
+            for feature in feature_definitions:
+                if feature.definition_hash not in existing_feature_hashes:
                     updated_features.append(feature)
 
             await self.update_document(
                 document_id=document.id,
-                data=FeatureTableCacheUpdate(features=updated_features),
+                data=FeatureTableCacheUpdate(feature_definitions=updated_features),
                 return_document=False,
             )
         else:
             observation_table = await self.observation_table_service.get_document(
                 document_id=observation_table_id
             )
-
-            entity_ids = []
-            if observation_table.primary_entity_ids:
-                entity_ids = [str(entity_id) for entity_id in observation_table.primary_entity_ids]
-
-            hasher = hashlib.shake_128()
-            name = f"{observation_table.id}_{','.join(sorted(entity_ids))}".encode("utf-8")
-            hasher.update(name)
-            name_hash = hasher.hexdigest(20)
-
             document = FeatureTableCacheModel(
                 observation_table_id=observation_table_id,
-                name=f"feature_table_cache_{name_hash}",
-                features=features,
+                table_name=f"feature_table_cache_{str(observation_table.id)}",
+                feature_definitions=feature_definitions,
             )
             await self.create_document(document)
