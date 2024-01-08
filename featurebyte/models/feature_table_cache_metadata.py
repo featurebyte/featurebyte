@@ -22,9 +22,10 @@ class CachedFeatureDefinition(FeatureByteBaseModel):
 
     feature_id: Optional[PydanticObjectId] = Field(default=None)
     definition_hash: str
+    feature_name: str
 
 
-class FeatureTableCacheModel(FeatureByteCatalogBaseDocumentModel):
+class FeatureTableCacheMetadataModel(FeatureByteCatalogBaseDocumentModel):
     """
     Model for feature table cache
 
@@ -47,7 +48,7 @@ class FeatureTableCacheModel(FeatureByteCatalogBaseDocumentModel):
         MongoDB settings
         """
 
-        collection_name: str = "feature_table_cache"
+        collection_name: str = "feature_table_cache_metadata"
         unique_constraints: List[UniqueValuesConstraint] = [
             UniqueValuesConstraint(
                 fields=("_id",),

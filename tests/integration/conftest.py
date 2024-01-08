@@ -1525,6 +1525,42 @@ def online_store_compute_query_service_fixture(app_container) -> OnlineStoreComp
     return app_container.online_store_compute_query_service
 
 
+@pytest.fixture(name="feature_store_service")
+def feature_store_service_fixture(app_container):
+    """FeatureStore service"""
+    return app_container.feature_store_service
+
+
+@pytest.fixture(name="feature_table_cache_service")
+def feature_table_cache_service_fixture(app_container):
+    """FeatureTableCacheService fixture"""
+    return app_container.feature_table_cache_service
+
+
+@pytest.fixture(name="observation_table_service")
+def observation_table_service_fixture(app_container):
+    """ObservationTableService fixture"""
+    return app_container.observation_table_service
+
+
+@pytest.fixture(name="feature_list_service")
+def feature_list_service_fixture(app_container):
+    """FeatureListService fixture"""
+    return app_container.feature_list_service
+
+
+@pytest.fixture(name="feature_table_cache_metadata_service")
+def feature_table_cache_metadata_service_fixture(app_container):
+    """FeatureTableCacheMetadataService fixture"""
+    return app_container.feature_table_cache_metadata_service
+
+
+@pytest.fixture(name="feature_service")
+def feature_service_fixture(app_container):
+    """FeatureService fixture"""
+    return app_container.feature_service
+
+
 @pytest.fixture(name="online_store", scope="session")
 def online_store_fixture():
     """
