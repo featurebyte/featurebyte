@@ -421,11 +421,20 @@ def split_nodes(
     return result
 
 
+def _maybe_add_row_index_column(
+    request_table_columns: list[str], to_include_row_index_column: bool
+) -> list[str]:
+    if to_include_row_index_column:
+        return [InternalName.TABLE_ROW_INDEX.value] + request_table_columns
+    return request_table_columns[:]
+
+
 def construct_join_feature_sets_query(
     feature_queries: list[FeatureQuery],
     output_feature_names: list[str],
     request_table_name: str,
     request_table_columns: list[str],
+    output_include_row_index: bool,
 ) -> expressions.Select:
     """
     Construct the SQL code that joins the results of intermediate feature queries
@@ -441,13 +450,18 @@ def construct_join_feature_sets_query(
     request_table_columns : list[str]
         List of column names in the request table. This should exclude the TABLE_ROW_INDEX
         column which is only used for joining.
+    output_include_row_index: bool
+        Whether to include the TABLE_ROW_INDEX column in the output
 
     Returns
     -------
     expressions.Select
     """
     expr = expressions.select(
-        *(get_qualified_column_identifier(col, "REQ") for col in request_table_columns)
+        *(
+            get_qualified_column_identifier(col, "REQ")
+            for col in _maybe_add_row_index_column(request_table_columns, output_include_row_index)
+        )
     ).from_(f"{request_table_name} AS REQ")
 
     table_alias_by_feature = {}
@@ -477,7 +491,7 @@ def construct_join_feature_sets_query(
     )
 
 
-def get_historical_features_query_set(  # pylint: disable=too-many-locals
+def get_historical_features_query_set(  # pylint: disable=too-many-locals,too-many-arguments
     request_table_name: str,
     graph: QueryGraph,
     nodes: list[Node],
@@ -487,6 +501,7 @@ def get_historical_features_query_set(  # pylint: disable=too-many-locals
     output_feature_names: list[str],
     serving_names_mapping: dict[str, str] | None = None,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
+    output_include_row_index: bool = False,
     progress_message: str = PROGRESS_MESSAGE_COMPUTING_FEATURES,
 ) -> HistoricalFeatureQuerySet:
     """Construct the SQL code that extracts historical features
@@ -511,8 +526,10 @@ def get_historical_features_query_set(  # pylint: disable=too-many-locals
         Optional mapping from original serving name to new serving name
     parent_serving_preparation: Optional[ParentServingPreparation]
         Preparation required for serving parent features
+    output_include_row_index: bool
+        Whether to include the TABLE_ROW_INDEX column in the output
     progress_message : str
-        Customised progress message which will be send to a client.
+        Customised progress message which will be sent to a client.
 
     Returns
     -------
@@ -526,7 +543,9 @@ def get_historical_features_query_set(  # pylint: disable=too-many-locals
         sql_expr, _ = get_historical_features_expr(
             graph=graph,
             nodes=nodes,
-            request_table_columns=request_table_columns,
+            request_table_columns=_maybe_add_row_index_column(
+                request_table_columns, output_include_row_index
+            ),
             serving_names_mapping=serving_names_mapping,
             source_type=source_type,
             request_table_name=request_table_name,
@@ -578,6 +597,7 @@ def get_historical_features_query_set(  # pylint: disable=too-many-locals
         output_feature_names=output_feature_names,
         request_table_name=request_table_name,
         request_table_columns=request_table_columns,
+        output_include_row_index=output_include_row_index,
     )
     output_query = sql_to_string(
         get_sql_adapter(source_type).create_table_as(
