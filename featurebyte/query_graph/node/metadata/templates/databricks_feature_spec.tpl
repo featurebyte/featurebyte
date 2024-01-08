@@ -27,13 +27,13 @@ exclude_columns = {{exclude_columns}}
 
 # Prepare the dataset for log model
 # 'features' is a list of feature lookups to be included in the training set
-# '[TARGET_COLUMN]' should be replaced with the actual name of the target column
 # 'exclude_columns' is a list of columns to be excluded from the training set
+target_column = "[TARGET_COLUMN]"
 schema = {{schema}}
 log_model_dataset = fe.create_training_set(
     df=spark.createDataFrame([], schema),
     feature_lookups=features,
-    label="[TARGET_COLUMN]",
+    label=target_column,
     exclude_columns=exclude_columns,
 )
 
@@ -47,9 +47,8 @@ training_df = feature_list.compute_historical_features(
 )
 
 # Separate the features (X_train) and the target variable (y_train) for model training
-# '[TARGET_COLUMN]' should be replaced with the actual name of the target column
-X_train = training_df.drop(["[TARGET_COLUMN]"], axis=1)
-y_train = training_df.label
+X_train = training_df.drop([target_column], axis=1)
+y_train = training_df[target_column]
 
 # Create and train the linear regression model using the training data
 model = linear_model.LinearRegression().fit(X_train, y_train)
