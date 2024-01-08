@@ -450,6 +450,8 @@ def construct_join_feature_sets_query(
     request_table_columns : list[str]
         List of column names in the request table. This should exclude the TABLE_ROW_INDEX
         column which is only used for joining.
+    output_include_row_index: bool
+        Whether to include the TABLE_ROW_INDEX column in the output
 
     Returns
     -------
@@ -489,7 +491,7 @@ def construct_join_feature_sets_query(
     )
 
 
-def get_historical_features_query_set(  # pylint: disable=too-many-locals
+def get_historical_features_query_set(  # pylint: disable=too-many-locals,too-many-arguments
     request_table_name: str,
     graph: QueryGraph,
     nodes: list[Node],
@@ -524,8 +526,10 @@ def get_historical_features_query_set(  # pylint: disable=too-many-locals
         Optional mapping from original serving name to new serving name
     parent_serving_preparation: Optional[ParentServingPreparation]
         Preparation required for serving parent features
+    output_include_row_index: bool
+        Whether to include the TABLE_ROW_INDEX column in the output
     progress_message : str
-        Customised progress message which will be send to a client.
+        Customised progress message which will be sent to a client.
 
     Returns
     -------

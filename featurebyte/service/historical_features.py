@@ -170,7 +170,7 @@ async def get_historical_features(  # pylint: disable=too-many-locals, too-many-
     tic_ = time.time()
 
     output_include_row_index = (
-        isinstance(observation_set, ObservationTableModel) and observation_set.has_row_index
+        isinstance(observation_set, ObservationTableModel) and observation_set.has_row_index is True
     )
     observation_set = get_internal_observation_set(observation_set)
 
