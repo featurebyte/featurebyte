@@ -1,18 +1,15 @@
 """Test related to offline store ingest graph decomposition."""
 import pytest
-from bson import ObjectId
 
-from featurebyte.query_graph.enum import NodeType
-from featurebyte.query_graph.transform.decompose_point import (
-    AggregationInfo,
-    DecomposePointGlobalState,
-)
+from featurebyte.query_graph.transform.decompose_point import AggregationInfo, DecomposePointState
 
 
 @pytest.fixture(name="decompose_point_global_state")
 def decompose_point_global_state_fixture():
-    """Fixture for DecomposePointGlobalState."""
-    return DecomposePointGlobalState.create(relationships_info=[], aggregation_node_names=set())
+    """Fixture for DecomposePointState."""
+    return DecomposePointState.create(
+        relationships_info=[], aggregation_node_names=set(), operation_structure_map={}
+    )
 
 
 @pytest.mark.parametrize(

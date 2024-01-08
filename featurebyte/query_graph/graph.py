@@ -24,6 +24,7 @@ from pydantic import Field
 from featurebyte.common.singleton import SingletonMeta
 from featurebyte.query_graph.enum import GraphNodeType, NodeType
 from featurebyte.query_graph.graph_node.base import GraphNode
+from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.query_graph.model.feature_job_setting import (
     FeatureJobSetting,
     TableIdFeatureJobSetting,
@@ -45,7 +46,10 @@ from featurebyte.query_graph.node.metadata.operation import (
 )
 from featurebyte.query_graph.node.mixin import BaseGroupbyParameters
 from featurebyte.query_graph.node.nested import BaseGraphNode, BaseViewGraphNodeParameters
-from featurebyte.query_graph.transform.entity_extractor import EntityExtractor
+from featurebyte.query_graph.transform.decompose_point import (
+    DecomposePointExtractor,
+    DecomposePointState,
+)
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 from featurebyte.query_graph.transform.pruning import prune_query_graph
@@ -129,6 +133,31 @@ class QueryGraph(QueryGraphModel):
         primary_input_nodes = self.get_primary_input_nodes(node_name=node_name)
         return sorted(set(node.parameters.id for node in primary_input_nodes if node.parameters.id))
 
+    def get_decompose_state(
+        self,
+        node_name: str,
+        relationships_info: Optional[List[EntityRelationshipInfo]] = None,
+    ) -> DecomposePointState:
+        """
+        Get decompose state of the query graph given the target node name
+
+        Parameters
+        ----------
+        node_name: str
+            Name of the node to get decompose state for
+        relationships_info: Optional[List[EntityRelationshipInfo]]
+            Entity relationship info
+
+        Returns
+        -------
+        DecomposePointState
+            Decompose state of the query graph
+        """
+        decompose_state = DecomposePointExtractor(graph=self).extract(
+            node=self.get_node_by_name(node_name=node_name), relationships_info=relationships_info
+        )
+        return decompose_state
+
     def get_entity_ids(self, node_name: str) -> List[ObjectId]:
         """
         Get entity IDs of the query graph given the target node name
@@ -143,10 +172,9 @@ class QueryGraph(QueryGraphModel):
         List[ObjectId]
             List of entity IDs in the query graph
         """
-        entity_state = EntityExtractor(graph=self).extract(
-            node=self.get_node_by_name(node_name=node_name)
-        )
-        return sorted(entity_state.entity_ids)
+        # not passing entity relationship to the extractor, primary entity will be the same as entity
+        decompose_state = self.get_decompose_state(node_name=node_name, relationships_info=None)
+        return sorted(decompose_state.primary_entity_ids)
 
     def get_user_defined_function_ids(self, node_name: str) -> List[ObjectId]:
         """
