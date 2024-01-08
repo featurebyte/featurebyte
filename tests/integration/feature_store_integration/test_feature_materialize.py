@@ -225,34 +225,37 @@ async def offline_store_feature_tables_fixture(app_container, deployed_feature_l
 
 
 @pytest.fixture(name="user_entity_ttl_feature_table")
-def user_entity_ttl_feature_table_fixture(offline_store_feature_tables):
+def user_entity_ttl_feature_table_fixture(offline_store_feature_tables, app_container):
     """
     Return the user entity feature table
     """
-    return offline_store_feature_tables["fb_entity_userid_fjs_3600_1800_1800_ttl"]
+    catalog_id = app_container.catalog_id
+    return offline_store_feature_tables[f"fb_entity_userid_fjs_3600_1800_1800_ttl_{catalog_id}"]
 
 
 @pytest.fixture(name="user_entity_non_ttl_feature_table")
-def user_entity_non_ttl_feature_table_fixture(offline_store_feature_tables):
+def user_entity_non_ttl_feature_table_fixture(offline_store_feature_tables, app_container):
     """
     Return the user entity feature table
     """
-    return offline_store_feature_tables["fb_entity_userid_fjs_86400_0_0"]
+    catalog_id = app_container.catalog_id
+    return offline_store_feature_tables[f"fb_entity_userid_fjs_86400_0_0_{catalog_id}"]
 
 
 @pytest.fixture(name="expected_feature_table_names")
-def expected_feature_table_names_fixture():
+def expected_feature_table_names_fixture(app_container):
     """
     Fixture for expected feature table names
     """
+    catalog_id = app_container.catalog_id
     return {
-        "fb_entity_overall_fjs_3600_1800_1800_ttl",
-        "fb_entity_product_action_fjs_3600_1800_1800_ttl",
-        "fb_entity_cust_id_fjs_3600_1800_1800_ttl",
-        "fb_entity_userid_fjs_3600_1800_1800_ttl",
-        "fb_entity_userid_fjs_86400_0_0",
-        "fb_entity_user_status_fjs_86400_0_0",
-        "fb_entity_order_id_fjs_86400_0_0",
+        f"fb_entity_overall_fjs_3600_1800_1800_ttl_{catalog_id}",
+        f"fb_entity_product_action_fjs_3600_1800_1800_ttl_{catalog_id}",
+        f"fb_entity_cust_id_fjs_3600_1800_1800_ttl_{catalog_id}",
+        f"fb_entity_userid_fjs_3600_1800_1800_ttl_{catalog_id}",
+        f"fb_entity_userid_fjs_86400_0_0_{catalog_id}",
+        f"fb_entity_user_status_fjs_86400_0_0_{catalog_id}",
+        f"fb_entity_order_id_fjs_86400_0_0_{catalog_id}",
     }
 
 
