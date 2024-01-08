@@ -107,7 +107,7 @@ def test_feature_list__get_historical_features(single_feat_flist, mocked_compute
 
     # Check compute_historical_feature_table() is called correctly
     expected_dataframe = dataframe.copy()
-    expected_dataframe[InternalName.ROW_INDEX] = [0, 1]
+    expected_dataframe[InternalName.DATAFRAME_ROW_INDEX] = [0, 1]
     _, kwargs = mock_compute_historical_feature_table.call_args
     assert expected_dataframe.equals(kwargs["observation_set"])
     assert (

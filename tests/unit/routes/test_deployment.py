@@ -376,7 +376,9 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
 
         async def mock_execute_query(query):
             _ = query
-            return pd.DataFrame([{"cust_id": 1, "feature_value": 123.0, "__FB_ROW_INDEX": 0}])
+            return pd.DataFrame(
+                [{"cust_id": 1, "feature_value": 123.0, "__FB_DATAFRAME_ROW_INDEX": 0}]
+            )
 
         mock_session = mock_get_session.return_value
         mock_session.execute_query = mock_execute_query
@@ -468,7 +470,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         async def mock_execute_query(query):
             _ = query
             return pd.DataFrame(
-                [{"cust_id": 1, "feature_value": missing_value, "__FB_ROW_INDEX": 0}]
+                [{"cust_id": 1, "feature_value": missing_value, "__FB_DATAFRAME_ROW_INDEX": 0}]
             )
 
         mock_session = mock_get_session.return_value
