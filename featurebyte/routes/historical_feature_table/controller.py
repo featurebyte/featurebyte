@@ -3,7 +3,7 @@ HistoricalTable API route controller
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
 import pandas as pd
 from bson import ObjectId
@@ -115,7 +115,7 @@ class HistoricalFeatureTableController(
 
     async def update_historical_feature_table(
         self, historical_feature_table_id: ObjectId, data: HistoricalFeatureTableUpdate
-    ) -> Optional[HistoricalFeatureTableModel]:
+    ) -> HistoricalFeatureTableModel:
         """
         Update HistoricalFeatureTable
 
@@ -130,4 +130,9 @@ class HistoricalFeatureTableController(
         -------
         Optional[HistoricalFeatureTableModel]
         """
-        return await self.service.update_document(historical_feature_table_id, data)
+        return cast(
+            HistoricalFeatureTableModel,
+            await self.service.update_document(
+                historical_feature_table_id, data, return_document=True
+            ),
+        )
