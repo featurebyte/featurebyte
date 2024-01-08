@@ -20,6 +20,7 @@ from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.storage import Storage
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin
+from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
 
 logger = get_logger(__name__)
 
@@ -38,6 +39,7 @@ class ObservationTableUploadTask(DataWarehouseMixin, BaseTask[ObservationTableUp
         session_manager_service: SessionManagerService,
         observation_table_service: ObservationTableService,
         catalog_service: CatalogService,
+        task_progress_updater: TaskProgressUpdater,
     ):
         super().__init__()
         self.temp_storage = temp_storage
@@ -45,6 +47,7 @@ class ObservationTableUploadTask(DataWarehouseMixin, BaseTask[ObservationTableUp
         self.session_manager_service = session_manager_service
         self.observation_table_service = observation_table_service
         self.catalog_service = catalog_service
+        self.task_progress_updater = task_progress_updater
 
     async def get_task_description(self, payload: ObservationTableUploadTaskPayload) -> str:
         return f'Save observation table "{payload.name}" from {payload.file_format} file.'
@@ -58,6 +61,10 @@ class ObservationTableUploadTask(DataWarehouseMixin, BaseTask[ObservationTableUp
         # Retrieve uploaded file from temp storage
         uploaded_dataframe = await self.temp_storage.get_dataframe(
             Path(payload.observation_set_storage_path)
+        )
+
+        await self.task_progress_updater.update_progress(
+            percent=20, message="Creating observation table"
         )
 
         # Get location for the new observation table
