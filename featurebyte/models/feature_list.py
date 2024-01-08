@@ -3,7 +3,7 @@ This module contains Feature list related models
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 import functools
 from collections import defaultdict
@@ -14,7 +14,7 @@ from pydantic import Field, PrivateAttr, StrictStr, root_validator, validator
 from typeguard import typechecked
 
 from featurebyte.common.validator import construct_sort_validator, version_validator
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, SourceType
 from featurebyte.models.base import (
     FeatureByteBaseModel,
     FeatureByteCatalogBaseDocumentModel,
@@ -24,7 +24,9 @@ from featurebyte.models.base import (
     VersionIdentifier,
 )
 from featurebyte.models.feature import FeatureModel
+from featurebyte.models.feature_list_store_info import DataBricksStoreInfo, StoreInfo
 from featurebyte.models.feature_namespace import FeatureReadiness
+from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.query_graph.node import Node
@@ -277,6 +279,8 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         Datetime when the FeatureList was first saved or published
     internal_feature_clusters: Optional[List[Any]]
         List of combined graphs for features from the same feature store
+    internal_store_info: Optional[dict[str, Any]]
+        Store specific info for the feature list
     """
 
     version: VersionIdentifier = Field(allow_mutation=False, description="Feature list version")
@@ -315,6 +319,9 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
     online_enabled_feature_ids: List[PydanticObjectId] = Field(
         allow_mutation=False, default_factory=list
     )
+
+    # store info contains the warehouse specific info for the feature list
+    internal_store_info: Optional[Dict[str, Any]] = Field(alias="store_info", default=None)
 
     # pydantic validators
     _sort_ids_validator = validator(
@@ -474,6 +481,45 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
                 FeatureCluster(**cluster) for cluster in self.internal_feature_clusters
             ]
         return self._feature_clusters
+
+    @property
+    def store_info(self) -> StoreInfo:
+        """
+        Store info for a feature list
+
+        Returns
+        -------
+        StoreInfo
+
+        Raises
+        ------
+        ValueError
+            If store info is not available
+        """
+        if self.internal_store_info is None:
+            raise ValueError("Store info is not available.")
+        return StoreInfo(**self.internal_store_info)
+
+    def initialize_store_info(
+        self, features: List[FeatureModel], feature_store: FeatureStoreModel
+    ) -> None:
+        """
+        Initialize store info for a feature list
+
+        Parameters
+        ----------
+        features: List[FeatureModel]
+            List of features
+        feature_store: FeatureStoreModel
+            Feature store model
+        """
+        store_type_to_store_info_class = {
+            SourceType.DATABRICKS: DataBricksStoreInfo,
+        }
+        if feature_store.type in store_type_to_store_info_class:
+            store_info_class = store_type_to_store_info_class[feature_store.type]
+            store_info = store_info_class.create(features=features, feature_store=feature_store)
+            self.internal_store_info = store_info.dict(by_alias=True)
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """

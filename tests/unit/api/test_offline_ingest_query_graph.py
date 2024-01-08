@@ -3,12 +3,13 @@ This module contains tests for the offline ingest query graph.
 """
 import os
 import textwrap
+from unittest import mock
 
 import freezegun
 import pytest
 from bson import json_util
 
-from featurebyte import Entity, FeatureJobSetting, RequestColumn
+from featurebyte import Entity, FeatureJobSetting, FeatureList, RequestColumn
 from featurebyte.models.feature import FeatureModel
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.transform.offline_store_ingest import AggregationNodeInfo
@@ -67,19 +68,23 @@ def check_ingest_query_graph(ingest_query_graph):
     )
 
 
-@freezegun.freeze_time("2023-12-29")
-def test_feature__ttl_and_non_ttl_components(
-    float_feature, non_time_based_feature, test_dir, update_fixtures
-):
-    """Test that a feature contains both ttl and non-ttl components."""
+@pytest.fixture(name="composite_feature")
+def composite_feature_fixture(float_feature, non_time_based_feature):
+    """Fixture for a composite feature"""
     ttl_component = 2 * (float_feature + 100)
     non_ttl_component = 3 - (non_time_based_feature + 100)
     feature = ttl_component + non_ttl_component
     feature.name = "feature"
-    feature.save()
+    return feature
+
+
+@freezegun.freeze_time("2023-12-29")
+def test_feature__ttl_and_non_ttl_components(composite_feature, test_dir, update_fixtures):
+    """Test that a feature contains both ttl and non-ttl components."""
+    composite_feature.save()
 
     # check offline ingest query graph
-    feature_model = feature.cached_model
+    feature_model = composite_feature.cached_model
     offline_store_info = feature_model.offline_store_info
     ingest_query_graphs = offline_store_info.extract_offline_store_ingest_query_graphs()
     assert len(ingest_query_graphs) == 2
@@ -188,17 +193,17 @@ def test_feature__request_column_ttl_and_non_ttl_components(
     )
 
     # check on-demand view code
-    codes = offline_store_info.generate_on_demand_feature_view_code(
-        feature_name_version=feature_model.versioned_name
-    )
-    expected = """
+    assert offline_store_info.odfv_info is not None
+    expected = f"""
     import json
     import numpy as np
     import pandas as pd
     import scipy as sp
 
 
-    def on_demand_feature_view(inputs: pd.DataFrame) -> pd.DataFrame:
+    def odfv_feature_v231227_{feature_model.id}(
+        inputs: pd.DataFrame,
+    ) -> pd.DataFrame:
         df = pd.DataFrame()
         request_col = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         feat = request_col + (request_col - request_col)
@@ -213,10 +218,16 @@ def test_feature__request_column_ttl_and_non_ttl_components(
             ),
             index=((feat - feat_1).dt.seconds // 86400).index,
         )
+        # TTL handling for feature_V231227
+        request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
+        cutoff = request_time - pd.Timedelta(seconds=3600)
+        feature_timestamp = pd.to_datetime(inputs["__feature_timestamp"], utc=True)
+        mask = (feature_timestamp >= cutoff) & (feature_timestamp <= request_time)
+        feat_2[~mask] = np.nan
         df["feature_V231227"] = feat_2
         return df
     """
-    assert codes.strip() == textwrap.dedent(expected).strip()
+    assert offline_store_info.odfv_info.codes.strip() == textwrap.dedent(expected).strip()
 
 
 def test_feature__multiple_non_ttl_components(
@@ -260,11 +271,7 @@ def test_feature__multiple_non_ttl_components(
 
     # check on-demand view code
     assert offline_store_info.is_decomposed is False
-    expected_error = "TTL is not set"
-    with pytest.raises(AssertionError, match=expected_error):
-        offline_store_info.generate_on_demand_feature_view_code(
-            feature_name_version=feature_model.versioned_name
-        )
+    assert offline_store_info.odfv_info is None
 
 
 @freezegun.freeze_time("2023-12-27")
@@ -284,18 +291,16 @@ def test_feature__ttl_item_aggregate_request_column(
 
     # check on-demand view code
     offline_store_info = feature_model.offline_store_info
-    name_version = feature_model.versioned_name
-    codes = offline_store_info.generate_on_demand_feature_view_code(
-        feature_name_version=name_version
-    )
-    expected = """
+    expected = f"""
     import json
     import numpy as np
     import pandas as pd
     import scipy as sp
 
 
-    def on_demand_feature_view(inputs: pd.DataFrame) -> pd.DataFrame:
+    def odfv_composite_feature_v231227_{feature_model.id}(
+        inputs: pd.DataFrame,
+    ) -> pd.DataFrame:
         df = pd.DataFrame()
         feat = pd.Series(
             np.where(
@@ -316,10 +321,16 @@ def test_feature__ttl_item_aggregate_request_column(
             np.where(pd.isna(feat) | pd.isna(feat_2), np.nan, feat + feat_2),
             index=feat.index,
         )
+        # TTL handling for composite_feature_V231227
+        request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
+        cutoff = request_time - pd.Timedelta(seconds=3600)
+        feature_timestamp = pd.to_datetime(inputs["__feature_timestamp"], utc=True)
+        mask = (feature_timestamp >= cutoff) & (feature_timestamp <= request_time)
+        feat_3[~mask] = np.nan
         df["composite_feature_V231227"] = feat_3
         return df
     """
-    assert codes.strip() == textwrap.dedent(expected).strip()
+    assert offline_store_info.odfv_info.codes.strip() == textwrap.dedent(expected).strip()
 
 
 @freezegun.freeze_time("2023-12-27")
@@ -361,18 +372,17 @@ def test_feature__input_has_mixed_ingest_graph_node_flags(
 
     # check on-demand view code
     offline_store_info = feature_model.offline_store_info
-    name_version = feature_model.versioned_name
-    codes = offline_store_info.generate_on_demand_feature_view_code(
-        feature_name_version=name_version, ttl_seconds=7200
-    )
-    expected = """
+    assert offline_store_info.odfv_info is not None
+    expected = f"""
     import json
     import numpy as np
     import pandas as pd
     import scipy as sp
 
 
-    def on_demand_feature_view(inputs: pd.DataFrame) -> pd.DataFrame:
+    def odfv_feature_zscore_v231227_{feature_model.id}(
+        inputs: pd.DataFrame,
+    ) -> pd.DataFrame:
         df = pd.DataFrame()
         feat = pd.Series(
             np.where(
@@ -394,14 +404,14 @@ def test_feature__input_has_mixed_ingest_graph_node_flags(
         )
         # TTL handling for feature_zscore_V231227
         request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
-        cutoff = request_time - pd.Timedelta(seconds=7200)
+        cutoff = request_time - pd.Timedelta(seconds=3600)
         feature_timestamp = pd.to_datetime(inputs["__feature_timestamp"], utc=True)
         mask = (feature_timestamp >= cutoff) & (feature_timestamp <= request_time)
         feat_1[~mask] = np.nan
         df["feature_zscore_V231227"] = feat_1
         return df
     """
-    assert codes.strip() == textwrap.dedent(expected).strip()
+    assert offline_store_info.odfv_info.codes.strip() == textwrap.dedent(expected).strip()
 
 
 def test_feature__composite_count_dict(
@@ -455,28 +465,26 @@ def test_feature__with_ttl_handling(float_feature):
     """Test a feature with ttl handling."""
     float_feature.save()
     offline_store_info = float_feature.cached_model.offline_store_info
-    name_version = float_feature.cached_model.versioned_name
-    codes = offline_store_info.generate_on_demand_feature_view_code(
-        feature_name_version=name_version, ttl_seconds=7200
-    )
-    expected = """
+    expected = f"""
     import json
     import numpy as np
     import pandas as pd
     import scipy as sp
 
 
-    def on_demand_feature_view(inputs: pd.DataFrame) -> pd.DataFrame:
+    def odfv_sum_1d_v231227_{float_feature.cached_model.id}(
+        inputs: pd.DataFrame,
+    ) -> pd.DataFrame:
         df = pd.DataFrame()
         request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
-        cutoff = request_time - pd.Timedelta(seconds=7200)
+        cutoff = request_time - pd.Timedelta(seconds=3600)
         feature_timestamp = pd.to_datetime(inputs["__feature_timestamp"], utc=True)
         mask = (feature_timestamp >= cutoff) & (feature_timestamp <= request_time)
         inputs["sum_1d_V231227"][~mask] = np.nan
         df["sum_1d_V231227"] = inputs["sum_1d_V231227"]
         return df
     """
-    assert codes.strip() == textwrap.dedent(expected).strip()
+    assert offline_store_info.odfv_info.codes.strip() == textwrap.dedent(expected).strip()
 
 
 def test_feature_entity_dtypes(
@@ -536,25 +544,30 @@ def test_on_demand_feature_view_code_generation__card_transaction_description_fe
         feature_dict = json_util.loads(file_handle.read())
         feature = FeatureModel(**feature_dict)
 
+    # initialize offline store info
+    feature.initialize_offline_store_info(entity_id_to_serving_name={})
+
     # check on-demand view code
     check_on_demand_feature_code_generation(feature_model=feature)
 
     # check the actual code
-    udf_codes = feature.offline_store_info.generate_on_demand_feature_function_code(
-        output_dtype=feature.dtype
-    )
     expected = """
+    CREATE FUNCTION udf_txn_cardtransactiondescription_representation_in_card_txn_count__6597d113acaf7f23202c6f74(x_1 STRING, x_2 STRING, x_3 STRING)
+    RETURNS DOUBLE
+    LANGUAGE PYTHON
+    COMMENT ''
+    AS $$
     import json
     import numpy as np
     import pandas as pd
     import scipy as sp
 
 
-    def on_demand_feature_function(col_1: str, col_2: str, col_3: str) -> float:
-        # col_1: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part1
-        # col_2: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part0
-        # col_3: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part2
-        feat_1 = np.nan if pd.isna(col_2) else json.loads(col_2)
+    def user_defined_function(col_1: str, col_2: str, col_3: str) -> float:
+        # col_1: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part2
+        # col_2: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part1
+        # col_3: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part0
+        feat_1 = np.nan if pd.isna(col_1) else json.loads(col_1)
 
         def get_relative_frequency(input_dict, key):
             if pd.isna(input_dict) or key not in input_dict:
@@ -565,25 +578,25 @@ def test_on_demand_feature_view_code_generation__card_transaction_description_fe
             key_frequency = input_dict.get(key, 0)
             return key_frequency / total_count
 
-        feat_2 = get_relative_frequency(feat_1, key=col_1)
+        feat_2 = get_relative_frequency(feat_1, key=col_2)
         flag_1 = pd.isna(feat_2)
         feat_2 = 0 if flag_1 else feat_2
         feat_3 = np.nan if pd.isna(col_3) else json.loads(col_3)
-        feat_4 = get_relative_frequency(feat_3, key=col_1)
+        feat_4 = get_relative_frequency(feat_3, key=col_2)
         flag_2 = pd.isna(feat_4)
         feat_4 = 0 if flag_2 else feat_4
         feat_5 = (
             np.nan
-            if pd.isna(feat_2) or pd.isna(feat_4)
-            else np.divide(feat_2, feat_4)
+            if pd.isna(feat_4) or pd.isna(feat_2)
+            else np.divide(feat_4, feat_2)
         )
         return feat_5
-    """
-    assert udf_codes.strip() == textwrap.dedent(expected).strip()
 
-    odfv_codes = feature.offline_store_info.generate_on_demand_feature_view_code(
-        feature_name_version=feature.versioned_name
-    )
+    return user_defined_function(x_1, x_2, x_3)
+    $$
+    """
+    assert feature.offline_store_info.udf_info.codes.strip() == textwrap.dedent(expected).strip()
+
     expected = """
     import json
     import numpy as np
@@ -591,10 +604,12 @@ def test_on_demand_feature_view_code_generation__card_transaction_description_fe
     import scipy as sp
 
 
-    def on_demand_feature_view(inputs: pd.DataFrame) -> pd.DataFrame:
+    def odfv_txn_cardtransactiondescription_representation_in_card_txn_count__6597d113acaf7f23202c6f74(
+        inputs: pd.DataFrame,
+    ) -> pd.DataFrame:
         df = pd.DataFrame()
         feat = inputs[
-            "__TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part0"
+            "__TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part2"
         ].apply(lambda x: np.nan if pd.isna(x) else json.loads(x))
 
         def get_relative_frequency(input_dict, key):
@@ -615,7 +630,7 @@ def test_on_demand_feature_view_code_generation__card_transaction_description_fe
         mask = feat_1.isnull()
         feat_1[mask] = 0
         feat_2 = inputs[
-            "__TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part2"
+            "__TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part0"
         ].apply(lambda x: np.nan if pd.isna(x) else json.loads(x))
         feat_3 = feat_2.combine(
             inputs[
@@ -627,13 +642,169 @@ def test_on_demand_feature_view_code_generation__card_transaction_description_fe
         feat_3[mask_1] = 0
         feat_4 = pd.Series(
             np.where(
-                pd.isna(feat_1) | pd.isna(feat_3), np.nan, np.divide(feat_1, feat_3)
+                pd.isna(feat_3) | pd.isna(feat_1), np.nan, np.divide(feat_3, feat_1)
             ),
-            index=feat_1.index,
+            index=feat_3.index,
         )
+        # TTL handling for TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105
+        request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
+        cutoff = request_time - pd.Timedelta(seconds=172800)
+        feature_timestamp = pd.to_datetime(inputs["__feature_timestamp"], utc=True)
+        mask_2 = (feature_timestamp >= cutoff) & (feature_timestamp <= request_time)
+        feat_4[~mask_2] = np.nan
         df[
             "TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105"
         ] = feat_4
         return df
     """
-    assert odfv_codes.strip() == textwrap.dedent(expected).strip()
+    assert feature.offline_store_info.odfv_info.codes.strip() == textwrap.dedent(expected).strip()
+
+
+@freezegun.freeze_time("2024-01-03")
+def test_databricks_specs(
+    float_feature, non_time_based_feature, composite_feature, latest_event_timestamp_feature
+):
+    """Test databricks specs"""
+    req_col_feature = (RequestColumn.point_in_time() - latest_event_timestamp_feature).dt.day
+    req_col_feature.name = "req_col_feature"
+    features = [float_feature, non_time_based_feature, composite_feature, req_col_feature]
+    for feature in features:
+        feature.save()
+
+    feature_list = FeatureList(features, name="feature_list")
+    with mock.patch("featurebyte.models.feature_list.SourceType") as mock_source_type:
+        # mock source type to be snowflake to trigger databricks specs generation
+        mock_source_type.DATABRICKS = "snowflake"
+        feature_list.save()
+
+    store_info = feature_list.cached_model.store_info
+    expected = """
+    # auto-generated by FeatureByte (based-on databricks-feature-store 0.16.3)
+    # Import necessary modules for feature engineering and machine learning
+    from databricks.feature_engineering import FeatureEngineeringClient
+    from databricks.feature_engineering import FeatureFunction, FeatureLookup
+    from pyspark.sql.types import LongType, StructField, StructType, TimestampType
+    from sklearn import linear_model
+    import featurebyte as fb
+    import mlflow
+
+    # Initialize the Feature Engineering client to interact with Databricks Feature Store
+    fe = FeatureEngineeringClient()
+
+    # Timestamp column name used to retrieve the latest feature values
+    timestamp_lookup_key = "POINT_IN_TIME"
+
+    # Define the features for the model
+    # FeatureLookup is used to specify how to retrieve features from the feature store
+    # Each FeatureLookup or FeatureFunction object defines a set of features to be included
+    features = [
+        FeatureLookup(
+            table_name="fb_entity_cust_id_fjs_1800_300_600_ttl",
+            lookup_key=["cust_id"],
+            timestamp_lookup_key=timestamp_lookup_key,
+            lookback_window=None,
+            feature_names=[
+                "sum_1d_V240103",
+                "__feature_V240103__part0",
+                "__req_col_feature_V240103__part0",
+            ],
+            rename_outputs={"sum_1d_V240103": "sum_1d"},
+        ),
+        FeatureLookup(
+            table_name="fb_entity_transaction_id_fjs_86400_0_0",
+            lookup_key=["transaction_id"],
+            timestamp_lookup_key=None,
+            lookback_window=None,
+            feature_names=["non_time_time_sum_amount_feature_V240103"],
+            rename_outputs={
+                "non_time_time_sum_amount_feature_V240103": "non_time_time_sum_amount_feature"
+            },
+        ),
+        FeatureLookup(
+            table_name="fb_entity_transaction_id",
+            lookup_key=["transaction_id"],
+            timestamp_lookup_key=None,
+            lookback_window=None,
+            feature_names=["__feature_V240103__part1"],
+            rename_outputs={},
+        ),
+        FeatureFunction(
+            udf_name="udf_feature_v240103_[FEATURE_ID1]",
+            input_bindings={
+                "col_1": "__feature_V240103__part0",
+                "col_2": "__feature_V240103__part1",
+            },
+            output_name="feature",
+        ),
+        FeatureFunction(
+            udf_name="udf_req_col_feature_v240103_[FEATURE_ID2]",
+            input_bindings={
+                "col_1": "__req_col_feature_V240103__part0",
+                "request_col_1": "POINT_IN_TIME",
+            },
+            output_name="req_col_feature",
+        ),
+    ]
+
+    # List of columns to exclude from the training set
+    # Users should consider including request columns and primary entity columns here
+    # This is important if these columns are not features but are only needed for lookup purposes
+    exclude_columns = [
+        "__feature_V240103__part0",
+        "__feature_V240103__part1",
+        "__req_col_feature_V240103__part0",
+    ]
+
+    # Prepare the dataset for log model
+    # 'features' is a list of feature lookups to be included in the training set
+    # '[TARGET_COLUMN]' should be replaced with the actual name of the target column
+    # 'exclude_columns' is a list of columns to be excluded from the training set
+    schema = StructType(
+        [
+            StructField("transaction_id", LongType()),
+            StructField("cust_id", LongType()),
+            StructField("POINT_IN_TIME", TimestampType()),
+        ]
+    )
+    log_model_dataset = fe.create_training_set(
+        df=spark.createDataFrame([], schema),
+        feature_lookups=features,
+        label="[TARGET_COLUMN]",
+        exclude_columns=exclude_columns,
+    )
+
+    # Retrieve the training dataframe through FeatureByte's compute_historical_features API
+    # Observation table should include the primary entity columns, the request columns, and the target column
+    catalog = fb.activate_and_get_catalog("[CATALOG_NAME]")
+    feature_list = catalog.get_feature_list("[FEATURE_LIST_NAME]")
+    observation_table = catalog.get_observation_table("[OBSERVATION_TABLE_NAME]")
+    training_df = feature_list.compute_historical_features(
+        observation_set=observation_table.to_pandas(),
+    )
+
+    # Separate the features (X_train) and the target variable (y_train) for model training
+    # '[TARGET_COLUMN]' should be replaced with the actual name of the target column
+    X_train = training_df.drop(["[TARGET_COLUMN]"], axis=1)
+    y_train = training_df.label
+
+    # Create and train the linear regression model using the training data
+    model = linear_model.LinearRegression().fit(X_train, y_train)
+
+    # Log the model and register it to the unity catalog
+    mlflow.set_registry_uri("databricks-uc")
+
+    fe.log_model(
+        model=model,
+        artifact_path="main.default.model",
+        flavor=mlflow.sklearn,
+        training_set=log_model_dataset,
+        registered_model_name="main.default.recommender_model",
+    )
+    """.replace(
+        "[FEATURE_ID1]",
+        str(composite_feature.cached_model.id),
+    ).replace(
+        "[FEATURE_ID2]",
+        str(req_col_feature.cached_model.id),
+    )
+    assert store_info.feature_specs_definition.strip() == textwrap.dedent(expected).strip()
