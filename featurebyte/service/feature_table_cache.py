@@ -83,15 +83,20 @@ class FeatureTableCacheService(
         """
         document = await self.get_document_for_observation_table(observation_table_id)
         if document:
-            updated_features = document.feature_definitions.copy()
-            existing_feature_hashes = {feat.definition_hash for feat in updated_features}
+            existing_features = {
+                feat.definition_hash: feat for feat in document.feature_definitions
+            }
             for feature in feature_definitions:
-                if feature.definition_hash not in existing_feature_hashes:
-                    updated_features.append(feature)
+                if feature.definition_hash not in existing_features:
+                    existing_features[feature.definition_hash] = feature
+                else:
+                    existing = existing_features[feature.definition_hash]
+                    if existing.feature_id is None:
+                        existing_features[feature.definition_hash] = feature
 
             await self.update_document(
                 document_id=document.id,
-                data=FeatureTableCacheUpdate(feature_definitions=updated_features),
+                data=FeatureTableCacheUpdate(feature_definitions=list(existing_features.values())),
                 return_document=False,
             )
         else:

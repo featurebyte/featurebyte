@@ -1,9 +1,10 @@
 """
 This module contains Feature Table Cache related models
 """
-from typing import List
+from typing import List, Optional
 
 import pymongo
+from pydantic import Field
 
 from featurebyte.models.base import (
     FeatureByteBaseModel,
@@ -19,7 +20,7 @@ class CachedFeatureDefinition(FeatureByteBaseModel):
     Definition of the feature cached in Feature Table Cache
     """
 
-    feature_id: PydanticObjectId
+    feature_id: Optional[PydanticObjectId] = Field(default=None)
     definition_hash: str
 
 

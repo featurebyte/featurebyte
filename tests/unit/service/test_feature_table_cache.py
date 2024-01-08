@@ -194,3 +194,64 @@ async def test_update_feature_table_cache_add_features(
         "feature_2_oops_different_definition_hash",
         "feature_3_definition_hash",
     ]
+
+
+@pytest.mark.asyncio
+async def test_update_feature_table_cache_updates_feature_id(
+    feature_table_cache_service,
+    observation_table_service,
+    observation_table,
+):
+    """test update_feature_table_cache method"""
+    observation_table_doc = await observation_table_service.create_document(observation_table)
+
+    features = [
+        CachedFeatureDefinition(
+            definition_hash="feature_1_definition_hash",
+        ),
+        CachedFeatureDefinition(
+            feature_id=ObjectId(),
+            definition_hash="feature_2_definition_hash",
+        ),
+    ]
+    await feature_table_cache_service.update_feature_table_cache(
+        observation_table_id=observation_table_doc.id,
+        feature_definitions=features,
+    )
+    document = await feature_table_cache_service.get_document_for_observation_table(
+        observation_table_id=observation_table_doc.id,
+    )
+    assert document.observation_table_id == observation_table_doc.id
+    assert document.table_name.startswith("feature_table_cache_")
+    assert [feat.definition_hash for feat in document.feature_definitions] == [
+        "feature_1_definition_hash",
+        "feature_2_definition_hash",
+    ]
+    assert not document.feature_definitions[0].feature_id
+    assert document.feature_definitions[1].feature_id
+
+    more_features = [
+        CachedFeatureDefinition(
+            feature_id=ObjectId(),
+            definition_hash="feature_1_definition_hash",
+        ),
+        CachedFeatureDefinition(
+            feature_id=ObjectId(),
+            definition_hash="feature_3_definition_hash",
+        ),
+    ]
+    await feature_table_cache_service.update_feature_table_cache(
+        observation_table_id=observation_table_doc.id,
+        feature_definitions=more_features,
+    )
+    document = await feature_table_cache_service.get_document_for_observation_table(
+        observation_table_id=observation_table_doc.id,
+    )
+    assert document.observation_table_id == observation_table_doc.id
+    assert document.table_name.startswith("feature_table_cache_")
+    assert [feat.definition_hash for feat in document.feature_definitions] == [
+        "feature_1_definition_hash",
+        "feature_2_definition_hash",
+        "feature_3_definition_hash",
+    ]
+    assert all(bool(feat.feature_id) for feat in document.feature_definitions)
