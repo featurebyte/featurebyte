@@ -34,8 +34,8 @@ class FeatureTableCacheModel(FeatureByteCatalogBaseDocumentModel):
         Observation Table Id
     table_name: str
         Name of the Feature Table Cache in DWH (SQL table name).
-    feature_definition_hashes: List[str]
-        List of feature definition hashes which are stored in this feature table cache
+    feature_definitions: List[CachedFeatureDefinition]
+        List of feature definitions which are stored in this feature table cache
     """
 
     observation_table_id: PydanticObjectId
