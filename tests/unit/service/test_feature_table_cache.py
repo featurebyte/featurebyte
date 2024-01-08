@@ -4,6 +4,7 @@ Test feature table cache service
 import pytest
 from bson import ObjectId
 
+from featurebyte.enum import MaterializedTableNamePrefix
 from featurebyte.models.feature_table_cache import CachedFeatureDefinition, FeatureTableCacheModel
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.request_input import SourceTableRequestInput
@@ -40,18 +41,34 @@ def observation_table_fixture(event_table, user):
 
 
 @pytest.mark.asyncio
-async def test_get_document_for_observation_table(
+async def test_get_or_create_feature_table_cache_creates_from_scratch(
     feature_table_cache_service,
     observation_table_service,
     observation_table,
 ):
-    """test get_document_for_observation_table method"""
+    """test get_or_create_feature_table_cache method"""
     observation_table_doc = await observation_table_service.create_document(observation_table)
 
-    get_document = await feature_table_cache_service.get_document_for_observation_table(
+    document = await feature_table_cache_service.get_or_create_feature_table_cache(
         observation_table_id=observation_table_doc.id,
     )
-    assert not get_document
+    assert document.id
+    assert document.observation_table_id == observation_table_doc.id
+    assert (
+        document.table_name
+        == f"{MaterializedTableNamePrefix.FEATURE_TABLE_CACHE}_{observation_table_doc.id}"
+    )
+    assert document.feature_definitions == []
+
+
+@pytest.mark.asyncio
+async def test_get_or_create_feature_table_cache_returns_existing(
+    feature_table_cache_service,
+    observation_table_service,
+    observation_table,
+):
+    """test get_or_create_feature_table_cache method"""
+    observation_table_doc = await observation_table_service.create_document(observation_table)
 
     data = FeatureTableCacheModel(
         observation_table_id=observation_table_doc.id,
@@ -69,7 +86,7 @@ async def test_get_document_for_observation_table(
     )
     document = await feature_table_cache_service.create_document(data)
 
-    get_document = await feature_table_cache_service.get_document_for_observation_table(
+    get_document = await feature_table_cache_service.get_or_create_feature_table_cache(
         observation_table_id=observation_table_doc.id,
     )
     assert document == get_document
@@ -84,20 +101,15 @@ async def test_update_feature_table_cache_from_scratch(
     """test update_feature_table_cache method"""
     observation_table_doc = await observation_table_service.create_document(observation_table)
 
-    document = await feature_table_cache_service.get_document_for_observation_table(
-        observation_table_id=observation_table_doc.id,
-    )
-    assert not document
-
     await feature_table_cache_service.update_feature_table_cache(
         observation_table_id=observation_table_doc.id,
         feature_definitions=[],
     )
-    document = await feature_table_cache_service.get_document_for_observation_table(
+    document = await feature_table_cache_service.get_or_create_feature_table_cache(
         observation_table_id=observation_table_doc.id,
     )
     assert document.observation_table_id == observation_table_doc.id
-    assert document.table_name.startswith("feature_table_cache_")
+    assert document.table_name.startswith(MaterializedTableNamePrefix.FEATURE_TABLE_CACHE)
     assert document.feature_definitions == []
 
     features = [
@@ -115,11 +127,11 @@ async def test_update_feature_table_cache_from_scratch(
         feature_definitions=features,
     )
 
-    document = await feature_table_cache_service.get_document_for_observation_table(
+    document = await feature_table_cache_service.get_or_create_feature_table_cache(
         observation_table_id=observation_table_doc.id,
     )
     assert document.observation_table_id == observation_table_doc.id
-    assert document.table_name.startswith("feature_table_cache_")
+    assert document.table_name.startswith(MaterializedTableNamePrefix.FEATURE_TABLE_CACHE)
     assert document.feature_definitions == [
         CachedFeatureDefinition(
             feature_id=document.feature_definitions[0].feature_id,
@@ -155,11 +167,11 @@ async def test_update_feature_table_cache_add_features(
         observation_table_id=observation_table_doc.id,
         feature_definitions=features,
     )
-    document = await feature_table_cache_service.get_document_for_observation_table(
+    document = await feature_table_cache_service.get_or_create_feature_table_cache(
         observation_table_id=observation_table_doc.id,
     )
     assert document.observation_table_id == observation_table_doc.id
-    assert document.table_name.startswith("feature_table_cache_")
+    assert document.table_name.startswith(MaterializedTableNamePrefix.FEATURE_TABLE_CACHE)
     assert [feat.definition_hash for feat in document.feature_definitions] == [
         "feature_1_definition_hash",
         "feature_2_definition_hash",
@@ -183,11 +195,11 @@ async def test_update_feature_table_cache_add_features(
         observation_table_id=observation_table_doc.id,
         feature_definitions=more_features,
     )
-    document = await feature_table_cache_service.get_document_for_observation_table(
+    document = await feature_table_cache_service.get_or_create_feature_table_cache(
         observation_table_id=observation_table_doc.id,
     )
     assert document.observation_table_id == observation_table_doc.id
-    assert document.table_name.startswith("feature_table_cache_")
+    assert document.table_name.startswith(MaterializedTableNamePrefix.FEATURE_TABLE_CACHE)
     assert [feat.definition_hash for feat in document.feature_definitions] == [
         "feature_1_definition_hash",
         "feature_2_definition_hash",
@@ -218,11 +230,11 @@ async def test_update_feature_table_cache_updates_feature_id(
         observation_table_id=observation_table_doc.id,
         feature_definitions=features,
     )
-    document = await feature_table_cache_service.get_document_for_observation_table(
+    document = await feature_table_cache_service.get_or_create_feature_table_cache(
         observation_table_id=observation_table_doc.id,
     )
     assert document.observation_table_id == observation_table_doc.id
-    assert document.table_name.startswith("feature_table_cache_")
+    assert document.table_name.startswith(MaterializedTableNamePrefix.FEATURE_TABLE_CACHE)
     assert [feat.definition_hash for feat in document.feature_definitions] == [
         "feature_1_definition_hash",
         "feature_2_definition_hash",
@@ -244,11 +256,11 @@ async def test_update_feature_table_cache_updates_feature_id(
         observation_table_id=observation_table_doc.id,
         feature_definitions=more_features,
     )
-    document = await feature_table_cache_service.get_document_for_observation_table(
+    document = await feature_table_cache_service.get_or_create_feature_table_cache(
         observation_table_id=observation_table_doc.id,
     )
     assert document.observation_table_id == observation_table_doc.id
-    assert document.table_name.startswith("feature_table_cache_")
+    assert document.table_name.startswith(MaterializedTableNamePrefix.FEATURE_TABLE_CACHE)
     assert [feat.definition_hash for feat in document.feature_definitions] == [
         "feature_1_definition_hash",
         "feature_2_definition_hash",

@@ -3,13 +3,15 @@ Base class for feature or target computer
 """
 from __future__ import annotations
 
-from typing import Any, Callable, Coroutine, Generic, List, Optional, TypeVar, Union
+from typing import Any, Callable, Coroutine, Generic, List, Optional, Set, TypeVar, Union
 
 from abc import abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import pandas as pd
+from bson import ObjectId
 
+from featurebyte.enum import MaterializedTableNamePrefix
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.parent_serving import ParentServingPreparation
@@ -20,6 +22,7 @@ from featurebyte.routes.common.feature_or_target_table import ValidationParamete
 from featurebyte.schema.common.feature_or_target import ComputeRequest
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.feature_table_cache import FeatureTableCacheService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.session.base import BaseSession
 from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
@@ -93,12 +96,14 @@ class Computer(Generic[ComputeRequestT, ExecutorParamsT]):
         entity_validation_service: EntityValidationService,
         session_manager_service: SessionManagerService,
         query_executor: QueryExecutor[ExecutorParamsT],
+        feature_table_cache_service: FeatureTableCacheService,
         task_progress_updater: TaskProgressUpdater,
     ):
         self.feature_store_service = feature_store_service
         self.entity_validation_service = entity_validation_service
         self.session_manager_service = session_manager_service
         self.query_executor = query_executor
+        self.feature_table_cache_service = feature_table_cache_service
         self.task_progress_updater = task_progress_updater
 
     @abstractmethod
@@ -142,31 +147,14 @@ class Computer(Generic[ComputeRequestT, ExecutorParamsT]):
             Executor parameters
         """
 
-    async def compute(
+    async def _execute(
         self,
         observation_set: Union[pd.DataFrame, ObservationTableModel],
         compute_request: ComputeRequestT,
         output_table_details: TableDetails,
+        validation_parameters: ValidationParameters,
+        request_column_names: Set[str],
     ) -> None:
-        """
-        Compute targets or features
-
-        Parameters
-        ----------
-        observation_set: pd.DataFrame
-            Observation set data
-        compute_request: ComputeRequestT
-            Compute request
-        output_table_details: TableDetails
-            Table details to write the results to
-        """
-        validation_parameters = await self.get_validation_parameters(compute_request)
-
-        if isinstance(observation_set, pd.DataFrame):
-            request_column_names = set(observation_set.columns)
-        else:
-            request_column_names = {col.name for col in observation_set.columns_info}
-
         parent_serving_preparation = (
             await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
                 graph=validation_parameters.graph,
@@ -191,3 +179,84 @@ class Computer(Generic[ComputeRequestT, ExecutorParamsT]):
             validation_parameters=validation_parameters,
         )
         await self.query_executor.execute(params)
+
+    async def _compute_data_frame(
+        self,
+        observation_set: pd.DataFrame,
+        compute_request: ComputeRequestT,
+        output_table_details: TableDetails,
+    ) -> None:
+        validation_parameters = await self.get_validation_parameters(compute_request)
+        request_column_names = set(observation_set.columns)
+        await self._execute(
+            observation_set=observation_set,
+            compute_request=compute_request,
+            output_table_details=output_table_details,
+            validation_parameters=validation_parameters,
+            request_column_names=request_column_names,
+        )
+
+    async def _compute_observation_table(
+        self,
+        observation_set: ObservationTableModel,
+        compute_request: ComputeRequestT,
+        output_table_details: TableDetails,
+    ) -> None:
+        validation_parameters = await self.get_validation_parameters(compute_request)
+        request_column_names = {col.name for col in observation_set.columns_info}
+
+        feature_cache, nodes_hash_dict = await self.feature_table_cache_service.filter_nodes(
+            observation_set.id,
+            validation_parameters.graph,
+            validation_parameters.nodes,
+        )
+        non_cached_validation_parameters = replace(
+            validation_parameters, nodes=list(nodes_hash_dict.values())
+        )
+
+        if len(nodes_hash_dict) < len(validation_parameters.nodes):
+            table_details = output_table_details.copy()
+            table_details.table_name = (
+                f"TEMP_{MaterializedTableNamePrefix.FEATURE_TABLE_CACHE}_{ObjectId()}"
+            )
+        else:
+            table_details = output_table_details.copy()
+            table_details.table_name = feature_cache.table_name
+
+        await self._execute(
+            observation_set=observation_set,
+            compute_request=compute_request,
+            output_table_details=table_details,
+            validation_parameters=non_cached_validation_parameters,
+            request_column_names=request_column_names,
+        )
+
+        if len(nodes_hash_dict) < len(validation_parameters.nodes):
+            # run merge into
+            pass
+        # update the view at output_table_details
+
+    async def compute(
+        self,
+        observation_set: Union[pd.DataFrame, ObservationTableModel],
+        compute_request: ComputeRequestT,
+        output_table_details: TableDetails,
+    ) -> None:
+        """
+        Compute targets or features
+
+        Parameters
+        ----------
+        observation_set: pd.DataFrame
+            Observation set data
+        compute_request: ComputeRequestT
+            Compute request
+        output_table_details: TableDetails
+            Table details to write the results to
+        """
+        if isinstance(observation_set, pd.DataFrame):
+            await self._compute_data_frame(observation_set, compute_request, output_table_details)
+        else:
+            await self._compute_observation_table(
+                observation_set, compute_request, output_table_details
+            )

@@ -38,6 +38,7 @@ from featurebyte.schema.feature_list import FeatureListGetHistoricalFeatures
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.feature_table_cache import FeatureTableCacheService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.target_helper.base_feature_or_target_computer import (
     BasicExecutorParams,
@@ -312,12 +313,14 @@ class HistoricalFeaturesService(
         query_executor: QueryExecutor[HistoricalFeatureExecutorParams],
         task_progress_updater: TaskProgressUpdater,
         feature_list_service: FeatureListService,
+        feature_table_cache_service: FeatureTableCacheService,
     ):
         super().__init__(
             feature_store_service,
             entity_validation_service,
             session_manager_service,
             query_executor,
+            feature_table_cache_service,
             task_progress_updater,
         )
         self.feature_list_service = feature_list_service

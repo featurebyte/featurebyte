@@ -23,6 +23,7 @@ from featurebyte.routes.common.feature_or_target_table import ValidationParamete
 from featurebyte.schema.target import ComputeTargetRequest
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.feature_table_cache import FeatureTableCacheService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.target_helper.base_feature_or_target_computer import (
     BasicExecutorParams,
@@ -108,12 +109,14 @@ class TargetComputer(Computer[ComputeTargetRequest, ExecutorParams]):
         session_manager_service: SessionManagerService,
         query_executor: QueryExecutor[ExecutorParams],
         task_progress_updater: TaskProgressUpdater,
+        feature_table_cache_service: FeatureTableCacheService,
     ):
         super().__init__(
             feature_store_service,
             entity_validation_service,
             session_manager_service,
             query_executor,
+            feature_table_cache_service,
             task_progress_updater,
         )
 
