@@ -511,6 +511,7 @@ def test_get_feature_list(
             ("primary_entity_ids", [str(cust_id_entity.id)]),
             ("readiness_distribution", [{"readiness": "DRAFT", "count": 1}]),
             ("relationships_info", audit_history.new_value.iloc[15]),
+            ("store_info", None),
             (
                 "supported_serving_entity_ids",
                 sorted([[str(cust_id_entity.id)], [str(transaction_entity.id)]]),
@@ -1399,7 +1400,6 @@ def test_feature_list_entity_relationship_validation(
     snowflake_event_table_with_entity,
     cust_id_entity,
     transaction_entity,
-    arbitrary_default_feature_job_setting,
 ):
     """Test feature list entity relationship validation"""
     event_view = snowflake_event_table_with_entity.get_view()

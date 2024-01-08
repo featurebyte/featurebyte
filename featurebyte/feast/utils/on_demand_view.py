@@ -9,7 +9,6 @@ from feast import FeatureView, Field, RequestSource
 from feast.feature_view_projection import FeatureViewProjection
 from feast.on_demand_feature_view import OnDemandFeatureView, on_demand_feature_view
 
-from featurebyte.common.string import sanitize_identifier
 from featurebyte.enum import DBVarType, SpecialColumnName
 from featurebyte.feast.enum import to_feast_primitive_type
 from featurebyte.models.feature import FeatureModel
@@ -123,19 +122,10 @@ class OnDemandFeatureViewConstructor:
             req_source = name_to_feast_request_source[SpecialColumnName.POINT_IN_TIME.value]
             sources.append(req_source)
 
-        function_name = (
-            f"compute_feature_{sanitize_identifier(feature_model.name)}_{feature_model.id}"
-        )
-        codes = offline_store_info.generate_on_demand_feature_view_code(
-            feature_name_version=feature_model.versioned_name,
-            input_df_name="inputs",
-            output_df_name="df",
-            function_name=function_name,
-            ttl_seconds=ttl_seconds,
-        )
+        assert offline_store_info.odfv_info is not None, "OfflineStoreInfo does not have ODFV info"
         feature_view = create_feast_on_demand_feature_view(
-            definition=codes,
-            function_name=function_name,
+            definition=offline_store_info.odfv_info.codes,
+            function_name=offline_store_info.odfv_info.function_name,
             sources=sources,
             schema=[
                 Field(

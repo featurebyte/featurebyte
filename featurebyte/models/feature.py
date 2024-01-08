@@ -23,7 +23,11 @@ from featurebyte.models.base import (
 )
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.models.mixin import QueryGraphMixin
-from featurebyte.models.offline_store_ingest_query import OfflineStoreInfo, OfflineStoreInfoMetadata
+from featurebyte.models.offline_store_ingest_query import (
+    OfflineStoreInfo,
+    OfflineStoreInfoMetadata,
+    ServingNameInfo,
+)
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
@@ -529,13 +533,26 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
             )
 
         # populate offline store info
-        self.internal_offline_store_info = OfflineStoreInfo(
+        offline_store_info = OfflineStoreInfo(
             graph=decomposed_graph,
             node_name=output_node_name,
             node_name_map=result.node_name_map,
             is_decomposed=result.is_decomposed,
             metadata=metadata,
-        ).dict(by_alias=True)
+            serving_names_info=[
+                ServingNameInfo(serving_name=serving_name, entity_id=entity_id)
+                for entity_id, serving_name in entity_id_to_serving_name.items()
+            ],
+        )
+        offline_store_info.initialize(
+            feature_versioned_name=self.versioned_name,
+            feature_dtype=self.dtype,
+            feature_job_settings=[
+                setting.feature_job_setting for setting in self.table_id_feature_job_settings
+            ],
+            feature_id=self.id,
+        )
+        self.internal_offline_store_info = offline_store_info.dict(by_alias=True)
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
