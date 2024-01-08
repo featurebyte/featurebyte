@@ -27,6 +27,7 @@ from featurebyte.exception import (
     MissingPointInTimeColumnError,
     ObservationTableInvalidContextError,
     ObservationTableInvalidUseCaseError,
+    ObservationTableMissingColumnsError,
     UnsupportedPointInTimeColumnTypeError,
 )
 from featurebyte.models.base import FeatureByteBaseDocumentModel, PydanticObjectId
@@ -247,6 +248,11 @@ class ObservationTableService(
         Returns
         -------
         ObservationTableUploadTaskPayload
+
+        Raises
+        ------
+        ObservationTableMissingColumnsError
+            If the observation set dataframe is missing required columns.
         """
 
         # Check any conflict with existing documents
@@ -254,6 +260,20 @@ class ObservationTableService(
         await self._check_document_unique_constraints(
             document=FeatureByteBaseDocumentModel(_id=output_document_id, name=data.name),
         )
+
+        # Check if required column names are provided
+        missing_columns = []
+        available_columns = set(observation_set_dataframe.columns.tolist())
+        if SpecialColumnName.POINT_IN_TIME not in observation_set_dataframe.columns:
+            missing_columns.append(str(SpecialColumnName.POINT_IN_TIME))
+        for entity_id in data.primary_entity_ids:
+            entity = await self.entity_service.get_document(document_id=entity_id)
+            if not set(entity.serving_names).intersection(available_columns):
+                missing_columns.append("/".join(entity.serving_names))
+        if missing_columns:
+            raise ObservationTableMissingColumnsError(
+                f"Required columns not found: {', '.join(missing_columns)}"
+            )
 
         # Persist dataframe to parquet file that can be read by the task later
         observation_set_storage_path = f"observation_table/{output_document_id}.parquet"
