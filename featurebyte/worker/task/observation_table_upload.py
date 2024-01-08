@@ -69,6 +69,9 @@ class ObservationTableUploadTask(DataWarehouseMixin, BaseTask[ObservationTableUp
         await db_session.register_table(
             location.table_details.table_name, uploaded_dataframe, temporary=False
         )
+        await self.observation_table_service.add_row_index_column(
+            db_session, location.table_details
+        )
 
         async with self.drop_table_on_error(db_session, location.table_details, payload):
             # Validate table and retrieve metadata about the table
@@ -94,6 +97,7 @@ class ObservationTableUploadTask(DataWarehouseMixin, BaseTask[ObservationTableUp
                 ),
                 purpose=payload.purpose,
                 primary_entity_ids=payload.primary_entity_ids,
+                has_row_index=True,
                 **additional_metadata,
             )
             await self.observation_table_service.create_document(observation_table)

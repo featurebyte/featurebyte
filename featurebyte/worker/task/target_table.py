@@ -83,6 +83,15 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
                 entity_ids
             )
 
+            # Note: For now, a new row index column is added to this newly created observation
+            # table. It is independent of the row index column of the input observation table. We
+            # might want to revisit this to possibly inherit the original row index column of the
+            # input observation table to allow feature table cache to be reused.
+            await self.observation_table_service.add_row_index_column(
+                db_session,
+                location.table_details,
+            )
+
             additional_metadata = (
                 await self.observation_table_service.validate_materialized_table_and_get_metadata(
                     db_session,
@@ -107,6 +116,7 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
                 request_input=payload.request_input,
                 primary_entity_ids=primary_entity_ids,
                 purpose=purpose,
+                has_row_index=True,
                 **additional_metadata,
             )
             await self.observation_table_service.create_document(observation_table)

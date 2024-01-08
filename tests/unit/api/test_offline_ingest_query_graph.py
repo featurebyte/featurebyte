@@ -63,6 +63,11 @@ def check_ingest_query_graph(ingest_query_graph):
         assert len(input_node_names) == 1
         assert input_node_names[0] == aggregation_node_info.input_node_name
 
+    # check consistency of entity info
+    assert len(ingest_query_graph.primary_entity_ids) == len(
+        ingest_query_graph.primary_entity_dtypes
+    )
+
 
 @freezegun.freeze_time("2023-12-29")
 def test_feature__ttl_and_non_ttl_components(
@@ -305,10 +310,10 @@ def test_feature__ttl_item_aggregate_request_column(
             ),
             index=inputs["__composite_feature_V231227__part0"].index,
         )
-        request_col = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         feat_1 = pd.to_datetime(
             inputs["__composite_feature_V231227__part2"], utc=True
         )
+        request_col = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         feat_2 = (request_col - feat_1).dt.seconds // 86400
         feat_3 = pd.Series(
             np.where(pd.isna(feat) | pd.isna(feat_2), np.nan, feat + feat_2),
@@ -477,6 +482,54 @@ def test_feature__with_ttl_handling(float_feature):
     assert codes.strip() == textwrap.dedent(expected).strip()
 
 
+def test_feature_entity_dtypes(
+    snowflake_event_table, cust_id_entity, transaction_entity, arbitrary_default_feature_job_setting
+):
+    """Test that entity dtypes are correctly set."""
+    snowflake_event_table.col_int.as_entity(cust_id_entity.name)
+    snowflake_event_table.col_text.as_entity(transaction_entity.name)
+    snowflake_event_table.update_default_feature_job_setting(
+        feature_job_setting=arbitrary_default_feature_job_setting,
+    )
+    event_view = snowflake_event_table.get_view()
+
+    feat_sum1 = event_view.groupby("col_int").aggregate_over(
+        value_column="col_float",
+        method="sum",
+        windows=["24h"],
+        feature_names=["sum_a_24h"],
+    )["sum_a_24h"]
+
+    feat_sum2 = event_view.groupby("col_text").aggregate_over(
+        value_column="col_float",
+        method="sum",
+        windows=["24h"],
+        feature_names=["sum_b_24h"],
+    )["sum_b_24h"]
+
+    feat = feat_sum1 + feat_sum2
+    feat.name = "feature"
+    feat.save()
+
+    # check the entity dtypes are correctly set
+    expected_entity_id_to_dtype = {
+        cust_id_entity.id: snowflake_event_table.col_int.info.dtype,
+        transaction_entity.id: snowflake_event_table.col_text.info.dtype,
+    }
+    assert feat.cached_model.entity_dtypes == [
+        expected_entity_id_to_dtype[entity_id] for entity_id in feat.entity_ids
+    ]
+
+    # check ingest query graph
+    offline_store_info = feat.cached_model.offline_store_info
+    ingest_query_graphs = offline_store_info.extract_offline_store_ingest_query_graphs()
+    assert len(ingest_query_graphs) == 1
+    assert ingest_query_graphs[0].primary_entity_ids == [cust_id_entity.id]
+    assert ingest_query_graphs[0].primary_entity_dtypes == [
+        expected_entity_id_to_dtype[cust_id_entity.id]
+    ]
+
+
 def test_on_demand_feature_view_code_generation__card_transaction_description_feature(test_dir):
     """Test on-demand feature view code generation for card_transaction_description feature."""
     fixture_path = os.path.join(
@@ -501,10 +554,10 @@ def test_on_demand_feature_view_code_generation__card_transaction_description_fe
 
 
     def on_demand_feature_function(col_1: str, col_2: str, col_3: str) -> float:
-        # col_1: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part0
-        # col_2: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part1
+        # col_1: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part1
+        # col_2: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part0
         # col_3: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part2
-        feat_1 = np.nan if pd.isna(col_1) else json.loads(col_1)
+        feat_1 = np.nan if pd.isna(col_2) else json.loads(col_2)
 
         def get_relative_frequency(input_dict, key):
             if pd.isna(input_dict) or key not in input_dict:
@@ -515,11 +568,11 @@ def test_on_demand_feature_view_code_generation__card_transaction_description_fe
             key_frequency = input_dict.get(key, 0)
             return key_frequency / total_count
 
-        feat_2 = get_relative_frequency(feat_1, key=col_2)
+        feat_2 = get_relative_frequency(feat_1, key=col_1)
         flag_1 = pd.isna(feat_2)
         feat_2 = 0 if flag_1 else feat_2
         feat_3 = np.nan if pd.isna(col_3) else json.loads(col_3)
-        feat_4 = get_relative_frequency(feat_3, key=col_2)
+        feat_4 = get_relative_frequency(feat_3, key=col_1)
         flag_2 = pd.isna(feat_4)
         feat_4 = 0 if flag_2 else feat_4
         feat_5 = (

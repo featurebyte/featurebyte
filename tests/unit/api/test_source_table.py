@@ -234,7 +234,7 @@ def test_create_observation_table(
     assert observation_table.primary_entity_ids == [cust_id_entity.id]
 
     # Check that the correct query was executed
-    query = snowflake_execute_query.call_args[0][0]
+    query = snowflake_execute_query.call_args_list[-2][0][0]
     check_observation_table_creation_query(
         query,
         """
@@ -249,11 +249,22 @@ def test_create_observation_table(
         )
         """,
     )
+    row_index_query = snowflake_execute_query.call_args_list[-1][0][0]
+    check_observation_table_creation_query(
+        row_index_query,
+        """
+        CREATE OR REPLACE TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE" AS
+        SELECT
+          ROW_NUMBER() OVER (ORDER BY 1) AS "__FB_TABLE_ROW_INDEX",
+          *
+        FROM "OBSERVATION_TABLE"
+        """,
+    )
 
 
 @pytest.mark.usefixtures("patched_observation_table_service")
 def test_create_observation_table_with_sample_rows(
-    snowflake_database_table, snowflake_execute_query
+    snowflake_database_table, snowflake_execute_query, catalog
 ):
     """
     Test creating ObservationTable from SourceTable with sampling
@@ -272,7 +283,7 @@ def test_create_observation_table_with_sample_rows(
     assert observation_table.name == "my_observation_table"
 
     # Check that the correct query was executed
-    query = snowflake_execute_query.call_args[0][0]
+    query = snowflake_execute_query.call_args_list[-2][0][0]
     check_observation_table_creation_query(
         query,
         """
@@ -287,6 +298,17 @@ def test_create_observation_table_with_sample_rows(
         ORDER BY
           RANDOM()
         LIMIT 100
+        """,
+    )
+    row_index_query = snowflake_execute_query.call_args_list[-1][0][0]
+    check_observation_table_creation_query(
+        row_index_query,
+        """
+        CREATE OR REPLACE TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE" AS
+        SELECT
+          ROW_NUMBER() OVER (ORDER BY 1) AS "__FB_TABLE_ROW_INDEX",
+          *
+        FROM "OBSERVATION_TABLE"
         """,
     )
 

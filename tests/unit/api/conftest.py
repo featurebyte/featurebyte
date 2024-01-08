@@ -3,7 +3,7 @@ Common test fixtures used across api test directories
 """
 import textwrap
 from datetime import datetime
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pandas as pd
 import pytest
@@ -16,6 +16,7 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.event_table import EventTable
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.item_table import ItemTable
+from featurebyte.api.source_table import SourceTable
 from featurebyte.config import Configurations
 from featurebyte.models.feature_store import TableStatus
 
@@ -449,3 +450,30 @@ def latest_event_timestamp_feature_fixture(snowflake_event_view_with_entity):
         ),
     )["latest_event_timestamp_90d"]
     return feature
+
+
+@pytest.fixture(name="mock_source_table")
+def mock_source_table_fixture():
+    """
+    Patches the underlying SourceTable in MaterializedTableMixin
+    """
+    mock_source_table = Mock(
+        name="mock_source_table",
+        spec=SourceTable,
+        preview=Mock(return_value=pd.DataFrame()),
+        sample=Mock(return_value=pd.DataFrame()),
+        describe=Mock(return_value=pd.DataFrame()),
+    )
+    mock_feature_store = Mock(
+        name="mock_feature_store",
+        get_data_source=Mock(
+            return_value=Mock(
+                name="mock_data_source",
+                get_source_table=Mock(return_value=mock_source_table),
+            )
+        ),
+    )
+    with patch(
+        "featurebyte.api.materialized_table.FeatureStore.get_by_id", return_value=mock_feature_store
+    ):
+        yield mock_source_table

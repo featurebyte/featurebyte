@@ -237,7 +237,7 @@ async def get_online_features(  # pylint: disable=too-many-locals
     tic = time.time()
 
     if isinstance(request_data, pd.DataFrame):
-        request_data[InternalName.ROW_INDEX] = range(request_data.shape[0])
+        request_data[InternalName.DATAFRAME_ROW_INDEX] = range(request_data.shape[0])
         request_table_expr = construct_dataframe_sql_expr(request_data, date_cols=[])
         request_table_columns = request_data.columns.tolist()
     else:
@@ -273,8 +273,8 @@ async def get_online_features(  # pylint: disable=too-many-locals
         assert df_features is not None
         assert isinstance(request_data, pd.DataFrame)
 
-        df_features = df_features.sort_values(InternalName.ROW_INDEX).drop(
-            InternalName.ROW_INDEX, axis=1
+        df_features = df_features.sort_values(InternalName.DATAFRAME_ROW_INDEX).drop(
+            InternalName.DATAFRAME_ROW_INDEX, axis=1
         )
         df_features.index = request_data.index
 

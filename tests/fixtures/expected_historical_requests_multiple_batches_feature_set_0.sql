@@ -10,7 +10,7 @@ WITH "REQUEST_TABLE_order_id" AS (
   FROM REQUEST_TABLE
 ), _FB_AGGREGATED AS (
   SELECT
-    REQ."__FB_ROW_INDEX_FOR_JOIN",
+    REQ."__FB_TABLE_ROW_INDEX",
     REQ."POINT_IN_TIME",
     REQ."CUSTOMER_ID",
     "T0"."_fb_internal_item_count_None_order_id_None_input_4" AS "_fb_internal_item_count_None_order_id_None_input_4",
@@ -67,7 +67,7 @@ WITH "REQUEST_TABLE_order_id" AS (
     AND REQ."MEMBERSHIP_STATUS" = T1."MEMBERSHIP_STATUS"
 )
 SELECT
-  AGG."__FB_ROW_INDEX_FOR_JOIN",
+  AGG."__FB_TABLE_ROW_INDEX",
   AGG."POINT_IN_TIME",
   AGG."CUSTOMER_ID",
   "_fb_internal_as_at_count_None_membership_status_None_input_3" AS "asat_feature",

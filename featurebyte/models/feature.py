@@ -97,6 +97,7 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
 
     # list of IDs attached to this feature or target
     entity_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
+    entity_dtypes: List[DBVarType] = Field(allow_mutation=False, default_factory=list)
     primary_entity_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
     table_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
     primary_table_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
@@ -160,9 +161,18 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
                 graph_dict = graph_dict.dict(by_alias=True)
             graph = QueryGraph(**graph_dict)
             node_name = values["node_name"]
+            decompose_state = graph.get_decompose_state(
+                node_name=node_name, relationships_info=None
+            )
+            entity_ids = decompose_state.primary_entity_ids
+
+            values["entity_ids"] = entity_ids
+            values["entity_dtypes"] = [
+                decompose_state.primary_entity_ids_to_dtypes_map[entity_id]
+                for entity_id in entity_ids
+            ]
             values["primary_table_ids"] = graph.get_primary_table_ids(node_name=node_name)
             values["table_ids"] = graph.get_table_ids(node_name=node_name)
-            values["entity_ids"] = graph.get_entity_ids(node_name=node_name)
             values["user_defined_function_ids"] = graph.get_user_defined_function_ids(
                 node_name=node_name
             )
@@ -501,6 +511,10 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
                 catalog_id=self.catalog_id,
             )
 
+            assert len(self.entity_ids) == len(
+                self.entity_dtypes
+            ), "entity_ids & entity_dtypes must match"
+            entity_id_to_dtype = dict(zip(self.entity_ids, self.entity_dtypes))
             metadata = OfflineStoreInfoMetadata(
                 aggregation_nodes_info=self._extract_aggregation_nodes_info(),
                 feature_job_setting=feature_job_setting,
@@ -509,6 +523,9 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
                 output_column_name=self.versioned_name,
                 output_dtype=self.dtype,
                 primary_entity_ids=self.primary_entity_ids,
+                primary_entity_dtypes=[
+                    entity_id_to_dtype[entity_id] for entity_id in self.primary_entity_ids
+                ],
             )
 
         # populate offline store info

@@ -3,12 +3,11 @@ Unit tests for ObservationTable class
 """
 from typing import Any, Dict
 
-from unittest.mock import Mock, call, patch
+from unittest.mock import call
 
 import pytest
 
 from featurebyte.api.observation_table import ObservationTable
-from featurebyte.api.source_table import SourceTable
 from featurebyte.models.observation_table import Purpose
 from tests.unit.api.base_materialize_table_test import BaseMaterializedTableApiTest
 
@@ -80,27 +79,6 @@ def test_data_source(observation_table_from_source):
     source_table = observation_table._source_table
     assert source_table.feature_store.id == observation_table.location.feature_store_id
     assert source_table.tabular_source.table_details == observation_table.location.table_details
-
-
-@pytest.fixture(name="mock_source_table")
-def mock_source_table_fixture():
-    """
-    Patches the underlying SourceTable in MaterializedTableMixin
-    """
-    mock_source_table = Mock(name="mock_source_table", spec=SourceTable)
-    mock_feature_store = Mock(
-        name="mock_feature_store",
-        get_data_source=Mock(
-            return_value=Mock(
-                name="mock_data_source",
-                get_source_table=Mock(return_value=mock_source_table),
-            )
-        ),
-    )
-    with patch(
-        "featurebyte.api.materialized_table.FeatureStore.get_by_id", return_value=mock_feature_store
-    ):
-        yield mock_source_table
 
 
 def test_preview(observation_table_from_source, mock_source_table):

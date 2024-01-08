@@ -533,7 +533,8 @@ def new_user_id_entity_fixture():
     [
         ("dataframe", "dataframe"),
         ("dataframe", "table"),
-        ("table", "table"),
+        ("table", "table"),  # input is observation table
+        ("uploaded_table", "table"),  # input is observation table from uploaded parquet file
     ],
 )
 @pytest.mark.usefixtures("patched_num_features_per_query")
@@ -552,7 +553,7 @@ async def test_get_historical_features(
     """
     _ = user_entity, new_user_id_entity
     input_format, output_format = in_out_formats
-    assert input_format in {"dataframe", "table"}
+    assert input_format in {"dataframe", "table", "uploaded_table"}
     assert output_format in {"dataframe", "table"}
 
     feature_group["COUNT_2h / COUNT_24h"] = feature_group["COUNT_2h"] / feature_group["COUNT_24h"]
