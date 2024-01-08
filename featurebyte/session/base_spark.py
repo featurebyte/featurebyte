@@ -324,7 +324,7 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
     @property
     def current_working_schema_version(self) -> int:
         # NOTE: Please also update the version in hive-udf/lib/build.gradle
-        return 11
+        return 12
 
     @property
     def sql_directory_name(self) -> str:
@@ -447,7 +447,7 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
                 "F_COUNT_DICT_COSINE_SIMILARITY",
                 "com.featurebyte.hive.udf.CountDictCosineSimilarityV1",
             ),
-            ("F_COUNT_DICT_ENTROPY", "com.featurebyte.hive.udf.CountDictEntropyV1"),
+            ("F_COUNT_DICT_ENTROPY", "com.featurebyte.hive.udf.CountDictEntropyV2"),
             ("F_COUNT_DICT_MOST_FREQUENT", "com.featurebyte.hive.udf.CountDictMostFrequentV1"),
             (
                 "F_COUNT_DICT_MOST_FREQUENT_VALUE",

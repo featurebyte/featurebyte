@@ -3,20 +3,11 @@ CREATE OR REPLACE FUNCTION F_COUNT_DICT_ENTROPY(counts MAP<STRING, INT>)
   LANGUAGE PYTHON
 AS
 $$
-  import math
-
-  if not counts:
-    return None
-
-  counts_arr = list(counts.values())
-  total = sum(counts_arr)
-  entropy = 0.0
-  count_length = len(counts_arr)
-
-  for i in range(count_length):
-    p = counts_arr[i] / total
-    entropy += p * math.log(p)
-
-  return entropy * -1.0
+    from scipy.stats import entropy
+    if counts is None:
+        return None
+    if not counts:
+        return 0.0
+    return entropy(list(counts.values()))
 $$
 ;
