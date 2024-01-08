@@ -8,9 +8,11 @@ from featurebyte.feast.utils.registry_construction import FeastRegistryConstruct
 
 
 @pytest.fixture(name="always_enable_feast_integration", autouse=True)
-def always_enable_feast_integration_fixture(enable_feast_integration):
-    """Enable feast integration for all tests in this directory"""
-    _ = enable_feast_integration
+def always_enable_feast_integration_fixture(
+    enable_feast_integration, patched_catalog_get_create_payload
+):
+    """Enable feast integration & patch catalog ID for all tests in this directory"""
+    _ = enable_feast_integration, patched_catalog_get_create_payload
     yield
 
 

@@ -75,7 +75,7 @@ async def test_update_feast_registry(feast_registry_service, feast_registry, fea
 
 
 @pytest.mark.asyncio
-async def test_get_feast_feature_store(feast_feature_store_service, feast_registry):
+async def test_get_feast_feature_store(feast_feature_store_service, feast_registry, catalog_id):
     """Test get feast feature store"""
     feast_fs = await feast_feature_store_service.get_feast_feature_store(
         feast_registry_id=feast_registry.id
@@ -85,15 +85,15 @@ async def test_get_feast_feature_store(feast_feature_store_service, feast_regist
     data_src_names = [data_source.name for data_source in feast_fs.list_data_sources()]
     assert set(data_src_names) == {
         "POINT_IN_TIME",
-        "fb_entity_cust_id_fjs_1800_300_600_ttl",
-        "fb_entity_transaction_id_fjs_86400_0_0",
+        f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}",
+        f"fb_entity_transaction_id_fjs_86400_0_0_{catalog_id}",
     }
     entity_names = [entity.name for entity in feast_fs.list_entities()]
     assert set(entity_names) == {"cust_id", "transaction_id"}
     fv_names = [feature_view.name for feature_view in feast_fs.list_feature_views()]
     assert set(fv_names) == {
-        "fb_entity_cust_id_fjs_1800_300_600_ttl",
-        "fb_entity_transaction_id_fjs_86400_0_0",
+        f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}",
+        f"fb_entity_transaction_id_fjs_86400_0_0_{catalog_id}",
     }
     fs_names = [feature_service.name for feature_service in feast_fs.list_feature_services()]
     assert fs_names == ["test_feature_list"]

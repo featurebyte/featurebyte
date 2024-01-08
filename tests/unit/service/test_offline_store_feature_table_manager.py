@@ -203,9 +203,10 @@ async def test_feature_table_one_feature_deployed(
     """
     Test feature table creation when one feature is deployed
     """
+    catalog_id = app_container.catalog_id
     feature_tables = await get_all_feature_tables(document_service)
     assert len(feature_tables) == 1
-    feature_table = feature_tables["fb_entity_cust_id_fjs_1800_300_600_ttl"]
+    feature_table = feature_tables[f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}"]
 
     feature_table_dict = feature_table.dict(
         by_alias=True, exclude={"created_at", "updated_at", "id"}
@@ -213,7 +214,7 @@ async def test_feature_table_one_feature_deployed(
     feature_cluster = feature_table_dict.pop("feature_cluster")
     assert feature_table_dict == {
         "block_modification_by": [],
-        "catalog_id": ObjectId("646f6c1c0ed28a5271fb02db"),
+        "catalog_id": catalog_id,
         "description": None,
         "entity_universe": {
             "query_template": {
@@ -232,7 +233,7 @@ async def test_feature_table_one_feature_deployed(
         },
         "has_ttl": True,
         "last_materialized_at": None,
-        "name": "fb_entity_cust_id_fjs_1800_300_600_ttl",
+        "name": f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}",
         "output_column_names": ["sum_1d_V231227"],
         "output_dtypes": ["FLOAT"],
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
@@ -249,7 +250,7 @@ async def test_feature_table_one_feature_deployed(
 
     await check_feast_registry(
         app_container,
-        expected_feature_views={"fb_entity_cust_id_fjs_1800_300_600_ttl"},
+        expected_feature_views={f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}"},
         expected_feature_services={"sum_1d_list"},
     )
 
@@ -266,9 +267,10 @@ async def test_feature_table_two_features_deployed(
     """
     Test feature table creation and update when two features are deployed
     """
+    catalog_id = app_container.catalog_id
     feature_tables = await get_all_feature_tables(document_service)
     assert len(feature_tables) == 1
-    feature_table = feature_tables["fb_entity_cust_id_fjs_1800_300_600_ttl"]
+    feature_table = feature_tables[f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}"]
 
     feature_table_dict = feature_table.dict(
         by_alias=True, exclude={"created_at", "updated_at", "id"}
@@ -295,7 +297,7 @@ async def test_feature_table_two_features_deployed(
         },
         "has_ttl": True,
         "last_materialized_at": None,
-        "name": "fb_entity_cust_id_fjs_1800_300_600_ttl",
+        "name": f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}",
         "output_column_names": ["sum_1d_V231227", "sum_1d_plus_123_V231227"],
         "output_dtypes": ["FLOAT", "FLOAT"],
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
@@ -312,7 +314,7 @@ async def test_feature_table_two_features_deployed(
 
     await check_feast_registry(
         app_container,
-        expected_feature_views={"fb_entity_cust_id_fjs_1800_300_600_ttl"},
+        expected_feature_views={f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}"},
         expected_feature_services={"sum_1d_list", "sum_1d_plus_123_list"},
     )
 
@@ -331,11 +333,12 @@ async def test_feature_table_undeploy(
     Test feature table creation and update when two features are deployed
     """
     # Simulate online enabling two features then online disable one
+    catalog_id = app_container.catalog_id
     undeploy_feature(deployed_float_feature)
 
     feature_tables = await get_all_feature_tables(document_service)
     assert len(feature_tables) == 1
-    feature_table = feature_tables["fb_entity_cust_id_fjs_1800_300_600_ttl"]
+    feature_table = feature_tables[f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}"]
 
     feature_table_dict = feature_table.dict(
         by_alias=True, exclude={"created_at", "updated_at", "id"}
@@ -362,7 +365,7 @@ async def test_feature_table_undeploy(
         },
         "has_ttl": True,
         "last_materialized_at": None,
-        "name": "fb_entity_cust_id_fjs_1800_300_600_ttl",
+        "name": f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}",
         "output_column_names": ["sum_1d_plus_123_V231227"],
         "output_dtypes": ["FLOAT"],
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
@@ -377,7 +380,7 @@ async def test_feature_table_undeploy(
 
     # Check drop_columns called
     args, _ = mock_feature_materialize_service["drop_columns"].call_args
-    assert args[0].name == "fb_entity_cust_id_fjs_1800_300_600_ttl"
+    assert args[0].name == f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}"
     assert args[1] == ["sum_1d_V231227"]
 
     # Check online disabling the last feature deletes the feature table
@@ -387,7 +390,7 @@ async def test_feature_table_undeploy(
     assert not await has_scheduled_task(periodic_task_service, feature_table)
 
     args, _ = mock_feature_materialize_service["drop_table"].call_args
-    assert args[0].name == "fb_entity_cust_id_fjs_1800_300_600_ttl"
+    assert args[0].name == f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}"
     await check_feast_registry(
         app_container,
         expected_feature_views=set(),
@@ -406,11 +409,12 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
     """
     Test feature table creation and update when two features are deployed
     """
+    catalog_id = app_container.catalog_id
     feature_tables = await get_all_feature_tables(document_service)
     assert len(feature_tables) == 2
 
     # Check customer entity feature table
-    feature_table = feature_tables["fb_entity_cust_id_fjs_1800_300_600_ttl"]
+    feature_table = feature_tables[f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}"]
     feature_table_dict = feature_table.dict(
         by_alias=True, exclude={"created_at", "updated_at", "id"}
     )
@@ -436,7 +440,7 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
         },
         "has_ttl": True,
         "last_materialized_at": None,
-        "name": "fb_entity_cust_id_fjs_1800_300_600_ttl",
+        "name": f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}",
         "output_column_names": ["sum_1d_V231227"],
         "output_dtypes": ["FLOAT"],
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
@@ -446,7 +450,7 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
     assert await has_scheduled_task(periodic_task_service, feature_table)
 
     # Check item entity feature table
-    feature_table = feature_tables["fb_entity_cust_id_fjs_10800_5_900_ttl"]
+    feature_table = feature_tables[f"fb_entity_cust_id_fjs_10800_5_900_ttl_{catalog_id}"]
     feature_table_dict = feature_table.dict(
         by_alias=True, exclude={"created_at", "updated_at", "id"}
     )
@@ -472,7 +476,7 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
         },
         "has_ttl": True,
         "last_materialized_at": None,
-        "name": "fb_entity_cust_id_fjs_10800_5_900_ttl",
+        "name": f"fb_entity_cust_id_fjs_10800_5_900_ttl_{catalog_id}",
         "output_column_names": ["sum_24h_every_3h_V231227"],
         "output_dtypes": ["FLOAT"],
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
@@ -484,8 +488,8 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
     await check_feast_registry(
         app_container,
         expected_feature_views={
-            "fb_entity_cust_id_fjs_10800_5_900_ttl",
-            "fb_entity_cust_id_fjs_1800_300_600_ttl",
+            f"fb_entity_cust_id_fjs_10800_5_900_ttl_{catalog_id}",
+            f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}",
         },
         expected_feature_services={"sum_24h_every_3h_list", "sum_1d_list"},
     )
@@ -501,9 +505,10 @@ async def test_feature_table_without_entity(
     """
     Test feature table creation when feature has no entity
     """
+    catalog_id = app_container.catalog_id
     feature_tables = await get_all_feature_tables(document_service)
     assert len(feature_tables) == 1
-    feature_table = feature_tables["fb_entity_overall_fjs_86400_3600_7200_ttl"]
+    feature_table = feature_tables[f"fb_entity_overall_fjs_86400_3600_7200_ttl_{catalog_id}"]
 
     feature_table_dict = feature_table.dict(
         by_alias=True, exclude={"created_at", "updated_at", "id"}
@@ -524,7 +529,7 @@ async def test_feature_table_without_entity(
         },
         "has_ttl": True,
         "last_materialized_at": None,
-        "name": "fb_entity_overall_fjs_86400_3600_7200_ttl",
+        "name": f"fb_entity_overall_fjs_86400_3600_7200_ttl_{catalog_id}",
         "output_column_names": ["count_1d_V231227"],
         "output_dtypes": ["INT"],
         "primary_entity_ids": [],
@@ -534,7 +539,7 @@ async def test_feature_table_without_entity(
     assert await has_scheduled_task(periodic_task_service, feature_table)
     await check_feast_registry(
         app_container,
-        expected_feature_views={"fb_entity_overall_fjs_86400_3600_7200_ttl"},
+        expected_feature_views={f"fb_entity_overall_fjs_86400_3600_7200_ttl_{catalog_id}"},
         expected_feature_services={"count_1d_list"},
     )
 
@@ -550,9 +555,10 @@ async def test_lookup_feature(
     """
     Test feature table creation with lookup feature
     """
+    catalog_id = app_container.catalog_id
     feature_tables = await get_all_feature_tables(document_service)
     assert len(feature_tables) == 1
-    feature_table = feature_tables["fb_entity_cust_id_fjs_86400_0_0"]
+    feature_table = feature_tables[f"fb_entity_cust_id_fjs_86400_0_0_{catalog_id}"]
 
     feature_table_dict = feature_table.dict(
         by_alias=True, exclude={"created_at", "updated_at", "id"}
@@ -576,7 +582,7 @@ async def test_lookup_feature(
         },
         "has_ttl": False,
         "last_materialized_at": None,
-        "name": "fb_entity_cust_id_fjs_86400_0_0",
+        "name": f"fb_entity_cust_id_fjs_86400_0_0_{catalog_id}",
         "output_column_names": ["some_lookup_feature_V231227"],
         "output_dtypes": ["BOOL"],
         "primary_entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
@@ -586,7 +592,7 @@ async def test_lookup_feature(
     assert await has_scheduled_task(periodic_task_service, feature_table)
     await check_feast_registry(
         app_container,
-        expected_feature_views={"fb_entity_cust_id_fjs_86400_0_0"},
+        expected_feature_views={f"fb_entity_cust_id_fjs_86400_0_0_{catalog_id}"},
         expected_feature_services={"some_lookup_feature_list"},
     )
 
@@ -602,9 +608,10 @@ async def test_aggregate_asat_feature(
     """
     Test feature table creation with aggregate asat feature
     """
+    catalog_id = app_container.catalog_id
     feature_tables = await get_all_feature_tables(document_service)
     assert len(feature_tables) == 1
-    feature_table = feature_tables["fb_entity_gender_fjs_86400_0_0"]
+    feature_table = feature_tables[f"fb_entity_gender_fjs_86400_0_0_{catalog_id}"]
 
     feature_table_dict = feature_table.dict(
         by_alias=True, exclude={"created_at", "updated_at", "id"}
@@ -629,7 +636,7 @@ async def test_aggregate_asat_feature(
         },
         "has_ttl": False,
         "last_materialized_at": None,
-        "name": "fb_entity_gender_fjs_86400_0_0",
+        "name": f"fb_entity_gender_fjs_86400_0_0_{catalog_id}",
         "output_column_names": ["asat_gender_count_V231227"],
         "output_dtypes": ["INT"],
         "primary_entity_ids": deployed_aggregate_asat_feature.primary_entity_ids,
@@ -639,7 +646,7 @@ async def test_aggregate_asat_feature(
     assert await has_scheduled_task(periodic_task_service, feature_table)
     await check_feast_registry(
         app_container,
-        expected_feature_views={"fb_entity_gender_fjs_86400_0_0"},
+        expected_feature_views={f"fb_entity_gender_fjs_86400_0_0_{catalog_id}"},
         expected_feature_services={"asat_gender_count_list"},
     )
 
@@ -652,9 +659,10 @@ async def test_new_deployment_when_all_features_already_deployed(
     """
     Test enabling a new deployment when all the underlying features are already deployed
     """
+    catalog_id = app_container.catalog_id
     await check_feast_registry(
         app_container,
-        expected_feature_views={"fb_entity_cust_id_fjs_1800_300_600_ttl"},
+        expected_feature_views={f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}"},
         expected_feature_services={
             "sum_1d_list",
             deployed_feature_list_when_all_features_already_deployed.name,

@@ -20,9 +20,11 @@ from tests.util.helper import (
 
 
 @pytest.fixture(name="always_enable_feast_integration", autouse=True)
-def always_enable_feast_integration_fixture(enable_feast_integration):
-    """Enable feast integration for all tests in this module"""
-    _ = enable_feast_integration
+def always_enable_feast_integration_fixture(
+    enable_feast_integration, patched_catalog_get_create_payload
+):
+    """Enable feast integration & patch catalog ID for all tests in this module"""
+    _ = enable_feast_integration, patched_catalog_get_create_payload
     yield
 
 
@@ -130,6 +132,7 @@ def test_feature__ttl_and_non_ttl_components(composite_feature, test_dir, update
 
 @freezegun.freeze_time("2023-12-27")
 def test_feature__request_column_ttl_and_non_ttl_components(
+    patched_catalog_get_create_payload,
     non_time_based_feature,
     latest_event_timestamp_feature,
     feature_group_feature_job_setting,
@@ -205,18 +208,18 @@ def test_feature__request_column_ttl_and_non_ttl_components(
         inputs: pd.DataFrame,
     ) -> pd.DataFrame:
         df = pd.DataFrame()
+        feat = pd.to_datetime(inputs["__feature_V231227__part0"], utc=True)
         request_col = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
-        feat = request_col + (request_col - request_col)
-        feat_1 = pd.to_datetime(inputs["__feature_V231227__part0"], utc=True)
+        feat_1 = request_col + (request_col - request_col)
         feat_2 = pd.Series(
             np.where(
-                pd.isna(((feat - feat_1).dt.seconds // 86400))
+                pd.isna(((feat_1 - feat).dt.seconds // 86400))
                 | pd.isna(inputs["__feature_V231227__part1"]),
                 np.nan,
-                ((feat - feat_1).dt.seconds // 86400)
+                ((feat_1 - feat).dt.seconds // 86400)
                 + inputs["__feature_V231227__part1"],
             ),
-            index=((feat - feat_1).dt.seconds // 86400).index,
+            index=((feat_1 - feat).dt.seconds // 86400).index,
         )
         # TTL handling for feature_V231227
         request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
@@ -302,7 +305,11 @@ def test_feature__ttl_item_aggregate_request_column(
         inputs: pd.DataFrame,
     ) -> pd.DataFrame:
         df = pd.DataFrame()
-        feat = pd.Series(
+        feat = pd.to_datetime(
+            inputs["__composite_feature_V231227__part2"], utc=True
+        )
+        request_col = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
+        feat_1 = pd.Series(
             np.where(
                 pd.isna(inputs["__composite_feature_V231227__part0"])
                 | pd.isna(inputs["__composite_feature_V231227__part1"]),
@@ -312,22 +319,22 @@ def test_feature__ttl_item_aggregate_request_column(
             ),
             index=inputs["__composite_feature_V231227__part0"].index,
         )
-        feat_1 = pd.to_datetime(
-            inputs["__composite_feature_V231227__part2"], utc=True
-        )
-        request_col = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
-        feat_2 = (request_col - feat_1).dt.seconds // 86400
-        feat_3 = pd.Series(
-            np.where(pd.isna(feat) | pd.isna(feat_2), np.nan, feat + feat_2),
-            index=feat.index,
+        feat_2 = pd.Series(
+            np.where(
+                pd.isna(feat_1)
+                | pd.isna(((request_col - feat).dt.seconds // 86400)),
+                np.nan,
+                feat_1 + ((request_col - feat).dt.seconds // 86400),
+            ),
+            index=feat_1.index,
         )
         # TTL handling for composite_feature_V231227
         request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         cutoff = request_time - pd.Timedelta(seconds=3600)
         feature_timestamp = pd.to_datetime(inputs["__feature_timestamp"], utc=True)
         mask = (feature_timestamp >= cutoff) & (feature_timestamp <= request_time)
-        feat_3[~mask] = np.nan
-        df["composite_feature_V231227"] = feat_3
+        feat_2[~mask] = np.nan
+        df["composite_feature_V231227"] = feat_2
         return df
     """
     assert offline_store_info.odfv_info.codes.strip() == textwrap.dedent(expected).strip()
@@ -564,10 +571,10 @@ def test_on_demand_feature_view_code_generation__card_transaction_description_fe
 
 
     def user_defined_function(col_1: str, col_2: str, col_3: str) -> float:
-        # col_1: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part2
-        # col_2: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part1
-        # col_3: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part0
-        feat_1 = np.nan if pd.isna(col_1) else json.loads(col_1)
+        # col_1: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part1
+        # col_2: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part0
+        # col_3: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part2
+        feat_1 = np.nan if pd.isna(col_2) else json.loads(col_2)
 
         def get_relative_frequency(input_dict, key):
             if pd.isna(input_dict) or key not in input_dict:
@@ -578,17 +585,17 @@ def test_on_demand_feature_view_code_generation__card_transaction_description_fe
             key_frequency = input_dict.get(key, 0)
             return key_frequency / total_count
 
-        feat_2 = get_relative_frequency(feat_1, key=col_2)
+        feat_2 = get_relative_frequency(feat_1, key=col_1)
         flag_1 = pd.isna(feat_2)
         feat_2 = 0 if flag_1 else feat_2
         feat_3 = np.nan if pd.isna(col_3) else json.loads(col_3)
-        feat_4 = get_relative_frequency(feat_3, key=col_2)
+        feat_4 = get_relative_frequency(feat_3, key=col_1)
         flag_2 = pd.isna(feat_4)
         feat_4 = 0 if flag_2 else feat_4
         feat_5 = (
             np.nan
-            if pd.isna(feat_4) or pd.isna(feat_2)
-            else np.divide(feat_4, feat_2)
+            if pd.isna(feat_2) or pd.isna(feat_4)
+            else np.divide(feat_2, feat_4)
         )
         return feat_5
 
@@ -609,7 +616,7 @@ def test_on_demand_feature_view_code_generation__card_transaction_description_fe
     ) -> pd.DataFrame:
         df = pd.DataFrame()
         feat = inputs[
-            "__TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part2"
+            "__TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part0"
         ].apply(lambda x: np.nan if pd.isna(x) else json.loads(x))
 
         def get_relative_frequency(input_dict, key):
@@ -630,7 +637,7 @@ def test_on_demand_feature_view_code_generation__card_transaction_description_fe
         mask = feat_1.isnull()
         feat_1[mask] = 0
         feat_2 = inputs[
-            "__TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part0"
+            "__TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part2"
         ].apply(lambda x: np.nan if pd.isna(x) else json.loads(x))
         feat_3 = feat_2.combine(
             inputs[
@@ -642,9 +649,9 @@ def test_on_demand_feature_view_code_generation__card_transaction_description_fe
         feat_3[mask_1] = 0
         feat_4 = pd.Series(
             np.where(
-                pd.isna(feat_3) | pd.isna(feat_1), np.nan, np.divide(feat_3, feat_1)
+                pd.isna(feat_1) | pd.isna(feat_3), np.nan, np.divide(feat_1, feat_3)
             ),
-            index=feat_3.index,
+            index=feat_1.index,
         )
         # TTL handling for TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105
         request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
@@ -662,7 +669,11 @@ def test_on_demand_feature_view_code_generation__card_transaction_description_fe
 
 @freezegun.freeze_time("2024-01-03")
 def test_databricks_specs(
-    float_feature, non_time_based_feature, composite_feature, latest_event_timestamp_feature
+    float_feature,
+    non_time_based_feature,
+    composite_feature,
+    latest_event_timestamp_feature,
+    catalog_id,
 ):
     """Test databricks specs"""
     req_col_feature = (RequestColumn.point_in_time() - latest_event_timestamp_feature).dt.day
@@ -699,7 +710,7 @@ def test_databricks_specs(
     # Each FeatureLookup or FeatureFunction object defines a set of features to be included
     features = [
         FeatureLookup(
-            table_name="fb_entity_cust_id_fjs_1800_300_600_ttl",
+            table_name="fb_entity_cust_id_fjs_1800_300_600_ttl_[CATALOG_ID]",
             lookup_key=["cust_id"],
             timestamp_lookup_key=timestamp_lookup_key,
             lookback_window=None,
@@ -711,7 +722,7 @@ def test_databricks_specs(
             rename_outputs={"sum_1d_V240103": "sum_1d"},
         ),
         FeatureLookup(
-            table_name="fb_entity_transaction_id_fjs_86400_0_0",
+            table_name="fb_entity_transaction_id_fjs_86400_0_0_[CATALOG_ID]",
             lookup_key=["transaction_id"],
             timestamp_lookup_key=None,
             lookback_window=None,
@@ -721,7 +732,7 @@ def test_databricks_specs(
             },
         ),
         FeatureLookup(
-            table_name="fb_entity_transaction_id",
+            table_name="fb_entity_transaction_id_[CATALOG_ID]",
             lookup_key=["transaction_id"],
             timestamp_lookup_key=None,
             lookback_window=None,
@@ -731,8 +742,8 @@ def test_databricks_specs(
         FeatureFunction(
             udf_name="udf_feature_v240103_[FEATURE_ID1]",
             input_bindings={
-                "col_1": "__feature_V240103__part0",
-                "col_2": "__feature_V240103__part1",
+                "col_1": "__feature_V240103__part1",
+                "col_2": "__feature_V240103__part0",
             },
             output_name="feature",
         ),
@@ -757,8 +768,8 @@ def test_databricks_specs(
 
     # Prepare the dataset for log model
     # 'features' is a list of feature lookups to be included in the training set
-    # '[TARGET_COLUMN]' should be replaced with the actual name of the target column
     # 'exclude_columns' is a list of columns to be excluded from the training set
+    target_column = "[TARGET_COLUMN]"
     schema = StructType(
         [
             StructField("transaction_id", LongType()),
@@ -769,7 +780,7 @@ def test_databricks_specs(
     log_model_dataset = fe.create_training_set(
         df=spark.createDataFrame([], schema),
         feature_lookups=features,
-        label="[TARGET_COLUMN]",
+        label=target_column,
         exclude_columns=exclude_columns,
     )
 
@@ -783,9 +794,8 @@ def test_databricks_specs(
     )
 
     # Separate the features (X_train) and the target variable (y_train) for model training
-    # '[TARGET_COLUMN]' should be replaced with the actual name of the target column
-    X_train = training_df.drop(["[TARGET_COLUMN]"], axis=1)
-    y_train = training_df.label
+    X_train = training_df.drop([target_column], axis=1)
+    y_train = training_df[target_column]
 
     # Create and train the linear regression model using the training data
     model = linear_model.LinearRegression().fit(X_train, y_train)
@@ -800,11 +810,12 @@ def test_databricks_specs(
         training_set=log_model_dataset,
         registered_model_name="main.default.recommender_model",
     )
-    """.replace(
-        "[FEATURE_ID1]",
-        str(composite_feature.cached_model.id),
-    ).replace(
-        "[FEATURE_ID2]",
-        str(req_col_feature.cached_model.id),
-    )
+    """
+    replace_pairs = [
+        ("[CATALOG_ID]", str(catalog_id)),
+        ("[FEATURE_ID1]", str(composite_feature.cached_model.id)),
+        ("[FEATURE_ID2]", str(req_col_feature.cached_model.id)),
+    ]
+    for replace_pair in replace_pairs:
+        expected = expected.replace(*replace_pair)
     assert store_info.feature_specs_definition.strip() == textwrap.dedent(expected).strip()
