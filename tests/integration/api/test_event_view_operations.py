@@ -645,6 +645,8 @@ async def test_get_historical_features(
             ],
         }
     )
+    if "table" in input_format:
+        df_historical_expected.insert(0, "__FB_TABLE_ROW_INDEX", np.arange(1, 11))
 
     if output_format == "table":
         df_historical_features = await compute_historical_feature_table_dataframe_helper(

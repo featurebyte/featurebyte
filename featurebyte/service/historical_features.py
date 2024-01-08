@@ -169,6 +169,9 @@ async def get_historical_features(  # pylint: disable=too-many-locals, too-many-
     """
     tic_ = time.time()
 
+    output_include_row_index = (
+        isinstance(observation_set, ObservationTableModel) and observation_set.has_row_index
+    )
     observation_set = get_internal_observation_set(observation_set)
 
     # Validate request
@@ -242,6 +245,7 @@ async def get_historical_features(  # pylint: disable=too-many-locals, too-many-
         output_feature_names=get_feature_names(graph, nodes),
         request_table_name=request_table_name,
         parent_serving_preparation=parent_serving_preparation,
+        output_include_row_index=output_include_row_index,
         progress_message=PROGRESS_MESSAGE_COMPUTING_FEATURES,
     )
     await historical_feature_query_set.execute(
