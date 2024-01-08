@@ -685,6 +685,8 @@ def test_databricks_specs(
     from databricks.feature_engineering import FeatureFunction, FeatureLookup
     from pyspark.sql.types import LongType, StructField, StructType, TimestampType
     from sklearn import linear_model
+    import featurebyte as fb
+    import mlflow
 
     # Initialize the Feature Engineering client to interact with Databricks Feature Store
     fe = FeatureEngineeringClient()
@@ -753,7 +755,7 @@ def test_databricks_specs(
         "__req_col_feature_V240103__part0",
     ]
 
-    # Prepare the training set
+    # Prepare the dataset for log model
     # 'features' is a list of feature lookups to be included in the training set
     # '[TARGET_COLUMN]' should be replaced with the actual name of the target column
     # 'exclude_columns' is a list of columns to be excluded from the training set
@@ -764,15 +766,21 @@ def test_databricks_specs(
             StructField("POINT_IN_TIME", TimestampType()),
         ]
     )
-    training_set = fe.create_training_set(
+    log_model_dataset = fe.create_training_set(
         df=spark.createDataFrame([], schema),
         feature_lookups=features,
         label="[TARGET_COLUMN]",
         exclude_columns=exclude_columns,
     )
 
-    # Load the training set as a Pandas DataFrame for model training
-    training_df = training_set.load_df().toPandas()
+    # Retrieve the training dataframe through FeatureByte's compute_historical_features API
+    # Observation table should include the primary entity columns, the request columns, and the target column
+    catalog = fb.activate_and_get_catalog("[CATALOG_NAME]")
+    feature_list = catalog.get_feature_list("[FEATURE_LIST_NAME]")
+    observation_table = catalog.get_observation_table("[OBSERVATION_TABLE_NAME]")
+    training_df = feature_list.compute_historical_features(
+        observation_set=observation_table.to_pandas(),
+    )
 
     # Separate the features (X_train) and the target variable (y_train) for model training
     # '[TARGET_COLUMN]' should be replaced with the actual name of the target column
@@ -781,6 +789,17 @@ def test_databricks_specs(
 
     # Create and train the linear regression model using the training data
     model = linear_model.LinearRegression().fit(X_train, y_train)
+
+    # Log the model and register it to the unity catalog
+    mlflow.set_registry_uri("databricks-uc")
+
+    fe.log_model(
+        model=model,
+        artifact_path="main.default.model",
+        flavor=mlflow.sklearn,
+        training_set=log_model_dataset,
+        registered_model_name="main.default.recommender_model",
+    )
     """.replace(
         "[FEATURE_ID1]",
         str(composite_feature.cached_model.id),
