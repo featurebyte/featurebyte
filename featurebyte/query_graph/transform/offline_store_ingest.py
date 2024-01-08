@@ -32,6 +32,7 @@ def get_offline_store_table_name(
     primary_entity_serving_names: List[str],
     feature_job_setting: Optional[FeatureJobSetting],
     has_ttl: bool,
+    catalog_id: PydanticObjectId,
 ) -> str:
     """
     Get offline store table name
@@ -44,6 +45,8 @@ def get_offline_store_table_name(
         Feature job setting
     has_ttl: bool
         Whether the offline store table has time-to-live property or not
+    catalog_id: PydanticObjectId
+        Catalog id
 
     Returns
     -------
@@ -64,7 +67,7 @@ def get_offline_store_table_name(
         table_name = f"{table_name}_fjs_{frequency}_{time_modulo_frequency}_{blind_spot}"
     if has_ttl:
         table_name = f"{table_name}_ttl"
-    return table_name
+    return f"{table_name}_{catalog_id}"
 
 
 def extract_dtype_from_graph(
@@ -121,6 +124,7 @@ class OfflineStoreIngestQueryGraphGlobalState:  # pylint: disable=too-many-insta
     feature_version: str
     entity_id_to_serving_name: Dict[PydanticObjectId, str]
     ingest_graph_node_counter: int
+    catalog_id: PydanticObjectId
 
     @classmethod
     def create(
@@ -130,6 +134,7 @@ class OfflineStoreIngestQueryGraphGlobalState:  # pylint: disable=too-many-insta
         target_node_name: str,
         entity_id_to_serving_name: Dict[PydanticObjectId, str],
         decompose_point_info: DecomposePointGlobalState,
+        catalog_id: PydanticObjectId,
     ) -> "OfflineStoreIngestQueryGraphGlobalState":
         """
         Create a new OfflineStoreIngestQueryGlobalState object from the given relationships info
@@ -146,6 +151,8 @@ class OfflineStoreIngestQueryGraphGlobalState:  # pylint: disable=too-many-insta
             Entity id to serving name mapping
         decompose_point_info: DecomposePointGlobalState
             Decompose point info
+        catalog_id: PydanticObjectId
+            Catalog id
 
         Returns
         -------
@@ -160,6 +167,7 @@ class OfflineStoreIngestQueryGraphGlobalState:  # pylint: disable=too-many-insta
             ingest_graph_node_counter=0,
             entity_id_to_serving_name=entity_id_to_serving_name,
             decompose_point_info=decompose_point_info,
+            catalog_id=catalog_id,
         )
 
     def add_operation_to_graph(
@@ -244,6 +252,7 @@ class OfflineStoreIngestQueryGraphTransformer(
         aggregation_node_names: Set[str],
         aggregation_info: AggregationInfo,
         entity_id_to_serving_name: Dict[PydanticObjectId, str],
+        catalog_id: PydanticObjectId,
     ) -> Dict[str, Any]:
         agg_nodes_info = []
         feature_job_settings = []
@@ -280,6 +289,7 @@ class OfflineStoreIngestQueryGraphTransformer(
             primary_entity_serving_names=primary_entity_serving_names,
             feature_job_setting=feature_job_setting,
             has_ttl=aggregation_info.has_ttl_agg_type,
+            catalog_id=catalog_id,
         )
         output_dtype = extract_dtype_from_graph(graph=subgraph, output_node=subgraph_output_node)
         parameters = {
@@ -307,6 +317,7 @@ class OfflineStoreIngestQueryGraphTransformer(
             aggregation_node_names=global_state.decompose_point_info.aggregation_node_names,
             aggregation_info=aggregation_info,
             entity_id_to_serving_name=global_state.entity_id_to_serving_name,
+            catalog_id=global_state.catalog_id,
         )
         part_num = global_state.ingest_graph_node_counter
         column_name = (
@@ -391,6 +402,7 @@ class OfflineStoreIngestQueryGraphTransformer(
         relationships_info: List[EntityRelationshipInfo],
         feature_name: str,
         feature_version: str,
+        catalog_id: PydanticObjectId,
     ) -> OfflineStoreIngestQueryGraphOutput:
         """
         Transform the given node into a decomposed graph with offline store ingest query nodes
@@ -407,6 +419,8 @@ class OfflineStoreIngestQueryGraphTransformer(
             Feature name (used to create the offline store table column name)
         feature_version: str
             Feature version (used to create the offline store table column name)
+        catalog_id: PydanticObjectId
+            Catalog id (used to create the offline store table name)
 
         Returns
         -------
@@ -424,6 +438,7 @@ class OfflineStoreIngestQueryGraphTransformer(
             target_node_name=target_node.name,
             entity_id_to_serving_name=entity_id_to_serving_name,
             decompose_point_info=decompose_point_info,
+            catalog_id=catalog_id,
         )
         if decompose_point_info.should_decompose:
             self._transform(global_state=global_state)

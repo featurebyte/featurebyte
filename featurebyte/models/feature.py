@@ -466,6 +466,7 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
             relationships_info=self.relationships_info or [],
             feature_name=self.name,
             feature_version=self.version.to_str(),
+            catalog_id=self.catalog_id,
         )
 
         if result.is_decomposed:
@@ -497,6 +498,7 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
                 ],
                 feature_job_setting=feature_job_setting,
                 has_ttl=has_ttl,
+                catalog_id=self.catalog_id,
             )
 
             metadata = OfflineStoreInfoMetadata(

@@ -1,4 +1,4 @@
-INSERT INTO "fb_entity_cust_id_fjs_1800_300_600_ttl" (
+INSERT INTO "fb_entity_cust_id_fjs_1800_300_600_ttl_646f6c1c0ed28a5271fb02db" (
   "__feature_timestamp",
   "cust_id",
   "sum_30m_V220101"

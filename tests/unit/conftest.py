@@ -49,6 +49,7 @@ from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
+from featurebyte.schema.catalog import CatalogCreate
 from featurebyte.schema.task import TaskStatus
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.session.base import DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS
@@ -1799,6 +1800,30 @@ def user(user_id):
     user = User()
     user.id = user_id
     return user
+
+
+@pytest.fixture(name="catalog_id", scope="session")
+def catalog_id_fixture():
+    """
+    User ID fixture
+    """
+    return ObjectId("63f9506dd478b94127123480")
+
+
+@pytest.fixture(name="patched_catalog_get_create_payload")
+def patched_catalog_get_create_payload_fixture(catalog_id, snowflake_feature_store):
+    """
+    Patch catalog get create payload
+    """
+    with mock.patch(
+        "featurebyte.api.catalog.Catalog._get_create_payload"
+    ) as mock_get_create_payload:
+        mock_get_create_payload.return_value = CatalogCreate(
+            _id=catalog_id,
+            name="catalog",
+            default_feature_store_ids=[snowflake_feature_store.id],
+        ).json_dict()
+        yield
 
 
 @pytest.fixture(name="catalog")

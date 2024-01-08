@@ -19,9 +19,11 @@ from tests.util.helper import (
 
 
 @pytest.fixture(name="always_enable_feast_integration", autouse=True)
-def always_enable_feast_integration_fixture(enable_feast_integration):
-    """Enable feast integration for all tests in this module"""
-    _ = enable_feast_integration
+def always_enable_feast_integration_fixture(
+    enable_feast_integration, patched_catalog_get_create_payload
+):
+    """Enable feast integration & patch catalog ID for all tests in this module"""
+    _ = enable_feast_integration, patched_catalog_get_create_payload
     yield
 
 
@@ -120,6 +122,7 @@ def test_feature__ttl_and_non_ttl_components(
 
 @freezegun.freeze_time("2023-12-27")
 def test_feature__request_column_ttl_and_non_ttl_components(
+    patched_catalog_get_create_payload,
     non_time_based_feature,
     latest_event_timestamp_feature,
     feature_group_feature_job_setting,
@@ -195,18 +198,18 @@ def test_feature__request_column_ttl_and_non_ttl_components(
 
     def on_demand_feature_view(inputs: pd.DataFrame) -> pd.DataFrame:
         df = pd.DataFrame()
-        feat = pd.to_datetime(inputs["__feature_V231227__part0"], utc=True)
         request_col = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
-        feat_1 = request_col + (request_col - request_col)
+        feat = request_col + (request_col - request_col)
+        feat_1 = pd.to_datetime(inputs["__feature_V231227__part0"], utc=True)
         feat_2 = pd.Series(
             np.where(
-                pd.isna(((feat_1 - feat).dt.seconds // 86400))
+                pd.isna(((feat - feat_1).dt.seconds // 86400))
                 | pd.isna(inputs["__feature_V231227__part1"]),
                 np.nan,
-                ((feat_1 - feat).dt.seconds // 86400)
+                ((feat - feat_1).dt.seconds // 86400)
                 + inputs["__feature_V231227__part1"],
             ),
-            index=((feat_1 - feat).dt.seconds // 86400).index,
+            index=((feat - feat_1).dt.seconds // 86400).index,
         )
         df["feature_V231227"] = feat_2
         return df

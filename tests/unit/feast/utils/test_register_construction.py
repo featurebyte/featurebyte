@@ -42,6 +42,7 @@ def test_feast_registry_construction__with_post_processing_features(
     float_feature,
     non_time_based_feature,
     latest_event_timestamp_feature,
+    catalog_id,
 ):
     """Test the construction of the feast register (with post processing features)"""
     feature_requires_post_processing = (
@@ -70,8 +71,8 @@ def test_feast_registry_construction__with_post_processing_features(
     assert odfv_spec["features"] == [{"name": f"feature_{get_version()}", "valueType": "DOUBLE"}]
     assert odfv_spec["sources"].keys() == {
         "POINT_IN_TIME",
-        "fb_entity_cust_id_fjs_1800_300_600_ttl",
-        "fb_entity_transaction_id",
+        f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}",
+        f"fb_entity_transaction_id_{catalog_id}",
     }
 
     data_sources = feast_registry_dict["dataSources"]
@@ -93,7 +94,7 @@ def test_feast_registry_construction__with_post_processing_features(
     assert udf.body_text.startswith("import json\nimport numpy as np\nimport pandas as pd\n")
 
 
-def test_feast_registry_construction(feast_registry_proto):
+def test_feast_registry_construction(feast_registry_proto, catalog_id):
     """Test the construction of the feast register"""
     feast_registry_dict = MessageToDict(feast_registry_proto)
     entities = feast_registry_dict["entities"]
@@ -130,24 +131,24 @@ def test_feast_registry_construction(feast_registry_proto):
         "dataSources": [
             {
                 "dataSourceClassType": "feast.infra.offline_stores.snowflake_source.SnowflakeSource",
-                "name": "fb_entity_cust_id_fjs_1800_300_600_ttl",
+                "name": f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}",
                 "project": "featurebyte_project",
                 "snowflakeOptions": {
                     "database": "sf_database",
                     "schema": "sf_schema",
-                    "table": "fb_entity_cust_id_fjs_1800_300_600_ttl",
+                    "table": f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}",
                 },
                 "timestampField": "__feature_timestamp",
                 "type": "BATCH_SNOWFLAKE",
             },
             {
                 "dataSourceClassType": "feast.infra.offline_stores.snowflake_source.SnowflakeSource",
-                "name": "fb_entity_transaction_id_fjs_86400_0_0",
+                "name": f"fb_entity_transaction_id_fjs_86400_0_0_{catalog_id}",
                 "project": "featurebyte_project",
                 "snowflakeOptions": {
                     "database": "sf_database",
                     "schema": "sf_schema",
-                    "table": "fb_entity_transaction_id_fjs_86400_0_0",
+                    "table": f"fb_entity_transaction_id_fjs_86400_0_0_{catalog_id}",
                 },
                 "timestampField": "__feature_timestamp",
                 "type": "BATCH_SNOWFLAKE",
@@ -209,7 +210,7 @@ def test_feast_registry_construction(feast_registry_proto):
                                     "valueType": "DOUBLE",
                                 }
                             ],
-                            "featureViewName": "fb_entity_transaction_id_fjs_86400_0_0",
+                            "featureViewName": f"fb_entity_transaction_id_fjs_86400_0_0_{catalog_id}",
                         },
                     ],
                     "name": "test_feature_list",
@@ -226,11 +227,11 @@ def test_feast_registry_construction(feast_registry_proto):
                 "spec": {
                     "batchSource": {
                         "dataSourceClassType": "feast.infra.offline_stores.snowflake_source.SnowflakeSource",
-                        "name": "fb_entity_cust_id_fjs_1800_300_600_ttl",
+                        "name": f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}",
                         "snowflakeOptions": {
                             "database": "sf_database",
                             "schema": "sf_schema",
-                            "table": "fb_entity_cust_id_fjs_1800_300_600_ttl",
+                            "table": f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}",
                         },
                         "timestampField": "__feature_timestamp",
                         "type": "BATCH_SNOWFLAKE",
@@ -241,7 +242,7 @@ def test_feast_registry_construction(feast_registry_proto):
                         {"name": "__feature_timestamp", "valueType": "UNIX_TIMESTAMP"},
                         {"name": f"sum_1d_{get_version()}", "valueType": "DOUBLE"},
                     ],
-                    "name": "fb_entity_cust_id_fjs_1800_300_600_ttl",
+                    "name": f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}",
                     "online": True,
                     "project": "featurebyte_project",
                     "ttl": "3600s",
@@ -255,11 +256,11 @@ def test_feast_registry_construction(feast_registry_proto):
                 "spec": {
                     "batchSource": {
                         "dataSourceClassType": "feast.infra.offline_stores.snowflake_source.SnowflakeSource",
-                        "name": "fb_entity_transaction_id_fjs_86400_0_0",
+                        "name": f"fb_entity_transaction_id_fjs_86400_0_0_{catalog_id}",
                         "snowflakeOptions": {
                             "database": "sf_database",
                             "schema": "sf_schema",
-                            "table": "fb_entity_transaction_id_fjs_86400_0_0",
+                            "table": f"fb_entity_transaction_id_fjs_86400_0_0_{catalog_id}",
                         },
                         "timestampField": "__feature_timestamp",
                         "type": "BATCH_SNOWFLAKE",
@@ -272,7 +273,7 @@ def test_feast_registry_construction(feast_registry_proto):
                             "valueType": "DOUBLE",
                         }
                     ],
-                    "name": "fb_entity_transaction_id_fjs_86400_0_0",
+                    "name": f"fb_entity_transaction_id_fjs_86400_0_0_{catalog_id}",
                     "online": True,
                     "project": "featurebyte_project",
                 },

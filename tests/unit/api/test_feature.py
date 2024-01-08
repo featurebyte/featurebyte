@@ -871,6 +871,7 @@ def check_offline_store_ingest_graph_on_composite_feature(
         entity_id_to_serving_name={},
         feature_name=feature_model.name,
         feature_version=feature_model.version.to_str(),
+        catalog_id=feature_model.catalog_id,
     )
     assert output.graph.edges_map == {
         "graph_1": ["add_1"],

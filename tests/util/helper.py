@@ -502,6 +502,7 @@ def check_decomposed_graph_output_node_hash(feature_model, output=None):
             relationships_info=feature_model.relationships_info,
             feature_name=feature_model.name,
             feature_version=feature_model.version.to_str(),
+            catalog_id=feature_model.catalog_id,
         )
 
     if output.is_decomposed is False:
