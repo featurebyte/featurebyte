@@ -25,6 +25,7 @@ from featurebyte.query_graph.node.nested import (
     OfflineStoreIngestQueryGraphNodeParameters,
     OfflineStoreMetadata,
 )
+from featurebyte.query_graph.node.schema import ColumnSpec
 from featurebyte.query_graph.node.utils import subset_frame_column_expr
 from featurebyte.query_graph.transform.on_demand_function import (
     InputArgumentInfo,
@@ -59,6 +60,14 @@ class OfflineStoreInfoMetadata(OfflineStoreMetadata):
 
     output_column_name: str
     primary_entity_ids: List[PydanticObjectId]
+
+
+class OfflineStoreEntityInfo(ColumnSpec):
+    """
+    EntityInfo object stores the entity information of the feature.
+    """
+
+    id: PydanticObjectId
 
 
 class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
@@ -161,6 +170,34 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
             feature_job_setting=metadata.feature_job_setting,
             has_ttl=metadata.has_ttl,
         )
+
+    def get_primary_entity_info(
+        self, entity_id_to_serving_name: Dict[PydanticObjectId:str]
+    ) -> List[OfflineStoreEntityInfo]:
+        """
+        Get primary entity info of the offline store ingest query graph
+
+        Parameters
+        ----------
+        entity_id_to_serving_name: Dict[PydanticObjectId: str]
+            Map from entity id to serving name
+
+        Returns
+        -------
+        List[OfflineStoreEntityInfo]
+            List of EntityInfo
+        """
+        output = []
+        for entity_id, entity_dtype in zip(self.primary_entity_ids, self.primary_entity_dtypes):
+            serving_name = entity_id_to_serving_name[entity_id]
+            output.append(
+                OfflineStoreEntityInfo(
+                    id=entity_id,
+                    name=serving_name,
+                    dtype=entity_dtype,
+                )
+            )
+        return output
 
     def ingest_graph_and_node(self) -> Tuple[QueryGraphModel, Node]:
         """

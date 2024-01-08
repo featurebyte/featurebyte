@@ -34,6 +34,7 @@ from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.offline_store_ingest_query import (
+    OfflineStoreEntityInfo,
     OfflineStoreIngestQueryGraph,
     get_time_aggregate_ttl_in_secs,
 )
@@ -49,11 +50,22 @@ class OfflineStoreTable(FeatureByteBaseModel):
     """
 
     table_name: str
-    primary_entity_ids: List[PydanticObjectId]
     feature_job_setting: Optional[FeatureJobSetting]
     has_ttl: bool
     ingest_query_graphs: List[OfflineStoreIngestQueryGraph]
-    primary_entity_serving_names: List[str]
+    primary_entity_info: List[OfflineStoreEntityInfo]
+
+    @property
+    def primary_entity_ids(self) -> Tuple[PydanticObjectId, ...]:
+        """
+        Get primary entity ids
+
+        Returns
+        -------
+        Tuple[PydanticObjectId, ...]
+            Primary entity ids
+        """
+        return tuple(entity_info.id for entity_info in self.primary_entity_info)
 
     def create_feast_entity(self) -> FeastEntity:
         """
@@ -66,10 +78,11 @@ class OfflineStoreTable(FeatureByteBaseModel):
         """
         # FIXME: We likely need to set the value type based on the dtype of the primary entity
         value_type = to_feast_primitive_type(DBVarType.VARCHAR).to_value_type()
-        assert len(self.primary_entity_serving_names) > 0
+        assert len(self.primary_entity_info) > 0
+        serving_names = [entity_info.name for entity_info in self.primary_entity_info]
         entity = FeastEntity(
-            name=" x ".join(self.primary_entity_serving_names),
-            join_keys=self.primary_entity_serving_names,
+            name=" x ".join(serving_names),
+            join_keys=serving_names,
             value_type=value_type,
         )
         return entity  # type: ignore[no-any-return]
@@ -241,18 +254,15 @@ class FeastRegistryConstructor:
         offline_store_tables = []
         for table_name, ingest_query_graphs in offline_table_key_to_ingest_query_graphs.items():
             assert len(ingest_query_graphs) > 0
-            primary_entity_ids = ingest_query_graphs[0].primary_entity_ids
-            feature_job_setting = ingest_query_graphs[0].feature_job_setting
-            has_ttl = ingest_query_graphs[0].has_ttl
+            first_ingest_query_graph = ingest_query_graphs[0]
             offline_store_table = OfflineStoreTable(
                 table_name=table_name,
-                primary_entity_ids=primary_entity_ids,
-                feature_job_setting=feature_job_setting,
+                feature_job_setting=first_ingest_query_graph.feature_job_setting,
                 ingest_query_graphs=ingest_query_graphs,
-                has_ttl=has_ttl,
-                primary_entity_serving_names=[
-                    entity_id_to_serving_name[entity_id] for entity_id in primary_entity_ids
-                ],
+                has_ttl=first_ingest_query_graph.has_ttl,
+                primary_entity_info=first_ingest_query_graph.get_primary_entity_info(
+                    entity_id_to_serving_name=entity_id_to_serving_name
+                ),
             )
             offline_store_tables.append(offline_store_table)
         return offline_store_tables
@@ -501,7 +511,7 @@ class FeastRegistryConstructor:
             **feature_store.get_feature_store_details().dict()
         )
         for offline_store_table in offline_store_tables:
-            entity_key = tuple(offline_store_table.primary_entity_ids)
+            entity_key = offline_store_table.primary_entity_ids
             if len(entity_key) > 0:
                 feast_entity = primary_entity_ids_to_feast_entity.get(
                     entity_key,
