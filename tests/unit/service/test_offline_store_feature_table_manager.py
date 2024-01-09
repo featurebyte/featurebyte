@@ -3,6 +3,7 @@ Tests for OfflineStoreFeatureTableManagerService
 """
 from typing import Dict
 
+import os
 from unittest.mock import patch
 
 import pytest
@@ -692,23 +693,19 @@ async def test_new_deployment_when_all_features_already_deployed(
 
 
 @pytest.mark.asyncio
-async def test_multiple_parts_in_same_feature_table(
-    app_container,
-    document_service,
-    periodic_task_service,
-    update_fixtures,
-    test_dir,
-):
+async def test_multiple_parts_in_same_feature_table(test_dir):
     """
     Test feature table creation when a feature has multiple parts in the same table
     """
-    fixture_filename = (
-        "tests/fixtures/feature/CUSTOMER_Age_Z_Score_to_FRENCHSTATE_invoice_customer_Age_4w.json"
+    fixture_filename = os.path.join(
+        test_dir,
+        "feature/CUSTOMER_Age_Z_Score_to_FRENCHSTATE_invoice_customer_Age_4w.json",
     )
     with open(fixture_filename) as file_handle:
         feature_dict = json_util.loads(file_handle.read())
     feature_model = FeatureModel(**feature_dict)
     feature_model.initialize_offline_store_info(entity_id_to_serving_name={})
+
     offline_ingest_graph_container = await OfflineIngestGraphContainer.build([feature_model])
     offline_store_table_name_to_feature_ids = {
         table_name: [feat.id for feat in features]

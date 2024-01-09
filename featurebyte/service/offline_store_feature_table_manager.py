@@ -67,7 +67,7 @@ class OfflineIngestGraphContainer:
             all_feature_entity_ids.update(feature.entity_ids)
 
         # Group features by offline store feature table name
-        offline_store_table_name_to_feature_ids = defaultdict(set)
+        offline_store_table_name_to_feature_ids: dict[str, set[ObjectId]] = defaultdict(set)
         offline_store_table_name_to_features = defaultdict(list)
         offline_store_table_name_to_graphs = defaultdict(list)
         for feature in features:
