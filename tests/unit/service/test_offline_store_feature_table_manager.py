@@ -7,10 +7,11 @@ from unittest.mock import patch
 
 import pytest
 import pytest_asyncio
-from bson import ObjectId
+from bson import ObjectId, json_util
 
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
+from featurebyte.service.offline_store_feature_table_manager import OfflineIngestGraphContainer
 from tests.util.helper import (
     assert_equal_json_fixture,
     assert_equal_with_expected_fixture,
@@ -127,6 +128,26 @@ async def deployed_item_aggregate_feature(
     _ = mock_update_data_warehouse
     _ = mock_feature_materialize_service
     return await deploy_feature(app_container, non_time_based_feature)
+
+
+@pytest_asyncio.fixture
+async def deployed_complex_feature(
+    app_container,
+    non_time_based_feature,
+    feature_without_entity,
+    mock_update_data_warehouse,
+    mock_feature_materialize_service,
+):
+    """
+    Fixture for a complex feature with multiple parts in the same feature table
+    """
+    _ = mock_update_data_warehouse
+    _ = mock_feature_materialize_service
+    f1 = non_time_based_feature
+    f2 = feature_without_entity
+    new_feature = f1 + f2 + f1
+    new_feature.name = "Complex Feature"
+    return await deploy_feature(app_container, new_feature)
 
 
 @pytest_asyncio.fixture
@@ -668,3 +689,39 @@ async def test_new_deployment_when_all_features_already_deployed(
             deployed_feature_list_when_all_features_already_deployed.name,
         },
     )
+
+
+@pytest.mark.asyncio
+async def test_multiple_parts_in_same_feature_table(
+    app_container,
+    document_service,
+    periodic_task_service,
+    update_fixtures,
+    test_dir,
+):
+    """
+    Test feature table creation when a feature has multiple parts in the same table
+    """
+    fixture_filename = (
+        "tests/fixtures/feature/CUSTOMER_Age_Z_Score_to_FRENCHSTATE_invoice_customer_Age_4w.json"
+    )
+    with open(fixture_filename) as file_handle:
+        feature_dict = json_util.loads(file_handle.read())
+    feature_model = FeatureModel(**feature_dict)
+    feature_model.initialize_offline_store_info(entity_id_to_serving_name={})
+    offline_ingest_graph_container = await OfflineIngestGraphContainer.build([feature_model])
+    offline_store_table_name_to_feature_ids = {
+        table_name: [feat.id for feat in features]
+        for (
+            table_name,
+            features,
+        ) in offline_ingest_graph_container.offline_store_table_name_to_features.items()
+    }
+    assert offline_store_table_name_to_feature_ids == {
+        "fb_entity_659ccffb8c6f3c0e0a7d1e42_fjs_3600_120_120_ttl_659ccfd58c6f3c0e0a7d1e37": [
+            ObjectId("659cd19b7e511ad3fcdec2fe"),
+        ],
+        "fb_entity_659ccffa8c6f3c0e0a7d1e3d_659ccfd58c6f3c0e0a7d1e37": [
+            ObjectId("659cd19b7e511ad3fcdec2fe")
+        ],
+    }
