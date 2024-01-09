@@ -62,7 +62,7 @@ class FeastRegistryService(
             query_filter={"_id": {"$in": list(feature_ids)}}
         ):
             features.append(feature)
-            entity_ids.update(feature.primary_entity_ids)
+            entity_ids.update(feature.entity_ids)
             feature_store_ids.add(feature.tabular_source.feature_store_id)
 
         entities = []
