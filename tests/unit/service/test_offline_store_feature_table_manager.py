@@ -699,7 +699,7 @@ async def test_multiple_parts_in_same_feature_table(test_dir):
     """
     fixture_filename = os.path.join(
         test_dir,
-        "feature/CUSTOMER_Age_Z_Score_to_FRENCHSTATE_invoice_customer_Age_4w.json",
+        "fixtures/feature/CUSTOMER_Age_Z_Score_to_FRENCHSTATE_invoice_customer_Age_4w.json",
     )
     with open(fixture_filename) as file_handle:
         feature_dict = json_util.loads(file_handle.read())
