@@ -3,7 +3,7 @@ HistoricalFeatureTable API routes
 """
 from __future__ import annotations
 
-from typing import Optional, cast
+from typing import Optional
 
 import json
 from http import HTTPStatus
@@ -25,6 +25,7 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
     VerboseQuery,
 )
+from featurebyte.routes.historical_feature_table.controller import HistoricalFeatureTableController
 from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.historical_feature_table import (
     HistoricalFeatureTableCreate,
@@ -56,12 +57,13 @@ async def create_historical_feature_table(
     Create HistoricalFeatureTable by submitting a materialization task
     """
     data = HistoricalFeatureTableCreate(**json.loads(payload))
-    controller = request.state.app_container.historical_feature_table_controller
-    task_submit: Task = await controller.create_table(
+    controller: HistoricalFeatureTableController = (
+        request.state.app_container.historical_feature_table_controller
+    )
+    return await controller.create_table(
         data=data,
         observation_set=observation_set,
     )
-    return task_submit
 
 
 @router.get("/{historical_feature_table_id}", response_model=HistoricalFeatureTableModel)
@@ -71,11 +73,10 @@ async def get_historical_feature_table(
     """
     Get HistoricalFeatureTable
     """
-    controller = request.state.app_container.historical_feature_table_controller
-    historical_feature_table: HistoricalFeatureTableModel = await controller.get(
-        document_id=historical_feature_table_id
+    controller: HistoricalFeatureTableController = (
+        request.state.app_container.historical_feature_table_controller
     )
-    return historical_feature_table
+    return await controller.get(document_id=historical_feature_table_id)
 
 
 @router.delete(
@@ -87,9 +88,10 @@ async def delete_historical_feature_table(
     """
     Delete HistoricalFeatureTable
     """
-    controller = request.state.app_container.historical_feature_table_controller
-    task: Task = await controller.delete_materialized_table(document_id=historical_feature_table_id)
-    return task
+    controller: HistoricalFeatureTableController = (
+        request.state.app_container.historical_feature_table_controller
+    )
+    return await controller.delete_materialized_table(document_id=historical_feature_table_id)
 
 
 @router.get("", response_model=HistoricalFeatureTableList)
@@ -149,9 +151,10 @@ async def get_historical_feature_table_info(
     """
     Get HistoricalFeatureTable info
     """
-    controller = request.state.app_container.historical_feature_table_controller
-    info = await controller.get_info(document_id=historical_feature_table_id, verbose=verbose)
-    return cast(HistoricalFeatureTableInfo, info)
+    controller: HistoricalFeatureTableController = (
+        request.state.app_container.historical_feature_table_controller
+    )
+    return await controller.get_info(document_id=historical_feature_table_id, verbose=verbose)
 
 
 @router.get("/pyarrow_table/{historical_feature_table_id}")
@@ -161,11 +164,10 @@ async def download_table_as_pyarrow_table(
     """
     Download HistoricalFeatureTable as pyarrow table
     """
-    controller = request.state.app_container.historical_feature_table_controller
-    result: StreamingResponse = await controller.download_materialized_table(
-        document_id=historical_feature_table_id,
+    controller: HistoricalFeatureTableController = (
+        request.state.app_container.historical_feature_table_controller
     )
-    return result
+    return await controller.download_materialized_table(document_id=historical_feature_table_id)
 
 
 @router.get("/parquet/{historical_feature_table_id}")
@@ -175,11 +177,12 @@ async def download_table_as_parquet(
     """
     Download HistoricalFeatureTable as parquet file
     """
-    controller = request.state.app_container.historical_feature_table_controller
-    result: StreamingResponse = await controller.download_materialized_table_as_parquet(
+    controller: HistoricalFeatureTableController = (
+        request.state.app_container.historical_feature_table_controller
+    )
+    return await controller.download_materialized_table_as_parquet(
         document_id=historical_feature_table_id,
     )
-    return result
 
 
 @router.patch(
@@ -193,12 +196,13 @@ async def update_historical_feature_table_description(
     """
     Update historical_feature_table description
     """
-    controller = request.state.app_container.historical_feature_table_controller
-    historical_feature_table: HistoricalFeatureTableModel = await controller.update_description(
+    controller: HistoricalFeatureTableController = (
+        request.state.app_container.historical_feature_table_controller
+    )
+    return await controller.update_description(
         document_id=historical_feature_table_id,
         description=data.description,
     )
-    return historical_feature_table
 
 
 @router.patch("/{historical_feature_table_id}", response_model=HistoricalFeatureTableModel)
@@ -210,11 +214,10 @@ async def update_historical_feature_table(
     """
     Update historical_feature_table
     """
-    controller = request.state.app_container.historical_feature_table_controller
-    historical_feature_table: HistoricalFeatureTableModel = (
-        await controller.update_historical_feature_table(
-            historical_feature_table_id=historical_feature_table_id,
-            data=data,
-        )
+    controller: HistoricalFeatureTableController = (
+        request.state.app_container.historical_feature_table_controller
     )
-    return historical_feature_table
+    return await controller.update_historical_feature_table(
+        historical_feature_table_id=historical_feature_table_id,
+        data=data,
+    )
