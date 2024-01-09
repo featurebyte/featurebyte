@@ -87,6 +87,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
     feature_group,
     cust_id_entity,
     transaction_entity,
+    mysql_online_store,
 ):
     """
     Write request payload for testing api route
@@ -251,6 +252,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         (feature_list_repeated, "feature_list_single_repeated"),
         (feature_list_multiple, "feature_list_multi"),
         (float_target, "target"),
+        (mysql_online_store, "mysql_online_store"),
     ]
     for api_object, name in api_object_name_pairs:
         json_payload = api_object._get_create_payload()
