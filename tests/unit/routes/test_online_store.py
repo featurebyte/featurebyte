@@ -16,7 +16,9 @@ class TestOnlineStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
 
     class_name = "OnlineStore"
     base_route = "/online_store"
-    payload = BaseApiTestSuite.load_payload("tests/fixtures/request_payloads/online_store.json")
+    payload = BaseApiTestSuite.load_payload(
+        "tests/fixtures/request_payloads/mysql_online_store.json"
+    )
     create_conflict_payload_expected_detail_pairs = [
         (
             payload,
