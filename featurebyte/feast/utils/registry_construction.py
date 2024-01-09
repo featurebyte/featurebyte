@@ -20,19 +20,18 @@ from feast import OnDemandFeatureView as FeastOnDemandFeatureView
 from feast import RequestSource as FeastRequestSource
 from feast.data_source import DataSource as FeastDataSource
 from feast.feature_view import DUMMY_ENTITY
-from feast.infra.online_stores.contrib.mysql_online_store.mysql import MySQLOnlineStoreConfig
-from feast.infra.online_stores.redis import RedisOnlineStoreConfig
 from feast.protos.feast.core.Registry_pb2 import Registry as RegistryProto
 from feast.repo_config import RegistryConfig, RepoConfig
 from feast.repo_contents import RepoContents
 from feast.repo_operations import apply_total_with_repo_instance
 
-from featurebyte.enum import DBVarType, InternalName, OnlineStoreType, SpecialColumnName
+from featurebyte.enum import DBVarType, InternalName, SpecialColumnName
 from featurebyte.feast.enum import to_feast_primitive_type
 from featurebyte.feast.model.feature_store import (
     FeastDatabaseDetails,
     FeatureStoreDetailsWithFeastConfiguration,
 )
+from featurebyte.feast.model.online_store import get_feast_online_store_details
 from featurebyte.feast.utils.on_demand_view import OnDemandFeatureViewConstructor
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.entity import EntityModel
@@ -472,14 +471,13 @@ class FeastRegistryBuilder:
     ) -> RepoConfig:
         online_store_config: Optional[Dict[str, Any]] = None
         if online_store:
-            online_store_for_type = {
-                OnlineStoreType.REDIS: RedisOnlineStoreConfig,
-                OnlineStoreType.MYSQL: MySQLOnlineStoreConfig,
-            }
-            online_store_config_class = online_store_for_type[online_store.details.type]
-            online_store_config = online_store_config_class(
-                **online_store.details.dict(by_alias=True, exclude={"credential": True})
-            ).dict(by_alias=True)
+            online_store_config = (
+                get_feast_online_store_details(
+                    online_store_details=online_store.details,
+                )
+                .to_feast_online_store_config()
+                .dict(by_alias=True)
+            )
         return RepoConfig(
             project=project_name,
             provider="local",

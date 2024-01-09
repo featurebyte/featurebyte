@@ -229,12 +229,12 @@ def expected_feature_view_specs_fixture(catalog_id):
                 {"name": "__feature_timestamp", "valueType": "UNIX_TIMESTAMP"},
                 {"name": f"sum_1d_{version}", "valueType": "DOUBLE"},
                 {
-                    "name": f"__composite_feature_ttl_req_col_{version}__part2",
-                    "valueType": "UNIX_TIMESTAMP",
-                },
-                {
                     "name": f"__composite_feature_ttl_req_col_{version}__part0",
                     "valueType": "DOUBLE",
+                },
+                {
+                    "name": f"__composite_feature_ttl_req_col_{version}__part2",
+                    "valueType": "UNIX_TIMESTAMP",
                 },
             ],
             "ttl": "3600s",
