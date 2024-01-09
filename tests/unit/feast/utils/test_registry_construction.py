@@ -171,6 +171,7 @@ def expected_feature_view_specs_fixture(catalog_id):
         "type": "BATCH_SNOWFLAKE",
     }
     common_params = {"project": "featurebyte_project", "online": True}
+    version = get_version()
     return [
         {
             **common_params,
@@ -187,7 +188,7 @@ def expected_feature_view_specs_fixture(catalog_id):
             "entityColumns": [{"name": "transaction_id", "valueType": "STRING"}],
             "features": [
                 {
-                    "name": f"non_time_time_sum_amount_feature_{get_version()}",
+                    "name": f"non_time_time_sum_amount_feature_{version}",
                     "valueType": "DOUBLE",
                 }
             ],
@@ -207,7 +208,7 @@ def expected_feature_view_specs_fixture(catalog_id):
             "entityColumns": [{"name": "__dummy_id", "valueType": "STRING"}],
             "features": [
                 {"name": "__feature_timestamp", "valueType": "UNIX_TIMESTAMP"},
-                {"name": f"count_1d_{get_version()}", "valueType": "INT64"},
+                {"name": f"count_1d_{version}", "valueType": "INT64"},
             ],
             "ttl": "172800s",
         },
@@ -226,13 +227,13 @@ def expected_feature_view_specs_fixture(catalog_id):
             "entityColumns": [{"name": "cust_id", "valueType": "STRING"}],
             "features": [
                 {"name": "__feature_timestamp", "valueType": "UNIX_TIMESTAMP"},
-                {"name": f"sum_1d_{get_version()}", "valueType": "DOUBLE"},
+                {"name": f"sum_1d_{version}", "valueType": "DOUBLE"},
                 {
-                    "name": f"__composite_feature_ttl_req_col_{get_version()}__part2",
+                    "name": f"__composite_feature_ttl_req_col_{version}__part2",
                     "valueType": "UNIX_TIMESTAMP",
                 },
                 {
-                    "name": f"__composite_feature_ttl_req_col_{get_version()}__part0",
+                    "name": f"__composite_feature_ttl_req_col_{version}__part0",
                     "valueType": "DOUBLE",
                 },
             ],
@@ -252,7 +253,7 @@ def expected_feature_view_specs_fixture(catalog_id):
             "entities": ["transaction_id"],
             "entityColumns": [{"name": "transaction_id", "valueType": "STRING"}],
             "features": [
-                {"name": "__composite_feature_ttl_req_col_V240109__part1", "valueType": "DOUBLE"}
+                {"name": f"__composite_feature_ttl_req_col_{version}__part1", "valueType": "DOUBLE"}
             ],
         },
     ]
