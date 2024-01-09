@@ -179,7 +179,7 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
 
         Parameters
         ----------
-        entity_id_to_serving_name: Dict[PydanticObjectId: str]
+        entity_id_to_serving_name: Dict[PydanticObjectId, str]
             Map from entity id to serving name
 
         Returns

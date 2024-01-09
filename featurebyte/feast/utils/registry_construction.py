@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional, Tuple, cast
 import tempfile
 from collections import defaultdict
 from datetime import timedelta
+from unittest.mock import patch
 
 from feast import Entity as FeastEntity
 from feast import FeatureService as FeastFeatureService
@@ -533,15 +534,18 @@ class FeastRegistryBuilder:
             for feature_service in feast_feature_services:
                 repo_content.feature_services.append(feature_service)
 
-            # this simulates feast apply command
-            apply_total_with_repo_instance(
-                store=feature_store,
-                project=project_name,
-                registry=registry,
-                repo=repo_content,
-                skip_source_validation=True,
-            )
-            return cast(RegistryProto, registry.proto())
+            with patch("feast.on_demand_feature_view.OnDemandFeatureView.infer_features"):
+                # patch to avoid calling infer_features() which may cause error when the input to the
+                # on-demand feature view contains types requiring json decoding (COUNT_DICT or ARRAY types)
+                # this simulates feast apply command
+                apply_total_with_repo_instance(
+                    store=feature_store,
+                    project=project_name,
+                    registry=registry,
+                    repo=repo_content,
+                    skip_source_validation=True,
+                )
+                return cast(RegistryProto, registry.proto())
 
     @classmethod
     def create(
