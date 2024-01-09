@@ -535,9 +535,9 @@ class FeastRegistryBuilder:
                 repo_content.feature_services.append(feature_service)
 
             with patch("feast.on_demand_feature_view.OnDemandFeatureView.infer_features"):
-                # patch to avoid calling infer_features() which may cause error when the input to the
-                # on-demand feature view contains types requiring json decoding (COUNT_DICT or ARRAY types)
-                # this simulates feast apply command
+                # FIXME: (DEV-2946) patch to avoid calling infer_features() which may cause error
+                #  when the input to the on-demand feature view contains types requiring json decoding
+                #  (COUNT_DICT or ARRAY types) this simulates feast apply command
                 apply_total_with_repo_instance(
                     store=feature_store,
                     project=project_name,
