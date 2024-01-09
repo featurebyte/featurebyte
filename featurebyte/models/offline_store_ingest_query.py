@@ -172,7 +172,7 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
         )
 
     def get_primary_entity_info(
-        self, entity_id_to_serving_name: Dict[PydanticObjectId:str]
+        self, entity_id_to_serving_name: Dict[PydanticObjectId, str]
     ) -> List[OfflineStoreEntityInfo]:
         """
         Get primary entity info of the offline store ingest query graph

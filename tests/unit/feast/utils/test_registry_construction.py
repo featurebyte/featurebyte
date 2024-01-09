@@ -9,6 +9,7 @@ from google.protobuf.json_format import MessageToDict
 from featurebyte import FeatureList, RequestColumn
 from featurebyte.common.model_util import get_version
 from featurebyte.feast.utils.registry_construction import FeastRegistryBuilder
+from tests.util.helper import assert_lists_of_dicts_equal
 
 
 def test_feast_registry_construction__missing_asset(
@@ -47,6 +48,7 @@ def test_feast_registry_construction__with_post_processing_features(
     non_time_based_feature,
     latest_event_timestamp_feature,
     catalog_id,
+    mock_pymysql_connect,
 ):
     """Test the construction of the feast register (with post processing features)"""
     feature_requires_post_processing = (
@@ -98,8 +100,214 @@ def test_feast_registry_construction__with_post_processing_features(
     udf = feast_registry_proto.on_demand_feature_views[0].spec.user_defined_function
     assert udf.body_text.startswith("import json\nimport numpy as np\nimport pandas as pd\n")
 
+    # check that mock_pymysql_connect was called
+    assert mock_pymysql_connect.call_count == 1
 
-def test_feast_registry_construction(feast_registry_proto, catalog_id):
+
+@pytest.fixture(name="expected_entity_specs")
+def expected_entities_fixture():
+    """Fixture for expected entities"""
+    return [
+        {
+            "joinKey": "cust_id",
+            "name": "cust_id",
+            "project": "featurebyte_project",
+            "valueType": "STRING",
+        },
+        {
+            "joinKey": "transaction_id",
+            "name": "transaction_id",
+            "project": "featurebyte_project",
+            "valueType": "STRING",
+        },
+        {
+            "joinKey": "__dummy_id",
+            "name": "__dummy",
+            "project": "featurebyte_project",
+        },
+    ]
+
+
+@pytest.fixture(name="expected_data_sources")
+def expected_data_sources_fixture(expected_data_source_names):
+    """Fixture for expected data source"""
+    expected_data_sources = [
+        {
+            "dataSourceClassType": "feast.infra.offline_stores.snowflake_source.SnowflakeSource",
+            "name": data_source_name,
+            "project": "featurebyte_project",
+            "snowflakeOptions": {
+                "database": "sf_database",
+                "schema": "sf_schema",
+                "table": data_source_name,
+            },
+            "timestampField": "__feature_timestamp",
+            "type": "BATCH_SNOWFLAKE",
+        }
+        for data_source_name in expected_data_source_names
+        if data_source_name != "POINT_IN_TIME"
+    ]
+    expected_data_sources.append(
+        {
+            "dataSourceClassType": "feast.data_source.RequestSource",
+            "name": "POINT_IN_TIME",
+            "project": "featurebyte_project",
+            "requestDataOptions": {
+                "schema": [{"name": "POINT_IN_TIME", "valueType": "UNIX_TIMESTAMP"}]
+            },
+            "type": "REQUEST_SOURCE",
+        }
+    )
+    return expected_data_sources
+
+
+@pytest.fixture(name="expected_feature_view_specs")
+def expected_feature_view_specs_fixture(catalog_id):
+    """Expected feature view specs"""
+    common_snowflake_options = {"database": "sf_database", "schema": "sf_schema"}
+    common_batch_source = {
+        "dataSourceClassType": "feast.infra.offline_stores.snowflake_source.SnowflakeSource",
+        "timestampField": "__feature_timestamp",
+        "type": "BATCH_SNOWFLAKE",
+    }
+    common_params = {"project": "featurebyte_project", "online": True}
+    return [
+        {
+            **common_params,
+            "name": f"fb_entity_transaction_id_fjs_86400_0_0_{catalog_id}",
+            "batchSource": {
+                **common_batch_source,
+                "name": f"fb_entity_transaction_id_fjs_86400_0_0_{catalog_id}",
+                "snowflakeOptions": {
+                    **common_snowflake_options,
+                    "table": f"fb_entity_transaction_id_fjs_86400_0_0_{catalog_id}",
+                },
+            },
+            "entities": ["transaction_id"],
+            "entityColumns": [{"name": "transaction_id", "valueType": "STRING"}],
+            "features": [
+                {
+                    "name": f"non_time_time_sum_amount_feature_{get_version()}",
+                    "valueType": "DOUBLE",
+                }
+            ],
+        },
+        {
+            **common_params,
+            "name": f"fb_entity_overall_fjs_86400_3600_7200_ttl_{catalog_id}",
+            "batchSource": {
+                **common_batch_source,
+                "name": f"fb_entity_overall_fjs_86400_3600_7200_ttl_{catalog_id}",
+                "snowflakeOptions": {
+                    **common_snowflake_options,
+                    "table": f"fb_entity_overall_fjs_86400_3600_7200_ttl_{catalog_id}",
+                },
+            },
+            "entities": ["__dummy"],
+            "entityColumns": [{"name": "__dummy_id", "valueType": "STRING"}],
+            "features": [
+                {"name": "__feature_timestamp", "valueType": "UNIX_TIMESTAMP"},
+                {"name": f"count_1d_{get_version()}", "valueType": "INT64"},
+            ],
+            "ttl": "172800s",
+        },
+        {
+            **common_params,
+            "name": f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}",
+            "batchSource": {
+                **common_batch_source,
+                "name": f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}",
+                "snowflakeOptions": {
+                    **common_snowflake_options,
+                    "table": f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}",
+                },
+            },
+            "entities": ["cust_id"],
+            "entityColumns": [{"name": "cust_id", "valueType": "STRING"}],
+            "features": [
+                {"name": "__feature_timestamp", "valueType": "UNIX_TIMESTAMP"},
+                {"name": f"sum_1d_{get_version()}", "valueType": "DOUBLE"},
+                {
+                    "name": f"__composite_feature_ttl_req_col_{get_version()}__part2",
+                    "valueType": "UNIX_TIMESTAMP",
+                },
+                {
+                    "name": f"__composite_feature_ttl_req_col_{get_version()}__part0",
+                    "valueType": "DOUBLE",
+                },
+            ],
+            "ttl": "3600s",
+        },
+        {
+            **common_params,
+            "name": f"fb_entity_transaction_id_{catalog_id}",
+            "batchSource": {
+                **common_batch_source,
+                "name": f"fb_entity_transaction_id_{catalog_id}",
+                "snowflakeOptions": {
+                    **common_snowflake_options,
+                    "table": f"fb_entity_transaction_id_{catalog_id}",
+                },
+            },
+            "entities": ["transaction_id"],
+            "entityColumns": [{"name": "transaction_id", "valueType": "STRING"}],
+            "features": [
+                {"name": "__composite_feature_ttl_req_col_V240109__part1", "valueType": "DOUBLE"}
+            ],
+        },
+    ]
+
+
+@pytest.fixture(name="expected_feature_service_spec")
+def expected_feature_service_spec_fixture(
+    catalog_id, float_feature, feature_without_entity, composite_feature_ttl_req_col
+):
+    """Expected feature service spec"""
+    comp_feat_id = composite_feature_ttl_req_col.id
+    version = get_version()
+    return [
+        {
+            "name": "test_feature_list",
+            "project": "featurebyte_project",
+            "features": [
+                {
+                    "featureColumns": [{"name": f"sum_1d_{version}", "valueType": "DOUBLE"}],
+                    "featureViewName": f"odfv_sum_1d_{version.lower()}_{float_feature.id}",
+                },
+                {
+                    "featureColumns": [{"name": f"count_1d_{version}", "valueType": "INT64"}],
+                    "featureViewName": f"odfv_count_1d_{version.lower()}_{feature_without_entity.id}",
+                },
+                {
+                    "featureColumns": [
+                        {
+                            "name": f"composite_feature_ttl_req_col_{version}",
+                            "valueType": "DOUBLE",
+                        }
+                    ],
+                    "featureViewName": f"odfv_composite_feature_ttl_req_col_{version.lower()}_{comp_feat_id}",
+                },
+                {
+                    "featureColumns": [
+                        {
+                            "name": f"non_time_time_sum_amount_feature_{version}",
+                            "valueType": "DOUBLE",
+                        }
+                    ],
+                    "featureViewName": f"fb_entity_transaction_id_fjs_86400_0_0_{catalog_id}",
+                },
+            ],
+        }
+    ]
+
+
+def test_feast_registry_construction(
+    feast_registry_proto,
+    expected_entity_specs,
+    expected_data_sources,
+    expected_feature_view_specs,
+    expected_feature_service_spec,
+):
     """Test the construction of the feast register"""
     feast_registry_dict = MessageToDict(feast_registry_proto)
     entities = feast_registry_dict["entities"]
@@ -109,8 +317,12 @@ def test_feast_registry_construction(feast_registry_proto, catalog_id):
     feat_view_name = feat_services[0]["spec"]["features"][0]["featureViewName"]
     assert feat_view_name.startswith("odfv_sum_1d_")
 
-    assert len(on_demand_feature_views) == 1
-    udf_definition = on_demand_feature_views[0]["spec"]["userDefinedFunction"]["bodyText"]
+    assert len(on_demand_feature_views) == 3
+    udf_definition = None
+    for odfv in on_demand_feature_views:
+        if odfv["spec"]["name"] == feat_view_name:
+            udf_definition = odfv["spec"]["userDefinedFunction"]["bodyText"]
+
     expected = f"""
     import json
     import numpy as np
@@ -132,165 +344,23 @@ def test_feast_registry_construction(feast_registry_proto, catalog_id):
     """
     assert udf_definition.strip() == textwrap.dedent(expected).strip()
 
-    assert feast_registry_dict == {
-        "dataSources": [
-            {
-                "dataSourceClassType": "feast.infra.offline_stores.snowflake_source.SnowflakeSource",
-                "name": f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}",
-                "project": "featurebyte_project",
-                "snowflakeOptions": {
-                    "database": "sf_database",
-                    "schema": "sf_schema",
-                    "table": f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}",
-                },
-                "timestampField": "__feature_timestamp",
-                "type": "BATCH_SNOWFLAKE",
-            },
-            {
-                "dataSourceClassType": "feast.infra.offline_stores.snowflake_source.SnowflakeSource",
-                "name": f"fb_entity_transaction_id_fjs_86400_0_0_{catalog_id}",
-                "project": "featurebyte_project",
-                "snowflakeOptions": {
-                    "database": "sf_database",
-                    "schema": "sf_schema",
-                    "table": f"fb_entity_transaction_id_fjs_86400_0_0_{catalog_id}",
-                },
-                "timestampField": "__feature_timestamp",
-                "type": "BATCH_SNOWFLAKE",
-            },
-            {
-                "dataSourceClassType": "feast.data_source.RequestSource",
-                "name": "POINT_IN_TIME",
-                "project": "featurebyte_project",
-                "requestDataOptions": {
-                    "schema": [{"name": "POINT_IN_TIME", "valueType": "UNIX_TIMESTAMP"}]
-                },
-                "type": "REQUEST_SOURCE",
-            },
-        ],
-        "entities": [
-            {
-                "meta": {
-                    "createdTimestamp": entities[0]["meta"]["createdTimestamp"],
-                    "lastUpdatedTimestamp": entities[0]["meta"]["lastUpdatedTimestamp"],
-                },
-                "spec": {
-                    "joinKey": "cust_id",
-                    "name": "cust_id",
-                    "project": "featurebyte_project",
-                    "valueType": "STRING",
-                },
-            },
-            {
-                "meta": {
-                    "createdTimestamp": entities[1]["meta"]["createdTimestamp"],
-                    "lastUpdatedTimestamp": entities[1]["meta"]["lastUpdatedTimestamp"],
-                },
-                "spec": {
-                    "joinKey": "transaction_id",
-                    "name": "transaction_id",
-                    "project": "featurebyte_project",
-                    "valueType": "STRING",
-                },
-            },
-        ],
-        "featureServices": [
-            {
-                "meta": {
-                    "createdTimestamp": feat_services[0]["meta"]["createdTimestamp"],
-                    "lastUpdatedTimestamp": feat_services[0]["meta"]["lastUpdatedTimestamp"],
-                },
-                "spec": {
-                    "features": [
-                        {
-                            "featureColumns": [
-                                {"name": f"sum_1d_{get_version()}", "valueType": "DOUBLE"}
-                            ],
-                            "featureViewName": feat_view_name,
-                        },
-                        {
-                            "featureColumns": [
-                                {
-                                    "name": f"non_time_time_sum_amount_feature_{get_version()}",
-                                    "valueType": "DOUBLE",
-                                }
-                            ],
-                            "featureViewName": f"fb_entity_transaction_id_fjs_86400_0_0_{catalog_id}",
-                        },
-                    ],
-                    "name": "test_feature_list",
-                    "project": "featurebyte_project",
-                },
-            }
-        ],
-        "featureViews": [
-            {
-                "meta": {
-                    "createdTimestamp": feat_views[0]["meta"]["createdTimestamp"],
-                    "lastUpdatedTimestamp": feat_views[0]["meta"]["lastUpdatedTimestamp"],
-                },
-                "spec": {
-                    "batchSource": {
-                        "dataSourceClassType": "feast.infra.offline_stores.snowflake_source.SnowflakeSource",
-                        "name": f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}",
-                        "snowflakeOptions": {
-                            "database": "sf_database",
-                            "schema": "sf_schema",
-                            "table": f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}",
-                        },
-                        "timestampField": "__feature_timestamp",
-                        "type": "BATCH_SNOWFLAKE",
-                    },
-                    "entities": ["cust_id"],
-                    "entityColumns": [{"name": "cust_id", "valueType": "STRING"}],
-                    "features": [
-                        {"name": "__feature_timestamp", "valueType": "UNIX_TIMESTAMP"},
-                        {"name": f"sum_1d_{get_version()}", "valueType": "DOUBLE"},
-                    ],
-                    "name": f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}",
-                    "online": True,
-                    "project": "featurebyte_project",
-                    "ttl": "3600s",
-                },
-            },
-            {
-                "meta": {
-                    "createdTimestamp": feat_views[1]["meta"]["createdTimestamp"],
-                    "lastUpdatedTimestamp": feat_views[1]["meta"]["lastUpdatedTimestamp"],
-                },
-                "spec": {
-                    "batchSource": {
-                        "dataSourceClassType": "feast.infra.offline_stores.snowflake_source.SnowflakeSource",
-                        "name": f"fb_entity_transaction_id_fjs_86400_0_0_{catalog_id}",
-                        "snowflakeOptions": {
-                            "database": "sf_database",
-                            "schema": "sf_schema",
-                            "table": f"fb_entity_transaction_id_fjs_86400_0_0_{catalog_id}",
-                        },
-                        "timestampField": "__feature_timestamp",
-                        "type": "BATCH_SNOWFLAKE",
-                    },
-                    "entities": ["transaction_id"],
-                    "entityColumns": [{"name": "transaction_id", "valueType": "STRING"}],
-                    "features": [
-                        {
-                            "name": f"non_time_time_sum_amount_feature_{get_version()}",
-                            "valueType": "DOUBLE",
-                        }
-                    ],
-                    "name": f"fb_entity_transaction_id_fjs_86400_0_0_{catalog_id}",
-                    "online": True,
-                    "project": "featurebyte_project",
-                },
-            },
-        ],
-        "onDemandFeatureViews": on_demand_feature_views,
-        "lastUpdated": feast_registry_dict["lastUpdated"],
-        "projectMetadata": [
-            {
-                "project": "featurebyte_project",
-                "projectUuid": feast_registry_dict["projectMetadata"][0]["projectUuid"],
-            }
-        ],
-        "versionId": feast_registry_dict["versionId"],
-    }
+    # check that the registry dict is as expected
+    assert_lists_of_dicts_equal(feast_registry_dict["dataSources"], expected_data_sources)
+    assert_lists_of_dicts_equal(
+        [entity["spec"] for entity in entities],
+        expected_entity_specs,
+    )
+    assert_lists_of_dicts_equal(
+        [feat_view["spec"] for feat_view in feat_views],
+        expected_feature_view_specs,
+    )
+    assert_lists_of_dicts_equal(
+        [feat_service["spec"] for feat_service in feat_services],
+        expected_feature_service_spec,
+    )
+    assert feast_registry_dict["projectMetadata"] == [
+        {
+            "project": "featurebyte_project",
+            "projectUuid": feast_registry_dict["projectMetadata"][0]["projectUuid"],
+        }
+    ]

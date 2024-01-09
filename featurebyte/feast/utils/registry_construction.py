@@ -19,11 +19,12 @@ from feast import OnDemandFeatureView as FeastOnDemandFeatureView
 from feast import RequestSource as FeastRequestSource
 from feast.data_source import DataSource as FeastDataSource
 from feast.feature_view import DUMMY_ENTITY
-from feast.inference import update_feature_views_with_inferred_features_and_entities
 from feast.infra.online_stores.contrib.mysql_online_store.mysql import MySQLOnlineStoreConfig
 from feast.infra.online_stores.redis import RedisOnlineStoreConfig
 from feast.protos.feast.core.Registry_pb2 import Registry as RegistryProto
 from feast.repo_config import RegistryConfig, RepoConfig
+from feast.repo_contents import RepoContents
+from feast.repo_operations import apply_total_with_repo_instance
 
 from featurebyte.enum import DBVarType, InternalName, OnlineStoreType, SpecialColumnName
 from featurebyte.feast.enum import to_feast_primitive_type
@@ -350,20 +351,7 @@ class FeastAssetCreator:
                         ],
                     )
 
-            offline_store_info = feature.offline_store_info
-            if offline_store_info.is_decomposed:
-                has_ttl = any(
-                    ingest_query_graph.has_ttl
-                    for ingest_query_graph in offline_store_info.extract_offline_store_ingest_query_graphs()
-                )
-            else:
-                assert offline_store_info.metadata is not None, "Missing offline store metadata"
-                has_ttl = offline_store_info.metadata.has_ttl
-
-            if (
-                has_ttl
-                and SpecialColumnName.POINT_IN_TIME.value not in name_to_feast_request_source
-            ):
+            if SpecialColumnName.POINT_IN_TIME.value not in name_to_feast_request_source:
                 name_to_feast_request_source[
                     SpecialColumnName.POINT_IN_TIME.value
                 ] = FeastRequestSource(
@@ -521,27 +509,39 @@ class FeastRegistryBuilder:
                 online_store=online_store,
                 registry_file_path=temp_file.name,
             )
-
-            # FIXME: Temporarily calling this inference function here to populate the entity_columns
-            #  field in feature views which is needed by feast materialize. This can be removed once
-            #  we call feast apply code path directly.
-            update_feature_views_with_inferred_features_and_entities(
-                feast_feature_views, list(primary_entity_ids_to_feast_entity.values()), repo_config
-            )
             feature_store = FeastFeatureStore(config=repo_config)
             registry = feature_store.registry
+
+            # prepare repo content by adding all feast assets
+            repo_content = RepoContents(
+                data_sources=[],
+                entities=[],
+                feature_views=[],
+                feature_services=[],
+                on_demand_feature_views=[],
+                stream_feature_views=[],
+                request_feature_views=[],
+            )
             for data_source in feast_data_sources + feast_request_sources:
-                registry.apply_data_source(data_source=data_source, project=project_name)
+                repo_content.data_sources.append(data_source)
             for entity in primary_entity_ids_to_feast_entity.values():
-                registry.apply_entity(entity=entity, project=project_name)
-            for feature_view in feast_feature_views + feast_on_demand_feature_views:
-                registry.apply_feature_view(feature_view=feature_view, project=project_name)
+                repo_content.entities.append(entity)
+            for feature_view in feast_feature_views:
+                repo_content.feature_views.append(feature_view)
+            for on_demand_feature_view in feast_on_demand_feature_views:
+                repo_content.on_demand_feature_views.append(on_demand_feature_view)
             for feature_service in feast_feature_services:
-                registry.apply_feature_service(
-                    feature_service=feature_service, project=project_name
-                )
-            registry_proto = registry.proto()
-            return cast(RegistryProto, registry_proto)
+                repo_content.feature_services.append(feature_service)
+
+            # this simulates feast apply command
+            apply_total_with_repo_instance(
+                store=feature_store,
+                project=project_name,
+                registry=registry,
+                repo=repo_content,
+                skip_source_validation=True,
+            )
+            return cast(RegistryProto, registry.proto())
 
     @classmethod
     def create(
@@ -627,7 +627,6 @@ class FeastRegistryBuilder:
             feast_on_demand_feature_views=on_demand_feature_views,
         )
 
-        # construct feast registry by constructing a feast feature store and extracting the registry
         return cls._create_feast_registry_proto(
             project_name=project_name,
             online_store=online_store,
