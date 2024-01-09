@@ -31,8 +31,8 @@ def test_info(saved_mysql_online_store, catalog):
             "port": 3306,
             "credential": {
                 "type": "USERNAME_PASSWORD",
-                "username": "mysql_user",
-                "password": "mysql_password",
+                "username": "********",
+                "password": "********",
             },
         },
         "catalogs": [{"name": "catalog"}],
