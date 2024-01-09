@@ -67,6 +67,7 @@ class OfflineIngestGraphContainer:
             all_feature_entity_ids.update(feature.entity_ids)
 
         # Group features by offline store feature table name
+        offline_store_table_name_to_feature_ids = defaultdict(set)
         offline_store_table_name_to_features = defaultdict(list)
         offline_store_table_name_to_graphs = defaultdict(list)
         for feature in features:
@@ -75,12 +76,11 @@ class OfflineIngestGraphContainer:
             )
 
             for offline_ingest_graph in offline_ingest_graphs:
-                offline_store_table_name_to_features[
-                    offline_ingest_graph.offline_store_table_name
-                ].append(feature)
-                offline_store_table_name_to_graphs[
-                    offline_ingest_graph.offline_store_table_name
-                ].append(offline_ingest_graph)
+                table_name = offline_ingest_graph.offline_store_table_name
+                if feature.id not in offline_store_table_name_to_feature_ids[table_name]:
+                    offline_store_table_name_to_feature_ids[table_name].add(feature.id)
+                    offline_store_table_name_to_features[table_name].append(feature)
+                offline_store_table_name_to_graphs[table_name].append(offline_ingest_graph)
 
         return cls(
             offline_store_table_name_to_features=offline_store_table_name_to_features,
