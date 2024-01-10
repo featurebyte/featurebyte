@@ -13,12 +13,7 @@ from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.savable_api_object import DeletableApiObject, SavableApiObject
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.credential import (
-    DatabaseCredential,
-    DatabaseCredentialType,
-    StorageCredential,
-    StorageCredentialType,
-)
+from featurebyte.models.credential import DatabaseCredential, StorageCredential
 from featurebyte.schema.credential import CredentialCreate, CredentialRead, CredentialUpdate
 
 
@@ -52,8 +47,8 @@ class Credential(DeletableApiObject, SavableApiObject):
         "feature_store",
         "created_at",
         "updated_at",
-        "database_credential_type",
-        "storage_credential_type",
+        "database_credential",
+        "storage_credential",
     ]
     _list_foreign_keys = [
         ForeignKeyMapping("feature_store_id", FeatureStore, "feature_store"),
@@ -74,34 +69,28 @@ class Credential(DeletableApiObject, SavableApiObject):
         return data.json_dict()
 
     @property
-    def database_credential_type(self) -> Optional[DatabaseCredentialType]:
+    def database_credential(self) -> Optional[DatabaseCredential]:
         """
         Get the database credential type.
 
         Returns
         -------
-        Optional[DatabaseCredentialType]
-            Database credential type.
+        Optional[DatabaseCredential]
+            Database credential.
         """
-        database_credential_type = self.cached_model.database_credential_type
-        if database_credential_type:
-            return DatabaseCredentialType(database_credential_type)
-        return None
+        return self.cached_model.database_credential
 
     @property
-    def storage_credential_type(self) -> Optional[StorageCredentialType]:
+    def storage_credential(self) -> Optional[StorageCredential]:
         """
         Get the storage credential type.
 
         Returns
         -------
-        Optional[StorageCredentialType]
-            Storage credential type.
+        Optional[StorageCredential]
+            Storage credential.
         """
-        storage_credential_type = self.cached_model.storage_credential_type
-        if storage_credential_type:
-            return StorageCredentialType(storage_credential_type)
-        return None
+        return self.cached_model.storage_credential
 
     @classmethod
     def create(

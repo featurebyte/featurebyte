@@ -125,7 +125,7 @@ class CredentialService(
         """
         credential = self.document_class(**data.dict(by_alias=True))
         await self._validate_credential(credential=credential)
-        credential.encrypt()
+        credential.encrypt_credentials()
         return await super().create_document(
             data=CredentialCreate(**credential.dict(by_alias=True))
         )
@@ -166,7 +166,7 @@ class CredentialService(
 
         # ensure document is decrypted
         try:
-            document.decrypt()
+            document.decrypt_credentials()
         except InvalidToken:
             logger.warning("Credential is already decrypted")
 

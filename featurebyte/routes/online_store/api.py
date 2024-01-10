@@ -8,7 +8,6 @@ from typing import Optional, cast
 from fastapi import Request
 
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.online_store import OnlineStoreModel
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.routes.base_router import BaseApiRouter
 from featurebyte.routes.common.schema import (
@@ -22,11 +21,16 @@ from featurebyte.routes.common.schema import (
 from featurebyte.routes.online_store.controller import OnlineStoreController
 from featurebyte.schema.common.base import DeleteResponse, DescriptionUpdate
 from featurebyte.schema.info import OnlineStoreInfo
-from featurebyte.schema.online_store import OnlineStoreCreate, OnlineStoreList, OnlineStoreUpdate
+from featurebyte.schema.online_store import (
+    OnlineStoreCreate,
+    OnlineStoreList,
+    OnlineStoreRead,
+    OnlineStoreUpdate,
+)
 
 
 class OnlineStoreRouter(
-    BaseApiRouter[OnlineStoreModel, OnlineStoreList, OnlineStoreCreate, OnlineStoreController]
+    BaseApiRouter[OnlineStoreRead, OnlineStoreList, OnlineStoreCreate, OnlineStoreController]
 ):
     """
     Feature Store API router
@@ -34,7 +38,7 @@ class OnlineStoreRouter(
 
     # pylint: disable=arguments-renamed
 
-    object_model = OnlineStoreModel
+    object_model = OnlineStoreRead
     list_object_model = OnlineStoreList
     create_object_schema = OnlineStoreCreate
     controller = OnlineStoreController
@@ -59,17 +63,17 @@ class OnlineStoreRouter(
         self,
         request: Request,
         data: OnlineStoreCreate,
-    ) -> OnlineStoreModel:
+    ) -> OnlineStoreRead:
         """
         Create Feature Store
         """
         controller = request.state.app_container.online_store_controller
-        online_store: OnlineStoreModel = await controller.create_online_store(data=data)
+        online_store: OnlineStoreRead = await controller.create_online_store(data=data)
         return online_store
 
     async def get_object(
         self, request: Request, online_store_id: PydanticObjectId
-    ) -> OnlineStoreModel:
+    ) -> OnlineStoreRead:
         return await super().get_object(request, online_store_id)
 
     async def list_audit_logs(
@@ -89,17 +93,17 @@ class OnlineStoreRouter(
     @staticmethod
     async def update_online_store(
         request: Request, online_store_id: PydanticObjectId, data: OnlineStoreUpdate
-    ) -> OnlineStoreModel:
+    ) -> OnlineStoreRead:
         """
         Update online store
         """
         controller = request.state.app_container.online_store_controller
         document = await controller.update_online_store(online_store_id, data)
-        return cast(OnlineStoreModel, document)
+        return cast(OnlineStoreRead, document)
 
     async def update_description(
         self, request: Request, online_store_id: PydanticObjectId, data: DescriptionUpdate
-    ) -> OnlineStoreModel:
+    ) -> OnlineStoreRead:
         return await super().update_description(request, online_store_id, data)
 
     @staticmethod
