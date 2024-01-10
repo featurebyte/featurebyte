@@ -1,10 +1,10 @@
 """
 Pydantic schemas for handling API payloads for credential routes
 """
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 from bson import ObjectId
-from pydantic import Field, StrictStr, root_validator
+from pydantic import Field, StrictStr, validator
 
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
@@ -16,11 +16,10 @@ from featurebyte.models.base import (
 
 # pylint: disable=too-many-ancestors
 from featurebyte.models.credential import (
+    BaseCredential,
     CredentialModel,
     DatabaseCredential,
-    DatabaseCredentialType,
     StorageCredential,
-    StorageCredentialType,
 )
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 
@@ -43,30 +42,27 @@ class CredentialRead(FeatureByteBaseDocumentModel):
     """
 
     feature_store_id: PydanticObjectId
-    database_credential_type: Optional[DatabaseCredentialType]
-    storage_credential_type: Optional[StorageCredentialType]
+    database_credential: Optional[DatabaseCredential]
+    storage_credential: Optional[StorageCredential]
 
-    @root_validator(pre=True)
+    @validator("database_credential", "storage_credential")
     @classmethod
-    def convert_credentials(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def hide_credentials(cls, credential: Optional[BaseCredential]) -> Optional[BaseCredential]:
         """
-        Convert credentials to the correct type.
+        Hide credentials in the details field
 
         Parameters
         ----------
-        values: Dict[str, Any]
-            Values to validate
+        credential: Optional[BaseCredential]
+            credential details
 
         Returns
         -------
-        Dict[str, Any]
-            Validated values
+        BaseCredential
         """
-        if values.get("database_credential"):
-            values["database_credential_type"] = values["database_credential"]["type"]
-        if values.get("storage_credential"):
-            values["storage_credential_type"] = values["storage_credential"]["type"]
-        return values
+        if credential:
+            credential.hide_values()
+        return credential
 
     class Settings(FeatureByteBaseDocumentModel.Settings):
         """
@@ -106,9 +102,9 @@ class CredentialServiceUpdate(BaseDocumentServiceUpdateSchema):
         Encrypt credentials
         """
         if self.database_credential:
-            self.database_credential.encrypt()
+            self.database_credential.encrypt_values()
         if self.storage_credential:
-            self.storage_credential.encrypt()
+            self.storage_credential.encrypt_values()
 
     class Settings(BaseDocumentServiceUpdateSchema.Settings):
         """

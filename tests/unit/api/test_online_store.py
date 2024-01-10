@@ -48,7 +48,7 @@ def decrypt_credential(docs):
     for doc in docs:
         # decrypt credential
         credential = UsernamePasswordCredential(**doc["details"]["credential"])
-        credential.decrypt()
+        credential.decrypt_values()
         doc["details"]["credential"] = credential.dict()
 
 

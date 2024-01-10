@@ -17,8 +17,6 @@ from featurebyte.models.base import (
 )
 from featurebyte.models.credential import BaseDatabaseCredential, UsernamePasswordCredential
 
-HIDDEN_VALUE = "********"
-
 
 class BaseOnlineStoreDetails(FeatureByteBaseModel):
     """
@@ -34,19 +32,7 @@ class BaseOnlineStoreDetails(FeatureByteBaseModel):
         Hide credentials values
         """
         if self.credential:
-            for field in self.credential.__fields__.values():
-                if field.type_ == StrictStr:
-                    setattr(self.credential, field.name, HIDDEN_VALUE)
-                elif field.type_ == str:
-                    # pydantic captures dict field type as str
-                    field_value = getattr(self.credential, field.name)
-                    if isinstance(field_value, dict):
-                        # hide values in the dict
-                        setattr(
-                            self.credential,
-                            field.name,
-                            {key: HIDDEN_VALUE for key, value in field_value.items()},
-                        )
+            self.credential.hide_values()
 
 
 class RedisOnlineStoreDetails(BaseOnlineStoreDetails):
