@@ -514,7 +514,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
             Feature store model
         """
         store_type_to_store_info_class = {
-            SourceType.DATABRICKS: DataBricksStoreInfo,
+            SourceType.DATABRICKS_UNITY: DataBricksStoreInfo,
         }
         if feature_store.type in store_type_to_store_info_class:
             store_info_class = store_type_to_store_info_class[feature_store.type]

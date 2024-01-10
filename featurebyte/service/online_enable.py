@@ -156,9 +156,6 @@ class OnlineEnableService(OpsServiceMixin):
         extended_feature_model = ExtendedFeatureModel(**feature.dict(by_alias=True))
         online_feature_spec = OnlineFeatureSpec(feature=extended_feature_model)
 
-        if not online_feature_spec.is_online_store_eligible:
-            return
-
         if feature.online_enabled:
             assert session is not None
             await feature_manager_service.online_enable(
