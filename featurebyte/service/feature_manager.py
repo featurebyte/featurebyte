@@ -16,6 +16,7 @@ from featurebyte.enum import SourceType
 from featurebyte.exception import DocumentNotFoundError
 from featurebyte.feature_manager.sql_template import tm_feature_tile_monitor
 from featurebyte.logging import get_logger
+from featurebyte.models.deployment import FeastIntegrationSettings
 from featurebyte.models.online_store_compute_query import OnlineStoreComputeQueryModel
 from featurebyte.models.online_store_spec import OnlineFeatureSpec
 from featurebyte.models.tile import TileSpec, TileType
@@ -73,7 +74,10 @@ class FeatureManagerService:
             Whether we are recreating the working schema from scratch. Only set as True when called
             by WorkingSchemaService.
         """
-        if session.source_type == SourceType.DATABRICKS_UNITY:
+        if (
+            FeastIntegrationSettings().FEATUREBYTE_FEAST_INTEGRATION_ENABLED
+            and session.source_type == SourceType.DATABRICKS_UNITY
+        ):
             # Register Databricks UDF for on-demand feature
             await self.may_register_databricks_udf_for_on_demand_feature(session, feature_spec)
 
@@ -291,7 +295,11 @@ class FeatureManagerService:
         feature_spec: OnlineFeatureSpec
             input feature instance
         """
-        if session.source_type == SourceType.DATABRICKS_UNITY:
+        if (
+            FeastIntegrationSettings().FEATUREBYTE_FEAST_INTEGRATION_ENABLED
+            and session
+            and session.source_type == SourceType.DATABRICKS_UNITY
+        ):
             # Remove Databricks UDF for on-demand feature
             await self.remove_databricks_udf_for_on_demand_feature_if_exists(session, feature_spec)
 
@@ -413,7 +421,7 @@ class FeatureManagerService:
             Instance of OnlineFeatureSpec
         """
         offline_store_info = feature_spec.feature.offline_store_info
-        if offline_store_info and offline_store_info.is_decomposed:
+        if offline_store_info and offline_store_info.is_decomposed and offline_store_info.udf_info:
             udf_info = offline_store_info.udf_info
             logger.debug(
                 "Registering Databricks UDF for on-demand feature",
@@ -440,7 +448,7 @@ class FeatureManagerService:
             Instance of OnlineFeatureSpec
         """
         offline_store_info = feature_spec.feature.offline_store_info
-        if offline_store_info and offline_store_info.is_decomposed:
+        if offline_store_info and offline_store_info.is_decomposed and offline_store_info.udf_info:
             udf_info = offline_store_info.udf_info
             logger.debug(
                 "Removing Databricks UDF for on-demand feature",

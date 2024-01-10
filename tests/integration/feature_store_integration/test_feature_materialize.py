@@ -319,7 +319,7 @@ async def test_feature_tables_populated(session, offline_store_feature_tables):
 @pytest.mark.asyncio
 async def test_databricks_udf_created(session, offline_store_feature_tables, expected_udf_names):
     """Test that udf is created in databricks"""
-    # extract expected udf names from features
+    _ = offline_store_feature_tables
     df = await session.execute_query(
         sql_to_string(parse_one("SHOW USER FUNCTIONS"), session.source_type)
     )
