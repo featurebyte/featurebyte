@@ -162,6 +162,12 @@ def features_fixture(
     feature_12 = item_type_counts.cd.most_frequent()
     feature_12.name = "Most Frequent Item Type by Order"
 
+    # feature_10 is a lookup feature by User. feature_11 is as-at feature by User Status. User
+    # Status ia a parent entity of User, so the primary entity of feature_13 is User.
+    feature_13 = feature_10 + "_" + feature_11.astype(str)
+    assert feature_13.primary_entity_ids == feature_10.primary_entity_ids
+    feature_13.name = "Complex Feature by User"
+
     # Save all features to be deployed
     features = [
         feature
@@ -178,6 +184,7 @@ def features_fixture(
             feature_10,
             feature_11,
             feature_12,
+            feature_13,
         ]
         if feature is not None
     ]
