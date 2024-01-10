@@ -275,9 +275,9 @@ def list_credentials(
 
     Examples
     --------
-    >>> fb.list_credentials()[["feature_store", "database_credential_type", "storage_credential_type"]]
-      feature_store database_credential_type storage_credential_type
-    0    playground                     None                    None
+    >>> fb.list_credentials()[["feature_store", "database_credential", "storage_credential"]]
+      feature_store database_credential storage_credential
+    0    playground                None               None
     """
     return Credential.list(include_id=include_id)
 
