@@ -10,7 +10,7 @@ from datetime import datetime
 
 import pymongo
 
-from featurebyte.enum import DBVarType, SourceType
+from featurebyte.enum import DBVarType
 from featurebyte.models.base import (
     FeatureByteCatalogBaseDocumentModel,
     PydanticObjectId,
@@ -167,66 +167,4 @@ def get_combined_ingest_graph(
         output_column_names=output_column_names,
         output_dtypes=output_dtypes,
         offline_ingest_graphs=all_offline_ingest_graphs,
-    )
-
-
-def get_offline_store_feature_table_model(
-    feature_table_name: str,
-    features: List[FeatureModel],
-    aggregate_result_table_names: List[str],
-    primary_entities: List[EntityModel],
-    has_ttl: bool,
-    feature_job_setting: Optional[FeatureJobSetting],
-    source_type: SourceType,
-) -> OfflineStoreFeatureTableModel:
-    """
-    Returns a OfflineStoreFeatureTableModel for a feature table
-
-    Parameters
-    ----------
-    feature_table_name : str
-        Feature table name
-    features : List[FeatureModel]
-        List of features
-    aggregate_result_table_names : List[str]
-        List of aggregate result table names
-    primary_entities : List[EntityModel]
-        List of primary entities
-    has_ttl : bool
-        Whether the feature table has TTL
-    feature_job_setting : Optional[FeatureJobSetting]
-        Feature job setting of the feature table
-    source_type : SourceType
-        Source type information
-
-    Returns
-    -------
-    OfflineStoreFeatureTableModel
-    """
-    ingest_graph_metadata = get_combined_ingest_graph(
-        features=features,
-        primary_entities=primary_entities,
-        has_ttl=has_ttl,
-        feature_job_setting=feature_job_setting,
-    )
-
-    entity_universe = EntityUniverseModel.create(
-        serving_names=[entity.serving_names[0] for entity in primary_entities],
-        aggregate_result_table_names=aggregate_result_table_names,
-        offline_ingest_graphs=ingest_graph_metadata.offline_ingest_graphs,
-        source_type=source_type,
-    )
-
-    return OfflineStoreFeatureTableModel(
-        name=feature_table_name,
-        feature_ids=[feature.id for feature in features],
-        primary_entity_ids=[entity.id for entity in primary_entities],
-        # FIXME: consolidate all the offline store serving names (get_entity_id_to_serving_name_for_offline_store)
-        serving_names=[entity.serving_names[0] for entity in primary_entities],
-        feature_cluster=ingest_graph_metadata.feature_cluster,
-        output_column_names=ingest_graph_metadata.output_column_names,
-        output_dtypes=ingest_graph_metadata.output_dtypes,
-        entity_universe=entity_universe,
-        has_ttl=has_ttl,
-        feature_job_setting=feature_job_setting,
     )

@@ -36,6 +36,7 @@ from featurebyte.query_graph.sql.online_serving import (
     get_online_features,
 )
 from featurebyte.service.entity import EntityService
+from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
@@ -76,7 +77,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
     materialised into a new table in the data warehouse.
     """
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         feature_service: FeatureService,
         online_store_compute_query_service: OnlineStoreComputeQueryService,
@@ -87,6 +88,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         feast_registry_service: FeastRegistryService,
         feast_feature_store_service: FeastFeatureStoreService,
         offline_store_feature_table_service: OfflineStoreFeatureTableService,
+        entity_validation_service: EntityValidationService,
     ):
         self.feature_service = feature_service
         self.online_store_compute_query_service = online_store_compute_query_service
@@ -97,6 +99,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         self.feast_registry_service = feast_registry_service
         self.feast_feature_store_service = feast_feature_store_service
         self.offline_store_feature_table_service = offline_store_feature_table_service
+        self.entity_validation_service = entity_validation_service
 
     @asynccontextmanager
     async def materialize_features(
@@ -169,6 +172,15 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
                 nodes = feature_table_model.feature_cluster.get_nodes_for_feature_names(
                     selected_columns
                 )
+            feature_store = await self.feature_store_service.get_document(
+                document_id=feature_table_model.feature_cluster.feature_store_id
+            )
+            parent_serving_preparation = await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
+                graph=feature_table_model.feature_cluster.graph,
+                nodes=nodes,
+                request_column_names=set(feature_table_model.serving_names),
+                feature_store=feature_store,
+            )
             await get_online_features(
                 session=session,
                 graph=feature_table_model.feature_cluster.graph,
@@ -178,6 +190,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
                 online_store_table_version_service=self.online_store_table_version_service,
                 output_table_details=output_table_details,
                 request_timestamp=feature_timestamp,
+                parent_serving_preparation=parent_serving_preparation,
             )
 
             column_names = []

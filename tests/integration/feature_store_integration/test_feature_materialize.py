@@ -379,6 +379,7 @@ async def test_feast_registry(app_container, expected_feature_table_names):
         f"Most Frequent Item Type by Order_{version}": ["type_12"],
         "PRODUCT_ACTION": ["detail"],
         f"User Status Feature_{version}": ["STÀTUS_CODE_37"],
+        f"Complex Feature by User_{version}": ["STÀTUS_CODE_37_1"],
         "cust_id": ["761"],
         "order_id": ["T1230"],
         "user_status": ["STÀTUS_CODE_37"],
@@ -401,6 +402,7 @@ async def test_feast_registry(app_container, expected_feature_table_names):
         "order_id": ["T1230"],
         f"User Status Feature_{version}": ["STÀTUS_CODE_37"],
         f"Current Number of Users With This Status_{version}": [1],
+        f"Complex Feature by User_{version}": ["STÀTUS_CODE_37_1"],
         f"Most Frequent Item Type by Order_{version}": ["type_12"],
         f"EXTERNAL_FS_COUNT_OVERALL_7d_{version}": [None],
         f"EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d_{version}": [None],
@@ -466,6 +468,7 @@ def test_online_features(config, deployed_feature_list):
         feat_dict["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"]
     )
     expected = {
+        "Complex Feature by User": "STÀTUS_CODE_37_1",
         "Current Number of Users With This Status": 1.0,
         "EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d": {
             "__MISSING__": 240.76,
@@ -615,6 +618,7 @@ async def test_simulated_materialize__non_ttl_feature_table(
         "__feature_timestamp",
         "üser id",
         f"User Status Feature_{version}",
+        f"Complex Feature by User_{version}",
     ]
     assert df_0.shape[0] == 4
     assert df_0["__feature_timestamp"].nunique() == 1

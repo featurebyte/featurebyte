@@ -19,7 +19,6 @@ from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.offline_store_feature_table import (
     FeaturesUpdate,
     OfflineStoreFeatureTableModel,
-    get_offline_store_feature_table_model,
 )
 from featurebyte.models.offline_store_ingest_query import OfflineStoreIngestQueryGraph
 from featurebyte.service.catalog import CatalogService
@@ -30,6 +29,9 @@ from featurebyte.service.feature_materialize import FeatureMaterializeService
 from featurebyte.service.feature_materialize_scheduler import FeatureMaterializeSchedulerService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
+from featurebyte.service.offline_store_feature_table_construction import (
+    OfflineStoreFeatureTableConstructionService,
+)
 from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
 
 
@@ -128,6 +130,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         catalog_service: CatalogService,
         feature_store_service: FeatureStoreService,
         offline_store_feature_table_service: OfflineStoreFeatureTableService,
+        offline_store_feature_table_construction_service: OfflineStoreFeatureTableConstructionService,
         feature_service: FeatureService,
         online_store_compute_query_service: OnlineStoreComputeQueryService,
         entity_service: EntityService,
@@ -140,6 +143,9 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
         self.catalog_service = catalog_service
         self.feature_store_service = feature_store_service
         self.offline_store_feature_table_service = offline_store_feature_table_service
+        self.offline_store_feature_table_construction_service = (
+            offline_store_feature_table_construction_service
+        )
         self.feature_service = feature_service
         self.online_store_compute_query_service = online_store_compute_query_service
         self.entity_service = entity_service
@@ -321,7 +327,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
             catalog_model.default_feature_store_ids[0]
         )
 
-        return get_offline_store_feature_table_model(
+        return await self.offline_store_feature_table_construction_service.get_offline_store_feature_table_model(
             feature_table_name=feature_table_name,
             features=[feature_ids_to_model[feature_id] for feature_id in feature_ids],
             aggregate_result_table_names=required_aggregate_result_tables,
