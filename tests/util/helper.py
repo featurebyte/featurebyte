@@ -828,7 +828,7 @@ def dict_to_tuple(d):
     if isinstance(d, dict):
         return tuple((k, dict_to_tuple(v)) for k, v in sorted(d.items()))
     if isinstance(d, list):
-        return tuple(dict_to_tuple(v) for v in d)
+        return tuple(sorted(dict_to_tuple(v) for v in d))
     return d
 
 
