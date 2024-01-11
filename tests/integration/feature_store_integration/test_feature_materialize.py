@@ -162,6 +162,12 @@ def features_fixture(
     feature_12 = item_type_counts.cd.most_frequent()
     feature_12.name = "Most Frequent Item Type by Order"
 
+    # feature_10 is a lookup feature by "User". feature_11 is as-at feature by "User Status". "User
+    # Status" is a parent entity of "User", so the primary entity of feature_13 is "User".
+    feature_13 = feature_10 + "_" + feature_11.astype(str)
+    assert feature_13.primary_entity_ids == feature_10.primary_entity_ids
+    feature_13.name = "Complex Feature by User"
+
     # Save all features to be deployed
     features = [
         feature
@@ -178,6 +184,7 @@ def features_fixture(
             feature_10,
             feature_11,
             feature_12,
+            feature_13,
         ]
         if feature is not None
     ]
@@ -405,6 +412,7 @@ async def test_feast_registry(app_container, expected_feature_table_names):
         f"Most Frequent Item Type by Order_{version}": ["type_12"],
         "PRODUCT_ACTION": ["detail"],
         f"User Status Feature_{version}": ["STÀTUS_CODE_37"],
+        f"Complex Feature by User_{version}": ["STÀTUS_CODE_37_1"],
         "cust_id": ["761"],
         "order_id": ["T1230"],
         "user_status": ["STÀTUS_CODE_37"],
@@ -427,6 +435,7 @@ async def test_feast_registry(app_container, expected_feature_table_names):
         "order_id": ["T1230"],
         f"User Status Feature_{version}": ["STÀTUS_CODE_37"],
         f"Current Number of Users With This Status_{version}": [1],
+        f"Complex Feature by User_{version}": ["STÀTUS_CODE_37_1"],
         f"Most Frequent Item Type by Order_{version}": ["type_12"],
         f"EXTERNAL_FS_COUNT_OVERALL_7d_{version}": [None],
         f"EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d_{version}": [None],
@@ -492,6 +501,7 @@ def test_online_features(config, deployed_feature_list):
         feat_dict["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"]
     )
     expected = {
+        "Complex Feature by User": "STÀTUS_CODE_37_1",
         "Current Number of Users With This Status": 1.0,
         "EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d": {
             "__MISSING__": 240.76,
@@ -641,8 +651,9 @@ async def test_simulated_materialize__non_ttl_feature_table(
         "__feature_timestamp",
         "üser id",
         f"User Status Feature_{version}",
+        f"Complex Feature by User_{version}",
     ]
-    assert df_0.shape[0] == 4
+    assert df_0.shape[0] == 9
     assert df_0["__feature_timestamp"].nunique() == 1
 
     # Trigger a materialization task after the feature table is created. This should materialize
@@ -654,7 +665,7 @@ async def test_simulated_materialize__non_ttl_feature_table(
             parse_one(f'SELECT * FROM "{feature_table_model.name}"'), session.source_type
         ),
     )
-    assert df_1.shape[0] == 13
+    assert df_1.shape[0] == 18
     assert df_1["__feature_timestamp"].nunique() == 2
 
     # Materialize one more time. Since there is no new data that appears since the last

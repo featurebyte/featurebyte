@@ -9,9 +9,11 @@ import pytest
 from featurebyte import SourceType
 from featurebyte.models.entity_universe import (
     EntityUniverseModel,
+    EntityUniverseParams,
     get_combined_universe,
     get_entity_universe_constructor,
 )
+from featurebyte.models.parent_serving import JoinStep
 from featurebyte.models.sqlglot_expression import SqlglotExpressionModel
 from featurebyte.query_graph.enum import NodeType
 
@@ -65,6 +67,22 @@ def item_aggregate_graph_and_node(filtered_non_time_based_feature):
         filtered_non_time_based_feature, NodeType.ITEM_GROUPBY
     )
     return graph, item_aggregate_node
+
+
+@pytest.fixture
+def join_steps(snowflake_scd_table_with_entity):
+    """
+    Fixture for a join steps to be applied when constructing entity universe
+    """
+    return [
+        JoinStep(
+            table=snowflake_scd_table_with_entity.cached_model,
+            parent_key="col_text",
+            parent_serving_name="cust_id",
+            child_key="cust_id_child",
+            child_serving_name="cust_id_child_serving_name",
+        )
+    ]
 
 
 def test_lookup_feature(catalog, lookup_graph_and_node):
@@ -197,7 +215,19 @@ def test_combined_universe(catalog, lookup_graph_and_node, aggregate_asat_graph_
     # Note: in practice the two universes should have the same serving name, though that is not the
     # case in this test.
     universe = get_combined_universe(
-        [lookup_graph_and_node, aggregate_asat_graph_and_node], SourceType.SNOWFLAKE
+        [
+            EntityUniverseParams(
+                graph=lookup_graph_and_node[0],
+                node=lookup_graph_and_node[1],
+                join_steps=None,
+            ),
+            EntityUniverseParams(
+                graph=aggregate_asat_graph_and_node[0],
+                node=aggregate_asat_graph_and_node[1],
+                join_steps=None,
+            ),
+        ],
+        SourceType.SNOWFLAKE,
     )
     expected = textwrap.dedent(
         """
@@ -253,7 +283,19 @@ def test_combined_universe_deduplicate(
     """
     _ = catalog
     universe = get_combined_universe(
-        [lookup_graph_and_node, lookup_graph_and_node_same_input], SourceType.SNOWFLAKE
+        [
+            EntityUniverseParams(
+                graph=lookup_graph_and_node[0],
+                node=lookup_graph_and_node[1],
+                join_steps=None,
+            ),
+            EntityUniverseParams(
+                graph=lookup_graph_and_node_same_input[0],
+                node=lookup_graph_and_node_same_input[1],
+                join_steps=None,
+            ),
+        ],
+        SourceType.SNOWFLAKE,
     )
     expected = textwrap.dedent(
         """
@@ -276,6 +318,53 @@ def test_combined_universe_deduplicate(
             "effective_timestamp" >= __fb_last_materialized_timestamp
             AND "effective_timestamp" < __fb_current_feature_timestamp
         )
+        """
+    ).strip()
+    assert universe.sql(pretty=True) == expected
+
+
+def test_combined_universe__join_steps(catalog, lookup_graph_and_node, join_steps):
+    """
+    Test combined universe with join steps
+    """
+    _ = catalog
+    universe = get_combined_universe(
+        [
+            EntityUniverseParams(
+                graph=lookup_graph_and_node[0],
+                node=lookup_graph_and_node[1],
+                join_steps=join_steps,
+            ),
+        ],
+        SourceType.SNOWFLAKE,
+    )
+    expected = textwrap.dedent(
+        """
+        SELECT DISTINCT
+          CHILD."cust_id_child" AS "cust_id_child_serving_name"
+        FROM (
+          SELECT DISTINCT
+            "col_text" AS "cust_id"
+          FROM (
+            SELECT
+              "col_int" AS "col_int",
+              "col_float" AS "col_float",
+              "col_text" AS "col_text",
+              "col_binary" AS "col_binary",
+              "col_boolean" AS "col_boolean",
+              "effective_timestamp" AS "effective_timestamp",
+              "end_timestamp" AS "end_timestamp",
+              "date_of_birth" AS "date_of_birth",
+              "created_at" AS "created_at",
+              "cust_id" AS "cust_id"
+            FROM "sf_database"."sf_schema"."scd_table"
+            WHERE
+              "effective_timestamp" >= __fb_last_materialized_timestamp
+              AND "effective_timestamp" < __fb_current_feature_timestamp
+          )
+        ) AS PARENT
+        LEFT JOIN "sf_database"."sf_schema"."scd_table" AS CHILD
+          ON PARENT."cust_id" = CHILD."col_text"
         """
     ).strip()
     assert universe.sql(pretty=True) == expected
