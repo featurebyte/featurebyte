@@ -1,10 +1,14 @@
 """
 This module contains common fixtures for unit tests
 """
+import datetime
+from unittest.mock import patch
+
 import pytest
 
 from featurebyte import FeatureList, RequestColumn
-from featurebyte.feast.utils.registry_construction import FeastRegistryConstructor
+from featurebyte.common.model_util import get_version
+from featurebyte.feast.utils.registry_construction import FeastRegistryBuilder
 
 
 @pytest.fixture(name="always_enable_feast_integration", autouse=True)
@@ -16,32 +20,11 @@ def always_enable_feast_integration_fixture(
     yield
 
 
-@pytest.fixture(name="feature_list")
-def feature_list_fixture(float_feature, non_time_based_feature):
-    """Fixture for the feature list"""
-    float_feature.save()
-    feature_list = FeatureList([float_feature, non_time_based_feature], name="test_feature_list")
-    feature_list.save()
-    return feature_list
-
-
-@pytest.fixture(name="feast_registry_proto")
-def feast_registry_proto_fixture(
-    snowflake_feature_store,
-    cust_id_entity,
-    transaction_entity,
-    float_feature,
-    non_time_based_feature,
-    feature_list,
-):
-    """Fixture for the feast registry proto"""
-    feast_registry_proto = FeastRegistryConstructor.create(
-        feature_store=snowflake_feature_store.cached_model,
-        entities=[cust_id_entity.cached_model, transaction_entity.cached_model],
-        features=[float_feature.cached_model, non_time_based_feature.cached_model],
-        feature_lists=[feature_list.cached_model],  # type: ignore
-    )
-    return feast_registry_proto
+@pytest.fixture(name="mock_pymysql_connect", autouse=True)
+def mock_pymysql_connect_fixture():
+    """Mock pymysql.connect"""
+    with patch("pymysql.connect") as mock_pymysql_connect:
+        yield mock_pymysql_connect
 
 
 @pytest.fixture(name="latest_event_timestamp_feature")
@@ -73,3 +56,89 @@ def composite_feature_ttl_req_col_fixture(
     composite_feature.name = "composite_feature_ttl_req_col"
     composite_feature.save()
     return composite_feature
+
+
+@pytest.fixture(name="feature_list_features", autouse=True)
+def feature_list_features_fixture(
+    float_feature, non_time_based_feature, feature_without_entity, composite_feature_ttl_req_col
+):
+    """Fixture for the feature list features"""
+    float_feature.save()
+    non_time_based_feature.save()
+    feature_without_entity.save()
+    return [
+        float_feature,
+        non_time_based_feature,
+        feature_without_entity,
+        composite_feature_ttl_req_col,
+    ]
+
+
+@pytest.fixture(name="feature_list")
+def feature_list_fixture(feature_list_features):
+    """Fixture for the feature list"""
+    feature_list = FeatureList(feature_list_features, name="test_feature_list")
+    feature_list.save()
+    return feature_list
+
+
+@pytest.fixture(name="feast_registry_proto")
+def feast_registry_proto_fixture(
+    snowflake_feature_store,
+    mysql_online_store,
+    cust_id_entity,
+    transaction_entity,
+    feature_list_features,
+    feature_list,
+):
+    """Fixture for the feast registry proto"""
+    feast_registry_proto = FeastRegistryBuilder.create(
+        feature_store=snowflake_feature_store.cached_model,
+        online_store=mysql_online_store.cached_model,
+        entities=[cust_id_entity.cached_model, transaction_entity.cached_model],
+        features=[feature.cached_model for feature in feature_list_features],
+        feature_lists=[feature_list.cached_model],  # type: ignore
+    )
+    return feast_registry_proto
+
+
+@pytest.fixture(name="expected_entity_names")
+def expected_entity_names_fixture():
+    """Fixture for expected entity names"""
+    return {"__dummy", "cust_id", "transaction_id"}
+
+
+@pytest.fixture(name="expected_data_source_names")
+def expected_data_source_names_fixture(catalog_id):
+    """Fixture for expected data source names"""
+    return {
+        "POINT_IN_TIME",
+        f"fb_entity_transaction_id_{catalog_id}",
+        f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}",
+        f"fb_entity_transaction_id_fjs_86400_0_0_{catalog_id}",
+        f"fb_entity_overall_fjs_86400_3600_7200_ttl_{catalog_id}",
+    }
+
+
+@pytest.fixture(name="expected_feature_view_name_to_ttl")
+def expected_feature_view_name_to_ttl_fixture(catalog_id):
+    """Fixture for expected feature view name to TTL"""
+    return {
+        f"fb_entity_transaction_id_{catalog_id}": datetime.timedelta(seconds=0),
+        f"fb_entity_transaction_id_fjs_86400_0_0_{catalog_id}": datetime.timedelta(seconds=0),
+        f"fb_entity_overall_fjs_86400_3600_7200_ttl_{catalog_id}": datetime.timedelta(days=2),
+        f"fb_entity_cust_id_fjs_1800_300_600_ttl_{catalog_id}": datetime.timedelta(seconds=3600),
+    }
+
+
+@pytest.fixture(name="expected_on_demand_feature_view_names")
+def expected_on_demand_feature_view_names_fixture(
+    float_feature, feature_without_entity, composite_feature_ttl_req_col
+):
+    """Fixture for expected on demand feature view names"""
+    version = get_version().lower()
+    return {
+        f"odfv_composite_feature_ttl_req_col_{version}_{composite_feature_ttl_req_col.id}",
+        f"odfv_count_1d_{version}_{feature_without_entity.id}",
+        f"odfv_sum_1d_{version}_{float_feature.id}",
+    }
