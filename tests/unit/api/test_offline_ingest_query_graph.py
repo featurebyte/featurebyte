@@ -4,13 +4,15 @@ This module contains tests for the offline ingest query graph.
 import os
 import textwrap
 from unittest import mock
+from unittest.mock import AsyncMock
 
 import freezegun
 import pytest
 from bson import json_util
 
-from featurebyte import Entity, FeatureJobSetting, FeatureList, RequestColumn
+from featurebyte import DatabricksDetails, Entity, FeatureJobSetting, FeatureList, RequestColumn
 from featurebyte.models.feature import FeatureModel
+from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.transform.offline_store_ingest import AggregationNodeInfo
 from tests.util.helper import (
@@ -683,9 +685,23 @@ def test_databricks_specs(
         feature.save()
 
     feature_list = FeatureList(features, name="feature_list")
-    with mock.patch("featurebyte.models.feature_list.SourceType") as mock_source_type:
-        # mock source type to be snowflake to trigger databricks specs generation
-        mock_source_type.DATABRICKS_UNITY = "snowflake"
+    with mock.patch(
+        "featurebyte.service.feature_list.FeatureStoreService.get_document", new_callable=AsyncMock
+    ) as mock_get_document:
+        # mock the feature store service to return the databricks feature store
+        feature_store = FeatureStoreModel(
+            name="databricks_feature_store",
+            type="databricks_unity",
+            details=DatabricksDetails(
+                host="host.databricks.com",
+                http_path="sql/protocalv1/some_path",
+                catalog_name="feature_engineering",
+                schema_name="some_schema",
+                group_name="testing",
+                storage_path=f"dbfs:/FileStore/some_storage_path",
+            ),
+        )
+        mock_get_document.return_value = feature_store
         feature_list.save()
 
     store_info = feature_list.cached_model.store_info
@@ -694,7 +710,13 @@ def test_databricks_specs(
     # Import necessary modules for feature engineering and machine learning
     from databricks.feature_engineering import FeatureEngineeringClient
     from databricks.feature_engineering import FeatureFunction, FeatureLookup
-    from pyspark.sql.types import LongType, StructField, StructType, TimestampType
+    from pyspark.sql.types import (
+        DoubleType,
+        LongType,
+        StructField,
+        StructType,
+        TimestampType,
+    )
     from sklearn import linear_model
     import featurebyte as fb
     import mlflow
@@ -710,7 +732,7 @@ def test_databricks_specs(
     # Each FeatureLookup or FeatureFunction object defines a set of features to be included
     features = [
         FeatureLookup(
-            table_name="fb_entity_cust_id_fjs_1800_300_600_ttl_[CATALOG_ID]",
+            table_name="`feature_engineering`.`some_schema`.fb_entity_cust_id_fjs_1800_300_600_ttl_[CATALOG_ID]",
             lookup_key=["cust_id"],
             timestamp_lookup_key=timestamp_lookup_key,
             lookback_window=None,
@@ -722,9 +744,9 @@ def test_databricks_specs(
             rename_outputs={"sum_1d_V240103": "sum_1d"},
         ),
         FeatureLookup(
-            table_name="fb_entity_transaction_id_fjs_86400_0_0_[CATALOG_ID]",
+            table_name="`feature_engineering`.`some_schema`.fb_entity_transaction_id_fjs_86400_0_0_[CATALOG_ID]",
             lookup_key=["transaction_id"],
-            timestamp_lookup_key=None,
+            timestamp_lookup_key=timestamp_lookup_key,
             lookback_window=None,
             feature_names=["non_time_time_sum_amount_feature_V240103"],
             rename_outputs={
@@ -732,26 +754,26 @@ def test_databricks_specs(
             },
         ),
         FeatureLookup(
-            table_name="fb_entity_transaction_id_[CATALOG_ID]",
+            table_name="`feature_engineering`.`some_schema`.fb_entity_transaction_id_[CATALOG_ID]",
             lookup_key=["transaction_id"],
-            timestamp_lookup_key=None,
+            timestamp_lookup_key=timestamp_lookup_key,
             lookback_window=None,
             feature_names=["__feature_V240103__part1"],
             rename_outputs={},
         ),
         FeatureFunction(
-            udf_name="udf_feature_v240103_[FEATURE_ID1]",
+            udf_name="`feature_engineering`.`some_schema`.udf_feature_v240103_[FEATURE_ID1]",
             input_bindings={
-                "col_1": "__feature_V240103__part1",
-                "col_2": "__feature_V240103__part0",
+                "x_1": "__feature_V240103__part1",
+                "x_2": "__feature_V240103__part0",
             },
             output_name="feature",
         ),
         FeatureFunction(
-            udf_name="udf_req_col_feature_v240103_[FEATURE_ID2]",
+            udf_name="`feature_engineering`.`some_schema`.udf_req_col_feature_v240103_[FEATURE_ID2]",
             input_bindings={
-                "col_1": "__req_col_feature_V240103__part0",
-                "request_col_1": "POINT_IN_TIME",
+                "x_1": "__req_col_feature_V240103__part0",
+                "r_1": "POINT_IN_TIME",
             },
             output_name="req_col_feature",
         ),
@@ -772,6 +794,7 @@ def test_databricks_specs(
     target_column = "[TARGET_COLUMN]"
     schema = StructType(
         [
+            StructField("[TARGET_COLUMN]", DoubleType()),
             StructField("transaction_id", LongType()),
             StructField("cust_id", LongType()),
             StructField("POINT_IN_TIME", TimestampType()),

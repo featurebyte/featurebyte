@@ -28,9 +28,9 @@ from featurebyte.query_graph.node.nested import (
 from featurebyte.query_graph.node.schema import ColumnSpec
 from featurebyte.query_graph.node.utils import subset_frame_column_expr
 from featurebyte.query_graph.transform.on_demand_function import (
-    InputArgumentInfo,
     OnDemandFeatureFunctionExtractor,
     OnDemandFeatureFunctionGlobalState,
+    SQLInputArgumentInfo,
 )
 from featurebyte.query_graph.transform.on_demand_view import OnDemandFeatureViewExtractor
 from featurebyte.query_graph.transform.quick_pruning import QuickGraphStructurePruningTransformer
@@ -263,7 +263,7 @@ class UserDefinedFunctionInfo(FeatureByteBaseModel):
     function_name: str
     input_var_prefix: str
     request_input_var_prefix: str
-    input_var_name_to_info: Dict[str, InputArgumentInfo] = Field(default_factory=dict)
+    sql_inputs_info: List[SQLInputArgumentInfo] = Field(default_factory=list)
     codes: str = Field(default="")
 
 
@@ -370,7 +370,7 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
                 input_var_prefix=udf_info.input_var_prefix,
                 request_input_var_prefix=udf_info.request_input_var_prefix,
             )
-            udf_info.input_var_name_to_info = udf_code_state.input_var_name_to_info
+            udf_info.sql_inputs_info = udf_code_state.sql_inputs_info
             udf_info.codes = udf_code_state.generate_code(to_sql=True)
             self.udf_info = udf_info
 
