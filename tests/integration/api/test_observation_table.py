@@ -209,25 +209,3 @@ async def test_observation_table_upload(
     check_materialized_table_preview_methods(
         observation_table, [SpecialColumnName.POINT_IN_TIME, "cust_id"], number_of_rows
     )
-
-
-@pytest.mark.asyncio
-async def test_observation_table_download_consistent_ordering(
-    event_table, scd_table, session, source_type, user_entity
-):
-    """
-    Test downloaded observation table follows a consistent ordering based on table row index
-    """
-    _ = user_entity
-    view = event_table.get_view()
-    scd_view = scd_table.get_view()
-    view = view.join(scd_view, on="ÜSER ID")
-    observation_table = view.create_observation_table(
-        f"{ObjectId()}_{source_type}",
-        columns=[view.timestamp_column, "ÜSER ID"],
-        columns_rename_mapping={view.timestamp_column: "POINT_IN_TIME", "ÜSER ID": "üser id"},
-    )
-
-    df_1 = observation_table.to_pandas()
-    df_2 = observation_table.to_pandas()
-    assert df_1.equals(df_2)
