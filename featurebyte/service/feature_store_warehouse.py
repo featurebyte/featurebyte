@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from typing import Any, List, Optional
 
+from featurebyte.enum import InternalName
 from featurebyte.exception import DatabaseNotFoundError, SchemaNotFoundError, TableNotFoundError
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.user_defined_function import UserDefinedFunctionModel
@@ -203,4 +204,9 @@ class FeatureStoreWarehouseService:
         except db_session.no_schema_error as exc:
             raise TableNotFoundError(f"Table {table_name} not found.") from exc
 
+        table_schema = {  # type: ignore[assignment]
+            col_name: v
+            for (col_name, v) in table_schema.items()
+            if col_name != InternalName.TABLE_ROW_INDEX
+        }
         return list(table_schema.values())
