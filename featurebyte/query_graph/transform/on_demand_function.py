@@ -32,6 +32,15 @@ class InputArgumentInfo(BaseModel):
     column_name: str
 
 
+class SQLInputArgumentInfo(InputArgumentInfo):
+    """
+    SQL input argument info
+    """
+
+    sql_input_var_name: str
+    py_input_var_name: str
+
+
 class OnDemandFeatureFunctionGlobalState(BaseModel):
     """
     On demand feature function global state
@@ -46,6 +55,33 @@ class OnDemandFeatureFunctionGlobalState(BaseModel):
     code_generator: CodeGenerator = Field(
         default_factory=lambda: CodeGenerator(template="on_demand_function.tpl")
     )
+
+    @property
+    def sql_inputs_info(self) -> List[SQLInputArgumentInfo]:
+        """
+        SQL inputs info
+
+        Returns
+        -------
+        List[SQLInputArgumentInfo]
+            SQL input variable name to info
+        """
+        output = []
+        codegen_config = self.code_generation_config
+        var_name_generator = VariableNameGenerator(one_based=True)
+        for input_arg_name, input_info in sorted(self.input_var_name_to_info.items()):
+            sql_param = var_name_generator.convert_to_variable_name(
+                variable_name_prefix=codegen_config.get_sql_param_prefix(input_arg_name),
+                node_name=None,
+            )
+            sql_param_info = SQLInputArgumentInfo(
+                py_type=input_info.py_type,
+                column_name=input_info.column_name,
+                py_input_var_name=input_arg_name,
+                sql_input_var_name=sql_param,
+            )
+            output.append(sql_param_info)
+        return output
 
     def register_input_argument(
         self, variable_name_prefix: str, py_type: str, column_name: str
@@ -88,17 +124,13 @@ class OnDemandFeatureFunctionGlobalState(BaseModel):
         py_func_params = []
         py_comments = []
         input_arg_names = []
-        var_name_generator = VariableNameGenerator(one_based=True)
-        for input_arg_name, input_info in sorted(self.input_var_name_to_info.items()):
-            sql_param = var_name_generator.convert_to_variable_name(
-                variable_name_prefix=codegen_config.get_sql_param_prefix(input_arg_name),
-                node_name=None,
-            )
-            sql_type = codegen_config.to_sql_type(input_info.py_type)
-            sql_func_params.append(f"{sql_param} {sql_type}")
-            py_func_params.append(f"{input_arg_name}: {input_info.py_type}")
-            py_comments.append(f"# {input_arg_name}: {input_info.column_name}")
-            input_arg_names.append(sql_param)
+        for sql_input_info in self.sql_inputs_info:
+            input_arg_name = sql_input_info.py_input_var_name
+            sql_type = codegen_config.to_sql_type(sql_input_info.py_type)
+            sql_func_params.append(f"{sql_input_info.sql_input_var_name} {sql_type}")
+            py_func_params.append(f"{input_arg_name}: {sql_input_info.py_type}")
+            py_comments.append(f"# {input_arg_name}: {sql_input_info.column_name}")
+            input_arg_names.append(sql_input_info.sql_input_var_name)
 
         function_codes = self.code_generator.generate(
             to_format=True,
