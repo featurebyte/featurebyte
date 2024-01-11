@@ -183,7 +183,7 @@ class DataBricksStoreInfo(BaseStoreInfo):
         assert isinstance(feature_store_details, DatabricksDetails)
         catalog_name = feature_store_details.catalog_name
         schema_name = feature_store_details.schema_name
-        return f"`{catalog_name}`.`{schema_name}`"
+        return f"{catalog_name}.{schema_name}"
 
     @staticmethod
     def _create_feature_functions(

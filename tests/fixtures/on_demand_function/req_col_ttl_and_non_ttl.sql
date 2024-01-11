@@ -1,4 +1,4 @@
-CREATE FUNCTION udf_func(x_1 STRING, x_2 DOUBLE, r_1 STRING)
+CREATE FUNCTION udf_func(x_1 TIMESTAMP, x_2 DOUBLE, r_1 TIMESTAMP)
 RETURNS DOUBLE
 LANGUAGE PYTHON
 COMMENT ''
@@ -10,7 +10,7 @@ import scipy as sp
 
 
 def user_defined_function(
-    col_1: str, col_2: float, request_col_1: str
+    col_1: pd.Timestamp, col_2: float, request_col_1: pd.Timestamp
 ) -> float:
     # col_1: __feature_V231227__part0
     # col_2: __feature_V231227__part1

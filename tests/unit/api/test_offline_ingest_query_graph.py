@@ -732,7 +732,7 @@ def test_databricks_specs(
     # Each FeatureLookup or FeatureFunction object defines a set of features to be included
     features = [
         FeatureLookup(
-            table_name="`feature_engineering`.`some_schema`.fb_entity_cust_id_fjs_1800_300_600_ttl_[CATALOG_ID]",
+            table_name="feature_engineering.some_schema.fb_entity_cust_id_fjs_1800_300_600_ttl_[CATALOG_ID]",
             lookup_key=["cust_id"],
             timestamp_lookup_key=timestamp_lookup_key,
             lookback_window=None,
@@ -744,7 +744,7 @@ def test_databricks_specs(
             rename_outputs={"sum_1d_V240103": "sum_1d"},
         ),
         FeatureLookup(
-            table_name="`feature_engineering`.`some_schema`.fb_entity_transaction_id_fjs_86400_0_0_[CATALOG_ID]",
+            table_name="feature_engineering.some_schema.fb_entity_transaction_id_fjs_86400_0_0_[CATALOG_ID]",
             lookup_key=["transaction_id"],
             timestamp_lookup_key=timestamp_lookup_key,
             lookback_window=None,
@@ -754,7 +754,7 @@ def test_databricks_specs(
             },
         ),
         FeatureLookup(
-            table_name="`feature_engineering`.`some_schema`.fb_entity_transaction_id_[CATALOG_ID]",
+            table_name="feature_engineering.some_schema.fb_entity_transaction_id_[CATALOG_ID]",
             lookup_key=["transaction_id"],
             timestamp_lookup_key=timestamp_lookup_key,
             lookback_window=None,
@@ -762,7 +762,7 @@ def test_databricks_specs(
             rename_outputs={},
         ),
         FeatureFunction(
-            udf_name="`feature_engineering`.`some_schema`.udf_feature_v240103_[FEATURE_ID1]",
+            udf_name="feature_engineering.some_schema.udf_feature_v240103_[FEATURE_ID1]",
             input_bindings={
                 "x_1": "__feature_V240103__part1",
                 "x_2": "__feature_V240103__part0",
@@ -770,7 +770,7 @@ def test_databricks_specs(
             output_name="feature",
         ),
         FeatureFunction(
-            udf_name="`feature_engineering`.`some_schema`.udf_req_col_feature_v240103_[FEATURE_ID2]",
+            udf_name="feature_engineering.some_schema.udf_req_col_feature_v240103_[FEATURE_ID2]",
             input_bindings={
                 "x_1": "__req_col_feature_V240103__part0",
                 "r_1": "POINT_IN_TIME",
