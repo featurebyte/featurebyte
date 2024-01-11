@@ -305,7 +305,7 @@ class DataBricksStoreInfo(BaseStoreInfo):
 
         if not has_point_in_time:
             base_dataframe_specs.append(
-                ColumnSpec(name=SpecialColumnName.POINT_IN_TIME, dtype=DBVarType.TIMESTAMP)
+                ColumnSpec(name=SpecialColumnName.POINT_IN_TIME.value, dtype=DBVarType.TIMESTAMP)
             )
 
         return cls(
