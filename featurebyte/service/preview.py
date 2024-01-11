@@ -17,7 +17,7 @@ from featurebyte.logging import get_logger
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
-from featurebyte.query_graph.sql.common import sql_to_string
+from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.sql.materialisation import get_source_count_expr, get_source_expr
 from featurebyte.schema.feature_store import (
@@ -312,6 +312,7 @@ class PreviewService:
         result = await db_session.execute_query(sql)
         assert result is not None
         columns = await db_session.list_table_schema(**location.table_details.json_dict())
+        has_row_index = InternalName.TABLE_ROW_INDEX in columns
         columns = {  # type: ignore[assignment]
             col_name: v
             for (col_name, v) in columns.items()
@@ -331,6 +332,8 @@ class PreviewService:
             raise LimitExceededError(f"Table size {shape} exceeds download limit.")
 
         sql_expr = get_source_expr(source=location.table_details, column_names=list(columns.keys()))
+        if has_row_index:
+            sql_expr = sql_expr.order_by(quoted_identifier(InternalName.TABLE_ROW_INDEX))
         sql = sql_to_string(
             sql_expr,
             source_type=db_session.source_type,
