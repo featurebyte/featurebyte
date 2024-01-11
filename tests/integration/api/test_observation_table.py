@@ -63,6 +63,7 @@ async def test_observation_table_from_source_table(
     expected_max = df["POINT_IN_TIME"].max()
     expected_cust_id_unique_count = df[user_id_entity_col_name].nunique()
     assert observation_table.entity_column_name_to_count["User ID"] == expected_cust_id_unique_count
+    assert df.columns.tolist() == ["POINT_IN_TIME", user_id_entity_col_name]
 
     def _convert_timestamp_for_timezones(timestamp_str):
         current_timestamp = pd.Timestamp(timestamp_str)
