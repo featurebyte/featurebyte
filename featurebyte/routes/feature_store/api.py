@@ -3,7 +3,7 @@ FeatureStore API routes
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional
 
 from fastapi import Query, Request
 

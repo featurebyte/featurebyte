@@ -270,7 +270,6 @@ async def test_value_counts(
 async def test_download_table(
     preview_service,
     feature_store,
-    feature_store_preview,
     mock_snowflake_session,
     has_row_index,
 ):
