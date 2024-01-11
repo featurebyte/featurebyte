@@ -685,7 +685,7 @@ def test_databricks_specs(
     feature_list = FeatureList(features, name="feature_list")
     with mock.patch("featurebyte.models.feature_list.SourceType") as mock_source_type:
         # mock source type to be snowflake to trigger databricks specs generation
-        mock_source_type.DATABRICKS = "snowflake"
+        mock_source_type.DATABRICKS_UNITY = "snowflake"
         feature_list.save()
 
     store_info = feature_list.cached_model.store_info

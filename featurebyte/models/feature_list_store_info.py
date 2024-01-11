@@ -94,7 +94,7 @@ class DataBricksStoreInfo(BaseStoreInfo):
     DataBricks store info
     """
 
-    type: SourceType = Field(default=SourceType.DATABRICKS, const=True)
+    type: SourceType = Field(default=SourceType.DATABRICKS_UNITY, const=True)
     databricks_sdk_version: str = Field(default="0.16.3")
     feature_specs: List[Union[DataBricksFeatureLookup, DataBricksFeatureFunction]]
     base_dataframe_specs: List[ColumnSpec]
