@@ -620,7 +620,7 @@ async def test_simulated_materialize__non_ttl_feature_table(
         f"User Status Feature_{version}",
         f"Complex Feature by User_{version}",
     ]
-    assert df_0.shape[0] == 4
+    assert df_0.shape[0] == 9
     assert df_0["__feature_timestamp"].nunique() == 1
 
     # Trigger a materialization task after the feature table is created. This should materialize
@@ -632,7 +632,7 @@ async def test_simulated_materialize__non_ttl_feature_table(
             parse_one(f'SELECT * FROM "{feature_table_model.name}"'), session.source_type
         ),
     )
-    assert df_1.shape[0] == 13
+    assert df_1.shape[0] == 18
     assert df_1["__feature_timestamp"].nunique() == 2
 
     # Materialize one more time. Since there is no new data that appears since the last
