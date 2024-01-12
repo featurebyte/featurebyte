@@ -1202,6 +1202,28 @@ def event_table_fixture(
     return event_table
 
 
+@pytest.fixture(name="event_view")
+def event_view_fixture(event_table):
+    """Event view fixture"""
+    event_view = event_table.get_view()
+    assert event_view.columns == [
+        "ËVENT_TIMESTAMP",
+        "CREATED_AT",
+        "CUST_ID",
+        "ÜSER ID",
+        "PRODUCT_ACTION",
+        "SESSION_ID",
+        "ÀMOUNT",
+        "TZ_OFFSET",
+        "TRANSACTION_ID",
+        "EMBEDDING_ARRAY",
+        "ARRAY",
+        "FLAT_DICT",
+        "NESTED_DICT",
+    ]
+    return event_view
+
+
 @pytest.fixture(name="item_table_name", scope="session")
 def item_table_name_fixture(source_type):
     """
@@ -1525,6 +1547,42 @@ def online_store_compute_query_service_fixture(app_container) -> OnlineStoreComp
     return app_container.online_store_compute_query_service
 
 
+@pytest.fixture(name="feature_store_service")
+def feature_store_service_fixture(app_container):
+    """FeatureStore service"""
+    return app_container.feature_store_service
+
+
+@pytest.fixture(name="feature_table_cache_service")
+def feature_table_cache_service_fixture(app_container):
+    """FeatureTableCacheService fixture"""
+    return app_container.feature_table_cache_service
+
+
+@pytest.fixture(name="observation_table_service")
+def observation_table_service_fixture(app_container):
+    """ObservationTableService fixture"""
+    return app_container.observation_table_service
+
+
+@pytest.fixture(name="feature_list_service")
+def feature_list_service_fixture(app_container):
+    """FeatureListService fixture"""
+    return app_container.feature_list_service
+
+
+@pytest.fixture(name="feature_table_cache_metadata_service")
+def feature_table_cache_metadata_service_fixture(app_container):
+    """FeatureTableCacheMetadataService fixture"""
+    return app_container.feature_table_cache_metadata_service
+
+
+@pytest.fixture(name="feature_service")
+def feature_service_fixture(app_container):
+    """FeatureService fixture"""
+    return app_container.feature_service
+
+
 @pytest.fixture(name="online_store", scope="session")
 def online_store_fixture():
     """
@@ -1537,3 +1595,47 @@ def online_store_fixture():
             connection_string=REDIS_URI.replace("redis://", ""),
         ),
     )
+
+
+@pytest.fixture(name="feature_group")
+def feature_group_fixture(event_view):
+    """
+    Fixture for a simple FeatureGroup with count features
+    """
+    event_view["derived_value_column"] = 1.0 * event_view["ÜSER ID"]
+    feature_group = event_view.groupby("ÜSER ID").aggregate_over(
+        method="count",
+        windows=["2h", "24h"],
+        feature_names=["COUNT_2h", "COUNT_24h"],
+    )
+    return feature_group
+
+
+@pytest.fixture(name="feature_group_per_category")
+def feature_group_per_category_fixture(event_view):
+    """
+    Fixture for a FeatureGroup with dictionary features
+    """
+
+    feature_group_per_category = event_view.groupby(
+        "ÜSER ID", category="PRODUCT_ACTION"
+    ).aggregate_over(
+        method="count",
+        windows=["2h", "24h"],
+        feature_names=["COUNT_BY_ACTION_2h", "COUNT_BY_ACTION_24h"],
+    )
+    # add features based on transformations on count per category
+    feature_counts_24h = feature_group_per_category["COUNT_BY_ACTION_24h"]
+    feature_group_per_category["ENTROPY_BY_ACTION_24h"] = feature_counts_24h.cd.entropy()
+    feature_group_per_category["MOST_FREQUENT_ACTION_24h"] = feature_counts_24h.cd.most_frequent()
+    feature_group_per_category["NUM_UNIQUE_ACTION_24h"] = feature_counts_24h.cd.unique_count()
+    feature_group_per_category[
+        "NUM_UNIQUE_ACTION_24h_exclude_missing"
+    ] = feature_counts_24h.cd.unique_count(include_missing=False)
+
+    feature_counts_2h = feature_group_per_category["COUNT_BY_ACTION_2h"]
+    feature_group_per_category[
+        "ACTION_SIMILARITY_2h_to_24h"
+    ] = feature_counts_2h.cd.cosine_similarity(feature_counts_24h)
+
+    return feature_group_per_category

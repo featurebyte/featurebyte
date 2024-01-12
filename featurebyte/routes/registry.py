@@ -92,6 +92,7 @@ from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.service.feature_table_cache import FeatureTableCacheService
+from featurebyte.service.feature_table_cache_metadata import FeatureTableCacheMetadataService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 from featurebyte.service.historical_features import (
     HistoricalFeatureExecutor,
@@ -249,6 +250,7 @@ app_container_config.register_class(FeatureStoreController)
 app_container_config.register_class(FeatureStoreService)
 app_container_config.register_class(FeatureStoreWarehouseService)
 app_container_config.register_class(FeatureTableCacheService)
+app_container_config.register_class(FeatureTableCacheMetadataService)
 app_container_config.register_class(HistoricalFeatureExecutor)
 app_container_config.register_class(HistoricalFeatureTableController)
 app_container_config.register_class(HistoricalFeatureTableService)
