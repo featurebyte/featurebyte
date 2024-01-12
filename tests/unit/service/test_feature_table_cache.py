@@ -252,7 +252,7 @@ async def test_update_feature_table_cache(
     assert params["output_table_details"].table_name == "__TEMP__FEATURE_TABLE_CACHE_ObjectId"
     assert params["is_feature_list_deployed"] == feature_list.deployed
 
-    assert mock_snowflake_session.execute_query.await_count == 3
+    assert mock_snowflake_session.execute_query.await_count == 2
 
     feature_table_cache = (
         await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
@@ -265,18 +265,11 @@ async def test_update_feature_table_cache(
     sqls = [arg[0][0] for arg in call_args]
 
     assert sqls[0] == (
-        'CREATE TABLE "sf_db"."sf_schema"."__TEMP__FEATURE_TABLE_CACHE_ObjectId" AS\n'
-        "SELECT\n"
-        '  "__FB_TABLE_ROW_INDEX",\n'
-        '  "sum_2h" AS "FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24"\n'
-        'FROM "__TEMP__FEATURE_TABLE_CACHE_ObjectId"'
-    )
-    assert sqls[1] == (
         "ALTER TABLE "
         f'"sf_db"."sf_schema"."{feature_table_cache.table_name}" ADD '
         'COLUMN "FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24" FLOAT'
     )
-    assert sqls[2] == (
+    assert sqls[1] == (
         "MERGE INTO "
         f'"sf_db"."sf_schema"."{feature_table_cache.table_name}" AS '
         "feature_table_cache USING "
@@ -284,5 +277,5 @@ async def test_update_feature_table_cache(
         'partial_features ON feature_table_cache."__FB_TABLE_ROW_INDEX" = '
         'partial_features."__FB_TABLE_ROW_INDEX"   WHEN MATCHED THEN UPDATE SET '
         'feature_table_cache."FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24" = '
-        'partial_features."FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24"'
+        'partial_features."sum_2h"'
     )

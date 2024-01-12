@@ -1,10 +1,10 @@
 """
 This module contains Feature Table Cache related models
 """
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 import pymongo
-from pydantic import Field
+from pydantic import Field, root_validator
 
 from featurebyte.models.base import (
     FeatureByteBaseModel,
@@ -22,7 +22,15 @@ class CachedFeatureDefinition(FeatureByteBaseModel):
 
     feature_id: Optional[PydanticObjectId] = Field(default=None)
     definition_hash: str
-    feature_name: str
+    feature_name: Optional[str] = Field(default=None)
+
+    @root_validator(pre=True)
+    @classmethod
+    def _set_feature_name(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        if "feature_name" not in values:
+            definition_hash = values["definition_hash"]
+            values["feature_name"] = f"FEATURE_{definition_hash}"
+        return values
 
 
 class FeatureTableCacheMetadataModel(FeatureByteCatalogBaseDocumentModel):

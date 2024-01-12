@@ -99,22 +99,6 @@ class FeatureTableCacheService:
         self.tile_cache_service = tile_cache_service
         self.feature_list_service = feature_list_service
 
-    def create_feature_name(self, definition_hash: str) -> str:
-        """
-        Create feature name from feature definition hash.
-
-        Parameters
-        ----------
-        definition_hash: str
-            Definition hash
-
-        Returns
-        -------
-        str
-            Feature name
-        """
-        return f"FEATURE_{definition_hash}"
-
     async def get_non_cached_nodes(
         self,
         feature_table_cache_metadata: FeatureTableCacheMetadataModel,
@@ -169,16 +153,53 @@ class FeatureTableCacheService:
         non_cached = [
             (
                 node,
-                CachedFeatureDefinition(
-                    definition_hash=definition_hash,
-                    feature_name=self.create_feature_name(definition_hash),
-                ),
+                CachedFeatureDefinition(definition_hash=definition_hash),
             )
             for definition_hash, node in hashes.items()
             if definition_hash not in cached_hashes
         ]
 
         return non_cached
+
+    async def _populate_intermediate_table(
+        self,
+        feature_store: FeatureStoreModel,
+        observation_table: ObservationTableModel,
+        db_session: BaseSession,
+        intermediate_table_name: str,
+        graph: QueryGraph,
+        nodes: List[Tuple[Node, CachedFeatureDefinition]],
+        serving_names_mapping: Optional[Dict[str, str]] = None,
+        is_feature_list_deployed: bool = False,
+    ) -> None:
+        request_column_names = {col.name for col in observation_table.columns_info}
+        nodes_only = [node for node, _ in nodes]
+        parent_serving_preparation = (
+            await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
+                graph=graph,
+                nodes=nodes_only,
+                request_column_names=request_column_names,
+                feature_store=feature_store,
+                serving_names_mapping=serving_names_mapping,
+            )
+        )
+        output_table_details = TableDetails(
+            database_name=db_session.database_name,
+            schema_name=db_session.schema_name,
+            table_name=intermediate_table_name,
+        )
+        await get_historical_features(
+            session=db_session,
+            tile_cache_service=self.tile_cache_service,
+            graph=graph,
+            nodes=nodes_only,
+            observation_set=observation_table,
+            feature_store=feature_store,
+            output_table_details=output_table_details,
+            serving_names_mapping=serving_names_mapping,
+            is_feature_list_deployed=is_feature_list_deployed,
+            parent_serving_preparation=parent_serving_preparation,
+        )
 
     async def _create_table(
         self,
@@ -195,38 +216,21 @@ class FeatureTableCacheService:
             f"__TEMP__{MaterializedTableNamePrefix.FEATURE_TABLE_CACHE}_{ObjectId()}"
         )
         try:
-            request_column_names = {col.name for col in observation_table.columns_info}
-            nodes_only = [node for node, _ in nodes]
-            parent_serving_preparation = await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
-                graph=graph,
-                nodes=nodes_only,
-                request_column_names=request_column_names,
+            await self._populate_intermediate_table(
                 feature_store=feature_store,
-                serving_names_mapping=serving_names_mapping,
-            )
-            output_table_details = TableDetails(
-                database_name=db_session.database_name,
-                schema_name=db_session.schema_name,
-                table_name=intermediate_table_name,
-            )
-
-            await get_historical_features(
-                session=db_session,
-                tile_cache_service=self.tile_cache_service,
+                observation_table=observation_table,
+                db_session=db_session,
+                intermediate_table_name=intermediate_table_name,
                 graph=graph,
-                nodes=nodes_only,
-                observation_set=observation_table,
-                feature_store=feature_store,
-                output_table_details=output_table_details,
+                nodes=nodes,
                 serving_names_mapping=serving_names_mapping,
                 is_feature_list_deployed=is_feature_list_deployed,
-                parent_serving_preparation=parent_serving_preparation,
             )
 
             feature_names = [
                 expressions.alias_(
                     quoted_identifier(cast(str, graph.get_node_output_column_name(node.name))),
-                    alias=quoted_identifier(feature_definition.feature_name),
+                    alias=quoted_identifier(cast(str, feature_definition.feature_name)),
                     quoted=True,
                 )
                 for node, feature_definition in nodes
@@ -268,7 +272,7 @@ class FeatureTableCacheService:
         is_feature_list_deployed: bool = False,
     ) -> None:
         # create temporary table with features
-        temp_final_cache_table_name = (
+        intermediate_table_name = (
             f"__TEMP__{MaterializedTableNamePrefix.FEATURE_TABLE_CACHE}_{ObjectId()}"
         )
 
@@ -276,11 +280,11 @@ class FeatureTableCacheService:
         merge_source_table_alias = "partial_features"
 
         try:
-            await self._create_table(
+            await self._populate_intermediate_table(
                 feature_store=feature_store,
                 observation_table=observation_table,
                 db_session=db_session,
-                final_table_name=temp_final_cache_table_name,
+                intermediate_table_name=intermediate_table_name,
                 graph=graph,
                 nodes=non_cached_nodes,
                 serving_names_mapping=serving_names_mapping,
@@ -296,9 +300,9 @@ class FeatureTableCacheService:
             )
             columns_expr = [
                 expressions.ColumnDef(
-                    this=quoted_identifier(definition.feature_name),
-                    kind=expressions.DataType.build(
-                        adapter.get_physical_type_from_dtype(extract_dtype_from_graph(graph, node))
+                    this=quoted_identifier(cast(str, definition.feature_name)),
+                    kind=adapter.get_physical_type_from_dtype(
+                        extract_dtype_from_graph(graph, node)
                     ),
                 )
                 for node, definition in non_cached_nodes
@@ -323,13 +327,14 @@ class FeatureTableCacheService:
                 expressions=[
                     expressions.EQ(
                         this=get_qualified_column_identifier(
-                            definition.feature_name, merge_target_table_alias
+                            cast(str, definition.feature_name), merge_target_table_alias
                         ),
                         expression=get_qualified_column_identifier(
-                            definition.feature_name, merge_source_table_alias
+                            cast(str, graph.get_node_output_column_name(node.name)),
+                            merge_source_table_alias,
                         ),
                     )
-                    for _, definition in non_cached_nodes
+                    for node, definition in non_cached_nodes
                 ]
             )
             merge_expr = expressions.Merge(
@@ -340,7 +345,7 @@ class FeatureTableCacheService:
                     alias=expressions.TableAlias(this=merge_target_table_alias),
                 ),
                 using=expressions.Table(
-                    this=quoted_identifier(temp_final_cache_table_name),
+                    this=quoted_identifier(intermediate_table_name),
                     db=quoted_identifier(db_session.schema_name),
                     catalog=quoted_identifier(db_session.database_name),
                     alias=expressions.TableAlias(this=merge_source_table_alias),
@@ -359,7 +364,7 @@ class FeatureTableCacheService:
             await db_session.drop_table(
                 database_name=db_session.database_name,
                 schema_name=db_session.schema_name,
-                table_name=temp_final_cache_table_name,
+                table_name=intermediate_table_name,
                 if_exists=True,
             )
 
