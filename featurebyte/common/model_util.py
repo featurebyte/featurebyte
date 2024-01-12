@@ -178,3 +178,36 @@ def get_utc_now() -> datetime:
     utc_now = datetime.utcnow()
     utc_now = utc_now.replace(microsecond=int(utc_now.microsecond / 1000) * 1000)
     return utc_now
+
+
+def convert_seconds_to_time_format(seconds: int) -> str:
+    """
+    Convert seconds to time format
+
+    Parameters
+    ----------
+    seconds: int
+        Seconds to convert
+
+    Returns
+    -------
+    str
+        Time format string
+    """
+    days = seconds // 86400
+    hours = (seconds % 86400) // 3600
+    minutes = (seconds % 3600) // 60
+    remaining_seconds = seconds % 60
+
+    # Build the time format string
+    time_format = ""
+    if days > 0:
+        time_format += f"{days}d"
+    if hours > 0:
+        time_format += f"{hours}h"
+    if minutes > 0:
+        time_format += f"{minutes}m"
+    if remaining_seconds > 0 or time_format == "":
+        time_format += f"{remaining_seconds}s"
+
+    return time_format
