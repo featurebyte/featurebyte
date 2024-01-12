@@ -78,8 +78,8 @@ class TestOnlineStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
                     "port": 3306,
                     "credential": {
                         "type": "USERNAME_PASSWORD",
-                        "username": "mysql_user",
-                        "password": "mysql_password",
+                        "username": "********",
+                        "password": "********",
                     },
                 },
             }.items()
@@ -101,8 +101,8 @@ class TestOnlineStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
             "port": 3307,
             "credential": {
                 "type": "USERNAME_PASSWORD",
-                "username": "mysql_user",
-                "password": "mysql_password",
+                "username": "********",
+                "password": "********",
             },
         }
 

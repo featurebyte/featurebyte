@@ -27,6 +27,13 @@ class BaseOnlineStoreDetails(FeatureByteBaseModel):
     type: OnlineStoreType
     credential: Optional[BaseDatabaseCredential]
 
+    def hide_details_credentials(self) -> None:
+        """
+        Hide credentials values
+        """
+        if self.credential:
+            self.credential.hide_values()
+
 
 class RedisOnlineStoreDetails(BaseOnlineStoreDetails):
     """

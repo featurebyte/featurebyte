@@ -821,3 +821,19 @@ def assert_dict_approx_equal(actual, expected):
         assert actual == pytest.approx(expected)
     else:
         assert actual == expected
+
+
+def dict_to_tuple(d):
+    """Recursively convert dictionary to a hashable tuple."""
+    if isinstance(d, dict):
+        return tuple((k, dict_to_tuple(v)) for k, v in sorted(d.items()))
+    if isinstance(d, list):
+        return tuple(sorted(dict_to_tuple(v) for v in d))
+    return d
+
+
+def assert_lists_of_dicts_equal(list1, list2):
+    """Compare two lists of dictionaries without considering the order, handling nested structures."""
+    set1 = {dict_to_tuple(d) for d in list1}
+    set2 = {dict_to_tuple(d) for d in list2}
+    assert set1 == set2, f"Expected {set1}, got {set2}"

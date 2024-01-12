@@ -1873,7 +1873,7 @@ async def insert_credential_fixture(persistent, user, snowflake_feature_store_id
         ),
         user_id=user.id,
     )
-    credential_model.encrypt()
+    credential_model.encrypt_credentials()
     await persistent.insert_one(
         collection_name=CredentialModel.collection_name(),
         document=credential_model.dict(by_alias=True),

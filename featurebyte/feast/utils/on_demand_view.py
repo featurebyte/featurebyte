@@ -87,7 +87,7 @@ class OnDemandFeatureViewConstructor:
 
         sources: List[Union[FeatureView, RequestSource, FeatureViewProjection]] = []
         has_point_in_time = False
-        ttl_seconds: Optional[int] = None
+        ttl_seconds: Optional[float] = None
         if offline_store_info.is_decomposed:
             for (
                 ingest_query_graph
@@ -114,7 +114,7 @@ class OnDemandFeatureViewConstructor:
                 offline_store_info.metadata.offline_store_table_name
             ]
             if fv_source.ttl is not None:
-                ttl_seconds = fv_source.ttl.seconds
+                ttl_seconds = fv_source.ttl.total_seconds()
             sources.append(fv_source)
 
         if not has_point_in_time and ttl_seconds:

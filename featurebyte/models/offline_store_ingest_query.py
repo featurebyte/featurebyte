@@ -25,11 +25,12 @@ from featurebyte.query_graph.node.nested import (
     OfflineStoreIngestQueryGraphNodeParameters,
     OfflineStoreMetadata,
 )
+from featurebyte.query_graph.node.schema import ColumnSpec
 from featurebyte.query_graph.node.utils import subset_frame_column_expr
 from featurebyte.query_graph.transform.on_demand_function import (
-    InputArgumentInfo,
     OnDemandFeatureFunctionExtractor,
     OnDemandFeatureFunctionGlobalState,
+    SQLInputArgumentInfo,
 )
 from featurebyte.query_graph.transform.on_demand_view import OnDemandFeatureViewExtractor
 from featurebyte.query_graph.transform.quick_pruning import QuickGraphStructurePruningTransformer
@@ -59,6 +60,14 @@ class OfflineStoreInfoMetadata(OfflineStoreMetadata):
 
     output_column_name: str
     primary_entity_ids: List[PydanticObjectId]
+
+
+class OfflineStoreEntityInfo(ColumnSpec):
+    """
+    EntityInfo object stores the entity information of the feature.
+    """
+
+    id: PydanticObjectId
 
 
 class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
@@ -162,6 +171,34 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
             has_ttl=metadata.has_ttl,
         )
 
+    def get_primary_entity_info(
+        self, entity_id_to_serving_name: Dict[PydanticObjectId, str]
+    ) -> List[OfflineStoreEntityInfo]:
+        """
+        Get primary entity info of the offline store ingest query graph
+
+        Parameters
+        ----------
+        entity_id_to_serving_name: Dict[PydanticObjectId, str]
+            Map from entity id to serving name
+
+        Returns
+        -------
+        List[OfflineStoreEntityInfo]
+            List of EntityInfo
+        """
+        output = []
+        for entity_id, entity_dtype in zip(self.primary_entity_ids, self.primary_entity_dtypes):
+            serving_name = entity_id_to_serving_name[entity_id]
+            output.append(
+                OfflineStoreEntityInfo(
+                    id=entity_id,
+                    name=serving_name,
+                    dtype=entity_dtype,
+                )
+            )
+        return output
+
     def ingest_graph_and_node(self) -> Tuple[QueryGraphModel, Node]:
         """
         Construct graph and node for generating offline store ingest SQL query
@@ -226,7 +263,7 @@ class UserDefinedFunctionInfo(FeatureByteBaseModel):
     function_name: str
     input_var_prefix: str
     request_input_var_prefix: str
-    input_var_name_to_info: Dict[str, InputArgumentInfo] = Field(default_factory=dict)
+    sql_inputs_info: List[SQLInputArgumentInfo] = Field(default_factory=list)
     codes: str = Field(default="")
 
 
@@ -333,7 +370,7 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
                 input_var_prefix=udf_info.input_var_prefix,
                 request_input_var_prefix=udf_info.request_input_var_prefix,
             )
-            udf_info.input_var_name_to_info = udf_code_state.input_var_name_to_info
+            udf_info.sql_inputs_info = udf_code_state.sql_inputs_info
             udf_info.codes = udf_code_state.generate_code(to_sql=True)
             self.udf_info = udf_info
 

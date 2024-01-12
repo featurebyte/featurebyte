@@ -110,7 +110,7 @@ def test_credentials_serialize_json(feature_store, database_credential, storage_
         storage_credential=storage_credential,
     )
     credential_to_serialize = copy.deepcopy(credential)
-    credential_to_serialize.encrypt()
+    credential_to_serialize.encrypt_credentials()
     credential_json = credential_to_serialize.json(by_alias=True)
     deserialized_credential = CredentialModel(**json.loads(credential_json))
 
@@ -119,7 +119,7 @@ def test_credentials_serialize_json(feature_store, database_credential, storage_
         assert deserialized_credential.json_dict() != credential.json_dict()
 
     # check that the credential is decrypted correctly
-    deserialized_credential.decrypt()
+    deserialized_credential.decrypt_credentials()
     assert deserialized_credential.json_dict() == credential.json_dict()
 
 

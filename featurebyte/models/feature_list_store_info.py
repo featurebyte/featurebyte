@@ -9,7 +9,7 @@ from abc import abstractmethod  # pylint: disable=wrong-import-order
 
 from pydantic import Field
 
-from featurebyte.enum import DBVarType, SourceType
+from featurebyte.enum import DBVarType, SourceType, SpecialColumnName
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_store import FeatureStoreModel
@@ -21,7 +21,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     get_object_class_from_function_call,
 )
 from featurebyte.query_graph.node.request import RequestColumnNode
-from featurebyte.query_graph.node.schema import ColumnSpec
+from featurebyte.query_graph.node.schema import ColumnSpec, DatabricksDetails
 
 
 class BaseStoreInfo(FeatureByteBaseModel):
@@ -94,7 +94,7 @@ class DataBricksStoreInfo(BaseStoreInfo):
     DataBricks store info
     """
 
-    type: SourceType = Field(default=SourceType.DATABRICKS, const=True)
+    type: SourceType = Field(default=SourceType.DATABRICKS_UNITY, const=True)
     databricks_sdk_version: str = Field(default="0.16.3")
     feature_specs: List[Union[DataBricksFeatureLookup, DataBricksFeatureFunction]]
     base_dataframe_specs: List[ColumnSpec]
@@ -178,18 +178,28 @@ class DataBricksStoreInfo(BaseStoreInfo):
         return codes
 
     @staticmethod
-    def _create_feature_functions(features: List[FeatureModel]) -> List[DataBricksFeatureFunction]:
+    def _get_fully_qualified_schema_name(feature_store: FeatureStoreModel) -> str:
+        feature_store_details = feature_store.details
+        assert isinstance(feature_store_details, DatabricksDetails)
+        catalog_name = feature_store_details.catalog_name
+        schema_name = feature_store_details.schema_name
+        return f"{catalog_name}.{schema_name}"
+
+    @staticmethod
+    def _create_feature_functions(
+        features: List[FeatureModel], schema_name: str
+    ) -> List[DataBricksFeatureFunction]:
         feature_functions = []
         for feature in features:
             offline_store_info = feature.offline_store_info
             if offline_store_info.udf_info:
                 input_bindings = {
-                    input_arg_name: input_info.column_name
-                    for input_arg_name, input_info in offline_store_info.udf_info.input_var_name_to_info.items()
+                    sql_input_info.sql_input_var_name: sql_input_info.column_name
+                    for sql_input_info in offline_store_info.udf_info.sql_inputs_info
                 }
                 feature_functions.append(
                     DataBricksFeatureFunction(
-                        udf_name=offline_store_info.udf_info.sql_function_name,
+                        udf_name=f"{schema_name}.{offline_store_info.udf_info.sql_function_name}",
                         input_bindings=input_bindings,
                         output_name=feature.name,
                     )
@@ -197,7 +207,9 @@ class DataBricksStoreInfo(BaseStoreInfo):
         return feature_functions
 
     @staticmethod
-    def _create_feature_lookups(features: List[FeatureModel]) -> List[DataBricksFeatureLookup]:
+    def _create_feature_lookups(
+        features: List[FeatureModel], schema_name: str
+    ) -> List[DataBricksFeatureLookup]:
         feature_lookups = []
         table_name_to_feature_lookup = {}
         for feature in features:
@@ -207,9 +219,7 @@ class DataBricksStoreInfo(BaseStoreInfo):
             }
             for ingest_query in offline_store_info.extract_offline_store_ingest_query_graphs():
                 table_name = ingest_query.offline_store_table_name
-                timestamp_lookup_key = None
-                if ingest_query.has_ttl:
-                    timestamp_lookup_key = VariableNameStr("timestamp_lookup_key")
+                timestamp_lookup_key = VariableNameStr("timestamp_lookup_key")
 
                 if table_name not in table_name_to_feature_lookup:
                     lookup_key = [
@@ -217,7 +227,7 @@ class DataBricksStoreInfo(BaseStoreInfo):
                         for entity_id in ingest_query.primary_entity_ids
                     ]
                     table_name_to_feature_lookup[table_name] = DataBricksFeatureLookup(
-                        table_name=ingest_query.offline_store_table_name,
+                        table_name=f"{schema_name}.{ingest_query.offline_store_table_name}",
                         lookup_key=lookup_key,
                         timestamp_lookup_key=timestamp_lookup_key,
                         lookback_window=None,
@@ -241,7 +251,6 @@ class DataBricksStoreInfo(BaseStoreInfo):
         cls, features: List[FeatureModel], feature_store: FeatureStoreModel
     ) -> "DataBricksStoreInfo":
         exclude_columns = set()
-        require_timestamp_lookup_key = False
         entity_id_to_column_spec = {}
         request_column_name_to_dtype = {}
         for feature in features:
@@ -250,9 +259,6 @@ class DataBricksStoreInfo(BaseStoreInfo):
                 info.entity_id: info.serving_name for info in offline_store_info.serving_names_info
             }
             for ingest_query in offline_store_info.extract_offline_store_ingest_query_graphs():
-                if ingest_query.has_ttl:
-                    require_timestamp_lookup_key = True
-
                 if offline_store_info.udf_info:
                     exclude_columns.add(ingest_query.output_column_name)
 
@@ -275,23 +281,38 @@ class DataBricksStoreInfo(BaseStoreInfo):
                     if node_params.column_name not in request_column_name_to_dtype:
                         request_column_name_to_dtype[node_params.column_name] = node_params.dtype
 
+        fully_qualified_schema_name = cls._get_fully_qualified_schema_name(feature_store)
         feature_specs: List[
             Union[DataBricksFeatureLookup, DataBricksFeatureFunction]
-        ] = cls._create_feature_lookups(features) + cls._create_feature_functions(features)
+        ] = cls._create_feature_lookups(
+            features, fully_qualified_schema_name
+        ) + cls._create_feature_functions(
+            features, fully_qualified_schema_name
+        )
 
-        base_dataframe_specs = []
+        base_dataframe_specs = [
+            ColumnSpec(name="[TARGET_COLUMN]", dtype=DBVarType.FLOAT),
+        ]
+        has_point_in_time = False
         for entity_id in sorted(entity_id_to_column_spec.keys()):
             base_dataframe_specs.append(entity_id_to_column_spec[entity_id])
         for column_name in sorted(request_column_name_to_dtype.keys()):
             base_dataframe_specs.append(
                 ColumnSpec(name=column_name, dtype=request_column_name_to_dtype[column_name])
             )
+            if column_name == SpecialColumnName.POINT_IN_TIME:
+                has_point_in_time = True
+
+        if not has_point_in_time:
+            base_dataframe_specs.append(
+                ColumnSpec(name=SpecialColumnName.POINT_IN_TIME.value, dtype=DBVarType.TIMESTAMP)
+            )
 
         return cls(
             feature_specs=feature_specs,
             base_dataframe_specs=base_dataframe_specs,
             exclude_columns=sorted(exclude_columns),
-            require_timestamp_lookup_key=require_timestamp_lookup_key,
+            require_timestamp_lookup_key=True,
         )
 
 

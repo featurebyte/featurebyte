@@ -58,7 +58,7 @@ class OnlineStoreService(
         """
         online_store = self.document_class(**data.dict(by_alias=True))
         if online_store.details.credential:
-            online_store.details.credential.encrypt()
+            online_store.details.credential.encrypt_values()
         return await super().create_document(
             data=OnlineStoreCreate(**online_store.dict(by_alias=True))
         )
@@ -109,7 +109,7 @@ class OnlineStoreService(
         )
         document = self.document_class(**document_dict)
         if document.details.credential:
-            document.details.credential.decrypt()
+            document.details.credential.decrypt_values()
         return document.dict(by_alias=True)
 
     async def list_documents_as_dict(
@@ -134,7 +134,7 @@ class OnlineStoreService(
         for document_dict in documents["data"]:
             document = self.document_class(**document_dict)
             if document.details.credential:
-                document.details.credential.decrypt()
+                document.details.credential.decrypt_values()
             document_dict["details"] = document.details.dict(by_alias=True)
         return documents
 
@@ -151,7 +151,7 @@ class OnlineStoreService(
             document_dict.update(update_dict)
             new_document = self.document_class(**document_dict)
             if new_document.details.credential:
-                new_document.details.credential.encrypt()
+                new_document.details.credential.encrypt_values()
                 update_dict["details"]["credential"] = new_document.details.credential.dict(
                     by_alias=True
                 )

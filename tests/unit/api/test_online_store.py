@@ -31,8 +31,8 @@ def test_info(saved_mysql_online_store, catalog):
             "port": 3306,
             "credential": {
                 "type": "USERNAME_PASSWORD",
-                "username": "mysql_user",
-                "password": "mysql_password",
+                "username": "********",
+                "password": "********",
             },
         },
         "catalogs": [{"name": "catalog"}],
@@ -48,7 +48,7 @@ def decrypt_credential(docs):
     for doc in docs:
         # decrypt credential
         credential = UsernamePasswordCredential(**doc["details"]["credential"])
-        credential.decrypt()
+        credential.decrypt_values()
         doc["details"]["credential"] = credential.dict()
 
 
