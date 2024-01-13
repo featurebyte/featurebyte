@@ -320,7 +320,7 @@ async def test_get_historical_features__tile_cache_multiple_batches(
     graph, node = complex_feature.extract_pruned_graph_and_node()
     nodes = [graph.get_node_by_name("groupby_1"), graph.get_node_by_name("groupby_2")]
 
-    with patch("featurebyte.service.historical_features.NUM_FEATURES_PER_QUERY", 1):
+    with patch("featurebyte.service.historical_features_and_target.NUM_FEATURES_PER_QUERY", 1):
         _ = await get_historical_features(
             session=mocked_session,
             tile_cache_service=tile_cache_service,
