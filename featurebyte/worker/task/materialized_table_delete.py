@@ -135,38 +135,41 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask[MaterializedTable
         return cast(MaterializedTableModel, document)
 
     async def execute(self, payload: MaterializedTableDeleteTaskPayload) -> Any:
-        # table to delete action/view flag mapping
+        # table to delete action mapping
         table_to_delete_action = {
-            MaterializedTableCollectionName.BATCH_REQUEST: (
-                self._delete_batch_request_table,
-                False,
-            ),
-            MaterializedTableCollectionName.BATCH_FEATURE: (
-                self._delete_batch_feature_table,
-                False,
-            ),
-            MaterializedTableCollectionName.OBSERVATION: (self._delete_observation_table, False),
-            MaterializedTableCollectionName.HISTORICAL_FEATURE: (
-                self._delete_historical_feature_table,
-                True,
-            ),
-            MaterializedTableCollectionName.STATIC_SOURCE: (
-                self._delete_static_source_table,
-                False,
-            ),
-            MaterializedTableCollectionName.TARGET: (self._delete_target_table, True),
+            MaterializedTableCollectionName.BATCH_REQUEST: self._delete_batch_request_table,
+            MaterializedTableCollectionName.BATCH_FEATURE: self._delete_batch_feature_table,
+            MaterializedTableCollectionName.OBSERVATION: self._delete_observation_table,
+            MaterializedTableCollectionName.HISTORICAL_FEATURE: self._delete_historical_feature_table,
+            MaterializedTableCollectionName.STATIC_SOURCE: self._delete_static_source_table,
+            MaterializedTableCollectionName.TARGET: self._delete_target_table,
         }
 
-        func, is_view = table_to_delete_action[payload.collection_name]
-
         # delete document stored at mongo
-        deleted_document = await func(payload)
+        deleted_document = await table_to_delete_action[payload.collection_name](payload)
 
         # delete table stored at data warehouse
         feature_store = await self.feature_store_service.get_document(
             document_id=deleted_document.location.feature_store_id
         )
         db_session = await self.session_manager_service.get_feature_store_session(feature_store)
+
+        is_view = False
+        if (
+            payload.collection_name
+            in [
+                MaterializedTableCollectionName.HISTORICAL_FEATURE,
+                MaterializedTableCollectionName.TARGET,
+            ]
+            and hasattr(deleted_document, "observation_table_id")
+            and getattr(deleted_document, "observation_table_id")
+        ):
+            observation_table_id = getattr(deleted_document, "observation_table_id")
+            observation_table = await self.observation_table_service.get_document(
+                observation_table_id
+            )
+            is_view = bool(observation_table.has_row_index)
+
         await db_session.drop_table(
             table_name=deleted_document.location.table_details.table_name,
             schema_name=deleted_document.location.table_details.schema_name,  # type: ignore
