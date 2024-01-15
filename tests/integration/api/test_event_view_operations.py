@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from bson import ObjectId
+from sqlglot import parse_one
 
 from featurebyte import (
     AggFunc,
@@ -20,10 +21,13 @@ from featurebyte import (
 )
 from featurebyte.exception import RecordCreationException
 from featurebyte.feature_manager.model import ExtendedFeatureModel
+from featurebyte.query_graph.sql.common import sql_to_string
 from tests.util.helper import (
     assert_preview_result_equal,
     compute_historical_feature_table_dataframe_helper,
+    create_observation_table_from_dataframe,
     fb_assert_frame_equal,
+    get_dataframe_from_materialized_table,
     get_lagged_series_pandas,
     iet_entropy,
     tz_localize_if_needed,
@@ -747,6 +751,7 @@ async def test_get_historical_features__feature_table_cache(
     user_entity,
     new_user_id_entity,
     input_format,
+    feature_table_cache_metadata_service,
 ):
     """Test feature table cache create/update"""
     _ = user_entity, new_user_id_entity
@@ -759,7 +764,6 @@ async def test_get_historical_features__feature_table_cache(
             feature_group["COUNT_2h"],
             feature_group_per_category["COUNT_BY_ACTION_24h"],
             feature_group_per_category["MOST_FREQUENT_ACTION_24h"],
-            feature_group_per_category["NUM_UNIQUE_ACTION_24h"],
         ],
         name="My FeatureList 1",
     )
@@ -781,12 +785,19 @@ async def test_get_historical_features__feature_table_cache(
     if "table" in input_format:
         df_historical_expected.insert(0, "__FB_TABLE_ROW_INDEX", np.arange(1, 11))
 
-    df_historical_features_1 = await compute_historical_feature_table_dataframe_helper(
-        feature_list=feature_list_1,
-        df_observation_set=df_training_events,
-        session=session,
-        data_source=data_source,
-        input_format=input_format,
+    observation_table = await create_observation_table_from_dataframe(
+        session,
+        df_training_events,
+        data_source,
+    )
+
+    historical_feature_table_name = f"historical_feature_table_{ObjectId()}"
+    historical_feature_table = feature_list_1.compute_historical_feature_table(
+        observation_table,
+        historical_feature_table_name,
+    )
+    df_historical_features_1 = await get_dataframe_from_materialized_table(
+        session, historical_feature_table
     )
 
     expected_cols = [
@@ -804,6 +815,14 @@ async def test_get_historical_features__feature_table_cache(
         sort_by_columns=["POINT_IN_TIME", "üser id"],
     )
 
+    historical_feature_table_name = f"historical_feature_table_{ObjectId()}"
+    historical_feature_table = feature_list_2.compute_historical_feature_table(
+        observation_table,
+        historical_feature_table_name,
+    )
+    df_historical_features_2 = await get_dataframe_from_materialized_table(
+        session, historical_feature_table
+    )
     expected_cols = [
         "__FB_TABLE_ROW_INDEX",
         "POINT_IN_TIME",
@@ -812,19 +831,30 @@ async def test_get_historical_features__feature_table_cache(
     _df_historical_expected = df_historical_expected[
         [col for col in df_historical_expected.columns if col in expected_cols]
     ]
-    df_historical_features_2 = await compute_historical_feature_table_dataframe_helper(
-        feature_list=feature_list_2,
-        df_observation_set=df_training_events,
-        session=session,
-        data_source=data_source,
-        input_format=input_format,
-    )
     fb_assert_frame_equal(
         df_historical_features_2,
         _df_historical_expected,
         dict_like_columns=["COUNT_BY_ACTION_24h"],
         sort_by_columns=["POINT_IN_TIME", "üser id"],
     )
+
+    cache = await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
+        observation_table_id=observation_table.id,
+    )
+    assert len(cache.feature_definitions) == len(
+        set(feature_list_1.feature_names + feature_list_2.feature_names)
+    )
+    df = await session.execute_query(
+        sql_to_string(
+            parse_one(
+                f"""
+                SELECT * FROM "{session.database_name}"."{session.schema_name}"."{cache.table_name}"
+                """
+            ),
+            source_type=session.source_type,
+        )
+    )
+    assert df.shape[0] == df_historical_expected.shape[0]
 
 
 def test_datetime_operations(event_view, source_type):
