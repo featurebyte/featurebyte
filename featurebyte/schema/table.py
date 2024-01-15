@@ -28,6 +28,7 @@ class TableCreate(FeatureByteBaseModel):
     tabular_source: TabularSource
     columns_info: List[ColumnInfoWithoutSemanticId]
     record_creation_timestamp_column: Optional[StrictStr]
+    description: Optional[StrictStr]
 
     # pydantic validators
     _columns_info_validator = validator("columns_info", allow_reuse=True)(columns_info_validator)

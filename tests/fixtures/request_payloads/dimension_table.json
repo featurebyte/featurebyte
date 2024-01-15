@@ -70,6 +70,7 @@
             "name": "cust_id"
         }
     ],
+    "description": "test dimension table",
     "dimension_id_column": "col_int",
     "name": "sf_dimension_table",
     "record_creation_timestamp_column": "created_at",
